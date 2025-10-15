@@ -1,0 +1,119 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/models/appointment.dart';
+
+/// ✅ Gestione degli appuntamenti (mock persistente in memoria)
+class AppointmentsNotifier extends Notifier<List<Appointment>> {
+  bool _initialized = false;
+
+  @override
+  List<Appointment> build() {
+    if (!_initialized) {
+      _initialized = true;
+      state = _mockAppointments();
+    }
+    return state;
+  }
+
+  List<Appointment> _mockAppointments() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return [
+      // Staff 1
+      Appointment(
+        id: 1,
+        staffId: 1,
+        clientName: 'Anna Rossi',
+        startTime: today.add(const Duration(hours: 9, minutes: 10)),
+        endTime: today.add(const Duration(hours: 9, minutes: 35)),
+      ),
+      Appointment(
+        id: 2,
+        staffId: 1,
+        clientName: 'Luca Bianchi',
+        startTime: today.add(const Duration(hours: 9, minutes: 30)),
+        endTime: today.add(const Duration(hours: 10, minutes: 30)),
+      ),
+      Appointment(
+        id: 3,
+        staffId: 1,
+        clientName: 'Paolo Verdi',
+        startTime: today.add(const Duration(hours: 11)),
+        endTime: today.add(const Duration(hours: 12)),
+      ),
+
+      // Staff 2
+      Appointment(
+        id: 4,
+        staffId: 2,
+        clientName: 'Giulia Neri',
+        startTime: today.add(const Duration(hours: 10)),
+        endTime: today.add(const Duration(hours: 11)),
+      ),
+      Appointment(
+        id: 5,
+        staffId: 2,
+        clientName: 'Marco Gialli',
+        startTime: today.add(const Duration(hours: 10, minutes: 15)),
+        endTime: today.add(const Duration(hours: 10, minutes: 45)),
+      ),
+      Appointment(
+        id: 6,
+        staffId: 2,
+        clientName: 'Chiara Blu',
+        startTime: today.add(const Duration(hours: 14)),
+        endTime: today.add(const Duration(hours: 15)),
+      ),
+
+      // Staff 3
+      Appointment(
+        id: 7,
+        staffId: 3,
+        clientName: 'Valentina',
+        startTime: today.add(const Duration(hours: 9)),
+        endTime: today.add(const Duration(hours: 9, minutes: 45)),
+      ),
+      Appointment(
+        id: 8,
+        staffId: 3,
+        clientName: 'Francesco',
+        startTime: today.add(const Duration(hours: 9, minutes: 30)),
+        endTime: today.add(const Duration(hours: 10, minutes: 15)),
+      ),
+      Appointment(
+        id: 9,
+        staffId: 3,
+        clientName: 'Elisa',
+        startTime: today.add(const Duration(hours: 10, minutes: 30)),
+        endTime: today.add(const Duration(hours: 11)),
+      ),
+    ];
+  }
+
+  void moveAppointment({
+    required int appointmentId,
+    required int newStaffId,
+    required DateTime newStart,
+    required DateTime newEnd,
+  }) {
+    state = [
+      for (final appt in state)
+        if (appt.id == appointmentId)
+          Appointment(
+            id: appt.id,
+            staffId: newStaffId,
+            clientName: appt.clientName,
+            startTime: newStart,
+            endTime: newEnd,
+          )
+        else
+          appt,
+    ];
+  }
+}
+
+final appointmentsProvider =
+    NotifierProvider<AppointmentsNotifier, List<Appointment>>(
+      AppointmentsNotifier.new,
+    );
