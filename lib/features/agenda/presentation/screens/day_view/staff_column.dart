@@ -7,9 +7,11 @@ import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/temp_drag_time_provider.dart';
 import '../widgets/agenda_dividers.dart';
 import '../widgets/appointment_card.dart';
 
@@ -46,6 +48,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     ) {
       if (!mounted) return;
       final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
+      final tempTimeNotifier = ref.read(tempDragTimeProvider.notifier);
+      final dragOffset = ref.read(dragOffsetProvider);
 
       if (next == null) {
         if (_isHighlighted || _hoverY != null) {
@@ -55,6 +59,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           });
         }
         highlightNotifier.clear();
+        tempTimeNotifier.clear();
         return;
       }
 
@@ -66,17 +71,51 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
       if (inside) {
         final local = box.globalToLocal(next);
+        final double effectiveY = ((local.dy - (dragOffset ?? 0)).clamp(
+          0,
+          box.size.height,
+        )).toDouble();
+
         setState(() {
-          _hoverY = local.dy;
+          _hoverY = effectiveY;
           _isHighlighted = true;
         });
         highlightNotifier.set(widget.staff.id);
+
+        // 🔹 Calcolo orario stimato di destinazione (come se rilasciassi ora)
+        final slotHeight = LayoutConfig.slotHeight;
+        final minutesFromTop =
+            (effectiveY / slotHeight) * LayoutConfig.minutesPerSlot;
+        final roundedMinutes = (minutesFromTop / 5).round() * 5;
+
+        final draggedId = ref.read(draggedAppointmentIdProvider);
+        Duration duration;
+
+        if (draggedId != null) {
+          final appt = ref
+              .read(appointmentsProvider)
+              .firstWhere((a) => a.id == draggedId);
+          duration = appt.endTime.difference(appt.startTime);
+        } else {
+          duration = const Duration(minutes: 30);
+        }
+
+        final today = DateTime.now();
+        final start = DateTime(
+          today.year,
+          today.month,
+          today.day,
+        ).add(Duration(minutes: roundedMinutes.toInt()));
+        final end = start.add(duration);
+
+        tempTimeNotifier.setTimes(start, end);
       } else if (_isHighlighted) {
         setState(() {
           _isHighlighted = false;
           _hoverY = null;
         });
         highlightNotifier.clear();
+        tempTimeNotifier.clear();
       }
     }, fireImmediately: false);
   }
@@ -119,7 +158,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
-    // 📅 Appuntamenti con ghost statico
     stackChildren.addAll(_buildAppointments(slotHeight));
 
     return DragTarget<Appointment>(
@@ -138,6 +176,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           _hoverY = null;
         });
         ref.read(highlightedStaffIdProvider.notifier).clear();
+        ref.read(tempDragTimeProvider.notifier).clear();
 
         final box = context.findRenderObject() as RenderBox?;
         if (box == null) return;
@@ -150,19 +189,12 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final duration = details.data.endTime.difference(
           details.data.startTime,
         );
-        final dayStart = 0;
-        final dayEnd = LayoutConfig.totalSlots * LayoutConfig.minutesPerSlot;
-        final safeStartMinutes = roundedMinutes.clamp(
-          dayStart,
-          dayEnd - duration.inMinutes,
-        );
-
         final today = DateTime.now();
         final newStart = DateTime(
           today.year,
           today.month,
           today.day,
-        ).add(Duration(minutes: safeStartMinutes));
+        ).add(Duration(minutes: roundedMinutes.toInt()));
         final newEnd = newStart.add(duration);
 
         appointmentsNotifier.moveAppointment(
@@ -198,12 +230,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     );
   }
 
-  /// 🔹 Costruisce tutte le AppointmentCard nella colonna
   List<Widget> _buildAppointments(double slotHeight) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final List<List<Appointment>> overlapGroups = [];
 
-    // Raggruppa appuntamenti sovrapposti
     for (final appt in widget.appointments) {
       bool added = false;
       for (final group in overlapGroups) {

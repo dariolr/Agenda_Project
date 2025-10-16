@@ -10,16 +10,18 @@ class TempDragTimeNotifier extends Notifier<(DateTime, DateTime)?> {
 
   /// Imposta un nuovo intervallo orario (start, end)
   void setTimes(DateTime start, DateTime end) {
-    state = (start, end);
+    // aggiorna solo se cambia effettivamente lo slot di riferimento
+    if (state == null ||
+        state!.$1.minute != start.minute ||
+        state!.$1.hour != start.hour) {
+      state = (start, end);
+    }
   }
 
   /// Resetta lo stato (nessun drag in corso)
-  void clear() {
-    state = null;
-  }
+  void clear() => state = null;
 }
 
-/// Provider globale per accedere all'intervallo orario temporaneo
 final tempDragTimeProvider =
     NotifierProvider<TempDragTimeNotifier, (DateTime, DateTime)?>(
       TempDragTimeNotifier.new,

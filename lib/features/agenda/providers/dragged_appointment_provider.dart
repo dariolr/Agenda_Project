@@ -7,14 +7,10 @@ class DraggedAppointmentIdNotifier extends Notifier<int?> {
   int? build() => null;
 
   /// Imposta l'ID dell'appuntamento trascinato
-  void set(int id) {
-    state = id;
-  }
+  void set(int id) => state = id;
 
   /// Cancella immediatamente il fantasma
-  void clear() {
-    state = null;
-  }
+  void clear() => state = null;
 }
 
 final draggedAppointmentIdProvider =
