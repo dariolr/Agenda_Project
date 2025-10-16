@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/../../../core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
+import '../../../providers/agenda_providers.dart'; // 👈 dragPositionProvider
 
 class AppointmentCard extends ConsumerStatefulWidget {
   final Appointment appointment;
@@ -37,6 +38,24 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           feedback: _buildFeedback(),
           childWhenDragging: _buildPlaceholder(),
           dragAnchorStrategy: childDragAnchorStrategy,
+
+          // 🔵 AGGIUNTO: aggiorna posizione globale durante il drag
+          onDragStarted: () {},
+          onDragUpdate: (details) {
+            ref
+                .read(dragPositionProvider.notifier)
+                .update(details.globalPosition);
+          },
+          onDragEnd: (_) {
+            ref.read(dragPositionProvider.notifier).clear();
+          },
+          onDragCompleted: () {
+            ref.read(dragPositionProvider.notifier).clear();
+          },
+          onDraggableCanceled: (_, __) {
+            ref.read(dragPositionProvider.notifier).clear();
+          },
+
           child: _buildCard(isDragging: false),
         );
       },
