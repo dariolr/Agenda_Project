@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/../../../core/models/appointment.dart';
 import '/../../../core/models/staff.dart';
+import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../widgets/agenda_dividers.dart';
@@ -32,20 +34,17 @@ class StaffColumn extends ConsumerStatefulWidget {
 class _StaffColumnState extends ConsumerState<StaffColumn> {
   bool _isHighlighted = false;
   double? _hoverY;
-
   late final ProviderSubscription<Offset?> _dragListener;
 
   @override
   void initState() {
     super.initState();
 
-    // Ascolta la posizione globale del drag per gestire highlight e hover
     _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
     ) {
       if (!mounted) return;
-
       final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
 
       if (next == null) {
@@ -120,10 +119,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
-    // 📅 Appuntamenti con gestione overlapping
+    // 📅 Appuntamenti con ghost statico
     stackChildren.addAll(_buildAppointments(slotHeight));
 
-    // 🔹 Container principale
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
         setState(() => _isHighlighted = true);
@@ -200,8 +198,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     );
   }
 
-  /// 🔹 Gestione overlapping e posizionamento appuntamenti
+  /// 🔹 Costruisce tutte le AppointmentCard nella colonna
   List<Widget> _buildAppointments(double slotHeight) {
+    final draggedId = ref.watch(draggedAppointmentIdProvider);
     final List<List<Appointment>> overlapGroups = [];
 
     // Raggruppa appuntamenti sovrapposti
@@ -221,7 +220,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       if (!added) overlapGroups.add([appt]);
     }
 
-    // Crea widget posizionati
     final List<Widget> positionedAppointments = [];
     for (final group in overlapGroups) {
       final groupSize = group.length;
@@ -245,7 +243,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             left: leftFraction * widget.columnWidth + 2,
             width: widget.columnWidth * widthFraction - 4,
             height: height,
-            child: AppointmentCard(appointment: a, color: widget.staff.color),
+            child: Opacity(
+              opacity: (a.id == draggedId) ? AgendaTheme.ghostOpacity : 1.0,
+              child: AppointmentCard(appointment: a, color: widget.staff.color),
+            ),
           ),
         );
       }

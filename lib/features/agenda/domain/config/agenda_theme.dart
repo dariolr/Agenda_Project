@@ -64,4 +64,16 @@ class AgendaTheme {
     fontSize: 14,
     color: Colors.black87,
   );
+
+  // ──────────────────────────────────────────────
+  // 👻 EFFETTO DRAG / FANTASMA
+  // ──────────────────────────────────────────────
+
+  /// Opacità del "fantasma" lasciato dalla card originale durante il drag.
+  /// Regola questo valore per rendere il ghost più o meno visibile.
+  static const double ghostOpacity = 0.50;
+
+  /// Durata dell’effetto fade-out del fantasma dopo il rilascio.
+  /// Aumentala per una dissolvenza più lenta e visibile.
+  static const Duration ghostFadeDuration = Duration(milliseconds: 500);
 }
