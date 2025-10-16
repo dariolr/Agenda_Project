@@ -551,6 +551,34 @@ final highlightedStaffIdProvider =
     NotifierProvider<HighlightedStaffIdNotifier, int?>(
       HighlightedStaffIdNotifier.new,
     );
+--- FILE: lib/features/agenda/providers/drag_offset_provider.dart ---
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// 🔹 Mantiene in memoria la distanza verticale (in pixel)
+/// tra il punto di presa del mouse/dito e il bordo superiore della card.
+///
+/// Questo offset serve per calcolare in modo preciso la posizione
+/// del bordo superiore della card durante il drag, così da poter
+/// mostrare e salvare l'orario corretto.
+class DragOffsetNotifier extends Notifier<double?> {
+  @override
+  double? build() => null;
+
+  /// Imposta la distanza verticale dal bordo superiore (in px)
+  void set(double value) {
+    state = value;
+  }
+
+  /// Resetta lo stato (nessun drag in corso)
+  void clear() {
+    state = null;
+  }
+}
+
+/// Provider globale per l'offset verticale di presa durante il drag
+final dragOffsetProvider = NotifierProvider<DragOffsetNotifier, double?>(
+  DragOffsetNotifier.new,
+);
 --- FILE: lib/features/agenda/providers/layout_config_provider.g.dart ---
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
@@ -817,6 +845,33 @@ class DragPositionNotifier extends Notifier<Offset?> {
 final dragPositionProvider = NotifierProvider<DragPositionNotifier, Offset?>(
   DragPositionNotifier.new,
 );
+--- FILE: lib/features/agenda/providers/temp_drag_time_provider.dart ---
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// 🔹 Mantiene in memoria temporanea l'intervallo orario stimato
+/// (start, end) dell'appuntamento durante il drag.
+/// Viene aggiornato in tempo reale dalla StaffColumn mentre l'utente trascina
+/// e letto da AppointmentCard per mostrare orari live.
+class TempDragTimeNotifier extends Notifier<(DateTime, DateTime)?> {
+  @override
+  (DateTime, DateTime)? build() => null;
+
+  /// Imposta un nuovo intervallo orario (start, end)
+  void setTimes(DateTime start, DateTime end) {
+    state = (start, end);
+  }
+
+  /// Resetta lo stato (nessun drag in corso)
+  void clear() {
+    state = null;
+  }
+}
+
+/// Provider globale per accedere all'intervallo orario temporaneo
+final tempDragTimeProvider =
+    NotifierProvider<TempDragTimeNotifier, (DateTime, DateTime)?>(
+      TempDragTimeNotifier.new,
+    );
 --- FILE: lib/features/agenda/domain/config/agenda_theme.dart ---
 import 'package:flutter/material.dart';
 
@@ -1188,7 +1243,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/../../../core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
-import '../../../providers/agenda_providers.dart'; // 👈 dragPositionProvider
+import '../../../providers/agenda_providers.dart'; // dragPositionProvider
 
 class AppointmentCard extends ConsumerStatefulWidget {
   final Appointment appointment;
@@ -1224,7 +1279,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           childWhenDragging: _buildPlaceholder(),
           dragAnchorStrategy: childDragAnchorStrategy,
 
-          // 🔵 AGGIUNTO: aggiorna posizione globale durante il drag
+          // 🔵 aggiorna la posizione globale durante il drag
           onDragStarted: () {},
           onDragUpdate: (details) {
             ref
@@ -1260,7 +1315,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     final servicesText = widget.appointment.formattedServices;
     final priceText = widget.appointment.formattedPrice;
 
-    // 🔸 Combina servizi + prezzo in una singola riga se disponibili
     String infoLine = servicesText;
     if (priceText.isNotEmpty) {
       infoLine = infoLine.isEmpty ? priceText : '$servicesText – $priceText';
@@ -1544,9 +1598,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     // 📅 Appuntamenti con gestione overlapping
     stackChildren.addAll(_buildAppointments(slotHeight));
 
-    // 🧹 Nessuna linea rossa o badge durante il drag
-    // (funzionalità rimossa per richiesta)
-
     // 🔹 Container principale
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
@@ -1745,7 +1796,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/staff.dart';
 import '../../../../../core/widgets/no_scrollbar_behavior.dart';
 import '../../../domain/config/layout_config.dart';
-import '../../../providers/agenda_providers.dart'; // 👈 dragPositionProvider
+import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/layout_config_provider.dart';
@@ -1767,18 +1818,18 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
 
 class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   Timer? _autoScrollTimer;
+  Timer? _centerTimer;
   late final ProviderSubscription<Offset?> _dragSub;
 
-  // Configurazione auto-scroll
-  static const double _scrollEdgeMargin = 100; // distanza dai bordi
-  static const double _scrollSpeed = 20; // pixel per tick
+  static const double _scrollEdgeMargin = 100;
+  static const double _scrollSpeed = 20;
   static const Duration _scrollInterval = Duration(milliseconds: 50);
 
   @override
   void initState() {
     super.initState();
 
-    // 🔹 Ascolta la posizione del drag per avviare/interrompere auto-scroll
+    // 🔹 Ascolta drag per auto-scroll
     _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
@@ -1789,6 +1840,44 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         _stopAutoScroll();
       }
     });
+
+    // 🔸 Centra la riga rossa all'avvio
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _centerCurrentTimeLine();
+    });
+
+    // 🔸 Riesegui il centramento ogni 5 minuti
+    _centerTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      _centerCurrentTimeLine();
+    });
+  }
+
+  void _centerCurrentTimeLine() {
+    final scrollState = ref.read(agendaScrollProvider(widget.staffList));
+    final verticalCtrl = scrollState.verticalScrollCtrl;
+
+    if (!verticalCtrl.hasClients) return;
+
+    final now = DateTime.now();
+    final minutesSinceMidnight = now.hour * 60 + now.minute;
+    final slotHeight = LayoutConfig.slotHeight;
+    final offset =
+        (minutesSinceMidnight / LayoutConfig.minutesPerSlot) * slotHeight;
+
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final viewHeight = renderBox.size.height;
+    final availableHeight = viewHeight - LayoutConfig.headerHeight;
+
+    // 🔹 Centra con leggera preferenza per il futuro (riga a ~40% dell’altezza)
+    const double bias = 0.4;
+    final targetOffset = (offset - availableHeight * bias).clamp(
+      0.0,
+      verticalCtrl.position.maxScrollExtent,
+    );
+
+    verticalCtrl.jumpTo(targetOffset);
   }
 
   void _startAutoScroll() {
@@ -1817,12 +1906,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
       double? newOffset;
 
-      // 🔼 Scroll verso l’alto
       if (localPos.dy < _scrollEdgeMargin && currentOffset > 0) {
         newOffset = (currentOffset - _scrollSpeed).clamp(0, maxScrollExtent);
-      }
-      // 🔽 Scroll verso il basso
-      else if (localPos.dy > viewHeight - _scrollEdgeMargin &&
+      } else if (localPos.dy > viewHeight - _scrollEdgeMargin &&
           currentOffset < maxScrollExtent) {
         newOffset = (currentOffset + _scrollSpeed).clamp(0, maxScrollExtent);
       }
@@ -1842,6 +1928,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   void dispose() {
     _dragSub.close();
     _stopAutoScroll();
+    _centerTimer?.cancel();
     super.dispose();
   }
 
@@ -1863,7 +1950,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔹 Header con nomi staff
             Material(
               elevation: 3,
               child: Container(
@@ -1888,7 +1974,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
               ),
             ),
 
-            // 🔹 Corpo principale scrollabile
+            // 🔹 Corpo scrollabile
             Expanded(
               child: ScrollConfiguration(
                 behavior: const NoScrollbarBehavior(),
@@ -1933,7 +2019,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                         ],
                       ),
 
-                      // 🔴 Riga rossa del tempo corrente (aggiornamento isolato)
+                      // 🔴 Riga rossa
                       CurrentTimeLine(hourColumnWidth: hourWidth),
                     ],
                   ),

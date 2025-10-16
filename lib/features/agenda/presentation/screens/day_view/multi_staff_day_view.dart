@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/staff.dart';
 import '../../../../../core/widgets/no_scrollbar_behavior.dart';
 import '../../../domain/config/layout_config.dart';
-import '../../../providers/agenda_providers.dart'; // 👈 dragPositionProvider
+import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/layout_config_provider.dart';
@@ -28,18 +28,18 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
 
 class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   Timer? _autoScrollTimer;
+  Timer? _centerTimer;
   late final ProviderSubscription<Offset?> _dragSub;
 
-  // Configurazione auto-scroll
-  static const double _scrollEdgeMargin = 100; // distanza dai bordi
-  static const double _scrollSpeed = 20; // pixel per tick
+  static const double _scrollEdgeMargin = 100;
+  static const double _scrollSpeed = 20;
   static const Duration _scrollInterval = Duration(milliseconds: 50);
 
   @override
   void initState() {
     super.initState();
 
-    // 🔹 Ascolta la posizione del drag per avviare/interrompere auto-scroll
+    // 🔹 Ascolta drag per auto-scroll
     _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
@@ -50,6 +50,44 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         _stopAutoScroll();
       }
     });
+
+    // 🔸 Centra la riga rossa all'avvio
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _centerCurrentTimeLine();
+    });
+
+    // 🔸 Riesegui il centramento ogni 5 minuti
+    _centerTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      _centerCurrentTimeLine();
+    });
+  }
+
+  void _centerCurrentTimeLine() {
+    final scrollState = ref.read(agendaScrollProvider(widget.staffList));
+    final verticalCtrl = scrollState.verticalScrollCtrl;
+
+    if (!verticalCtrl.hasClients) return;
+
+    final now = DateTime.now();
+    final minutesSinceMidnight = now.hour * 60 + now.minute;
+    final slotHeight = LayoutConfig.slotHeight;
+    final offset =
+        (minutesSinceMidnight / LayoutConfig.minutesPerSlot) * slotHeight;
+
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final viewHeight = renderBox.size.height;
+    final availableHeight = viewHeight - LayoutConfig.headerHeight;
+
+    // 🔹 Centra con leggera preferenza per il futuro (riga a ~40% dell’altezza)
+    const double bias = 0.4;
+    final targetOffset = (offset - availableHeight * bias).clamp(
+      0.0,
+      verticalCtrl.position.maxScrollExtent,
+    );
+
+    verticalCtrl.jumpTo(targetOffset);
   }
 
   void _startAutoScroll() {
@@ -78,12 +116,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
       double? newOffset;
 
-      // 🔼 Scroll verso l’alto
       if (localPos.dy < _scrollEdgeMargin && currentOffset > 0) {
         newOffset = (currentOffset - _scrollSpeed).clamp(0, maxScrollExtent);
-      }
-      // 🔽 Scroll verso il basso
-      else if (localPos.dy > viewHeight - _scrollEdgeMargin &&
+      } else if (localPos.dy > viewHeight - _scrollEdgeMargin &&
           currentOffset < maxScrollExtent) {
         newOffset = (currentOffset + _scrollSpeed).clamp(0, maxScrollExtent);
       }
@@ -103,6 +138,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   void dispose() {
     _dragSub.close();
     _stopAutoScroll();
+    _centerTimer?.cancel();
     super.dispose();
   }
 
@@ -124,7 +160,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔹 Header con nomi staff
             Material(
               elevation: 3,
               child: Container(
@@ -149,7 +184,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
               ),
             ),
 
-            // 🔹 Corpo principale scrollabile
+            // 🔹 Corpo scrollabile
             Expanded(
               child: ScrollConfiguration(
                 behavior: const NoScrollbarBehavior(),
@@ -194,7 +229,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                         ],
                       ),
 
-                      // 🔴 Riga rossa del tempo corrente (aggiornamento isolato)
+                      // 🔴 Riga rossa
                       CurrentTimeLine(hourColumnWidth: hourWidth),
                     ],
                   ),
