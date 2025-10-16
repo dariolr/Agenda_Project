@@ -32,12 +32,14 @@ class StaffColumn extends ConsumerStatefulWidget {
 class _StaffColumnState extends ConsumerState<StaffColumn> {
   bool _isHighlighted = false;
   double? _hoverY;
+
   late final ProviderSubscription<Offset?> _dragListener;
 
   @override
   void initState() {
     super.initState();
 
+    // Ascolta la posizione globale del drag per gestire highlight e hover
     _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
@@ -98,7 +100,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     final stackChildren = <Widget>[];
 
-    // Griglia oraria
+    // 🕓 Griglia oraria coerente con HourColumn
     stackChildren.add(
       Column(
         children: List.generate(totalSlots, (index) {
@@ -118,65 +120,13 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
+    // 📅 Appuntamenti con gestione overlapping
     stackChildren.addAll(_buildAppointments(slotHeight));
 
-    // 🔴 Linea e badge durante il drag
-    if (_isHighlighted && _hoverY != null) {
-      // 👇 offset fisso: badge e linea allineati al bordo superiore
-      final dragged = ref.read(appointmentsProvider).isNotEmpty
-          ? ref.read(appointmentsProvider).first
-          : null;
+    // 🧹 Nessuna linea rossa o badge durante il drag
+    // (funzionalità rimossa per richiesta)
 
-      final durationMinutes = dragged?.totalDuration ?? 30;
-      final offset =
-          (durationMinutes / LayoutConfig.minutesPerSlot) * slotHeight / 2;
-      final double adjustedY = (_hoverY! - slotHeight).clamp(
-        0,
-        totalSlots * slotHeight,
-      );
-
-      final slotMinutes = LayoutConfig.minutesPerSlot;
-      final minutesFromTop = (adjustedY / slotHeight) * slotMinutes;
-      final roundedMinutes = (minutesFromTop / 5).round() * 5;
-      final hour = roundedMinutes ~/ 60;
-      final minute = roundedMinutes % 60;
-      final formatted =
-          '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-      const double badgeOffset = 15; // prova valori tra 15 e 22
-
-      stackChildren.addAll([
-        Positioned(
-          top: (adjustedY - 25).clamp(0, totalSlots * slotHeight - 25),
-
-          left: 0,
-          right: 0,
-          child: Container(
-            height: 1.2,
-            color: widget.staff.color.withOpacity(0.55),
-          ),
-        ),
-        Positioned(
-          top: (adjustedY - badgeOffset).clamp(
-            0,
-            totalSlots * slotHeight - badgeOffset,
-          ),
-          left: 8,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.75),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              formatted,
-              style: const TextStyle(color: Colors.white, fontSize: 11),
-            ),
-          ),
-        ),
-      ]);
-    }
-
-    // Container principale
+    // 🔹 Container principale
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
         setState(() => _isHighlighted = true);
@@ -253,10 +203,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     );
   }
 
-  /// Gestione overlapping
+  /// 🔹 Gestione overlapping e posizionamento appuntamenti
   List<Widget> _buildAppointments(double slotHeight) {
     final List<List<Appointment>> overlapGroups = [];
 
+    // Raggruppa appuntamenti sovrapposti
     for (final appt in widget.appointments) {
       bool added = false;
       for (final group in overlapGroups) {
@@ -273,6 +224,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       if (!added) overlapGroups.add([appt]);
     }
 
+    // Crea widget posizionati
     final List<Widget> positionedAppointments = [];
     for (final group in overlapGroups) {
       final groupSize = group.length;
