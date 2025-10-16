@@ -43,7 +43,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Card visiva con orario, cliente, servizi, durata e prezzo — adattiva
   Widget _buildCard({required bool isDragging}) {
     final baseColor = widget.color.withOpacity(0.15);
     const borderRadius = BorderRadius.all(Radius.circular(6));
@@ -65,8 +64,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
     return Material(
       borderRadius: borderRadius,
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
       color: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
@@ -86,13 +83,12 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           style: AgendaTheme.appointmentTextStyle.copyWith(
             fontSize: 12.5,
             height: 1.15,
-            decoration: TextDecoration.none,
           ),
           child: FittedBox(
             alignment: Alignment.topLeft,
-            fit: BoxFit.scaleDown,
+            fit: BoxFit.scaleDown, // ✅ ridimensiona automaticamente
             child: Column(
-              mainAxisSize: MainAxisSize.min, // 🔹 evita overflow verticale
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 🔸 Riga 1 → orario + cliente
@@ -143,7 +139,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Feedback durante il drag (identico in dimensioni)
   Widget _buildFeedback() {
     final size = _lastSize;
     return Material(
@@ -158,7 +153,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Placeholder invisibile per mantenere layout durante il drag
   Widget _buildPlaceholder() {
     final size = _lastSize;
     return SizedBox(

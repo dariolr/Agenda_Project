@@ -8,6 +8,7 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../widgets/agenda_dividers.dart'; // ✅ allineato a HourColumn
 import '../widgets/appointment_card.dart';
 
 class StaffColumn extends ConsumerStatefulWidget {
@@ -38,6 +39,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   void initState() {
     super.initState();
 
+    // 🔹 Ascolta la posizione del drag per gestire highlight e riga oraria
     _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
@@ -83,35 +85,36 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   @override
   void dispose() {
     _dragListener.close();
-    final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
-    if (highlightNotifier.state == widget.staff.id) {
-      highlightNotifier.clear();
+
+    final highlightedId = ref.read(highlightedStaffIdProvider);
+    if (highlightedId == widget.staff.id) {
+      ref.read(highlightedStaffIdProvider.notifier).clear();
     }
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final slotHeight = ref.watch(layoutConfigProvider);
+    final slotHeight = ref.watch(layoutConfigProvider); // double
     final totalSlots = LayoutConfig.totalSlots;
-    final slotsPerHour = (60 ~/ LayoutConfig.minutesPerSlot);
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
 
     final stackChildren = <Widget>[];
 
-    // 🕓 Griglia oraria
+    // 🕓 Griglia oraria coerente con HourColumn (usa AgendaHorizontalDivider)
     stackChildren.add(
       Column(
         children: List.generate(totalSlots, (index) {
+          final slotsPerHour = 60 ~/ LayoutConfig.minutesPerSlot;
           final isHourStart = index % slotsPerHour == 0;
-          return Container(
+          return SizedBox(
             height: slotHeight,
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Colors.grey.withOpacity(isHourStart ? 0.2 : 0.5),
-                  width: isHourStart ? 0.5 : 1,
-                ),
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: AgendaHorizontalDivider(
+                color: Colors.grey.withOpacity(isHourStart ? 0.2 : 0.5),
+                thickness: isHourStart ? 0.5 : 1,
               ),
             ),
           );
@@ -119,51 +122,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
-    // 🔹 Raggruppamento overlapping appuntamenti
-    final List<List<Appointment>> overlapGroups = [];
-    for (final appt in widget.appointments) {
-      bool added = false;
-      for (final group in overlapGroups) {
-        if (group.any(
-          (g) =>
-              appt.startTime.isBefore(g.endTime) &&
-              appt.endTime.isAfter(g.startTime),
-        )) {
-          group.add(appt);
-          added = true;
-          break;
-        }
-      }
-      if (!added) overlapGroups.add([appt]);
-    }
+    // 📅 Appuntamenti con gestione overlapping
+    stackChildren.addAll(_buildAppointments(slotHeight));
 
-    // 📅 Appuntamenti
-    for (final group in overlapGroups) {
-      final groupSize = group.length;
-      for (int i = 0; i < groupSize; i++) {
-        final a = group[i];
-        final startMinutes = a.startTime.hour * 60 + a.startTime.minute;
-        final endMinutes = a.endTime.hour * 60 + a.endTime.minute;
-        final top = (startMinutes / LayoutConfig.minutesPerSlot) * slotHeight;
-        final height =
-            ((endMinutes - startMinutes) / LayoutConfig.minutesPerSlot) *
-            slotHeight;
-        final widthFraction = 1 / groupSize;
-        final leftFraction = i * widthFraction;
-
-        stackChildren.add(
-          Positioned(
-            top: top,
-            left: leftFraction * widget.columnWidth + 4,
-            width: widget.columnWidth * widthFraction - 8,
-            height: height,
-            child: AppointmentCard(appointment: a, color: widget.staff.color),
-          ),
-        );
-      }
-    }
-
-    // 🟢 Riga e orario durante il drag
+    // 🟢 Riga oraria durante il drag
     if (_isHighlighted && _hoverY != null) {
       final slotMinutes = LayoutConfig.minutesPerSlot;
       final minutesFromTop = (_hoverY! / slotHeight) * slotMinutes;
@@ -201,7 +163,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ]);
     }
 
-    // 🔹 Colonna staff completa
+    // 🔹 Container principale
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
         setState(() => _isHighlighted = true);
@@ -259,7 +221,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
             decoration: BoxDecoration(
-              color: Colors.transparent,
+              color: _isHighlighted
+                  ? widget.staff.color.withOpacity(0.05)
+                  : Colors.transparent,
               border: widget.showRightBorder
                   ? Border(
                       right: BorderSide(
@@ -268,20 +232,65 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                       ),
                     )
                   : null,
-              boxShadow: _isHighlighted
-                  ? [
-                      BoxShadow(
-                        color: widget.staff.color.withOpacity(0.08),
-                        blurRadius: 14,
-                        spreadRadius: 0.5,
-                      ),
-                    ]
-                  : [],
             ),
             child: Stack(children: stackChildren),
           ),
         );
       },
     );
+  }
+
+  /// 🔹 Gestione overlapping e posizionamento appuntamenti
+  List<Widget> _buildAppointments(double slotHeight) {
+    final List<List<Appointment>> overlapGroups = [];
+
+    // 🔸 Raggruppa appuntamenti sovrapposti
+    for (final appt in widget.appointments) {
+      bool added = false;
+      for (final group in overlapGroups) {
+        if (group.any(
+          (g) =>
+              appt.startTime.isBefore(g.endTime) &&
+              appt.endTime.isAfter(g.startTime),
+        )) {
+          group.add(appt);
+          added = true;
+          break;
+        }
+      }
+      if (!added) overlapGroups.add([appt]);
+    }
+
+    // 🔸 Crea widget posizionati
+    final List<Widget> positionedAppointments = [];
+    for (final group in overlapGroups) {
+      final groupSize = group.length;
+      for (int i = 0; i < groupSize; i++) {
+        final a = group[i];
+        final startMinutes = a.startTime.hour * 60 + a.startTime.minute;
+        final endMinutes = a.endTime.hour * 60 + a.endTime.minute;
+
+        final double top =
+            (startMinutes / LayoutConfig.minutesPerSlot) * slotHeight;
+        final double height =
+            ((endMinutes - startMinutes) / LayoutConfig.minutesPerSlot) *
+            slotHeight;
+
+        final double widthFraction = 1 / groupSize;
+        final double leftFraction = i * widthFraction;
+
+        positionedAppointments.add(
+          Positioned(
+            top: top,
+            left: leftFraction * widget.columnWidth + 2,
+            width: widget.columnWidth * widthFraction - 4,
+            height: height,
+            child: AppointmentCard(appointment: a, color: widget.staff.color),
+          ),
+        );
+      }
+    }
+
+    return positionedAppointments;
   }
 }

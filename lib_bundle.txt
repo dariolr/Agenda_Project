@@ -538,19 +538,15 @@ abstract class _$AgendaScroll extends $Notifier<AgendaScrollState> {
 --- FILE: lib/features/agenda/providers/highlighted_staff_provider.dart ---
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 🔹 Notifier che tiene traccia dello staff attualmente evidenziato durante il drag
+/// 🔹 Tiene traccia dello staff evidenziato durante il drag
 class HighlightedStaffIdNotifier extends Notifier<int?> {
   @override
   int? build() => null;
 
-  /// Imposta l’ID dello staff attualmente evidenziato
   void set(int? id) => state = id;
-
-  /// Resetta lo staff evidenziato
   void clear() => state = null;
 }
 
-/// 🔹 Provider globale per lo staff evidenziato
 final highlightedStaffIdProvider =
     NotifierProvider<HighlightedStaffIdNotifier, int?>(
       HighlightedStaffIdNotifier.new,
@@ -821,8 +817,6 @@ class DragPositionNotifier extends Notifier<Offset?> {
 final dragPositionProvider = NotifierProvider<DragPositionNotifier, Offset?>(
   DragPositionNotifier.new,
 );
---- FILE: lib/features/agenda/data/agenda_api.dart ---
---- FILE: lib/features/agenda/data/agenda_repository.dart ---
 --- FILE: lib/features/agenda/domain/config/agenda_theme.dart ---
 import 'package:flutter/material.dart';
 
@@ -1127,7 +1121,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Card visiva con orario, cliente, servizi, durata e prezzo — adattiva
   Widget _buildCard({required bool isDragging}) {
     final baseColor = widget.color.withOpacity(0.15);
     const borderRadius = BorderRadius.all(Radius.circular(6));
@@ -1149,8 +1142,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
     return Material(
       borderRadius: borderRadius,
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
       color: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
@@ -1170,13 +1161,12 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           style: AgendaTheme.appointmentTextStyle.copyWith(
             fontSize: 12.5,
             height: 1.15,
-            decoration: TextDecoration.none,
           ),
           child: FittedBox(
             alignment: Alignment.topLeft,
-            fit: BoxFit.scaleDown,
+            fit: BoxFit.scaleDown, // ✅ ridimensiona automaticamente
             child: Column(
-              mainAxisSize: MainAxisSize.min, // 🔹 evita overflow verticale
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 🔸 Riga 1 → orario + cliente
@@ -1227,7 +1217,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Feedback durante il drag (identico in dimensioni)
   Widget _buildFeedback() {
     final size = _lastSize;
     return Material(
@@ -1242,7 +1231,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Placeholder invisibile per mantenere layout durante il drag
   Widget _buildPlaceholder() {
     final size = _lastSize;
     return SizedBox(
@@ -1315,6 +1303,7 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../widgets/agenda_dividers.dart'; // ✅ allineato a HourColumn
 import '../widgets/appointment_card.dart';
 
 class StaffColumn extends ConsumerStatefulWidget {
@@ -1345,6 +1334,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   void initState() {
     super.initState();
 
+    // 🔹 Ascolta la posizione del drag per gestire highlight e riga oraria
     _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
@@ -1390,35 +1380,36 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   @override
   void dispose() {
     _dragListener.close();
-    final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
-    if (highlightNotifier.state == widget.staff.id) {
-      highlightNotifier.clear();
+
+    final highlightedId = ref.read(highlightedStaffIdProvider);
+    if (highlightedId == widget.staff.id) {
+      ref.read(highlightedStaffIdProvider.notifier).clear();
     }
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final slotHeight = ref.watch(layoutConfigProvider);
+    final slotHeight = ref.watch(layoutConfigProvider); // double
     final totalSlots = LayoutConfig.totalSlots;
-    final slotsPerHour = (60 ~/ LayoutConfig.minutesPerSlot);
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
 
     final stackChildren = <Widget>[];
 
-    // 🕓 Griglia oraria
+    // 🕓 Griglia oraria coerente con HourColumn (usa AgendaHorizontalDivider)
     stackChildren.add(
       Column(
         children: List.generate(totalSlots, (index) {
+          final slotsPerHour = 60 ~/ LayoutConfig.minutesPerSlot;
           final isHourStart = index % slotsPerHour == 0;
-          return Container(
+          return SizedBox(
             height: slotHeight,
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Colors.grey.withOpacity(isHourStart ? 0.2 : 0.5),
-                  width: isHourStart ? 0.5 : 1,
-                ),
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: AgendaHorizontalDivider(
+                color: Colors.grey.withOpacity(isHourStart ? 0.2 : 0.5),
+                thickness: isHourStart ? 0.5 : 1,
               ),
             ),
           );
@@ -1426,51 +1417,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
-    // 🔹 Raggruppamento overlapping appuntamenti
-    final List<List<Appointment>> overlapGroups = [];
-    for (final appt in widget.appointments) {
-      bool added = false;
-      for (final group in overlapGroups) {
-        if (group.any(
-          (g) =>
-              appt.startTime.isBefore(g.endTime) &&
-              appt.endTime.isAfter(g.startTime),
-        )) {
-          group.add(appt);
-          added = true;
-          break;
-        }
-      }
-      if (!added) overlapGroups.add([appt]);
-    }
+    // 📅 Appuntamenti con gestione overlapping
+    stackChildren.addAll(_buildAppointments(slotHeight));
 
-    // 📅 Appuntamenti
-    for (final group in overlapGroups) {
-      final groupSize = group.length;
-      for (int i = 0; i < groupSize; i++) {
-        final a = group[i];
-        final startMinutes = a.startTime.hour * 60 + a.startTime.minute;
-        final endMinutes = a.endTime.hour * 60 + a.endTime.minute;
-        final top = (startMinutes / LayoutConfig.minutesPerSlot) * slotHeight;
-        final height =
-            ((endMinutes - startMinutes) / LayoutConfig.minutesPerSlot) *
-            slotHeight;
-        final widthFraction = 1 / groupSize;
-        final leftFraction = i * widthFraction;
-
-        stackChildren.add(
-          Positioned(
-            top: top,
-            left: leftFraction * widget.columnWidth + 4,
-            width: widget.columnWidth * widthFraction - 8,
-            height: height,
-            child: AppointmentCard(appointment: a, color: widget.staff.color),
-          ),
-        );
-      }
-    }
-
-    // 🟢 Riga e orario durante il drag
+    // 🟢 Riga oraria durante il drag
     if (_isHighlighted && _hoverY != null) {
       final slotMinutes = LayoutConfig.minutesPerSlot;
       final minutesFromTop = (_hoverY! / slotHeight) * slotMinutes;
@@ -1508,7 +1458,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ]);
     }
 
-    // 🔹 Colonna staff completa
+    // 🔹 Container principale
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
         setState(() => _isHighlighted = true);
@@ -1566,7 +1516,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
             decoration: BoxDecoration(
-              color: Colors.transparent,
+              color: _isHighlighted
+                  ? widget.staff.color.withOpacity(0.05)
+                  : Colors.transparent,
               border: widget.showRightBorder
                   ? Border(
                       right: BorderSide(
@@ -1575,21 +1527,66 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                       ),
                     )
                   : null,
-              boxShadow: _isHighlighted
-                  ? [
-                      BoxShadow(
-                        color: widget.staff.color.withOpacity(0.08),
-                        blurRadius: 14,
-                        spreadRadius: 0.5,
-                      ),
-                    ]
-                  : [],
             ),
             child: Stack(children: stackChildren),
           ),
         );
       },
     );
+  }
+
+  /// 🔹 Gestione overlapping e posizionamento appuntamenti
+  List<Widget> _buildAppointments(double slotHeight) {
+    final List<List<Appointment>> overlapGroups = [];
+
+    // 🔸 Raggruppa appuntamenti sovrapposti
+    for (final appt in widget.appointments) {
+      bool added = false;
+      for (final group in overlapGroups) {
+        if (group.any(
+          (g) =>
+              appt.startTime.isBefore(g.endTime) &&
+              appt.endTime.isAfter(g.startTime),
+        )) {
+          group.add(appt);
+          added = true;
+          break;
+        }
+      }
+      if (!added) overlapGroups.add([appt]);
+    }
+
+    // 🔸 Crea widget posizionati
+    final List<Widget> positionedAppointments = [];
+    for (final group in overlapGroups) {
+      final groupSize = group.length;
+      for (int i = 0; i < groupSize; i++) {
+        final a = group[i];
+        final startMinutes = a.startTime.hour * 60 + a.startTime.minute;
+        final endMinutes = a.endTime.hour * 60 + a.endTime.minute;
+
+        final double top =
+            (startMinutes / LayoutConfig.minutesPerSlot) * slotHeight;
+        final double height =
+            ((endMinutes - startMinutes) / LayoutConfig.minutesPerSlot) *
+            slotHeight;
+
+        final double widthFraction = 1 / groupSize;
+        final double leftFraction = i * widthFraction;
+
+        positionedAppointments.add(
+          Positioned(
+            top: top,
+            left: leftFraction * widget.columnWidth + 2,
+            width: widget.columnWidth * widthFraction - 4,
+            height: height,
+            child: AppointmentCard(appointment: a, color: widget.staff.color),
+          ),
+        );
+      }
+    }
+
+    return positionedAppointments;
   }
 }
 --- FILE: lib/features/agenda/presentation/screens/day_view/responsive_layout.dart ---
@@ -1788,10 +1785,7 @@ class StaffHeaderRow extends ConsumerWidget {
       height: headerHeight,
       child: Row(
         children: [
-          // Colonna "Ora" — vuota e trasparente
           SizedBox(width: hourColumnWidth, height: headerHeight),
-
-          // Scroll orizzontale sincronizzato con le colonne
           Expanded(
             child: SingleChildScrollView(
               controller: scrollController,
@@ -1803,73 +1797,37 @@ class StaffHeaderRow extends ConsumerWidget {
                   final isLast = index == staffList.length - 1;
                   final isHighlighted = highlightedId == staff.id;
 
-                  return Stack(
-                    children: [
-                      // 🔹 Base colorata per ogni colonna staff
-                      Container(
-                        width: columnWidth,
-                        height: headerHeight,
-                        decoration: BoxDecoration(
-                          color: staff.color.withOpacity(0.18),
-                          border: Border(
-                            right: BorderSide(
-                              color: isLast
-                                  ? Colors.transparent
-                                  : Colors.grey.withOpacity(0.25),
-                              width: 1,
-                            ),
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 6,
-                        ),
-                        child: Text(
-                          staff.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: Colors.black87,
-                          ),
+                  return Container(
+                    width: columnWidth,
+                    height: headerHeight,
+                    decoration: BoxDecoration(
+                      color: isHighlighted
+                          ? staff.color.withOpacity(0.18)
+                          : staff.color.withOpacity(0.10),
+                      border: Border(
+                        right: BorderSide(
+                          color: isLast
+                              ? Colors.transparent
+                              : Colors.grey.withOpacity(0.25),
+                          width: 1,
                         ),
                       ),
-
-                      // 🔸 Badge fisso in alto quando colonna è evidenziata
-                      Positioned(
-                        top: 6,
-                        left: 6,
-                        right: 6,
-                        child: AnimatedOpacity(
-                          opacity: isHighlighted ? 1 : 0,
-                          duration: const Duration(milliseconds: 120),
-                          curve: Curves.easeInOut,
-                          child: IgnorePointer(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: staff.color.withOpacity(0.28),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                staff.name,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                    ),
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 6,
+                    ),
+                    child: Text(
+                      staff.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: Colors.black87,
                       ),
-                    ],
+                    ),
                   );
                 }).toList(),
               ),
@@ -1938,12 +1896,6 @@ export 'presentation/screens/widgets/agenda_dividers.dart';
 // � Application (providers, notifiers, stato)
 // ──────────────────────────────────────────────
 export 'providers/agenda_scroll_provider.dart';
---- FILE: lib/shared/styles/colors.dart ---
---- FILE: lib/shared/styles/spacing.dart ---
---- FILE: lib/shared/styles/typography.dart ---
---- FILE: lib/shared/widgets/app_card.dart ---
---- FILE: lib/shared/widgets/app_button.dart ---
---- FILE: lib/shared/widgets/app_loading.dart ---
 --- FILE: lib/main.dart ---
 import 'package:agenda_frontend/app/app.dart';
 import 'package:flutter/material.dart';
