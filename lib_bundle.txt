@@ -359,6 +359,30 @@ final staffProvider = Provider<List<Staff>>((ref) {
     Staff(id: 5, name: 'Luisa', color: Colors.purpleAccent),
   ];
 });
+--- FILE: lib/features/agenda/providers/dragged_appointment_provider.dart ---
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// 🔹 Tiene traccia dell’appuntamento attualmente trascinato.
+/// Nessun delay: il fantasma scompare subito al rilascio.
+class DraggedAppointmentIdNotifier extends Notifier<int?> {
+  @override
+  int? build() => null;
+
+  /// Imposta l'ID dell'appuntamento trascinato
+  void set(int id) {
+    state = id;
+  }
+
+  /// Cancella immediatamente il fantasma
+  void clear() {
+    state = null;
+  }
+}
+
+final draggedAppointmentIdProvider =
+    NotifierProvider<DraggedAppointmentIdNotifier, int?>(
+      DraggedAppointmentIdNotifier.new,
+    );
 --- FILE: lib/features/agenda/providers/layout_config_provider.dart ---
 import 'dart:async';
 
@@ -939,6 +963,18 @@ class AgendaTheme {
     fontSize: 14,
     color: Colors.black87,
   );
+
+  // ──────────────────────────────────────────────
+  // 👻 EFFETTO DRAG / FANTASMA
+  // ──────────────────────────────────────────────
+
+  /// Opacità del "fantasma" lasciato dalla card originale durante il drag.
+  /// Regola questo valore per rendere il ghost più o meno visibile.
+  static const double ghostOpacity = 0.50;
+
+  /// Durata dell’effetto fade-out del fantasma dopo il rilascio.
+  /// Aumentala per una dissolvenza più lenta e visibile.
+  static const Duration ghostFadeDuration = Duration(milliseconds: 500);
 }
 --- FILE: lib/features/agenda/domain/config/layout_config.dart ---
 import 'package:flutter/material.dart';
@@ -1244,6 +1280,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '/../../../core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../providers/agenda_providers.dart'; // dragPositionProvider
+import '../../../providers/dragged_appointment_provider.dart'; // gestione fantasma
 
 class AppointmentCard extends ConsumerStatefulWidget {
   final Appointment appointment;
@@ -1276,33 +1313,42 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         return LongPressDraggable<Appointment>(
           data: widget.appointment,
           feedback: _buildFeedback(),
-          childWhenDragging: _buildPlaceholder(),
+          // 👻 Durante il drag la card originale resta semitrasparente
+          childWhenDragging: _buildCard(isDragging: false, isGhost: true),
           dragAnchorStrategy: childDragAnchorStrategy,
 
-          // 🔵 aggiorna la posizione globale durante il drag
-          onDragStarted: () {},
+          // 🔵 Inizio drag → segna l'appuntamento trascinato
+          onDragStarted: () {
+            ref
+                .read(draggedAppointmentIdProvider.notifier)
+                .set(widget.appointment.id);
+          },
+
+          // 🔴 Fine drag o rilascio → rimuove subito il fantasma
+          onDragEnd: (_) => _handleDragEnd(ref),
+          onDragCompleted: () => _handleDragEnd(ref),
+          onDraggableCanceled: (_, __) => _handleDragEnd(ref),
+
+          // 🔁 Aggiorna posizione globale del cursore
           onDragUpdate: (details) {
             ref
                 .read(dragPositionProvider.notifier)
                 .update(details.globalPosition);
           },
-          onDragEnd: (_) {
-            ref.read(dragPositionProvider.notifier).clear();
-          },
-          onDragCompleted: () {
-            ref.read(dragPositionProvider.notifier).clear();
-          },
-          onDraggableCanceled: (_, __) {
-            ref.read(dragPositionProvider.notifier).clear();
-          },
 
+          // ✅ Card normale (non in drag)
           child: _buildCard(isDragging: false),
         );
       },
     );
   }
 
-  Widget _buildCard({required bool isDragging}) {
+  void _handleDragEnd(WidgetRef ref) {
+    ref.read(draggedAppointmentIdProvider.notifier).clear();
+    ref.read(dragPositionProvider.notifier).clear();
+  }
+
+  Widget _buildCard({required bool isDragging, bool isGhost = false}) {
     final baseColor = widget.color.withOpacity(0.15);
     const borderRadius = BorderRadius.all(Radius.circular(6));
 
@@ -1314,82 +1360,86 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
     final servicesText = widget.appointment.formattedServices;
     final priceText = widget.appointment.formattedPrice;
-
     String infoLine = servicesText;
     if (priceText.isNotEmpty) {
       infoLine = infoLine.isEmpty ? priceText : '$servicesText – $priceText';
     }
 
-    return Material(
-      borderRadius: borderRadius,
-      color: Colors.transparent,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Color.alphaBlend(baseColor, Colors.white),
-          borderRadius: borderRadius,
-          border: Border.all(color: widget.color, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: widget.color.withOpacity(isDragging ? 0.3 : 0.1),
-              blurRadius: isDragging ? 8 : 4,
-              offset: isDragging ? const Offset(2, 3) : const Offset(1, 1),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        child: DefaultTextStyle(
-          style: AgendaTheme.appointmentTextStyle.copyWith(
-            fontSize: 12.5,
-            height: 1.15,
-          ),
-          child: FittedBox(
-            alignment: Alignment.topLeft,
-            fit: BoxFit.scaleDown, // ✅ ridimensiona automaticamente
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 🔸 Riga 1 → orario + cliente
-                RichText(
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '$start - $end  ',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      TextSpan(
-                        text: client,
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+    // 👻 Opacità fantasma regolabile da AgendaTheme
+    final double opacity = isGhost ? AgendaTheme.ghostOpacity : 1.0;
 
-                // 🔸 Riga 2 → servizi + prezzo
-                if (infoLine.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1),
-                    child: Text(
-                      infoLine,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w400,
-                        height: 1.1,
-                      ),
+    return Opacity(
+      opacity: opacity,
+      child: Material(
+        borderRadius: borderRadius,
+        color: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Color.alphaBlend(baseColor, Colors.white),
+            borderRadius: borderRadius,
+            border: Border.all(color: widget.color, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(isDragging ? 0.3 : 0.1),
+                blurRadius: isDragging ? 8 : 4,
+                offset: isDragging ? const Offset(2, 3) : const Offset(1, 1),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: DefaultTextStyle(
+            style: AgendaTheme.appointmentTextStyle.copyWith(
+              fontSize: 12.5,
+              height: 1.15,
+            ),
+            child: FittedBox(
+              alignment: Alignment.topLeft,
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 🔸 Riga 1 → orario + cliente
+                  RichText(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '$start - $end  ',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        TextSpan(
+                          text: client,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-              ],
+                  // 🔸 Riga 2 → servizi + prezzo
+                  if (infoLine.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: Text(
+                        infoLine,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w400,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1408,14 +1458,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         height: size?.height,
         child: _buildCard(isDragging: true),
       ),
-    );
-  }
-
-  Widget _buildPlaceholder() {
-    final size = _lastSize;
-    return SizedBox(
-      width: size?.width ?? double.infinity,
-      height: size?.height ?? 0,
     );
   }
 }
@@ -1478,9 +1520,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/../../../core/models/appointment.dart';
 import '/../../../core/models/staff.dart';
+import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../widgets/agenda_dividers.dart';
@@ -1507,20 +1551,17 @@ class StaffColumn extends ConsumerStatefulWidget {
 class _StaffColumnState extends ConsumerState<StaffColumn> {
   bool _isHighlighted = false;
   double? _hoverY;
-
   late final ProviderSubscription<Offset?> _dragListener;
 
   @override
   void initState() {
     super.initState();
 
-    // Ascolta la posizione globale del drag per gestire highlight e hover
     _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
     ) {
       if (!mounted) return;
-
       final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
 
       if (next == null) {
@@ -1595,10 +1636,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
-    // 📅 Appuntamenti con gestione overlapping
+    // 📅 Appuntamenti con ghost statico
     stackChildren.addAll(_buildAppointments(slotHeight));
 
-    // 🔹 Container principale
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
         setState(() => _isHighlighted = true);
@@ -1675,8 +1715,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     );
   }
 
-  /// 🔹 Gestione overlapping e posizionamento appuntamenti
+  /// 🔹 Costruisce tutte le AppointmentCard nella colonna
   List<Widget> _buildAppointments(double slotHeight) {
+    final draggedId = ref.watch(draggedAppointmentIdProvider);
     final List<List<Appointment>> overlapGroups = [];
 
     // Raggruppa appuntamenti sovrapposti
@@ -1696,7 +1737,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       if (!added) overlapGroups.add([appt]);
     }
 
-    // Crea widget posizionati
     final List<Widget> positionedAppointments = [];
     for (final group in overlapGroups) {
       final groupSize = group.length;
@@ -1720,7 +1760,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             left: leftFraction * widget.columnWidth + 2,
             width: widget.columnWidth * widthFraction - 4,
             height: height,
-            child: AppointmentCard(appointment: a, color: widget.staff.color),
+            child: Opacity(
+              opacity: (a.id == draggedId) ? AgendaTheme.ghostOpacity : 1.0,
+              child: AppointmentCard(appointment: a, color: widget.staff.color),
+            ),
           ),
         );
       }
