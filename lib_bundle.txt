@@ -1031,6 +1031,113 @@ class _LayoutConfigAutoListenerState
     return widget.child;
   }
 }
+--- FILE: lib/features/agenda/presentation/screens/widgets/current_time_line.dart ---
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../../../domain/config/layout_config.dart';
+
+/// 🔹 Widget autonomo che disegna e aggiorna la riga rossa dell’orario corrente
+class CurrentTimeLine extends StatefulWidget {
+  final double hourColumnWidth;
+
+  const CurrentTimeLine({super.key, required this.hourColumnWidth});
+
+  @override
+  State<CurrentTimeLine> createState() => _CurrentTimeLineState();
+}
+
+class _CurrentTimeLineState extends State<CurrentTimeLine> {
+  Timer? _minuteTimer;
+  double _offset = 0;
+  String _label = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _updateLine();
+    _scheduleMinuteSync();
+  }
+
+  void _scheduleMinuteSync() {
+    final now = DateTime.now();
+    final msToNextMinute = 60000 - (now.second * 1000 + now.millisecond);
+
+    _minuteTimer = Timer(Duration(milliseconds: msToNextMinute), () {
+      _updateLine();
+      _minuteTimer?.cancel();
+      _minuteTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        _updateLine();
+      });
+    });
+  }
+
+  void _updateLine() {
+    final now = DateTime.now();
+    final minutesSinceMidnight = now.hour * 60 + now.minute;
+    final slotHeight = LayoutConfig.slotHeight;
+    final offset =
+        (minutesSinceMidnight / LayoutConfig.minutesPerSlot) * slotHeight;
+    final label =
+        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+
+    if (mounted) {
+      setState(() {
+        _offset = offset;
+        _label = label;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _minuteTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: _offset,
+      left: 0,
+      right: 0,
+      child: Row(
+        children: [
+          // Pallino e orario nella colonna ore
+          SizedBox(
+            width: widget.hourColumnWidth,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.redAccent,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _label,
+                  style: const TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+            ),
+          ),
+          // Linea rossa che attraversa tutte le colonne
+          Expanded(child: Container(height: 0.5, color: Colors.redAccent)),
+        ],
+      ),
+    );
+  }
+}
 --- FILE: lib/features/agenda/presentation/screens/widgets/agenda_dividers.dart ---
 import 'package:flutter/material.dart';
 
@@ -1081,6 +1188,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/../../../core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
+import '../../../providers/agenda_providers.dart'; // 👈 dragPositionProvider
 
 class AppointmentCard extends ConsumerStatefulWidget {
   final Appointment appointment;
@@ -1115,6 +1223,24 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           feedback: _buildFeedback(),
           childWhenDragging: _buildPlaceholder(),
           dragAnchorStrategy: childDragAnchorStrategy,
+
+          // 🔵 AGGIUNTO: aggiorna posizione globale durante il drag
+          onDragStarted: () {},
+          onDragUpdate: (details) {
+            ref
+                .read(dragPositionProvider.notifier)
+                .update(details.globalPosition);
+          },
+          onDragEnd: (_) {
+            ref.read(dragPositionProvider.notifier).clear();
+          },
+          onDragCompleted: () {
+            ref.read(dragPositionProvider.notifier).clear();
+          },
+          onDraggableCanceled: (_, __) {
+            ref.read(dragPositionProvider.notifier).clear();
+          },
+
           child: _buildCard(isDragging: false),
         );
       },
@@ -1303,7 +1429,7 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
-import '../widgets/agenda_dividers.dart'; // ✅ allineato a HourColumn
+import '../widgets/agenda_dividers.dart';
 import '../widgets/appointment_card.dart';
 
 class StaffColumn extends ConsumerStatefulWidget {
@@ -1334,7 +1460,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   void initState() {
     super.initState();
 
-    // 🔹 Ascolta la posizione del drag per gestire highlight e riga oraria
+    // Ascolta la posizione globale del drag per gestire highlight e hover
     _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
@@ -1380,24 +1506,22 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   @override
   void dispose() {
     _dragListener.close();
-
     final highlightedId = ref.read(highlightedStaffIdProvider);
     if (highlightedId == widget.staff.id) {
       ref.read(highlightedStaffIdProvider.notifier).clear();
     }
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final slotHeight = ref.watch(layoutConfigProvider); // double
+    final slotHeight = ref.watch(layoutConfigProvider);
     final totalSlots = LayoutConfig.totalSlots;
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
 
     final stackChildren = <Widget>[];
 
-    // 🕓 Griglia oraria coerente con HourColumn (usa AgendaHorizontalDivider)
+    // 🕓 Griglia oraria coerente con HourColumn
     stackChildren.add(
       Column(
         children: List.generate(totalSlots, (index) {
@@ -1420,43 +1544,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     // 📅 Appuntamenti con gestione overlapping
     stackChildren.addAll(_buildAppointments(slotHeight));
 
-    // 🟢 Riga oraria durante il drag
-    if (_isHighlighted && _hoverY != null) {
-      final slotMinutes = LayoutConfig.minutesPerSlot;
-      final minutesFromTop = (_hoverY! / slotHeight) * slotMinutes;
-      final roundedMinutes = (minutesFromTop / 5).round() * 5;
-      final hour = roundedMinutes ~/ 60;
-      final minute = roundedMinutes % 60;
-      final formatted =
-          '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-
-      stackChildren.addAll([
-        Positioned(
-          top: _hoverY!.clamp(0, totalSlots * slotHeight),
-          left: 0,
-          right: 0,
-          child: Container(
-            height: 1.2,
-            color: widget.staff.color.withOpacity(0.55),
-          ),
-        ),
-        Positioned(
-          top: (_hoverY! - 20).clamp(0, totalSlots * slotHeight - 20),
-          left: 8,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.75),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              formatted,
-              style: const TextStyle(color: Colors.white, fontSize: 11),
-            ),
-          ),
-        ),
-      ]);
-    }
+    // 🧹 Nessuna linea rossa o badge durante il drag
+    // (funzionalità rimossa per richiesta)
 
     // 🔹 Container principale
     return DragTarget<Appointment>(
@@ -1539,7 +1628,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   List<Widget> _buildAppointments(double slotHeight) {
     final List<List<Appointment>> overlapGroups = [];
 
-    // 🔸 Raggruppa appuntamenti sovrapposti
+    // Raggruppa appuntamenti sovrapposti
     for (final appt in widget.appointments) {
       bool added = false;
       for (final group in overlapGroups) {
@@ -1556,7 +1645,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       if (!added) overlapGroups.add([appt]);
     }
 
-    // 🔸 Crea widget posizionati
+    // Crea widget posizionati
     final List<Widget> positionedAppointments = [];
     for (final group in overlapGroups) {
       final groupSize = group.length;
@@ -1648,31 +1737,122 @@ class ResponsiveLayout {
   double get totalHeight => LayoutConfig.totalSlots * slotHeight;
 }
 --- FILE: lib/features/agenda/presentation/screens/day_view/multi_staff_day_view.dart ---
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/staff.dart';
 import '../../../../../core/widgets/no_scrollbar_behavior.dart';
 import '../../../domain/config/layout_config.dart';
+import '../../../providers/agenda_providers.dart'; // 👈 dragPositionProvider
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../widgets/agenda_dividers.dart';
+import '../widgets/current_time_line.dart';
 import 'hour_column.dart';
 import 'responsive_layout.dart';
 import 'staff_column.dart';
 import 'staff_header_row.dart';
 
-class MultiStaffDayView extends ConsumerWidget {
+class MultiStaffDayView extends ConsumerStatefulWidget {
   final List<Staff> staffList;
 
   const MultiStaffDayView({super.key, required this.staffList});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MultiStaffDayView> createState() => _MultiStaffDayViewState();
+}
+
+class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
+  Timer? _autoScrollTimer;
+  late final ProviderSubscription<Offset?> _dragSub;
+
+  // Configurazione auto-scroll
+  static const double _scrollEdgeMargin = 100; // distanza dai bordi
+  static const double _scrollSpeed = 20; // pixel per tick
+  static const Duration _scrollInterval = Duration(milliseconds: 50);
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 🔹 Ascolta la posizione del drag per avviare/interrompere auto-scroll
+    _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (
+      previous,
+      next,
+    ) {
+      if (next != null) {
+        _startAutoScroll();
+      } else {
+        _stopAutoScroll();
+      }
+    });
+  }
+
+  void _startAutoScroll() {
+    if (_autoScrollTimer != null) return;
+
+    _autoScrollTimer = Timer.periodic(_scrollInterval, (_) {
+      if (!mounted) return;
+
+      final dragPos = ref.read(dragPositionProvider);
+      if (dragPos == null) {
+        _stopAutoScroll();
+        return;
+      }
+
+      final scrollState = ref.read(agendaScrollProvider(widget.staffList));
+      final verticalCtrl = scrollState.verticalScrollCtrl;
+      if (!verticalCtrl.hasClients) return;
+
+      final renderBox = context.findRenderObject() as RenderBox?;
+      if (renderBox == null) return;
+
+      final localPos = renderBox.globalToLocal(dragPos);
+      final viewHeight = renderBox.size.height;
+      final maxScrollExtent = verticalCtrl.position.maxScrollExtent;
+      final currentOffset = verticalCtrl.offset;
+
+      double? newOffset;
+
+      // 🔼 Scroll verso l’alto
+      if (localPos.dy < _scrollEdgeMargin && currentOffset > 0) {
+        newOffset = (currentOffset - _scrollSpeed).clamp(0, maxScrollExtent);
+      }
+      // 🔽 Scroll verso il basso
+      else if (localPos.dy > viewHeight - _scrollEdgeMargin &&
+          currentOffset < maxScrollExtent) {
+        newOffset = (currentOffset + _scrollSpeed).clamp(0, maxScrollExtent);
+      }
+
+      if (newOffset != null && newOffset != currentOffset) {
+        verticalCtrl.jumpTo(newOffset);
+      }
+    });
+  }
+
+  void _stopAutoScroll() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = null;
+  }
+
+  @override
+  void dispose() {
+    _dragSub.close();
+    _stopAutoScroll();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final appointments = ref.watch(appointmentsProvider);
-    final scrollState = ref.watch(agendaScrollProvider(staffList));
-    final layout = ResponsiveLayout.of(context, staffCount: staffList.length);
+    final scrollState = ref.watch(agendaScrollProvider(widget.staffList));
+    final layout = ResponsiveLayout.of(
+      context,
+      staffCount: widget.staffList.length,
+    );
     final slotHeight = ref.watch(layoutConfigProvider);
 
     final totalContentHeight = LayoutConfig.totalSlots * slotHeight;
@@ -1683,6 +1863,7 @@ class MultiStaffDayView extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 🔹 Header con nomi staff
             Material(
               elevation: 3,
               child: Container(
@@ -1699,7 +1880,7 @@ class MultiStaffDayView extends ConsumerWidget {
                   ),
                 ),
                 child: StaffHeaderRow(
-                  staffList: staffList,
+                  staffList: widget.staffList,
                   scrollController: scrollState.horizontalScrollCtrl,
                   columnWidth: layout.columnWidth,
                   hourColumnWidth: hourWidth,
@@ -1707,42 +1888,53 @@ class MultiStaffDayView extends ConsumerWidget {
               ),
             ),
 
+            // 🔹 Corpo principale scrollabile
             Expanded(
               child: ScrollConfiguration(
                 behavior: const NoScrollbarBehavior(),
                 child: SingleChildScrollView(
                   controller: scrollState.verticalScrollCtrl,
                   physics: const ClampingScrollPhysics(),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Stack(
                     children: [
-                      SizedBox(width: hourWidth, child: const HourColumn()),
-                      AgendaVerticalDivider(height: totalContentHeight),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          controller: scrollState.horizontalScrollCtrl,
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: staffList.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final staff = entry.value;
-                              final isLast = index == staffList.length - 1;
-                              final staffAppointments = appointments
-                                  .where((a) => a.staffId == staff.id)
-                                  .toList();
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(width: hourWidth, child: const HourColumn()),
+                          AgendaVerticalDivider(height: totalContentHeight),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              controller: scrollState.horizontalScrollCtrl,
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: widget.staffList.asMap().entries.map((
+                                  entry,
+                                ) {
+                                  final index = entry.key;
+                                  final staff = entry.value;
+                                  final isLast =
+                                      index == widget.staffList.length - 1;
+                                  final staffAppointments = appointments
+                                      .where((a) => a.staffId == staff.id)
+                                      .toList();
 
-                              return StaffColumn(
-                                staff: staff,
-                                appointments: staffAppointments,
-                                columnWidth: layout.columnWidth,
-                                showRightBorder:
-                                    staffList.length > 1 && !isLast,
-                              );
-                            }).toList(),
+                                  return StaffColumn(
+                                    staff: staff,
+                                    appointments: staffAppointments,
+                                    columnWidth: layout.columnWidth,
+                                    showRightBorder:
+                                        widget.staffList.length > 1 && !isLast,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
+
+                      // 🔴 Riga rossa del tempo corrente (aggiornamento isolato)
+                      CurrentTimeLine(hourColumnWidth: hourWidth),
                     ],
                   ),
                 ),

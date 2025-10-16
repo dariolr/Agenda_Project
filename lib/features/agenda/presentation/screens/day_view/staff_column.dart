@@ -123,9 +123,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     // 📅 Appuntamenti con gestione overlapping
     stackChildren.addAll(_buildAppointments(slotHeight));
 
-    // 🧹 Nessuna linea rossa o badge durante il drag
-    // (funzionalità rimossa per richiesta)
-
     // 🔹 Container principale
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {

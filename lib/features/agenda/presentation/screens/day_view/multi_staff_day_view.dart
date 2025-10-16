@@ -11,6 +11,7 @@ import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../widgets/agenda_dividers.dart';
+import '../widgets/current_time_line.dart';
 import 'hour_column.dart';
 import 'responsive_layout.dart';
 import 'staff_column.dart';
@@ -30,7 +31,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   late final ProviderSubscription<Offset?> _dragSub;
 
   // Configurazione auto-scroll
-  static const double _scrollEdgeMargin = 100; // distanza in px dai bordi
+  static const double _scrollEdgeMargin = 100; // distanza dai bordi
   static const double _scrollSpeed = 20; // pixel per tick
   static const Duration _scrollInterval = Duration(milliseconds: 50);
 
@@ -155,39 +156,46 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 child: SingleChildScrollView(
                   controller: scrollState.verticalScrollCtrl,
                   physics: const ClampingScrollPhysics(),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Stack(
                     children: [
-                      SizedBox(width: hourWidth, child: const HourColumn()),
-                      AgendaVerticalDivider(height: totalContentHeight),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          controller: scrollState.horizontalScrollCtrl,
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: widget.staffList.asMap().entries.map((
-                              entry,
-                            ) {
-                              final index = entry.key;
-                              final staff = entry.value;
-                              final isLast =
-                                  index == widget.staffList.length - 1;
-                              final staffAppointments = appointments
-                                  .where((a) => a.staffId == staff.id)
-                                  .toList();
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(width: hourWidth, child: const HourColumn()),
+                          AgendaVerticalDivider(height: totalContentHeight),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              controller: scrollState.horizontalScrollCtrl,
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: widget.staffList.asMap().entries.map((
+                                  entry,
+                                ) {
+                                  final index = entry.key;
+                                  final staff = entry.value;
+                                  final isLast =
+                                      index == widget.staffList.length - 1;
+                                  final staffAppointments = appointments
+                                      .where((a) => a.staffId == staff.id)
+                                      .toList();
 
-                              return StaffColumn(
-                                staff: staff,
-                                appointments: staffAppointments,
-                                columnWidth: layout.columnWidth,
-                                showRightBorder:
-                                    widget.staffList.length > 1 && !isLast,
-                              );
-                            }).toList(),
+                                  return StaffColumn(
+                                    staff: staff,
+                                    appointments: staffAppointments,
+                                    columnWidth: layout.columnWidth,
+                                    showRightBorder:
+                                        widget.staffList.length > 1 && !isLast,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
+
+                      // 🔴 Riga rossa del tempo corrente (aggiornamento isolato)
+                      CurrentTimeLine(hourColumnWidth: hourWidth),
                     ],
                   ),
                 ),

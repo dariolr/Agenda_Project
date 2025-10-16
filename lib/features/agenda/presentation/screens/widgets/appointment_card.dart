@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/../../../core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
-import '../../../providers/agenda_providers.dart'; // 👈 dragPositionProvider
+import '../../../providers/agenda_providers.dart'; // dragPositionProvider
 
 class AppointmentCard extends ConsumerStatefulWidget {
   final Appointment appointment;
@@ -39,7 +39,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           childWhenDragging: _buildPlaceholder(),
           dragAnchorStrategy: childDragAnchorStrategy,
 
-          // 🔵 AGGIUNTO: aggiorna posizione globale durante il drag
+          // 🔵 aggiorna la posizione globale durante il drag
           onDragStarted: () {},
           onDragUpdate: (details) {
             ref
@@ -75,7 +75,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     final servicesText = widget.appointment.formattedServices;
     final priceText = widget.appointment.formattedPrice;
 
-    // 🔸 Combina servizi + prezzo in una singola riga se disponibili
     String infoLine = servicesText;
     if (priceText.isNotEmpty) {
       infoLine = infoLine.isEmpty ? priceText : '$servicesText – $priceText';
