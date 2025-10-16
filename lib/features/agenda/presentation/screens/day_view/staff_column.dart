@@ -6,6 +6,7 @@ import '/../../../core/models/staff.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../widgets/appointment_card.dart';
 
@@ -36,11 +37,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   @override
   void initState() {
     super.initState();
+
     _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
     ) {
       if (!mounted) return;
+
+      final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
 
       if (next == null) {
         if (_isHighlighted || _hoverY != null) {
@@ -49,6 +53,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             _hoverY = null;
           });
         }
+        highlightNotifier.clear();
         return;
       }
 
@@ -64,11 +69,13 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           _hoverY = local.dy;
           _isHighlighted = true;
         });
+        highlightNotifier.set(widget.staff.id);
       } else if (_isHighlighted) {
         setState(() {
           _isHighlighted = false;
           _hoverY = null;
         });
+        highlightNotifier.clear();
       }
     }, fireImmediately: false);
   }
@@ -76,6 +83,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   @override
   void dispose() {
     _dragListener.close();
+    final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
+    if (highlightNotifier.state == widget.staff.id) {
+      highlightNotifier.clear();
+    }
     super.dispose();
   }
 
@@ -190,17 +201,23 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ]);
     }
 
+    // 🔹 Colonna staff completa
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
         setState(() => _isHighlighted = true);
+        ref.read(highlightedStaffIdProvider.notifier).set(widget.staff.id);
         return true;
       },
-      onLeave: (_) => setState(() => _isHighlighted = false),
+      onLeave: (_) {
+        setState(() => _isHighlighted = false);
+        ref.read(highlightedStaffIdProvider.notifier).clear();
+      },
       onAcceptWithDetails: (details) {
         setState(() {
           _isHighlighted = false;
           _hoverY = null;
         });
+        ref.read(highlightedStaffIdProvider.notifier).clear();
 
         final box = context.findRenderObject() as RenderBox?;
         if (box == null) return;
@@ -236,68 +253,33 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         );
       },
       builder: (context, candidateData, rejectedData) {
-        return Stack(
-          children: [
-            // 🔹 Contenuto scrollabile
-            SizedBox(
-              width: widget.columnWidth,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  border: widget.showRightBorder
-                      ? Border(
-                          right: BorderSide(
-                            color: Colors.grey.withOpacity(0.25),
-                            width: 0.5,
-                          ),
-                        )
-                      : null,
-                  boxShadow: _isHighlighted
-                      ? [
-                          BoxShadow(
-                            color: widget.staff.color.withOpacity(0.08),
-                            blurRadius: 14,
-                            spreadRadius: 0.5,
-                          ),
-                        ]
-                      : [],
-                ),
-                child: Stack(children: stackChildren),
-              ),
-            ),
-
-            // 🔹 Badge staff — fisso in alto
-            // TODO: fisso in alto ma senza scrollare via
-            if (_isHighlighted)
-              Positioned(
-                top: 6,
-                left: 6,
-                right: 6,
-                child: IgnorePointer(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: widget.staff.color.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      widget.staff.name,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        color: Colors.black87,
+        return SizedBox(
+          width: widget.columnWidth,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              border: widget.showRightBorder
+                  ? Border(
+                      right: BorderSide(
+                        color: Colors.grey.withOpacity(0.25),
+                        width: 0.5,
                       ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
+                    )
+                  : null,
+              boxShadow: _isHighlighted
+                  ? [
+                      BoxShadow(
+                        color: widget.staff.color.withOpacity(0.08),
+                        blurRadius: 14,
+                        spreadRadius: 0.5,
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Stack(children: stackChildren),
+          ),
         );
       },
     );

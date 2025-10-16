@@ -48,7 +48,7 @@ final class LayoutConfigNotifierProvider
 }
 
 String _$layoutConfigNotifierHash() =>
-    r'7754050fe9d4c9c8b644783d3f9f115b3adf7956';
+    r'57a4ba295f79fbc4359b8a531d26239836ede945';
 
 /// Provider responsabile di mantenere aggiornata la configurazione del layout
 /// (in particolare l’altezza degli slot e dell’header)

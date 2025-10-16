@@ -1,0 +1,1956 @@
+--- FILE: lib/core/network/api_client.dart ---
+--- FILE: lib/core/utils/color_utils.dart ---
+import 'package:flutter/material.dart';
+
+class ColorUtils {
+  /// Restituisce il colore in formato esadecimale '#AARRGGBB'
+  static String toHex(Color color) {
+    final int argb = color.toARGB32();
+    return '#${argb.toRadixString(16).padLeft(8, '0').toUpperCase()}';
+  }
+
+  /// Converte una stringa esadecimale '#AARRGGBB' o '#RRGGBB' in un Color
+  static Color fromHex(String hexString) {
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) buffer.write('FF');
+    buffer.write(hexString.replaceFirst('#', ''));
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
+}
+--- FILE: lib/core/utils/date_utils.dart ---
+--- FILE: lib/core/models/appointment.dart ---
+class Appointment {
+  final int id;
+  final int staffId;
+  final String clientName;
+  final DateTime startTime;
+  final DateTime endTime;
+
+  /// 🔹 Lista di ID dei servizi associati (versione "leggera")
+  final List<int>? serviceIds;
+
+  /// 🔹 Lista completa di servizi (versione "espansa")
+  final List<Service>? services;
+
+  const Appointment({
+    required this.id,
+    required this.staffId,
+    required this.clientName,
+    required this.startTime,
+    required this.endTime,
+    this.serviceIds,
+    this.services,
+  });
+
+  /// 🔸 Costruttore da JSON
+  factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
+    id: json['id'],
+    staffId: json['staff_id'],
+    clientName: json['client_name'],
+    startTime: DateTime.parse(json['start_time']),
+    endTime: DateTime.parse(json['end_time']),
+    serviceIds: json['service_ids'] != null
+        ? List<int>.from(json['service_ids'])
+        : null,
+    services: json['services'] != null
+        ? (json['services'] as List).map((s) => Service.fromJson(s)).toList()
+        : null,
+  );
+
+  /// 🔸 Serializzazione in JSON
+  Map<String, dynamic> toJson({bool includeServices = true}) {
+    return {
+      'id': id,
+      'staff_id': staffId,
+      'client_name': clientName,
+      'start_time': startTime.toIso8601String(),
+      'end_time': endTime.toIso8601String(),
+      if (serviceIds != null) 'service_ids': serviceIds,
+      if (includeServices && services != null)
+        'services': services!.map((s) => s.toJson()).toList(),
+    };
+  }
+
+  /// 🔹 Durata totale in minuti
+  int get totalDuration => endTime.difference(startTime).inMinutes;
+
+  /// 🔹 Prezzo totale dell'appuntamento
+  double get totalPrice {
+    if (services == null || services!.isEmpty) return 0.0;
+    return services!.map((s) => s.price ?? 0.0).fold(0.0, (a, b) => a + b);
+  }
+
+  /// 🔹 Restituisce lista nomi servizi (se presenti)
+  List<String> get serviceNames {
+    if (services != null && services!.isNotEmpty) {
+      return services!.map((s) => s.name).toList();
+    }
+    return [];
+  }
+
+  /// 🔹 Stringa compatta per UI (es. "Taglio, Shampoo – 45 min")
+  String get formattedServices {
+    if (serviceNames.isEmpty) return '';
+    final names = serviceNames.length > 3
+        ? '${serviceNames.length} servizi'
+        : serviceNames.join(', ');
+    return '$names – $totalDuration min';
+  }
+
+  /// 🔹 Stringa formattata per prezzo totale
+  String get formattedPrice {
+    if (totalPrice == 0) return '';
+    return '${totalPrice.toStringAsFixed(2)}€';
+  }
+}
+
+class Service {
+  final int id;
+  final String name;
+  final int? duration; // minuti
+  final double? price; // costo singolo in euro
+
+  const Service({
+    required this.id,
+    required this.name,
+    this.duration,
+    this.price,
+  });
+
+  factory Service.fromJson(Map<String, dynamic> json) => Service(
+    id: json['id'],
+    name: json['name'],
+    duration: json['duration'],
+    price: json['price'] != null ? (json['price'] as num).toDouble() : null,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    if (duration != null) 'duration': duration,
+    if (price != null) 'price': price,
+  };
+}
+--- FILE: lib/core/models/staff.dart ---
+import 'package:flutter/material.dart';
+
+import '../utils/color_utils.dart';
+
+class Staff {
+  final int id;
+  final String name;
+  final Color color;
+
+  const Staff({required this.id, required this.name, required this.color});
+
+  factory Staff.fromJson(Map<String, dynamic> json) => Staff(
+    id: json['id'],
+    name: json['name'],
+    color: json['color_hex'] == null
+        ? ColorUtils.fromHex(json['color_hex'])
+        : ColorUtils.fromHex('#FFD700'),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'color_hex': ColorUtils.toHex(color),
+  };
+}
+--- FILE: lib/core/widgets/no_scrollbar_behavior.dart ---
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+
+/// Comportamento di scroll che disattiva scrollbar, effetto glow e spazio riservato
+class NoScrollbarBehavior extends ScrollBehavior {
+  const NoScrollbarBehavior();
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return child; // 🔕 nessuna scrollbar
+  }
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+  }; // abilita lo scroll anche col mouse
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const ClampingScrollPhysics(); // nessun overscroll o padding aggiuntivo
+}
+--- FILE: lib/app/router.dart ---
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../features/agenda/presentation/agenda_screen.dart';
+
+/// 🔹 Router globale dell’app (GoRouter v16+ compatibile)
+final GoRouter appRouter = GoRouter(
+  initialLocation: '/agenda',
+  routes: [
+    GoRoute(
+      path: '/agenda',
+      name: 'agenda',
+      builder: (BuildContext context, GoRouterState state) => AgendaScreen(),
+    ),
+  ],
+
+  // 🔸 Gestione errori: se la route non esiste
+  errorBuilder: (context, state) => Scaffold(
+    appBar: AppBar(title: const Text('Errore')),
+    body: Center(
+      child: Text(
+        'Pagina non trovata: ${state.uri.path}',
+        style: const TextStyle(color: Colors.redAccent),
+      ),
+    ),
+  ),
+
+  // 🔸 Debug logging (facoltativo)
+  debugLogDiagnostics: true,
+);
+--- FILE: lib/app/theme/theme_provider.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'theme_config.dart';
+
+/// 🔹 Notifier moderno per gestire il tema dinamico
+class ThemeNotifier extends Notifier<AppThemeConfig> {
+  @override
+  AppThemeConfig build() {
+    // Stato iniziale del tema
+    return const AppThemeConfig(
+      seedColor: Color(0xFFFFD700), // Oro
+      brightness: Brightness.dark,
+    );
+  }
+
+  /// Cambia il colore principale (seed color)
+  void updateSeed(Color color) {
+    state = state.copyWith(seedColor: color);
+  }
+
+  /// Inverte la modalità chiara/scura
+  void toggleBrightness() {
+    state = state.copyWith(
+      brightness: state.brightness == Brightness.dark
+          ? Brightness.light
+          : Brightness.dark,
+    );
+  }
+}
+
+/// 🔹 Provider globale per il tema (versione Notifier)
+final themeNotifierProvider = NotifierProvider<ThemeNotifier, AppThemeConfig>(
+  ThemeNotifier.new,
+);
+--- FILE: lib/app/theme/theme_config.dart ---
+import 'package:flutter/material.dart';
+
+class AppThemeConfig {
+  final Color seedColor;
+  final Brightness brightness;
+
+  const AppThemeConfig({
+    required this.seedColor,
+    this.brightness = Brightness.dark,
+  });
+
+  AppThemeConfig copyWith({Color? seedColor, Brightness? brightness}) {
+    return AppThemeConfig(
+      seedColor: seedColor ?? this.seedColor,
+      brightness: brightness ?? this.brightness,
+    );
+  }
+}
+--- FILE: lib/app/theme/theme.dart ---
+import 'package:flutter/material.dart';
+
+import 'theme_config.dart';
+
+ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: config.seedColor,
+    brightness: brightness,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: colorScheme,
+    brightness: brightness,
+
+    // Sfondo principale
+    scaffoldBackgroundColor: colorScheme.surface,
+
+    // AppBar coerente con il tema
+    appBarTheme: AppBarTheme(
+      backgroundColor: colorScheme.surface,
+      foregroundColor: colorScheme.onSurface,
+      centerTitle: true,
+      elevation: 0,
+    ),
+
+    // Pulsante flottante coerente
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: colorScheme.primary,
+      foregroundColor: colorScheme.onPrimary,
+    ),
+
+    // Stile card aggiornato per Material 3
+    cardTheme: CardThemeData(
+      color: colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      margin: const EdgeInsets.all(8),
+    ),
+
+    // Tipografia coerente
+    textTheme: const TextTheme(
+      bodyMedium: TextStyle(fontSize: 14),
+      titleMedium: TextStyle(fontWeight: FontWeight.w600),
+    ),
+  );
+}
+--- FILE: lib/app/app.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'router.dart';
+import 'theme/theme.dart';
+import 'theme/theme_provider.dart';
+
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeConfig = ref.watch(themeNotifierProvider);
+
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      title: 'Agenda Platform',
+      themeMode: ThemeMode.system,
+      theme: buildTheme(themeConfig, Brightness.light),
+      darkTheme: buildTheme(themeConfig, Brightness.light),
+      routerConfig: appRouter,
+    );
+  }
+}
+--- FILE: lib/features/agenda/providers/staff_providers.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/models/staff.dart';
+
+final staffProvider = Provider<List<Staff>>((ref) {
+  return [
+    Staff(id: 1, name: 'Mario', color: Colors.green),
+    Staff(id: 2, name: 'Luca', color: Colors.cyan),
+    Staff(id: 3, name: 'Sara', color: Colors.orange),
+    Staff(id: 4, name: 'Alessia', color: Colors.pinkAccent),
+    Staff(id: 5, name: 'Luisa', color: Colors.purpleAccent),
+  ];
+});
+--- FILE: lib/features/agenda/providers/layout_config_provider.dart ---
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../domain/config/layout_config.dart';
+
+part 'layout_config_provider.g.dart';
+
+/// Provider responsabile di mantenere aggiornata la configurazione del layout
+/// (in particolare l’altezza degli slot e dell’header)
+@riverpod
+class LayoutConfigNotifier extends _$LayoutConfigNotifier {
+  Timer? _resizeDebounce;
+
+  @override
+  double build() {
+    ref.onDispose(() {
+      _resizeDebounce?.cancel();
+    });
+    return LayoutConfig.slotHeight;
+  }
+
+  /// Aggiorna dinamicamente l’altezza degli slot e dell’header
+  /// in base alle dimensioni della finestra
+  void updateFromContext(BuildContext context) {
+    _resizeDebounce?.cancel();
+    _resizeDebounce = Timer(const Duration(milliseconds: 100), () {
+      final size = MediaQuery.of(context).size;
+      final screenHeight = size.height;
+      final screenWidth = size.width;
+
+      // 🔹 Calcolo dinamico dell’altezza degli slot
+      double newSlotHeight = LayoutConfig.slotHeight;
+      if (screenHeight < 700) {
+        newSlotHeight = 30 * 0.8;
+      } else if (screenHeight > 1200) {
+        newSlotHeight = 30 * 1.2;
+      } else {
+        newSlotHeight = 30;
+      }
+
+      // 🔹 Calcolo dinamico dell’altezza dell’header
+      double newHeaderHeight;
+      if (screenWidth >= 1024) {
+        newHeaderHeight = 56; // Desktop
+      } else if (screenWidth >= 600) {
+        newHeaderHeight = 52; // Tablet
+      } else {
+        newHeaderHeight = 48; // Mobile
+      }
+
+      // 🔹 Aggiorna LayoutConfig globale
+      LayoutConfig.updateSlotHeight(newSlotHeight);
+      LayoutConfig.updateHeaderHeight(newHeaderHeight);
+
+      // 🔹 Aggiorna stato provider se necessario
+      if (newSlotHeight != state) {
+        state = newSlotHeight;
+      }
+      debugPrint(
+        '🔁 Layout updated → slotHeight: $newSlotHeight | headerHeight: $newHeaderHeight',
+      );
+    });
+  }
+}
+--- FILE: lib/features/agenda/providers/agenda_scroll_provider.g.dart ---
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'agenda_scroll_provider.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+
+@ProviderFor(AgendaScroll)
+const agendaScrollProvider = AgendaScrollFamily._();
+
+final class AgendaScrollProvider
+    extends $NotifierProvider<AgendaScroll, AgendaScrollState> {
+  const AgendaScrollProvider._({
+    required AgendaScrollFamily super.from,
+    required List<Staff> super.argument,
+  }) : super(
+         retry: null,
+         name: r'agendaScrollProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$agendaScrollHash();
+
+  @override
+  String toString() {
+    return r'agendaScrollProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  AgendaScroll create() => AgendaScroll();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AgendaScrollState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AgendaScrollState>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgendaScrollProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agendaScrollHash() => r'68ed618f8b12029a0d3177f2c9e8f146840ca836';
+
+final class AgendaScrollFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          AgendaScroll,
+          AgendaScrollState,
+          AgendaScrollState,
+          AgendaScrollState,
+          List<Staff>
+        > {
+  const AgendaScrollFamily._()
+    : super(
+        retry: null,
+        name: r'agendaScrollProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  AgendaScrollProvider call(List<Staff> staffList) =>
+      AgendaScrollProvider._(argument: staffList, from: this);
+
+  @override
+  String toString() => r'agendaScrollProvider';
+}
+
+abstract class _$AgendaScroll extends $Notifier<AgendaScrollState> {
+  late final _$args = ref.$arg as List<Staff>;
+  List<Staff> get staffList => _$args;
+
+  AgendaScrollState build(List<Staff> staffList);
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build(_$args);
+    final ref = this.ref as $Ref<AgendaScrollState, AgendaScrollState>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AgendaScrollState, AgendaScrollState>,
+              AgendaScrollState,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+--- FILE: lib/features/agenda/providers/highlighted_staff_provider.dart ---
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// 🔹 Notifier che tiene traccia dello staff attualmente evidenziato durante il drag
+class HighlightedStaffIdNotifier extends Notifier<int?> {
+  @override
+  int? build() => null;
+
+  /// Imposta l’ID dello staff attualmente evidenziato
+  void set(int? id) => state = id;
+
+  /// Resetta lo staff evidenziato
+  void clear() => state = null;
+}
+
+/// 🔹 Provider globale per lo staff evidenziato
+final highlightedStaffIdProvider =
+    NotifierProvider<HighlightedStaffIdNotifier, int?>(
+      HighlightedStaffIdNotifier.new,
+    );
+--- FILE: lib/features/agenda/providers/layout_config_provider.g.dart ---
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'layout_config_provider.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// Provider responsabile di mantenere aggiornata la configurazione del layout
+/// (in particolare l’altezza degli slot e dell’header)
+
+@ProviderFor(LayoutConfigNotifier)
+const layoutConfigProvider = LayoutConfigNotifierProvider._();
+
+/// Provider responsabile di mantenere aggiornata la configurazione del layout
+/// (in particolare l’altezza degli slot e dell’header)
+final class LayoutConfigNotifierProvider
+    extends $NotifierProvider<LayoutConfigNotifier, double> {
+  /// Provider responsabile di mantenere aggiornata la configurazione del layout
+  /// (in particolare l’altezza degli slot e dell’header)
+  const LayoutConfigNotifierProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'layoutConfigProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$layoutConfigNotifierHash();
+
+  @$internal
+  @override
+  LayoutConfigNotifier create() => LayoutConfigNotifier();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(double value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<double>(value),
+    );
+  }
+}
+
+String _$layoutConfigNotifierHash() =>
+    r'57a4ba295f79fbc4359b8a531d26239836ede945';
+
+/// Provider responsabile di mantenere aggiornata la configurazione del layout
+/// (in particolare l’altezza degli slot e dell’header)
+
+abstract class _$LayoutConfigNotifier extends $Notifier<double> {
+  double build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<double, double>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<double, double>,
+              double,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+--- FILE: lib/features/agenda/providers/appointment_providers.dart ---
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/models/appointment.dart';
+
+/// ✅ Gestione degli appuntamenti (mock persistente in memoria)
+class AppointmentsNotifier extends Notifier<List<Appointment>> {
+  bool _initialized = false;
+
+  @override
+  List<Appointment> build() {
+    if (!_initialized) {
+      _initialized = true;
+      state = _mockAppointments();
+    }
+    return state;
+  }
+
+  List<Appointment> _mockAppointments() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return [
+      // Staff 1
+      Appointment(
+        id: 1,
+        staffId: 1,
+        clientName: 'Anna Rossi',
+        startTime: today.add(const Duration(hours: 9, minutes: 10)),
+        endTime: today.add(const Duration(hours: 9, minutes: 35)),
+      ),
+      Appointment(
+        id: 2,
+        staffId: 1,
+        clientName: 'Luca Bianchi',
+        startTime: today.add(const Duration(hours: 9, minutes: 30)),
+        endTime: today.add(const Duration(hours: 10, minutes: 30)),
+      ),
+      Appointment(
+        id: 3,
+        staffId: 1,
+        clientName: 'Paolo Verdi',
+        startTime: today.add(const Duration(hours: 11)),
+        endTime: today.add(const Duration(hours: 12)),
+      ),
+
+      // Staff 2
+      Appointment(
+        id: 4,
+        staffId: 2,
+        clientName: 'Giulia Neri',
+        startTime: today.add(const Duration(hours: 10)),
+        endTime: today.add(const Duration(hours: 11)),
+      ),
+      Appointment(
+        id: 5,
+        staffId: 2,
+        clientName: 'Marco Gialli',
+        startTime: today.add(const Duration(hours: 10, minutes: 15)),
+        endTime: today.add(const Duration(hours: 10, minutes: 45)),
+      ),
+      Appointment(
+        id: 6,
+        staffId: 2,
+        clientName: 'Chiara Blu',
+        startTime: today.add(const Duration(hours: 14)),
+        endTime: today.add(const Duration(hours: 15)),
+      ),
+
+      // Staff 3
+      Appointment(
+        id: 7,
+        staffId: 3,
+        clientName: 'Valentina',
+        startTime: today.add(const Duration(hours: 9)),
+        endTime: today.add(const Duration(hours: 9, minutes: 45)),
+      ),
+      Appointment(
+        id: 8,
+        staffId: 3,
+        clientName: 'Francesco',
+        startTime: today.add(const Duration(hours: 9, minutes: 30)),
+        endTime: today.add(const Duration(hours: 10, minutes: 15)),
+      ),
+      Appointment(
+        id: 9,
+        staffId: 3,
+        clientName: 'Elisa',
+        startTime: today.add(const Duration(hours: 10, minutes: 30)),
+        endTime: today.add(const Duration(hours: 11)),
+      ),
+    ];
+  }
+
+  void moveAppointment({
+    required int appointmentId,
+    required int newStaffId,
+    required DateTime newStart,
+    required DateTime newEnd,
+  }) {
+    state = [
+      for (final appt in state)
+        if (appt.id == appointmentId)
+          Appointment(
+            id: appt.id,
+            staffId: newStaffId,
+            clientName: appt.clientName,
+            startTime: newStart,
+            endTime: newEnd,
+          )
+        else
+          appt,
+    ];
+  }
+}
+
+final appointmentsProvider =
+    NotifierProvider<AppointmentsNotifier, List<Appointment>>(
+      AppointmentsNotifier.new,
+    );
+--- FILE: lib/features/agenda/providers/agenda_scroll_provider.dart ---
+import 'package:flutter/material.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../../core/models/staff.dart';
+
+part 'agenda_scroll_provider.g.dart';
+
+/// Stato con tutti i controller di scroll sincronizzati
+class AgendaScrollState {
+  final ScrollController verticalScrollCtrl;
+  final ScrollController horizontalScrollCtrl;
+  final Map<int, ScrollController> staffScrollCtrls;
+
+  const AgendaScrollState({
+    required this.verticalScrollCtrl,
+    required this.horizontalScrollCtrl,
+    required this.staffScrollCtrls,
+  });
+}
+
+@riverpod
+class AgendaScroll extends _$AgendaScroll {
+  @override
+  AgendaScrollState build(List<Staff> staffList) {
+    final verticalCtrl = ScrollController();
+    final horizontalCtrl = ScrollController();
+    final staffCtrls = {for (final s in staffList) s.id: ScrollController()};
+
+    ref.onDispose(() {
+      verticalCtrl.dispose();
+      horizontalCtrl.dispose();
+      for (final c in staffCtrls.values) {
+        c.dispose();
+      }
+    });
+
+    return AgendaScrollState(
+      verticalScrollCtrl: verticalCtrl,
+      horizontalScrollCtrl: horizontalCtrl,
+      staffScrollCtrls: staffCtrls,
+    );
+  }
+
+  /// Sincronizza orizzontalmente lo scroll (se serve)
+  void syncHorizontal(double offset) {
+    final st = state;
+    if (st.horizontalScrollCtrl.hasClients) {
+      st.horizontalScrollCtrl.jumpTo(offset);
+    }
+  }
+}
+--- FILE: lib/features/agenda/providers/agenda_providers.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// 🔹 Notifier che tiene traccia della posizione globale del drag
+class DragPositionNotifier extends Notifier<Offset?> {
+  @override
+  Offset? build() => null;
+
+  /// Aggiorna la posizione del cursore
+  void update(Offset position) => state = position;
+
+  /// Resetta la posizione (quando il drag termina)
+  void clear() => state = null;
+}
+
+/// 🔹 Provider globale per la posizione del drag
+final dragPositionProvider = NotifierProvider<DragPositionNotifier, Offset?>(
+  DragPositionNotifier.new,
+);
+--- FILE: lib/features/agenda/data/agenda_api.dart ---
+--- FILE: lib/features/agenda/data/agenda_repository.dart ---
+--- FILE: lib/features/agenda/domain/config/agenda_theme.dart ---
+import 'package:flutter/material.dart';
+
+/// Tema visivo centralizzato per l'agenda.
+/// Definisce colori, spessori, altezze e stili coerenti
+/// per tutti i componenti della vista agenda.
+///
+/// In futuro potrai adattarlo dinamicamente (dark mode, branding, ecc.)
+class AgendaTheme {
+  // ──────────────────────────────────────────────
+  // 🎨 COLORI BASE
+  // ──────────────────────────────────────────────
+
+  /// Colore principale per i separatori verticali/orizzontali
+  static Color get dividerColor => Colors.grey.shade300;
+
+  /// Colore per ombre leggere o bordi di separazione
+  static Color get shadowColor => Colors.black.withValues(alpha: 0.05);
+
+  /// Colore di sfondo per lo slot orario
+  static const Color backgroundHourSlot = Colors.white;
+
+  /// Colore di sfondo per le intestazioni staff
+  static Color staffHeaderBackground(Color base) =>
+      base.withValues(alpha: 0.15);
+
+  /// Colore del testo nelle intestazioni staff
+  static const Color staffHeaderTextColor = Colors.black87;
+
+  /// Colore del bordo di un appuntamento (card)
+  static Color get appointmentBorder => Colors.grey.shade400;
+
+  // ──────────────────────────────────────────────
+  // 💧 OMBRE & BORDI
+  // ──────────────────────────────────────────────
+
+  /// Ombra leggera usata nei divider verticali
+  static BoxShadow get subtleShadow =>
+      BoxShadow(color: shadowColor, offset: const Offset(1, 0), blurRadius: 2);
+
+  /// Stile base per i separatori verticali
+  static BoxDecoration get verticalDividerDecoration =>
+      BoxDecoration(color: dividerColor, boxShadow: [subtleShadow]);
+
+  /// Stile base per i separatori orizzontali
+  static BoxDecoration get horizontalDividerDecoration =>
+      const BoxDecoration(color: Colors.grey);
+
+  // ──────────────────────────────────────────────
+  // 🧱 STILI TESTO
+  // ──────────────────────────────────────────────
+
+  static const TextStyle staffHeaderTextStyle = TextStyle(
+    fontWeight: FontWeight.bold,
+    color: staffHeaderTextColor,
+  );
+
+  static const TextStyle hourTextStyle = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: Colors.black87,
+  );
+
+  static const TextStyle appointmentTextStyle = TextStyle(
+    fontSize: 14,
+    color: Colors.black87,
+  );
+}
+--- FILE: lib/features/agenda/domain/config/layout_config.dart ---
+import 'package:flutter/material.dart';
+
+class LayoutConfig {
+  // ──────────────────────────────────────────────
+  // 📐 DIMENSIONI STRUTTURALI
+  // ──────────────────────────────────────────────
+
+  static const double hourColumnWidth = 70;
+
+  /// Altezza iniziale di default della barra header
+  static double _headerHeight = 50;
+
+  /// Getter per l’altezza corrente dell’header
+  static double get headerHeight => _headerHeight;
+
+  /// Aggiorna dinamicamente l’altezza dell’header
+  static void updateHeaderHeight(double newHeight) {
+    _headerHeight = newHeight;
+  }
+
+  static const int hoursInDay = 24;
+
+  static const double horizontalPadding = 8;
+  static const double verticalPadding = 4;
+
+  /// 🔹 Larghezza minima garantita per ogni colonna staff
+  static const double minColumnWidth = 180;
+
+  /// 🔹 [maxColumnWidth] rimosso: le colonne si espandono liberamente
+
+  static const double borderRadius = 8;
+
+  // ──────────────────────────────────────────────
+  // ⏱️ CONFIGURAZIONE SLOT TEMPORALI
+  // ──────────────────────────────────────────────
+
+  static const int minutesPerSlot = 30;
+
+  static double _slotHeight = 30;
+
+  static double get slotHeight => _slotHeight;
+
+  static int get totalSlots => (hoursInDay * 60 ~/ minutesPerSlot);
+
+  static double get totalHeight => totalSlots * _slotHeight;
+
+  static void updateSlotHeight(double newHeight) {
+    _slotHeight = newHeight;
+  }
+
+  // ──────────────────────────────────────────────
+  // ⚙️ CALCOLI DINAMICI
+  // ──────────────────────────────────────────────
+
+  /// Calcola quanti staff possono essere mostrati in base alla larghezza schermo
+  static int computeMaxVisibleStaff(double screenWidth) {
+    final availableWidth = screenWidth - hourColumnWidth;
+    final maxStaff = (availableWidth / minColumnWidth).floor();
+    return maxStaff.clamp(1, 6);
+  }
+
+  /// 🔸 Calcola dinamicamente la larghezza di ogni colonna staff
+  /// per riempire tutto lo spazio disponibile senza superare un minimo.
+  static double computeAdaptiveColumnWidth({
+    required double screenWidth,
+    required int visibleStaffCount,
+  }) {
+    if (visibleStaffCount <= 0) return minColumnWidth;
+
+    final availableWidth = screenWidth - hourColumnWidth;
+    final idealWidth = availableWidth / visibleStaffCount;
+
+    // 👇 Solo limite minimo
+    return idealWidth < minColumnWidth ? minColumnWidth : idealWidth;
+  }
+
+  /// Altezza header “responsive” basata sulla larghezza finestra.
+  static double headerHeightFor(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1024) return 56; // Desktop
+    if (width >= 600) return 52; // Tablet
+    return 48; // Mobile
+  }
+}
+--- FILE: lib/features/agenda/presentation/screens/widgets/layout_config_auto_listener.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../providers/layout_config_provider.dart';
+
+/// Widget che osserva i cambiamenti di dimensione finestra o orientamento
+/// e aggiorna automaticamente il layoutConfigProvider.
+class LayoutConfigAutoListener extends ConsumerStatefulWidget {
+  final Widget child;
+
+  const LayoutConfigAutoListener({super.key, required this.child});
+
+  @override
+  ConsumerState<LayoutConfigAutoListener> createState() =>
+      _LayoutConfigAutoListenerState();
+}
+
+class _LayoutConfigAutoListenerState
+    extends ConsumerState<LayoutConfigAutoListener>
+    with WidgetsBindingObserver {
+  Size? _lastSize;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    // Aggiorno subito la configurazione iniziale
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateLayoutConfig();
+    });
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final newSize = MediaQuery.of(context).size;
+      if (_lastSize == null || newSize != _lastSize) {
+        _lastSize = newSize;
+        _updateLayoutConfig();
+      }
+    });
+  }
+
+  void _updateLayoutConfig() {
+    ref.read(layoutConfigProvider.notifier).updateFromContext(context);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
+}
+--- FILE: lib/features/agenda/presentation/screens/widgets/agenda_dividers.dart ---
+import 'package:flutter/material.dart';
+
+/// Divider verticale sottile tra la colonna oraria e le colonne staff
+class AgendaVerticalDivider extends StatelessWidget {
+  final double height;
+  final Color color;
+  final double thickness;
+
+  const AgendaVerticalDivider({
+    super.key,
+    required this.height,
+    this.color = const Color(0xFFBDBDBD),
+    this.thickness = 0.5,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      width: thickness,
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.4)),
+      ),
+    );
+  }
+}
+
+/// Divider orizzontale usato per le righe orarie
+class AgendaHorizontalDivider extends StatelessWidget {
+  final double thickness;
+  final Color color;
+
+  const AgendaHorizontalDivider({
+    super.key,
+    this.thickness = 0.5,
+    this.color = const Color(0xFFBDBDBD),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Divider(height: thickness, thickness: thickness, color: color);
+  }
+}
+--- FILE: lib/features/agenda/presentation/screens/widgets/appointment_card.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '/../../../core/models/appointment.dart';
+import '../../../domain/config/agenda_theme.dart';
+
+class AppointmentCard extends ConsumerStatefulWidget {
+  final Appointment appointment;
+  final Color color;
+
+  const AppointmentCard({
+    super.key,
+    required this.appointment,
+    required this.color,
+  });
+
+  @override
+  ConsumerState<AppointmentCard> createState() => _AppointmentCardState();
+}
+
+class _AppointmentCardState extends ConsumerState<AppointmentCard> {
+  Size? _lastSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final newSize = Size(constraints.maxWidth, constraints.maxHeight);
+          if (mounted && (_lastSize == null || _lastSize != newSize)) {
+            setState(() => _lastSize = newSize);
+          }
+        });
+
+        return LongPressDraggable<Appointment>(
+          data: widget.appointment,
+          feedback: _buildFeedback(),
+          childWhenDragging: _buildPlaceholder(),
+          dragAnchorStrategy: childDragAnchorStrategy,
+          child: _buildCard(isDragging: false),
+        );
+      },
+    );
+  }
+
+  /// 🔹 Card visiva con orario, cliente, servizi, durata e prezzo — adattiva
+  Widget _buildCard({required bool isDragging}) {
+    final baseColor = widget.color.withOpacity(0.15);
+    const borderRadius = BorderRadius.all(Radius.circular(6));
+
+    final start =
+        '${widget.appointment.startTime.hour.toString().padLeft(2, '0')}:${widget.appointment.startTime.minute.toString().padLeft(2, '0')}';
+    final end =
+        '${widget.appointment.endTime.hour.toString().padLeft(2, '0')}:${widget.appointment.endTime.minute.toString().padLeft(2, '0')}';
+    final client = widget.appointment.clientName;
+
+    final servicesText = widget.appointment.formattedServices;
+    final priceText = widget.appointment.formattedPrice;
+
+    // 🔸 Combina servizi + prezzo in una singola riga se disponibili
+    String infoLine = servicesText;
+    if (priceText.isNotEmpty) {
+      infoLine = infoLine.isEmpty ? priceText : '$servicesText – $priceText';
+    }
+
+    return Material(
+      borderRadius: borderRadius,
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      color: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(baseColor, Colors.white),
+          borderRadius: borderRadius,
+          border: Border.all(color: widget.color, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: widget.color.withOpacity(isDragging ? 0.3 : 0.1),
+              blurRadius: isDragging ? 8 : 4,
+              offset: isDragging ? const Offset(2, 3) : const Offset(1, 1),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: DefaultTextStyle(
+          style: AgendaTheme.appointmentTextStyle.copyWith(
+            fontSize: 12.5,
+            height: 1.15,
+            decoration: TextDecoration.none,
+          ),
+          child: FittedBox(
+            alignment: Alignment.topLeft,
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // 🔹 evita overflow verticale
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 🔸 Riga 1 → orario + cliente
+                RichText(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '$start - $end  ',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      TextSpan(
+                        text: client,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 🔸 Riga 2 → servizi + prezzo
+                if (infoLine.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: Text(
+                      infoLine,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w400,
+                        height: 1.1,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 🔹 Feedback durante il drag (identico in dimensioni)
+  Widget _buildFeedback() {
+    final size = _lastSize;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: const BorderRadius.all(Radius.circular(6)),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        width: size?.width,
+        height: size?.height,
+        child: _buildCard(isDragging: true),
+      ),
+    );
+  }
+
+  /// 🔹 Placeholder invisibile per mantenere layout durante il drag
+  Widget _buildPlaceholder() {
+    final size = _lastSize;
+    return SizedBox(
+      width: size?.width ?? double.infinity,
+      height: size?.height ?? 0,
+    );
+  }
+}
+--- FILE: lib/features/agenda/presentation/screens/day_view/hour_column.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../domain/config/agenda_theme.dart';
+import '../../../domain/config/layout_config.dart';
+import '../../../providers/layout_config_provider.dart';
+import '../widgets/agenda_dividers.dart';
+
+class HourColumn extends ConsumerWidget {
+  const HourColumn({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final slotHeight = ref.watch(layoutConfigProvider);
+    final totalSlots = LayoutConfig.totalSlots;
+    final slotsPerHour = (60 ~/ LayoutConfig.minutesPerSlot);
+
+    return Column(
+      children: List.generate(totalSlots, (index) {
+        final isHourStart = index % slotsPerHour == 0;
+        final hour = (index ~/ slotsPerHour);
+        final minutes = (index % slotsPerHour) * LayoutConfig.minutesPerSlot;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          height: slotHeight,
+          child: Stack(
+            children: [
+              if (isHourStart)
+                Positioned(
+                  left: 8,
+                  top: 0,
+                  child: Text(
+                    "${hour.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}",
+                    style: AgendaTheme.hourTextStyle,
+                  ),
+                ),
+              Align(
+                alignment: Alignment.bottomLeft,
+                child: AgendaHorizontalDivider(
+                  color: Colors.grey.withOpacity(isHourStart ? 0.2 : 0.5),
+                  thickness: isHourStart ? 0.5 : 1,
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+}
+--- FILE: lib/features/agenda/presentation/screens/day_view/staff_column.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '/../../../core/models/appointment.dart';
+import '/../../../core/models/staff.dart';
+import '../../../domain/config/layout_config.dart';
+import '../../../providers/agenda_providers.dart';
+import '../../../providers/appointment_providers.dart';
+import '../../../providers/highlighted_staff_provider.dart';
+import '../../../providers/layout_config_provider.dart';
+import '../widgets/appointment_card.dart';
+
+class StaffColumn extends ConsumerStatefulWidget {
+  final Staff staff;
+  final List<Appointment> appointments;
+  final double columnWidth;
+  final bool showRightBorder;
+
+  const StaffColumn({
+    super.key,
+    required this.staff,
+    required this.appointments,
+    required this.columnWidth,
+    this.showRightBorder = true,
+  });
+
+  @override
+  ConsumerState<StaffColumn> createState() => _StaffColumnState();
+}
+
+class _StaffColumnState extends ConsumerState<StaffColumn> {
+  bool _isHighlighted = false;
+  double? _hoverY;
+
+  late final ProviderSubscription<Offset?> _dragListener;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
+      previous,
+      next,
+    ) {
+      if (!mounted) return;
+
+      final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
+
+      if (next == null) {
+        if (_isHighlighted || _hoverY != null) {
+          setState(() {
+            _isHighlighted = false;
+            _hoverY = null;
+          });
+        }
+        highlightNotifier.clear();
+        return;
+      }
+
+      final box = context.findRenderObject() as RenderBox?;
+      if (box == null) return;
+
+      final rect = box.localToGlobal(Offset.zero) & box.size;
+      final inside = rect.contains(next);
+
+      if (inside) {
+        final local = box.globalToLocal(next);
+        setState(() {
+          _hoverY = local.dy;
+          _isHighlighted = true;
+        });
+        highlightNotifier.set(widget.staff.id);
+      } else if (_isHighlighted) {
+        setState(() {
+          _isHighlighted = false;
+          _hoverY = null;
+        });
+        highlightNotifier.clear();
+      }
+    }, fireImmediately: false);
+  }
+
+  @override
+  void dispose() {
+    _dragListener.close();
+    final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
+    if (highlightNotifier.state == widget.staff.id) {
+      highlightNotifier.clear();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final slotHeight = ref.watch(layoutConfigProvider);
+    final totalSlots = LayoutConfig.totalSlots;
+    final slotsPerHour = (60 ~/ LayoutConfig.minutesPerSlot);
+    final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
+
+    final stackChildren = <Widget>[];
+
+    // 🕓 Griglia oraria
+    stackChildren.add(
+      Column(
+        children: List.generate(totalSlots, (index) {
+          final isHourStart = index % slotsPerHour == 0;
+          return Container(
+            height: slotHeight,
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.withOpacity(isHourStart ? 0.2 : 0.5),
+                  width: isHourStart ? 0.5 : 1,
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+
+    // 🔹 Raggruppamento overlapping appuntamenti
+    final List<List<Appointment>> overlapGroups = [];
+    for (final appt in widget.appointments) {
+      bool added = false;
+      for (final group in overlapGroups) {
+        if (group.any(
+          (g) =>
+              appt.startTime.isBefore(g.endTime) &&
+              appt.endTime.isAfter(g.startTime),
+        )) {
+          group.add(appt);
+          added = true;
+          break;
+        }
+      }
+      if (!added) overlapGroups.add([appt]);
+    }
+
+    // 📅 Appuntamenti
+    for (final group in overlapGroups) {
+      final groupSize = group.length;
+      for (int i = 0; i < groupSize; i++) {
+        final a = group[i];
+        final startMinutes = a.startTime.hour * 60 + a.startTime.minute;
+        final endMinutes = a.endTime.hour * 60 + a.endTime.minute;
+        final top = (startMinutes / LayoutConfig.minutesPerSlot) * slotHeight;
+        final height =
+            ((endMinutes - startMinutes) / LayoutConfig.minutesPerSlot) *
+            slotHeight;
+        final widthFraction = 1 / groupSize;
+        final leftFraction = i * widthFraction;
+
+        stackChildren.add(
+          Positioned(
+            top: top,
+            left: leftFraction * widget.columnWidth + 4,
+            width: widget.columnWidth * widthFraction - 8,
+            height: height,
+            child: AppointmentCard(appointment: a, color: widget.staff.color),
+          ),
+        );
+      }
+    }
+
+    // 🟢 Riga e orario durante il drag
+    if (_isHighlighted && _hoverY != null) {
+      final slotMinutes = LayoutConfig.minutesPerSlot;
+      final minutesFromTop = (_hoverY! / slotHeight) * slotMinutes;
+      final roundedMinutes = (minutesFromTop / 5).round() * 5;
+      final hour = roundedMinutes ~/ 60;
+      final minute = roundedMinutes % 60;
+      final formatted =
+          '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+      stackChildren.addAll([
+        Positioned(
+          top: _hoverY!.clamp(0, totalSlots * slotHeight),
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 1.2,
+            color: widget.staff.color.withOpacity(0.55),
+          ),
+        ),
+        Positioned(
+          top: (_hoverY! - 20).clamp(0, totalSlots * slotHeight - 20),
+          left: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.75),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              formatted,
+              style: const TextStyle(color: Colors.white, fontSize: 11),
+            ),
+          ),
+        ),
+      ]);
+    }
+
+    // 🔹 Colonna staff completa
+    return DragTarget<Appointment>(
+      onWillAcceptWithDetails: (_) {
+        setState(() => _isHighlighted = true);
+        ref.read(highlightedStaffIdProvider.notifier).set(widget.staff.id);
+        return true;
+      },
+      onLeave: (_) {
+        setState(() => _isHighlighted = false);
+        ref.read(highlightedStaffIdProvider.notifier).clear();
+      },
+      onAcceptWithDetails: (details) {
+        setState(() {
+          _isHighlighted = false;
+          _hoverY = null;
+        });
+        ref.read(highlightedStaffIdProvider.notifier).clear();
+
+        final box = context.findRenderObject() as RenderBox?;
+        if (box == null) return;
+
+        final localPosition = box.globalToLocal(details.offset);
+        final minutesFromTop =
+            (localPosition.dy / slotHeight) * LayoutConfig.minutesPerSlot;
+        final roundedMinutes = (minutesFromTop / 5).round() * 5;
+
+        final duration = details.data.endTime.difference(
+          details.data.startTime,
+        );
+        final dayStart = 0;
+        final dayEnd = LayoutConfig.totalSlots * LayoutConfig.minutesPerSlot;
+        final safeStartMinutes = roundedMinutes.clamp(
+          dayStart,
+          dayEnd - duration.inMinutes,
+        );
+
+        final today = DateTime.now();
+        final newStart = DateTime(
+          today.year,
+          today.month,
+          today.day,
+        ).add(Duration(minutes: safeStartMinutes));
+        final newEnd = newStart.add(duration);
+
+        appointmentsNotifier.moveAppointment(
+          appointmentId: details.data.id,
+          newStaffId: widget.staff.id,
+          newStart: newStart,
+          newEnd: newEnd,
+        );
+      },
+      builder: (context, candidateData, rejectedData) {
+        return SizedBox(
+          width: widget.columnWidth,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              border: widget.showRightBorder
+                  ? Border(
+                      right: BorderSide(
+                        color: Colors.grey.withOpacity(0.25),
+                        width: 0.5,
+                      ),
+                    )
+                  : null,
+              boxShadow: _isHighlighted
+                  ? [
+                      BoxShadow(
+                        color: widget.staff.color.withOpacity(0.08),
+                        blurRadius: 14,
+                        spreadRadius: 0.5,
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Stack(children: stackChildren),
+          ),
+        );
+      },
+    );
+  }
+}
+--- FILE: lib/features/agenda/presentation/screens/day_view/responsive_layout.dart ---
+import 'package:flutter/material.dart';
+
+import '../../../domain/config/layout_config.dart';
+
+class ResponsiveLayout {
+  final double columnWidth;
+  final double slotHeight;
+  final int maxVisibleStaff;
+
+  const ResponsiveLayout({
+    required this.columnWidth,
+    required this.slotHeight,
+    required this.maxVisibleStaff,
+  });
+
+  static ResponsiveLayout of(BuildContext context, {required int staffCount}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // ──────────────────────────────────────────────
+    // 📐 Calcolo larghezza colonne staff
+    // ──────────────────────────────────────────────
+    final dynamicMaxVisible = LayoutConfig.computeMaxVisibleStaff(screenWidth);
+
+    final availableWidth = screenWidth - LayoutConfig.hourColumnWidth;
+    final rawWidth = availableWidth / staffCount.clamp(1, dynamicMaxVisible);
+
+    // 🔸 Solo limite minimo: niente limite massimo
+    final columnWidth = rawWidth < LayoutConfig.minColumnWidth
+        ? LayoutConfig.minColumnWidth
+        : rawWidth;
+
+    // ──────────────────────────────────────────────
+    // ⏱️ Calcolo altezza slot dinamica
+    // ──────────────────────────────────────────────
+    double slotHeight = LayoutConfig.slotHeight;
+
+    if (screenHeight < 700) {
+      slotHeight = LayoutConfig.slotHeight * 0.8;
+    } else if (screenHeight > 1200) {
+      slotHeight = LayoutConfig.slotHeight * 1.2;
+    }
+
+    slotHeight = slotHeight.roundToDouble();
+
+    // 🔁 Aggiorna LayoutConfig globale
+    LayoutConfig.updateSlotHeight(slotHeight);
+
+    return ResponsiveLayout(
+      columnWidth: columnWidth,
+      slotHeight: slotHeight,
+      maxVisibleStaff: dynamicMaxVisible,
+    );
+  }
+
+  double get totalHeight => LayoutConfig.totalSlots * slotHeight;
+}
+--- FILE: lib/features/agenda/presentation/screens/day_view/multi_staff_day_view.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../../core/models/staff.dart';
+import '../../../../../core/widgets/no_scrollbar_behavior.dart';
+import '../../../domain/config/layout_config.dart';
+import '../../../providers/agenda_scroll_provider.dart';
+import '../../../providers/appointment_providers.dart';
+import '../../../providers/layout_config_provider.dart';
+import '../widgets/agenda_dividers.dart';
+import 'hour_column.dart';
+import 'responsive_layout.dart';
+import 'staff_column.dart';
+import 'staff_header_row.dart';
+
+class MultiStaffDayView extends ConsumerWidget {
+  final List<Staff> staffList;
+
+  const MultiStaffDayView({super.key, required this.staffList});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appointments = ref.watch(appointmentsProvider);
+    final scrollState = ref.watch(agendaScrollProvider(staffList));
+    final layout = ResponsiveLayout.of(context, staffCount: staffList.length);
+    final slotHeight = ref.watch(layoutConfigProvider);
+
+    final totalContentHeight = LayoutConfig.totalSlots * slotHeight;
+    final hourWidth = LayoutConfig.hourColumnWidth;
+
+    return Stack(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Material(
+              elevation: 3,
+              child: Container(
+                width: double.infinity,
+                constraints: BoxConstraints(
+                  minHeight: LayoutConfig.headerHeight,
+                ),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.grey.withOpacity(0.35),
+                      width: 1.2,
+                    ),
+                  ),
+                ),
+                child: StaffHeaderRow(
+                  staffList: staffList,
+                  scrollController: scrollState.horizontalScrollCtrl,
+                  columnWidth: layout.columnWidth,
+                  hourColumnWidth: hourWidth,
+                ),
+              ),
+            ),
+
+            Expanded(
+              child: ScrollConfiguration(
+                behavior: const NoScrollbarBehavior(),
+                child: SingleChildScrollView(
+                  controller: scrollState.verticalScrollCtrl,
+                  physics: const ClampingScrollPhysics(),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(width: hourWidth, child: const HourColumn()),
+                      AgendaVerticalDivider(height: totalContentHeight),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          controller: scrollState.horizontalScrollCtrl,
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: staffList.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final staff = entry.value;
+                              final isLast = index == staffList.length - 1;
+                              final staffAppointments = appointments
+                                  .where((a) => a.staffId == staff.id)
+                                  .toList();
+
+                              return StaffColumn(
+                                staff: staff,
+                                appointments: staffAppointments,
+                                columnWidth: layout.columnWidth,
+                                showRightBorder:
+                                    staffList.length > 1 && !isLast,
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+--- FILE: lib/features/agenda/presentation/screens/day_view/staff_header_row.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../../core/models/staff.dart';
+import '../../../domain/config/layout_config.dart';
+import '../../../providers/highlighted_staff_provider.dart';
+
+class StaffHeaderRow extends ConsumerWidget {
+  final List<Staff> staffList;
+  final ScrollController scrollController;
+  final double columnWidth;
+  final double hourColumnWidth;
+
+  const StaffHeaderRow({
+    super.key,
+    required this.staffList,
+    required this.scrollController,
+    required this.columnWidth,
+    required this.hourColumnWidth,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final headerHeight = LayoutConfig.headerHeight;
+    final highlightedId = ref.watch(highlightedStaffIdProvider);
+
+    return SizedBox(
+      height: headerHeight,
+      child: Row(
+        children: [
+          // Colonna "Ora" — vuota e trasparente
+          SizedBox(width: hourColumnWidth, height: headerHeight),
+
+          // Scroll orizzontale sincronizzato con le colonne
+          Expanded(
+            child: SingleChildScrollView(
+              controller: scrollController,
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: staffList.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final staff = entry.value;
+                  final isLast = index == staffList.length - 1;
+                  final isHighlighted = highlightedId == staff.id;
+
+                  return Stack(
+                    children: [
+                      // 🔹 Base colorata per ogni colonna staff
+                      Container(
+                        width: columnWidth,
+                        height: headerHeight,
+                        decoration: BoxDecoration(
+                          color: staff.color.withOpacity(0.18),
+                          border: Border(
+                            right: BorderSide(
+                              color: isLast
+                                  ? Colors.transparent
+                                  : Colors.grey.withOpacity(0.25),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 6,
+                        ),
+                        child: Text(
+                          staff.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+
+                      // 🔸 Badge fisso in alto quando colonna è evidenziata
+                      Positioned(
+                        top: 6,
+                        left: 6,
+                        right: 6,
+                        child: AnimatedOpacity(
+                          opacity: isHighlighted ? 1 : 0,
+                          duration: const Duration(milliseconds: 120),
+                          curve: Curves.easeInOut,
+                          child: IgnorePointer(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: staff.color.withOpacity(0.28),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                staff.name,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+--- FILE: lib/features/agenda/presentation/agenda_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../providers/staff_providers.dart';
+import 'screens/day_view/multi_staff_day_view.dart';
+import 'screens/widgets/layout_config_auto_listener.dart';
+
+class AgendaScreen extends ConsumerWidget {
+  const AgendaScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // ✅ Recupera la lista dello staff dal provider
+    final staffList = ref.watch(staffProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Agenda'), centerTitle: true),
+      body: LayoutConfigAutoListener(
+        child: SafeArea(
+          // Passa la lista dello staff alla view
+          child: MultiStaffDayView(staffList: staffList),
+        ),
+      ),
+    );
+  }
+}
+--- FILE: lib/features/agenda/agenda_feature.dart ---
+/// Entry point modulare per la feature "Agenda"
+/// Importa qui tutti i componenti pubblici dell'agenda.
+/// Così altrove potrai scrivere semplicemente:
+///   import 'package:agenda/features/agenda/agenda_feature.dart';
+
+library;
+
+export 'domain/config/agenda_theme.dart'; // se aggiungi un tema centralizzato
+// ──────────────────────────────────────────────
+// � Domain & Config
+// ──────────────────────────────────────────────
+export 'domain/config/layout_config.dart';
+// Schermata di agenda (entry screen)
+export 'presentation//agenda_screen.dart';
+export 'presentation/screens/day_view/hour_column.dart';
+// Vista principale (giornaliera multi-staff)
+export 'presentation/screens/day_view/multi_staff_day_view.dart';
+// ──────────────────────────────────────────────
+// 🎨 Presentation layer
+// ──────────────────────────────────────────────
+
+// Layout e componenti core
+export 'presentation/screens/day_view/responsive_layout.dart';
+export 'presentation/screens/day_view/staff_column.dart';
+export 'presentation/screens/day_view/staff_header_row.dart';
+export 'presentation/screens/widgets/agenda_dividers.dart';
+// ──────────────────────────────────────────────
+// � Application (providers, notifiers, stato)
+// ──────────────────────────────────────────────
+export 'providers/agenda_scroll_provider.dart';
+--- FILE: lib/shared/styles/colors.dart ---
+--- FILE: lib/shared/styles/spacing.dart ---
+--- FILE: lib/shared/styles/typography.dart ---
+--- FILE: lib/shared/widgets/app_card.dart ---
+--- FILE: lib/shared/widgets/app_button.dart ---
+--- FILE: lib/shared/widgets/app_loading.dart ---
+--- FILE: lib/main.dart ---
+import 'package:agenda_frontend/app/app.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  runApp(const ProviderScope(child: MyApp()));
+}
