@@ -31,7 +31,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   Timer? _centerTimer;
   late final ProviderSubscription<Offset?> _dragSub;
 
-  // 🔗 Controller orizzontale dedicato all'header
   final ScrollController _headerHCtrl = ScrollController();
   bool _isSyncing = false;
 
@@ -58,7 +57,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     // Centra la riga rossa all’avvio
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerCurrentTimeLine();
-      _setupHorizontalSync(); // <- dopo che i widget hanno un controller attaccato
+      _setupHorizontalSync();
     });
 
     // Riesegui il centramento ogni 5 minuti
@@ -72,7 +71,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         .read(agendaScrollProvider(widget.staffList))
         .horizontalScrollCtrl;
 
-    // allinea offset iniziale
     if (_headerHCtrl.hasClients && bodyCtrl.hasClients) {
       _headerHCtrl.jumpTo(bodyCtrl.offset);
     }
@@ -150,6 +148,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
           currentOffset < maxScrollExtent) {
         newOffset = (currentOffset + _scrollSpeed).clamp(0, maxScrollExtent);
       }
+
       if (newOffset != null && newOffset != currentOffset) {
         verticalCtrl.jumpTo(newOffset);
       }
@@ -183,44 +182,11 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     final totalContentHeight = LayoutConfig.totalSlots * slotHeight;
     final hourWidth = LayoutConfig.hourColumnWidth;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
       children: [
-        // HEADER: scroll orizzontale con controller dedicato, sincronizzato al body
-        Material(
-          elevation: 3,
-          child: SizedBox(
-            height: LayoutConfig.headerHeight,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 🔹 Colonna orari fissa
-                SizedBox(width: hourWidth),
-
-                // 🔹 Sezione staff scrollabile orizzontalmente
-                Expanded(
-                  child: ScrollConfiguration(
-                    behavior: const NoScrollbarBehavior(),
-                    child: SingleChildScrollView(
-                      controller: _headerHCtrl,
-                      scrollDirection: Axis.horizontal,
-                      physics: const ClampingScrollPhysics(),
-                      child: StaffHeaderRow(
-                        staffList: widget.staffList,
-                        scrollController: _headerHCtrl,
-                        columnWidth: layout.columnWidth,
-                        hourColumnWidth: hourWidth,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // BODY
-        Expanded(
+        // BODY scrollabile (sotto)
+        Positioned.fill(
+          top: LayoutConfig.headerHeight,
           child: ScrollConfiguration(
             behavior: const NoScrollbarBehavior(),
             child: SingleChildScrollView(
@@ -237,8 +203,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                         child: ScrollConfiguration(
                           behavior: const NoScrollbarBehavior(),
                           child: SingleChildScrollView(
-                            controller: scrollState
-                                .horizontalScrollCtrl, // <- controller body
+                            controller: scrollState.horizontalScrollCtrl,
                             scrollDirection: Axis.horizontal,
                             physics: const ClampingScrollPhysics(),
                             child: Row(
@@ -269,6 +234,48 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                     ],
                   ),
                   CurrentTimeLine(hourColumnWidth: hourWidth),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // HEADER (sopra con ombra reale)
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: LayoutConfig.headerHeight,
+          child: Material(
+            elevation: 8,
+            shadowColor: Colors.black.withOpacity(0.30),
+            surfaceTintColor: Colors.transparent,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0x1F000000), width: 0.5),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: hourWidth),
+                  Expanded(
+                    child: ScrollConfiguration(
+                      behavior: const NoScrollbarBehavior(),
+                      child: SingleChildScrollView(
+                        controller: _headerHCtrl,
+                        scrollDirection: Axis.horizontal,
+                        physics: const ClampingScrollPhysics(),
+                        child: StaffHeaderRow(
+                          staffList: widget.staffList,
+                          scrollController: _headerHCtrl,
+                          columnWidth: layout.columnWidth,
+                          hourColumnWidth: hourWidth,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
