@@ -29,6 +29,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // 🔹 Registra la dimensione effettiva (serve per larghezza del feedback)
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final newSize = Size(constraints.maxWidth, constraints.maxHeight);
           if (mounted && (_lastSize == null || _lastSize != newSize)) {
@@ -38,25 +39,26 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
         return Listener(
           onPointerDown: (event) {
-            // 🔹 Registra l'impuntatura del mouse/touch per il drag
+            // 🔹 Registra la posizione di impuntatura del mouse/touch
             final local = event.localPosition.dy;
             ref.read(dragOffsetProvider.notifier).set(local);
           },
           child: LongPressDraggable<Appointment>(
             data: widget.appointment,
 
-            // 🔸 Feedback con Consumer (aggiornamenti live)
+            // 🔸 Feedback con orario live
             feedback: Consumer(
               builder: (context, ref, _) => Transform.scale(
-                scale: 1.0, // 🔹 Mantiene scala 1:1 nel layer overlay
+                scale: 1.0, // evita scaling overlay
                 child: _buildFeedback(context, ref),
               ),
             ),
+
             feedbackOffset: Offset.zero,
             dragAnchorStrategy: childDragAnchorStrategy,
             childWhenDragging: _buildCard(isDragging: false, isGhost: true),
 
-            // 🔸 Inizio e fine drag
+            // 🔹 Inizio e fine drag
             onDragStarted: () {
               ref
                   .read(draggedAppointmentIdProvider.notifier)
@@ -66,14 +68,14 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
             onDragCompleted: () => _handleDragEnd(ref),
             onDraggableCanceled: (_, __) => _handleDragEnd(ref),
 
-            // 🔸 Tracciamento continuo del cursore
+            // 🔹 Tracciamento continuo del cursore
             onDragUpdate: (details) {
               ref
                   .read(dragPositionProvider.notifier)
                   .update(details.globalPosition);
             },
 
-            // 🔸 Card visibile normale
+            // 🔹 Card normale
             child: _buildCard(isDragging: false),
           ),
         );
@@ -88,19 +90,25 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     ref.read(tempDragTimeProvider.notifier).clear();
   }
 
-  /// 🔹 Card base (usata sia nel layout normale che nel feedback)
+  /// 🔹 Card base (usata sia nel layout che nel feedback)
   Widget _buildCard({
     required bool isDragging,
     bool isGhost = false,
     bool forFeedback = false,
+    DateTime? overrideStart,
+    DateTime? overrideEnd,
   }) {
     final baseColor = widget.color.withOpacity(0.15);
     const borderRadius = BorderRadius.all(Radius.circular(6));
 
+    final startTime = overrideStart ?? widget.appointment.startTime;
+    final endTime = overrideEnd ?? widget.appointment.endTime;
+
     final start =
-        '${widget.appointment.startTime.hour.toString().padLeft(2, '0')}:${widget.appointment.startTime.minute.toString().padLeft(2, '0')}';
+        '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
     final end =
-        '${widget.appointment.endTime.hour.toString().padLeft(2, '0')}:${widget.appointment.endTime.minute.toString().padLeft(2, '0')}';
+        '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+
     final client = widget.appointment.clientName;
 
     final servicesText = widget.appointment.formattedServices;
@@ -116,7 +124,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 🔸 Riga 1 → orario + cliente
+        // 🔸 Riga 1 → orario + cliente (ora dinamico)
         RichText(
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -182,9 +190,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               fontSize: 12.5,
               height: 1.15,
             ),
-            // 🔸 niente FittedBox nel feedback
             child: forFeedback
-                ? content
+                ? content // feedback → no FittedBox
                 : FittedBox(
                     alignment: Alignment.topLeft,
                     fit: BoxFit.scaleDown,
@@ -196,56 +203,25 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Feedback (la card che si muove durante il drag)
+  /// 🔹 Feedback (card in movimento con orario aggiornato live)
   Widget _buildFeedback(BuildContext context, WidgetRef ref) {
-    final size = _lastSize ?? context.size;
+    final size = _lastSize ?? const Size(180, 60);
     final times = ref.watch(tempDragTimeProvider);
 
-    String? liveTimeText;
-    if (times != null) {
-      final start =
-          '${times.$1.hour.toString().padLeft(2, '0')}:${times.$1.minute.toString().padLeft(2, '0')}';
-      final end =
-          '${times.$2.hour.toString().padLeft(2, '0')}:${times.$2.minute.toString().padLeft(2, '0')}';
-      liveTimeText = '$start - $end';
-    }
-
-    final width = size?.width ?? 180;
-    final height = size?.height ?? 60;
+    final liveStart = times?.$1;
+    final liveEnd = times?.$2;
 
     return Material(
       color: Colors.transparent,
       borderRadius: const BorderRadius.all(Radius.circular(6)),
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
-        constraints: BoxConstraints.tight(Size(width, height)),
-        child: Stack(
-          children: [
-            _buildCard(isDragging: true, forFeedback: true),
-            if (liveTimeText != null)
-              Positioned(
-                bottom: 2,
-                right: 4,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    liveTimeText,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-          ],
+        constraints: BoxConstraints(minWidth: size.width, maxWidth: size.width),
+        child: _buildCard(
+          isDragging: true,
+          forFeedback: true,
+          overrideStart: liveStart,
+          overrideEnd: liveEnd,
         ),
       ),
     );
