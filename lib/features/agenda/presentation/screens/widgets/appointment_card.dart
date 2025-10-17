@@ -11,11 +11,15 @@ import '../../../providers/temp_drag_time_provider.dart';
 class AppointmentCard extends ConsumerStatefulWidget {
   final Appointment appointment;
   final Color color;
+  final double? columnWidth;
+  final bool expandToLeft; // ✅ nuova proprietà
 
   const AppointmentCard({
     super.key,
     required this.appointment,
     required this.color,
+    this.columnWidth,
+    this.expandToLeft = false,
   });
 
   @override
@@ -29,7 +33,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 🔹 Registra la dimensione effettiva (serve per larghezza del feedback)
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final newSize = Size(constraints.maxWidth, constraints.maxHeight);
           if (mounted && (_lastSize == null || _lastSize != newSize)) {
@@ -39,43 +42,31 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
         return Listener(
           onPointerDown: (event) {
-            // 🔹 Registra la posizione di impuntatura del mouse/touch
             final local = event.localPosition.dy;
             ref.read(dragOffsetProvider.notifier).set(local);
+            ref
+                .read(draggedAppointmentIdProvider.notifier)
+                .set(widget.appointment.id);
           },
           child: LongPressDraggable<Appointment>(
             data: widget.appointment,
-
-            // 🔸 Feedback con orario live
             feedback: Consumer(
               builder: (context, ref, _) => Transform.scale(
-                scale: 1.0, // evita scaling overlay
+                scale: 1.0,
                 child: _buildFeedback(context, ref),
               ),
             ),
-
             feedbackOffset: Offset.zero,
             dragAnchorStrategy: childDragAnchorStrategy,
             childWhenDragging: _buildCard(isDragging: false, isGhost: true),
-
-            // 🔹 Inizio e fine drag
-            onDragStarted: () {
-              ref
-                  .read(draggedAppointmentIdProvider.notifier)
-                  .set(widget.appointment.id);
-            },
             onDragEnd: (_) => _handleDragEnd(ref),
             onDragCompleted: () => _handleDragEnd(ref),
             onDraggableCanceled: (_, __) => _handleDragEnd(ref),
-
-            // 🔹 Tracciamento continuo del cursore
             onDragUpdate: (details) {
               ref
                   .read(dragPositionProvider.notifier)
                   .update(details.globalPosition);
             },
-
-            // 🔹 Card normale
             child: _buildCard(isDragging: false),
           ),
         );
@@ -90,7 +81,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     ref.read(tempDragTimeProvider.notifier).clear();
   }
 
-  /// 🔹 Card base (usata sia nel layout che nel feedback)
   Widget _buildCard({
     required bool isDragging,
     bool isGhost = false,
@@ -124,7 +114,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 🔸 Riga 1 → orario + cliente (ora dinamico)
         RichText(
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -132,22 +121,28 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
             children: [
               TextSpan(
                 text: '$start - $end  ',
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w500,
+                style: TextStyle(
+                  color: (isDragging || forFeedback)
+                      ? Colors.black87
+                      : Colors.grey,
+                  fontWeight: (isDragging || forFeedback)
+                      ? FontWeight
+                            .w700 // ✅ grassetto se in movimento
+                      : FontWeight.w500,
                 ),
               ),
               TextSpan(
                 text: client,
-                style: const TextStyle(
-                  color: Colors.black87,
+                style: TextStyle(
+                  color: (isDragging || forFeedback)
+                      ? Colors.grey
+                      : Colors.black87,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
         ),
-        // 🔸 Riga 2 → servizi + prezzo
         if (infoLine.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 1),
@@ -191,7 +186,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               height: 1.15,
             ),
             child: forFeedback
-                ? content // feedback → no FittedBox
+                ? content
                 : FittedBox(
                     alignment: Alignment.topLeft,
                     fit: BoxFit.scaleDown,
@@ -203,25 +198,35 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Feedback (card in movimento con orario aggiornato live)
+  /// 🔹 Feedback (card mobile con direzione di espansione dinamica)
   Widget _buildFeedback(BuildContext context, WidgetRef ref) {
-    final size = _lastSize ?? const Size(180, 60);
     final times = ref.watch(tempDragTimeProvider);
-
     final liveStart = times?.$1;
     final liveEnd = times?.$2;
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: const BorderRadius.all(Radius.circular(6)),
-      clipBehavior: Clip.antiAlias,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: size.width, maxWidth: size.width),
-        child: _buildCard(
-          isDragging: true,
-          forFeedback: true,
-          overrideStart: liveStart,
-          overrideEnd: liveEnd,
+    final double feedbackWidth = widget.columnWidth ?? _lastSize?.width ?? 180;
+
+    // 🔹 Se deve espandersi a sinistra → sposta la card di mezza colonna verso sinistra
+    // 🔹 Altrimenti (espansione verso destra) → nessuna traslazione
+    final double shift = widget.expandToLeft ? -feedbackWidth / 2 : 0;
+
+    return Transform.translate(
+      offset: Offset(shift, 0), // ✅ sposta la card nella direzione giusta
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: const BorderRadius.all(Radius.circular(6)),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: feedbackWidth - 4,
+            maxWidth: feedbackWidth - 4,
+          ),
+          child: _buildCard(
+            isDragging: true,
+            forFeedback: true,
+            overrideStart: liveStart,
+            overrideEnd: liveEnd,
+          ),
         ),
       ),
     );

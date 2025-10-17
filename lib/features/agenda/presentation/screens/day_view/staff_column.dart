@@ -82,7 +82,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         });
         highlightNotifier.set(widget.staff.id);
 
-        // 🔹 Calcolo orario stimato di destinazione (come se rilasciassi ora)
         final slotHeight = LayoutConfig.slotHeight;
         final minutesFromTop =
             (effectiveY / slotHeight) * LayoutConfig.minutesPerSlot;
@@ -138,7 +137,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     final stackChildren = <Widget>[];
 
-    // 🕓 Griglia oraria coerente con HourColumn
+    // 🕓 Griglia oraria
     stackChildren.add(
       Column(
         children: List.generate(totalSlots, (index) {
@@ -158,6 +157,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
+    // 🔹 Appuntamenti
     stackChildren.addAll(_buildAppointments(slotHeight));
 
     return DragTarget<Appointment>(
@@ -234,6 +234,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final List<List<Appointment>> overlapGroups = [];
 
+    // 🔹 Raggruppa appuntamenti che si sovrappongono
     for (final appt in widget.appointments) {
       bool added = false;
       for (final group in overlapGroups) {
@@ -251,10 +252,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }
 
     final List<Widget> positionedAppointments = [];
+
+    // 🔹 Costruisci i widget
     for (final group in overlapGroups) {
       final groupSize = group.length;
       for (int i = 0; i < groupSize; i++) {
         final a = group[i];
+        final bool isDragged = a.id == draggedId;
+
         final startMinutes = a.startTime.hour * 60 + a.startTime.minute;
         final endMinutes = a.endTime.hour * 60 + a.endTime.minute;
 
@@ -264,8 +269,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             ((endMinutes - startMinutes) / LayoutConfig.minutesPerSlot) *
             slotHeight;
 
-        final double widthFraction = 1 / groupSize;
-        final double leftFraction = i * widthFraction;
+        double widthFraction = 1 / groupSize;
+        double leftFraction = i * widthFraction;
+        double opacity = 1.0;
+
+        if (isDragged) {
+          // 👻 Ghost → solo opacità ridotta, nessuna espansione
+          opacity = AgendaTheme.ghostOpacity;
+        }
 
         positionedAppointments.add(
           Positioned(
@@ -274,8 +285,13 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             width: widget.columnWidth * widthFraction - 4,
             height: height,
             child: Opacity(
-              opacity: (a.id == draggedId) ? AgendaTheme.ghostOpacity : 1.0,
-              child: AppointmentCard(appointment: a, color: widget.staff.color),
+              opacity: opacity,
+              child: AppointmentCard(
+                appointment: a,
+                color: widget.staff.color,
+                columnWidth: widget.columnWidth,
+                expandToLeft: i > 0, // ✅ destra → espansione verso sinistra
+              ),
             ),
           ),
         );
