@@ -31,6 +31,10 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   Timer? _centerTimer;
   late final ProviderSubscription<Offset?> _dragSub;
 
+  // 🔗 Controller orizzontale dedicato all'header
+  final ScrollController _headerHCtrl = ScrollController();
+  bool _isSyncing = false;
+
   static const double _scrollEdgeMargin = 100;
   static const double _scrollSpeed = 20;
   static const Duration _scrollInterval = Duration(milliseconds: 50);
@@ -39,7 +43,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   void initState() {
     super.initState();
 
-    // 🔹 Ascolta drag per auto-scroll
+    // Auto-scroll verticale durante il drag
     _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
@@ -51,21 +55,50 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       }
     });
 
-    // 🔸 Centra la riga rossa all'avvio
+    // Centra la riga rossa all’avvio
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerCurrentTimeLine();
+      _setupHorizontalSync(); // <- dopo che i widget hanno un controller attaccato
     });
 
-    // 🔸 Riesegui il centramento ogni 5 minuti
+    // Riesegui il centramento ogni 5 minuti
     _centerTimer = Timer.periodic(const Duration(minutes: 5), (_) {
       _centerCurrentTimeLine();
+    });
+  }
+
+  void _setupHorizontalSync() {
+    final bodyCtrl = ref
+        .read(agendaScrollProvider(widget.staffList))
+        .horizontalScrollCtrl;
+
+    // allinea offset iniziale
+    if (_headerHCtrl.hasClients && bodyCtrl.hasClients) {
+      _headerHCtrl.jumpTo(bodyCtrl.offset);
+    }
+
+    // listener body -> header
+    bodyCtrl.addListener(() {
+      if (_isSyncing) return;
+      if (!_headerHCtrl.hasClients) return;
+      _isSyncing = true;
+      _headerHCtrl.jumpTo(bodyCtrl.offset);
+      _isSyncing = false;
+    });
+
+    // listener header -> body
+    _headerHCtrl.addListener(() {
+      if (_isSyncing) return;
+      if (!bodyCtrl.hasClients) return;
+      _isSyncing = true;
+      bodyCtrl.jumpTo(_headerHCtrl.offset);
+      _isSyncing = false;
     });
   }
 
   void _centerCurrentTimeLine() {
     final scrollState = ref.read(agendaScrollProvider(widget.staffList));
     final verticalCtrl = scrollState.verticalScrollCtrl;
-
     if (!verticalCtrl.hasClients) return;
 
     final now = DateTime.now();
@@ -76,23 +109,19 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
-
     final viewHeight = renderBox.size.height;
     final availableHeight = viewHeight - LayoutConfig.headerHeight;
 
-    // 🔹 Centra con leggera preferenza per il futuro (riga a ~40% dell’altezza)
     const double bias = 0.4;
     final targetOffset = (offset - availableHeight * bias).clamp(
       0.0,
       verticalCtrl.position.maxScrollExtent,
     );
-
     verticalCtrl.jumpTo(targetOffset);
   }
 
   void _startAutoScroll() {
     if (_autoScrollTimer != null) return;
-
     _autoScrollTimer = Timer.periodic(_scrollInterval, (_) {
       if (!mounted) return;
 
@@ -115,14 +144,12 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       final currentOffset = verticalCtrl.offset;
 
       double? newOffset;
-
       if (localPos.dy < _scrollEdgeMargin && currentOffset > 0) {
         newOffset = (currentOffset - _scrollSpeed).clamp(0, maxScrollExtent);
       } else if (localPos.dy > viewHeight - _scrollEdgeMargin &&
           currentOffset < maxScrollExtent) {
         newOffset = (currentOffset + _scrollSpeed).clamp(0, maxScrollExtent);
       }
-
       if (newOffset != null && newOffset != currentOffset) {
         verticalCtrl.jumpTo(newOffset);
       }
@@ -139,6 +166,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _dragSub.close();
     _stopAutoScroll();
     _centerTimer?.cancel();
+    _headerHCtrl.dispose();
     super.dispose();
   }
 
@@ -155,88 +183,96 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     final totalContentHeight = LayoutConfig.totalSlots * slotHeight;
     final hourWidth = LayoutConfig.hourColumnWidth;
 
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Material(
-              elevation: 3,
-              child: Container(
-                width: double.infinity,
-                constraints: BoxConstraints(
-                  minHeight: LayoutConfig.headerHeight,
-                ),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.grey.withOpacity(0.35),
-                      width: 1.2,
+        // HEADER: scroll orizzontale con controller dedicato, sincronizzato al body
+        Material(
+          elevation: 3,
+          child: SizedBox(
+            height: LayoutConfig.headerHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 🔹 Colonna orari fissa
+                SizedBox(width: hourWidth),
+
+                // 🔹 Sezione staff scrollabile orizzontalmente
+                Expanded(
+                  child: ScrollConfiguration(
+                    behavior: const NoScrollbarBehavior(),
+                    child: SingleChildScrollView(
+                      controller: _headerHCtrl,
+                      scrollDirection: Axis.horizontal,
+                      physics: const ClampingScrollPhysics(),
+                      child: StaffHeaderRow(
+                        staffList: widget.staffList,
+                        scrollController: _headerHCtrl,
+                        columnWidth: layout.columnWidth,
+                        hourColumnWidth: hourWidth,
+                      ),
                     ),
                   ),
                 ),
-                child: StaffHeaderRow(
-                  staffList: widget.staffList,
-                  scrollController: scrollState.horizontalScrollCtrl,
-                  columnWidth: layout.columnWidth,
-                  hourColumnWidth: hourWidth,
-                ),
-              ),
+              ],
             ),
+          ),
+        ),
 
-            // 🔹 Corpo scrollabile
-            Expanded(
-              child: ScrollConfiguration(
-                behavior: const NoScrollbarBehavior(),
-                child: SingleChildScrollView(
-                  controller: scrollState.verticalScrollCtrl,
-                  physics: const ClampingScrollPhysics(),
-                  child: Stack(
+        // BODY
+        Expanded(
+          child: ScrollConfiguration(
+            behavior: const NoScrollbarBehavior(),
+            child: SingleChildScrollView(
+              controller: scrollState.verticalScrollCtrl,
+              physics: const ClampingScrollPhysics(),
+              child: Stack(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(width: hourWidth, child: const HourColumn()),
-                          AgendaVerticalDivider(height: totalContentHeight),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              controller: scrollState.horizontalScrollCtrl,
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: widget.staffList.asMap().entries.map((
-                                  entry,
-                                ) {
-                                  final index = entry.key;
-                                  final staff = entry.value;
-                                  final isLast =
-                                      index == widget.staffList.length - 1;
-                                  final staffAppointments = appointments
-                                      .where((a) => a.staffId == staff.id)
-                                      .toList();
+                      SizedBox(width: hourWidth, child: const HourColumn()),
+                      AgendaVerticalDivider(height: totalContentHeight),
+                      Expanded(
+                        child: ScrollConfiguration(
+                          behavior: const NoScrollbarBehavior(),
+                          child: SingleChildScrollView(
+                            controller: scrollState
+                                .horizontalScrollCtrl, // <- controller body
+                            scrollDirection: Axis.horizontal,
+                            physics: const ClampingScrollPhysics(),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: widget.staffList.asMap().entries.map((
+                                entry,
+                              ) {
+                                final index = entry.key;
+                                final staff = entry.value;
+                                final isLast =
+                                    index == widget.staffList.length - 1;
+                                final staffAppointments = appointments
+                                    .where((a) => a.staffId == staff.id)
+                                    .toList();
 
-                                  return StaffColumn(
-                                    staff: staff,
-                                    appointments: staffAppointments,
-                                    columnWidth: layout.columnWidth,
-                                    showRightBorder:
-                                        widget.staffList.length > 1 && !isLast,
-                                  );
-                                }).toList(),
-                              ),
+                                return StaffColumn(
+                                  staff: staff,
+                                  appointments: staffAppointments,
+                                  columnWidth: layout.columnWidth,
+                                  showRightBorder:
+                                      widget.staffList.length > 1 && !isLast,
+                                );
+                              }).toList(),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-
-                      // 🔴 Riga rossa
-                      CurrentTimeLine(hourColumnWidth: hourWidth),
                     ],
                   ),
-                ),
+                  CurrentTimeLine(hourColumnWidth: hourWidth),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ],
     );
