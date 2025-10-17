@@ -18,9 +18,7 @@ class AgendaVerticalDivider extends StatelessWidget {
     return SizedBox(
       height: height,
       width: thickness,
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.4)),
-      ),
+      child: DecoratedBox(decoration: BoxDecoration(color: color)),
     );
   }
 }

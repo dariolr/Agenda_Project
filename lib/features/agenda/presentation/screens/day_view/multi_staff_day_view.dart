@@ -28,7 +28,6 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
 
 class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   Timer? _autoScrollTimer;
-  Timer? _centerTimer;
   late final ProviderSubscription<Offset?> _dragSub;
 
   final ScrollController _headerHCtrl = ScrollController();
@@ -58,11 +57,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerCurrentTimeLine();
       _setupHorizontalSync();
-    });
-
-    // Riesegui il centramento ogni 5 minuti
-    _centerTimer = Timer.periodic(const Duration(minutes: 5), (_) {
-      _centerCurrentTimeLine();
     });
   }
 
@@ -164,7 +158,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   void dispose() {
     _dragSub.close();
     _stopAutoScroll();
-    _centerTimer?.cancel();
     _headerHCtrl.dispose();
     super.dispose();
   }
@@ -198,7 +191,10 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(width: hourWidth, child: const HourColumn()),
-                      AgendaVerticalDivider(height: totalContentHeight),
+                      AgendaVerticalDivider(
+                        height: totalContentHeight,
+                        thickness: 1,
+                      ),
                       Expanded(
                         child: ScrollConfiguration(
                           behavior: const NoScrollbarBehavior(),

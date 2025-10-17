@@ -18,6 +18,7 @@ class HourColumn extends ConsumerWidget {
     return Column(
       children: List.generate(totalSlots, (index) {
         final isHourStart = index % slotsPerHour == 0;
+        final isMainLine = (index + 1) % slotsPerHour == 0;
         final hour = (index ~/ slotsPerHour);
         final minutes = (index % slotsPerHour) * LayoutConfig.minutesPerSlot;
 
@@ -39,8 +40,8 @@ class HourColumn extends ConsumerWidget {
               Align(
                 alignment: Alignment.bottomLeft,
                 child: AgendaHorizontalDivider(
-                  color: Colors.grey.withOpacity(isHourStart ? 0.2 : 0.5),
-                  thickness: isHourStart ? 0.5 : 1,
+                  color: Colors.grey.withOpacity(isMainLine ? 0.5 : 0.2),
+                  thickness: isMainLine ? 1 : 0.5,
                 ),
               ),
             ],

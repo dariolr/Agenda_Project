@@ -142,14 +142,15 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       Column(
         children: List.generate(totalSlots, (index) {
           final slotsPerHour = 60 ~/ LayoutConfig.minutesPerSlot;
-          final isHourStart = index % slotsPerHour == 0;
+          final isHourStart = (index + 1) % slotsPerHour == 0;
+          final isMainLine = (index + 1) % slotsPerHour == 0;
           return SizedBox(
             height: slotHeight,
             child: Align(
               alignment: Alignment.bottomLeft,
               child: AgendaHorizontalDivider(
-                color: Colors.grey.withOpacity(isHourStart ? 0.2 : 0.5),
-                thickness: isHourStart ? 0.5 : 1,
+                color: Colors.grey.withOpacity(isHourStart ? 0.5 : 0.2),
+                thickness: isHourStart ? 1 : 0.5,
               ),
             ),
           );
@@ -217,7 +218,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               border: widget.showRightBorder
                   ? Border(
                       right: BorderSide(
-                        color: Colors.grey.withOpacity(0.25),
+                        color: Colors.grey.withOpacity(0.5),
                         width: 0.5,
                       ),
                     )

@@ -34,7 +34,7 @@ class LayoutConfig {
   // ⏱️ CONFIGURAZIONE SLOT TEMPORALI
   // ──────────────────────────────────────────────
 
-  static const int minutesPerSlot = 30;
+  static const int minutesPerSlot = 15;
 
   static double _slotHeight = 30;
 
