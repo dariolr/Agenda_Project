@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/../../../core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
+import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
@@ -42,8 +43,10 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
         return Listener(
           onPointerDown: (event) {
-            final local = event.localPosition.dy;
-            ref.read(dragOffsetProvider.notifier).set(local);
+            final localY = event.localPosition.dy;
+            final localX = event.localPosition.dx;
+            ref.read(dragOffsetProvider.notifier).set(localY);
+            ref.read(dragOffsetXProvider.notifier).set(localX);
             ref
                 .read(draggedAppointmentIdProvider.notifier)
                 .set(widget.appointment.id);
@@ -77,6 +80,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
   void _handleDragEnd(WidgetRef ref) {
     ref.read(draggedAppointmentIdProvider.notifier).clear();
     ref.read(dragOffsetProvider.notifier).clear();
+    ref.read(dragOffsetXProvider.notifier).clear();
     ref.read(dragPositionProvider.notifier).clear();
     ref.read(tempDragTimeProvider.notifier).clear();
   }
@@ -126,8 +130,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                       ? Colors.black87
                       : Colors.grey,
                   fontWeight: (isDragging || forFeedback)
-                      ? FontWeight
-                            .w700 // ✅ grassetto se in movimento
+                      ? FontWeight.w700
                       : FontWeight.w500,
                 ),
               ),
@@ -198,7 +201,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Feedback (card mobile con direzione di espansione dinamica)
+  /// 🔹 Feedback (card mobile con blocco al bordo sinistro)
   Widget _buildFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
     final liveStart = times?.$1;
@@ -206,12 +209,21 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
     final double feedbackWidth = widget.columnWidth ?? _lastSize?.width ?? 180;
 
-    // 🔹 Se deve espandersi a sinistra → sposta la card di mezza colonna verso sinistra
-    // 🔹 Altrimenti (espansione verso destra) → nessuna traslazione
-    final double shift = widget.expandToLeft ? -feedbackWidth / 2 : 0;
+    // 🔹 Direzione di espansione orizzontale
+    double shift = widget.expandToLeft ? -feedbackWidth / 2 : 0;
+
+    // 🧠 Blocca la card quando tocca la colonna orari
+    final dragPos = ref.watch(dragPositionProvider);
+    final dragOffsetX = ref.watch(dragOffsetXProvider) ?? 0.0;
+    if (dragPos != null) {
+      final leftEdgeX = dragPos.dx - dragOffsetX + shift;
+      if (leftEdgeX < LayoutConfig.hourColumnWidth) {
+        shift += LayoutConfig.hourColumnWidth - leftEdgeX;
+      }
+    }
 
     return Transform.translate(
-      offset: Offset(shift, 0), // ✅ sposta la card nella direzione giusta
+      offset: Offset(shift, 0),
       child: Material(
         color: Colors.transparent,
         borderRadius: const BorderRadius.all(Radius.circular(6)),
