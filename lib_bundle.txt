@@ -114,7 +114,14 @@ class MessageLookup extends MessageLookupByLibrary {
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
-        "appTitle": MessageLookupByLibrary.simpleMessage("Agenda")
+        "appTitle": MessageLookupByLibrary.simpleMessage("Agenda"),
+        "clientsTitle": MessageLookupByLibrary.simpleMessage("Elenco Clienti"),
+        "navAgenda": MessageLookupByLibrary.simpleMessage("Agenda"),
+        "navClients": MessageLookupByLibrary.simpleMessage("Clienti"),
+        "navServices": MessageLookupByLibrary.simpleMessage("Servizi"),
+        "navStaff": MessageLookupByLibrary.simpleMessage("Staff"),
+        "servicesTitle": MessageLookupByLibrary.simpleMessage("Elenco Servizi"),
+        "staffTitle": MessageLookupByLibrary.simpleMessage("Elenco Staff")
       };
 }
 --- FILE: lib/core/l10n/intl/messages_en.dart ---
@@ -142,7 +149,14 @@ class MessageLookup extends MessageLookupByLibrary {
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
-        "appTitle": MessageLookupByLibrary.simpleMessage("Agenda Platform")
+        "appTitle": MessageLookupByLibrary.simpleMessage("Agenda Platform"),
+        "clientsTitle": MessageLookupByLibrary.simpleMessage("Clients List"),
+        "navAgenda": MessageLookupByLibrary.simpleMessage("Agenda"),
+        "navClients": MessageLookupByLibrary.simpleMessage("Clients"),
+        "navServices": MessageLookupByLibrary.simpleMessage("Services"),
+        "navStaff": MessageLookupByLibrary.simpleMessage("Staff"),
+        "servicesTitle": MessageLookupByLibrary.simpleMessage("Services List"),
+        "staffTitle": MessageLookupByLibrary.simpleMessage("Staff List")
       };
 }
 --- FILE: lib/core/l10n/l10n.dart ---
@@ -203,6 +217,76 @@ class L10n {
     return Intl.message(
       'Agenda',
       name: 'appTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Agenda`
+  String get navAgenda {
+    return Intl.message(
+      'Agenda',
+      name: 'navAgenda',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clienti`
+  String get navClients {
+    return Intl.message(
+      'Clienti',
+      name: 'navClients',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizi`
+  String get navServices {
+    return Intl.message(
+      'Servizi',
+      name: 'navServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Staff`
+  String get navStaff {
+    return Intl.message(
+      'Staff',
+      name: 'navStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Elenco Clienti`
+  String get clientsTitle {
+    return Intl.message(
+      'Elenco Clienti',
+      name: 'clientsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Elenco Servizi`
+  String get servicesTitle {
+    return Intl.message(
+      'Elenco Servizi',
+      name: 'servicesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Elenco Staff`
+  String get staffTitle {
+    return Intl.message(
+      'Elenco Staff',
+      name: 'staffTitle',
       desc: '',
       args: [],
     );
@@ -422,25 +506,91 @@ class NoScrollbarBehavior extends ScrollBehavior {
   ScrollPhysics getScrollPhysics(BuildContext context) =>
       const ClampingScrollPhysics(); // nessun overscroll o padding aggiuntivo
 }
+--- FILE: lib/core/widgets/layout_config_auto_listener.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// 1. Importa il nuovo provider globale
+import '../../app/providers/form_factor_provider.dart';
+import '../../features/agenda/providers/layout_config_provider.dart';
+
+class LayoutConfigAutoListener extends ConsumerStatefulWidget {
+  final Widget child;
+
+  const LayoutConfigAutoListener({super.key, required this.child});
+  @override
+  ConsumerState<LayoutConfigAutoListener> createState() =>
+      _LayoutConfigAutoListenerState();
+}
+
+class _LayoutConfigAutoListenerState
+    extends ConsumerState<LayoutConfigAutoListener>
+    with WidgetsBindingObserver {
+  Size? _lastSize;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateLayoutConfig();
+    });
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final newSize = MediaQuery.of(context).size;
+      if (_lastSize == null || newSize != _lastSize) {
+        _lastSize = newSize;
+        _updateLayoutConfig();
+      }
+    });
+  }
+
+  void _updateLayoutConfig() {
+    // 2. Aggiorna il provider originale (per l'agenda)
+    ref.read(layoutConfigProvider.notifier).updateFromContext(context);
+
+    // 3. Aggiorna il NUOVO provider globale (per la Shell)
+    final screenWidth = MediaQuery.of(context).size.width;
+    ref.read(formFactorProvider.notifier).update(screenWidth);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
+}
 --- FILE: lib/app/router.dart ---
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+// Importa le nuove schermate
 import '../features/agenda/presentation/agenda_screen.dart';
+import '../features/clients/presentation/clients_screen.dart';
+import '../features/services/presentation/services_screen.dart';
+import '../features/staff/presentation/staff_screen.dart';
+// Importa la nostra "Shell"
+import 'scaffold_with_navigation.dart';
 
-/// 🔹 Router globale dell’app (GoRouter v16+ compatibile)
+// 1. Definiamo una chiave globale per la nostra Shell (necessaria)
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+/// 🔹 Router globale dell’app
 final GoRouter appRouter = GoRouter(
   initialLocation: '/agenda',
-  routes: [
-    GoRoute(
-      path: '/agenda',
-      name: 'agenda',
-      builder: (BuildContext context, GoRouterState state) => AgendaScreen(),
-    ),
-  ],
+  navigatorKey: _rootNavigatorKey,
 
-  // 🔸 Gestione errori: se la route non esiste
+  debugLogDiagnostics: kDebugMode,
+
   errorBuilder: (context, state) => Scaffold(
     appBar: AppBar(title: const Text('Errore')),
     body: Center(
@@ -451,9 +601,304 @@ final GoRouter appRouter = GoRouter(
     ),
   ),
 
-  // 🔸 Debug logging (facoltativo)
-  debugLogDiagnostics: kDebugMode,
+  // 2. Definiamo la nostra navigazione con `StatefulShellRoute`
+  routes: [
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return ScaffoldWithNavigation(navigationShell: navigationShell);
+      },
+
+      branches: [
+        // --- Ramo 0: Agenda ---
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/agenda',
+              name: 'agenda',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const AgendaScreen(),
+            ),
+          ],
+        ),
+
+        // --- Ramo 1: Clienti ---
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/clienti',
+              name: 'clienti',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const ClientsScreen(),
+            ),
+          ],
+        ),
+
+        // --- Ramo 2: Servizi ---
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/servizi',
+              name: 'servizi',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const ServicesScreen(),
+            ),
+          ],
+        ),
+
+        // --- Ramo 3: Staff ---
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/staff',
+              name: 'staff',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const StaffScreen(),
+            ),
+          ],
+        ),
+      ],
+    ),
+  ],
 );
+--- FILE: lib/app/scaffold_with_navigation.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // 1. Importa Riverpod
+import 'package:go_router/go_router.dart';
+
+import '../core/l10n/l10_extension.dart';
+// 2. Importa il nuovo provider globale
+import 'providers/form_factor_provider.dart';
+
+// 3. Trasforma in ConsumerWidget
+class ScaffoldWithNavigation extends ConsumerWidget {
+  const ScaffoldWithNavigation({super.key, required this.navigationShell});
+
+  final StatefulNavigationShell navigationShell;
+
+  // ... (le funzioni helper _getLocalizedTitle e _getDestinations non cambiano) ...
+  // [CODICE HELPER OMESSO PER BREVITÀ]
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 4. Aggiungi WidgetRef
+    final destinations = _getDestinations(context);
+
+    // 5. LEGGI IL PROVIDER GLOBALE!
+    final formFactor = ref.watch(formFactorProvider);
+
+    // 6. Usa il formFactor per decidere il layout
+    if (formFactor == AppFormFactor.tabletOrDesktop) {
+      // 🎯 TARGET WEB/DESKTOP/TABLET: NavigationRail
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            _getLocalizedTitle(context, navigationShell.currentIndex),
+          ),
+          centerTitle: false,
+        ),
+        body: Row(
+          children: [
+            NavigationRail(
+              selectedIndex: navigationShell.currentIndex,
+              onDestinationSelected: (index) => _goBranch(index),
+              labelType: NavigationRailLabelType.all,
+              destinations: destinations
+                  .map(
+                    (d) => NavigationRailDestination(
+                      icon: d.icon,
+                      selectedIcon: d.selectedIcon,
+                      label: Text(d.label),
+                    ),
+                  )
+                  .toList(),
+            ),
+            const VerticalDivider(thickness: 1, width: 1),
+            Expanded(child: navigationShell),
+          ],
+        ),
+      );
+    }
+
+    // 🎯 TARGET MOBILE: BottomNavigationBar
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_getLocalizedTitle(context, navigationShell.currentIndex)),
+      ),
+      body: navigationShell,
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: navigationShell.currentIndex,
+        onTap: (index) => _goBranch(index),
+        type: BottomNavigationBarType.fixed,
+        items: destinations
+            .map(
+              (d) => BottomNavigationBarItem(
+                icon: d.icon,
+                activeIcon: d.selectedIcon,
+                label: d.label,
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  // ... (la funzione _goBranch non cambia) ...
+  void _goBranch(int index) {
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
+  }
+
+  // ... (le funzioni helper omesse prima) ...
+  String _getLocalizedTitle(BuildContext context, int index) {
+    final l10n = context.l10n;
+    switch (index) {
+      case 0:
+        return l10n.navAgenda;
+      case 1:
+        return l10n.navClients;
+      case 2:
+        return l10n.navServices;
+      case 3:
+        return l10n.navStaff;
+      default:
+        return l10n.appTitle;
+    }
+  }
+
+  List<NavigationDestination> _getDestinations(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      NavigationDestination(
+        icon: const Icon(Icons.calendar_month_outlined),
+        selectedIcon: const Icon(Icons.calendar_month),
+        label: l10n.navAgenda,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.people_outline),
+        selectedIcon: const Icon(Icons.people),
+        label: l10n.navClients,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.cut_outlined),
+        selectedIcon: const Icon(Icons.cut),
+        label: l10n.navServices,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.badge_outlined),
+        selectedIcon: const Icon(Icons.badge),
+        label: l10n.navStaff,
+      ),
+    ];
+  }
+}
+
+// Classe helper (invariata)
+class NavigationDestination {
+  const NavigationDestination({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+  });
+  final Widget icon;
+  final Widget selectedIcon;
+  final String label;
+}
+--- FILE: lib/app/providers/form_factor_provider.dart ---
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'form_factor_provider.g.dart';
+
+// Definiamo i due layout che ci interessano
+enum AppFormFactor { mobile, tabletOrDesktop }
+
+@riverpod
+class FormFactorNotifier extends _$FormFactorNotifier {
+  @override
+  AppFormFactor build() {
+    // Il default è mobile, ma verrà aggiornato immediatamente
+    return AppFormFactor.mobile;
+  }
+
+  /// Aggiorna il form factor in base alla larghezza dello schermo.
+  /// Usa lo stesso breakpoint di 600px che usi nel resto dell'app.
+  void update(double screenWidth) {
+    final newFactor = screenWidth >= 600
+        ? AppFormFactor.tabletOrDesktop
+        : AppFormFactor.mobile;
+
+    // Aggiorna lo stato solo se il form factor cambia
+    if (state != newFactor) {
+      state = newFactor;
+    }
+  }
+}
+--- FILE: lib/app/providers/form_factor_provider.g.dart ---
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'form_factor_provider.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+
+@ProviderFor(FormFactorNotifier)
+const formFactorProvider = FormFactorNotifierProvider._();
+
+final class FormFactorNotifierProvider
+    extends $NotifierProvider<FormFactorNotifier, AppFormFactor> {
+  const FormFactorNotifierProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'formFactorProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$formFactorNotifierHash();
+
+  @$internal
+  @override
+  FormFactorNotifier create() => FormFactorNotifier();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AppFormFactor value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AppFormFactor>(value),
+    );
+  }
+}
+
+String _$formFactorNotifierHash() =>
+    r'b424a354337075ba3ba718aa01c971cbf4353de7';
+
+abstract class _$FormFactorNotifier extends $Notifier<AppFormFactor> {
+  AppFormFactor build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<AppFormFactor, AppFormFactor>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AppFormFactor, AppFormFactor>,
+              AppFormFactor,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
 --- FILE: lib/app/theme/theme_provider.dart ---
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -605,6 +1050,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/l10n/l10_extension.dart';
 import '/core/l10n/l10n.dart';
+// 1. Importa il listener dalla sua nuova posizione (se non l'hai già spostato)
+// Assicurati che il percorso sia corretto.
+import '../core/widgets/layout_config_auto_listener.dart';
 import 'router.dart';
 import 'theme/theme.dart';
 import 'theme/theme_provider.dart';
@@ -615,22 +1063,13 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeConfig = ref.watch(themeNotifierProvider);
-
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-
-      // 💬 Titolo localizzato
       title: 'Agenda Platform',
-
-      // 🧭 Navigazione
       routerConfig: appRouter,
-
-      // 🎨 Tema dinamico
       themeMode: ThemeMode.system,
       theme: buildTheme(themeConfig, Brightness.light),
       darkTheme: buildTheme(themeConfig, Brightness.dark),
-
-      // 🌍 Localizzazione
       localizationsDelegates: const [
         L10n.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -638,19 +1077,44 @@ class MyApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: L10n.delegate.supportedLocales,
-
-      // Lingua predefinita (puoi gestirla con Riverpod in futuro)
       locale: const Locale('it'),
 
-      // 👁️ Imposta dinamicamente il titolo della finestra (Web/Desktop)
+      // 2. SPOSTA IL LISTENER QUI
       builder: (context, child) {
         final localizedTitle = context.l10n.appTitle;
         return Title(
           title: localizedTitle,
-          color: Colors.transparent,
-          child: child ?? const SizedBox.shrink(),
+          color: Theme.of(context).scaffoldBackgroundColor,
+          // Questo widget ora aggiornerà i provider globali
+          // prima che qualsiasi schermata venga costruita.
+          child: LayoutConfigAutoListener(
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
+    );
+  }
+}
+--- FILE: lib/features/clients/providers/clients_providers.dart ---
+--- FILE: lib/features/clients/data/clients_api.dart ---
+--- FILE: lib/features/clients/data/clients_repository.dart ---
+--- FILE: lib/features/clients/domain/clients.dart ---
+--- FILE: lib/features/clients/presentation/clients_screen.dart ---
+import 'package:flutter/material.dart';
+
+import '../../../core/l10n/l10_extension.dart'; // 🌍
+
+class ClientsScreen extends StatelessWidget {
+  const ClientsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // ❗️ Niente Scaffold o AppBar
+    return Center(
+      child: Text(
+        context.l10n.clientsTitle, // 🌍
+        style: const TextStyle(fontSize: 24),
+      ),
     );
   }
 }
@@ -1396,67 +1860,6 @@ class LayoutConfig {
     return 48; // Mobile
   }
 }
---- FILE: lib/features/agenda/presentation/screens/widgets/layout_config_auto_listener.dart ---
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../providers/layout_config_provider.dart';
-
-/// Widget che osserva i cambiamenti di dimensione finestra o orientamento
-/// e aggiorna automaticamente il layoutConfigProvider.
-class LayoutConfigAutoListener extends ConsumerStatefulWidget {
-  final Widget child;
-
-  const LayoutConfigAutoListener({super.key, required this.child});
-
-  @override
-  ConsumerState<LayoutConfigAutoListener> createState() =>
-      _LayoutConfigAutoListenerState();
-}
-
-class _LayoutConfigAutoListenerState
-    extends ConsumerState<LayoutConfigAutoListener>
-    with WidgetsBindingObserver {
-  Size? _lastSize;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-
-    // Aggiorno subito la configurazione iniziale
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updateLayoutConfig();
-    });
-  }
-
-  @override
-  void didChangeMetrics() {
-    super.didChangeMetrics();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final newSize = MediaQuery.of(context).size;
-      if (_lastSize == null || newSize != _lastSize) {
-        _lastSize = newSize;
-        _updateLayoutConfig();
-      }
-    });
-  }
-
-  void _updateLayoutConfig() {
-    ref.read(layoutConfigProvider.notifier).updateFromContext(context);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return widget.child;
-  }
-}
 --- FILE: lib/features/agenda/presentation/screens/widgets/current_time_line.dart ---
 import 'dart:async';
 
@@ -1892,9 +2295,7 @@ class HourColumn extends ConsumerWidget {
         final hour = (index ~/ slotsPerHour);
         final minutes = (index % slotsPerHour) * LayoutConfig.minutesPerSlot;
 
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
+        return SizedBox(
           height: slotHeight,
           child: Stack(
             children: [
@@ -2149,12 +2550,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       builder: (context, candidateData, rejectedData) {
         return SizedBox(
           width: widget.columnWidth,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
+          child: Container(
             decoration: BoxDecoration(
               color: _isHighlighted
-                  ? widget.staff.color.withOpacity(0.05)
+                  ? widget.staff.color.withOpacity(0.01)
                   : Colors.transparent,
               border: widget.showRightBorder
                   ? Border(
@@ -2666,7 +3065,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/staff_providers.dart';
 import 'screens/day_view/multi_staff_day_view.dart';
-import 'screens/widgets/layout_config_auto_listener.dart';
 
 class AgendaScreen extends ConsumerWidget {
   const AgendaScreen({super.key});
@@ -2676,14 +3074,9 @@ class AgendaScreen extends ConsumerWidget {
     // ✅ Recupera la lista dello staff dal provider
     final staffList = ref.watch(staffProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Agenda'), centerTitle: true),
-      body: LayoutConfigAutoListener(
-        child: SafeArea(
-          // Passa la lista dello staff alla view
-          child: MultiStaffDayView(staffList: staffList),
-        ),
-      ),
+    return SafeArea(
+      // Passa la lista dello staff alla view
+      child: MultiStaffDayView(staffList: staffList),
     );
   }
 }
@@ -2718,6 +3111,63 @@ export 'presentation/screens/widgets/agenda_dividers.dart';
 // � Application (providers, notifiers, stato)
 // ──────────────────────────────────────────────
 export 'providers/agenda_scroll_provider.dart';
+--- FILE: lib/features/staff/providers/staff_providers.dart ---
+--- FILE: lib/features/staff/data/staff_api.dart ---
+--- FILE: lib/features/staff/data/staff_repository.dart ---
+--- FILE: lib/features/staff/domain/staff.dart ---
+import 'package:flutter/material.dart';
+
+import '../../../core/l10n/l10_extension.dart'; // 🌍
+
+class StaffScreen extends StatelessWidget {
+  const StaffScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        context.l10n.staffTitle, // 🌍
+        style: const TextStyle(fontSize: 24),
+      ),
+    );
+  }
+}
+--- FILE: lib/features/staff/presentation/staff_screen.dart ---
+import 'package:flutter/material.dart';
+
+class StaffScreen extends StatelessWidget {
+  const StaffScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Schermata Staff', style: TextStyle(fontSize: 24)),
+    );
+  }
+}
+--- FILE: lib/features/services/services_feature.dart ---
+--- FILE: lib/features/services/providers/services_providers.dart ---
+--- FILE: lib/features/services/data/services_api.dart ---
+--- FILE: lib/features/services/data/services_repository.dart ---
+--- FILE: lib/features/services/domain/services.dart ---
+--- FILE: lib/features/services/presentation/services_screen.dart ---
+import 'package:flutter/material.dart';
+
+import '../../../core/l10n/l10_extension.dart'; // 🌍
+
+class ServicesScreen extends StatelessWidget {
+  const ServicesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        context.l10n.servicesTitle, // 🌍
+        style: const TextStyle(fontSize: 24),
+      ),
+    );
+  }
+}
 --- FILE: lib/main.dart ---
 import 'package:agenda_frontend/app/app.dart';
 import 'package:flutter/material.dart';

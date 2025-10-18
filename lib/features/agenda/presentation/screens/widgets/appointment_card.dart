@@ -210,6 +210,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
     final double feedbackWidth =
         widget.columnWidth ?? _lastSize?.width ?? 180.0;
+    final double feedbackHeight = _lastSize?.height ?? 50.0;
     final hourW = LayoutConfig.hourColumnWidth;
 
     if (dragPos == null) return const SizedBox.shrink();
@@ -246,6 +247,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           constraints: BoxConstraints(
             minWidth: feedbackWidth - 4,
             maxWidth: feedbackWidth - 4,
+            minHeight: feedbackHeight,
+            maxHeight: feedbackHeight,
           ),
           child: _buildCard(
             isDragging: true,
