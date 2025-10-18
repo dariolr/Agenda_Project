@@ -42,6 +42,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   void initState() {
     super.initState();
 
+    // Ascolta la posizione globale del drag per aggiornare highlight e orario stimato
     _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
@@ -182,8 +183,15 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         if (box == null) return;
 
         final localPosition = box.globalToLocal(details.offset);
+
+        // 🔹 Evita il caso offset 0.0 (rilascio perfettamente sul bordo)
+        double effectiveDy = localPosition.dy;
+        if (effectiveDy <= 0.0) {
+          effectiveDy = 0.1;
+        }
+
         final minutesFromTop =
-            (localPosition.dy / slotHeight) * LayoutConfig.minutesPerSlot;
+            (effectiveDy / slotHeight) * LayoutConfig.minutesPerSlot;
         final roundedMinutes = (minutesFromTop / 5).round() * 5;
 
         final duration = details.data.endTime.difference(

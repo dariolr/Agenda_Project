@@ -9,6 +9,7 @@ import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../widgets/agenda_dividers.dart';
 import '../widgets/current_time_line.dart';
@@ -53,7 +54,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       }
     });
 
-    // Centra la riga rossa all’avvio
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerCurrentTimeLine();
       _setupHorizontalSync();
@@ -69,7 +69,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       _headerHCtrl.jumpTo(bodyCtrl.offset);
     }
 
-    // listener body -> header
     bodyCtrl.addListener(() {
       if (_isSyncing) return;
       if (!_headerHCtrl.hasClients) return;
@@ -78,7 +77,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       _isSyncing = false;
     });
 
-    // listener header -> body
     _headerHCtrl.addListener(() {
       if (_isSyncing) return;
       if (!bodyCtrl.hasClients) return;
@@ -175,68 +173,74 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     final totalContentHeight = LayoutConfig.totalSlots * slotHeight;
     final hourWidth = LayoutConfig.hourColumnWidth;
 
+    // LayerLink condiviso per il body
+    final link = ref.watch(dragLayerLinkProvider);
+
     return Stack(
       children: [
-        // BODY scrollabile (sotto)
+        // BODY scrollabile (sotto) + target per il follower del feedback
         Positioned.fill(
           top: LayoutConfig.headerHeight,
-          child: ScrollConfiguration(
-            behavior: const NoScrollbarBehavior(),
-            child: SingleChildScrollView(
-              controller: scrollState.verticalScrollCtrl,
-              physics: const ClampingScrollPhysics(),
-              child: Stack(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(width: hourWidth, child: const HourColumn()),
-                      AgendaVerticalDivider(
-                        height: totalContentHeight,
-                        thickness: 1,
-                      ),
-                      Expanded(
-                        child: ScrollConfiguration(
-                          behavior: const NoScrollbarBehavior(),
-                          child: SingleChildScrollView(
-                            controller: scrollState.horizontalScrollCtrl,
-                            scrollDirection: Axis.horizontal,
-                            physics: const ClampingScrollPhysics(),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: widget.staffList.asMap().entries.map((
-                                entry,
-                              ) {
-                                final index = entry.key;
-                                final staff = entry.value;
-                                final isLast =
-                                    index == widget.staffList.length - 1;
-                                final staffAppointments = appointments
-                                    .where((a) => a.staffId == staff.id)
-                                    .toList();
+          child: CompositedTransformTarget(
+            link: link,
+            child: ScrollConfiguration(
+              behavior: const NoScrollbarBehavior(),
+              child: SingleChildScrollView(
+                controller: scrollState.verticalScrollCtrl,
+                physics: const ClampingScrollPhysics(),
+                child: Stack(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: hourWidth, child: const HourColumn()),
+                        AgendaVerticalDivider(
+                          height: totalContentHeight,
+                          thickness: 1,
+                        ),
+                        Expanded(
+                          child: ScrollConfiguration(
+                            behavior: const NoScrollbarBehavior(),
+                            child: SingleChildScrollView(
+                              controller: scrollState.horizontalScrollCtrl,
+                              scrollDirection: Axis.horizontal,
+                              physics: const ClampingScrollPhysics(),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: widget.staffList.asMap().entries.map((
+                                  entry,
+                                ) {
+                                  final index = entry.key;
+                                  final staff = entry.value;
+                                  final isLast =
+                                      index == widget.staffList.length - 1;
+                                  final staffAppointments = appointments
+                                      .where((a) => a.staffId == staff.id)
+                                      .toList();
 
-                                return StaffColumn(
-                                  staff: staff,
-                                  appointments: staffAppointments,
-                                  columnWidth: layout.columnWidth,
-                                  showRightBorder:
-                                      widget.staffList.length > 1 && !isLast,
-                                );
-                              }).toList(),
+                                  return StaffColumn(
+                                    staff: staff,
+                                    appointments: staffAppointments,
+                                    columnWidth: layout.columnWidth,
+                                    showRightBorder:
+                                        widget.staffList.length > 1 && !isLast,
+                                  );
+                                }).toList(),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  CurrentTimeLine(hourColumnWidth: hourWidth),
-                ],
+                      ],
+                    ),
+                    CurrentTimeLine(hourColumnWidth: hourWidth),
+                  ],
+                ),
               ),
             ),
           ),
         ),
 
-        // HEADER (sopra con ombra reale)
+        // HEADER (sopra)
         Positioned(
           top: 0,
           left: 0,

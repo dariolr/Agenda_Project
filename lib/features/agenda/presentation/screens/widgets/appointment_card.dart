@@ -5,6 +5,7 @@ import '/../../../core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
+import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
@@ -13,7 +14,7 @@ class AppointmentCard extends ConsumerStatefulWidget {
   final Appointment appointment;
   final Color color;
   final double? columnWidth;
-  final bool expandToLeft; // ✅ nuova proprietà
+  final bool expandToLeft;
 
   const AppointmentCard({
     super.key,
@@ -54,10 +55,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           child: LongPressDraggable<Appointment>(
             data: widget.appointment,
             feedback: Consumer(
-              builder: (context, ref, _) => Transform.scale(
-                scale: 1.0,
-                child: _buildFeedback(context, ref),
-              ),
+              builder: (context, ref, _) =>
+                  _buildFollowerFeedback(context, ref),
             ),
             feedbackOffset: Offset.zero,
             dragAnchorStrategy: childDragAnchorStrategy,
@@ -104,7 +103,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
 
     final client = widget.appointment.clientName;
-
     final servicesText = widget.appointment.formattedServices;
     final priceText = widget.appointment.formattedPrice;
     String infoLine = servicesText;
@@ -201,29 +199,45 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Feedback (card mobile con blocco al bordo sinistro)
-  Widget _buildFeedback(BuildContext context, WidgetRef ref) {
+  Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
     final liveStart = times?.$1;
     final liveEnd = times?.$2;
 
-    final double feedbackWidth = widget.columnWidth ?? _lastSize?.width ?? 180;
-
-    // 🔹 Direzione di espansione orizzontale
-    double shift = widget.expandToLeft ? -feedbackWidth / 2 : 0;
-
-    // 🧠 Blocca la card quando tocca la colonna orari
     final dragPos = ref.watch(dragPositionProvider);
+    final dragOffsetY = ref.watch(dragOffsetProvider) ?? 0.0;
     final dragOffsetX = ref.watch(dragOffsetXProvider) ?? 0.0;
-    if (dragPos != null) {
-      final leftEdgeX = dragPos.dx - dragOffsetX + shift;
-      if (leftEdgeX < LayoutConfig.hourColumnWidth) {
-        shift += LayoutConfig.hourColumnWidth - leftEdgeX;
-      }
-    }
+    final link = ref.watch(dragLayerLinkProvider);
 
-    return Transform.translate(
-      offset: Offset(shift, 0),
+    final double feedbackWidth =
+        widget.columnWidth ?? _lastSize?.width ?? 180.0;
+    final hourW = LayoutConfig.hourColumnWidth;
+
+    if (dragPos == null) return const SizedBox.shrink();
+
+    final overlayBox =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (overlayBox == null) return const SizedBox.shrink();
+
+    final bodyOriginGlobal = (link.leader != null && link.leader!.attached)
+        ? link.leader!.offset
+        : Offset.zero;
+
+    final rel = dragPos - bodyOriginGlobal;
+
+    double left = rel.dx - dragOffsetX;
+    double top = rel.dy - dragOffsetY;
+
+    if (widget.expandToLeft) {
+      left -= (feedbackWidth / 2);
+    }
+    if (left < hourW) left = hourW;
+    if (top < 0) top = 0;
+
+    return CompositedTransformFollower(
+      link: link,
+      showWhenUnlinked: false,
+      offset: Offset(left, top),
       child: Material(
         color: Colors.transparent,
         borderRadius: const BorderRadius.all(Radius.circular(6)),
