@@ -1,3 +1,240 @@
+--- FILE: lib/core/l10n/l10_extension.dart ---
+import 'package:flutter/widgets.dart';
+
+import 'l10n.dart';
+
+/// 🔤 Estensione per accedere facilmente alle stringhe localizzate.
+///
+/// Permette di scrivere:
+/// ```dart
+/// Text(context.l10n.welcomeMessage)
+/// ```
+/// invece di:
+/// ```dart
+/// Text(L10n.of(context).welcomeMessage)
+/// ```
+///
+/// ✅ Compatibile con aggiornamenti runtime della lingua.
+/// ✅ Evita dipendenze da `L10n.current` statico.
+/// ✅ Standard consigliato per progetti Flutter internazionalizzati.
+extension L10nX on BuildContext {
+  /// Restituisce l'istanza corrente di [L10n] per questo [BuildContext].
+  L10n get l10n => L10n.of(this);
+}
+--- FILE: lib/core/l10n/intl/messages_all.dart ---
+// DO NOT EDIT. This is code generated via package:intl/generate_localized.dart
+// This is a library that looks up messages for specific locales by
+// delegating to the appropriate library.
+
+// Ignore issues from commonly used lints in this file.
+// ignore_for_file:implementation_imports, file_names, unnecessary_new
+// ignore_for_file:unnecessary_brace_in_string_interps, directives_ordering
+// ignore_for_file:argument_type_not_assignable, invalid_assignment
+// ignore_for_file:prefer_single_quotes, prefer_generic_function_type_aliases
+// ignore_for_file:comment_references
+
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/message_lookup_by_library.dart';
+import 'package:intl/src/intl_helpers.dart';
+
+import 'messages_en.dart' as messages_en;
+import 'messages_it.dart' as messages_it;
+
+typedef Future<dynamic> LibraryLoader();
+Map<String, LibraryLoader> _deferredLibraries = {
+  'en': () => new SynchronousFuture(null),
+  'it': () => new SynchronousFuture(null),
+};
+
+MessageLookupByLibrary? _findExact(String localeName) {
+  switch (localeName) {
+    case 'en':
+      return messages_en.messages;
+    case 'it':
+      return messages_it.messages;
+    default:
+      return null;
+  }
+}
+
+/// User programs should call this before using [localeName] for messages.
+Future<bool> initializeMessages(String localeName) {
+  var availableLocale = Intl.verifiedLocale(
+      localeName, (locale) => _deferredLibraries[locale] != null,
+      onFailure: (_) => null);
+  if (availableLocale == null) {
+    return new SynchronousFuture(false);
+  }
+  var lib = _deferredLibraries[availableLocale];
+  lib == null ? new SynchronousFuture(false) : lib();
+  initializeInternalMessageLookup(() => new CompositeMessageLookup());
+  messageLookup.addLocale(availableLocale, _findGeneratedMessagesFor);
+  return new SynchronousFuture(true);
+}
+
+bool _messagesExistFor(String locale) {
+  try {
+    return _findExact(locale) != null;
+  } catch (e) {
+    return false;
+  }
+}
+
+MessageLookupByLibrary? _findGeneratedMessagesFor(String locale) {
+  var actualLocale =
+      Intl.verifiedLocale(locale, _messagesExistFor, onFailure: (_) => null);
+  if (actualLocale == null) return null;
+  return _findExact(actualLocale);
+}
+--- FILE: lib/core/l10n/intl/messages_it.dart ---
+// DO NOT EDIT. This is code generated via package:intl/generate_localized.dart
+// This is a library that provides messages for a it locale. All the
+// messages from the main program should be duplicated here with the same
+// function name.
+
+// Ignore issues from commonly used lints in this file.
+// ignore_for_file:unnecessary_brace_in_string_interps, unnecessary_new
+// ignore_for_file:prefer_single_quotes,comment_references, directives_ordering
+// ignore_for_file:annotate_overrides,prefer_generic_function_type_aliases
+// ignore_for_file:unused_import, file_names, avoid_escaping_inner_quotes
+// ignore_for_file:unnecessary_string_interpolations, unnecessary_string_escapes
+
+import 'package:intl/intl.dart';
+import 'package:intl/message_lookup_by_library.dart';
+
+final messages = new MessageLookup();
+
+typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
+
+class MessageLookup extends MessageLookupByLibrary {
+  String get localeName => 'it';
+
+  final messages = _notInlinedMessages(_notInlinedMessages);
+  static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+        "appTitle": MessageLookupByLibrary.simpleMessage("Agenda")
+      };
+}
+--- FILE: lib/core/l10n/intl/messages_en.dart ---
+// DO NOT EDIT. This is code generated via package:intl/generate_localized.dart
+// This is a library that provides messages for a en locale. All the
+// messages from the main program should be duplicated here with the same
+// function name.
+
+// Ignore issues from commonly used lints in this file.
+// ignore_for_file:unnecessary_brace_in_string_interps, unnecessary_new
+// ignore_for_file:prefer_single_quotes,comment_references, directives_ordering
+// ignore_for_file:annotate_overrides,prefer_generic_function_type_aliases
+// ignore_for_file:unused_import, file_names, avoid_escaping_inner_quotes
+// ignore_for_file:unnecessary_string_interpolations, unnecessary_string_escapes
+
+import 'package:intl/intl.dart';
+import 'package:intl/message_lookup_by_library.dart';
+
+final messages = new MessageLookup();
+
+typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
+
+class MessageLookup extends MessageLookupByLibrary {
+  String get localeName => 'en';
+
+  final messages = _notInlinedMessages(_notInlinedMessages);
+  static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+        "appTitle": MessageLookupByLibrary.simpleMessage("Agenda Platform")
+      };
+}
+--- FILE: lib/core/l10n/l10n.dart ---
+// GENERATED CODE - DO NOT MODIFY BY HAND
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'intl/messages_all.dart';
+
+// **************************************************************************
+// Generator: Flutter Intl IDE plugin
+// Made by Localizely
+// **************************************************************************
+
+// ignore_for_file: non_constant_identifier_names, lines_longer_than_80_chars
+// ignore_for_file: join_return_with_assignment, prefer_final_in_for_each
+// ignore_for_file: avoid_redundant_argument_values, avoid_escaping_inner_quotes
+
+class L10n {
+  L10n();
+
+  static L10n? _current;
+
+  static L10n get current {
+    assert(_current != null,
+        'No instance of L10n was loaded. Try to initialize the L10n delegate before accessing L10n.current.');
+    return _current!;
+  }
+
+  static const AppLocalizationDelegate delegate = AppLocalizationDelegate();
+
+  static Future<L10n> load(Locale locale) {
+    final name = (locale.countryCode?.isEmpty ?? false)
+        ? locale.languageCode
+        : locale.toString();
+    final localeName = Intl.canonicalizedLocale(name);
+    return initializeMessages(localeName).then((_) {
+      Intl.defaultLocale = localeName;
+      final instance = L10n();
+      L10n._current = instance;
+
+      return instance;
+    });
+  }
+
+  static L10n of(BuildContext context) {
+    final instance = L10n.maybeOf(context);
+    assert(instance != null,
+        'No instance of L10n present in the widget tree. Did you add L10n.delegate in localizationsDelegates?');
+    return instance!;
+  }
+
+  static L10n? maybeOf(BuildContext context) {
+    return Localizations.of<L10n>(context, L10n);
+  }
+
+  /// `Agenda`
+  String get appTitle {
+    return Intl.message(
+      'Agenda',
+      name: 'appTitle',
+      desc: '',
+      args: [],
+    );
+  }
+}
+
+class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {
+  const AppLocalizationDelegate();
+
+  List<Locale> get supportedLocales {
+    return const <Locale>[
+      Locale.fromSubtags(languageCode: 'it'),
+      Locale.fromSubtags(languageCode: 'en'),
+    ];
+  }
+
+  @override
+  bool isSupported(Locale locale) => _isSupported(locale);
+  @override
+  Future<L10n> load(Locale locale) => L10n.load(locale);
+  @override
+  bool shouldReload(AppLocalizationDelegate old) => false;
+
+  bool _isSupported(Locale locale) {
+    for (var supportedLocale in supportedLocales) {
+      if (supportedLocale.languageCode == locale.languageCode) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
 --- FILE: lib/core/network/api_client.dart ---
 --- FILE: lib/core/utils/color_utils.dart ---
 import 'package:flutter/material.dart';
@@ -363,8 +600,11 @@ ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
 }
 --- FILE: lib/app/app.dart ---
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '/core/l10n/l10_extension.dart';
+import '/core/l10n/l10n.dart';
 import 'router.dart';
 import 'theme/theme.dart';
 import 'theme/theme_provider.dart';
@@ -378,11 +618,39 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
+
+      // 💬 Titolo localizzato
       title: 'Agenda Platform',
+
+      // 🧭 Navigazione
+      routerConfig: appRouter,
+
+      // 🎨 Tema dinamico
       themeMode: ThemeMode.system,
       theme: buildTheme(themeConfig, Brightness.light),
-      darkTheme: buildTheme(themeConfig, Brightness.light),
-      routerConfig: appRouter,
+      darkTheme: buildTheme(themeConfig, Brightness.dark),
+
+      // 🌍 Localizzazione
+      localizationsDelegates: const [
+        L10n.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: L10n.delegate.supportedLocales,
+
+      // Lingua predefinita (puoi gestirla con Riverpod in futuro)
+      locale: const Locale('it'),
+
+      // 👁️ Imposta dinamicamente il titolo della finestra (Web/Desktop)
+      builder: (context, child) {
+        final localizedTitle = context.l10n.appTitle;
+        return Title(
+          title: localizedTitle,
+          color: Colors.transparent,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

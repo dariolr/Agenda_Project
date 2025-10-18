@@ -46,7 +46,7 @@ class MyApp extends ConsumerWidget {
         final localizedTitle = context.l10n.appTitle;
         return Title(
           title: localizedTitle,
-          color: Colors.transparent,
+          color: Colors.white,
           child: child ?? const SizedBox.shrink(),
         );
       },
