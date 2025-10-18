@@ -11,7 +11,7 @@ export 'domain/config/agenda_theme.dart'; // se aggiungi un tema centralizzato
 // ──────────────────────────────────────────────
 export 'domain/config/layout_config.dart';
 // Schermata di agenda (entry screen)
-export 'presentation//agenda_screen.dart';
+export 'presentation/agenda_screen.dart';
 export 'presentation/screens/day_view/hour_column.dart';
 // Vista principale (giornaliera multi-staff)
 export 'presentation/screens/day_view/multi_staff_day_view.dart';

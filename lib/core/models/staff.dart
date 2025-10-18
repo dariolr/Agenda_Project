@@ -12,7 +12,7 @@ class Staff {
   factory Staff.fromJson(Map<String, dynamic> json) => Staff(
     id: json['id'],
     name: json['name'],
-    color: json['color_hex'] == null
+    color: json['color_hex'] != null
         ? ColorUtils.fromHex(json['color_hex'])
         : ColorUtils.fromHex('#FFD700'),
   );
