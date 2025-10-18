@@ -225,12 +225,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       builder: (context, candidateData, rejectedData) {
         return SizedBox(
           width: widget.columnWidth,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
+          child: Container(
             decoration: BoxDecoration(
               color: _isHighlighted
-                  ? widget.staff.color.withOpacity(0.05)
+                  ? widget.staff.color.withOpacity(0.01)
                   : Colors.transparent,
               border: widget.showRightBorder
                   ? Border(

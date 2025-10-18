@@ -59,6 +59,76 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Agenda`
+  String get navAgenda {
+    return Intl.message(
+      'Agenda',
+      name: 'navAgenda',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clienti`
+  String get navClients {
+    return Intl.message(
+      'Clienti',
+      name: 'navClients',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizi`
+  String get navServices {
+    return Intl.message(
+      'Servizi',
+      name: 'navServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Staff`
+  String get navStaff {
+    return Intl.message(
+      'Staff',
+      name: 'navStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Elenco Clienti`
+  String get clientsTitle {
+    return Intl.message(
+      'Elenco Clienti',
+      name: 'clientsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Elenco Servizi`
+  String get servicesTitle {
+    return Intl.message(
+      'Elenco Servizi',
+      name: 'servicesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Elenco Staff`
+  String get staffTitle {
+    return Intl.message(
+      'Elenco Staff',
+      name: 'staffTitle',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

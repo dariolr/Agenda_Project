@@ -1,4 +1,12 @@
 {
   "@@locale": "it",
-  "appTitle": "Agenda"
+  "appTitle": "Agenda",
+  "navAgenda": "Agenda",
+  "navClients": "Clienti",
+  "navServices": "Servizi",
+  "navStaff": "Staff",
+  "clientsTitle": "Elenco Clienti",
+  "servicesTitle": "Elenco Servizi",
+  "staffTitle": "Elenco Staff"
+
 }

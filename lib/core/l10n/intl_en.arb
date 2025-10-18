@@ -1,4 +1,11 @@
 {
   "@@locale": "en",
-  "appTitle": "Agenda Platform"
+  "appTitle": "Agenda Platform",
+  "navAgenda": "Agenda",
+  "navClients": "Clients",
+  "navServices": "Services",
+  "navStaff": "Staff",
+  "clientsTitle": "Clients List",
+  "servicesTitle": "Services List",
+  "staffTitle": "Staff List"  
 }

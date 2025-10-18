@@ -22,9 +22,7 @@ class HourColumn extends ConsumerWidget {
         final hour = (index ~/ slotsPerHour);
         final minutes = (index % slotsPerHour) * LayoutConfig.minutesPerSlot;
 
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
+        return SizedBox(
           height: slotHeight,
           child: Stack(
             children: [
