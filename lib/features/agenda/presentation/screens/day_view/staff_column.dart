@@ -143,7 +143,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         children: List.generate(totalSlots, (index) {
           final slotsPerHour = 60 ~/ LayoutConfig.minutesPerSlot;
           final isHourStart = (index + 1) % slotsPerHour == 0;
-          final isMainLine = (index + 1) % slotsPerHour == 0;
           return SizedBox(
             height: slotHeight,
             child: Align(

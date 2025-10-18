@@ -276,46 +276,87 @@ import 'package:flutter/material.dart';
 
 import 'theme_config.dart';
 
+/// 🔹 Tema chiaro con sfondo bianco e testi neri
 ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: config.seedColor,
-    brightness: brightness,
+  // Palette chiara, fissa (non dipende dal seed)
+  const colorScheme = ColorScheme.light(
+    primary: Colors.black,
+    onPrimary: Colors.white,
+    secondary: Colors.grey,
+    onSecondary: Colors.white,
+    background: Colors.white,
+    onBackground: Colors.black,
+    surface: Colors.white,
+    onSurface: Colors.black,
   );
 
   return ThemeData(
     useMaterial3: true,
+    brightness: Brightness.light,
     colorScheme: colorScheme,
-    brightness: brightness,
 
-    // Sfondo principale
-    scaffoldBackgroundColor: colorScheme.surface,
+    // ✅ Sfondo bianco
+    scaffoldBackgroundColor: Colors.white,
+    canvasColor: Colors.white,
 
-    // AppBar coerente con il tema
-    appBarTheme: AppBarTheme(
-      backgroundColor: colorScheme.surface,
-      foregroundColor: colorScheme.onSurface,
+    // ✅ AppBar bianca, testo nero
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
       centerTitle: true,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
+      iconTheme: IconThemeData(color: Colors.black),
+      titleTextStyle: TextStyle(
+        color: Colors.black,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
     ),
 
-    // Pulsante flottante coerente
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: colorScheme.primary,
-      foregroundColor: colorScheme.onPrimary,
-    ),
-
-    // Stile card aggiornato per Material 3
+    // ✅ Card bianche con bordo grigio leggero (usa CardThemeData!)
     cardTheme: CardThemeData(
-      color: colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       margin: const EdgeInsets.all(8),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: Colors.grey.shade300, width: 0.5),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+      ),
     ),
 
-    // Tipografia coerente
+    // ✅ Testi neri
     textTheme: const TextTheme(
-      bodyMedium: TextStyle(fontSize: 14),
-      titleMedium: TextStyle(fontWeight: FontWeight.w600),
+      bodyLarge: TextStyle(color: Colors.black),
+      bodyMedium: TextStyle(color: Colors.black, fontSize: 14),
+      bodySmall: TextStyle(color: Colors.black87, fontSize: 12),
+      titleMedium: TextStyle(
+        color: Colors.black,
+        fontWeight: FontWeight.w600,
+        fontSize: 16,
+      ),
+      labelLarge: TextStyle(color: Colors.black),
+    ),
+
+    // ✅ Icone e divider coerenti
+    iconTheme: const IconThemeData(color: Colors.black),
+    dividerColor: Colors.grey,
+
+    // ✅ Pulsanti coerenti
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8), // BorderRadiusGeometry ok
+        ),
+      ),
     ),
   );
 }
@@ -1029,7 +1070,7 @@ class LayoutConfig {
   // ⏱️ CONFIGURAZIONE SLOT TEMPORALI
   // ──────────────────────────────────────────────
 
-  static const int minutesPerSlot = 30;
+  static const int minutesPerSlot = 15;
 
   static double _slotHeight = 30;
 
@@ -1266,9 +1307,7 @@ class AgendaVerticalDivider extends StatelessWidget {
     return SizedBox(
       height: height,
       width: thickness,
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.4)),
-      ),
+      child: DecoratedBox(decoration: BoxDecoration(color: color)),
     );
   }
 }
@@ -1295,6 +1334,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/../../../core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
+import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
@@ -1334,8 +1374,10 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
         return Listener(
           onPointerDown: (event) {
-            final local = event.localPosition.dy;
-            ref.read(dragOffsetProvider.notifier).set(local);
+            final localY = event.localPosition.dy;
+            final localX = event.localPosition.dx;
+            ref.read(dragOffsetProvider.notifier).set(localY);
+            ref.read(dragOffsetXProvider.notifier).set(localX);
             ref
                 .read(draggedAppointmentIdProvider.notifier)
                 .set(widget.appointment.id);
@@ -1369,6 +1411,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
   void _handleDragEnd(WidgetRef ref) {
     ref.read(draggedAppointmentIdProvider.notifier).clear();
     ref.read(dragOffsetProvider.notifier).clear();
+    ref.read(dragOffsetXProvider.notifier).clear();
     ref.read(dragPositionProvider.notifier).clear();
     ref.read(tempDragTimeProvider.notifier).clear();
   }
@@ -1418,8 +1461,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                       ? Colors.black87
                       : Colors.grey,
                   fontWeight: (isDragging || forFeedback)
-                      ? FontWeight
-                            .w700 // ✅ grassetto se in movimento
+                      ? FontWeight.w700
                       : FontWeight.w500,
                 ),
               ),
@@ -1490,7 +1532,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Feedback (card mobile con direzione di espansione dinamica)
+  /// 🔹 Feedback (card mobile con blocco al bordo sinistro)
   Widget _buildFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
     final liveStart = times?.$1;
@@ -1498,12 +1540,21 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
     final double feedbackWidth = widget.columnWidth ?? _lastSize?.width ?? 180;
 
-    // 🔹 Se deve espandersi a sinistra → sposta la card di mezza colonna verso sinistra
-    // 🔹 Altrimenti (espansione verso destra) → nessuna traslazione
-    final double shift = widget.expandToLeft ? -feedbackWidth / 2 : 0;
+    // 🔹 Direzione di espansione orizzontale
+    double shift = widget.expandToLeft ? -feedbackWidth / 2 : 0;
+
+    // 🧠 Blocca la card quando tocca la colonna orari
+    final dragPos = ref.watch(dragPositionProvider);
+    final dragOffsetX = ref.watch(dragOffsetXProvider) ?? 0.0;
+    if (dragPos != null) {
+      final leftEdgeX = dragPos.dx - dragOffsetX + shift;
+      if (leftEdgeX < LayoutConfig.hourColumnWidth) {
+        shift += LayoutConfig.hourColumnWidth - leftEdgeX;
+      }
+    }
 
     return Transform.translate(
-      offset: Offset(shift, 0), // ✅ sposta la card nella direzione giusta
+      offset: Offset(shift, 0),
       child: Material(
         color: Colors.transparent,
         borderRadius: const BorderRadius.all(Radius.circular(6)),
@@ -1545,6 +1596,7 @@ class HourColumn extends ConsumerWidget {
     return Column(
       children: List.generate(totalSlots, (index) {
         final isHourStart = index % slotsPerHour == 0;
+        final isMainLine = (index + 1) % slotsPerHour == 0;
         final hour = (index ~/ slotsPerHour);
         final minutes = (index % slotsPerHour) * LayoutConfig.minutesPerSlot;
 
@@ -1566,8 +1618,8 @@ class HourColumn extends ConsumerWidget {
               Align(
                 alignment: Alignment.bottomLeft,
                 child: AgendaHorizontalDivider(
-                  color: Colors.grey.withOpacity(isHourStart ? 0.2 : 0.5),
-                  thickness: isHourStart ? 0.5 : 1,
+                  color: Colors.grey.withOpacity(isMainLine ? 0.5 : 0.2),
+                  thickness: isMainLine ? 1 : 0.5,
                 ),
               ),
             ],
@@ -1722,14 +1774,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       Column(
         children: List.generate(totalSlots, (index) {
           final slotsPerHour = 60 ~/ LayoutConfig.minutesPerSlot;
-          final isHourStart = index % slotsPerHour == 0;
+          final isHourStart = (index + 1) % slotsPerHour == 0;
           return SizedBox(
             height: slotHeight,
             child: Align(
               alignment: Alignment.bottomLeft,
               child: AgendaHorizontalDivider(
-                color: Colors.grey.withOpacity(isHourStart ? 0.2 : 0.5),
-                thickness: isHourStart ? 0.5 : 1,
+                color: Colors.grey.withOpacity(isHourStart ? 0.5 : 0.2),
+                thickness: isHourStart ? 1 : 0.5,
               ),
             ),
           );
@@ -1797,7 +1849,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               border: widget.showRightBorder
                   ? Border(
                       right: BorderSide(
-                        color: Colors.grey.withOpacity(0.25),
+                        color: Colors.grey.withOpacity(0.5),
                         width: 0.5,
                       ),
                     )
@@ -1970,7 +2022,6 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
 
 class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   Timer? _autoScrollTimer;
-  Timer? _centerTimer;
   late final ProviderSubscription<Offset?> _dragSub;
 
   final ScrollController _headerHCtrl = ScrollController();
@@ -2000,11 +2051,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerCurrentTimeLine();
       _setupHorizontalSync();
-    });
-
-    // Riesegui il centramento ogni 5 minuti
-    _centerTimer = Timer.periodic(const Duration(minutes: 5), (_) {
-      _centerCurrentTimeLine();
     });
   }
 
@@ -2106,7 +2152,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   void dispose() {
     _dragSub.close();
     _stopAutoScroll();
-    _centerTimer?.cancel();
     _headerHCtrl.dispose();
     super.dispose();
   }
@@ -2140,7 +2185,10 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(width: hourWidth, child: const HourColumn()),
-                      AgendaVerticalDivider(height: totalContentHeight),
+                      AgendaVerticalDivider(
+                        height: totalContentHeight,
+                        thickness: 1,
+                      ),
                       Expanded(
                         child: ScrollConfiguration(
                           behavior: const NoScrollbarBehavior(),
