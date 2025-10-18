@@ -953,6 +953,15 @@ final tempDragTimeProvider =
     NotifierProvider<TempDragTimeNotifier, (DateTime, DateTime)?>(
       TempDragTimeNotifier.new,
     );
+--- FILE: lib/features/agenda/providers/drag_layer_link_provider.dart ---
+// lib/features/agenda/providers/drag_layer_link_provider.dart
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// LayerLink condiviso per ancorare il feedback del drag al body (sotto l'header)
+final dragLayerLinkProvider = Provider<LayerLink>((ref) {
+  return LayerLink();
+});
 --- FILE: lib/features/agenda/domain/config/agenda_theme.dart ---
 import 'package:flutter/material.dart';
 
@@ -1336,6 +1345,7 @@ import '/../../../core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
+import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
@@ -1344,7 +1354,7 @@ class AppointmentCard extends ConsumerStatefulWidget {
   final Appointment appointment;
   final Color color;
   final double? columnWidth;
-  final bool expandToLeft; // ✅ nuova proprietà
+  final bool expandToLeft;
 
   const AppointmentCard({
     super.key,
@@ -1374,10 +1384,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
         return Listener(
           onPointerDown: (event) {
-            final localY = event.localPosition.dy;
-            final localX = event.localPosition.dx;
-            ref.read(dragOffsetProvider.notifier).set(localY);
-            ref.read(dragOffsetXProvider.notifier).set(localX);
+            ref.read(dragOffsetProvider.notifier).set(event.localPosition.dy);
+            ref.read(dragOffsetXProvider.notifier).set(event.localPosition.dx);
             ref
                 .read(draggedAppointmentIdProvider.notifier)
                 .set(widget.appointment.id);
@@ -1385,10 +1393,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           child: LongPressDraggable<Appointment>(
             data: widget.appointment,
             feedback: Consumer(
-              builder: (context, ref, _) => Transform.scale(
-                scale: 1.0,
-                child: _buildFeedback(context, ref),
-              ),
+              builder: (context, ref, _) =>
+                  _buildFollowerFeedback(context, ref),
             ),
             feedbackOffset: Offset.zero,
             dragAnchorStrategy: childDragAnchorStrategy,
@@ -1435,7 +1441,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
 
     final client = widget.appointment.clientName;
-
     final servicesText = widget.appointment.formattedServices;
     final priceText = widget.appointment.formattedPrice;
     String infoLine = servicesText;
@@ -1532,29 +1537,47 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 🔹 Feedback (card mobile con blocco al bordo sinistro)
-  Widget _buildFeedback(BuildContext context, WidgetRef ref) {
+  /// Feedback mobile ancorato al body (sotto l'header)
+  Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
     final liveStart = times?.$1;
     final liveEnd = times?.$2;
 
-    final double feedbackWidth = widget.columnWidth ?? _lastSize?.width ?? 180;
-
-    // 🔹 Direzione di espansione orizzontale
-    double shift = widget.expandToLeft ? -feedbackWidth / 2 : 0;
-
-    // 🧠 Blocca la card quando tocca la colonna orari
     final dragPos = ref.watch(dragPositionProvider);
+    final dragOffsetY = ref.watch(dragOffsetProvider) ?? 0.0;
     final dragOffsetX = ref.watch(dragOffsetXProvider) ?? 0.0;
-    if (dragPos != null) {
-      final leftEdgeX = dragPos.dx - dragOffsetX + shift;
-      if (leftEdgeX < LayoutConfig.hourColumnWidth) {
-        shift += LayoutConfig.hourColumnWidth - leftEdgeX;
-      }
-    }
+    final link = ref.watch(dragLayerLinkProvider);
 
-    return Transform.translate(
-      offset: Offset(shift, 0),
+    final double feedbackWidth =
+        widget.columnWidth ?? _lastSize?.width ?? 180.0;
+    final hourW = LayoutConfig.hourColumnWidth;
+
+    if (dragPos == null) return const SizedBox.shrink();
+
+    final overlayBox =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (overlayBox == null) return const SizedBox.shrink();
+
+    final bodyOriginGlobal = (link.leader != null && link.leader!.attached)
+        ? link.leader!.offset
+        : Offset.zero;
+
+    final rel = dragPos - bodyOriginGlobal;
+
+    double left = rel.dx - dragOffsetX;
+    double top = rel.dy - dragOffsetY;
+
+    // blocco orizzontale e verticale
+    if (widget.expandToLeft) {
+      left -= (feedbackWidth / 2);
+    }
+    if (left < hourW) left = hourW;
+    if (top < 0) top = 0;
+
+    return CompositedTransformFollower(
+      link: link,
+      showWhenUnlinked: false,
+      offset: Offset(left, top),
       child: Material(
         color: Colors.transparent,
         borderRadius: const BorderRadius.all(Radius.circular(6)),
@@ -1679,6 +1702,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       next,
     ) {
       if (!mounted) return;
+
       final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
       final tempTimeNotifier = ref.read(tempDragTimeProvider.notifier);
       final dragOffset = ref.read(dragOffsetProvider);
@@ -1741,6 +1765,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         tempTimeNotifier.setTimes(start, end);
       } else if (_isHighlighted) {
+        // 🔹 Non cancellare subito lo stato se il cursore è appena sopra l'header
+        final globalY = next.dy;
+        final headerHeight = LayoutConfig.headerHeight;
+
+        // Tolleranza di 5px sopra l'header: manteniamo highlight e orario
+        if (globalY > headerHeight - 5) {
+          return;
+        }
+
+        // 🔻 Fuori completamente: reset normale
         setState(() {
           _isHighlighted = false;
           _hoverY = null;
@@ -1814,8 +1848,15 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         if (box == null) return;
 
         final localPosition = box.globalToLocal(details.offset);
+
+        // 🔹 Evita il caso offset 0.0 (rilascio perfettamente sul bordo)
+        double effectiveDy = localPosition.dy;
+        if (effectiveDy <= 0.0) {
+          effectiveDy = 0.1;
+        }
+
         final minutesFromTop =
-            (localPosition.dy / slotHeight) * LayoutConfig.minutesPerSlot;
+            (effectiveDy / slotHeight) * LayoutConfig.minutesPerSlot;
         final roundedMinutes = (minutesFromTop / 5).round() * 5;
 
         final duration = details.data.endTime.difference(
@@ -1922,7 +1963,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                 appointment: a,
                 color: widget.staff.color,
                 columnWidth: widget.columnWidth,
-                expandToLeft: i > 0, // ✅ destra → espansione verso sinistra
+                expandToLeft: i > 0,
               ),
             ),
           ),
@@ -2003,6 +2044,7 @@ import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../widgets/agenda_dividers.dart';
 import '../widgets/current_time_line.dart';
@@ -2035,7 +2077,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   void initState() {
     super.initState();
 
-    // Auto-scroll verticale durante il drag
+    // Ascolta inizio/fine drag per attivare auto-scroll verticale
     _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
@@ -2047,7 +2089,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       }
     });
 
-    // Centra la riga rossa all’avvio
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerCurrentTimeLine();
       _setupHorizontalSync();
@@ -2063,7 +2104,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       _headerHCtrl.jumpTo(bodyCtrl.offset);
     }
 
-    // listener body -> header
     bodyCtrl.addListener(() {
       if (_isSyncing) return;
       if (!_headerHCtrl.hasClients) return;
@@ -2072,7 +2112,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       _isSyncing = false;
     });
 
-    // listener header -> body
     _headerHCtrl.addListener(() {
       if (_isSyncing) return;
       if (!bodyCtrl.hasClients) return;
@@ -2169,68 +2208,74 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     final totalContentHeight = LayoutConfig.totalSlots * slotHeight;
     final hourWidth = LayoutConfig.hourColumnWidth;
 
+    // Link condiviso per il body (feedback anchor)
+    final link = ref.watch(dragLayerLinkProvider);
+
     return Stack(
       children: [
-        // BODY scrollabile (sotto)
+        // BODY (area principale scrollabile)
         Positioned.fill(
           top: LayoutConfig.headerHeight,
-          child: ScrollConfiguration(
-            behavior: const NoScrollbarBehavior(),
-            child: SingleChildScrollView(
-              controller: scrollState.verticalScrollCtrl,
-              physics: const ClampingScrollPhysics(),
-              child: Stack(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(width: hourWidth, child: const HourColumn()),
-                      AgendaVerticalDivider(
-                        height: totalContentHeight,
-                        thickness: 1,
-                      ),
-                      Expanded(
-                        child: ScrollConfiguration(
-                          behavior: const NoScrollbarBehavior(),
-                          child: SingleChildScrollView(
-                            controller: scrollState.horizontalScrollCtrl,
-                            scrollDirection: Axis.horizontal,
-                            physics: const ClampingScrollPhysics(),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: widget.staffList.asMap().entries.map((
-                                entry,
-                              ) {
-                                final index = entry.key;
-                                final staff = entry.value;
-                                final isLast =
-                                    index == widget.staffList.length - 1;
-                                final staffAppointments = appointments
-                                    .where((a) => a.staffId == staff.id)
-                                    .toList();
+          child: CompositedTransformTarget(
+            link: link,
+            child: ScrollConfiguration(
+              behavior: const NoScrollbarBehavior(),
+              child: SingleChildScrollView(
+                controller: scrollState.verticalScrollCtrl,
+                physics: const ClampingScrollPhysics(),
+                child: Stack(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: hourWidth, child: const HourColumn()),
+                        AgendaVerticalDivider(
+                          height: totalContentHeight,
+                          thickness: 1,
+                        ),
+                        Expanded(
+                          child: ScrollConfiguration(
+                            behavior: const NoScrollbarBehavior(),
+                            child: SingleChildScrollView(
+                              controller: scrollState.horizontalScrollCtrl,
+                              scrollDirection: Axis.horizontal,
+                              physics: const ClampingScrollPhysics(),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: widget.staffList.asMap().entries.map((
+                                  entry,
+                                ) {
+                                  final index = entry.key;
+                                  final staff = entry.value;
+                                  final isLast =
+                                      index == widget.staffList.length - 1;
+                                  final staffAppointments = appointments
+                                      .where((a) => a.staffId == staff.id)
+                                      .toList();
 
-                                return StaffColumn(
-                                  staff: staff,
-                                  appointments: staffAppointments,
-                                  columnWidth: layout.columnWidth,
-                                  showRightBorder:
-                                      widget.staffList.length > 1 && !isLast,
-                                );
-                              }).toList(),
+                                  return StaffColumn(
+                                    staff: staff,
+                                    appointments: staffAppointments,
+                                    columnWidth: layout.columnWidth,
+                                    showRightBorder:
+                                        widget.staffList.length > 1 && !isLast,
+                                  );
+                                }).toList(),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  CurrentTimeLine(hourColumnWidth: hourWidth),
-                ],
+                      ],
+                    ),
+                    CurrentTimeLine(hourColumnWidth: hourWidth),
+                  ],
+                ),
               ),
             ),
           ),
         ),
 
-        // HEADER (sopra con ombra reale)
+        // HEADER (nomi staff)
         Positioned(
           top: 0,
           left: 0,
@@ -2238,7 +2283,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
           height: LayoutConfig.headerHeight,
           child: Material(
             elevation: 8,
-            shadowColor: Colors.black.withOpacity(0.30),
+            shadowColor: Colors.black.withOpacity(0.3),
             surfaceTintColor: Colors.transparent,
             child: DecoratedBox(
               decoration: const BoxDecoration(

@@ -42,7 +42,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   void initState() {
     super.initState();
 
-    // Auto-scroll verticale durante il drag
+    // Ascolta inizio/fine drag per attivare auto-scroll verticale
     _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
@@ -173,12 +173,12 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     final totalContentHeight = LayoutConfig.totalSlots * slotHeight;
     final hourWidth = LayoutConfig.hourColumnWidth;
 
-    // LayerLink condiviso per il body
+    // Link condiviso per il body (feedback anchor)
     final link = ref.watch(dragLayerLinkProvider);
 
     return Stack(
       children: [
-        // BODY scrollabile (sotto) + target per il follower del feedback
+        // BODY (area principale scrollabile)
         Positioned.fill(
           top: LayoutConfig.headerHeight,
           child: CompositedTransformTarget(
@@ -240,7 +240,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
           ),
         ),
 
-        // HEADER (sopra)
+        // HEADER (nomi staff)
         Positioned(
           top: 0,
           left: 0,
@@ -248,7 +248,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
           height: LayoutConfig.headerHeight,
           child: Material(
             elevation: 8,
-            shadowColor: Colors.black.withOpacity(0.30),
+            shadowColor: Colors.black.withOpacity(0.3),
             surfaceTintColor: Colors.transparent,
             child: DecoratedBox(
               decoration: const BoxDecoration(

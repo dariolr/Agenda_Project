@@ -42,12 +42,12 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   void initState() {
     super.initState();
 
-    // Ascolta la posizione globale del drag per aggiornare highlight e orario stimato
     _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
       next,
     ) {
       if (!mounted) return;
+
       final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
       final tempTimeNotifier = ref.read(tempDragTimeProvider.notifier);
       final dragOffset = ref.read(dragOffsetProvider);
@@ -110,6 +110,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         tempTimeNotifier.setTimes(start, end);
       } else if (_isHighlighted) {
+        // 🔹 Non cancellare subito lo stato se il cursore è appena sopra l'header
+        final globalY = next.dy;
+        final headerHeight = LayoutConfig.headerHeight;
+
+        // Tolleranza di 5px sopra l'header: manteniamo highlight e orario
+        if (globalY > headerHeight - 5) {
+          return;
+        }
+
+        // 🔻 Fuori completamente: reset normale
         setState(() {
           _isHighlighted = false;
           _hoverY = null;
@@ -298,7 +308,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                 appointment: a,
                 color: widget.staff.color,
                 columnWidth: widget.columnWidth,
-                expandToLeft: i > 0, // ✅ destra → espansione verso sinistra
+                expandToLeft: i > 0,
               ),
             ),
           ),

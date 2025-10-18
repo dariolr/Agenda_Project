@@ -44,10 +44,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
         return Listener(
           onPointerDown: (event) {
-            final localY = event.localPosition.dy;
-            final localX = event.localPosition.dx;
-            ref.read(dragOffsetProvider.notifier).set(localY);
-            ref.read(dragOffsetXProvider.notifier).set(localX);
+            ref.read(dragOffsetProvider.notifier).set(event.localPosition.dy);
+            ref.read(dragOffsetXProvider.notifier).set(event.localPosition.dx);
             ref
                 .read(draggedAppointmentIdProvider.notifier)
                 .set(widget.appointment.id);
@@ -199,6 +197,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
+  /// Feedback mobile ancorato al body (sotto l'header)
   Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
     final liveStart = times?.$1;
@@ -228,6 +227,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     double left = rel.dx - dragOffsetX;
     double top = rel.dy - dragOffsetY;
 
+    // blocco orizzontale e verticale
     if (widget.expandToLeft) {
       left -= (feedbackWidth / 2);
     }
