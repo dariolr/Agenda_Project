@@ -146,7 +146,7 @@ class Staff {
   factory Staff.fromJson(Map<String, dynamic> json) => Staff(
     id: json['id'],
     name: json['name'],
-    color: json['color_hex'] == null
+    color: json['color_hex'] != null
         ? ColorUtils.fromHex(json['color_hex'])
         : ColorUtils.fromHex('#FFD700'),
   );
@@ -186,6 +186,7 @@ class NoScrollbarBehavior extends ScrollBehavior {
       const ClampingScrollPhysics(); // nessun overscroll o padding aggiuntivo
 }
 --- FILE: lib/app/router.dart ---
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -214,7 +215,7 @@ final GoRouter appRouter = GoRouter(
   ),
 
   // 🔸 Debug logging (facoltativo)
-  debugLogDiagnostics: true,
+  debugLogDiagnostics: kDebugMode,
 );
 --- FILE: lib/app/theme/theme_provider.dart ---
 import 'package:flutter/material.dart';
@@ -979,7 +980,7 @@ class AgendaTheme {
   static Color get dividerColor => Colors.grey.shade300;
 
   /// Colore per ombre leggere o bordi di separazione
-  static Color get shadowColor => Colors.black.withValues(alpha: 0.05);
+  static Color get shadowColor => Colors.black.withOpacity(0.5);
 
   /// Colore di sfondo per lo slot orario
   static const Color backgroundHourSlot = Colors.white;
@@ -2432,7 +2433,7 @@ export 'domain/config/agenda_theme.dart'; // se aggiungi un tema centralizzato
 // ──────────────────────────────────────────────
 export 'domain/config/layout_config.dart';
 // Schermata di agenda (entry screen)
-export 'presentation//agenda_screen.dart';
+export 'presentation/agenda_screen.dart';
 export 'presentation/screens/day_view/hour_column.dart';
 // Vista principale (giornaliera multi-staff)
 export 'presentation/screens/day_view/multi_staff_day_view.dart';

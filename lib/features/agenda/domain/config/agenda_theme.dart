@@ -14,7 +14,7 @@ class AgendaTheme {
   static Color get dividerColor => Colors.grey.shade300;
 
   /// Colore per ombre leggere o bordi di separazione
-  static Color get shadowColor => Colors.black.withValues(alpha: 0.05);
+  static Color get shadowColor => Colors.black.withOpacity(0.5);
 
   /// Colore di sfondo per lo slot orario
   static const Color backgroundHourSlot = Colors.white;
