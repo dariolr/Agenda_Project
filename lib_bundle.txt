@@ -1646,14 +1646,14 @@ class DragPositionNotifier extends Notifier<Offset?> {
   @override
   Offset? build() => null;
 
-  /// Aggiorna la posizione del cursore
   void update(Offset position) => state = position;
 
-  /// Resetta la posizione (quando il drag termina)
+  /// ✅ Nuovo metodo pubblico per aggiornare lo stato interpolato
+  void set(Offset newValue) => state = newValue;
+
   void clear() => state = null;
 }
 
-/// 🔹 Provider globale per la posizione del drag
 final dragPositionProvider = NotifierProvider<DragPositionNotifier, Offset?>(
   DragPositionNotifier.new,
 );
@@ -1687,14 +1687,34 @@ final tempDragTimeProvider =
       TempDragTimeNotifier.new,
     );
 --- FILE: lib/features/agenda/providers/drag_layer_link_provider.dart ---
-// lib/features/agenda/providers/drag_layer_link_provider.dart
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// LayerLink condiviso per ancorare il feedback del drag al body (sotto l'header)
-final dragLayerLinkProvider = Provider<LayerLink>((ref) {
-  return LayerLink();
-});
+/// 🔹 Gestisce il LayerLink del body (ancora per i feedback)
+class DragLayerLinkNotifier extends Notifier<LayerLink> {
+  @override
+  LayerLink build() => LayerLink();
+
+  void reset() => state = LayerLink();
+}
+
+final dragLayerLinkProvider =
+    NotifierProvider<DragLayerLinkNotifier, LayerLink>(
+      DragLayerLinkNotifier.new,
+    );
+
+/// 🔹 Gestisce il RenderBox del body (area scrollabile dell’agenda)
+class DragBodyBoxNotifier extends Notifier<RenderBox?> {
+  @override
+  RenderBox? build() => null;
+
+  void set(RenderBox box) => state = box;
+  void clear() => state = null;
+}
+
+final dragBodyBoxProvider = NotifierProvider<DragBodyBoxNotifier, RenderBox?>(
+  DragBodyBoxNotifier.new,
+);
 --- FILE: lib/features/agenda/domain/config/agenda_theme.dart ---
 import 'package:flutter/material.dart';
 
@@ -2013,7 +2033,7 @@ class AgendaHorizontalDivider extends StatelessWidget {
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '/../../../core/models/appointment.dart';
+import '/core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
@@ -2042,22 +2062,33 @@ class AppointmentCard extends ConsumerStatefulWidget {
 
 class _AppointmentCardState extends ConsumerState<AppointmentCard> {
   Size? _lastSize;
+  Offset? _lastPointerGlobalPosition;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          final newSize = Size(constraints.maxWidth, constraints.maxHeight);
-          if (mounted && (_lastSize == null || _lastSize != newSize)) {
-            setState(() => _lastSize = newSize);
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          if (mounted && (_lastSize == null || _lastSize != size)) {
+            setState(() => _lastSize = size);
           }
         });
 
         return Listener(
-          onPointerDown: (event) {
-            ref.read(dragOffsetProvider.notifier).set(event.localPosition.dy);
-            ref.read(dragOffsetXProvider.notifier).set(event.localPosition.dx);
+          onPointerDown: (e) {
+            _lastPointerGlobalPosition =
+                e.position; // ✅ salva la posizione globale
+            final box = context.findRenderObject() as RenderBox?;
+            if (box != null) {
+              final topLeft = box.localToGlobal(Offset.zero);
+              ref
+                  .read(dragOffsetXProvider.notifier)
+                  .set(e.position.dx - topLeft.dx);
+              ref
+                  .read(dragOffsetProvider.notifier)
+                  .set(e.position.dy - topLeft.dy);
+            }
             ref
                 .read(draggedAppointmentIdProvider.notifier)
                 .set(widget.appointment.id);
@@ -2065,20 +2096,37 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           child: LongPressDraggable<Appointment>(
             data: widget.appointment,
             feedback: Consumer(
-              builder: (context, ref, _) =>
-                  _buildFollowerFeedback(context, ref),
+              builder: (c, r, _) => _buildFollowerFeedback(c, r),
             ),
             feedbackOffset: Offset.zero,
             dragAnchorStrategy: childDragAnchorStrategy,
+            hapticFeedbackOnStart: false,
             childWhenDragging: _buildCard(isDragging: false, isGhost: true),
-            onDragEnd: (_) => _handleDragEnd(ref),
-            onDragCompleted: () => _handleDragEnd(ref),
-            onDraggableCanceled: (_, __) => _handleDragEnd(ref),
-            onDragUpdate: (details) {
-              ref
-                  .read(dragPositionProvider.notifier)
-                  .update(details.globalPosition);
+
+            // ✅ inizializza subito la posizione del feedback al long press
+            onDragStarted: () {
+              if (_lastPointerGlobalPosition != null) {
+                ref
+                    .read(dragPositionProvider.notifier)
+                    .set(_lastPointerGlobalPosition!);
+              }
             },
+
+            // 🔁 smoothing + coordinate locali al body
+            onDragUpdate: (details) {
+              final prev = ref.read(dragPositionProvider);
+              final bodyBox = ref.read(dragBodyBoxProvider);
+              if (bodyBox != null) {
+                final local = bodyBox.globalToLocal(details.globalPosition);
+                ref
+                    .read(dragPositionProvider.notifier)
+                    .set(Offset.lerp(prev, local, 0.85)!);
+              }
+            },
+
+            onDragEnd: (_) => _handleEnd(ref),
+            onDragCompleted: () => _handleEnd(ref),
+            onDraggableCanceled: (_, __) => _handleEnd(ref),
             child: _buildCard(isDragging: false),
           ),
         );
@@ -2086,7 +2134,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  void _handleDragEnd(WidgetRef ref) {
+  void _handleEnd(WidgetRef ref) {
     ref.read(draggedAppointmentIdProvider.notifier).clear();
     ref.read(dragOffsetProvider.notifier).clear();
     ref.read(dragOffsetXProvider.notifier).clear();
@@ -2102,8 +2150,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     DateTime? overrideEnd,
   }) {
     final baseColor = widget.color.withOpacity(0.15);
-    const borderRadius = BorderRadius.all(Radius.circular(6));
-
+    const r = BorderRadius.all(Radius.circular(6));
     final startTime = overrideStart ?? widget.appointment.startTime;
     final endTime = overrideEnd ?? widget.appointment.endTime;
 
@@ -2111,76 +2158,26 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
     final end =
         '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
-
     final client = widget.appointment.clientName;
-    final servicesText = widget.appointment.formattedServices;
-    final priceText = widget.appointment.formattedPrice;
-    String infoLine = servicesText;
-    if (priceText.isNotEmpty) {
-      infoLine = infoLine.isEmpty ? priceText : '$servicesText – $priceText';
+
+    final pieces = <String>[];
+    if (widget.appointment.formattedServices.isNotEmpty) {
+      pieces.add(widget.appointment.formattedServices);
     }
-
-    final double opacity = isGhost ? AgendaTheme.ghostOpacity : 1.0;
-
-    final content = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: '$start - $end  ',
-                style: TextStyle(
-                  color: (isDragging || forFeedback)
-                      ? Colors.black87
-                      : Colors.grey,
-                  fontWeight: (isDragging || forFeedback)
-                      ? FontWeight.w700
-                      : FontWeight.w500,
-                ),
-              ),
-              TextSpan(
-                text: client,
-                style: TextStyle(
-                  color: (isDragging || forFeedback)
-                      ? Colors.grey
-                      : Colors.black87,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (infoLine.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 1),
-            child: Text(
-              infoLine,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Colors.black54,
-                fontWeight: FontWeight.w400,
-                height: 1.1,
-              ),
-            ),
-          ),
-      ],
-    );
+    if (widget.appointment.formattedPrice.isNotEmpty) {
+      pieces.add(widget.appointment.formattedPrice);
+    }
+    final info = pieces.join(' – ');
 
     return Opacity(
-      opacity: opacity,
+      opacity: isGhost ? AgendaTheme.ghostOpacity : 1,
       child: Material(
-        borderRadius: borderRadius,
+        borderRadius: r,
         color: Colors.transparent,
         child: Container(
           decoration: BoxDecoration(
             color: Color.alphaBlend(baseColor, Colors.white),
-            borderRadius: borderRadius,
+            borderRadius: r,
             border: Border.all(color: widget.color, width: 1),
             boxShadow: [
               BoxShadow(
@@ -2197,11 +2194,11 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               height: 1.15,
             ),
             child: forFeedback
-                ? content
+                ? _buildContent(start, end, client, info)
                 : FittedBox(
                     alignment: Alignment.topLeft,
                     fit: BoxFit.scaleDown,
-                    child: content,
+                    child: _buildContent(start, end, client, info),
                   ),
           ),
         ),
@@ -2209,61 +2206,101 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// Feedback mobile ancorato al body (sotto l'header)
+  Widget _buildContent(String start, String end, String client, String info) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        RichText(
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: '$start - $end  ',
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              TextSpan(
+                text: client,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (info.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Text(
+              info,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.black54,
+                height: 1.1,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Feedback ancorato al body (coordinate locali, zero offset da header/rail)
   Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
-    final liveStart = times?.$1;
-    final liveEnd = times?.$2;
+    final start = times?.$1;
+    final end = times?.$2;
 
     final dragPos = ref.watch(dragPositionProvider);
-    final dragOffsetY = ref.watch(dragOffsetProvider) ?? 0.0;
-    final dragOffsetX = ref.watch(dragOffsetXProvider) ?? 0.0;
+    final offY = ref.watch(dragOffsetProvider) ?? 0;
+    final offX = ref.watch(dragOffsetXProvider) ?? 0;
     final link = ref.watch(dragLayerLinkProvider);
 
-    final double feedbackWidth =
-        widget.columnWidth ?? _lastSize?.width ?? 180.0;
+    final w = widget.columnWidth ?? _lastSize?.width ?? 180.0;
+    final h = _lastSize?.height ?? 50.0;
     final hourW = LayoutConfig.hourColumnWidth;
 
     if (dragPos == null) return const SizedBox.shrink();
 
-    final overlayBox =
-        Overlay.of(context).context.findRenderObject() as RenderBox?;
-    if (overlayBox == null) return const SizedBox.shrink();
+    double left = dragPos.dx - offX;
+    double top = dragPos.dy - offY;
 
-    final bodyOriginGlobal = (link.leader != null && link.leader!.attached)
-        ? link.leader!.offset
-        : Offset.zero;
-
-    final rel = dragPos - bodyOriginGlobal;
-
-    double left = rel.dx - dragOffsetX;
-    double top = rel.dy - dragOffsetY;
-
-    // blocco orizzontale e verticale
-    if (widget.expandToLeft) {
-      left -= (feedbackWidth / 2);
-    }
+    if (widget.expandToLeft) left -= (w / 2);
     if (left < hourW) left = hourW;
     if (top < 0) top = 0;
 
-    return CompositedTransformFollower(
-      link: link,
-      showWhenUnlinked: false,
-      offset: Offset(left, top),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: const BorderRadius.all(Radius.circular(6)),
-        clipBehavior: Clip.antiAlias,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: feedbackWidth - 4,
-            maxWidth: feedbackWidth - 4,
-          ),
-          child: _buildCard(
-            isDragging: true,
-            forFeedback: true,
-            overrideStart: liveStart,
-            overrideEnd: liveEnd,
+    final dpr = MediaQuery.of(context).devicePixelRatio;
+    left = (left * dpr).round() / dpr;
+    top = (top * dpr).round() / dpr;
+
+    return RepaintBoundary(
+      child: CompositedTransformFollower(
+        link: link,
+        showWhenUnlinked: false,
+        offset: Offset(left, top),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: const BorderRadius.all(Radius.circular(6)),
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: w - 4,
+              maxWidth: w - 4,
+              minHeight: h,
+              maxHeight: h,
+            ),
+            child: _buildCard(
+              isDragging: true,
+              forFeedback: true,
+              overrideStart: start,
+              overrideEnd: end,
+            ),
           ),
         ),
       ),
@@ -2723,7 +2760,6 @@ import 'staff_header_row.dart';
 
 class MultiStaffDayView extends ConsumerStatefulWidget {
   final List<Staff> staffList;
-
   const MultiStaffDayView({super.key, required this.staffList});
 
   @override
@@ -2733,7 +2769,6 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
 class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   Timer? _autoScrollTimer;
   late final ProviderSubscription<Offset?> _dragSub;
-
   final ScrollController _headerHCtrl = ScrollController();
   bool _isSyncing = false;
 
@@ -2741,15 +2776,13 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   static const double _scrollSpeed = 20;
   static const Duration _scrollInterval = Duration(milliseconds: 50);
 
+  final GlobalKey _bodyKey = GlobalKey(); // 👈 registrazione RenderBox body
+
   @override
   void initState() {
     super.initState();
 
-    // Ascolta inizio/fine drag per attivare auto-scroll verticale
-    _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (
-      previous,
-      next,
-    ) {
+    _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (prev, next) {
       if (next != null) {
         _startAutoScroll();
       } else {
@@ -2758,9 +2791,17 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _registerBodyBox();
       _centerCurrentTimeLine();
       _setupHorizontalSync();
     });
+  }
+
+  void _registerBodyBox() {
+    final box = _bodyKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null) {
+      ref.read(dragBodyBoxProvider.notifier).set(box);
+    }
   }
 
   void _setupHorizontalSync() {
@@ -2773,16 +2814,14 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     }
 
     bodyCtrl.addListener(() {
-      if (_isSyncing) return;
-      if (!_headerHCtrl.hasClients) return;
+      if (_isSyncing || !_headerHCtrl.hasClients) return;
       _isSyncing = true;
       _headerHCtrl.jumpTo(bodyCtrl.offset);
       _isSyncing = false;
     });
 
     _headerHCtrl.addListener(() {
-      if (_isSyncing) return;
-      if (!bodyCtrl.hasClients) return;
+      if (_isSyncing || !bodyCtrl.hasClients) return;
       _isSyncing = true;
       bodyCtrl.jumpTo(_headerHCtrl.offset);
       _isSyncing = false;
@@ -2795,22 +2834,21 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     if (!verticalCtrl.hasClients) return;
 
     final now = DateTime.now();
-    final minutesSinceMidnight = now.hour * 60 + now.minute;
-    final slotHeight = LayoutConfig.slotHeight;
+    final minutes = now.hour * 60 + now.minute;
     final offset =
-        (minutesSinceMidnight / LayoutConfig.minutesPerSlot) * slotHeight;
+        (minutes / LayoutConfig.minutesPerSlot) * LayoutConfig.slotHeight;
 
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
     final viewHeight = renderBox.size.height;
     final availableHeight = viewHeight - LayoutConfig.headerHeight;
 
-    const double bias = 0.4;
-    final targetOffset = (offset - availableHeight * bias).clamp(
+    const bias = 0.4;
+    final target = (offset - availableHeight * bias).clamp(
       0.0,
       verticalCtrl.position.maxScrollExtent,
     );
-    verticalCtrl.jumpTo(targetOffset);
+    verticalCtrl.jumpTo(target);
   }
 
   void _startAutoScroll() {
@@ -2833,18 +2871,18 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
       final localPos = renderBox.globalToLocal(dragPos);
       final viewHeight = renderBox.size.height;
-      final maxScrollExtent = verticalCtrl.position.maxScrollExtent;
-      final currentOffset = verticalCtrl.offset;
+      final maxExtent = verticalCtrl.position.maxScrollExtent;
+      final current = verticalCtrl.offset;
 
       double? newOffset;
-      if (localPos.dy < _scrollEdgeMargin && currentOffset > 0) {
-        newOffset = (currentOffset - _scrollSpeed).clamp(0, maxScrollExtent);
+      if (localPos.dy < _scrollEdgeMargin && current > 0) {
+        newOffset = (current - _scrollSpeed).clamp(0, maxExtent);
       } else if (localPos.dy > viewHeight - _scrollEdgeMargin &&
-          currentOffset < maxScrollExtent) {
-        newOffset = (currentOffset + _scrollSpeed).clamp(0, maxScrollExtent);
+          current < maxExtent) {
+        newOffset = (current + _scrollSpeed).clamp(0, maxExtent);
       }
 
-      if (newOffset != null && newOffset != currentOffset) {
+      if (newOffset != null && newOffset != current) {
         verticalCtrl.jumpTo(newOffset);
       }
     });
@@ -2872,19 +2910,21 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       staffCount: widget.staffList.length,
     );
     final slotHeight = ref.watch(layoutConfigProvider);
+    final totalHeight = LayoutConfig.totalSlots * slotHeight;
+    final hourW = LayoutConfig.hourColumnWidth;
 
-    final totalContentHeight = LayoutConfig.totalSlots * slotHeight;
-    final hourWidth = LayoutConfig.hourColumnWidth;
+    final link = ref.watch(dragLayerLinkProvider); // ✅ Notifier state
 
-    // Link condiviso per il body (feedback anchor)
-    final link = ref.watch(dragLayerLinkProvider);
+    // Aggiorna periodicamente il bodyBox (in caso di resize)
+    WidgetsBinding.instance.addPostFrameCallback((_) => _registerBodyBox());
 
     return Stack(
       children: [
-        // BODY (area principale scrollabile)
+        // BODY scrollabile con leader
         Positioned.fill(
           top: LayoutConfig.headerHeight,
           child: CompositedTransformTarget(
+            key: _bodyKey,
             link: link,
             child: ScrollConfiguration(
               behavior: const NoScrollbarBehavior(),
@@ -2896,9 +2936,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(width: hourWidth, child: const HourColumn()),
+                        SizedBox(width: hourW, child: const HourColumn()),
                         AgendaVerticalDivider(
-                          height: totalContentHeight,
+                          height: totalHeight,
                           thickness: 1,
                         ),
                         Expanded(
@@ -2911,22 +2951,21 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: widget.staffList.asMap().entries.map((
-                                  entry,
+                                  e,
                                 ) {
-                                  final index = entry.key;
-                                  final staff = entry.value;
-                                  final isLast =
-                                      index == widget.staffList.length - 1;
-                                  final staffAppointments = appointments
-                                      .where((a) => a.staffId == staff.id)
+                                  final i = e.key;
+                                  final s = e.value;
+                                  final last = i == widget.staffList.length - 1;
+                                  final staffAppts = appointments
+                                      .where((a) => a.staffId == s.id)
                                       .toList();
 
                                   return StaffColumn(
-                                    staff: staff,
-                                    appointments: staffAppointments,
+                                    staff: s,
+                                    appointments: staffAppts,
                                     columnWidth: layout.columnWidth,
                                     showRightBorder:
-                                        widget.staffList.length > 1 && !isLast,
+                                        widget.staffList.length > 1 && !last,
                                   );
                                 }).toList(),
                               ),
@@ -2935,7 +2974,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                         ),
                       ],
                     ),
-                    CurrentTimeLine(hourColumnWidth: hourWidth),
+                    CurrentTimeLine(hourColumnWidth: hourW),
                   ],
                 ),
               ),
@@ -2943,7 +2982,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
           ),
         ),
 
-        // HEADER (nomi staff)
+        // HEADER staff
         Positioned(
           top: 0,
           left: 0,
@@ -2960,9 +2999,8 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 ),
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(width: hourWidth),
+                  SizedBox(width: hourW),
                   Expanded(
                     child: ScrollConfiguration(
                       behavior: const NoScrollbarBehavior(),
@@ -2974,7 +3012,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                           staffList: widget.staffList,
                           scrollController: _headerHCtrl,
                           columnWidth: layout.columnWidth,
-                          hourColumnWidth: hourWidth,
+                          hourColumnWidth: hourW,
                         ),
                       ),
                     ),
@@ -3114,24 +3152,6 @@ export 'providers/agenda_scroll_provider.dart';
 --- FILE: lib/features/staff/providers/staff_providers.dart ---
 --- FILE: lib/features/staff/data/staff_api.dart ---
 --- FILE: lib/features/staff/data/staff_repository.dart ---
---- FILE: lib/features/staff/domain/staff.dart ---
-import 'package:flutter/material.dart';
-
-import '../../../core/l10n/l10_extension.dart'; // 🌍
-
-class StaffScreen extends StatelessWidget {
-  const StaffScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        context.l10n.staffTitle, // 🌍
-        style: const TextStyle(fontSize: 24),
-      ),
-    );
-  }
-}
 --- FILE: lib/features/staff/presentation/staff_screen.dart ---
 import 'package:flutter/material.dart';
 

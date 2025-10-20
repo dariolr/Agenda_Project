@@ -20,7 +20,6 @@ import 'staff_header_row.dart';
 
 class MultiStaffDayView extends ConsumerStatefulWidget {
   final List<Staff> staffList;
-
   const MultiStaffDayView({super.key, required this.staffList});
 
   @override
@@ -30,7 +29,6 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
 class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   Timer? _autoScrollTimer;
   late final ProviderSubscription<Offset?> _dragSub;
-
   final ScrollController _headerHCtrl = ScrollController();
   bool _isSyncing = false;
 
@@ -38,15 +36,13 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   static const double _scrollSpeed = 20;
   static const Duration _scrollInterval = Duration(milliseconds: 50);
 
+  final GlobalKey _bodyKey = GlobalKey(); // 👈 registrazione RenderBox body
+
   @override
   void initState() {
     super.initState();
 
-    // Ascolta inizio/fine drag per attivare auto-scroll verticale
-    _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (
-      previous,
-      next,
-    ) {
+    _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (prev, next) {
       if (next != null) {
         _startAutoScroll();
       } else {
@@ -55,9 +51,17 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _registerBodyBox();
       _centerCurrentTimeLine();
       _setupHorizontalSync();
     });
+  }
+
+  void _registerBodyBox() {
+    final box = _bodyKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null) {
+      ref.read(dragBodyBoxProvider.notifier).set(box);
+    }
   }
 
   void _setupHorizontalSync() {
@@ -70,16 +74,14 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     }
 
     bodyCtrl.addListener(() {
-      if (_isSyncing) return;
-      if (!_headerHCtrl.hasClients) return;
+      if (_isSyncing || !_headerHCtrl.hasClients) return;
       _isSyncing = true;
       _headerHCtrl.jumpTo(bodyCtrl.offset);
       _isSyncing = false;
     });
 
     _headerHCtrl.addListener(() {
-      if (_isSyncing) return;
-      if (!bodyCtrl.hasClients) return;
+      if (_isSyncing || !bodyCtrl.hasClients) return;
       _isSyncing = true;
       bodyCtrl.jumpTo(_headerHCtrl.offset);
       _isSyncing = false;
@@ -92,22 +94,21 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     if (!verticalCtrl.hasClients) return;
 
     final now = DateTime.now();
-    final minutesSinceMidnight = now.hour * 60 + now.minute;
-    final slotHeight = LayoutConfig.slotHeight;
+    final minutes = now.hour * 60 + now.minute;
     final offset =
-        (minutesSinceMidnight / LayoutConfig.minutesPerSlot) * slotHeight;
+        (minutes / LayoutConfig.minutesPerSlot) * LayoutConfig.slotHeight;
 
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
     final viewHeight = renderBox.size.height;
     final availableHeight = viewHeight - LayoutConfig.headerHeight;
 
-    const double bias = 0.4;
-    final targetOffset = (offset - availableHeight * bias).clamp(
+    const bias = 0.4;
+    final target = (offset - availableHeight * bias).clamp(
       0.0,
       verticalCtrl.position.maxScrollExtent,
     );
-    verticalCtrl.jumpTo(targetOffset);
+    verticalCtrl.jumpTo(target);
   }
 
   void _startAutoScroll() {
@@ -130,18 +131,18 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
       final localPos = renderBox.globalToLocal(dragPos);
       final viewHeight = renderBox.size.height;
-      final maxScrollExtent = verticalCtrl.position.maxScrollExtent;
-      final currentOffset = verticalCtrl.offset;
+      final maxExtent = verticalCtrl.position.maxScrollExtent;
+      final current = verticalCtrl.offset;
 
       double? newOffset;
-      if (localPos.dy < _scrollEdgeMargin && currentOffset > 0) {
-        newOffset = (currentOffset - _scrollSpeed).clamp(0, maxScrollExtent);
+      if (localPos.dy < _scrollEdgeMargin && current > 0) {
+        newOffset = (current - _scrollSpeed).clamp(0, maxExtent);
       } else if (localPos.dy > viewHeight - _scrollEdgeMargin &&
-          currentOffset < maxScrollExtent) {
-        newOffset = (currentOffset + _scrollSpeed).clamp(0, maxScrollExtent);
+          current < maxExtent) {
+        newOffset = (current + _scrollSpeed).clamp(0, maxExtent);
       }
 
-      if (newOffset != null && newOffset != currentOffset) {
+      if (newOffset != null && newOffset != current) {
         verticalCtrl.jumpTo(newOffset);
       }
     });
@@ -169,19 +170,21 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       staffCount: widget.staffList.length,
     );
     final slotHeight = ref.watch(layoutConfigProvider);
+    final totalHeight = LayoutConfig.totalSlots * slotHeight;
+    final hourW = LayoutConfig.hourColumnWidth;
 
-    final totalContentHeight = LayoutConfig.totalSlots * slotHeight;
-    final hourWidth = LayoutConfig.hourColumnWidth;
+    final link = ref.watch(dragLayerLinkProvider); // ✅ Notifier state
 
-    // Link condiviso per il body (feedback anchor)
-    final link = ref.watch(dragLayerLinkProvider);
+    // Aggiorna periodicamente il bodyBox (in caso di resize)
+    WidgetsBinding.instance.addPostFrameCallback((_) => _registerBodyBox());
 
     return Stack(
       children: [
-        // BODY (area principale scrollabile)
+        // BODY scrollabile con leader
         Positioned.fill(
           top: LayoutConfig.headerHeight,
           child: CompositedTransformTarget(
+            key: _bodyKey,
             link: link,
             child: ScrollConfiguration(
               behavior: const NoScrollbarBehavior(),
@@ -193,9 +196,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(width: hourWidth, child: const HourColumn()),
+                        SizedBox(width: hourW, child: const HourColumn()),
                         AgendaVerticalDivider(
-                          height: totalContentHeight,
+                          height: totalHeight,
                           thickness: 1,
                         ),
                         Expanded(
@@ -208,22 +211,21 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: widget.staffList.asMap().entries.map((
-                                  entry,
+                                  e,
                                 ) {
-                                  final index = entry.key;
-                                  final staff = entry.value;
-                                  final isLast =
-                                      index == widget.staffList.length - 1;
-                                  final staffAppointments = appointments
-                                      .where((a) => a.staffId == staff.id)
+                                  final i = e.key;
+                                  final s = e.value;
+                                  final last = i == widget.staffList.length - 1;
+                                  final staffAppts = appointments
+                                      .where((a) => a.staffId == s.id)
                                       .toList();
 
                                   return StaffColumn(
-                                    staff: staff,
-                                    appointments: staffAppointments,
+                                    staff: s,
+                                    appointments: staffAppts,
                                     columnWidth: layout.columnWidth,
                                     showRightBorder:
-                                        widget.staffList.length > 1 && !isLast,
+                                        widget.staffList.length > 1 && !last,
                                   );
                                 }).toList(),
                               ),
@@ -232,7 +234,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                         ),
                       ],
                     ),
-                    CurrentTimeLine(hourColumnWidth: hourWidth),
+                    CurrentTimeLine(hourColumnWidth: hourW),
                   ],
                 ),
               ),
@@ -240,7 +242,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
           ),
         ),
 
-        // HEADER (nomi staff)
+        // HEADER staff
         Positioned(
           top: 0,
           left: 0,
@@ -257,9 +259,8 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 ),
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(width: hourWidth),
+                  SizedBox(width: hourW),
                   Expanded(
                     child: ScrollConfiguration(
                       behavior: const NoScrollbarBehavior(),
@@ -271,7 +272,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                           staffList: widget.staffList,
                           scrollController: _headerHCtrl,
                           columnWidth: layout.columnWidth,
-                          hourColumnWidth: hourWidth,
+                          hourColumnWidth: hourW,
                         ),
                       ),
                     ),

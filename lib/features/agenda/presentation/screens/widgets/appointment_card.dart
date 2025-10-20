@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '/../../../core/models/appointment.dart';
+import '/core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
@@ -30,43 +30,88 @@ class AppointmentCard extends ConsumerStatefulWidget {
 
 class _AppointmentCardState extends ConsumerState<AppointmentCard> {
   Size? _lastSize;
+  Offset? _lastPointerGlobalPosition;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          final newSize = Size(constraints.maxWidth, constraints.maxHeight);
-          if (mounted && (_lastSize == null || _lastSize != newSize)) {
-            setState(() => _lastSize = newSize);
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          if (mounted && (_lastSize == null || _lastSize != size)) {
+            setState(() => _lastSize = size);
           }
         });
 
         return Listener(
-          onPointerDown: (event) {
-            ref.read(dragOffsetProvider.notifier).set(event.localPosition.dy);
-            ref.read(dragOffsetXProvider.notifier).set(event.localPosition.dx);
+          onPointerDown: (e) {
+            _lastPointerGlobalPosition = e.position;
+
+            final bodyBox = ref.read(dragBodyBoxProvider);
+            final cardBox = context.findRenderObject() as RenderBox?;
+
+            if (bodyBox != null && cardBox != null) {
+              final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
+              final cardTopLeftLocalToBody = bodyBox.globalToLocal(
+                cardTopLeftGlobal,
+              );
+
+              ref
+                  .read(dragOffsetProvider.notifier)
+                  .set(e.position.dy - cardTopLeftGlobal.dy);
+              ref
+                  .read(dragOffsetXProvider.notifier)
+                  .set(e.position.dx - cardTopLeftGlobal.dx);
+
+              // Sincronizza anche la posizione iniziale nel body
+              final localStart = bodyBox.globalToLocal(e.position);
+              ref.read(dragPositionProvider.notifier).set(localStart);
+            }
+
             ref
                 .read(draggedAppointmentIdProvider.notifier)
                 .set(widget.appointment.id);
           },
+
           child: LongPressDraggable<Appointment>(
             data: widget.appointment,
             feedback: Consumer(
-              builder: (context, ref, _) =>
-                  _buildFollowerFeedback(context, ref),
+              builder: (c, r, _) => _buildFollowerFeedback(c, r),
             ),
             feedbackOffset: Offset.zero,
             dragAnchorStrategy: childDragAnchorStrategy,
+            hapticFeedbackOnStart: false,
             childWhenDragging: _buildCard(isDragging: false, isGhost: true),
-            onDragEnd: (_) => _handleDragEnd(ref),
-            onDragCompleted: () => _handleDragEnd(ref),
-            onDraggableCanceled: (_, __) => _handleDragEnd(ref),
-            onDragUpdate: (details) {
-              ref
-                  .read(dragPositionProvider.notifier)
-                  .update(details.globalPosition);
+
+            // ✅ inizializza subito la posizione del feedback al long press
+            onDragStarted: () {
+              final bodyBox = ref.read(dragBodyBoxProvider);
+              if (bodyBox != null && _lastPointerGlobalPosition != null) {
+                // Converti subito in coordinate locali del body
+                final local = bodyBox.globalToLocal(
+                  _lastPointerGlobalPosition!,
+                );
+
+                // Sincronizza subito tutto
+                ref.read(dragPositionProvider.notifier).set(local);
+              }
             },
+
+            // 🔁 smoothing + coordinate locali al body
+            onDragUpdate: (details) {
+              final prev = ref.read(dragPositionProvider);
+              final bodyBox = ref.read(dragBodyBoxProvider);
+              if (bodyBox != null) {
+                final local = bodyBox.globalToLocal(details.globalPosition);
+                ref
+                    .read(dragPositionProvider.notifier)
+                    .set(Offset.lerp(prev, local, 0.85)!);
+              }
+            },
+
+            onDragEnd: (_) => _handleEnd(ref),
+            onDragCompleted: () => _handleEnd(ref),
+            onDraggableCanceled: (_, __) => _handleEnd(ref),
             child: _buildCard(isDragging: false),
           ),
         );
@@ -74,7 +119,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  void _handleDragEnd(WidgetRef ref) {
+  void _handleEnd(WidgetRef ref) {
     ref.read(draggedAppointmentIdProvider.notifier).clear();
     ref.read(dragOffsetProvider.notifier).clear();
     ref.read(dragOffsetXProvider.notifier).clear();
@@ -90,8 +135,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     DateTime? overrideEnd,
   }) {
     final baseColor = widget.color.withOpacity(0.15);
-    const borderRadius = BorderRadius.all(Radius.circular(6));
-
+    const r = BorderRadius.all(Radius.circular(6));
     final startTime = overrideStart ?? widget.appointment.startTime;
     final endTime = overrideEnd ?? widget.appointment.endTime;
 
@@ -99,76 +143,26 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
     final end =
         '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
-
     final client = widget.appointment.clientName;
-    final servicesText = widget.appointment.formattedServices;
-    final priceText = widget.appointment.formattedPrice;
-    String infoLine = servicesText;
-    if (priceText.isNotEmpty) {
-      infoLine = infoLine.isEmpty ? priceText : '$servicesText – $priceText';
+
+    final pieces = <String>[];
+    if (widget.appointment.formattedServices.isNotEmpty) {
+      pieces.add(widget.appointment.formattedServices);
     }
-
-    final double opacity = isGhost ? AgendaTheme.ghostOpacity : 1.0;
-
-    final content = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: '$start - $end  ',
-                style: TextStyle(
-                  color: (isDragging || forFeedback)
-                      ? Colors.black87
-                      : Colors.grey,
-                  fontWeight: (isDragging || forFeedback)
-                      ? FontWeight.w700
-                      : FontWeight.w500,
-                ),
-              ),
-              TextSpan(
-                text: client,
-                style: TextStyle(
-                  color: (isDragging || forFeedback)
-                      ? Colors.grey
-                      : Colors.black87,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (infoLine.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 1),
-            child: Text(
-              infoLine,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Colors.black54,
-                fontWeight: FontWeight.w400,
-                height: 1.1,
-              ),
-            ),
-          ),
-      ],
-    );
+    if (widget.appointment.formattedPrice.isNotEmpty) {
+      pieces.add(widget.appointment.formattedPrice);
+    }
+    final info = pieces.join(' – ');
 
     return Opacity(
-      opacity: opacity,
+      opacity: isGhost ? AgendaTheme.ghostOpacity : 1,
       child: Material(
-        borderRadius: borderRadius,
+        borderRadius: r,
         color: Colors.transparent,
         child: Container(
           decoration: BoxDecoration(
             color: Color.alphaBlend(baseColor, Colors.white),
-            borderRadius: borderRadius,
+            borderRadius: r,
             border: Border.all(color: widget.color, width: 1),
             boxShadow: [
               BoxShadow(
@@ -185,11 +179,11 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               height: 1.15,
             ),
             child: forFeedback
-                ? content
+                ? _buildContent(start, end, client, info)
                 : FittedBox(
                     alignment: Alignment.topLeft,
                     fit: BoxFit.scaleDown,
-                    child: content,
+                    child: _buildContent(start, end, client, info),
                   ),
           ),
         ),
@@ -197,64 +191,101 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// Feedback mobile ancorato al body (sotto l'header)
+  Widget _buildContent(String start, String end, String client, String info) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        RichText(
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: '$start - $end  ',
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              TextSpan(
+                text: client,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (info.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Text(
+              info,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.black54,
+                height: 1.1,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Feedback ancorato al body (coordinate locali, zero offset da header/rail)
   Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
-    final liveStart = times?.$1;
-    final liveEnd = times?.$2;
+    final start = times?.$1;
+    final end = times?.$2;
 
     final dragPos = ref.watch(dragPositionProvider);
-    final dragOffsetY = ref.watch(dragOffsetProvider) ?? 0.0;
-    final dragOffsetX = ref.watch(dragOffsetXProvider) ?? 0.0;
+    final offY = ref.watch(dragOffsetProvider) ?? 0;
+    final offX = ref.watch(dragOffsetXProvider) ?? 0;
     final link = ref.watch(dragLayerLinkProvider);
 
-    final double feedbackWidth =
-        widget.columnWidth ?? _lastSize?.width ?? 180.0;
-    final double feedbackHeight = _lastSize?.height ?? 50.0;
+    final w = widget.columnWidth ?? _lastSize?.width ?? 180.0;
+    final h = _lastSize?.height ?? 50.0;
     final hourW = LayoutConfig.hourColumnWidth;
 
     if (dragPos == null) return const SizedBox.shrink();
 
-    final overlayBox =
-        Overlay.of(context).context.findRenderObject() as RenderBox?;
-    if (overlayBox == null) return const SizedBox.shrink();
+    double left = dragPos.dx - offX;
+    double top = dragPos.dy - offY;
 
-    final bodyOriginGlobal = (link.leader != null && link.leader!.attached)
-        ? link.leader!.offset
-        : Offset.zero;
-
-    final rel = dragPos - bodyOriginGlobal;
-
-    double left = rel.dx - dragOffsetX;
-    double top = rel.dy - dragOffsetY;
-
-    // blocco orizzontale e verticale
-    if (widget.expandToLeft) {
-      left -= (feedbackWidth / 2);
-    }
+    if (widget.expandToLeft) left -= (w / 2);
     if (left < hourW) left = hourW;
     if (top < 0) top = 0;
 
-    return CompositedTransformFollower(
-      link: link,
-      showWhenUnlinked: false,
-      offset: Offset(left, top),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: const BorderRadius.all(Radius.circular(6)),
-        clipBehavior: Clip.antiAlias,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: feedbackWidth - 4,
-            maxWidth: feedbackWidth - 4,
-            minHeight: feedbackHeight,
-            maxHeight: feedbackHeight,
-          ),
-          child: _buildCard(
-            isDragging: true,
-            forFeedback: true,
-            overrideStart: liveStart,
-            overrideEnd: liveEnd,
+    final dpr = MediaQuery.of(context).devicePixelRatio;
+    left = (left * dpr).round() / dpr;
+    top = (top * dpr).round() / dpr;
+
+    return RepaintBoundary(
+      child: CompositedTransformFollower(
+        link: link,
+        showWhenUnlinked: false,
+        offset: Offset(left, top),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: const BorderRadius.all(Radius.circular(6)),
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: w - 4,
+              maxWidth: w - 4,
+              minHeight: h,
+              maxHeight: h,
+            ),
+            child: _buildCard(
+              isDragging: true,
+              forFeedback: true,
+              overrideStart: start,
+              overrideEnd: end,
+            ),
           ),
         ),
       ),
