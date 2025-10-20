@@ -8,6 +8,8 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
+import '../../../providers/highlighted_staff_provider.dart';
+import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 
 class AppointmentCard extends ConsumerStatefulWidget {
@@ -52,7 +54,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
             if (bodyBox != null && cardBox != null) {
               final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
-
               ref
                   .read(dragOffsetProvider.notifier)
                   .set(e.position.dy - cardTopLeftGlobal.dy);
@@ -60,7 +61,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                   .read(dragOffsetXProvider.notifier)
                   .set(e.position.dx - cardTopLeftGlobal.dx);
 
-              // Sincronizza anche la posizione iniziale nel body
               final localStart = bodyBox.globalToLocal(e.position);
               ref.read(dragPositionProvider.notifier).set(localStart);
             }
@@ -69,7 +69,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                 .read(draggedAppointmentIdProvider.notifier)
                 .set(widget.appointment.id);
           },
-
           child: LongPressDraggable<Appointment>(
             data: widget.appointment,
             feedback: Consumer(
@@ -79,22 +78,15 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
             dragAnchorStrategy: childDragAnchorStrategy,
             hapticFeedbackOnStart: false,
             childWhenDragging: _buildCard(isDragging: false, isGhost: true),
-
-            // ✅ inizializza subito la posizione del feedback al long press
             onDragStarted: () {
               final bodyBox = ref.read(dragBodyBoxProvider);
               if (bodyBox != null && _lastPointerGlobalPosition != null) {
-                // Converti subito in coordinate locali del body
                 final local = bodyBox.globalToLocal(
                   _lastPointerGlobalPosition!,
                 );
-
-                // Sincronizza subito tutto
                 ref.read(dragPositionProvider.notifier).set(local);
               }
             },
-
-            // 🔁 smoothing + coordinate locali al body
             onDragUpdate: (details) {
               final prev = ref.read(dragPositionProvider);
               final bodyBox = ref.read(dragBodyBoxProvider);
@@ -105,7 +97,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                     .set(Offset.lerp(prev, local, 0.85)!);
               }
             },
-
             onDragEnd: (_) => _handleEnd(ref),
             onDragCompleted: () => _handleEnd(ref),
             onDraggableCanceled: (_, __) => _handleEnd(ref),
@@ -135,13 +126,11 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     const r = BorderRadius.all(Radius.circular(6));
     final startTime = overrideStart ?? widget.appointment.startTime;
     final endTime = overrideEnd ?? widget.appointment.endTime;
-
     final start =
         '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
     final end =
         '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
     final client = widget.appointment.clientName;
-
     final pieces = <String>[];
     if (widget.appointment.formattedServices.isNotEmpty) {
       pieces.add(widget.appointment.formattedServices);
@@ -233,29 +222,39 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// Feedback ancorato al body (coordinate locali, zero offset da header/rail)
+  /// 👻 Feedback ancorato alla colonna evidenziata (centrato orizzontalmente)
   Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
     final start = times?.$1;
     final end = times?.$2;
-
     final dragPos = ref.watch(dragPositionProvider);
     final offY = ref.watch(dragOffsetProvider) ?? 0;
     final offX = ref.watch(dragOffsetXProvider) ?? 0;
     final link = ref.watch(dragLayerLinkProvider);
 
+    final highlightedId = ref.watch(highlightedStaffIdProvider);
+    final columnsRects = ref.watch(staffColumnsGeometryProvider);
+
     final w = widget.columnWidth ?? _lastSize?.width ?? 180.0;
     final h = _lastSize?.height ?? 50.0;
     final hourW = LayoutConfig.hourColumnWidth;
-
     if (dragPos == null) return const SizedBox.shrink();
 
-    double left = dragPos.dx - offX;
+    // verticale invariata
     double top = dragPos.dy - offY;
-
-    if (widget.expandToLeft) left -= (w / 2);
-    if (left < hourW) left = hourW;
     if (top < 0) top = 0;
+
+    // orizzontale ancorata alla colonna corrente
+    double left;
+    final rect = highlightedId != null ? columnsRects[highlightedId] : null;
+    if (rect != null) {
+      left = rect.left + (rect.width - w) / 2;
+      if (left < hourW) left = hourW;
+    } else {
+      left = dragPos.dx - offX;
+      if (widget.expandToLeft) left -= (w / 2);
+      if (left < hourW) left = hourW;
+    }
 
     final dpr = MediaQuery.of(context).devicePixelRatio;
     left = (left * dpr).round() / dpr;
