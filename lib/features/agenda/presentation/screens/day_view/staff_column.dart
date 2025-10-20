@@ -1,3 +1,4 @@
+import 'package:agenda_frontend/features/agenda/providers/drag_layer_link_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -50,7 +51,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
       final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
       final tempTimeNotifier = ref.read(tempDragTimeProvider.notifier);
-      final dragOffset = ref.read(dragOffsetProvider);
 
       if (next == null) {
         if (_isHighlighted || _hoverY != null) {
@@ -65,14 +65,30 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       }
 
       final box = context.findRenderObject() as RenderBox?;
-      if (box == null) return;
+      final bodyBox = ref.read(dragBodyBoxProvider);
+      if (box == null || bodyBox == null) return;
 
-      final rect = box.localToGlobal(Offset.zero) & box.size;
-      final inside = rect.contains(next);
+      // next è BODY-LOCAL. Portiamo la colonna in BODY-LOCAL:
+      final columnTopLeftInBody = bodyBox.globalToLocal(
+        box.localToGlobal(Offset.zero),
+      );
+
+      // Convertiamo il punto di drag in coordinate della colonna
+      final localInColumn = Offset(
+        next.dx - columnTopLeftInBody.dx,
+        next.dy - columnTopLeftInBody.dy,
+      );
+
+      // Test "inside" con coordinate locali alla colonna
+      final inside =
+          localInColumn.dx >= 0 &&
+          localInColumn.dy >= 0 &&
+          localInColumn.dx <= box.size.width &&
+          localInColumn.dy <= box.size.height;
 
       if (inside) {
-        final local = box.globalToLocal(next);
-        final double effectiveY = ((local.dy - (dragOffset ?? 0)).clamp(
+        final dragOffset = ref.read(dragOffsetProvider);
+        final double effectiveY = ((localInColumn.dy - (dragOffset ?? 0)).clamp(
           0,
           box.size.height,
         )).toDouble();
@@ -90,7 +106,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         final draggedId = ref.read(draggedAppointmentIdProvider);
         Duration duration;
-
         if (draggedId != null) {
           final appt = ref
               .read(appointmentsProvider)
@@ -110,16 +125,13 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         tempTimeNotifier.setTimes(start, end);
       } else if (_isHighlighted) {
-        // 🔹 Non cancellare subito lo stato se il cursore è appena sopra l'header
-        final globalY = next.dy;
+        // Mantieni tolleranza rispetto all'header
         final headerHeight = LayoutConfig.headerHeight;
-
-        // Tolleranza di 5px sopra l'header: manteniamo highlight e orario
+        final globalY = next.dy; // next è body-local; qui basta sogliare
         if (globalY > headerHeight - 5) {
           return;
         }
 
-        // 🔻 Fuori completamente: reset normale
         setState(() {
           _isHighlighted = false;
           _hoverY = null;

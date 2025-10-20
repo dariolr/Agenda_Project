@@ -2077,22 +2077,34 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
         return Listener(
           onPointerDown: (e) {
-            _lastPointerGlobalPosition =
-                e.position; // ✅ salva la posizione globale
-            final box = context.findRenderObject() as RenderBox?;
-            if (box != null) {
-              final topLeft = box.localToGlobal(Offset.zero);
-              ref
-                  .read(dragOffsetXProvider.notifier)
-                  .set(e.position.dx - topLeft.dx);
+            _lastPointerGlobalPosition = e.position;
+
+            final bodyBox = ref.read(dragBodyBoxProvider);
+            final cardBox = context.findRenderObject() as RenderBox?;
+
+            if (bodyBox != null && cardBox != null) {
+              final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
+              final cardTopLeftLocalToBody = bodyBox.globalToLocal(
+                cardTopLeftGlobal,
+              );
+
               ref
                   .read(dragOffsetProvider.notifier)
-                  .set(e.position.dy - topLeft.dy);
+                  .set(e.position.dy - cardTopLeftGlobal.dy);
+              ref
+                  .read(dragOffsetXProvider.notifier)
+                  .set(e.position.dx - cardTopLeftGlobal.dx);
+
+              // Sincronizza anche la posizione iniziale nel body
+              final localStart = bodyBox.globalToLocal(e.position);
+              ref.read(dragPositionProvider.notifier).set(localStart);
             }
+
             ref
                 .read(draggedAppointmentIdProvider.notifier)
                 .set(widget.appointment.id);
           },
+
           child: LongPressDraggable<Appointment>(
             data: widget.appointment,
             feedback: Consumer(
@@ -2105,10 +2117,15 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
             // ✅ inizializza subito la posizione del feedback al long press
             onDragStarted: () {
-              if (_lastPointerGlobalPosition != null) {
-                ref
-                    .read(dragPositionProvider.notifier)
-                    .set(_lastPointerGlobalPosition!);
+              final bodyBox = ref.read(dragBodyBoxProvider);
+              if (bodyBox != null && _lastPointerGlobalPosition != null) {
+                // Converti subito in coordinate locali del body
+                final local = bodyBox.globalToLocal(
+                  _lastPointerGlobalPosition!,
+                );
+
+                // Sincronizza subito tutto
+                ref.read(dragPositionProvider.notifier).set(local);
               }
             },
 

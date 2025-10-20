@@ -52,9 +52,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
             if (bodyBox != null && cardBox != null) {
               final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
-              final cardTopLeftLocalToBody = bodyBox.globalToLocal(
-                cardTopLeftGlobal,
-              );
 
               ref
                   .read(dragOffsetProvider.notifier)
