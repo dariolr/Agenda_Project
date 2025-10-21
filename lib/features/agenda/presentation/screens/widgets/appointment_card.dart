@@ -9,7 +9,7 @@ import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
-import '../../../providers/selected_appointment_provider.dart'; // 👈 nuovo import
+import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 
@@ -38,7 +38,11 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
   @override
   Widget build(BuildContext context) {
     final selectedId = ref.watch(selectedAppointmentProvider);
-    final isSelected = selectedId == widget.appointment.id; // ✅ stato globale
+    final draggedId = ref.watch(draggedAppointmentIdProvider);
+
+    final isSelected = selectedId == widget.appointment.id;
+    final isDragging = draggedId == widget.appointment.id;
+    final showThickBorder = isSelected || isDragging;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -52,17 +56,14 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
-            ref
-                .read(selectedAppointmentProvider.notifier)
-                .toggle(widget.appointment.id);
+            final notifier = ref.read(selectedAppointmentProvider.notifier);
+            notifier.toggle(widget.appointment.id);
           },
           child: Listener(
             onPointerDown: (e) {
               _lastPointerGlobalPosition = e.position;
-
               final bodyBox = ref.read(dragBodyBoxProvider);
               final cardBox = context.findRenderObject() as RenderBox?;
-
               if (bodyBox != null && cardBox != null) {
                 final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
                 ref
@@ -71,7 +72,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                 ref
                     .read(dragOffsetXProvider.notifier)
                     .set(e.position.dx - cardTopLeftGlobal.dx);
-
                 final localStart = bodyBox.globalToLocal(e.position);
                 ref.read(dragPositionProvider.notifier).set(localStart);
               }
@@ -86,13 +86,20 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               hapticFeedbackOnStart: false,
               childWhenDragging: _buildCard(
                 isGhost: true,
-                isSelected: isSelected,
+                showThickBorder: showThickBorder,
               ),
               onDragStarted: () {
+                // 🔹 Solo una card selezionata
+                final selected = ref.read(selectedAppointmentProvider.notifier);
+                selected.clear();
+                selected.toggle(widget.appointment.id);
+
+                // 🔹 Segna questa come dragging
                 ref
                     .read(draggedAppointmentIdProvider.notifier)
                     .set(widget.appointment.id);
 
+                // 🔹 Posizione iniziale
                 final bodyBox = ref.read(dragBodyBoxProvider);
                 if (bodyBox != null && _lastPointerGlobalPosition != null) {
                   final local = bodyBox.globalToLocal(
@@ -114,7 +121,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               onDragEnd: (_) => _handleEnd(ref),
               onDragCompleted: () => _handleEnd(ref),
               onDraggableCanceled: (_, __) => _handleEnd(ref),
-              child: _buildCard(isSelected: isSelected),
+              child: _buildCard(showThickBorder: showThickBorder),
             ),
           ),
         );
@@ -128,12 +135,15 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     ref.read(dragOffsetXProvider.notifier).clear();
     ref.read(dragPositionProvider.notifier).clear();
     ref.read(tempDragTimeProvider.notifier).clear();
+    ref
+        .read(selectedAppointmentProvider.notifier)
+        .clear(); // ✅ tutte unselected
   }
 
   Widget _buildCard({
     bool isGhost = false,
     bool forFeedback = false,
-    bool isSelected = false,
+    bool showThickBorder = false,
     DateTime? overrideStart,
     DateTime? overrideEnd,
   }) {
@@ -146,6 +156,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     final end =
         '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
     final client = widget.appointment.clientName;
+
     final pieces = <String>[];
     if (widget.appointment.formattedServices.isNotEmpty) {
       pieces.add(widget.appointment.formattedServices);
@@ -155,23 +166,27 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     }
     final info = pieces.join(' – ');
 
-    final borderWidth = isSelected ? 2.5 : 1.0; // 👈 bordo dinamico
+    final borderWidth = showThickBorder ? 2.5 : 1.0;
 
     return Opacity(
       opacity: isGhost ? AgendaTheme.ghostOpacity : 1,
       child: Material(
         borderRadius: r,
         color: Colors.transparent,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
             color: Color.alphaBlend(baseColor, Colors.white),
             borderRadius: r,
             border: Border.all(color: widget.color, width: borderWidth),
             boxShadow: [
               BoxShadow(
-                color: widget.color.withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(1, 1),
+                color: widget.color.withOpacity(showThickBorder ? 0.25 : 0.1),
+                blurRadius: showThickBorder ? 8 : 4,
+                offset: showThickBorder
+                    ? const Offset(2, 3)
+                    : const Offset(1, 1),
               ),
             ],
           ),
@@ -239,7 +254,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// 👻 Feedback ancorato alla colonna evidenziata (centrato orizzontalmente)
+  /// 👻 Feedback ancorato alla colonna evidenziata
   Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
     final start = times?.$1;
@@ -257,11 +272,9 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     final hourW = LayoutConfig.hourColumnWidth;
     if (dragPos == null) return const SizedBox.shrink();
 
-    // verticale invariata
     double top = dragPos.dy - offY;
     if (top < 0) top = 0;
 
-    // orizzontale ancorata alla colonna corrente
     double left;
     final rect = highlightedId != null ? columnsRects[highlightedId] : null;
     if (rect != null) {
@@ -295,6 +308,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
             ),
             child: _buildCard(
               forFeedback: true,
+              showThickBorder: true,
               overrideStart: start,
               overrideEnd: end,
             ),
