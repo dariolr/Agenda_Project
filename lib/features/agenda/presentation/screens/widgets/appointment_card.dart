@@ -196,13 +196,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               fontSize: 12.5,
               height: 1.15,
             ),
-            child: forFeedback
-                ? _buildContent(start, end, client, info)
-                : FittedBox(
-                    alignment: Alignment.topLeft,
-                    fit: BoxFit.scaleDown,
-                    child: _buildContent(start, end, client, info),
-                  ),
+            // ✅ niente più FittedBox o troncamenti
+            child: _buildContent(start, end, client, info),
           ),
         ),
       ),
@@ -216,7 +211,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
       children: [
         RichText(
           maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          softWrap: false, // ❌ mai andare a capo
+          overflow: TextOverflow.clip, // ✂️ taglia orizzontalmente se serve
           text: TextSpan(
             children: [
               TextSpan(
@@ -242,7 +238,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
             child: Text(
               info,
               maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              softWrap: false, // ❌ anche qui: resta su una riga
+              overflow: TextOverflow.clip, // ✂️ taglia se necessario
               style: const TextStyle(
                 fontSize: 11,
                 color: Colors.black54,
