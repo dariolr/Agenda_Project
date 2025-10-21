@@ -1637,6 +1637,34 @@ class AgendaScroll extends _$AgendaScroll {
     }
   }
 }
+--- FILE: lib/features/agenda/providers/staff_columns_geometry_provider.dart ---
+import 'dart:ui';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Mappa: staffId -> Rect della colonna in coordinate BODY-LOCAL
+class StaffColumnsGeometryNotifier extends Notifier<Map<int, Rect>> {
+  @override
+  Map<int, Rect> build() => <int, Rect>{};
+
+  void setRect(int staffId, Rect rect) {
+    final next = Map<int, Rect>.from(state)..[staffId] = rect;
+    state = next;
+  }
+
+  void clearFor(int staffId) {
+    if (!state.containsKey(staffId)) return;
+    final next = Map<int, Rect>.from(state)..remove(staffId);
+    state = next;
+  }
+
+  void clearAll() => state = <int, Rect>{};
+}
+
+final staffColumnsGeometryProvider =
+    NotifierProvider<StaffColumnsGeometryNotifier, Map<int, Rect>>(
+      StaffColumnsGeometryNotifier.new,
+    );
 --- FILE: lib/features/agenda/providers/agenda_providers.dart ---
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -2040,6 +2068,8 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
+import '../../../providers/highlighted_staff_provider.dart';
+import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 
 class AppointmentCard extends ConsumerStatefulWidget {
@@ -2084,7 +2114,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
             if (bodyBox != null && cardBox != null) {
               final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
-
               ref
                   .read(dragOffsetProvider.notifier)
                   .set(e.position.dy - cardTopLeftGlobal.dy);
@@ -2092,7 +2121,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                   .read(dragOffsetXProvider.notifier)
                   .set(e.position.dx - cardTopLeftGlobal.dx);
 
-              // Sincronizza anche la posizione iniziale nel body
               final localStart = bodyBox.globalToLocal(e.position);
               ref.read(dragPositionProvider.notifier).set(localStart);
             }
@@ -2101,7 +2129,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                 .read(draggedAppointmentIdProvider.notifier)
                 .set(widget.appointment.id);
           },
-
           child: LongPressDraggable<Appointment>(
             data: widget.appointment,
             feedback: Consumer(
@@ -2111,22 +2138,15 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
             dragAnchorStrategy: childDragAnchorStrategy,
             hapticFeedbackOnStart: false,
             childWhenDragging: _buildCard(isDragging: false, isGhost: true),
-
-            // ✅ inizializza subito la posizione del feedback al long press
             onDragStarted: () {
               final bodyBox = ref.read(dragBodyBoxProvider);
               if (bodyBox != null && _lastPointerGlobalPosition != null) {
-                // Converti subito in coordinate locali del body
                 final local = bodyBox.globalToLocal(
                   _lastPointerGlobalPosition!,
                 );
-
-                // Sincronizza subito tutto
                 ref.read(dragPositionProvider.notifier).set(local);
               }
             },
-
-            // 🔁 smoothing + coordinate locali al body
             onDragUpdate: (details) {
               final prev = ref.read(dragPositionProvider);
               final bodyBox = ref.read(dragBodyBoxProvider);
@@ -2137,7 +2157,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                     .set(Offset.lerp(prev, local, 0.85)!);
               }
             },
-
             onDragEnd: (_) => _handleEnd(ref),
             onDragCompleted: () => _handleEnd(ref),
             onDraggableCanceled: (_, __) => _handleEnd(ref),
@@ -2167,13 +2186,11 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     const r = BorderRadius.all(Radius.circular(6));
     final startTime = overrideStart ?? widget.appointment.startTime;
     final endTime = overrideEnd ?? widget.appointment.endTime;
-
     final start =
         '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
     final end =
         '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
     final client = widget.appointment.clientName;
-
     final pieces = <String>[];
     if (widget.appointment.formattedServices.isNotEmpty) {
       pieces.add(widget.appointment.formattedServices);
@@ -2265,29 +2282,39 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  /// Feedback ancorato al body (coordinate locali, zero offset da header/rail)
+  /// 👻 Feedback ancorato alla colonna evidenziata (centrato orizzontalmente)
   Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
     final start = times?.$1;
     final end = times?.$2;
-
     final dragPos = ref.watch(dragPositionProvider);
     final offY = ref.watch(dragOffsetProvider) ?? 0;
     final offX = ref.watch(dragOffsetXProvider) ?? 0;
     final link = ref.watch(dragLayerLinkProvider);
 
+    final highlightedId = ref.watch(highlightedStaffIdProvider);
+    final columnsRects = ref.watch(staffColumnsGeometryProvider);
+
     final w = widget.columnWidth ?? _lastSize?.width ?? 180.0;
     final h = _lastSize?.height ?? 50.0;
     final hourW = LayoutConfig.hourColumnWidth;
-
     if (dragPos == null) return const SizedBox.shrink();
 
-    double left = dragPos.dx - offX;
+    // verticale invariata
     double top = dragPos.dy - offY;
-
-    if (widget.expandToLeft) left -= (w / 2);
-    if (left < hourW) left = hourW;
     if (top < 0) top = 0;
+
+    // orizzontale ancorata alla colonna corrente
+    double left;
+    final rect = highlightedId != null ? columnsRects[highlightedId] : null;
+    if (rect != null) {
+      left = rect.left + (rect.width - w) / 2;
+      if (left < hourW) left = hourW;
+    } else {
+      left = dragPos.dx - offX;
+      if (widget.expandToLeft) left -= (w / 2);
+      if (left < hourW) left = hourW;
+    }
 
     final dpr = MediaQuery.of(context).devicePixelRatio;
     left = (left * dpr).round() / dpr;
@@ -2388,6 +2415,7 @@ import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../widgets/agenda_dividers.dart';
 import '../widgets/appointment_card.dart';
@@ -2444,18 +2472,28 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       final bodyBox = ref.read(dragBodyBoxProvider);
       if (box == null || bodyBox == null) return;
 
-      // next è BODY-LOCAL. Portiamo la colonna in BODY-LOCAL:
+      // 🔹 Registra il Rect corrente in body-local per l'ancoraggio del ghost
       final columnTopLeftInBody = bodyBox.globalToLocal(
         box.localToGlobal(Offset.zero),
       );
+      ref
+          .read(staffColumnsGeometryProvider.notifier)
+          .setRect(
+            widget.staff.id,
+            Rect.fromLTWH(
+              columnTopLeftInBody.dx,
+              columnTopLeftInBody.dy,
+              box.size.width,
+              box.size.height,
+            ),
+          );
 
-      // Convertiamo il punto di drag in coordinate della colonna
+      // next è BODY-LOCAL → coordinate locali alla colonna
       final localInColumn = Offset(
         next.dx - columnTopLeftInBody.dx,
         next.dy - columnTopLeftInBody.dy,
       );
 
-      // Test "inside" con coordinate locali alla colonna
       final inside =
           localInColumn.dx >= 0 &&
           localInColumn.dy >= 0 &&
@@ -2501,9 +2539,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         tempTimeNotifier.setTimes(start, end);
       } else if (_isHighlighted) {
-        // Mantieni tolleranza rispetto all'header
         final headerHeight = LayoutConfig.headerHeight;
-        final globalY = next.dy; // next è body-local; qui basta sogliare
+        final globalY = next.dy;
         if (globalY > headerHeight - 5) {
           return;
         }
@@ -2525,11 +2562,32 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     if (highlightedId == widget.staff.id) {
       ref.read(highlightedStaffIdProvider.notifier).clear();
     }
+    ref.read(staffColumnsGeometryProvider.notifier).clearFor(widget.staff.id);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // 🔹 Aggiorna geometria dopo il layout (utile su resize)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final box = context.findRenderObject() as RenderBox?;
+      final bodyBox = ref.read(dragBodyBoxProvider);
+      if (box != null && bodyBox != null) {
+        final topLeft = bodyBox.globalToLocal(box.localToGlobal(Offset.zero));
+        ref
+            .read(staffColumnsGeometryProvider.notifier)
+            .setRect(
+              widget.staff.id,
+              Rect.fromLTWH(
+                topLeft.dx,
+                topLeft.dy,
+                box.size.width,
+                box.size.height,
+              ),
+            );
+      }
+    });
+
     final slotHeight = ref.watch(layoutConfigProvider);
     final totalSlots = LayoutConfig.totalSlots;
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
@@ -2581,8 +2639,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         if (box == null) return;
 
         final localPosition = box.globalToLocal(details.offset);
-
-        // 🔹 Evita il caso offset 0.0 (rilascio perfettamente sul bordo)
         double effectiveDy = localPosition.dy;
         if (effectiveDy <= 0.0) {
           effectiveDy = 0.1;
@@ -2638,7 +2694,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final List<List<Appointment>> overlapGroups = [];
 
-    // 🔹 Raggruppa appuntamenti che si sovrappongono
+    // Raggruppa appuntamenti che si sovrappongono
     for (final appt in widget.appointments) {
       bool added = false;
       for (final group in overlapGroups) {
@@ -2655,14 +2711,13 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       if (!added) overlapGroups.add([appt]);
     }
 
-    final List<Widget> positionedAppointments = [];
+    final positionedAppointments = <Widget>[];
 
-    // 🔹 Costruisci i widget
     for (final group in overlapGroups) {
       final groupSize = group.length;
       for (int i = 0; i < groupSize; i++) {
         final a = group[i];
-        final bool isDragged = a.id == draggedId;
+        final isDragged = a.id == draggedId;
 
         final startMinutes = a.startTime.hour * 60 + a.startTime.minute;
         final endMinutes = a.endTime.hour * 60 + a.endTime.minute;
@@ -2675,12 +2730,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         double widthFraction = 1 / groupSize;
         double leftFraction = i * widthFraction;
-        double opacity = 1.0;
-
-        if (isDragged) {
-          // 👻 Ghost → solo opacità ridotta, nessuna espansione
-          opacity = AgendaTheme.ghostOpacity;
-        }
+        double opacity = isDragged ? AgendaTheme.ghostOpacity : 1.0;
 
         positionedAppointments.add(
           Positioned(
