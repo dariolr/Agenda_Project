@@ -378,6 +378,26 @@ class Appointment {
         : null,
   );
 
+  Appointment copyWith({
+    int? id,
+    int? staffId,
+    String? clientName,
+    DateTime? startTime,
+    DateTime? endTime,
+    List<int>? serviceIds,
+    List<Service>? services,
+  }) {
+    return Appointment(
+      id: id ?? this.id,
+      staffId: staffId ?? this.staffId,
+      clientName: clientName ?? this.clientName,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      serviceIds: serviceIds ?? this.serviceIds,
+      services: services ?? this.services,
+    );
+  }
+
   /// 🔸 Serializzazione in JSON
   Map<String, dynamic> toJson({bool includeServices = true}) {
     return {
@@ -1214,9 +1234,6 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
       if (newSlotHeight != state) {
         state = newSlotHeight;
       }
-      debugPrint(
-        '🔁 Layout updated → slotHeight: $newSlotHeight | headerHeight: $newHeaderHeight',
-      );
     });
   }
 }
@@ -1566,18 +1583,13 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     required DateTime newEnd,
   }) {
     state = [
-      for (final appt in state)
-        if (appt.id == appointmentId)
-          Appointment(
-            id: appt.id,
-            staffId: newStaffId,
-            clientName: appt.clientName,
-            startTime: newStart,
-            endTime: newEnd,
-          )
+      for (final a in state)
+        if (a.id == appointmentId)
+          a.copyWith(staffId: newStaffId, startTime: newStart, endTime: newEnd)
         else
-          appt,
+          a,
     ];
+    print('Updated appointment $appointmentId → $newEnd');
   }
 }
 
@@ -1601,6 +1613,80 @@ class IsResizingNotifier extends Notifier<bool> {
 final isResizingProvider = NotifierProvider<IsResizingNotifier, bool>(
   IsResizingNotifier.new,
 );
+--- FILE: lib/features/agenda/providers/resizing_provider.dart ---
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class _ResizingEntry {
+  final double? tempHeight;
+  final DateTime? provisionalEndTime;
+
+  const _ResizingEntry({this.tempHeight, this.provisionalEndTime});
+
+  _ResizingEntry copyWith({double? tempHeight, DateTime? provisionalEndTime}) {
+    return _ResizingEntry(
+      tempHeight: tempHeight ?? this.tempHeight,
+      provisionalEndTime: provisionalEndTime ?? this.provisionalEndTime,
+    );
+  }
+}
+
+class ResizingState {
+  final Map<int, _ResizingEntry> entries;
+  const ResizingState({this.entries = const {}});
+
+  ResizingState copyWith({Map<int, _ResizingEntry>? entries}) =>
+      ResizingState(entries: entries ?? this.entries);
+}
+
+class ResizingNotifier extends Notifier<ResizingState> {
+  @override
+  ResizingState build() => const ResizingState();
+
+  void start(int id, double startHeight) {
+    final newMap = Map<int, _ResizingEntry>.from(state.entries);
+    newMap[id] = _ResizingEntry(tempHeight: startHeight);
+    state = state.copyWith(entries: newMap);
+  }
+
+  void updateHeight(int id, double h) {
+    final entry = state.entries[id];
+    if (entry != null) {
+      final newMap = Map<int, _ResizingEntry>.from(state.entries);
+      newMap[id] = entry.copyWith(tempHeight: h);
+      state = state.copyWith(entries: newMap);
+    }
+  }
+
+  void updateProvisionalEndTime(int id, DateTime newEnd) {
+    final entry = state.entries[id];
+    if (entry != null) {
+      final newMap = Map<int, _ResizingEntry>.from(state.entries);
+      newMap[id] = entry.copyWith(provisionalEndTime: newEnd);
+      state = state.copyWith(entries: newMap);
+    }
+  }
+
+  void stop(int id) {
+    final newMap = Map<int, _ResizingEntry>.from(state.entries);
+    newMap.remove(id);
+    state = state.copyWith(entries: newMap);
+  }
+
+  void clearAll() => state = const ResizingState();
+}
+
+final resizingProvider = NotifierProvider<ResizingNotifier, ResizingState>(
+  ResizingNotifier.new,
+);
+
+/// 🟢 Provider selettivo: restituisce solo l’entry del singolo appointment
+final resizingEntryProvider = Provider.family<_ResizingEntry?, int>((
+  ref,
+  appointmentId,
+) {
+  final state = ref.watch(resizingProvider);
+  return state.entries[appointmentId];
+});
 --- FILE: lib/features/agenda/providers/agenda_scroll_provider.dart ---
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -2112,6 +2198,7 @@ import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
+import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
@@ -2137,10 +2224,8 @@ class AppointmentCard extends ConsumerStatefulWidget {
 class _AppointmentCardState extends ConsumerState<AppointmentCard> {
   Size? _lastSize;
   Offset? _lastPointerGlobalPosition;
-  final double _accumulatedDragDy = 0;
-
-  // 🔹 variabili per resize fluido
   double? _tempHeight;
+  double? _initialHeight;
   bool _isDraggingResize = false;
 
   @override
@@ -2167,7 +2252,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               final localPos = cardBox.globalToLocal(e.position);
               final cardHeight = cardBox.size.height;
               const resizeZoneHeight = 20.0;
-              // 🔸 Se clicco nel bordo inferiore → non attivo il drag principale
               if (localPos.dy > cardHeight - resizeZoneHeight) return;
 
               _lastPointerGlobalPosition = e.position;
@@ -2187,7 +2271,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           },
           child: GestureDetector(
             onTap: () {
-              // ✅ Se non sto ridimensionando, seleziono la card
               final resizing = ref.read(isResizingProvider);
               if (!resizing) {
                 final notifier = ref.read(selectedAppointmentProvider.notifier);
@@ -2214,7 +2297,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                 ref
                     .read(draggedAppointmentIdProvider.notifier)
                     .set(widget.appointment.id);
-
                 final bodyBox = ref.read(dragBodyBoxProvider);
                 if (bodyBox != null && _lastPointerGlobalPosition != null) {
                   final local = bodyBox.globalToLocal(
@@ -2256,9 +2338,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     ref.read(selectedAppointmentProvider.notifier).clear();
   }
 
-  // ──────────────────────────────────────────────
-  // BUILD CARD
-  // ──────────────────────────────────────────────
   Widget _buildCard({
     bool isGhost = false,
     bool forFeedback = false,
@@ -2267,10 +2346,14 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     DateTime? overrideStart,
     DateTime? overrideEnd,
   }) {
+    final entry = ref.watch(resizingEntryProvider(widget.appointment.id));
+
     final baseColor = widget.color.withOpacity(0.15);
     const r = BorderRadius.all(Radius.circular(6));
     final startTime = overrideStart ?? widget.appointment.startTime;
-    final endTime = overrideEnd ?? widget.appointment.endTime;
+    final endTime =
+        entry?.provisionalEndTime ?? overrideEnd ?? widget.appointment.endTime;
+
     final start =
         '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
     final end =
@@ -2295,7 +2378,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 80),
           curve: Curves.easeOutQuad,
-          height: _tempHeight, // 🔹 altezza live durante il resize
           decoration: BoxDecoration(
             color: Color.alphaBlend(baseColor, Colors.white),
             borderRadius: r,
@@ -2327,9 +2409,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  // ──────────────────────────────────────────────
-  // CONTENUTO TESTUALE
-  // ──────────────────────────────────────────────
   Widget _buildContent(String start, String end, String client, String info) {
     return ClipRect(
       child: Column(
@@ -2380,9 +2459,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  // ──────────────────────────────────────────────
-  // HANDLE RESIZE FLUIDO
-  // ──────────────────────────────────────────────
   Widget _buildResizeHandle() {
     return Align(
       alignment: Alignment.bottomCenter,
@@ -2391,27 +2467,50 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onVerticalDragStart: (_) {
+            final h = _lastSize?.height ?? 0;
+            _initialHeight = h;
             ref.read(isResizingProvider.notifier).start();
+            ref.read(resizingProvider.notifier).start(widget.appointment.id, h);
             setState(() {
               _isDraggingResize = true;
-              _tempHeight = _lastSize?.height;
+              _tempHeight = h;
             });
           },
           onVerticalDragUpdate: (details) {
-            setState(() {
-              _tempHeight =
-                  (_tempHeight ?? _lastSize?.height ?? 0) + details.delta.dy;
-              if (_tempHeight! < 20) _tempHeight = 20;
-            });
+            final previous = _tempHeight ?? _lastSize?.height ?? 0;
+            final next = (previous + details.delta.dy)
+                .clamp(20, double.infinity)
+                .toDouble();
+
+            setState(() => _tempHeight = next);
+            ref
+                .read(resizingProvider.notifier)
+                .updateHeight(widget.appointment.id, next);
+
+            // 🔹 Orario live quantizzato a 5 minuti
+            final appt = widget.appointment;
+            final minutesPerPixel =
+                LayoutConfig.minutesPerSlot / LayoutConfig.slotHeight;
+            final baseHeight = _initialHeight ?? _lastSize?.height ?? 0;
+            final deltaPixels = next - baseHeight;
+
+            final deltaMinutesRaw = (deltaPixels * minutesPerPixel);
+            final deltaMinutes = ((deltaMinutesRaw / 5).round() * 5).toInt();
+
+            final previewEnd = appt.endTime.add(
+              Duration(minutes: deltaMinutes),
+            );
+            ref
+                .read(resizingProvider.notifier)
+                .updateProvisionalEndTime(widget.appointment.id, previewEnd);
           },
           onVerticalDragEnd: (_) {
             final appt = widget.appointment;
             final notifier = ref.read(appointmentsProvider.notifier);
-
             final minutesPerPixel =
                 LayoutConfig.minutesPerSlot / LayoutConfig.slotHeight;
-            final currentHeight = _lastSize?.height ?? 0;
-            final deltaPixels = (_tempHeight ?? currentHeight) - currentHeight;
+            final baseHeight = _initialHeight ?? _lastSize?.height ?? 0;
+            final deltaPixels = (_tempHeight ?? baseHeight) - baseHeight;
             final deltaMinutes = (deltaPixels * minutesPerPixel).round();
 
             if (deltaMinutes.abs() >= 5) {
@@ -2419,18 +2518,27 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               final newEnd = appt.endTime.add(Duration(minutes: steps * 5));
               final minEnd = appt.startTime.add(const Duration(minutes: 5));
 
+              ref
+                  .read(resizingProvider.notifier)
+                  .updateProvisionalEndTime(widget.appointment.id, newEnd);
+
               notifier.moveAppointment(
                 appointmentId: appt.id,
                 newStaffId: appt.staffId,
                 newStart: appt.startTime,
                 newEnd: newEnd.isAfter(minEnd) ? newEnd : minEnd,
               );
+
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() {});
+              });
             }
 
             setState(() {
               _isDraggingResize = false;
               _tempHeight = null;
             });
+
             ref.read(isResizingProvider.notifier).stop();
           },
           child: AnimatedContainer(
@@ -2465,9 +2573,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  // ──────────────────────────────────────────────
-  // DRAG FEEDBACK
-  // ──────────────────────────────────────────────
   Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
     final start = times?.$1;
@@ -2583,20 +2688,21 @@ class HourColumn extends ConsumerWidget {
   }
 }
 --- FILE: lib/features/agenda/presentation/screens/day_view/staff_column.dart ---
-import 'package:agenda_frontend/features/agenda/providers/drag_layer_link_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '/../../../core/models/appointment.dart';
-import '/../../../core/models/staff.dart';
+import '/core/models/appointment.dart';
+import '/core/models/staff.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/resizing_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../widgets/agenda_dividers.dart';
@@ -2654,7 +2760,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       final bodyBox = ref.read(dragBodyBoxProvider);
       if (box == null || bodyBox == null) return;
 
-      // 🔹 Registra il Rect corrente in body-local per l'ancoraggio del ghost
       final columnTopLeftInBody = bodyBox.globalToLocal(
         box.localToGlobal(Offset.zero),
       );
@@ -2670,7 +2775,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             ),
           );
 
-      // next è BODY-LOCAL → coordinate locali alla colonna
       final localInColumn = Offset(
         next.dx - columnTopLeftInBody.dx,
         next.dy - columnTopLeftInBody.dy,
@@ -2723,9 +2827,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       } else if (_isHighlighted) {
         final headerHeight = LayoutConfig.headerHeight;
         final globalY = next.dy;
-        if (globalY > headerHeight - 5) {
-          return;
-        }
+        if (globalY > headerHeight - 5) return;
 
         setState(() {
           _isHighlighted = false;
@@ -2750,7 +2852,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
   @override
   Widget build(BuildContext context) {
-    // 🔹 Aggiorna geometria dopo il layout (utile su resize)
+    // 🔹 Reattività: osserva sempre il provider principale
+    final allAppointments = ref.watch(appointmentsProvider);
+    print(
+      'Provider hash (staffColumn): ${ref.read(appointmentsProvider.notifier).hashCode}',
+    );
+
+    final staffAppointments = allAppointments
+        .where((a) => a.staffId == widget.staff.id)
+        .toList();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final box = context.findRenderObject() as RenderBox?;
       final bodyBox = ref.read(dragBodyBoxProvider);
@@ -2776,7 +2887,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     final stackChildren = <Widget>[];
 
-    // 🕓 Griglia oraria
+    // 🔹 Griglia oraria
     stackChildren.add(
       Column(
         children: List.generate(totalSlots, (index) {
@@ -2796,8 +2907,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
-    // 🔹 Appuntamenti
-    stackChildren.addAll(_buildAppointments(slotHeight));
+    // 🔹 Appuntamenti (reattivi)
+    stackChildren.addAll(_buildAppointments(slotHeight, staffAppointments));
 
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
@@ -2822,9 +2933,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         final localPosition = box.globalToLocal(details.offset);
         double effectiveDy = localPosition.dy;
-        if (effectiveDy <= 0.0) {
-          effectiveDy = 0.1;
-        }
+        if (effectiveDy <= 0.0) effectiveDy = 0.1;
 
         final minutesFromTop =
             (effectiveDy / slotHeight) * LayoutConfig.minutesPerSlot;
@@ -2872,12 +2981,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     );
   }
 
-  List<Widget> _buildAppointments(double slotHeight) {
+  List<Widget> _buildAppointments(
+    double slotHeight,
+    List<Appointment> appointments,
+  ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
+    final resizingState = ref.watch(resizingProvider);
+
     final List<List<Appointment>> overlapGroups = [];
 
-    // Raggruppa appuntamenti che si sovrappongono
-    for (final appt in widget.appointments) {
+    for (final appt in appointments) {
       bool added = false;
       for (final group in overlapGroups) {
         if (group.any(
@@ -2906,9 +3019,20 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         final double top =
             (startMinutes / LayoutConfig.minutesPerSlot) * slotHeight;
-        final double height =
+        double height =
             ((endMinutes - startMinutes) / LayoutConfig.minutesPerSlot) *
             slotHeight;
+
+        final entry = resizingState.entries[a.id];
+        if (entry != null) {
+          if (a.endTime != entry.provisionalEndTime) {
+            if (entry.tempHeight != null) height = entry.tempHeight!;
+          } else {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ref.read(resizingProvider.notifier).stop(a.id);
+            });
+          }
+        }
 
         double widthFraction = 1 / groupSize;
         double leftFraction = i * widthFraction;

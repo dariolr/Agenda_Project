@@ -290,21 +290,23 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
             });
           },
           onVerticalDragUpdate: (details) {
-            final double next =
-                (((_tempHeight ?? _lastSize?.height ?? 0) + details.delta.dy)
-                        .clamp(20, double.infinity))
-                    .toDouble();
+            final previous = _tempHeight ?? _lastSize?.height ?? 0;
+            final next = (previous + details.delta.dy)
+                .clamp(20, double.infinity)
+                .toDouble();
+
             setState(() => _tempHeight = next);
             ref
                 .read(resizingProvider.notifier)
                 .updateHeight(widget.appointment.id, next);
 
-            // 🔹 Aggiorna orario provvisorio live durante il resize
+            // 🔹 Orario live quantizzato a 5 minuti
             final appt = widget.appointment;
             final minutesPerPixel =
                 LayoutConfig.minutesPerSlot / LayoutConfig.slotHeight;
             final baseHeight = _initialHeight ?? _lastSize?.height ?? 0;
             final deltaPixels = next - baseHeight;
+
             final deltaMinutesRaw = (deltaPixels * minutesPerPixel);
             final deltaMinutes = ((deltaMinutesRaw / 5).round() * 5).toInt();
 
@@ -316,10 +318,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                 .updateProvisionalEndTime(widget.appointment.id, previewEnd);
           },
           onVerticalDragEnd: (_) {
-            print(
-              '🟢 onVerticalDragEnd triggered for ${widget.appointment.id}',
-            );
-
             final appt = widget.appointment;
             final notifier = ref.read(appointmentsProvider.notifier);
             final minutesPerPixel =
