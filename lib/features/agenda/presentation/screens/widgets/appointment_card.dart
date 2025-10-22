@@ -62,12 +62,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           onPointerDown: (e) {
             final cardBox = context.findRenderObject() as RenderBox?;
             if (cardBox != null) {
-              final localPos = cardBox.globalToLocal(e.position);
-              final cardHeight = cardBox.size.height;
-              const resizeZoneHeight = 20.0;
-              if (localPos.dy > cardHeight - resizeZoneHeight) return;
-
               _lastPointerGlobalPosition = e.position;
+
               final bodyBox = ref.read(dragBodyBoxProvider);
               if (bodyBox != null) {
                 final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
@@ -82,6 +78,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               }
             }
           },
+
           child: GestureDetector(
             onTap: () {
               final resizing = ref.read(isResizingProvider);
@@ -89,8 +86,14 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                 final notifier = ref.read(selectedAppointmentProvider.notifier);
                 notifier.clear();
                 notifier.toggle(widget.appointment.id);
+
+                ref.read(dragOffsetProvider.notifier).clear();
+                ref.read(dragOffsetXProvider.notifier).clear();
+                ref.read(dragPositionProvider.notifier).clear();
+                ref.read(highlightedStaffIdProvider.notifier).clear();
               }
             },
+
             child: LongPressDraggable<Appointment>(
               data: widget.appointment,
               feedback: Consumer(
@@ -110,6 +113,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                 ref
                     .read(draggedAppointmentIdProvider.notifier)
                     .set(widget.appointment.id);
+
                 final bodyBox = ref.read(dragBodyBoxProvider);
                 if (bodyBox != null && _lastPointerGlobalPosition != null) {
                   final local = bodyBox.globalToLocal(
@@ -300,7 +304,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                 .read(resizingProvider.notifier)
                 .updateHeight(widget.appointment.id, next);
 
-            // 🔹 Orario live quantizzato a 5 minuti
             final appt = widget.appointment;
             final minutesPerPixel =
                 LayoutConfig.minutesPerSlot / LayoutConfig.slotHeight;
