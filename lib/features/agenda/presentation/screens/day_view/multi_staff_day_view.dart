@@ -10,6 +10,7 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
+import '../../../providers/is_resizing_provider.dart'; // 👈 nuovo import
 import '../../../providers/layout_config_provider.dart';
 import '../widgets/agenda_dividers.dart';
 import '../widgets/current_time_line.dart';
@@ -36,7 +37,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   static const double _scrollSpeed = 20;
   static const Duration _scrollInterval = Duration(milliseconds: 50);
 
-  final GlobalKey _bodyKey = GlobalKey(); // 👈 registrazione RenderBox body
+  final GlobalKey _bodyKey = GlobalKey(); // registrazione RenderBox body
 
   @override
   void initState() {
@@ -172,8 +173,10 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     final slotHeight = ref.watch(layoutConfigProvider);
     final totalHeight = LayoutConfig.totalSlots * slotHeight;
     final hourW = LayoutConfig.hourColumnWidth;
+    final link = ref.watch(dragLayerLinkProvider);
 
-    final link = ref.watch(dragLayerLinkProvider); // ✅ Notifier state
+    // 🔹 blocca scroll se stiamo ridimensionando
+    final isResizing = ref.watch(isResizingProvider);
 
     // Aggiorna periodicamente il bodyBox (in caso di resize)
     WidgetsBinding.instance.addPostFrameCallback((_) => _registerBodyBox());
@@ -190,7 +193,10 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
               behavior: const NoScrollbarBehavior(),
               child: SingleChildScrollView(
                 controller: scrollState.verticalScrollCtrl,
-                physics: const ClampingScrollPhysics(),
+                // 👇 blocco dinamico scroll verticale
+                physics: isResizing
+                    ? const NeverScrollableScrollPhysics()
+                    : const ClampingScrollPhysics(),
                 child: Stack(
                   children: [
                     Row(

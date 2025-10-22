@@ -36,6 +36,26 @@ class Appointment {
         : null,
   );
 
+  Appointment copyWith({
+    int? id,
+    int? staffId,
+    String? clientName,
+    DateTime? startTime,
+    DateTime? endTime,
+    List<int>? serviceIds,
+    List<Service>? services,
+  }) {
+    return Appointment(
+      id: id ?? this.id,
+      staffId: staffId ?? this.staffId,
+      clientName: clientName ?? this.clientName,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      serviceIds: serviceIds ?? this.serviceIds,
+      services: services ?? this.services,
+    );
+  }
+
   /// 🔸 Serializzazione in JSON
   Map<String, dynamic> toJson({bool includeServices = true}) {
     return {

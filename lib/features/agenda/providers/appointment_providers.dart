@@ -98,18 +98,13 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     required DateTime newEnd,
   }) {
     state = [
-      for (final appt in state)
-        if (appt.id == appointmentId)
-          Appointment(
-            id: appt.id,
-            staffId: newStaffId,
-            clientName: appt.clientName,
-            startTime: newStart,
-            endTime: newEnd,
-          )
+      for (final a in state)
+        if (a.id == appointmentId)
+          a.copyWith(staffId: newStaffId, startTime: newStart, endTime: newEnd)
         else
-          appt,
+          a,
     ];
+    print('Updated appointment $appointmentId → $newEnd');
   }
 }
 

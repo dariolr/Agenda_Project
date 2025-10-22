@@ -5,10 +5,13 @@ import '/core/models/appointment.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
+import '../../../providers/appointment_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
+import '../../../providers/is_resizing_provider.dart';
+import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
@@ -34,12 +37,14 @@ class AppointmentCard extends ConsumerStatefulWidget {
 class _AppointmentCardState extends ConsumerState<AppointmentCard> {
   Size? _lastSize;
   Offset? _lastPointerGlobalPosition;
+  double? _tempHeight;
+  double? _initialHeight;
+  bool _isDraggingResize = false;
 
   @override
   Widget build(BuildContext context) {
     final selectedId = ref.watch(selectedAppointmentProvider);
     final draggedId = ref.watch(draggedAppointmentIdProvider);
-
     final isSelected = selectedId == widget.appointment.id;
     final isDragging = draggedId == widget.appointment.id;
     final showThickBorder = isSelected || isDragging;
@@ -53,18 +58,18 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           }
         });
 
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            final notifier = ref.read(selectedAppointmentProvider.notifier);
-            notifier.toggle(widget.appointment.id);
-          },
-          child: Listener(
-            onPointerDown: (e) {
+        return Listener(
+          onPointerDown: (e) {
+            final cardBox = context.findRenderObject() as RenderBox?;
+            if (cardBox != null) {
+              final localPos = cardBox.globalToLocal(e.position);
+              final cardHeight = cardBox.size.height;
+              const resizeZoneHeight = 20.0;
+              if (localPos.dy > cardHeight - resizeZoneHeight) return;
+
               _lastPointerGlobalPosition = e.position;
               final bodyBox = ref.read(dragBodyBoxProvider);
-              final cardBox = context.findRenderObject() as RenderBox?;
-              if (bodyBox != null && cardBox != null) {
+              if (bodyBox != null) {
                 final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
                 ref
                     .read(dragOffsetProvider.notifier)
@@ -74,6 +79,16 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                     .set(e.position.dx - cardTopLeftGlobal.dx);
                 final localStart = bodyBox.globalToLocal(e.position);
                 ref.read(dragPositionProvider.notifier).set(localStart);
+              }
+            }
+          },
+          child: GestureDetector(
+            onTap: () {
+              final resizing = ref.read(isResizingProvider);
+              if (!resizing) {
+                final notifier = ref.read(selectedAppointmentProvider.notifier);
+                notifier.clear();
+                notifier.toggle(widget.appointment.id);
               }
             },
             child: LongPressDraggable<Appointment>(
@@ -89,17 +104,12 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                 showThickBorder: showThickBorder,
               ),
               onDragStarted: () {
-                // 🔹 Solo una card selezionata
                 final selected = ref.read(selectedAppointmentProvider.notifier);
                 selected.clear();
                 selected.toggle(widget.appointment.id);
-
-                // 🔹 Segna questa come dragging
                 ref
                     .read(draggedAppointmentIdProvider.notifier)
                     .set(widget.appointment.id);
-
-                // 🔹 Posizione iniziale
                 final bodyBox = ref.read(dragBodyBoxProvider);
                 if (bodyBox != null && _lastPointerGlobalPosition != null) {
                   final local = bodyBox.globalToLocal(
@@ -121,7 +131,10 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               onDragEnd: (_) => _handleEnd(ref),
               onDragCompleted: () => _handleEnd(ref),
               onDraggableCanceled: (_, __) => _handleEnd(ref),
-              child: _buildCard(showThickBorder: showThickBorder),
+              child: _buildCard(
+                showThickBorder: showThickBorder,
+                isResizingDisabled: isDragging,
+              ),
             ),
           ),
         );
@@ -135,22 +148,25 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     ref.read(dragOffsetXProvider.notifier).clear();
     ref.read(dragPositionProvider.notifier).clear();
     ref.read(tempDragTimeProvider.notifier).clear();
-    ref
-        .read(selectedAppointmentProvider.notifier)
-        .clear(); // ✅ tutte unselected
+    ref.read(selectedAppointmentProvider.notifier).clear();
   }
 
   Widget _buildCard({
     bool isGhost = false,
     bool forFeedback = false,
     bool showThickBorder = false,
+    bool isResizingDisabled = false,
     DateTime? overrideStart,
     DateTime? overrideEnd,
   }) {
+    final entry = ref.watch(resizingEntryProvider(widget.appointment.id));
+
     final baseColor = widget.color.withOpacity(0.15);
     const r = BorderRadius.all(Radius.circular(6));
     final startTime = overrideStart ?? widget.appointment.startTime;
-    final endTime = overrideEnd ?? widget.appointment.endTime;
+    final endTime =
+        entry?.provisionalEndTime ?? overrideEnd ?? widget.appointment.endTime;
+
     final start =
         '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
     final end =
@@ -165,7 +181,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
       pieces.add(widget.appointment.formattedPrice);
     }
     final info = pieces.join(' – ');
-
     final borderWidth = showThickBorder ? 2.5 : 1.0;
 
     return Opacity(
@@ -174,8 +189,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         borderRadius: r,
         color: Colors.transparent,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOutCubic,
+          duration: const Duration(milliseconds: 80),
+          curve: Curves.easeOutQuad,
           decoration: BoxDecoration(
             color: Color.alphaBlend(baseColor, Colors.white),
             borderRadius: r,
@@ -190,14 +205,17 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          child: DefaultTextStyle(
-            style: AgendaTheme.appointmentTextStyle.copyWith(
-              fontSize: 12.5,
-              height: 1.15,
-            ),
-            // ✅ niente più FittedBox o troncamenti
-            child: _buildContent(start, end, client, info),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: _buildContent(start, end, client, info),
+                ),
+              ),
+              if (!forFeedback && !isResizingDisabled) _buildResizeHandle(),
+            ],
           ),
         ),
       ),
@@ -205,53 +223,171 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
   }
 
   Widget _buildContent(String start, String end, String client, String info) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        RichText(
-          maxLines: 1,
-          softWrap: false, // ❌ mai andare a capo
-          overflow: TextOverflow.clip, // ✂️ taglia orizzontalmente se serve
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: '$start - $end  ',
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              TextSpan(
-                text: client,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (info.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 1),
-            child: Text(
-              info,
+    return ClipRect(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: RichText(
               maxLines: 1,
-              softWrap: false, // ❌ anche qui: resta su una riga
-              overflow: TextOverflow.clip, // ✂️ taglia se necessario
-              style: const TextStyle(
-                fontSize: 11,
-                color: Colors.black54,
-                height: 1.1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$start - $end  ',
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  TextSpan(
+                    text: client,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-      ],
+          if (info.isNotEmpty)
+            Flexible(
+              child: Text(
+                info,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.black54,
+                  height: 1.1,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  /// 👻 Feedback ancorato alla colonna evidenziata
+  Widget _buildResizeHandle() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.resizeUpDown,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onVerticalDragStart: (_) {
+            final h = _lastSize?.height ?? 0;
+            _initialHeight = h;
+            ref.read(isResizingProvider.notifier).start();
+            ref.read(resizingProvider.notifier).start(widget.appointment.id, h);
+            setState(() {
+              _isDraggingResize = true;
+              _tempHeight = h;
+            });
+          },
+          onVerticalDragUpdate: (details) {
+            final double next =
+                (((_tempHeight ?? _lastSize?.height ?? 0) + details.delta.dy)
+                        .clamp(20, double.infinity))
+                    .toDouble();
+            setState(() => _tempHeight = next);
+            ref
+                .read(resizingProvider.notifier)
+                .updateHeight(widget.appointment.id, next);
+
+            // 🔹 Aggiorna orario provvisorio live durante il resize
+            final appt = widget.appointment;
+            final minutesPerPixel =
+                LayoutConfig.minutesPerSlot / LayoutConfig.slotHeight;
+            final baseHeight = _initialHeight ?? _lastSize?.height ?? 0;
+            final deltaPixels = next - baseHeight;
+            final deltaMinutesRaw = (deltaPixels * minutesPerPixel);
+            final deltaMinutes = ((deltaMinutesRaw / 5).round() * 5).toInt();
+
+            final previewEnd = appt.endTime.add(
+              Duration(minutes: deltaMinutes),
+            );
+            ref
+                .read(resizingProvider.notifier)
+                .updateProvisionalEndTime(widget.appointment.id, previewEnd);
+          },
+          onVerticalDragEnd: (_) {
+            print(
+              '🟢 onVerticalDragEnd triggered for ${widget.appointment.id}',
+            );
+
+            final appt = widget.appointment;
+            final notifier = ref.read(appointmentsProvider.notifier);
+            final minutesPerPixel =
+                LayoutConfig.minutesPerSlot / LayoutConfig.slotHeight;
+            final baseHeight = _initialHeight ?? _lastSize?.height ?? 0;
+            final deltaPixels = (_tempHeight ?? baseHeight) - baseHeight;
+            final deltaMinutes = (deltaPixels * minutesPerPixel).round();
+
+            if (deltaMinutes.abs() >= 5) {
+              final steps = (deltaMinutes ~/ 5);
+              final newEnd = appt.endTime.add(Duration(minutes: steps * 5));
+              final minEnd = appt.startTime.add(const Duration(minutes: 5));
+
+              ref
+                  .read(resizingProvider.notifier)
+                  .updateProvisionalEndTime(widget.appointment.id, newEnd);
+
+              notifier.moveAppointment(
+                appointmentId: appt.id,
+                newStaffId: appt.staffId,
+                newStart: appt.startTime,
+                newEnd: newEnd.isAfter(minEnd) ? newEnd : minEnd,
+              );
+
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() {});
+              });
+            }
+
+            setState(() {
+              _isDraggingResize = false;
+              _tempHeight = null;
+            });
+
+            ref.read(isResizingProvider.notifier).stop();
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 80),
+            curve: Curves.easeOutQuad,
+            height: 20,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: _isDraggingResize
+                  ? Colors.grey.withOpacity(0.2)
+                  : Colors.transparent,
+              border: Border(
+                top: BorderSide(
+                  color: _isDraggingResize
+                      ? Colors.grey.shade700
+                      : Colors.grey.withOpacity(0.2),
+                  width: 1.2,
+                ),
+              ),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(6),
+              ),
+            ),
+            alignment: Alignment.bottomCenter,
+            child: const Padding(
+              padding: EdgeInsets.only(bottom: 1),
+              child: Icon(Icons.drag_indicator, size: 14, color: Colors.grey),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref) {
     final times = ref.watch(tempDragTimeProvider);
     final start = times?.$1;
@@ -260,7 +396,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     final offY = ref.watch(dragOffsetProvider) ?? 0;
     final offX = ref.watch(dragOffsetXProvider) ?? 0;
     final link = ref.watch(dragLayerLinkProvider);
-
     final highlightedId = ref.watch(highlightedStaffIdProvider);
     final columnsRects = ref.watch(staffColumnsGeometryProvider);
 

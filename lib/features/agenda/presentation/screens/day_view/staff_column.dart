@@ -1,17 +1,18 @@
-import 'package:agenda_frontend/features/agenda/providers/drag_layer_link_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '/../../../core/models/appointment.dart';
-import '/../../../core/models/staff.dart';
+import '/core/models/appointment.dart';
+import '/core/models/staff.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/resizing_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../widgets/agenda_dividers.dart';
@@ -69,7 +70,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       final bodyBox = ref.read(dragBodyBoxProvider);
       if (box == null || bodyBox == null) return;
 
-      // 🔹 Registra il Rect corrente in body-local per l'ancoraggio del ghost
       final columnTopLeftInBody = bodyBox.globalToLocal(
         box.localToGlobal(Offset.zero),
       );
@@ -85,7 +85,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             ),
           );
 
-      // next è BODY-LOCAL → coordinate locali alla colonna
       final localInColumn = Offset(
         next.dx - columnTopLeftInBody.dx,
         next.dy - columnTopLeftInBody.dy,
@@ -138,9 +137,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       } else if (_isHighlighted) {
         final headerHeight = LayoutConfig.headerHeight;
         final globalY = next.dy;
-        if (globalY > headerHeight - 5) {
-          return;
-        }
+        if (globalY > headerHeight - 5) return;
 
         setState(() {
           _isHighlighted = false;
@@ -165,7 +162,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
   @override
   Widget build(BuildContext context) {
-    // 🔹 Aggiorna geometria dopo il layout (utile su resize)
+    // 🔹 Reattività: osserva sempre il provider principale
+    final allAppointments = ref.watch(appointmentsProvider);
+    print(
+      'Provider hash (staffColumn): ${ref.read(appointmentsProvider.notifier).hashCode}',
+    );
+
+    final staffAppointments = allAppointments
+        .where((a) => a.staffId == widget.staff.id)
+        .toList();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final box = context.findRenderObject() as RenderBox?;
       final bodyBox = ref.read(dragBodyBoxProvider);
@@ -191,7 +197,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     final stackChildren = <Widget>[];
 
-    // 🕓 Griglia oraria
+    // 🔹 Griglia oraria
     stackChildren.add(
       Column(
         children: List.generate(totalSlots, (index) {
@@ -211,8 +217,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
-    // 🔹 Appuntamenti
-    stackChildren.addAll(_buildAppointments(slotHeight));
+    // 🔹 Appuntamenti (reattivi)
+    stackChildren.addAll(_buildAppointments(slotHeight, staffAppointments));
 
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
@@ -237,9 +243,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         final localPosition = box.globalToLocal(details.offset);
         double effectiveDy = localPosition.dy;
-        if (effectiveDy <= 0.0) {
-          effectiveDy = 0.1;
-        }
+        if (effectiveDy <= 0.0) effectiveDy = 0.1;
 
         final minutesFromTop =
             (effectiveDy / slotHeight) * LayoutConfig.minutesPerSlot;
@@ -287,12 +291,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     );
   }
 
-  List<Widget> _buildAppointments(double slotHeight) {
+  List<Widget> _buildAppointments(
+    double slotHeight,
+    List<Appointment> appointments,
+  ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
+    final resizingState = ref.watch(resizingProvider);
+
     final List<List<Appointment>> overlapGroups = [];
 
-    // Raggruppa appuntamenti che si sovrappongono
-    for (final appt in widget.appointments) {
+    for (final appt in appointments) {
       bool added = false;
       for (final group in overlapGroups) {
         if (group.any(
@@ -321,9 +329,20 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         final double top =
             (startMinutes / LayoutConfig.minutesPerSlot) * slotHeight;
-        final double height =
+        double height =
             ((endMinutes - startMinutes) / LayoutConfig.minutesPerSlot) *
             slotHeight;
+
+        final entry = resizingState.entries[a.id];
+        if (entry != null) {
+          if (a.endTime != entry.provisionalEndTime) {
+            if (entry.tempHeight != null) height = entry.tempHeight!;
+          } else {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ref.read(resizingProvider.notifier).stop(a.id);
+            });
+          }
+        }
 
         double widthFraction = 1 / groupSize;
         double leftFraction = i * widthFraction;

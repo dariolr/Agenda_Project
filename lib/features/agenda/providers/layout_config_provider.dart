@@ -58,9 +58,6 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
       if (newSlotHeight != state) {
         state = newSlotHeight;
       }
-      debugPrint(
-        '🔁 Layout updated → slotHeight: $newSlotHeight | headerHeight: $newHeaderHeight',
-      );
     });
   }
 }
