@@ -104,7 +104,6 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         else
           a,
     ];
-    print('Updated appointment $appointmentId → $newEnd');
   }
 }
 

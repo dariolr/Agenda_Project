@@ -164,9 +164,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   Widget build(BuildContext context) {
     // 🔹 Reattività: osserva sempre il provider principale
     final allAppointments = ref.watch(appointmentsProvider);
-    print(
-      'Provider hash (staffColumn): ${ref.read(appointmentsProvider.notifier).hashCode}',
-    );
 
     final staffAppointments = allAppointments
         .where((a) => a.staffId == widget.staff.id)
