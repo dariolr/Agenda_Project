@@ -344,23 +344,19 @@ class Appointment {
   final int id;
   final int staffId;
   final String clientName;
+  final String serviceName;
   final DateTime startTime;
   final DateTime endTime;
-
-  /// 🔹 Lista di ID dei servizi associati (versione "leggera")
-  final List<int>? serviceIds;
-
-  /// 🔹 Lista completa di servizi (versione "espansa")
-  final List<Service>? services;
+  final double? price; // costo singolo in euro
 
   const Appointment({
     required this.id,
     required this.staffId,
     required this.clientName,
+    required this.serviceName,
     required this.startTime,
     required this.endTime,
-    this.serviceIds,
-    this.services,
+    this.price,
   });
 
   /// 🔸 Costruttore da JSON
@@ -368,33 +364,29 @@ class Appointment {
     id: json['id'],
     staffId: json['staff_id'],
     clientName: json['client_name'],
+    serviceName: json['service_name'],
     startTime: DateTime.parse(json['start_time']),
     endTime: DateTime.parse(json['end_time']),
-    serviceIds: json['service_ids'] != null
-        ? List<int>.from(json['service_ids'])
-        : null,
-    services: json['services'] != null
-        ? (json['services'] as List).map((s) => Service.fromJson(s)).toList()
-        : null,
+    price: json['price'] != null ? (json['price'] as num).toDouble() : null,
   );
 
   Appointment copyWith({
     int? id,
     int? staffId,
     String? clientName,
+    String? serviceName,
     DateTime? startTime,
     DateTime? endTime,
-    List<int>? serviceIds,
-    List<Service>? services,
+    double? price,
   }) {
     return Appointment(
       id: id ?? this.id,
       staffId: staffId ?? this.staffId,
       clientName: clientName ?? this.clientName,
+      serviceName: serviceName ?? this.serviceName,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
-      serviceIds: serviceIds ?? this.serviceIds,
-      services: services ?? this.services,
+      price: price ?? this.price,
     );
   }
 
@@ -404,47 +396,23 @@ class Appointment {
       'id': id,
       'staff_id': staffId,
       'client_name': clientName,
+      'service_name': serviceName,
       'start_time': startTime.toIso8601String(),
       'end_time': endTime.toIso8601String(),
-      if (serviceIds != null) 'service_ids': serviceIds,
-      if (includeServices && services != null)
-        'services': services!.map((s) => s.toJson()).toList(),
+      if (price != null) 'price': price,
     };
   }
 
   /// 🔹 Durata totale in minuti
   int get totalDuration => endTime.difference(startTime).inMinutes;
 
-  /// 🔹 Prezzo totale dell'appuntamento
-  double get totalPrice {
-    if (services == null || services!.isEmpty) return 0.0;
-    return services!.map((s) => s.price ?? 0.0).fold(0.0, (a, b) => a + b);
-  }
-
-  /// 🔹 Restituisce lista nomi servizi (se presenti)
-  List<String> get serviceNames {
-    if (services != null && services!.isNotEmpty) {
-      return services!.map((s) => s.name).toList();
-    }
-    return [];
-  }
-
-  /// 🔹 Stringa compatta per UI (es. "Taglio, Shampoo – 45 min")
-  String get formattedServices {
-    if (serviceNames.isEmpty) return '';
-    final names = serviceNames.length > 3
-        ? '${serviceNames.length} servizi'
-        : serviceNames.join(', ');
-    return '$names – $totalDuration min';
-  }
-
   /// 🔹 Stringa formattata per prezzo totale
   String get formattedPrice {
-    if (totalPrice == 0) return '';
-    return '${totalPrice.toStringAsFixed(2)}€';
+    if (price == null || price == 0) return '';
+    return '${price!.toStringAsFixed(2)}€';
   }
 }
-
+--- FILE: lib/core/models/service.dart ---
 class Service {
   final int id;
   final String name;
@@ -1510,6 +1478,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         id: 1,
         staffId: 1,
         clientName: 'Anna Rossi',
+        serviceName: 'service name',
         startTime: today.add(const Duration(hours: 9, minutes: 10)),
         endTime: today.add(const Duration(hours: 9, minutes: 35)),
       ),
@@ -1517,6 +1486,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         id: 2,
         staffId: 1,
         clientName: 'Luca Bianchi',
+        serviceName: 'service name',
         startTime: today.add(const Duration(hours: 9, minutes: 30)),
         endTime: today.add(const Duration(hours: 10, minutes: 30)),
       ),
@@ -1524,6 +1494,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         id: 3,
         staffId: 1,
         clientName: 'Paolo Verdi',
+        serviceName: 'service name',
         startTime: today.add(const Duration(hours: 11)),
         endTime: today.add(const Duration(hours: 12)),
       ),
@@ -1533,6 +1504,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         id: 4,
         staffId: 2,
         clientName: 'Giulia Neri',
+        serviceName: 'service name',
         startTime: today.add(const Duration(hours: 10)),
         endTime: today.add(const Duration(hours: 11)),
       ),
@@ -1540,6 +1512,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         id: 5,
         staffId: 2,
         clientName: 'Marco Gialli',
+        serviceName: 'service name',
         startTime: today.add(const Duration(hours: 10, minutes: 15)),
         endTime: today.add(const Duration(hours: 10, minutes: 45)),
       ),
@@ -1547,6 +1520,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         id: 6,
         staffId: 2,
         clientName: 'Chiara Blu',
+        serviceName: 'service name',
         startTime: today.add(const Duration(hours: 14)),
         endTime: today.add(const Duration(hours: 15)),
       ),
@@ -1556,6 +1530,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         id: 7,
         staffId: 3,
         clientName: 'Valentina',
+        serviceName: 'service name',
         startTime: today.add(const Duration(hours: 9)),
         endTime: today.add(const Duration(hours: 9, minutes: 45)),
       ),
@@ -1563,6 +1538,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         id: 8,
         staffId: 3,
         clientName: 'Francesco',
+        serviceName: 'service name',
         startTime: today.add(const Duration(hours: 9, minutes: 30)),
         endTime: today.add(const Duration(hours: 10, minutes: 15)),
       ),
@@ -1570,6 +1546,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         id: 9,
         staffId: 3,
         clientName: 'Elisa',
+        serviceName: 'service name',
         startTime: today.add(const Duration(hours: 10, minutes: 30)),
         endTime: today.add(const Duration(hours: 11)),
       ),
@@ -2108,43 +2085,62 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
     super.dispose();
   }
 
+  // In lib/features/agenda/presentation/screens/widgets/current_time_line.dart
+
   @override
   Widget build(BuildContext context) {
+    // 1. La linea viene posizionata esattamente a _offset
     return Positioned(
       top: _offset,
       left: 0,
       right: 0,
-      child: Row(
+      // Usiamo uno Stack per sovrapporre la linea e il testo
+      child: Stack(
+        clipBehavior: Clip.none, // Permette al testo di "uscire"
         children: [
-          // Pallino e orario nella colonna ore
-          SizedBox(
-            width: widget.hourColumnWidth,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
+          // 2. Questa è la linea rossa
+          Container(
+            height: 0.5, // Manteniamo un'altezza minima per la visibilità
+            color: Colors.redAccent,
+            // Lasciamo lo spazio per la colonna degli orari
+            margin: EdgeInsets.only(left: widget.hourColumnWidth),
+          ),
+
+          // 3. Posizioniamo il testo e il pallino RELATIVAMENTE alla linea
+          Positioned(
+            left: 0,
+            // Centriamo il testo verticalmente sulla linea.
+            // (L'altezza del testo è 11 , quindi -5.5 è circa il centro)
+            top: -6,
+            child: SizedBox(
+              width: widget.hourColumnWidth,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment:
+                    CrossAxisAlignment.center, // Centra pallino e testo
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _label,
-                  style: const TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(width: 4),
+                  Text(
+                    _label,
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-              ],
+                  const SizedBox(width: 4),
+                ],
+              ),
             ),
           ),
-          // Linea rossa che attraversa tutte le colonne
-          Expanded(child: Container(height: 0.5, color: Colors.redAccent)),
         ],
       ),
     );
@@ -2373,8 +2369,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     final client = widget.appointment.clientName;
 
     final pieces = <String>[];
-    if (widget.appointment.formattedServices.isNotEmpty) {
-      pieces.add(widget.appointment.formattedServices);
+    if (widget.appointment.serviceName.isNotEmpty) {
+      pieces.add(widget.appointment.serviceName);
     }
     if (widget.appointment.formattedPrice.isNotEmpty) {
       pieces.add(widget.appointment.formattedPrice);

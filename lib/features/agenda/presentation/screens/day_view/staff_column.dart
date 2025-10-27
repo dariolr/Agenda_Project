@@ -1,3 +1,4 @@
+import 'package:agenda_frontend/features/agenda/providers/dragged_card_size_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -98,10 +99,21 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
       if (inside) {
         final dragOffset = ref.read(dragOffsetProvider);
-        final double effectiveY = ((localInColumn.dy - (dragOffset ?? 0)).clamp(
-          0,
-          box.size.height,
-        )).toDouble();
+
+        // 🔹 Altezza effettiva della card trascinata (fallback 50px se non nota)
+        final draggedCardHeightPx =
+            ref.read(draggedCardSizeProvider)?.height ?? 50.0;
+
+        // 🔹 Punto massimo CONSENTITO per l'inizio della card in pixel
+        // (deve starci tutta la card dentro alla colonna)
+        final maxYStartPx = (box.size.height - draggedCardHeightPx)
+            .clamp(0, box.size.height)
+            .toDouble();
+
+        // 🔹 Y effettiva del "top" della card, clampata ai limiti verticali
+        final double effectiveY = (localInColumn.dy - (dragOffset ?? 0))
+            .clamp(0, maxYStartPx)
+            .toDouble();
 
         setState(() {
           _hoverY = effectiveY;
@@ -109,11 +121,19 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         });
         highlightNotifier.set(widget.staff.id);
 
+        // ─────────────────────────────────────────
+        // ⏱ Calcolo orario proposto
+        // ─────────────────────────────────────────
         final slotHeight = LayoutConfig.slotHeight;
+
+        // minuti dall'inizio giornata (00:00) stimati dalla posizione clampata
         final minutesFromTop =
             (effectiveY / slotHeight) * LayoutConfig.minutesPerSlot;
-        final roundedMinutes = (minutesFromTop / 5).round() * 5;
 
+        // arrotondiamo a step di 5 minuti come prima
+        double roundedMinutes = (minutesFromTop / 5).round() * 5;
+
+        // durata dell'appuntamento trascinato
         final draggedId = ref.read(draggedAppointmentIdProvider);
         Duration duration;
         if (draggedId != null) {
@@ -125,14 +145,35 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           duration = const Duration(minutes: 30);
         }
 
+        final durationMinutes = duration.inMinutes;
+
+        // 🔒 Limite massimo per l'inizio in minuti:
+        // (fine giornata in minuti) - (durata appuntamento)
+        // es: 24h = 1440 minuti, durata 60 → ultimo start valido = 1380 (=23:00)
+        final dayMinutes = LayoutConfig.hoursInDay * 60; // 24 * 60 = 1440
+        final maxStartMinutes = (dayMinutes - durationMinutes).clamp(
+          0,
+          dayMinutes,
+        );
+
+        // clamp finale dell'orario di inizio
+        if (roundedMinutes > maxStartMinutes) {
+          roundedMinutes = maxStartMinutes.toDouble();
+        } else if (roundedMinutes < 0) {
+          roundedMinutes = 0;
+        }
+
+        // costruiamo gli orari definitivi da mostrare nella card di feedback
         final today = DateTime.now();
         final start = DateTime(
           today.year,
           today.month,
           today.day,
         ).add(Duration(minutes: roundedMinutes.toInt()));
+
         final end = start.add(duration);
 
+        // aggiorna l'anteprima oraria mostrata nella card fantasma
         tempTimeNotifier.setTimes(start, end);
       } else if (_isHighlighted) {
         final headerHeight = LayoutConfig.headerHeight;

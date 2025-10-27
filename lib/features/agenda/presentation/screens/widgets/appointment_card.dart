@@ -397,6 +397,19 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     double top = dragPos.dy - offY;
     if (top < 0) top = 0;
 
+    // 🔹 Calcola l’altezza totale effettiva del body scrollabile
+    final bodyBox = ref.read(dragBodyBoxProvider);
+    final totalHeight = bodyBox?.size.height ?? LayoutConfig.totalHeight;
+    final cardHeight = h;
+
+    // 🔹 Impedisce di superare la fine dell’area visibile (ancora inferiore)
+    if (top + cardHeight > totalHeight) {
+      top = totalHeight - cardHeight;
+    }
+
+    // 🔹 Sicurezza extra nel caso di overflow negativo
+    if (top < 0) top = 0;
+
     double left;
     final rect = highlightedId != null ? columnsRects[highlightedId] : null;
     if (rect != null) {
