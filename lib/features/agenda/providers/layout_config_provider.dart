@@ -25,13 +25,14 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
   /// in base alle dimensioni della finestra
   void updateFromContext(BuildContext context) {
     _resizeDebounce?.cancel();
-    _resizeDebounce = Timer(const Duration(milliseconds: 100), () {
-      final size = MediaQuery.of(context).size;
-      final screenHeight = size.height;
-      final screenWidth = size.width;
 
-      // 🔹 Calcolo dinamico dell’altezza degli slot
-      double newSlotHeight = LayoutConfig.slotHeight;
+    final size = MediaQuery.of(context).size;
+    final screenWidth = size.width;
+    final screenHeight = size.height;
+
+    _resizeDebounce = Timer(const Duration(milliseconds: 100), () {
+      // 🔹 Calcolo dinamico slot height
+      double newSlotHeight;
       if (screenHeight < 700) {
         newSlotHeight = 30 * 0.8;
       } else if (screenHeight > 1200) {
@@ -40,24 +41,49 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
         newSlotHeight = 30;
       }
 
-      // 🔹 Calcolo dinamico dell’altezza dell’header
+      // 🔹 Calcolo dinamico header height
       double newHeaderHeight;
       if (screenWidth >= 1024) {
-        newHeaderHeight = 56; // Desktop
+        newHeaderHeight = 56;
       } else if (screenWidth >= 600) {
-        newHeaderHeight = 52; // Tablet
+        newHeaderHeight = 52;
       } else {
-        newHeaderHeight = 48; // Mobile
+        newHeaderHeight = 48;
       }
 
-      // 🔹 Aggiorna LayoutConfig globale
+      // 🔹 Calcolo dinamico hour column width
+      double newHourWidth;
+      if (screenWidth >= 1024) {
+        newHourWidth = 60;
+      } else if (screenWidth >= 600) {
+        newHourWidth = 55;
+      } else {
+        newHourWidth = 50;
+      }
+      // ──────────────────────────────────────────────
+      // ⚙️ Confronta i valori precedenti
+      // ──────────────────────────────────────────────
+      final slotChanged = newSlotHeight != LayoutConfig.slotHeight;
+      final headerChanged = newHeaderHeight != LayoutConfig.headerHeight;
+      final hourChanged = newHourWidth != LayoutConfig.hourColumnWidth;
+
+      // ──────────────────────────────────────────────
+      // 🧩 Aggiorna il LayoutConfig globale
+      // ──────────────────────────────────────────────
       LayoutConfig.updateSlotHeight(newSlotHeight);
       LayoutConfig.updateHeaderHeight(newHeaderHeight);
+      LayoutConfig.updateHourColumnWidth(newHourWidth);
 
-      // 🔹 Aggiorna stato provider se necessario
-      if (newSlotHeight != state) {
-        state = newSlotHeight;
+      if (slotChanged || headerChanged || hourChanged) {
+        // 👇 piccolo trucco per forzare rebuild anche se il valore è identico
+        if (newSlotHeight == state) {
+          state = newSlotHeight + 0.0001;
+          state = newSlotHeight;
+        } else {
+          state = newSlotHeight;
+        }
       }
+      debugPrint('Width: $screenWidth → hourColumnWidth: $newHourWidth');
     });
   }
 }

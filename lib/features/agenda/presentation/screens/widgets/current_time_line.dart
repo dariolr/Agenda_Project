@@ -71,8 +71,6 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
     super.dispose();
   }
 
-  // In lib/features/agenda/presentation/screens/widgets/current_time_line.dart
-
   @override
   Widget build(BuildContext context) {
     // 1. La linea viene posizionata esattamente a _offset
@@ -100,30 +98,35 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
             top: -6,
             child: SizedBox(
               width: widget.hourColumnWidth,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment:
-                    CrossAxisAlignment.center, // Centra pallino e testo
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.redAccent,
-                      shape: BoxShape.circle,
-                    ),
+              child: SizedBox(
+                width: widget.hourColumnWidth,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _label,
+                        style: const TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _label,
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                ],
+                ),
               ),
             ),
           ),

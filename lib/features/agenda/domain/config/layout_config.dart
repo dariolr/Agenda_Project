@@ -5,29 +5,25 @@ class LayoutConfig {
   // 📐 DIMENSIONI STRUTTURALI
   // ──────────────────────────────────────────────
 
-  static const double hourColumnWidth = 70;
+  static double _hourColumnWidth = 60;
+
+  static double get hourColumnWidth => _hourColumnWidth;
+
+  /// 🔹 Aggiorna dinamicamente la larghezza della colonna oraria
+  static void updateHourColumnWidth(double newWidth) =>
+      _hourColumnWidth = newWidth;
 
   /// Altezza iniziale di default della barra header
   static double _headerHeight = 50;
 
-  /// Getter per l’altezza corrente dell’header
   static double get headerHeight => _headerHeight;
-
-  /// Aggiorna dinamicamente l’altezza dell’header
-  static void updateHeaderHeight(double newHeight) {
-    _headerHeight = newHeight;
-  }
+  static void updateHeaderHeight(double newHeight) => _headerHeight = newHeight;
 
   static const int hoursInDay = 24;
-
   static const double horizontalPadding = 8;
   static const double verticalPadding = 4;
 
-  /// 🔹 Larghezza minima garantita per ogni colonna staff
   static const double minColumnWidth = 180;
-
-  /// 🔹 [maxColumnWidth] rimosso: le colonne si espandono liberamente
-
   static const double borderRadius = 8;
 
   // ──────────────────────────────────────────────
