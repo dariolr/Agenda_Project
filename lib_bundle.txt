@@ -2588,6 +2588,19 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     double top = dragPos.dy - offY;
     if (top < 0) top = 0;
 
+    // 🔹 Calcola l’altezza totale effettiva del body scrollabile
+    final bodyBox = ref.read(dragBodyBoxProvider);
+    final totalHeight = bodyBox?.size.height ?? LayoutConfig.totalHeight;
+    final cardHeight = h;
+
+    // 🔹 Impedisce di superare la fine dell’area visibile (ancora inferiore)
+    if (top + cardHeight > totalHeight) {
+      top = totalHeight - cardHeight;
+    }
+
+    // 🔹 Sicurezza extra nel caso di overflow negativo
+    if (top < 0) top = 0;
+
     double left;
     final rect = highlightedId != null ? columnsRects[highlightedId] : null;
     if (rect != null) {
@@ -2684,6 +2697,7 @@ class HourColumn extends ConsumerWidget {
   }
 }
 --- FILE: lib/features/agenda/presentation/screens/day_view/staff_column.dart ---
+import 'package:agenda_frontend/features/agenda/providers/dragged_card_size_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -2784,10 +2798,20 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
       if (inside) {
         final dragOffset = ref.read(dragOffsetProvider);
-        final double effectiveY = ((localInColumn.dy - (dragOffset ?? 0)).clamp(
-          0,
-          box.size.height,
-        )).toDouble();
+
+        // 🔹 Altezza effettiva della card trascinata (fallback 50px se non nota)
+        final draggedCardHeightPx =
+            ref.read(draggedCardSizeProvider)?.height ?? 50.0;
+
+        // 🔹 Punto massimo CONSENTITO per l'inizio della card in pixel
+        final maxYStartPx = (box.size.height - draggedCardHeightPx)
+            .clamp(0, box.size.height)
+            .toDouble();
+
+        // 🔹 Y effettiva del "top" della card, clampata ai limiti verticali
+        final double effectiveY = (localInColumn.dy - (dragOffset ?? 0))
+            .clamp(0, maxYStartPx)
+            .toDouble();
 
         setState(() {
           _hoverY = effectiveY;
@@ -2795,11 +2819,19 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         });
         highlightNotifier.set(widget.staff.id);
 
+        // ─────────────────────────────────────────
+        // ⏱ Calcolo orario proposto
+        // ─────────────────────────────────────────
         final slotHeight = LayoutConfig.slotHeight;
+
+        // minuti dall'inizio giornata (00:00)
         final minutesFromTop =
             (effectiveY / slotHeight) * LayoutConfig.minutesPerSlot;
-        final roundedMinutes = (minutesFromTop / 5).round() * 5;
 
+        // arrotondiamo a step di 5 minuti
+        double roundedMinutes = (minutesFromTop / 5).round() * 5;
+
+        // durata dell'appuntamento trascinato
         final draggedId = ref.read(draggedAppointmentIdProvider);
         Duration duration;
         if (draggedId != null) {
@@ -2811,14 +2843,39 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           duration = const Duration(minutes: 30);
         }
 
+        final durationMinutes = duration.inMinutes;
+
+        // 🔒 Limite massimo per l'inizio in minuti:
+        final dayMinutes = LayoutConfig.hoursInDay * 60; // 24 * 60 = 1440
+        final maxStartMinutes = (dayMinutes - durationMinutes).clamp(
+          0,
+          dayMinutes,
+        );
+
+        // --- ✅ FIX #1: blocco fine oltre 24:00 ---
+        final endMinutes = roundedMinutes + durationMinutes;
+        if (endMinutes > dayMinutes) {
+          roundedMinutes = (dayMinutes - durationMinutes).toDouble();
+        }
+
+        // clamp finale dell'orario di inizio
+        if (roundedMinutes > maxStartMinutes) {
+          roundedMinutes = maxStartMinutes.toDouble();
+        } else if (roundedMinutes < 0) {
+          roundedMinutes = 0;
+        }
+
+        // costruiamo gli orari da mostrare nella card fantasma
         final today = DateTime.now();
         final start = DateTime(
           today.year,
           today.month,
           today.day,
         ).add(Duration(minutes: roundedMinutes.toInt()));
+
         final end = start.add(duration);
 
+        // aggiorna l'anteprima oraria mostrata nella card fantasma
         tempTimeNotifier.setTimes(start, end);
       } else if (_isHighlighted) {
         final headerHeight = LayoutConfig.headerHeight;
@@ -2848,9 +2905,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
   @override
   Widget build(BuildContext context) {
-    // 🔹 Reattività: osserva sempre il provider principale
     final allAppointments = ref.watch(appointmentsProvider);
-
     final staffAppointments = allAppointments
         .where((a) => a.staffId == widget.staff.id)
         .toList();
@@ -2900,7 +2955,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
-    // 🔹 Appuntamenti (reattivi)
+    // 🔹 Appuntamenti
     stackChildren.addAll(_buildAppointments(slotHeight, staffAppointments));
 
     return DragTarget<Appointment>(
@@ -2930,18 +2985,52 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         final minutesFromTop =
             (effectiveDy / slotHeight) * LayoutConfig.minutesPerSlot;
-        final roundedMinutes = (minutesFromTop / 5).round() * 5;
+        double roundedMinutes = (minutesFromTop / 5).round() * 5;
 
         final duration = details.data.endTime.difference(
           details.data.startTime,
         );
-        final today = DateTime.now();
-        final newStart = DateTime(
-          today.year,
-          today.month,
-          today.day,
-        ).add(Duration(minutes: roundedMinutes.toInt()));
-        final newEnd = newStart.add(duration);
+        final durationMinutes = duration.inMinutes;
+
+        // ✅ Data base dell'app originale
+        final baseDate = DateTime(
+          details.data.startTime.year,
+          details.data.startTime.month,
+          details.data.startTime.day,
+        );
+
+        // Calcolo nuovo start in minuti
+        DateTime newStart = baseDate.add(
+          Duration(minutes: roundedMinutes.toInt()),
+        );
+
+        DateTime newEnd = newStart.add(duration);
+
+        // --- ✅ FIX: non andare oltre la giornata corrente ---
+        final endOfDay = DateTime(
+          baseDate.year,
+          baseDate.month,
+          baseDate.day,
+          23,
+          59,
+          59,
+        );
+
+        if (newEnd.isAfter(endOfDay)) {
+          newEnd = endOfDay;
+          newStart = newEnd.subtract(Duration(minutes: durationMinutes));
+
+          // ✅ correzione visiva: se finisce a 23:59, aggancia inizio all'ora piena
+          if (newStart.minute == 59) {
+            newStart = DateTime(
+              newStart.year,
+              newStart.month,
+              newStart.day,
+              newStart.hour + 1,
+              0,
+            );
+          }
+        }
 
         appointmentsNotifier.moveAppointment(
           appointmentId: details.data.id,

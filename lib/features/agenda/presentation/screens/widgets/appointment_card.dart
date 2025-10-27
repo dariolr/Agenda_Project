@@ -171,10 +171,9 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     final endTime =
         entry?.provisionalEndTime ?? overrideEnd ?? widget.appointment.endTime;
 
-    final start =
-        '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
-    final end =
-        '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+    final start = _formatTime(startTime);
+    final end = _formatTime(endTime);
+
     final client = widget.appointment.clientName;
 
     final pieces = <String>[];
@@ -231,6 +230,12 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         ),
       ),
     );
+  }
+
+  String _formatTime(DateTime time) {
+    // Se è 23:59 o 23:59:59 → mostra come 24:00
+    if (time.hour == 23 && time.minute >= 59) return '24:00';
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   Widget _buildContent(String start, String end, String client, String info) {
