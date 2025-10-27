@@ -187,14 +187,21 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     final info = pieces.join(' – ');
     final borderWidth = showThickBorder ? 2.5 : 1.0;
 
+    final animationDuration = _isDraggingResize || forFeedback
+        ? Duration.zero
+        : const Duration(milliseconds: 80);
+    final animationCurve = _isDraggingResize || forFeedback
+        ? Curves.linear
+        : Curves.easeOutQuad;
+
     return Opacity(
       opacity: isGhost ? AgendaTheme.ghostOpacity : 1,
       child: Material(
         borderRadius: r,
         color: Colors.transparent,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 80),
-          curve: Curves.easeOutQuad,
+          duration: animationDuration,
+          curve: animationCurve,
           decoration: BoxDecoration(
             color: Color.alphaBlend(baseColor, Colors.white),
             borderRadius: r,

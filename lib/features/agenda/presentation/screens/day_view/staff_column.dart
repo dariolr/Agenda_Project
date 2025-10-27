@@ -293,7 +293,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     List<Appointment> appointments,
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
-    final resizingState = ref.watch(resizingProvider);
 
     final List<List<Appointment>> overlapGroups = [];
 
@@ -330,7 +329,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             ((endMinutes - startMinutes) / LayoutConfig.minutesPerSlot) *
             slotHeight;
 
-        final entry = resizingState.entries[a.id];
+        final entry = ref.watch(resizingEntryProvider(a.id));
         if (entry != null) {
           if (a.endTime != entry.provisionalEndTime) {
             if (entry.tempHeight != null) height = entry.tempHeight!;
