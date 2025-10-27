@@ -267,6 +267,13 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
               child: Row(
                 children: [
                   SizedBox(width: hourW),
+                  AgendaVerticalDivider(
+                    height: totalHeight,
+                    thickness: 1,
+                    color: widget.staffList.isEmpty
+                        ? Colors.transparent
+                        : widget.staffList.first.color.withOpacity(0.10),
+                  ),
                   Expanded(
                     child: ScrollConfiguration(
                       behavior: const NoScrollbarBehavior(),
