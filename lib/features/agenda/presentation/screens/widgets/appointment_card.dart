@@ -178,8 +178,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     final client = widget.appointment.clientName;
 
     final pieces = <String>[];
-    if (widget.appointment.formattedServices.isNotEmpty) {
-      pieces.add(widget.appointment.formattedServices);
+    if (widget.appointment.serviceName.isNotEmpty) {
+      pieces.add(widget.appointment.serviceName);
     }
     if (widget.appointment.formattedPrice.isNotEmpty) {
       pieces.add(widget.appointment.formattedPrice);
