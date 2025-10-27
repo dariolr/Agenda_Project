@@ -1,28 +1,35 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/config/layout_config.dart';
+import '../../../providers/layout_config_provider.dart';
 
 /// 🔹 Widget autonomo che disegna e aggiorna la riga rossa dell’orario corrente
-class CurrentTimeLine extends StatefulWidget {
+class CurrentTimeLine extends ConsumerStatefulWidget {
   final double hourColumnWidth;
 
   const CurrentTimeLine({super.key, required this.hourColumnWidth});
 
   @override
-  State<CurrentTimeLine> createState() => _CurrentTimeLineState();
+  ConsumerState<CurrentTimeLine> createState() => _CurrentTimeLineState();
 }
 
-class _CurrentTimeLineState extends State<CurrentTimeLine> {
+class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   Timer? _minuteTimer;
   double _offset = 0;
   String _label = '';
+  late final ProviderSubscription<double> _slotHeightSub;
 
   @override
   void initState() {
     super.initState();
-    _updateLine();
+    _slotHeightSub = ref.listenManual<double>(
+      layoutConfigProvider,
+      (previous, next) => _updateLine(slotHeightOverride: next),
+      fireImmediately: true,
+    );
     _scheduleMinuteSync();
   }
 
@@ -39,10 +46,11 @@ class _CurrentTimeLineState extends State<CurrentTimeLine> {
     });
   }
 
-  void _updateLine() {
+  void _updateLine({double? slotHeightOverride}) {
     final now = DateTime.now();
     final minutesSinceMidnight = now.hour * 60 + now.minute;
-    final slotHeight = LayoutConfig.slotHeight;
+    final double slotHeight =
+        slotHeightOverride ?? ref.read(layoutConfigProvider);
     final offset =
         (minutesSinceMidnight / LayoutConfig.minutesPerSlot) * slotHeight;
     final label =
@@ -59,6 +67,7 @@ class _CurrentTimeLineState extends State<CurrentTimeLine> {
   @override
   void dispose() {
     _minuteTimer?.cancel();
+    _slotHeightSub.close();
     super.dispose();
   }
 
