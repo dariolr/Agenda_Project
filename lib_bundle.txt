@@ -1441,7 +1441,7 @@ final class LayoutConfigNotifierProvider
 }
 
 String _$layoutConfigNotifierHash() =>
-    r'57a4ba295f79fbc4359b8a531d26239836ede945';
+    r'850083366aea0ce85343fe700d326c9e075842cf';
 
 /// Provider responsabile di mantenere aggiornata la configurazione del layout
 /// (in particolare l’altezza degli slot e dell’header)
@@ -1589,7 +1589,6 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         else
           a,
     ];
-    print('Updated appointment $appointmentId → $newEnd');
   }
 }
 
@@ -2039,28 +2038,35 @@ class LayoutConfig {
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/config/layout_config.dart';
+import '../../../providers/layout_config_provider.dart';
 
 /// 🔹 Widget autonomo che disegna e aggiorna la riga rossa dell’orario corrente
-class CurrentTimeLine extends StatefulWidget {
+class CurrentTimeLine extends ConsumerStatefulWidget {
   final double hourColumnWidth;
 
   const CurrentTimeLine({super.key, required this.hourColumnWidth});
 
   @override
-  State<CurrentTimeLine> createState() => _CurrentTimeLineState();
+  ConsumerState<CurrentTimeLine> createState() => _CurrentTimeLineState();
 }
 
-class _CurrentTimeLineState extends State<CurrentTimeLine> {
+class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   Timer? _minuteTimer;
   double _offset = 0;
   String _label = '';
+  late final ProviderSubscription<double> _slotHeightSub;
 
   @override
   void initState() {
     super.initState();
-    _updateLine();
+    _slotHeightSub = ref.listenManual<double>(
+      layoutConfigProvider,
+      (previous, next) => _updateLine(slotHeightOverride: next),
+      fireImmediately: true,
+    );
     _scheduleMinuteSync();
   }
 
@@ -2077,10 +2083,11 @@ class _CurrentTimeLineState extends State<CurrentTimeLine> {
     });
   }
 
-  void _updateLine() {
+  void _updateLine({double? slotHeightOverride}) {
     final now = DateTime.now();
     final minutesSinceMidnight = now.hour * 60 + now.minute;
-    final slotHeight = LayoutConfig.slotHeight;
+    final double slotHeight =
+        slotHeightOverride ?? ref.read(layoutConfigProvider);
     final offset =
         (minutesSinceMidnight / LayoutConfig.minutesPerSlot) * slotHeight;
     final label =
@@ -2097,6 +2104,7 @@ class _CurrentTimeLineState extends State<CurrentTimeLine> {
   @override
   void dispose() {
     _minuteTimer?.cancel();
+    _slotHeightSub.close();
     super.dispose();
   }
 
@@ -2374,14 +2382,21 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     final info = pieces.join(' – ');
     final borderWidth = showThickBorder ? 2.5 : 1.0;
 
+    final animationDuration = _isDraggingResize || forFeedback
+        ? Duration.zero
+        : const Duration(milliseconds: 80);
+    final animationCurve = _isDraggingResize || forFeedback
+        ? Curves.linear
+        : Curves.easeOutQuad;
+
     return Opacity(
       opacity: isGhost ? AgendaTheme.ghostOpacity : 1,
       child: Material(
         borderRadius: r,
         color: Colors.transparent,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 80),
-          curve: Curves.easeOutQuad,
+          duration: animationDuration,
+          curve: animationCurve,
           decoration: BoxDecoration(
             color: Color.alphaBlend(baseColor, Colors.white),
             borderRadius: r,
@@ -2544,27 +2559,9 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
             ref.read(isResizingProvider.notifier).stop();
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 80),
-            curve: Curves.easeOutQuad,
+          child: Container(
             height: 20,
             width: double.infinity,
-            decoration: BoxDecoration(
-              color: _isDraggingResize
-                  ? Colors.grey.withOpacity(0.2)
-                  : Colors.transparent,
-              border: Border(
-                top: BorderSide(
-                  color: _isDraggingResize
-                      ? Colors.grey.shade700
-                      : Colors.grey.withOpacity(0.2),
-                  width: 1.2,
-                ),
-              ),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(6),
-              ),
-            ),
             alignment: Alignment.bottomCenter,
             child: const Padding(
               padding: EdgeInsets.only(bottom: 1),
@@ -2857,9 +2854,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   Widget build(BuildContext context) {
     // 🔹 Reattività: osserva sempre il provider principale
     final allAppointments = ref.watch(appointmentsProvider);
-    print(
-      'Provider hash (staffColumn): ${ref.read(appointmentsProvider.notifier).hashCode}',
-    );
 
     final staffAppointments = allAppointments
         .where((a) => a.staffId == widget.staff.id)
@@ -2989,7 +2983,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     List<Appointment> appointments,
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
-    final resizingState = ref.watch(resizingProvider);
 
     final List<List<Appointment>> overlapGroups = [];
 
@@ -3026,7 +3019,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             ((endMinutes - startMinutes) / LayoutConfig.minutesPerSlot) *
             slotHeight;
 
-        final entry = resizingState.entries[a.id];
+        final entry = ref.watch(resizingEntryProvider(a.id));
         if (entry != null) {
           if (a.endTime != entry.provisionalEndTime) {
             if (entry.tempHeight != null) height = entry.tempHeight!;

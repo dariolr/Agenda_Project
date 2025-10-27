@@ -71,43 +71,62 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
     super.dispose();
   }
 
+  // In lib/features/agenda/presentation/screens/widgets/current_time_line.dart
+
   @override
   Widget build(BuildContext context) {
+    // 1. La linea viene posizionata esattamente a _offset
     return Positioned(
       top: _offset,
       left: 0,
       right: 0,
-      child: Row(
+      // Usiamo uno Stack per sovrapporre la linea e il testo
+      child: Stack(
+        clipBehavior: Clip.none, // Permette al testo di "uscire"
         children: [
-          // Pallino e orario nella colonna ore
-          SizedBox(
-            width: widget.hourColumnWidth,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
+          // 2. Questa è la linea rossa
+          Container(
+            height: 0.5, // Manteniamo un'altezza minima per la visibilità
+            color: Colors.redAccent,
+            // Lasciamo lo spazio per la colonna degli orari
+            margin: EdgeInsets.only(left: widget.hourColumnWidth),
+          ),
+
+          // 3. Posizioniamo il testo e il pallino RELATIVAMENTE alla linea
+          Positioned(
+            left: 0,
+            // Centriamo il testo verticalmente sulla linea.
+            // (L'altezza del testo è 11 , quindi -5.5 è circa il centro)
+            top: -6,
+            child: SizedBox(
+              width: widget.hourColumnWidth,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment:
+                    CrossAxisAlignment.center, // Centra pallino e testo
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _label,
-                  style: const TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(width: 4),
+                  Text(
+                    _label,
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-              ],
+                  const SizedBox(width: 4),
+                ],
+              ),
             ),
           ),
-          // Linea rossa che attraversa tutte le colonne
-          Expanded(child: Container(height: 0.5, color: Colors.redAccent)),
         ],
       ),
     );
