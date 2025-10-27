@@ -364,27 +364,9 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
             ref.read(isResizingProvider.notifier).stop();
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 80),
-            curve: Curves.easeOutQuad,
+          child: Container(
             height: 20,
             width: double.infinity,
-            decoration: BoxDecoration(
-              color: _isDraggingResize
-                  ? Colors.grey.withOpacity(0.2)
-                  : Colors.transparent,
-              border: Border(
-                top: BorderSide(
-                  color: _isDraggingResize
-                      ? Colors.grey.shade700
-                      : Colors.grey.withOpacity(0.2),
-                  width: 1.2,
-                ),
-              ),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(6),
-              ),
-            ),
             alignment: Alignment.bottomCenter,
             child: const Padding(
               padding: EdgeInsets.only(bottom: 1),
