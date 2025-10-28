@@ -36,7 +36,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         staffId: 1,
         clientName: 'Anna Rossi',
         serviceName: 'service name',
-        startTime: today.add(const Duration(hours: 9, minutes: 40)),
+        startTime: today.add(const Duration(hours: 9, minutes: 35)),
         endTime: today.add(const Duration(hours: 10, minutes: 40)),
       ),
       Appointment(
