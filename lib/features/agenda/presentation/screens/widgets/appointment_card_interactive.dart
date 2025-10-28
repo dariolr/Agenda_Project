@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/appointment.dart';
+import '../../../../../../app/providers/form_factor_provider.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
@@ -16,13 +17,17 @@ import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 
-class AppointmentCard extends ConsumerStatefulWidget {
+/// 🔹 Versione unificata per DESKTOP e MOBILE.
+/// Mantiene drag, resize, ghost, select, ma cambia il comportamento del tap:
+/// - Desktop → seleziona la card.
+/// - Mobile → apre un bottom sheet con i dettagli.
+class AppointmentCardInteractive extends ConsumerStatefulWidget {
   final Appointment appointment;
   final Color color;
   final double? columnWidth;
   final bool expandToLeft;
 
-  const AppointmentCard({
+  const AppointmentCardInteractive({
     super.key,
     required this.appointment,
     required this.color,
@@ -31,19 +36,21 @@ class AppointmentCard extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<AppointmentCard> createState() => _AppointmentCardState();
+  ConsumerState<AppointmentCardInteractive> createState() =>
+      _AppointmentCardInteractiveState();
 }
 
-class _AppointmentCardState extends ConsumerState<AppointmentCard> {
+class _AppointmentCardInteractiveState
+    extends ConsumerState<AppointmentCardInteractive> {
   Size? _lastSize;
   Offset? _lastPointerGlobalPosition;
-
   bool _isDraggingResize = false;
 
   @override
   Widget build(BuildContext context) {
     final selectedId = ref.watch(selectedAppointmentProvider);
     final draggedId = ref.watch(draggedAppointmentIdProvider);
+    final formFactor = ref.watch(formFactorProvider);
 
     final isSelected = selectedId == widget.appointment.id;
     final isDragging = draggedId == widget.appointment.id;
@@ -51,7 +58,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // salviamo la dimensione reale per calcolare il delta di resize
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final size = Size(constraints.maxWidth, constraints.maxHeight);
           if (mounted && (_lastSize == null || _lastSize != size)) {
@@ -64,43 +70,40 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
             final cardBox = context.findRenderObject() as RenderBox?;
             if (cardBox != null) {
               _lastPointerGlobalPosition = e.position;
-
               final bodyBox = ref.read(dragBodyBoxProvider);
               if (bodyBox != null) {
                 final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
-
-                // offset verticale del puntatore dentro la card
                 ref
                     .read(dragOffsetProvider.notifier)
                     .set(e.position.dy - cardTopLeftGlobal.dy);
-
-                // offset orizzontale del puntatore dentro la card
                 ref
                     .read(dragOffsetXProvider.notifier)
                     .set(e.position.dx - cardTopLeftGlobal.dx);
-
-                // posizione iniziale del drag nel sistema di coordinate del body
                 final localStart = bodyBox.globalToLocal(e.position);
                 ref.read(dragPositionProvider.notifier).set(localStart);
               }
             }
           },
 
+          // 🔹 Qui differenziamo tap (desktop vs mobile)
           child: GestureDetector(
             onTap: () {
-              // Evita di selezionare mentre stai ridimensionando
               final resizingNow = ref.read(isResizingProvider);
-              if (!resizingNow) {
-                final sel = ref.read(selectedAppointmentProvider.notifier);
-                sel.clear();
-                sel.toggle(widget.appointment.id);
+              if (resizingNow) return;
 
-                // pulizia stato drag
-                ref.read(dragOffsetProvider.notifier).clear();
-                ref.read(dragOffsetXProvider.notifier).clear();
-                ref.read(dragPositionProvider.notifier).clear();
-                ref.read(highlightedStaffIdProvider.notifier).clear();
+              if (formFactor == AppFormFactor.mobile) {
+                _openBottomSheet(context);
+                return;
               }
+
+              final sel = ref.read(selectedAppointmentProvider.notifier);
+              sel.clear();
+              sel.toggle(widget.appointment.id);
+
+              ref.read(dragOffsetProvider.notifier).clear();
+              ref.read(dragOffsetXProvider.notifier).clear();
+              ref.read(dragPositionProvider.notifier).clear();
+              ref.read(highlightedStaffIdProvider.notifier).clear();
             },
 
             child: LongPressDraggable<Appointment>(
@@ -111,25 +114,19 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               feedbackOffset: Offset.zero,
               dragAnchorStrategy: childDragAnchorStrategy,
               hapticFeedbackOnStart: false,
-
-              // Ghost lasciato al posto originale durante il drag
               childWhenDragging: _buildCard(
                 isGhost: true,
                 showThickBorder: showThickBorder,
               ),
 
               onDragStarted: () {
-                // seleziona la card che sto trascinando
                 final selected = ref.read(selectedAppointmentProvider.notifier);
                 selected.clear();
                 selected.toggle(widget.appointment.id);
-
-                // segna quale appointment è in drag
                 ref
                     .read(draggedAppointmentIdProvider.notifier)
                     .set(widget.appointment.id);
 
-                // aggiorna posizione iniziale nel body
                 final bodyBox = ref.read(dragBodyBoxProvider);
                 if (bodyBox != null && _lastPointerGlobalPosition != null) {
                   final local = bodyBox.globalToLocal(
@@ -140,7 +137,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               },
 
               onDragUpdate: (details) {
-                // follower che segue il cursore ma con smoothing
                 final prev = ref.read(dragPositionProvider);
                 final bodyBox = ref.read(dragBodyBoxProvider);
                 if (bodyBox != null) {
@@ -155,7 +151,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
               onDragCompleted: () => _handleEnd(ref),
               onDraggableCanceled: (_, __) => _handleEnd(ref),
 
-              // Card reale (interattiva, ridimensionabile)
               child: _buildCard(
                 showThickBorder: showThickBorder,
                 isResizingDisabled: isDragging,
@@ -184,7 +179,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     DateTime? overrideStart,
     DateTime? overrideEnd,
   }) {
-    // Stato di resize live da resizingProvider
     final resizingEntry = ref.watch(
       resizingEntryProvider(widget.appointment.id),
     );
@@ -200,7 +194,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
     final start = _formatTime(startTime);
     final end = _formatTime(endTime);
-
     final client = widget.appointment.clientName;
 
     final pieces = <String>[];
@@ -211,10 +204,8 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
       pieces.add(widget.appointment.formattedPrice);
     }
     final info = pieces.join(' – ');
-
     final borderWidth = showThickBorder ? 2.5 : 1.0;
 
-    // animazioni morbide solo quando NON sto trascinando il bordo
     final animationDuration = _isDraggingResize || forFeedback
         ? Duration.zero
         : const Duration(milliseconds: 80);
@@ -253,8 +244,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                   child: _buildContent(start, end, client, info),
                 ),
               ),
-
-              // Handle di resize in basso (se non è ghost e non è la versione follower)
               if (!forFeedback && !isResizingDisabled) _buildResizeHandle(),
             ],
           ),
@@ -264,7 +253,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
   }
 
   String _formatTime(DateTime time) {
-    // Se è 23:59 / 23:59:59 → mostra "24:00"
     if (time.hour == 23 && time.minute >= 59) return '24:00';
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
@@ -319,21 +307,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
     );
   }
 
-  // ==========================
-  // NUOVA LOGICA RESIZE HANDLE
-  // ==========================
-  //
-  // Qui entra in gioco il nuovo resizing_provider:
-  // - startResize() viene chiamato a inizio drag,
-  //   e PULISCE qualsiasi sessione precedente.
-  // - updateDuringResize() ricalcola altezza preview + fine provvisoria.
-  //   (usa delta relativo all'altezza iniziale salvata in startResize,
-  //   quindi niente accumulo sporco tra tentativi).
-  // - commitResizeAndEnd() restituisce l'endTime finale da salvare
-  //   nell'appointmentsProvider e poi FA CLEANUP TOTALE.
-  // - cancelResize() pulisce se abortisci.
-  //
-  // Questo è il fix del bug in release (range di resize che si riduce sempre).
+  // 🔹 Resize identico all’originale
   Widget _buildResizeHandle() {
     return Align(
       alignment: Alignment.bottomCenter,
@@ -341,11 +315,9 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
         cursor: SystemMouseCursors.resizeUpDown,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-
           onVerticalDragStart: (details) {
             final renderBox = context.findRenderObject() as RenderBox?;
             final currentHeightPx = renderBox?.size.height ?? 0;
-
             _lastPointerGlobalPosition = details.globalPosition;
 
             ref
@@ -356,27 +328,18 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                   startTime: widget.appointment.startTime,
                   endTime: widget.appointment.endTime,
                 );
-
             ref.read(isResizingProvider.notifier).start();
             setState(() => _isDraggingResize = true);
           },
-
           onVerticalDragUpdate: (details) {
             if (_lastPointerGlobalPosition == null) return;
-
-            // 🔹 Posizione globale attuale del puntatore
             final currentGlobal = details.globalPosition;
-
-            // 🔹 Calcola spostamento verticale rispetto al frame precedente
             final deltaY = currentGlobal.dy - _lastPointerGlobalPosition!.dy;
-
-            // 🔹 Aggiorna la posizione di riferimento per il prossimo frame
             _lastPointerGlobalPosition = currentGlobal;
 
             final minutesPerPixel =
                 LayoutConfig.minutesPerSlot / LayoutConfig.slotHeight;
             final pixelsPerMinute = 1 / minutesPerPixel;
-
             final dayEnd = DateTime(
               widget.appointment.startTime.year,
               widget.appointment.startTime.month,
@@ -396,9 +359,7 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                   snapMinutes: 5,
                 );
           },
-
           onVerticalDragEnd: (_) async {
-            // 🔹 chiude la sessione di resize e ottiene il nuovo endTime
             final newEnd = ref
                 .read(resizingProvider.notifier)
                 .commitResizeAndEnd(appointmentId: widget.appointment.id);
@@ -406,7 +367,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
             if (newEnd != null) {
               final appt = widget.appointment;
               final minEnd = appt.startTime.add(const Duration(minutes: 5));
-
               ref
                   .read(appointmentsProvider.notifier)
                   .moveAppointment(
@@ -417,22 +377,12 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
                   );
             }
 
-            // 🔹 attende un frame per permettere il rebuild del layout
             await Future.delayed(const Duration(milliseconds: 100));
-
-            // 🔹 forza la ricostruzione del layout aggiornato
-            if (mounted) {
-              setState(() {
-                _isDraggingResize = false;
-              });
-            }
-
-            // 🔹 ri-inizializza la posizione iniziale per il prossimo resize
+            if (mounted) setState(() => _isDraggingResize = false);
             _lastPointerGlobalPosition = null;
             ref.read(isResizingProvider.notifier).stop();
             ref.invalidate(resizingProvider);
           },
-
           onVerticalDragCancel: () {
             ref
                 .read(resizingProvider.notifier)
@@ -440,7 +390,6 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
             ref.read(isResizingProvider.notifier).stop();
             setState(() => _isDraggingResize = false);
           },
-
           child: Container(
             height: 20,
             width: double.infinity,
@@ -474,39 +423,27 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
 
     if (dragPos == null) return const SizedBox.shrink();
 
-    // posizione Y proposta del follower
     double top = dragPos.dy - offY;
     if (top < 0) top = 0;
 
-    // Limita il follower a non uscire sotto dalla zona scrollabile
     final bodyBox = ref.read(dragBodyBoxProvider);
     final totalHeight = bodyBox?.size.height ?? LayoutConfig.totalHeight;
     final cardHeight = h;
-
-    if (top + cardHeight > totalHeight) {
-      top = totalHeight - cardHeight;
-    }
+    if (top + cardHeight > totalHeight) top = totalHeight - cardHeight;
     if (top < 0) top = 0;
 
-    // posizione X proposta del follower
     double left;
     final rect = highlightedId != null ? columnsRects[highlightedId] : null;
 
     if (rect != null) {
-      // Se stai evidenziando una staff column specifica,
-      // centra la card su quella colonna
       left = rect.left + (rect.width - w) / 2;
       if (left < hourW) left = hourW;
     } else {
-      // altrimenti segui il puntatore
       left = dragPos.dx - offX;
-      if (widget.expandToLeft) {
-        left -= (w / 2);
-      }
+      if (widget.expandToLeft) left -= (w / 2);
       if (left < hourW) left = hourW;
     }
 
-    // pixel perfect con DPR
     final dpr = MediaQuery.of(context).devicePixelRatio;
     left = (left * dpr).round() / dpr;
     top = (top * dpr).round() / dpr;
@@ -536,6 +473,86 @@ class _AppointmentCardState extends ConsumerState<AppointmentCard> {
           ),
         ),
       ),
+    );
+  }
+
+  /// 🔹 Bottom sheet per i dettagli appuntamento (solo mobile)
+  void _openBottomSheet(BuildContext context) {
+    final appt = widget.appointment;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                Text(
+                  appt.clientName,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_formatTime(appt.startTime)} – ${_formatTime(appt.endTime)}',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  appt.serviceName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                if (appt.price != null && appt.price! > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      appt.formattedPrice,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 20),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                    label: const Text('Chiudi'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

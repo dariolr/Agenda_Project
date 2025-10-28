@@ -17,7 +17,7 @@ import '../../../providers/resizing_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../widgets/agenda_dividers.dart';
-import '../widgets/appointment_card.dart';
+import '../widgets/appointment_card_base.dart';
 
 class StaffColumn extends ConsumerStatefulWidget {
   final Staff staff;
