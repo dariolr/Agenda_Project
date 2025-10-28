@@ -414,18 +414,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final entry = ref.watch(resizingEntryProvider(a.id));
         if (entry != null) {
           if (a.endTime != entry.provisionalEndTime) {
-            if (entry.tempHeight != null) height = entry.tempHeight!;
-          } else {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ref.read(resizingProvider.notifier).stop(a.id);
-            });
+            height = entry.currentPreviewHeightPx;
           }
         }
 
+        // 🔹 Gestione overlap orizzontale
         double widthFraction = 1 / groupSize;
         double leftFraction = i * widthFraction;
         double opacity = isDragged ? AgendaTheme.ghostOpacity : 1.0;
 
+        // 🔹 Costruisci la card
         positionedAppointments.add(
           Positioned(
             top: top,

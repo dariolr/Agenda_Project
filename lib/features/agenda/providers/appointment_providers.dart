@@ -105,7 +105,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     required int newStaffId,
     required DateTime newStart,
     required DateTime newEnd,
-  }) {
+  }) async {
     state = [
       for (final a in state)
         if (a.id == appointmentId)
@@ -113,6 +113,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         else
           a,
     ];
+    await Future.delayed(Duration.zero);
   }
 }
 
