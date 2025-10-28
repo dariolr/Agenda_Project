@@ -1,5 +1,6 @@
 class Appointment {
   final int id;
+  final int idBooking;
   final int staffId;
   final String clientName;
   final String serviceName;
@@ -9,6 +10,7 @@ class Appointment {
 
   const Appointment({
     required this.id,
+    required this.idBooking,
     required this.staffId,
     required this.clientName,
     required this.serviceName,
@@ -20,6 +22,7 @@ class Appointment {
   /// 🔸 Costruttore da JSON
   factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
     id: json['id'],
+    idBooking: json['id_booking'],
     staffId: json['staff_id'],
     clientName: json['client_name'],
     serviceName: json['service_name'],
@@ -30,6 +33,7 @@ class Appointment {
 
   Appointment copyWith({
     int? id,
+    int? idBooking,
     int? staffId,
     String? clientName,
     String? serviceName,
@@ -39,6 +43,7 @@ class Appointment {
   }) {
     return Appointment(
       id: id ?? this.id,
+      idBooking: idBooking ?? this.idBooking,
       staffId: staffId ?? this.staffId,
       clientName: clientName ?? this.clientName,
       serviceName: serviceName ?? this.serviceName,
@@ -52,6 +57,7 @@ class Appointment {
   Map<String, dynamic> toJson({bool includeServices = true}) {
     return {
       'id': id,
+      'id_booking': idBooking,
       'staff_id': staffId,
       'client_name': clientName,
       'service_name': serviceName,

@@ -23,6 +23,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       // Staff 1
       Appointment(
         id: 1,
+        idBooking: 101,
         staffId: 1,
         clientName: 'Anna Rossi',
         serviceName: 'service name',
@@ -31,14 +32,16 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       ),
       Appointment(
         id: 2,
+        idBooking: 102,
         staffId: 1,
-        clientName: 'Luca Bianchi',
+        clientName: 'Anna Rossi',
         serviceName: 'service name',
-        startTime: today.add(const Duration(hours: 9, minutes: 30)),
-        endTime: today.add(const Duration(hours: 10, minutes: 30)),
+        startTime: today.add(const Duration(hours: 9, minutes: 40)),
+        endTime: today.add(const Duration(hours: 10, minutes: 40)),
       ),
       Appointment(
         id: 3,
+        idBooking: 103,
         staffId: 1,
         clientName: 'Paolo Verdi',
         serviceName: 'service name',
@@ -49,6 +52,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       // Staff 2
       Appointment(
         id: 4,
+        idBooking: 104,
         staffId: 2,
         clientName: 'Giulia Neri',
         serviceName: 'service name',
@@ -57,6 +61,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       ),
       Appointment(
         id: 5,
+        idBooking: 105,
         staffId: 2,
         clientName: 'Marco Gialli',
         serviceName: 'service name',
@@ -65,6 +70,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       ),
       Appointment(
         id: 6,
+        idBooking: 106,
         staffId: 2,
         clientName: 'Chiara Blu',
         serviceName: 'service name',
@@ -75,6 +81,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       // Staff 3
       Appointment(
         id: 7,
+        idBooking: 107,
         staffId: 3,
         clientName: 'Valentina',
         serviceName: 'service name',
@@ -83,6 +90,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       ),
       Appointment(
         id: 8,
+        idBooking: 108,
         staffId: 3,
         clientName: 'Francesco',
         serviceName: 'service name',
@@ -91,6 +99,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       ),
       Appointment(
         id: 9,
+        idBooking: 109,
         staffId: 3,
         clientName: 'Elisa',
         serviceName: 'service name',
