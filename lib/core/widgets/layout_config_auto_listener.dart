@@ -9,6 +9,7 @@ class LayoutConfigAutoListener extends ConsumerStatefulWidget {
   final Widget child;
 
   const LayoutConfigAutoListener({super.key, required this.child});
+
   @override
   ConsumerState<LayoutConfigAutoListener> createState() =>
       _LayoutConfigAutoListenerState();
@@ -18,11 +19,15 @@ class _LayoutConfigAutoListenerState
     extends ConsumerState<LayoutConfigAutoListener>
     with WidgetsBindingObserver {
   Size? _lastSize;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+
+    // 🔹 FIX SAFARI DESKTOP: attendi un frame + piccolo delay
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(milliseconds: 150));
       _updateLayoutConfig();
     });
   }
@@ -40,12 +45,27 @@ class _LayoutConfigAutoListenerState
   }
 
   void _updateLayoutConfig() {
-    // 2. Aggiorna il provider originale (per l'agenda)
+    final size = MediaQuery.of(context).size;
+    final screenWidth = size.width;
+    final screenHeight = size.height;
+
+    // 🧩 FIX: evita aggiornamenti con MediaQuery ancora non pronta
+    if (screenWidth < 100 || screenHeight < 100) {
+      debugPrint(
+        '🟠 LayoutConfigAutoListener → MediaQuery non pronta (${size.width}x${size.height}), skip update.',
+      );
+      return;
+    }
+
+    // 🔹 Aggiorna layout per l’agenda
     ref.read(layoutConfigProvider.notifier).updateFromContext(context);
 
-    // 3. Aggiorna il NUOVO provider globale (per la Shell)
-    final screenWidth = MediaQuery.of(context).size.width;
+    // 🔹 Aggiorna form factor globale (usato dalla shell)
     ref.read(formFactorProvider.notifier).update(screenWidth);
+
+    debugPrint(
+      '✅ LayoutConfig aggiornato → width: ${size.width.toStringAsFixed(0)}, height: ${size.height.toStringAsFixed(0)}',
+    );
   }
 
   @override
