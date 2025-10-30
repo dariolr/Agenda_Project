@@ -84,6 +84,18 @@ class _AppointmentCardInteractiveState
               }
             }
           },
+          onPointerUp: (e) {
+            // Se dragPositionProvider è ancora attivo, resettalo. Questo gestisce i casi in cui onDragEnd potrebbe non attivarsi.
+            if (ref.read(dragPositionProvider) != null) {
+              ref.read(dragPositionProvider.notifier).clear();
+            }
+          },
+          onPointerCancel: (e) {
+            // Resetta anche in caso di cancellazione del puntatore.
+            if (ref.read(dragPositionProvider) != null) {
+              ref.read(dragPositionProvider.notifier).clear();
+            }
+          },
 
           // 🔹 Qui differenziamo tap (desktop vs mobile)
           child: GestureDetector(
