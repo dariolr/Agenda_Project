@@ -88,28 +88,16 @@ class _AppointmentCardInteractiveState
           // 🔹 Qui differenziamo tap (desktop vs mobile)
           child: GestureDetector(
             onTap: () {
-              final resizingNow = ref.read(isResizingProvider);
-              if (resizingNow) return;
-
               if (formFactor == AppFormFactor.mobile) {
-                _openBottomSheet(context);
-                return;
+                _handleMobileTap();
+              } else {
+                _handleDesktopTap();
               }
-
-              final sel = ref.read(selectedAppointmentProvider.notifier);
-              sel.clear();
-              sel.toggle(widget.appointment.id);
-
-              ref.read(dragOffsetProvider.notifier).clear();
-              ref.read(dragOffsetXProvider.notifier).clear();
-              ref.read(dragPositionProvider.notifier).clear();
-              ref.read(highlightedStaffIdProvider.notifier).clear();
             },
-
             child: LongPressDraggable<Appointment>(
               data: widget.appointment,
               feedback: Consumer(
-                builder: (c, r, _) => _buildFollowerFeedback(c, r),
+                builder: (c, r, _) => _buildFollowerFeedback(c, r, isSelected, formFactor),
               ),
               feedbackOffset: Offset.zero,
               dragAnchorStrategy: childDragAnchorStrategy,
@@ -117,6 +105,8 @@ class _AppointmentCardInteractiveState
               childWhenDragging: _buildCard(
                 isGhost: true,
                 showThickBorder: showThickBorder,
+                isSelected: isSelected,
+                formFactor: formFactor,
               ),
 
               onDragStarted: () {
@@ -154,6 +144,8 @@ class _AppointmentCardInteractiveState
               child: _buildCard(
                 showThickBorder: showThickBorder,
                 isResizingDisabled: isDragging,
+                isSelected: isSelected,
+                formFactor: formFactor,
               ),
             ),
           ),
@@ -171,11 +163,56 @@ class _AppointmentCardInteractiveState
     ref.read(selectedAppointmentProvider.notifier).clear();
   }
 
+  // 🔹 Logica per il tap su DESKTOP
+  void _handleDesktopTap() {
+    final resizingNow = ref.read(isResizingProvider);
+    if (resizingNow) return;
+
+    final sel = ref.read(selectedAppointmentProvider.notifier);
+    sel.clear();
+    sel.toggle(widget.appointment.id);
+
+    ref.read(dragOffsetProvider.notifier).clear();
+    ref.read(dragOffsetXProvider.notifier).clear();
+    ref.read(dragPositionProvider.notifier).clear();
+    ref.read(highlightedStaffIdProvider.notifier).clear();
+  }
+
+  // 🔹 Logica per il tap su MOBILE
+  void _handleMobileTap() async {
+    final resizingNow = ref.read(isResizingProvider);
+    if (resizingNow) return;
+
+    // Select the appointment when the bottom sheet is opened
+    ref.read(selectedAppointmentProvider.notifier).clear(); // Clear any previous selection
+    ref.read(selectedAppointmentProvider.notifier).toggle(widget.appointment.id);
+
+    // Apre il nuovo "smart" bottom sheet
+    await _openSmartBottomSheet(); // Await the dismissal
+
+    // Clear selection when bottom sheet is dismissed
+    ref.read(selectedAppointmentProvider.notifier).clear();
+  }
+
+  Future<void> _openSmartBottomSheet() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _AppointmentActionSheet(appointment: widget.appointment),
+    );
+  }
+
   Widget _buildCard({
     bool isGhost = false,
     bool forFeedback = false,
     bool showThickBorder = false,
     bool isResizingDisabled = false,
+    required bool isSelected,
+    required AppFormFactor formFactor,
     DateTime? overrideStart,
     DateTime? overrideEnd,
   }) {
@@ -193,7 +230,12 @@ class _AppointmentCardInteractiveState
         widget.appointment.endTime;
 
     final start = _formatTime(startTime);
-    final end = _formatTime(endTime);
+    String formattedEndTime;
+    if (endTime.hour == 23 && endTime.minute == 59) {
+      formattedEndTime = '24:00';
+    } else {
+      formattedEndTime = _formatTime(endTime);
+    }
     final client = widget.appointment.clientName;
 
     final pieces = <String>[];
@@ -241,10 +283,10 @@ class _AppointmentCardInteractiveState
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: Align(
                   alignment: Alignment.topLeft,
-                  child: _buildContent(start, end, client, info),
+                  child: _buildContent(start, formattedEndTime, client, info),
                 ),
               ),
-              if (!forFeedback && !isResizingDisabled) _buildResizeHandle(),
+              if (!forFeedback && !isResizingDisabled && isSelected && formFactor == AppFormFactor.tabletOrDesktop) _buildResizeHandle(),
             ],
           ),
         ),
@@ -404,7 +446,7 @@ class _AppointmentCardInteractiveState
     );
   }
 
-  Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref) {
+  Widget _buildFollowerFeedback(BuildContext context, WidgetRef ref, bool isSelected, AppFormFactor formFactor) {
     final times = ref.watch(tempDragTimeProvider);
     final start = times?.$1;
     final end = times?.$2;
@@ -469,90 +511,141 @@ class _AppointmentCardInteractiveState
               showThickBorder: true,
               overrideStart: start,
               overrideEnd: end,
+              isSelected: isSelected,
+              formFactor: formFactor,
             ),
           ),
         ),
       ),
     );
   }
+} // Closing brace for _AppointmentCardInteractiveState
 
-  /// 🔹 Bottom sheet per i dettagli appuntamento (solo mobile)
-  void _openBottomSheet(BuildContext context) {
-    final appt = widget.appointment;
+class _AppointmentActionSheet extends ConsumerWidget {
+  final Appointment appointment;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+  const _AppointmentActionSheet({required this.appointment});
+
+  String _formatTime(DateTime time) {
+    if (time.hour == 23 && time.minute >= 59) return '24:00';
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            Text(
+              appointment.clientName,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${_formatTime(appointment.startTime)} – ${_formatTime(appointment.endTime)}',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              appointment.serviceName,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            if (appointment.price != null && appointment.price! > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  appointment.formattedPrice,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.black54,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 20),
+            // Action Buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Implement Resize logic
+                      Navigator.pop(context); // Close the bottom sheet
+                      // For now, just select and show a message
+                      ref.read(selectedAppointmentProvider.notifier).clear();
+                      ref.read(selectedAppointmentProvider.notifier).toggle(appointment.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Funzione Resize da implementare')),
+                      );
+                    },
+                    child: const Text('Ridimensiona'),
                   ),
                 ),
-                Text(
-                  appt.clientName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Implement Move logic
+                      Navigator.pop(context); // Close the bottom sheet
+                      // For now, just select and show a message
+                      ref.read(selectedAppointmentProvider.notifier).clear();
+                      ref.read(selectedAppointmentProvider.notifier).toggle(appointment.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Funzione Sposta da implementare')),
+                      );
+                    },
+                    child: const Text('Sposta'),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${_formatTime(appt.startTime)} – ${_formatTime(appt.endTime)}',
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  appt.serviceName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                if (appt.price != null && appt.price! > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      appt.formattedPrice,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 20),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                    label: const Text('Chiudi'),
-                  ),
-                ),
-                const SizedBox(height: 16),
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Implement Delete logic
+                      Navigator.pop(context); // Close the bottom sheet
+                      ref.read(appointmentsProvider.notifier).deleteAppointment(appointment.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Appuntamento eliminato')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    child: const Text('Elimina'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
     );
   }
 }
+

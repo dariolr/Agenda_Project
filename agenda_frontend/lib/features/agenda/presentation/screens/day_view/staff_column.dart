@@ -16,6 +16,7 @@ import '../../../providers/layout_config_provider.dart';
 import '../../../providers/resizing_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
+import '../../../providers/selected_appointment_provider.dart'; // Added missing import
 import '../widgets/agenda_dividers.dart';
 import '../widgets/appointment_card_base.dart';
 
@@ -347,23 +348,28 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         );
       },
       builder: (context, candidateData, rejectedData) {
-        return SizedBox(
-          width: widget.columnWidth,
-          child: Container(
-            decoration: BoxDecoration(
-              color: _isHighlighted
-                  ? widget.staff.color.withOpacity(0.01)
-                  : Colors.transparent,
-              border: widget.showRightBorder
-                  ? Border(
-                      right: BorderSide(
-                        color: Colors.grey.withOpacity(0.5),
-                        width: 0.5,
-                      ),
-                    )
-                  : null,
+        return GestureDetector(
+          onTap: () {
+            ref.read(selectedAppointmentProvider.notifier).clear();
+          },
+          child: SizedBox(
+            width: widget.columnWidth,
+            child: Container(
+              decoration: BoxDecoration(
+                color: _isHighlighted
+                    ? widget.staff.color.withOpacity(0.01)
+                    : Colors.transparent,
+                border: widget.showRightBorder
+                    ? Border(
+                        right: BorderSide(
+                          color: Colors.grey.withOpacity(0.5),
+                          width: 0.5,
+                        ),
+                      )
+                    : null,
+              ),
+              child: Stack(children: stackChildren),
             ),
-            child: Stack(children: stackChildren),
           ),
         );
       },

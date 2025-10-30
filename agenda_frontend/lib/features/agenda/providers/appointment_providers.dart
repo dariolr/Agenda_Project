@@ -124,6 +124,14 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     ];
     await Future.delayed(Duration.zero);
   }
+
+  void deleteAppointment(int appointmentId) {
+    state = [
+      for (final a in state)
+        if (a.id != appointmentId)
+          a,
+    ];
+  }
 }
 
 final appointmentsProvider =
