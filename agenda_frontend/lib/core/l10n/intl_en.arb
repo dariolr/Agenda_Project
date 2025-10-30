@@ -7,5 +7,22 @@
   "navStaff": "Staff",
   "clientsTitle": "Clients List",
   "servicesTitle": "Services List",
-  "staffTitle": "Staff List"  
+  "staffTitle": "Staff List",
+  "errorTitle": "Error",
+  "errorNotFound": "Page not found: {path}",
+  "@errorNotFound": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "staffScreenPlaceholder": "Staff Screen",
+  "actionResize": "Resize",
+  "actionMove": "Move",
+  "actionDelete": "Delete",
+  "actionCancel": "Cancel",
+  "actionConfirm": "Confirm",
+  "deleteConfirmationTitle": "Confirm deletion?",
+  "appointmentDeletedMessage": "Appointment deleted"  
 }

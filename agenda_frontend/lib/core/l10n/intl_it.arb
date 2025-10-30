@@ -7,6 +7,22 @@
   "navStaff": "Staff",
   "clientsTitle": "Elenco Clienti",
   "servicesTitle": "Elenco Servizi",
-  "staffTitle": "Elenco Staff"
-
+  "staffTitle": "Elenco Staff",
+  "errorTitle": "Errore",
+  "errorNotFound": "Pagina non trovata: {path}",
+  "@errorNotFound": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "staffScreenPlaceholder": "Schermata Staff",
+  "actionResize": "Ridimensiona",
+  "actionMove": "Sposta",
+  "actionDelete": "Elimina",
+  "actionCancel": "Annulla",
+  "actionConfirm": "Conferma",
+  "deleteConfirmationTitle": "Confermi l’eliminazione?",
+  "appointmentDeletedMessage": "Appuntamento eliminato"
 }

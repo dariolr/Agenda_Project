@@ -9,6 +9,7 @@ import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_screen.dart';
 // Importa la nostra "Shell"
 import 'scaffold_with_navigation.dart';
+import '../core/l10n/l10_extension.dart';
 
 // 1. Definiamo una chiave globale per la nostra Shell (necessaria)
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -21,10 +22,10 @@ final GoRouter appRouter = GoRouter(
   debugLogDiagnostics: kDebugMode,
 
   errorBuilder: (context, state) => Scaffold(
-    appBar: AppBar(title: const Text('Errore')),
+    appBar: AppBar(title: Text(context.l10n.errorTitle)),
     body: Center(
       child: Text(
-        'Pagina non trovata: ${state.uri.path}',
+        context.l10n.errorNotFound(state.uri.path),
         style: const TextStyle(color: Colors.redAccent),
       ),
     ),

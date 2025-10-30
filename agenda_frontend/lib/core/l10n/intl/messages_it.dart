@@ -22,13 +22,29 @@ class MessageLookup extends MessageLookupByLibrary {
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
-        "appTitle": MessageLookupByLibrary.simpleMessage("Agenda"),
-        "clientsTitle": MessageLookupByLibrary.simpleMessage("Elenco Clienti"),
-        "navAgenda": MessageLookupByLibrary.simpleMessage("Agenda"),
-        "navClients": MessageLookupByLibrary.simpleMessage("Clienti"),
-        "navServices": MessageLookupByLibrary.simpleMessage("Servizi"),
-        "navStaff": MessageLookupByLibrary.simpleMessage("Staff"),
-        "servicesTitle": MessageLookupByLibrary.simpleMessage("Elenco Servizi"),
-        "staffTitle": MessageLookupByLibrary.simpleMessage("Elenco Staff")
-      };
+    "actionCancel": MessageLookupByLibrary.simpleMessage("Annulla"),
+    "actionConfirm": MessageLookupByLibrary.simpleMessage("Conferma"),
+    "actionDelete": MessageLookupByLibrary.simpleMessage("Elimina"),
+    "actionMove": MessageLookupByLibrary.simpleMessage("Sposta"),
+    "actionResize": MessageLookupByLibrary.simpleMessage("Ridimensiona"),
+    "appTitle": MessageLookupByLibrary.simpleMessage("Agenda"),
+    "appointmentDeletedMessage": MessageLookupByLibrary.simpleMessage(
+      "Appuntamento eliminato",
+    ),
+    "clientsTitle": MessageLookupByLibrary.simpleMessage("Elenco Clienti"),
+    "deleteConfirmationTitle": MessageLookupByLibrary.simpleMessage(
+      "Confermi l’eliminazione?",
+    ),
+    "errorNotFound": (path) => "Pagina non trovata: $path",
+    "errorTitle": MessageLookupByLibrary.simpleMessage("Errore"),
+    "navAgenda": MessageLookupByLibrary.simpleMessage("Agenda"),
+    "navClients": MessageLookupByLibrary.simpleMessage("Clienti"),
+    "navServices": MessageLookupByLibrary.simpleMessage("Servizi"),
+    "navStaff": MessageLookupByLibrary.simpleMessage("Staff"),
+    "servicesTitle": MessageLookupByLibrary.simpleMessage("Elenco Servizi"),
+    "staffScreenPlaceholder": MessageLookupByLibrary.simpleMessage(
+      "Schermata Staff",
+    ),
+    "staffTitle": MessageLookupByLibrary.simpleMessage("Elenco Staff"),
+  };
 }
