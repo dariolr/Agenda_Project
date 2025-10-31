@@ -136,52 +136,45 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         // durata dell'appuntamento trascinato
         final draggedId = ref.read(draggedAppointmentIdProvider);
         Duration duration;
+        DateTime baseDate;
         if (draggedId != null) {
           final appt = ref
               .read(appointmentsProvider)
               .firstWhere((a) => a.id == draggedId);
           duration = appt.endTime.difference(appt.startTime);
+          baseDate = DateTime(
+            appt.startTime.year,
+            appt.startTime.month,
+            appt.startTime.day,
+          );
         } else {
           duration = const Duration(minutes: 30);
+          final now = DateTime.now();
+          baseDate = DateTime(now.year, now.month, now.day);
         }
 
         final durationMinutes = duration.inMinutes;
 
-        // 🔒 Limite massimo per l'inizio in minuti:
-        final dayMinutes = LayoutConfig.hoursInDay * 60; // 24 * 60 = 1440
-        final maxStartMinutes = (dayMinutes - durationMinutes).clamp(
-          0,
-          dayMinutes,
-        );
+        // 🔒 Limiti nell'arco della giornata
+        const totalMinutes = LayoutConfig.hoursInDay * 60; // 1440
+        final maxStartMinutesNum =
+            (totalMinutes - durationMinutes).clamp(0, totalMinutes);
 
-        // --- ✅ FIX #1: blocco fine oltre 24:00 ---
-        final endMinutes = roundedMinutes + durationMinutes;
-        if (endMinutes > dayMinutes) {
-          roundedMinutes = (dayMinutes - durationMinutes).toDouble();
-
-          // ✅ correzione extra: forza minuto a 0 all'ultimo slot visivo
-          final lastHourStart = dayMinutes - 60; // 1380 = 23:00
-          if (roundedMinutes >= lastHourStart) {
-            roundedMinutes = lastHourStart.toDouble(); // fissa a 23:00
-          }
-        }
-
-        // clamp finale dell'orario di inizio
-        if (roundedMinutes > maxStartMinutes) {
-          roundedMinutes = maxStartMinutes.toDouble();
+        if (roundedMinutes > maxStartMinutesNum) {
+          roundedMinutes = maxStartMinutesNum.toDouble();
         } else if (roundedMinutes < 0) {
           roundedMinutes = 0;
         }
 
-        // costruiamo gli orari da mostrare nella card fantasma
-        final today = DateTime.now();
-        final start = DateTime(
-          today.year,
-          today.month,
-          today.day,
-        ).add(Duration(minutes: roundedMinutes.toInt()));
+        final startMinutes = roundedMinutes.toInt();
+        final endMinutes =
+            (startMinutes + durationMinutes).clamp(0, totalMinutes).toInt();
 
-        final end = start.add(duration);
+        final start = baseDate.add(Duration(minutes: startMinutes));
+        var end = baseDate.add(Duration(minutes: endMinutes));
+
+        final dayBoundary = baseDate.add(const Duration(days: 1));
+        if (end.isAfter(dayBoundary)) end = dayBoundary;
 
         // aggiorna l'anteprima oraria mostrata nella card fantasma
         tempTimeNotifier.setTimes(start, end);
@@ -307,38 +300,22 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           details.data.startTime.day,
         );
 
-        // Calcolo nuovo start in minuti
-        DateTime newStart = baseDate.add(
-          Duration(minutes: roundedMinutes.toInt()),
-        );
+        // 🔒 Limiti della giornata in minuti
+        const totalMinutes = LayoutConfig.hoursInDay * 60; // 1440
+        final maxStartMinutesNum =
+            (totalMinutes - durationMinutes).clamp(0, totalMinutes);
 
-        DateTime newEnd = newStart.add(duration);
+        int startMinutes = roundedMinutes.toInt();
+        final maxStartMinutes = maxStartMinutesNum.toInt();
 
-        // --- ✅ FIX: non andare oltre la giornata corrente ---
-        final endOfDay = DateTime(
-          baseDate.year,
-          baseDate.month,
-          baseDate.day,
-          23,
-          59,
-          59,
-        );
+        if (startMinutes > maxStartMinutes) startMinutes = maxStartMinutes;
+        if (startMinutes < 0) startMinutes = 0;
 
-        if (newEnd.isAfter(endOfDay)) {
-          newEnd = endOfDay;
-          newStart = newEnd.subtract(Duration(minutes: durationMinutes));
+        final endMinutes =
+            (startMinutes + durationMinutes).clamp(0, totalMinutes).toInt();
 
-          // ✅ correzione visiva: se finisce a 23:59, aggancia inizio all'ora piena
-          if (newStart.minute == 59) {
-            newStart = DateTime(
-              newStart.year,
-              newStart.month,
-              newStart.day,
-              newStart.hour + 1,
-              0,
-            );
-          }
-        }
+        DateTime newStart = baseDate.add(Duration(minutes: startMinutes));
+        DateTime newEnd = baseDate.add(Duration(minutes: endMinutes));
 
         appointmentsNotifier.moveAppointment(
           appointmentId: details.data.id,
@@ -408,8 +385,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final a = group[i];
         final isDragged = a.id == draggedId;
 
-        final startMinutes = a.startTime.hour * 60 + a.startTime.minute;
-        final endMinutes = a.endTime.hour * 60 + a.endTime.minute;
+        final dayStart = DateTime(
+          a.startTime.year,
+          a.startTime.month,
+          a.startTime.day,
+        );
+
+        final startMinutes = a.startTime.difference(dayStart).inMinutes;
+        final endMinutes = a.endTime.difference(dayStart).inMinutes;
 
         final double top =
             (startMinutes / LayoutConfig.minutesPerSlot) * slotHeight;

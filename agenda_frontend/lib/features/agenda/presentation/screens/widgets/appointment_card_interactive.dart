@@ -296,12 +296,7 @@ class _AppointmentCardInteractiveState
         widget.appointment.endTime;
 
     final start = _formatTime(startTime);
-    String formattedEndTime;
-    if (endTime.hour == 23 && endTime.minute == 59) {
-      formattedEndTime = '24:00';
-    } else {
-      formattedEndTime = _formatTime(endTime);
-    }
+    final formattedEndTime = _formatTime(endTime);
     final client = widget.appointment.clientName;
 
     final pieces = <String>[];
@@ -365,8 +360,18 @@ class _AppointmentCardInteractiveState
   }
 
   String _formatTime(DateTime time) {
-    if (time.hour == 23 && time.minute >= 59) return '24:00';
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    final dayStart = DateTime(
+      widget.appointment.startTime.year,
+      widget.appointment.startTime.month,
+      widget.appointment.startTime.day,
+    );
+
+    final dayBoundary = dayStart.add(const Duration(days: 1));
+    if (time.isAtSameMomentAs(dayBoundary)) return '24:00';
+
+    final hours = time.hour.toString().padLeft(2, '0');
+    final minutes = time.minute.toString().padLeft(2, '0');
+    return '$hours:$minutes';
   }
 
   Widget _buildContent(String start, String end, String client, String info) {
@@ -457,9 +462,7 @@ class _AppointmentCardInteractiveState
               widget.appointment.startTime.year,
               widget.appointment.startTime.month,
               widget.appointment.startTime.day,
-              23,
-              59,
-            );
+            ).add(const Duration(days: 1));
 
             ref
                 .read(resizingProvider.notifier)
@@ -614,8 +617,18 @@ class _AppointmentActionSheetState
   bool _showDeleteConfirm = false;
 
   String _formatTime(DateTime time) {
-    if (time.hour == 23 && time.minute >= 59) return '24:00';
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    final appointment = widget.appointment;
+    final dayStart = DateTime(
+      appointment.startTime.year,
+      appointment.startTime.month,
+      appointment.startTime.day,
+    );
+    final dayBoundary = dayStart.add(const Duration(days: 1));
+    if (time.isAtSameMomentAs(dayBoundary)) return '24:00';
+
+    final hours = time.hour.toString().padLeft(2, '0');
+    final minutes = time.minute.toString().padLeft(2, '0');
+    return '$hours:$minutes';
   }
 
   @override
