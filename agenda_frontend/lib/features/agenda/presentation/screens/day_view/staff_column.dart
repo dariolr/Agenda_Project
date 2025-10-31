@@ -13,6 +13,7 @@ import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/dragged_base_range_provider.dart';
 import '../../../providers/resizing_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
@@ -148,9 +149,17 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             appt.startTime.day,
           );
         } else {
-          duration = const Duration(minutes: 30);
-          final now = DateTime.now();
-          baseDate = DateTime(now.year, now.month, now.day);
+          final baseRange = ref.read(draggedBaseRangeProvider);
+          if (baseRange != null) {
+            final start = baseRange.$1;
+            final end = baseRange.$2;
+            duration = end.difference(start);
+            baseDate = DateTime(start.year, start.month, start.day);
+          } else {
+            duration = const Duration(minutes: 30);
+            final now = DateTime.now();
+            baseDate = DateTime(now.year, now.month, now.day);
+          }
         }
 
         final durationMinutes = duration.inMinutes;

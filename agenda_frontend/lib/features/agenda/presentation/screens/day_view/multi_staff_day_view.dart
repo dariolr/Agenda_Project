@@ -32,10 +32,13 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   late final ProviderSubscription<Offset?> _dragSub;
   final ScrollController _headerHCtrl = ScrollController();
   bool _isSyncing = false;
+  Offset? _initialDragPosition;
+  bool _autoScrollArmed = false;
 
   static const double _scrollEdgeMargin = 100;
   static const double _scrollSpeed = 20;
   static const Duration _scrollInterval = Duration(milliseconds: 50);
+  static const double _autoScrollActivationThreshold = 16;
 
   final GlobalKey _bodyKey = GlobalKey(); // registrazione RenderBox body
 
@@ -45,8 +48,14 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
     _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (prev, next) {
       if (next != null) {
+        if (prev == null) {
+          _initialDragPosition = next;
+          _autoScrollArmed = false;
+        }
         _startAutoScroll();
       } else {
+        _initialDragPosition = null;
+        _autoScrollArmed = false;
         _stopAutoScroll();
       }
     });
@@ -123,6 +132,12 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         return;
       }
 
+      if (!_autoScrollArmed && _initialDragPosition != null) {
+        final deltaY = (dragPos.dy - _initialDragPosition!.dy).abs();
+        if (deltaY < _autoScrollActivationThreshold) return;
+        _autoScrollArmed = true;
+      }
+
       final scrollState = ref.read(agendaScrollProvider(widget.staffList));
       final verticalCtrl = scrollState.verticalScrollCtrl;
       if (!verticalCtrl.hasClients) return;
@@ -152,6 +167,8 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   void _stopAutoScroll() {
     _autoScrollTimer?.cancel();
     _autoScrollTimer = null;
+    _initialDragPosition = null;
+    _autoScrollArmed = false;
   }
 
   @override

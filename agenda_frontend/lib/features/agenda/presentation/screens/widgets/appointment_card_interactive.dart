@@ -13,12 +13,14 @@ import '../../../providers/appointment_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
+import '../../../providers/dragged_base_range_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
+import '../../../providers/layout_config_provider.dart';
 
 /// 🔹 Versione unificata per DESKTOP e MOBILE.
 /// Mantiene drag, resize, ghost, select, ma cambia il comportamento del tap:
@@ -78,6 +80,12 @@ class _AppointmentCardInteractiveState
             if (cardBox != null) {
               _lastPointerGlobalPosition = e.position;
               _evaluateDragBlock(cardBox, e.position);
+              ref
+                  .read(draggedBaseRangeProvider.notifier)
+                  .set(
+                    widget.appointment.startTime,
+                    widget.appointment.endTime,
+                  );
 
               final bodyBox = ref.read(dragBodyBoxProvider);
               if (bodyBox != null) {
@@ -105,6 +113,7 @@ class _AppointmentCardInteractiveState
               ref.read(dragPositionProvider.notifier).clear();
             }
             _updateDragBlock(false);
+            ref.read(draggedBaseRangeProvider.notifier).clear();
           },
           onPointerCancel: (e) {
             // Resetta anche in caso di cancellazione del puntatore.
@@ -112,6 +121,7 @@ class _AppointmentCardInteractiveState
               ref.read(dragPositionProvider.notifier).clear();
             }
             _updateDragBlock(false);
+            ref.read(draggedBaseRangeProvider.notifier).clear();
           },
 
           // 🔹 Qui differenziamo tap (desktop vs mobile)
@@ -141,6 +151,12 @@ class _AppointmentCardInteractiveState
               ),
 
               onDragStarted: () {
+                ref
+                    .read(draggedBaseRangeProvider.notifier)
+                    .set(
+                      widget.appointment.startTime,
+                      widget.appointment.endTime,
+                    );
                 final selected = ref.read(selectedAppointmentProvider.notifier);
                 selected.clear();
                 selected.toggle(widget.appointment.id);
@@ -168,7 +184,7 @@ class _AppointmentCardInteractiveState
                 }
               },
 
-              onDragEnd: (_) => _handleEnd(ref),
+              onDragEnd: (details) => _handleDragEnd(ref, details),
               onDragCompleted: () => _handleEnd(ref),
               onDraggableCanceled: (_, __) => _handleEnd(ref),
 
@@ -192,6 +208,79 @@ class _AppointmentCardInteractiveState
     ref.read(dragPositionProvider.notifier).clear();
     ref.read(tempDragTimeProvider.notifier).clear();
     ref.read(selectedAppointmentProvider.notifier).clear();
+    ref.read(draggedBaseRangeProvider.notifier).clear();
+  }
+
+  void _handleDragEnd(WidgetRef ref, DraggableDetails details) {
+    if (details.wasAccepted) {
+      _handleEnd(ref);
+      return;
+    }
+
+    final bodyBox = ref.read(dragBodyBoxProvider);
+    final columns = ref.read(staffColumnsGeometryProvider);
+    if (bodyBox == null || columns.isEmpty) {
+      _handleEnd(ref);
+      return;
+    }
+
+    final bodyOffset = bodyBox.globalToLocal(details.offset);
+    const tolerance = 4.0;
+
+    int? targetStaffId;
+    Rect? targetRect;
+    for (final entry in columns.entries) {
+      final rect = entry.value.inflate(tolerance);
+      if (bodyOffset.dx >= rect.left && bodyOffset.dx <= rect.right) {
+        targetStaffId = entry.key;
+        targetRect = rect;
+        break;
+      }
+    }
+
+    if (targetStaffId == null || targetRect == null) {
+      _handleEnd(ref);
+      return;
+    }
+
+    final slotHeight = ref.read(layoutConfigProvider);
+    final minutesPerSlot = LayoutConfig.minutesPerSlot;
+    final totalMinutes = LayoutConfig.hoursInDay * 60;
+
+    final localY = bodyOffset.dy - targetRect.top;
+    final baseDate = DateTime(
+      widget.appointment.startTime.year,
+      widget.appointment.startTime.month,
+      widget.appointment.startTime.day,
+    );
+
+    final durationMinutes = widget.appointment.endTime
+        .difference(widget.appointment.startTime)
+        .inMinutes;
+    final rawMaxStart = totalMinutes - durationMinutes;
+    final maxStartMinutes = rawMaxStart < 0 ? 0 : rawMaxStart;
+
+    double minutesFromTop = (localY / slotHeight) * minutesPerSlot;
+    int roundedMinutes = ((minutesFromTop / 5).round() * 5).toInt();
+    if (roundedMinutes < 0) {
+      roundedMinutes = 0;
+    } else if (roundedMinutes > maxStartMinutes) {
+      roundedMinutes = maxStartMinutes;
+    }
+
+    final newStart = baseDate.add(Duration(minutes: roundedMinutes));
+    var newEnd = newStart.add(Duration(minutes: durationMinutes));
+    final dayBoundary = baseDate.add(const Duration(days: 1));
+    if (newEnd.isAfter(dayBoundary)) newEnd = dayBoundary;
+
+    ref.read(appointmentsProvider.notifier).moveAppointment(
+          appointmentId: widget.appointment.id,
+          newStaffId: targetStaffId,
+          newStart: newStart,
+          newEnd: newEnd,
+        );
+
+    _handleEnd(ref);
   }
 
   void _evaluateDragBlock(RenderBox cardBox, Offset globalPosition) {
@@ -546,14 +635,24 @@ class _AppointmentCardInteractiveState
 
     if (dragPos == null) return const SizedBox.shrink();
 
-    double top = dragPos.dy - offY;
-    if (top < 0) top = 0;
-
     final bodyBox = ref.read(dragBodyBoxProvider);
     final totalHeight = bodyBox?.size.height ?? LayoutConfig.totalHeight;
     final cardHeight = h;
-    if (top + cardHeight > totalHeight) top = totalHeight - cardHeight;
-    if (top < 0) top = 0;
+
+    final double unconstrainedTop = dragPos.dy - offY;
+    double top = unconstrainedTop;
+    double translateY = 0;
+
+    double maxTop = totalHeight - cardHeight;
+    if (maxTop < 0) maxTop = 0;
+
+    if (unconstrainedTop < 0) {
+      translateY = unconstrainedTop;
+      top = 0;
+    } else if (unconstrainedTop > maxTop) {
+      translateY = unconstrainedTop - maxTop;
+      top = maxTop;
+    }
 
     double left;
     final rect = highlightedId != null ? columnsRects[highlightedId] : null;
@@ -570,30 +669,32 @@ class _AppointmentCardInteractiveState
     final dpr = MediaQuery.of(context).devicePixelRatio;
     left = (left * dpr).round() / dpr;
     top = (top * dpr).round() / dpr;
+    translateY = (translateY * dpr).round() / dpr;
 
     return RepaintBoundary(
       child: CompositedTransformFollower(
         link: link,
         showWhenUnlinked: false,
         offset: Offset(left, top),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: const BorderRadius.all(Radius.circular(6)),
-          clipBehavior: Clip.antiAlias,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minWidth: w - 4,
-              maxWidth: w - 4,
-              minHeight: h,
-              maxHeight: h,
-            ),
-            child: _buildCard(
-              forFeedback: true,
-              showThickBorder: true,
-              overrideStart: start,
-              overrideEnd: end,
-              isSelected: isSelected,
-              formFactor: formFactor,
+        child: SizedBox(
+          width: w - 4,
+          height: h,
+          child: ClipRect(
+            child: Transform.translate(
+              offset: Offset(0, translateY),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: const BorderRadius.all(Radius.circular(6)),
+                clipBehavior: Clip.antiAlias,
+                child: _buildCard(
+                  forFeedback: true,
+                  showThickBorder: true,
+                  overrideStart: start,
+                  overrideEnd: end,
+                  isSelected: isSelected,
+                  formFactor: formFactor,
+                ),
+              ),
             ),
           ),
         ),
