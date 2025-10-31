@@ -133,7 +133,7 @@ class _AppointmentCardInteractiveState
                 _handleDesktopTap();
               }
             },
-            child: LongPressDraggable<Appointment>(
+            child: Draggable<Appointment>(
               data: widget.appointment,
               feedback: Consumer(
                 builder: (c, r, _) =>
@@ -141,7 +141,6 @@ class _AppointmentCardInteractiveState
               ),
               feedbackOffset: Offset.zero,
               dragAnchorStrategy: childDragAnchorStrategy,
-              hapticFeedbackOnStart: false,
               maxSimultaneousDrags: _blockDragDuringResize ? 0 : 1,
               childWhenDragging: _buildCard(
                 isGhost: true,
