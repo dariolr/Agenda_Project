@@ -95,36 +95,43 @@ class ResizingNotifier extends Notifier<ResizingState> {
     if (entry == null) return;
 
     // 🔹 Calcola nuova altezza cumulativa a partire dall'altezza corrente
-    double proposedHeightPx = (entry.currentPreviewHeightPx + deltaDy).clamp(
-      0,
-      double.infinity,
-    );
+    double proposedHeightPx = entry.currentPreviewHeightPx + deltaDy;
+
+    final minHeightPx = minDurationMinutes * pixelsPerMinute;
+    final rawMaxDurationMinutes =
+        dayEnd.difference(entry.startTimeInitial).inMinutes;
+    final effectiveMaxDurationMinutes = rawMaxDurationMinutes <= 0
+        ? minDurationMinutes
+        : rawMaxDurationMinutes < minDurationMinutes
+            ? minDurationMinutes
+            : rawMaxDurationMinutes;
+    final maxHeightPx = effectiveMaxDurationMinutes * pixelsPerMinute;
+
+    // 🔹 Applica i limiti min/max consentiti
+    proposedHeightPx = proposedHeightPx.clamp(minHeightPx, maxHeightPx).toDouble();
 
     final proposedDurationMinutes = proposedHeightPx / pixelsPerMinute;
 
-    // 🔹 Durata minima
-    final durationAfterMin = proposedDurationMinutes < minDurationMinutes
-        ? minDurationMinutes.toDouble()
-        : proposedDurationMinutes;
+    // 🔹 Snap ai minuti impostati solo per il calcolo dell'end time
+    final lowerBoundMinutes = minDurationMinutes.toDouble();
+    final upperBoundMinutes = effectiveMaxDurationMinutes.toDouble();
 
-    // 🔹 Snap ai minuti impostati
-    double snappedMinutes = _snapToStep(durationAfterMin, snapMinutes);
+    final snappedMinutes = _snapToStep(
+      proposedDurationMinutes,
+      snapMinutes,
+    ).clamp(
+      lowerBoundMinutes,
+      upperBoundMinutes < lowerBoundMinutes
+          ? lowerBoundMinutes
+          : upperBoundMinutes,
+    );
 
-    // 🔹 Nuovo end provvisorio
+    // 🔹 Nuovo end provvisorio (clamp a fine giornata se necessario)
     DateTime candidateEnd = entry.startTimeInitial.add(
       Duration(minutes: snappedMinutes.round()),
     );
-
-    // 🔹 Clamp a fine giornata
     if (candidateEnd.isAfter(dayEnd)) {
       candidateEnd = dayEnd;
-      snappedMinutes = candidateEnd
-          .difference(entry.startTimeInitial)
-          .inMinutes
-          .toDouble();
-      proposedHeightPx = snappedMinutes * pixelsPerMinute;
-    } else {
-      proposedHeightPx = snappedMinutes * pixelsPerMinute;
     }
 
     final updatedEntry = entry.copyWith(
