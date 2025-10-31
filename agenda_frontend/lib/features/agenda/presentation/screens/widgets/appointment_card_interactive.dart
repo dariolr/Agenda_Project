@@ -48,6 +48,10 @@ class _AppointmentCardInteractiveState
   Size? _lastSize;
   Offset? _lastPointerGlobalPosition;
   bool _isDraggingResize = false;
+  bool _blockDragDuringResize = false;
+
+  static const double _dragBlockZoneHeight = 28.0;
+  static const int _minSlotsForDragBlock = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +77,8 @@ class _AppointmentCardInteractiveState
             final cardBox = context.findRenderObject() as RenderBox?;
             if (cardBox != null) {
               _lastPointerGlobalPosition = e.position;
+              _evaluateDragBlock(cardBox, e.position);
+
               final bodyBox = ref.read(dragBodyBoxProvider);
               if (bodyBox != null) {
                 final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
@@ -87,17 +93,25 @@ class _AppointmentCardInteractiveState
               }
             }
           },
+          onPointerMove: (e) {
+            final cardBox = context.findRenderObject() as RenderBox?;
+            if (cardBox != null) {
+              _evaluateDragBlock(cardBox, e.position);
+            }
+          },
           onPointerUp: (e) {
             // Se dragPositionProvider è ancora attivo, resettalo. Questo gestisce i casi in cui onDragEnd potrebbe non attivarsi.
             if (ref.read(dragPositionProvider) != null) {
               ref.read(dragPositionProvider.notifier).clear();
             }
+            _updateDragBlock(false);
           },
           onPointerCancel: (e) {
             // Resetta anche in caso di cancellazione del puntatore.
             if (ref.read(dragPositionProvider) != null) {
               ref.read(dragPositionProvider.notifier).clear();
             }
+            _updateDragBlock(false);
           },
 
           // 🔹 Qui differenziamo tap (desktop vs mobile)
@@ -118,6 +132,7 @@ class _AppointmentCardInteractiveState
               feedbackOffset: Offset.zero,
               dragAnchorStrategy: childDragAnchorStrategy,
               hapticFeedbackOnStart: false,
+              maxSimultaneousDrags: _blockDragDuringResize ? 0 : 1,
               childWhenDragging: _buildCard(
                 isGhost: true,
                 showThickBorder: showThickBorder,
@@ -177,6 +192,42 @@ class _AppointmentCardInteractiveState
     ref.read(dragPositionProvider.notifier).clear();
     ref.read(tempDragTimeProvider.notifier).clear();
     ref.read(selectedAppointmentProvider.notifier).clear();
+  }
+
+  void _evaluateDragBlock(RenderBox cardBox, Offset globalPosition) {
+    final formFactor = ref.read(formFactorProvider);
+    if (formFactor != AppFormFactor.tabletOrDesktop) {
+      _updateDragBlock(false);
+      return;
+    }
+
+    final selectedId = ref.read(selectedAppointmentProvider);
+    if (selectedId != widget.appointment.id) {
+      _updateDragBlock(false);
+      return;
+    }
+
+    final localPos = cardBox.globalToLocal(globalPosition);
+    final cardHeight = cardBox.size.height;
+    final distanceFromBottom = cardHeight - localPos.dy;
+
+    final minHeightForBlocking =
+        LayoutConfig.slotHeight * _minSlotsForDragBlock;
+
+    final shouldBlock = distanceFromBottom >= 0 &&
+        distanceFromBottom <= _dragBlockZoneHeight &&
+        cardHeight >= minHeightForBlocking;
+
+    _updateDragBlock(shouldBlock);
+  }
+
+  void _updateDragBlock(bool value) {
+    if (_blockDragDuringResize == value) return;
+    if (!mounted) {
+      _blockDragDuringResize = value;
+      return;
+    }
+    setState(() => _blockDragDuringResize = value);
   }
 
   // 🔹 Logica per il tap su DESKTOP
@@ -380,6 +431,7 @@ class _AppointmentCardInteractiveState
             final renderBox = context.findRenderObject() as RenderBox?;
             final currentHeightPx = renderBox?.size.height ?? 0;
             _lastPointerGlobalPosition = details.globalPosition;
+            _updateDragBlock(true);
 
             ref
                 .read(resizingProvider.notifier)
@@ -441,6 +493,7 @@ class _AppointmentCardInteractiveState
             await Future.delayed(const Duration(milliseconds: 100));
             if (mounted) setState(() => _isDraggingResize = false);
             _lastPointerGlobalPosition = null;
+            _updateDragBlock(false);
             ref.read(isResizingProvider.notifier).stop();
             ref.invalidate(resizingProvider);
           },
@@ -450,6 +503,7 @@ class _AppointmentCardInteractiveState
                 .cancelResize(appointmentId: widget.appointment.id);
             ref.read(isResizingProvider.notifier).stop();
             setState(() => _isDraggingResize = false);
+            _updateDragBlock(false);
           },
           child: Container(
             height: 20,
