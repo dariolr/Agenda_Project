@@ -14,6 +14,7 @@ import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/dragged_base_range_provider.dart';
+import '../../../providers/dragged_last_staff_provider.dart';
 import '../../../providers/resizing_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
@@ -93,13 +94,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         next.dy - columnTopLeftInBody.dy,
       );
 
-      final inside =
-          localInColumn.dx >= 0 &&
-          localInColumn.dy >= 0 &&
-          localInColumn.dx <= box.size.width &&
-          localInColumn.dy <= box.size.height;
-
-      if (inside) {
+      final withinHorizontal =
+          localInColumn.dx >= 0 && localInColumn.dx <= box.size.width;
+      if (withinHorizontal) {
         final dragOffset = ref.read(dragOffsetProvider);
 
         // 🔹 Altezza effettiva della card trascinata (fallback 50px se non nota)
@@ -112,15 +109,17 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             .toDouble();
 
         // 🔹 Y effettiva del "top" della card, clampata ai limiti verticali
-        final double effectiveY = (localInColumn.dy - (dragOffset ?? 0))
-            .clamp(0, maxYStartPx)
-            .toDouble();
+        final clampedLocalDy =
+            localInColumn.dy.clamp(0.0, box.size.height.toDouble());
+        final double effectiveY =
+            (clampedLocalDy - (dragOffset ?? 0)).clamp(0, maxYStartPx).toDouble();
 
         setState(() {
           _hoverY = effectiveY;
           _isHighlighted = true;
         });
         highlightNotifier.set(widget.staff.id);
+        ref.read(draggedLastStaffIdProvider.notifier).set(widget.staff.id);
 
         // ─────────────────────────────────────────
         // ⏱ Calcolo orario proposto

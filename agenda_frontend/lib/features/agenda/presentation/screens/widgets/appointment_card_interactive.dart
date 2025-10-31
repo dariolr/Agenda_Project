@@ -14,6 +14,7 @@ import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/dragged_base_range_provider.dart';
+import '../../../providers/dragged_last_staff_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/resizing_provider.dart';
@@ -65,172 +66,194 @@ class _AppointmentCardInteractiveState
     final isDragging = draggedId == widget.appointment.id;
     final showThickBorder = isSelected || isDragging;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final size = Size(constraints.maxWidth, constraints.maxHeight);
-          if (mounted && (_lastSize == null || _lastSize != size)) {
-            setState(() => _lastSize = size);
-          }
-        });
-
-        return Listener(
-          onPointerDown: (e) {
-            final cardBox = context.findRenderObject() as RenderBox?;
-            if (cardBox != null) {
-              _lastPointerGlobalPosition = e.position;
-              _evaluateDragBlock(cardBox, e.position);
-              ref
-                  .read(draggedBaseRangeProvider.notifier)
-                  .set(
-                    widget.appointment.startTime,
-                    widget.appointment.endTime,
-                  );
-
-              final bodyBox = ref.read(dragBodyBoxProvider);
-              if (bodyBox != null) {
-                final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
-                ref
-                    .read(dragOffsetProvider.notifier)
-                    .set(e.position.dy - cardTopLeftGlobal.dy);
-                ref
-                    .read(dragOffsetXProvider.notifier)
-                    .set(e.position.dx - cardTopLeftGlobal.dx);
-                final localStart = bodyBox.globalToLocal(e.position);
-                ref.read(dragPositionProvider.notifier).set(localStart);
-              }
+    return MouseRegion(
+      onEnter: (_) => _selectAppointment(ref),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final size = Size(constraints.maxWidth, constraints.maxHeight);
+            if (mounted && (_lastSize == null || _lastSize != size)) {
+              setState(() => _lastSize = size);
             }
-          },
-          onPointerMove: (e) {
-            final cardBox = context.findRenderObject() as RenderBox?;
-            if (cardBox != null) {
-              _evaluateDragBlock(cardBox, e.position);
-            }
-          },
-          onPointerUp: (e) {
-            // Se dragPositionProvider è ancora attivo, resettalo. Questo gestisce i casi in cui onDragEnd potrebbe non attivarsi.
-            if (ref.read(dragPositionProvider) != null) {
-              ref.read(dragPositionProvider.notifier).clear();
-            }
-            _updateDragBlock(false);
-            ref.read(draggedBaseRangeProvider.notifier).clear();
-          },
-          onPointerCancel: (e) {
-            // Resetta anche in caso di cancellazione del puntatore.
-            if (ref.read(dragPositionProvider) != null) {
-              ref.read(dragPositionProvider.notifier).clear();
-            }
-            _updateDragBlock(false);
-            ref.read(draggedBaseRangeProvider.notifier).clear();
-          },
+          });
 
-          // 🔹 Qui differenziamo tap (desktop vs mobile)
-          child: GestureDetector(
-            onTap: () {
-              if (formFactor == AppFormFactor.mobile) {
-                _handleMobileTap();
-              } else {
-                _handleDesktopTap();
-              }
-            },
-            child: Draggable<Appointment>(
-              data: widget.appointment,
-              feedback: Consumer(
-                builder: (c, r, _) =>
-                    _buildFollowerFeedback(c, r, isSelected, formFactor),
-              ),
-              feedbackOffset: Offset.zero,
-              dragAnchorStrategy: childDragAnchorStrategy,
-              maxSimultaneousDrags: _blockDragDuringResize ? 0 : 1,
-              childWhenDragging: _buildCard(
-                isGhost: true,
-                showThickBorder: showThickBorder,
-                isSelected: isSelected,
-                formFactor: formFactor,
-              ),
-
-              onDragStarted: () {
+          return Listener(
+            onPointerDown: (e) {
+              final cardBox = context.findRenderObject() as RenderBox?;
+              if (cardBox != null) {
+                _lastPointerGlobalPosition = e.position;
+                _evaluateDragBlock(cardBox, e.position);
                 ref
                     .read(draggedBaseRangeProvider.notifier)
                     .set(
                       widget.appointment.startTime,
                       widget.appointment.endTime,
                     );
-                final selected = ref.read(selectedAppointmentProvider.notifier);
-                selected.clear();
-                selected.toggle(widget.appointment.id);
                 ref
-                    .read(draggedAppointmentIdProvider.notifier)
-                    .set(widget.appointment.id);
+                    .read(draggedLastStaffIdProvider.notifier)
+                    .set(widget.appointment.staffId);
 
-                final bodyBox = ref.read(dragBodyBoxProvider);
-                if (bodyBox != null && _lastPointerGlobalPosition != null) {
-                  final local = bodyBox.globalToLocal(
-                    _lastPointerGlobalPosition!,
-                  );
-                  ref.read(dragPositionProvider.notifier).set(local);
-                }
-              },
-
-              onDragUpdate: (details) {
-                final prev = ref.read(dragPositionProvider);
                 final bodyBox = ref.read(dragBodyBoxProvider);
                 if (bodyBox != null) {
-                  final local = bodyBox.globalToLocal(details.globalPosition);
+                  final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
                   ref
-                      .read(dragPositionProvider.notifier)
-                      .set(Offset.lerp(prev, local, 0.85)!);
+                      .read(dragOffsetProvider.notifier)
+                      .set(e.position.dy - cardTopLeftGlobal.dy);
+                  ref
+                      .read(dragOffsetXProvider.notifier)
+                      .set(e.position.dx - cardTopLeftGlobal.dx);
+                  final localStart = bodyBox.globalToLocal(e.position);
+                  ref.read(dragPositionProvider.notifier).set(localStart);
+                }
+              }
+            },
+            onPointerMove: (e) {
+              final cardBox = context.findRenderObject() as RenderBox?;
+              if (cardBox != null) {
+                _evaluateDragBlock(cardBox, e.position);
+              }
+            },
+            onPointerUp: (e) {
+              if (ref.read(dragPositionProvider) != null) {
+                ref.read(dragPositionProvider.notifier).clear();
+              }
+              _updateDragBlock(false);
+              ref.read(draggedBaseRangeProvider.notifier).clear();
+              ref.read(draggedLastStaffIdProvider.notifier).clear();
+            },
+            onPointerCancel: (e) {
+              if (ref.read(dragPositionProvider) != null) {
+                ref.read(dragPositionProvider.notifier).clear();
+              }
+              _updateDragBlock(false);
+              ref.read(draggedBaseRangeProvider.notifier).clear();
+              ref.read(draggedLastStaffIdProvider.notifier).clear();
+            },
+            child: GestureDetector(
+              onTap: () {
+                if (formFactor == AppFormFactor.mobile) {
+                  _handleMobileTap();
+                } else {
+                  _handleDesktopTap();
                 }
               },
+              onLongPress: () => _selectAppointment(ref),
+              child: Draggable<Appointment>(
+                data: widget.appointment,
+                feedback: Consumer(
+                  builder: (c, r, _) =>
+                      _buildFollowerFeedback(c, r, isSelected, formFactor),
+                ),
+                feedbackOffset: Offset.zero,
+                dragAnchorStrategy: childDragAnchorStrategy,
+                maxSimultaneousDrags: _blockDragDuringResize ? 0 : 1,
+                childWhenDragging: _buildCard(
+                  isGhost: true,
+                  showThickBorder: showThickBorder,
+                  isSelected: isSelected,
+                  formFactor: formFactor,
+                ),
 
-              onDragEnd: (details) => _handleDragEnd(ref, details),
-              onDragCompleted: () => _handleEnd(ref),
-              onDraggableCanceled: (_, __) => _handleEnd(ref),
+                onDragStarted: () {
+                  ref
+                      .read(draggedBaseRangeProvider.notifier)
+                      .set(
+                        widget.appointment.startTime,
+                        widget.appointment.endTime,
+                      );
+                  _selectAppointment(ref);
+                  ref
+                      .read(draggedAppointmentIdProvider.notifier)
+                      .set(widget.appointment.id);
 
-              child: _buildCard(
-                showThickBorder: showThickBorder,
-                isResizingDisabled: isDragging,
-                isSelected: isSelected,
-                formFactor: formFactor,
+                  final bodyBox = ref.read(dragBodyBoxProvider);
+                  if (bodyBox != null && _lastPointerGlobalPosition != null) {
+                    final local = bodyBox.globalToLocal(
+                      _lastPointerGlobalPosition!,
+                    );
+                    ref.read(dragPositionProvider.notifier).set(local);
+                  }
+                },
+
+                onDragUpdate: (details) {
+                  final prev = ref.read(dragPositionProvider);
+                  final bodyBox = ref.read(dragBodyBoxProvider);
+                  if (bodyBox != null) {
+                    final local = bodyBox.globalToLocal(details.globalPosition);
+                    ref
+                        .read(dragPositionProvider.notifier)
+                        .set(Offset.lerp(prev, local, 0.85)!);
+                  }
+                },
+
+                onDragEnd: (details) => _handleDragEnd(ref, details),
+                onDragCompleted: () => _handleEnd(ref, keepSelection: true),
+                onDraggableCanceled: (_, __) =>
+                    _handleEnd(ref, keepSelection: true),
+
+                child: _buildCard(
+                  showThickBorder: showThickBorder,
+                  isResizingDisabled: isDragging,
+                  isSelected: isSelected,
+                  formFactor: formFactor,
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
-  void _handleEnd(WidgetRef ref) {
+  void _handleEnd(WidgetRef ref, {bool keepSelection = false}) {
     ref.read(draggedAppointmentIdProvider.notifier).clear();
     ref.read(dragOffsetProvider.notifier).clear();
     ref.read(dragOffsetXProvider.notifier).clear();
     ref.read(dragPositionProvider.notifier).clear();
     ref.read(tempDragTimeProvider.notifier).clear();
-    ref.read(selectedAppointmentProvider.notifier).clear();
+    if (keepSelection) {
+      _selectAppointment(ref);
+    } else {
+      ref.read(selectedAppointmentProvider.notifier).clear();
+    }
     ref.read(draggedBaseRangeProvider.notifier).clear();
+    ref.read(draggedLastStaffIdProvider.notifier).clear();
+  }
+
+  void _selectAppointment(WidgetRef ref) {
+    final sel = ref.read(selectedAppointmentProvider.notifier);
+    sel.clear();
+    sel.toggle(widget.appointment.id);
   }
 
   void _handleDragEnd(WidgetRef ref, DraggableDetails details) {
     if (details.wasAccepted) {
-      _handleEnd(ref);
+      _handleEnd(ref, keepSelection: true);
       return;
     }
 
     final bodyBox = ref.read(dragBodyBoxProvider);
     final columns = ref.read(staffColumnsGeometryProvider);
     if (bodyBox == null || columns.isEmpty) {
-      _handleEnd(ref);
+      _handleEnd(ref, keepSelection: true);
       return;
     }
 
-    final bodyOffset = bodyBox.globalToLocal(details.offset);
+    final dragPosLocal = ref.read(dragPositionProvider);
+    final lastStaffId = ref.read(draggedLastStaffIdProvider);
+    final offY = ref.read(dragOffsetProvider) ?? 0;
+    final offX = ref.read(dragOffsetXProvider) ?? 0;
+    final pointerGlobal = details.offset + Offset(offX, offY);
+    final pointerLocal = bodyBox.globalToLocal(pointerGlobal);
+    final releaseOffset = dragPosLocal ?? pointerLocal;
+    final bodyOffset = pointerLocal;
     const tolerance = 4.0;
 
     int? targetStaffId;
     Rect? targetRect;
     for (final entry in columns.entries) {
       final rect = entry.value.inflate(tolerance);
-      if (bodyOffset.dx >= rect.left && bodyOffset.dx <= rect.right) {
+      if (releaseOffset.dx >= rect.left && releaseOffset.dx <= rect.right) {
         targetStaffId = entry.key;
         targetRect = rect;
         break;
@@ -238,15 +261,30 @@ class _AppointmentCardInteractiveState
     }
 
     if (targetStaffId == null || targetRect == null) {
-      _handleEnd(ref);
+      for (final entry in columns.entries) {
+        final rect = entry.value.inflate(tolerance);
+        if (bodyOffset.dx >= rect.left && bodyOffset.dx <= rect.right) {
+          targetStaffId = entry.key;
+          targetRect = rect;
+          break;
+        }
+      }
+    }
+
+    final int dropStaffId =
+        targetStaffId ?? lastStaffId ?? widget.appointment.staffId;
+    targetRect ??= columns[dropStaffId];
+
+    if (targetRect == null) {
+      _handleEnd(ref, keepSelection: true);
       return;
     }
 
+    double localY = releaseOffset.dy - targetRect.top;
     final slotHeight = ref.read(layoutConfigProvider);
     final minutesPerSlot = LayoutConfig.minutesPerSlot;
     final totalMinutes = LayoutConfig.hoursInDay * 60;
 
-    final localY = bodyOffset.dy - targetRect.top;
     final baseDate = DateTime(
       widget.appointment.startTime.year,
       widget.appointment.startTime.month,
@@ -256,6 +294,7 @@ class _AppointmentCardInteractiveState
     final durationMinutes = widget.appointment.endTime
         .difference(widget.appointment.startTime)
         .inMinutes;
+
     final rawMaxStart = totalMinutes - durationMinutes;
     final maxStartMinutes = rawMaxStart < 0 ? 0 : rawMaxStart;
 
@@ -274,12 +313,12 @@ class _AppointmentCardInteractiveState
 
     ref.read(appointmentsProvider.notifier).moveAppointment(
           appointmentId: widget.appointment.id,
-          newStaffId: targetStaffId,
+          newStaffId: dropStaffId,
           newStart: newStart,
           newEnd: newEnd,
         );
 
-    _handleEnd(ref);
+    _handleEnd(ref, keepSelection: true);
   }
 
   void _evaluateDragBlock(RenderBox cardBox, Offset globalPosition) {
@@ -323,9 +362,7 @@ class _AppointmentCardInteractiveState
     final resizingNow = ref.read(isResizingProvider);
     if (resizingNow) return;
 
-    final sel = ref.read(selectedAppointmentProvider.notifier);
-    sel.clear();
-    sel.toggle(widget.appointment.id);
+    _selectAppointment(ref);
 
     ref.read(dragOffsetProvider.notifier).clear();
     ref.read(dragOffsetXProvider.notifier).clear();
@@ -339,12 +376,7 @@ class _AppointmentCardInteractiveState
     if (resizingNow) return;
 
     // Select the appointment when the bottom sheet is opened
-    ref
-        .read(selectedAppointmentProvider.notifier)
-        .clear(); // Clear any previous selection
-    ref
-        .read(selectedAppointmentProvider.notifier)
-        .toggle(widget.appointment.id);
+    _selectAppointment(ref);
 
     // Apre il nuovo "smart" bottom sheet
     await _openSmartBottomSheet(); // Await the dismissal
