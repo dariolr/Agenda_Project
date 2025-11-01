@@ -56,7 +56,7 @@ class AgendaTheme {
 
   static const TextStyle hourTextStyle = TextStyle(
     fontSize: 13,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.bold,
     color: Colors.black87,
   );
 

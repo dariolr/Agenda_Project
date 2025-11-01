@@ -1,4 +1,6 @@
+import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/config/layout_config.dart';
 
@@ -19,11 +21,15 @@ class ResponsiveLayout {
     required LayoutConfig config,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final formFactor = container.read(formFactorProvider);
 
     // ──────────────────────────────────────────────
     // 📐 Calcolo larghezza colonne staff
     // ──────────────────────────────────────────────
-    final dynamicMaxVisible = config.computeMaxVisibleStaff(screenWidth);
+    final dynamicMaxVisible = formFactor == AppFormFactor.mobile
+        ? 2
+        : config.computeMaxVisibleStaff(screenWidth);
     final availableWidth = screenWidth - config.hourColumnWidth;
     final rawWidth = availableWidth / staffCount.clamp(1, dynamicMaxVisible);
 

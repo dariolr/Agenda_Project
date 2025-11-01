@@ -27,11 +27,11 @@ class HourColumn extends ConsumerWidget {
           child: Stack(
             children: [
               if (isHourStart)
-                Positioned(
-                  left: 8,
-                  top: 0,
+                Align(
+                  alignment: Alignment.center,
                   child: Text(
                     "${hour.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}",
+                    textAlign: TextAlign.center,
                     style: AgendaTheme.hourTextStyle,
                   ),
                 ),

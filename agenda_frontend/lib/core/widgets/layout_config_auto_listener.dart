@@ -59,10 +59,6 @@ class _LayoutConfigAutoListenerState
 
     // 🔹 Aggiorna form factor globale (usato dalla shell)
     ref.read(formFactorProvider.notifier).update(screenWidth);
-
-    debugPrint(
-      '✅ LayoutConfig aggiornato → width: ${size.width.toStringAsFixed(0)}, height: ${size.height.toStringAsFixed(0)}',
-    );
   }
 
   @override

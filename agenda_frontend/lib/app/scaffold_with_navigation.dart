@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'; // 1. Importa Riverpod
 import 'package:go_router/go_router.dart';
 
 import '../core/l10n/l10_extension.dart';
+import '../features/agenda/providers/layout_config_provider.dart';
 // 2. Importa il nuovo provider globale
 import 'providers/form_factor_provider.dart';
 
@@ -25,6 +26,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
     // 6. Usa il formFactor per decidere il layout
     if (formFactor == AppFormFactor.tabletOrDesktop) {
+      final layoutConfig = ref.watch(layoutConfigProvider);
+      final dividerColor = Theme.of(context).dividerColor;
+      const dividerThickness = 1.0;
+
       // 🎯 TARGET WEB/DESKTOP/TABLET: NavigationRail
       return Scaffold(
         appBar: AppBar(
@@ -38,18 +43,23 @@ class ScaffoldWithNavigation extends ConsumerWidget {
             NavigationRail(
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: (index) => _goBranch(index),
-              labelType: NavigationRailLabelType.all,
+              labelType: NavigationRailLabelType.none,
               destinations: destinations
                   .map(
                     (d) => NavigationRailDestination(
-                      icon: d.icon,
-                      selectedIcon: d.selectedIcon,
+                      icon: Tooltip(message: d.label, child: d.icon),
+                      selectedIcon:
+                          Tooltip(message: d.label, child: d.selectedIcon),
                       label: Text(d.label),
                     ),
                   )
                   .toList(),
             ),
-            const VerticalDivider(thickness: 1, width: 1),
+            _RailDivider(
+              topInset: layoutConfig.headerHeight,
+              color: dividerColor,
+              thickness: dividerThickness,
+            ),
             Expanded(child: navigationShell),
           ],
         ),
@@ -108,26 +118,89 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final l10n = context.l10n;
     return [
       NavigationDestination(
-        icon: const Icon(Icons.calendar_month_outlined),
-        selectedIcon: const Icon(Icons.calendar_month),
+        icon: _NavIcon(icon: Icons.calendar_month_outlined),
+        selectedIcon: _NavIcon(icon: Icons.calendar_month, selected: true),
         label: l10n.navAgenda,
       ),
       NavigationDestination(
-        icon: const Icon(Icons.people_outline),
-        selectedIcon: const Icon(Icons.people),
+        icon: _NavIcon(icon: Icons.people_outline),
+        selectedIcon: _NavIcon(icon: Icons.people, selected: true),
         label: l10n.navClients,
       ),
       NavigationDestination(
-        icon: const Icon(Icons.cut_outlined),
-        selectedIcon: const Icon(Icons.cut),
+        icon: _NavIcon(icon: Icons.cut_outlined),
+        selectedIcon: _NavIcon(icon: Icons.cut, selected: true),
         label: l10n.navServices,
       ),
       NavigationDestination(
-        icon: const Icon(Icons.badge_outlined),
-        selectedIcon: const Icon(Icons.badge),
+        icon: _NavIcon(icon: Icons.badge_outlined),
+        selectedIcon: _NavIcon(icon: Icons.badge, selected: true),
         label: l10n.navStaff,
       ),
     ];
+  }
+}
+
+class _RailDivider extends StatelessWidget {
+  const _RailDivider({
+    required this.topInset,
+    required this.color,
+    required this.thickness,
+  });
+
+  final double topInset;
+  final Color color;
+  final double thickness;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: thickness,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final availableHeight = constraints.maxHeight;
+          final inset = topInset.clamp(0.0, availableHeight);
+
+          return Column(
+            children: [
+              SizedBox(height: inset),
+              Expanded(
+                child: Container(color: color),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _NavIcon extends StatelessWidget {
+  const _NavIcon({
+    required this.icon,
+    this.selected = false,
+  });
+
+  final IconData icon;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final cardColor = theme.cardTheme.color ?? colorScheme.surface;
+    final iconColor = selected ? colorScheme.primary : colorScheme.onPrimary;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeInOut,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: selected ? cardColor : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, color: iconColor),
+    );
   }
 }
 

@@ -1,3 +1,6 @@
+import 'dart:ui' as ui;
+
+import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'form_factor_provider.g.dart';
@@ -9,7 +12,19 @@ enum AppFormFactor { mobile, tabletOrDesktop }
 class FormFactorNotifier extends _$FormFactorNotifier {
   @override
   AppFormFactor build() {
-    // Il default è mobile, ma verrà aggiornato immediatamente
+    final binding = WidgetsFlutterBinding.ensureInitialized();
+    final dispatcher = binding.platformDispatcher;
+    final ui.FlutterView? view = dispatcher.views.isNotEmpty
+        ? dispatcher.views.first
+        : dispatcher.implicitView;
+
+    if (view != null) {
+      final logicalSize = view.physicalSize / view.devicePixelRatio;
+      return logicalSize.width >= 600
+          ? AppFormFactor.tabletOrDesktop
+          : AppFormFactor.mobile;
+    }
+
     return AppFormFactor.mobile;
   }
 

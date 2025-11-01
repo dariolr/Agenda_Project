@@ -33,7 +33,7 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
       final next = state.copyWith(
         slotHeight: _deriveSlotHeight(screenHeight),
         headerHeight: _deriveHeaderHeight(screenWidth),
-        hourColumnWidth: _deriveHourColumnWidth(screenWidth),
+        hourColumnWidth: _deriveHourColumnWidth(context),
       );
 
       if (next != state) {
@@ -55,13 +55,23 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
   double _deriveHeaderHeight(double screenWidth) =>
       LayoutConfig.headerHeightForWidth(screenWidth);
 
-  double _deriveHourColumnWidth(double screenWidth) {
-    if (screenWidth >= 1024) {
-      return 60;
-    }
-    if (screenWidth >= 600) {
-      return 55;
-    }
-    return 50;
+  double _deriveHourColumnWidth(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final style = textTheme.bodyMedium ?? const TextStyle(fontSize: 14);
+    final textDirection = Directionality.maybeOf(context) ?? TextDirection.ltr;
+
+    final painter = TextPainter(
+      text: TextSpan(text: '23:59', style: style),
+      textDirection: textDirection,
+      maxLines: 1,
+    )..layout();
+
+    final baseWidth = painter.width;
+    const extraPadding = LayoutConfig.horizontalPadding;
+    const safety = 6.0; // margine ridotto oltre il testo
+
+    final computed = baseWidth + extraPadding + safety;
+
+    return computed.clamp(48.0, 80.0);
   }
 }

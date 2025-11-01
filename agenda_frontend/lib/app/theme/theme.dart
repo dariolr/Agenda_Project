@@ -6,10 +6,13 @@ import 'theme_config.dart';
 ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
   final isDark = brightness == Brightness.dark;
 
+  const colorPrimary1 = Colors.black; // colore base scuro
+  const colorPrimary2 = Colors.white; // colore contrasto chiaro
+
   final background = isDark ? Colors.black : Colors.white;
   final surface = background;
-  final primary = isDark ? Colors.white : Colors.black;
-  final onPrimary = isDark ? Colors.black : Colors.white;
+  final primary = colorPrimary1;
+  final onPrimary = colorPrimary2;
   final onBackground = isDark ? Colors.white : Colors.black;
 
   final colorScheme = ColorScheme(
@@ -40,13 +43,13 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
 
   return base.copyWith(
     appBarTheme: AppBarTheme(
-      backgroundColor: surface,
-      foregroundColor: onBackground,
+      backgroundColor: colorPrimary2,
+      foregroundColor: colorPrimary1,
       centerTitle: true,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      iconTheme: IconThemeData(color: onBackground),
-      titleTextStyle: titleStyle.copyWith(color: onBackground),
+      iconTheme: const IconThemeData(color: colorPrimary1),
+      titleTextStyle: titleStyle.copyWith(color: colorPrimary1),
     ),
     cardTheme: CardThemeData(
       color: surface,
@@ -67,6 +70,28 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: primary,
       foregroundColor: onPrimary,
+    ),
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: colorPrimary1,
+      selectedIconTheme: const IconThemeData(color: colorPrimary2),
+      unselectedIconTheme: const IconThemeData(color: colorPrimary2),
+      selectedLabelTextStyle: const TextStyle(
+        color: colorPrimary2,
+        fontWeight: FontWeight.w600,
+      ),
+      unselectedLabelTextStyle: const TextStyle(
+        color: colorPrimary2,
+      ),
+      minWidth: 68,
+    ),
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      backgroundColor: colorPrimary1,
+      selectedItemColor: colorPrimary2,
+      unselectedItemColor: colorPrimary2,
+      selectedIconTheme: const IconThemeData(color: colorPrimary2),
+      unselectedIconTheme: const IconThemeData(color: colorPrimary2),
+      showUnselectedLabels: true,
+      type: BottomNavigationBarType.fixed,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
