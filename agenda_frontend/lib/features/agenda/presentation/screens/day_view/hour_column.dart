@@ -11,7 +11,7 @@ class HourColumn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final slotHeight = ref.watch(layoutConfigProvider);
+    final slotHeight = ref.watch(layoutConfigProvider).slotHeight;
     final totalSlots = LayoutConfig.totalSlots;
     final slotsPerHour = (60 ~/ LayoutConfig.minutesPerSlot);
 

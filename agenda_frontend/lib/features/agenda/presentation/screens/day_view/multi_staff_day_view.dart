@@ -105,13 +105,14 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
     final now = DateTime.now();
     final minutes = now.hour * 60 + now.minute;
+    final config = ref.read(layoutConfigProvider);
     final offset =
-        (minutes / LayoutConfig.minutesPerSlot) * LayoutConfig.slotHeight;
+        (minutes / LayoutConfig.minutesPerSlot) * config.slotHeight;
 
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
     final viewHeight = renderBox.size.height;
-    final availableHeight = viewHeight - LayoutConfig.headerHeight;
+    final availableHeight = viewHeight - config.headerHeight;
 
     const bias = 0.4;
     final target = (offset - availableHeight * bias).clamp(
@@ -183,13 +184,15 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   Widget build(BuildContext context) {
     final appointments = ref.watch(appointmentsProvider);
     final scrollState = ref.watch(agendaScrollProvider(widget.staffList));
+    final layoutConfig = ref.watch(layoutConfigProvider);
     final layout = ResponsiveLayout.of(
       context,
       staffCount: widget.staffList.length,
+      config: layoutConfig,
     );
-    final slotHeight = ref.watch(layoutConfigProvider);
-    final totalHeight = LayoutConfig.totalSlots * slotHeight;
-    final hourW = LayoutConfig.hourColumnWidth;
+    final totalHeight = layoutConfig.totalHeight;
+    final hourW = layoutConfig.hourColumnWidth;
+    final headerHeight = layoutConfig.headerHeight;
     final link = ref.watch(dragLayerLinkProvider);
 
     // 🔹 blocca scroll se stiamo ridimensionando
@@ -202,7 +205,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       children: [
         // BODY scrollabile con leader
         Positioned.fill(
-          top: LayoutConfig.headerHeight,
+          top: headerHeight,
           child: CompositedTransformTarget(
             key: _bodyKey,
             link: link,
@@ -270,7 +273,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
           top: 0,
           left: 0,
           right: 0,
-          height: LayoutConfig.headerHeight,
+          height: headerHeight,
           child: Material(
             elevation: 8,
             shadowColor: Colors.black.withOpacity(0.3),

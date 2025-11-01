@@ -98,6 +98,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           localInColumn.dx >= 0 && localInColumn.dx <= box.size.width;
       if (withinHorizontal) {
         final dragOffset = ref.read(dragOffsetProvider);
+        final layoutConfig = ref.read(layoutConfigProvider);
 
         // 🔹 Altezza effettiva della card trascinata (fallback 50px se non nota)
         final draggedCardHeightPx =
@@ -124,7 +125,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         // ─────────────────────────────────────────
         // ⏱ Calcolo orario proposto
         // ─────────────────────────────────────────
-        final slotHeight = LayoutConfig.slotHeight;
+        final slotHeight = layoutConfig.slotHeight;
 
         // minuti dall'inizio giornata (00:00)
         final minutesFromTop =
@@ -187,7 +188,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         // aggiorna l'anteprima oraria mostrata nella card fantasma
         tempTimeNotifier.setTimes(start, end);
       } else if (_isHighlighted) {
-        final headerHeight = LayoutConfig.headerHeight;
+        final headerHeight = ref.read(layoutConfigProvider).headerHeight;
         final globalY = next.dy;
         if (globalY > headerHeight - 5) return;
 
@@ -238,7 +239,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       }
     });
 
-    final slotHeight = ref.watch(layoutConfigProvider);
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final slotHeight = layoutConfig.slotHeight;
     final totalSlots = LayoutConfig.totalSlots;
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
 

@@ -20,14 +20,14 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   Timer? _minuteTimer;
   double _offset = 0;
   String _label = '';
-  late final ProviderSubscription<double> _slotHeightSub;
+  late final ProviderSubscription<LayoutConfig> _layoutConfigSub;
 
   @override
   void initState() {
     super.initState();
-    _slotHeightSub = ref.listenManual<double>(
+    _layoutConfigSub = ref.listenManual<LayoutConfig>(
       layoutConfigProvider,
-      (previous, next) => _updateLine(slotHeightOverride: next),
+      (previous, next) => _updateLine(configOverride: next),
       fireImmediately: true,
     );
     _scheduleMinuteSync();
@@ -46,11 +46,12 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
     });
   }
 
-  void _updateLine({double? slotHeightOverride}) {
+  void _updateLine({LayoutConfig? configOverride}) {
     final now = DateTime.now();
     final minutesSinceMidnight = now.hour * 60 + now.minute;
-    final double slotHeight =
-        slotHeightOverride ?? ref.read(layoutConfigProvider);
+    final LayoutConfig config =
+        configOverride ?? ref.read(layoutConfigProvider);
+    final slotHeight = config.slotHeight;
     final offset =
         (minutesSinceMidnight / LayoutConfig.minutesPerSlot) * slotHeight;
     final label =
@@ -67,7 +68,7 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   @override
   void dispose() {
     _minuteTimer?.cancel();
-    _slotHeightSub.close();
+    _layoutConfigSub.close();
     super.dispose();
   }
 

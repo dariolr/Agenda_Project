@@ -13,16 +13,18 @@ class ResponsiveLayout {
     required this.maxVisibleStaff,
   });
 
-  static ResponsiveLayout of(BuildContext context, {required int staffCount}) {
+  static ResponsiveLayout of(
+    BuildContext context, {
+    required int staffCount,
+    required LayoutConfig config,
+  }) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
 
     // ──────────────────────────────────────────────
     // 📐 Calcolo larghezza colonne staff
     // ──────────────────────────────────────────────
-    final dynamicMaxVisible = LayoutConfig.computeMaxVisibleStaff(screenWidth);
-
-    final availableWidth = screenWidth - LayoutConfig.hourColumnWidth;
+    final dynamicMaxVisible = config.computeMaxVisibleStaff(screenWidth);
+    final availableWidth = screenWidth - config.hourColumnWidth;
     final rawWidth = availableWidth / staffCount.clamp(1, dynamicMaxVisible);
 
     // 🔸 Solo limite minimo: niente limite massimo
@@ -30,25 +32,9 @@ class ResponsiveLayout {
         ? LayoutConfig.minColumnWidth
         : rawWidth;
 
-    // ──────────────────────────────────────────────
-    // ⏱️ Calcolo altezza slot dinamica
-    // ──────────────────────────────────────────────
-    double slotHeight = LayoutConfig.slotHeight;
-
-    if (screenHeight < 700) {
-      slotHeight = LayoutConfig.slotHeight * 0.8;
-    } else if (screenHeight > 1200) {
-      slotHeight = LayoutConfig.slotHeight * 1.2;
-    }
-
-    slotHeight = slotHeight.roundToDouble();
-
-    // 🔁 Aggiorna LayoutConfig globale
-    LayoutConfig.updateSlotHeight(slotHeight);
-
     return ResponsiveLayout(
       columnWidth: columnWidth,
-      slotHeight: slotHeight,
+      slotHeight: config.slotHeight,
       maxVisibleStaff: dynamicMaxVisible,
     );
   }

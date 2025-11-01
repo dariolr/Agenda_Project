@@ -60,6 +60,8 @@ class _AppointmentCardInteractiveState
   static const double _dragBlockZoneHeight = 28.0;
   static const int _minSlotsForDragBlock = 3;
 
+  LayoutConfig get _layoutConfig => ref.read(layoutConfigProvider);
+
   @override
   Widget build(BuildContext context) {
     final selectedId = ref.watch(selectedAppointmentProvider);
@@ -285,7 +287,7 @@ class _AppointmentCardInteractiveState
     }
 
     double localY = releaseOffset.dy - targetRect.top;
-    final slotHeight = ref.read(layoutConfigProvider);
+    final slotHeight = _layoutConfig.slotHeight;
     final minutesPerSlot = LayoutConfig.minutesPerSlot;
     final totalMinutes = LayoutConfig.hoursInDay * 60;
 
@@ -343,7 +345,7 @@ class _AppointmentCardInteractiveState
     final distanceFromBottom = cardHeight - localPos.dy;
 
     final minHeightForBlocking =
-        LayoutConfig.slotHeight * _minSlotsForDragBlock;
+        _layoutConfig.slotHeight * _minSlotsForDragBlock;
 
     final shouldBlock = distanceFromBottom >= 0 &&
         distanceFromBottom <= _dragBlockZoneHeight &&
@@ -720,7 +722,7 @@ class _AppointmentCardInteractiveState
             _lastPointerGlobalPosition = currentGlobal;
 
             final minutesPerPixel =
-                LayoutConfig.minutesPerSlot / LayoutConfig.slotHeight;
+                LayoutConfig.minutesPerSlot / _layoutConfig.slotHeight;
             final pixelsPerMinute = 1 / minutesPerPixel;
             final dayEnd = DateTime(
               widget.appointment.startTime.year,
@@ -792,6 +794,7 @@ class _AppointmentCardInteractiveState
     bool isSelected,
     AppFormFactor formFactor,
   ) {
+    final layoutConfig = ref.watch(layoutConfigProvider);
     final times = ref.watch(tempDragTimeProvider);
     final start = times?.$1;
     final end = times?.$2;
@@ -802,16 +805,16 @@ class _AppointmentCardInteractiveState
     final link = ref.watch(dragLayerLinkProvider);
 
     final highlightedId = ref.watch(highlightedStaffIdProvider);
-    final columnsRects = ref.watch(staffColumnsGeometryProvider);
+   final columnsRects = ref.watch(staffColumnsGeometryProvider);
 
     final w = widget.columnWidth ?? _lastSize?.width ?? 180.0;
     final h = _lastSize?.height ?? 50.0;
-    final hourW = LayoutConfig.hourColumnWidth;
+    final hourW = layoutConfig.hourColumnWidth;
 
     if (dragPos == null) return const SizedBox.shrink();
 
     final bodyBox = ref.read(dragBodyBoxProvider);
-    final totalHeight = bodyBox?.size.height ?? LayoutConfig.totalHeight;
+    final totalHeight = bodyBox?.size.height ?? layoutConfig.totalHeight;
     final cardHeight = h;
 
     final double unconstrainedTop = dragPos.dy - offY;

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/staff.dart';
-import '../../../domain/config/layout_config.dart';
 import '../../../providers/highlighted_staff_provider.dart';
+import '../../../providers/layout_config_provider.dart';
 
 class StaffHeaderRow extends ConsumerWidget {
   final List<Staff> staffList;
@@ -22,7 +22,7 @@ class StaffHeaderRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final headerHeight = LayoutConfig.headerHeight;
+    final headerHeight = ref.watch(layoutConfigProvider).headerHeight;
     final highlightedId = ref.watch(highlightedStaffIdProvider);
 
     // ⚠️ Nessuna SizedBox iniziale qui! Lo spazio per l'ora è già messo nel parent.

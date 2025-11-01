@@ -17,7 +17,7 @@ const layoutConfigProvider = LayoutConfigNotifierProvider._();
 /// Provider responsabile di mantenere aggiornata la configurazione del layout
 /// (in particolare l’altezza degli slot e dell’header)
 final class LayoutConfigNotifierProvider
-    extends $NotifierProvider<LayoutConfigNotifier, double> {
+    extends $NotifierProvider<LayoutConfigNotifier, LayoutConfig> {
   /// Provider responsabile di mantenere aggiornata la configurazione del layout
   /// (in particolare l’altezza degli slot e dell’header)
   const LayoutConfigNotifierProvider._()
@@ -39,10 +39,10 @@ final class LayoutConfigNotifierProvider
   LayoutConfigNotifier create() => LayoutConfigNotifier();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(double value) {
+  Override overrideWithValue(LayoutConfig value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<double>(value),
+      providerOverride: $SyncValueProvider<LayoutConfig>(value),
     );
   }
 }
@@ -53,18 +53,18 @@ String _$layoutConfigNotifierHash() =>
 /// Provider responsabile di mantenere aggiornata la configurazione del layout
 /// (in particolare l’altezza degli slot e dell’header)
 
-abstract class _$LayoutConfigNotifier extends $Notifier<double> {
-  double build();
+abstract class _$LayoutConfigNotifier extends $Notifier<LayoutConfig> {
+  LayoutConfig build();
   @$mustCallSuper
   @override
   void runBuild() {
     final created = build();
-    final ref = this.ref as $Ref<double, double>;
+    final ref = this.ref as $Ref<LayoutConfig, LayoutConfig>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<double, double>,
-              double,
+              AnyNotifier<LayoutConfig, LayoutConfig>,
+              LayoutConfig,
               Object?,
               Object?
             >;
