@@ -114,12 +114,20 @@ class _AppointmentCardInteractiveState
               }
             },
             onPointerMove: (e) {
+              if (_isDraggingResize) {
+                _performResizeUpdate(e);
+                return;
+              }
               final cardBox = context.findRenderObject() as RenderBox?;
               if (cardBox != null) {
                 _evaluateDragBlock(cardBox, e.position);
               }
             },
             onPointerUp: (e) {
+              if (_isDraggingResize) {
+                _performResizeEnd();
+                return;
+              }
               if (ref.read(dragPositionProvider) != null) {
                 ref.read(dragPositionProvider.notifier).clear();
               }
@@ -128,6 +136,10 @@ class _AppointmentCardInteractiveState
               ref.read(draggedLastStaffIdProvider.notifier).clear();
             },
             onPointerCancel: (e) {
+              if (_isDraggingResize) {
+                _performResizeCancel();
+                return;
+              }
               if (ref.read(dragPositionProvider) != null) {
                 ref.read(dragPositionProvider.notifier).clear();
               }
@@ -690,6 +702,66 @@ class _AppointmentCardInteractiveState
     );
   }
 
+  void _performResizeUpdate(PointerEvent details) {
+    if (_lastPointerGlobalPosition == null) return;
+    final currentGlobal = details.position;
+    final deltaY = currentGlobal.dy - _lastPointerGlobalPosition!.dy;
+    _lastPointerGlobalPosition = currentGlobal;
+
+    final minutesPerPixel =
+        _layoutConfig.minutesPerSlot / _layoutConfig.slotHeight;
+    final pixelsPerMinute = 1 / minutesPerPixel;
+    final dayEnd = DateTime(
+      widget.appointment.startTime.year,
+      widget.appointment.startTime.month,
+      widget.appointment.startTime.day,
+    ).add(const Duration(days: 1));
+
+    ref.read(resizingProvider.notifier).updateDuringResize(
+          appointmentId: widget.appointment.id,
+          deltaDy: deltaY,
+          pixelsPerMinute: pixelsPerMinute,
+          dayEnd: dayEnd,
+          minDurationMinutes: 5,
+          snapMinutes: 5,
+        );
+  }
+
+  void _performResizeEnd() async {
+    final newEnd = ref
+        .read(resizingProvider.notifier)
+        .commitResizeAndEnd(appointmentId: widget.appointment.id);
+
+    if (newEnd != null) {
+      final appt = widget.appointment;
+      final minEnd = appt.startTime.add(const Duration(minutes: 5));
+      ref.read(appointmentsProvider.notifier).moveAppointment(
+            appointmentId: appt.id,
+            newStaffId: appt.staffId,
+            newStart: appt.startTime,
+            newEnd: newEnd.isAfter(minEnd) ? newEnd : minEnd,
+          );
+    }
+
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) setState(() => _isDraggingResize = false);
+    _lastPointerGlobalPosition = null;
+    _updateDragBlock(false);
+    ref.read(isResizingProvider.notifier).stop();
+    ref.invalidate(resizingProvider);
+  }
+
+  void _performResizeCancel() {
+    ref
+        .read(resizingProvider.notifier)
+        .cancelResize(appointmentId: widget.appointment.id);
+    ref.read(isResizingProvider.notifier).stop();
+    if (mounted) {
+      setState(() => _isDraggingResize = false);
+    }
+    _updateDragBlock(false);
+  }
+
   // 🔹 Resize identico all’originale
   Widget _buildResizeHandle() {
     return Align(
@@ -716,63 +788,13 @@ class _AppointmentCardInteractiveState
             setState(() => _isDraggingResize = true);
           },
           onVerticalDragUpdate: (details) {
-            if (_lastPointerGlobalPosition == null) return;
-            final currentGlobal = details.globalPosition;
-            final deltaY = currentGlobal.dy - _lastPointerGlobalPosition!.dy;
-            _lastPointerGlobalPosition = currentGlobal;
-
-            final minutesPerPixel =
-                _layoutConfig.minutesPerSlot / _layoutConfig.slotHeight;
-            final pixelsPerMinute = 1 / minutesPerPixel;
-            final dayEnd = DateTime(
-              widget.appointment.startTime.year,
-              widget.appointment.startTime.month,
-              widget.appointment.startTime.day,
-            ).add(const Duration(days: 1));
-
-            ref
-                .read(resizingProvider.notifier)
-                .updateDuringResize(
-                  appointmentId: widget.appointment.id,
-                  deltaDy: deltaY,
-                  pixelsPerMinute: pixelsPerMinute,
-                  dayEnd: dayEnd,
-                  minDurationMinutes: 5,
-                  snapMinutes: 5,
-                );
+            // Gestito da onPointerMove
           },
-          onVerticalDragEnd: (_) async {
-            final newEnd = ref
-                .read(resizingProvider.notifier)
-                .commitResizeAndEnd(appointmentId: widget.appointment.id);
-
-            if (newEnd != null) {
-              final appt = widget.appointment;
-              final minEnd = appt.startTime.add(const Duration(minutes: 5));
-              ref
-                  .read(appointmentsProvider.notifier)
-                  .moveAppointment(
-                    appointmentId: appt.id,
-                    newStaffId: appt.staffId,
-                    newStart: appt.startTime,
-                    newEnd: newEnd.isAfter(minEnd) ? newEnd : minEnd,
-                  );
-            }
-
-            await Future.delayed(const Duration(milliseconds: 100));
-            if (mounted) setState(() => _isDraggingResize = false);
-            _lastPointerGlobalPosition = null;
-            _updateDragBlock(false);
-            ref.read(isResizingProvider.notifier).stop();
-            ref.invalidate(resizingProvider);
+          onVerticalDragEnd: (_) {
+            // Gestito da onPointerUp
           },
           onVerticalDragCancel: () {
-            ref
-                .read(resizingProvider.notifier)
-                .cancelResize(appointmentId: widget.appointment.id);
-            ref.read(isResizingProvider.notifier).stop();
-            setState(() => _isDraggingResize = false);
-            _updateDragBlock(false);
+            // Gestito da onPointerCancel
           },
           child: Container(
             height: 20,

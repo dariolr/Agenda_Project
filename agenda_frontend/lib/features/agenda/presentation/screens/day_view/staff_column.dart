@@ -370,52 +370,66 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
 
-    final List<List<Appointment>> overlapGroups = [];
+    final layoutAppointments = appointments.map((appt) {
+      final resizingEntry = ref.watch(resizingEntryProvider(appt.id));
+      if (resizingEntry != null &&
+          resizingEntry.provisionalEndTime != appt.endTime) {
+        return appt.copyWith(endTime: resizingEntry.provisionalEndTime);
+      }
+      return appt;
+    }).toList();
 
-    for (final appt in appointments) {
+    final List<List<Appointment>> overlapGroups = [];
+    for (final appt in layoutAppointments) {
       bool added = false;
       for (final group in overlapGroups) {
-        if (group.any(
-          (g) =>
-              appt.startTime.isBefore(g.endTime) &&
-              appt.endTime.isAfter(g.startTime),
-        )) {
+        if (group.any((g) =>
+            appt.startTime.isBefore(g.endTime) &&
+            appt.endTime.isAfter(g.startTime))) {
           group.add(appt);
           added = true;
           break;
         }
       }
-      if (!added) overlapGroups.add([appt]);
+      if (!added) {
+        overlapGroups.add([appt]);
+      }
     }
 
     final positionedAppointments = <Widget>[];
 
+    final originalAppointmentsMap = {for (var a in appointments) a.id: a};
+
     for (final group in overlapGroups) {
       final groupSize = group.length;
+      group.sort((a, b) => a.startTime.compareTo(b.startTime));
+
       for (int i = 0; i < groupSize; i++) {
-        final a = group[i];
-        final isDragged = a.id == draggedId;
+        final layoutAppt = group[i];
+        final originalAppt = originalAppointmentsMap[layoutAppt.id]!;
+
+        final isDragged = originalAppt.id == draggedId;
 
         final dayStart = DateTime(
-          a.startTime.year,
-          a.startTime.month,
-          a.startTime.day,
+          originalAppt.startTime.year,
+          originalAppt.startTime.month,
+          originalAppt.startTime.day,
         );
 
-        final startMinutes = a.startTime.difference(dayStart).inMinutes;
-        final endMinutes = a.endTime.difference(dayStart).inMinutes;
+        final startMinutes =
+            originalAppt.startTime.difference(dayStart).inMinutes;
+
+        final endMinutes = layoutAppt.endTime.difference(dayStart).inMinutes;
 
         final double top =
             (startMinutes / layoutConfig.minutesPerSlot) * slotHeight;
         double height =
             ((endMinutes - startMinutes) / layoutConfig.minutesPerSlot) *
-            slotHeight;
+                slotHeight;
 
-        final entry = ref.watch(resizingEntryProvider(a.id));
+        final entry = ref.watch(resizingEntryProvider(originalAppt.id));
         if (entry != null) {
-          if (a.endTime != entry.provisionalEndTime) {
-            height = entry.currentPreviewHeightPx;
-          }
+          height = entry.currentPreviewHeightPx;
         }
 
         // 🔹 Gestione overlap orizzontale
@@ -426,6 +440,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         // 🔹 Costruisci la card
         positionedAppointments.add(
           Positioned(
+            key: ValueKey(originalAppt.id),
             top: top,
             left: leftFraction * widget.columnWidth + 2,
             width: widget.columnWidth * widthFraction - 4,
@@ -433,7 +448,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             child: Opacity(
               opacity: opacity,
               child: AppointmentCard(
-                appointment: a,
+                appointment: originalAppt,
                 color: widget.staff.color,
                 columnWidth: widget.columnWidth,
                 expandToLeft: i > 0,
