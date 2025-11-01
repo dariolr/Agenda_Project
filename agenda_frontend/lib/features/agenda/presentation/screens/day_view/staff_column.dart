@@ -129,7 +129,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         // minuti dall'inizio giornata (00:00)
         final minutesFromTop =
-            (effectiveY / slotHeight) * LayoutConfig.minutesPerSlot;
+            (effectiveY / slotHeight) * layoutConfig.minutesPerSlot;
 
         // arrotondiamo a step di 5 minuti
         double roundedMinutes = (minutesFromTop / 5).round() * 5;
@@ -241,7 +241,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     final layoutConfig = ref.watch(layoutConfigProvider);
     final slotHeight = layoutConfig.slotHeight;
-    final totalSlots = LayoutConfig.totalSlots;
+    final totalSlots = layoutConfig.totalSlots;
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
 
     final stackChildren = <Widget>[];
@@ -250,7 +250,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     stackChildren.add(
       Column(
         children: List.generate(totalSlots, (index) {
-          final slotsPerHour = 60 ~/ LayoutConfig.minutesPerSlot;
+          final slotsPerHour = 60 ~/ layoutConfig.minutesPerSlot;
           final isHourStart = (index + 1) % slotsPerHour == 0;
           return SizedBox(
             height: slotHeight,
@@ -295,7 +295,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         if (effectiveDy <= 0.0) effectiveDy = 0.1;
 
         final minutesFromTop =
-            (effectiveDy / slotHeight) * LayoutConfig.minutesPerSlot;
+            (effectiveDy / slotHeight) * layoutConfig.minutesPerSlot;
         double roundedMinutes = (minutesFromTop / 5).round() * 5;
 
         final duration = details.data.endTime.difference(
@@ -368,6 +368,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     List<Appointment> appointments,
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
+    final layoutConfig = ref.watch(layoutConfigProvider);
 
     final List<List<Appointment>> overlapGroups = [];
 
@@ -405,9 +406,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final endMinutes = a.endTime.difference(dayStart).inMinutes;
 
         final double top =
-            (startMinutes / LayoutConfig.minutesPerSlot) * slotHeight;
+            (startMinutes / layoutConfig.minutesPerSlot) * slotHeight;
         double height =
-            ((endMinutes - startMinutes) / LayoutConfig.minutesPerSlot) *
+            ((endMinutes - startMinutes) / layoutConfig.minutesPerSlot) *
             slotHeight;
 
         final entry = ref.watch(resizingEntryProvider(a.id));

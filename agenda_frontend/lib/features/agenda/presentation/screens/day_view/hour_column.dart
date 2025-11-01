@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/config/agenda_theme.dart';
-import '../../../domain/config/layout_config.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../widgets/agenda_dividers.dart';
 
@@ -11,16 +10,17 @@ class HourColumn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final slotHeight = ref.watch(layoutConfigProvider).slotHeight;
-    final totalSlots = LayoutConfig.totalSlots;
-    final slotsPerHour = (60 ~/ LayoutConfig.minutesPerSlot);
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final slotHeight = layoutConfig.slotHeight;
+    final totalSlots = layoutConfig.totalSlots;
+    final slotsPerHour = (60 ~/ layoutConfig.minutesPerSlot);
 
     return Column(
       children: List.generate(totalSlots, (index) {
         final isHourStart = index % slotsPerHour == 0;
         final isMainLine = (index + 1) % slotsPerHour == 0;
         final hour = (index ~/ slotsPerHour);
-        final minutes = (index % slotsPerHour) * LayoutConfig.minutesPerSlot;
+        final minutes = (index % slotsPerHour) * layoutConfig.minutesPerSlot;
 
         return SizedBox(
           height: slotHeight,

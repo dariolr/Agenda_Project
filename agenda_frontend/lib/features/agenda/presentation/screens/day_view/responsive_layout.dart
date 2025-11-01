@@ -8,11 +8,13 @@ class ResponsiveLayout {
   final double columnWidth;
   final double slotHeight;
   final int maxVisibleStaff;
+  final int totalSlots;
 
   const ResponsiveLayout({
     required this.columnWidth,
     required this.slotHeight,
     required this.maxVisibleStaff,
+    required this.totalSlots,
   });
 
   static ResponsiveLayout of(
@@ -29,21 +31,25 @@ class ResponsiveLayout {
     // ──────────────────────────────────────────────
     final dynamicMaxVisible = formFactor == AppFormFactor.mobile
         ? 2
-        : config.computeMaxVisibleStaff(screenWidth);
-    final availableWidth = screenWidth - config.hourColumnWidth;
-    final rawWidth = availableWidth / staffCount.clamp(1, dynamicMaxVisible);
+        : config.computeMaxVisibleStaff(
+            screenWidth,
+            formFactor: formFactor,
+          );
+    final visibleStaff = staffCount.clamp(1, dynamicMaxVisible);
 
-    // 🔸 Solo limite minimo: niente limite massimo
-    final columnWidth = rawWidth < LayoutConfig.minColumnWidth
-        ? LayoutConfig.minColumnWidth
-        : rawWidth;
+    final columnWidth = config.computeAdaptiveColumnWidth(
+      screenWidth: screenWidth,
+      visibleStaffCount: visibleStaff,
+      formFactor: formFactor,
+    );
 
     return ResponsiveLayout(
       columnWidth: columnWidth,
       slotHeight: config.slotHeight,
       maxVisibleStaff: dynamicMaxVisible,
+      totalSlots: config.totalSlots,
     );
   }
 
-  double get totalHeight => LayoutConfig.totalSlots * slotHeight;
+  double get totalHeight => totalSlots * slotHeight;
 }

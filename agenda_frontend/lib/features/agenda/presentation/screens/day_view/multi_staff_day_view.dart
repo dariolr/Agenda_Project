@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/staff.dart';
 import '../../../../../core/widgets/no_scrollbar_behavior.dart';
-import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
@@ -106,8 +105,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     final now = DateTime.now();
     final minutes = now.hour * 60 + now.minute;
     final config = ref.read(layoutConfigProvider);
-    final offset =
-        (minutes / LayoutConfig.minutesPerSlot) * config.slotHeight;
+    final offset = (minutes / config.minutesPerSlot) * config.slotHeight;
 
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox == null) return;

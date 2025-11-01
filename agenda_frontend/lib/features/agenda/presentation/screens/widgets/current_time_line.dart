@@ -53,7 +53,7 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
         configOverride ?? ref.read(layoutConfigProvider);
     final slotHeight = config.slotHeight;
     final offset =
-        (minutesSinceMidnight / LayoutConfig.minutesPerSlot) * slotHeight;
+        (minutesSinceMidnight / config.minutesPerSlot) * slotHeight;
     final label =
         "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
 

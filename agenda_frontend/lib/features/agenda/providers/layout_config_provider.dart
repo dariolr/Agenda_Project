@@ -74,4 +74,17 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
 
     return computed.clamp(48.0, 80.0);
   }
+
+  /// Aggiorna i minuti per slot in base alla scelta utente.
+  void setMinutesPerSlot(int minutes) {
+    if (!LayoutConfig.isValidSlotDuration(minutes)) {
+      return;
+    }
+
+    if (state.minutesPerSlot == minutes) {
+      return;
+    }
+
+    state = state.copyWith(minutesPerSlot: minutes);
+  }
 }

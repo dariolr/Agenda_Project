@@ -288,7 +288,7 @@ class _AppointmentCardInteractiveState
 
     double localY = releaseOffset.dy - targetRect.top;
     final slotHeight = _layoutConfig.slotHeight;
-    final minutesPerSlot = LayoutConfig.minutesPerSlot;
+    final minutesPerSlot = _layoutConfig.minutesPerSlot;
     final totalMinutes = LayoutConfig.hoursInDay * 60;
 
     final baseDate = DateTime(
@@ -722,7 +722,7 @@ class _AppointmentCardInteractiveState
             _lastPointerGlobalPosition = currentGlobal;
 
             final minutesPerPixel =
-                LayoutConfig.minutesPerSlot / _layoutConfig.slotHeight;
+                _layoutConfig.minutesPerSlot / _layoutConfig.slotHeight;
             final pixelsPerMinute = 1 / minutesPerPixel;
             final dayEnd = DateTime(
               widget.appointment.startTime.year,
