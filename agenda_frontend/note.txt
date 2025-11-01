@@ -7,7 +7,7 @@ dart run build_runner build --delete-conflicting-outputs
 
 git log --oneline --since="1 day ago"
 git checkout <id_commit>
-git checkout main
+git checkout master
 
 
 
