@@ -20,31 +20,30 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'en';
 
+  static String m0(path) => "Page not found: ${path}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
-    "actionCancel": MessageLookupByLibrary.simpleMessage("Cancel"),
-    "actionConfirm": MessageLookupByLibrary.simpleMessage("Confirm"),
-    "actionDelete": MessageLookupByLibrary.simpleMessage("Delete"),
-    "actionMove": MessageLookupByLibrary.simpleMessage("Move"),
-    "actionResize": MessageLookupByLibrary.simpleMessage("Resize"),
-    "appTitle": MessageLookupByLibrary.simpleMessage("Agenda Platform"),
-    "appointmentDeletedMessage": MessageLookupByLibrary.simpleMessage(
-      "Appointment deleted",
-    ),
-    "clientsTitle": MessageLookupByLibrary.simpleMessage("Clients List"),
-    "deleteConfirmationTitle": MessageLookupByLibrary.simpleMessage(
-      "Confirm deletion?",
-    ),
-    "errorNotFound": (path) => "Page not found: $path",
-    "errorTitle": MessageLookupByLibrary.simpleMessage("Error"),
-    "navAgenda": MessageLookupByLibrary.simpleMessage("Agenda"),
-    "navClients": MessageLookupByLibrary.simpleMessage("Clients"),
-    "navServices": MessageLookupByLibrary.simpleMessage("Services"),
-    "navStaff": MessageLookupByLibrary.simpleMessage("Staff"),
-    "staffScreenPlaceholder": MessageLookupByLibrary.simpleMessage(
-      "Staff Screen",
-    ),
-    "servicesTitle": MessageLookupByLibrary.simpleMessage("Services List"),
-    "staffTitle": MessageLookupByLibrary.simpleMessage("Staff List"),
-  };
+        "actionCancel": MessageLookupByLibrary.simpleMessage("Cancel"),
+        "actionConfirm": MessageLookupByLibrary.simpleMessage("Confirm"),
+        "actionDelete": MessageLookupByLibrary.simpleMessage("Delete"),
+        "actionMove": MessageLookupByLibrary.simpleMessage("Move"),
+        "actionResize": MessageLookupByLibrary.simpleMessage("Resize"),
+        "appTitle": MessageLookupByLibrary.simpleMessage("Agenda Platform"),
+        "appointmentDeletedMessage":
+            MessageLookupByLibrary.simpleMessage("Appointment deleted"),
+        "clientsTitle": MessageLookupByLibrary.simpleMessage("Clients List"),
+        "deleteConfirmationTitle":
+            MessageLookupByLibrary.simpleMessage("Confirm deletion?"),
+        "errorNotFound": m0,
+        "errorTitle": MessageLookupByLibrary.simpleMessage("Error"),
+        "navAgenda": MessageLookupByLibrary.simpleMessage("Agenda"),
+        "navClients": MessageLookupByLibrary.simpleMessage("Clients"),
+        "navServices": MessageLookupByLibrary.simpleMessage("Services"),
+        "navStaff": MessageLookupByLibrary.simpleMessage("Staff"),
+        "servicesTitle": MessageLookupByLibrary.simpleMessage("Services List"),
+        "staffScreenPlaceholder":
+            MessageLookupByLibrary.simpleMessage("Staff Screen"),
+        "staffTitle": MessageLookupByLibrary.simpleMessage("Staff List")
+      };
 }

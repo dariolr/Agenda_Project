@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/appointment.dart';
+import '/core/models/staff.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/widgets/app_bottom_sheet.dart';
 import '/core/widgets/app_buttons.dart';
@@ -22,6 +23,7 @@ import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/staff_providers.dart';
 
 /// 🔹 Versione unificata per DESKTOP e MOBILE.
 /// Mantiene drag, resize, ghost, select, ma cambia il comportamento del tap:
@@ -45,6 +47,8 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
   ConsumerState<AppointmentCardInteractive> createState() =>
       _AppointmentCardInteractiveState();
 }
+
+enum _AppointmentQuickAction { resize, move }
 
 class _AppointmentCardInteractiveState
     extends ConsumerState<AppointmentCardInteractive> {
@@ -375,21 +379,161 @@ class _AppointmentCardInteractiveState
     final resizingNow = ref.read(isResizingProvider);
     if (resizingNow) return;
 
-    // Select the appointment when the bottom sheet is opened
     _selectAppointment(ref);
 
-    // Apre il nuovo "smart" bottom sheet
-    await _openSmartBottomSheet(); // Await the dismissal
+    final action = await _openSmartBottomSheet();
 
-    // Clear selection when bottom sheet is dismissed
-    ref.read(selectedAppointmentProvider.notifier).clear();
+    if (!mounted) return;
+
+    if (action == null) {
+      ref.read(selectedAppointmentProvider.notifier).clear();
+      return;
+    }
+
+    bool executed = false;
+    switch (action) {
+      case _AppointmentQuickAction.resize:
+        executed = await _handleQuickResize();
+        break;
+      case _AppointmentQuickAction.move:
+        executed = await _handleQuickMove();
+        break;
+    }
+
+    if (!mounted) return;
+
+    if (!executed) {
+      ref.read(selectedAppointmentProvider.notifier).clear();
+    } else {
+      _selectAppointment(ref);
+    }
   }
 
-  Future<void> _openSmartBottomSheet() async {
-    await AppBottomSheet.show(
+  Future<_AppointmentQuickAction?> _openSmartBottomSheet() {
+    return AppBottomSheet.show<_AppointmentQuickAction>(
       context: context,
       builder: (_) => _AppointmentActionSheet(appointment: widget.appointment),
     );
+  }
+
+  Future<bool> _handleQuickResize() async {
+    final appointment = widget.appointment;
+    final start = appointment.startTime;
+    final dayStart = DateTime(start.year, start.month, start.day);
+    final dayBoundary = dayStart.add(const Duration(days: 1));
+
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(appointment.endTime),
+      helpText: context.l10n.actionResize,
+    );
+
+    if (picked == null || !mounted) return false;
+
+    int minutes = picked.hour * 60 + picked.minute;
+    minutes = _snapMinutes(minutes);
+    minutes = minutes.clamp(0, LayoutConfig.hoursInDay * 60);
+
+    var newEnd = dayStart.add(Duration(minutes: minutes));
+    final minEnd = start.add(const Duration(minutes: 5));
+    if (newEnd.isBefore(minEnd)) newEnd = minEnd;
+    if (newEnd.isAfter(dayBoundary)) newEnd = dayBoundary;
+
+    if (newEnd == appointment.endTime) return false;
+
+    ref.read(appointmentsProvider.notifier).moveAppointment(
+          appointmentId: appointment.id,
+          newStaffId: appointment.staffId,
+          newStart: start,
+          newEnd: newEnd,
+        );
+
+    if (!mounted) return true;
+
+    _selectAppointment(ref);
+    final message = '${_formatTime(start)} – ${_formatTime(newEnd)}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${context.l10n.actionResize}: $message')),
+    );
+
+    return true;
+  }
+
+  Future<bool> _handleQuickMove() async {
+    final appointment = widget.appointment;
+    final duration = appointment.endTime.difference(appointment.startTime);
+    final dayStart = DateTime(
+      appointment.startTime.year,
+      appointment.startTime.month,
+      appointment.startTime.day,
+    );
+    final dayBoundary = dayStart.add(const Duration(days: 1));
+
+    final staffList = ref.read(staffProvider);
+    int targetStaffId = appointment.staffId;
+    if (staffList.length > 1) {
+      final chosen = await AppBottomSheet.show<int>(
+        context: context,
+        builder: (_) => _StaffPickerSheet(
+          staff: staffList,
+          selectedStaffId: targetStaffId,
+        ),
+      );
+      if (!mounted) return false;
+      if (chosen == null) return false;
+      targetStaffId = chosen;
+    }
+
+    final pickedStart = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(appointment.startTime),
+      helpText: context.l10n.actionMove,
+    );
+
+    if (pickedStart == null || !mounted) return false;
+
+    int minutes = pickedStart.hour * 60 + pickedStart.minute;
+    minutes = _snapMinutes(minutes);
+    minutes = minutes.clamp(0, LayoutConfig.hoursInDay * 60);
+
+    var newStart = dayStart.add(Duration(minutes: minutes));
+    var newEnd = newStart.add(duration);
+
+    if (newEnd.isAfter(dayBoundary)) {
+      newEnd = dayBoundary;
+      newStart = newEnd.subtract(duration);
+      if (newStart.isBefore(dayStart)) {
+        newStart = dayStart;
+        newEnd = newStart.add(duration);
+      }
+    }
+
+    if (newStart == appointment.startTime && targetStaffId == appointment.staffId) {
+      return false;
+    }
+
+    ref.read(appointmentsProvider.notifier).moveAppointment(
+          appointmentId: appointment.id,
+          newStaffId: targetStaffId,
+          newStart: newStart,
+          newEnd: newEnd,
+        );
+
+    if (!mounted) return true;
+
+    _selectAppointment(ref);
+    final message = '${_formatTime(newStart)} – ${_formatTime(newEnd)}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${context.l10n.actionMove}: $message')),
+    );
+
+    return true;
+  }
+
+  int _snapMinutes(int minutes, {int step = 5}) {
+    if (step <= 1) return minutes;
+    final snapped = (minutes / step).round() * step;
+    return snapped.clamp(0, LayoutConfig.hoursInDay * 60);
   }
 
   Widget _buildCard({
@@ -791,16 +935,7 @@ class _AppointmentActionSheetState
             Expanded(
               child: AppFilledButton(
                 onPressed: () {
-                  Navigator.pop(context); // Close the bottom sheet
-                  ref.read(selectedAppointmentProvider.notifier).clear();
-                  ref
-                      .read(selectedAppointmentProvider.notifier)
-                      .toggle(appointment.id);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Funzione Resize da implementare'),
-                    ),
-                  );
+                  Navigator.pop(context, _AppointmentQuickAction.resize);
                 },
                 child: Text(context.l10n.actionResize),
               ),
@@ -809,16 +944,7 @@ class _AppointmentActionSheetState
             Expanded(
               child: AppFilledButton(
                 onPressed: () {
-                  Navigator.pop(context); // Close the bottom sheet
-                  ref.read(selectedAppointmentProvider.notifier).clear();
-                  ref
-                      .read(selectedAppointmentProvider.notifier)
-                      .toggle(appointment.id);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Funzione Sposta da implementare'),
-                    ),
-                  );
+                  Navigator.pop(context, _AppointmentQuickAction.move);
                 },
                 child: Text(context.l10n.actionMove),
               ),
@@ -924,6 +1050,44 @@ class _AppointmentActionSheetState
             style: const TextStyle(fontSize: 15, color: Colors.black54),
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _StaffPickerSheet extends StatelessWidget {
+  const _StaffPickerSheet({
+    required this.staff,
+    required this.selectedStaffId,
+  });
+
+  final List<Staff> staff;
+  final int selectedStaffId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.l10n.staffTitle,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 12),
+        ...staff.map(
+          (s) => ListTile(
+            leading: CircleAvatar(
+              radius: 12,
+              backgroundColor: s.color,
+            ),
+            title: Text(s.name),
+            trailing:
+                s.id == selectedStaffId ? const Icon(Icons.check) : null,
+            onTap: () => Navigator.pop(context, s.id),
+          ),
+        ),
+        const SizedBox(height: 12),
       ],
     );
   }
