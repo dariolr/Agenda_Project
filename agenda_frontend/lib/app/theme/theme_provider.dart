@@ -6,13 +6,10 @@ import 'theme_config.dart';
 /// 🔹 Notifier moderno per gestire il tema dinamico
 class ThemeNotifier extends Notifier<AppThemeConfig> {
   @override
-  AppThemeConfig build() {
-    // Stato iniziale del tema
-    return const AppThemeConfig(
-      seedColor: Color(0xFFFFD700), // Oro
-      brightness: Brightness.dark,
-    );
-  }
+  AppThemeConfig build() => const AppThemeConfig(
+    seedColor: Colors.black,
+    brightness: Brightness.light,
+  );
 
   /// Cambia il colore principale (seed color)
   void updateSeed(Color color) {
@@ -21,11 +18,9 @@ class ThemeNotifier extends Notifier<AppThemeConfig> {
 
   /// Inverte la modalità chiara/scura
   void toggleBrightness() {
-    state = state.copyWith(
-      brightness: state.brightness == Brightness.dark
-          ? Brightness.light
-          : Brightness.dark,
-    );
+    if (state.brightness != Brightness.light) {
+      state = state.copyWith(brightness: Brightness.light);
+    }
   }
 }
 

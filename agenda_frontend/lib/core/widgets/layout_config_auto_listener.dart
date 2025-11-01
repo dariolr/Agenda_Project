@@ -51,9 +51,6 @@ class _LayoutConfigAutoListenerState
 
     // 🧩 FIX: evita aggiornamenti con MediaQuery ancora non pronta
     if (screenWidth < 100 || screenHeight < 100) {
-      debugPrint(
-        '🟠 LayoutConfigAutoListener → MediaQuery non pronta (${size.width}x${size.height}), skip update.',
-      );
       return;
     }
 

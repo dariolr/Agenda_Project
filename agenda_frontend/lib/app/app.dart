@@ -21,9 +21,8 @@ class MyApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       title: 'Agenda Platform',
       routerConfig: appRouter,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       theme: buildTheme(themeConfig, Brightness.light),
-      darkTheme: buildTheme(themeConfig, Brightness.dark),
       localizationsDelegates: const [
         L10n.delegate,
         GlobalMaterialLocalizations.delegate,

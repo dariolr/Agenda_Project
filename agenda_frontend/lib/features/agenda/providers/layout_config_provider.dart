@@ -38,12 +38,6 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
 
       if (next != state) {
         state = next;
-        debugPrint(
-          'Width: ${screenWidth.toStringAsFixed(0)} → '
-          'hourColumnWidth: ${next.hourColumnWidth.toStringAsFixed(0)}, '
-          'slotHeight: ${next.slotHeight.toStringAsFixed(1)}, '
-          'headerHeight: ${next.headerHeight.toStringAsFixed(0)}',
-        );
       }
     });
   }

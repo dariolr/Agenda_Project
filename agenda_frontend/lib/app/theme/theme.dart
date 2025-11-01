@@ -2,86 +2,78 @@ import 'package:flutter/material.dart';
 
 import 'theme_config.dart';
 
-/// 🔹 Tema chiaro con sfondo bianco e testi neri
-ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
-  // Palette chiara, fissa (non dipende dal seed)
-  const colorScheme = ColorScheme.light(
-    primary: Colors.black,
-    onPrimary: Colors.white,
-    secondary: Colors.grey,
-    onSecondary: Colors.white,
-    background: Colors.white,
-    onBackground: Colors.black,
-    surface: Colors.white,
-    onSurface: Colors.black,
+/// Crea un tema coerente partendo dal seed definito in [AppThemeConfig].
+ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
+
+  final background = isDark ? Colors.black : Colors.white;
+  final surface = background;
+  final primary = isDark ? Colors.white : Colors.black;
+  final onPrimary = isDark ? Colors.black : Colors.white;
+  final onBackground = isDark ? Colors.white : Colors.black;
+
+  final colorScheme = ColorScheme(
+    brightness: brightness,
+    primary: primary,
+    onPrimary: onPrimary,
+    secondary: primary,
+    onSecondary: onPrimary,
+    error: Colors.red,
+    onError: Colors.white,
+    background: background,
+    onBackground: onBackground,
+    surface: surface,
+    onSurface: onBackground,
   );
 
-  return ThemeData(
+  final base = ThemeData(
     useMaterial3: true,
-    brightness: Brightness.light,
     colorScheme: colorScheme,
+    brightness: brightness,
+    scaffoldBackgroundColor: background,
+    canvasColor: surface,
+  );
 
-    // ✅ Sfondo bianco
-    scaffoldBackgroundColor: Colors.white,
-    canvasColor: Colors.white,
+  final titleStyle =
+      base.textTheme.titleLarge ??
+      const TextStyle(fontSize: 18, fontWeight: FontWeight.w600);
 
-    // ✅ AppBar bianca, testo nero
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+  return base.copyWith(
+    appBarTheme: AppBarTheme(
+      backgroundColor: surface,
+      foregroundColor: onBackground,
       centerTitle: true,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      iconTheme: IconThemeData(color: Colors.black),
-      titleTextStyle: TextStyle(
-        color: Colors.black,
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-      ),
+      iconTheme: IconThemeData(color: onBackground),
+      titleTextStyle: titleStyle.copyWith(color: onBackground),
     ),
-
-    // ✅ Card bianche con bordo grigio leggero (usa CardThemeData!)
     cardTheme: CardThemeData(
-      color: Colors.white,
+      color: surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       margin: const EdgeInsets.all(8),
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.grey.shade300, width: 0.5),
         borderRadius: const BorderRadius.all(Radius.circular(12)),
+        side: BorderSide(color: onBackground.withOpacity(0.1), width: 0.5),
       ),
     ),
-
-    // ✅ Testi neri
-    textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: Colors.black),
-      bodyMedium: TextStyle(color: Colors.black, fontSize: 14),
-      bodySmall: TextStyle(color: Colors.black87, fontSize: 12),
-      titleMedium: TextStyle(
-        color: Colors.black,
-        fontWeight: FontWeight.w600,
-        fontSize: 16,
-      ),
-      labelLarge: TextStyle(color: Colors.black),
+    textTheme: base.textTheme.apply(
+      bodyColor: onBackground,
+      displayColor: onBackground,
     ),
-
-    // ✅ Icone e divider coerenti
-    iconTheme: const IconThemeData(color: Colors.black),
-    dividerColor: Colors.grey,
-
-    // ✅ Pulsanti coerenti
-    floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: Colors.black,
-      foregroundColor: Colors.white,
+    iconTheme: IconThemeData(color: onBackground),
+    dividerColor: onBackground.withOpacity(0.12),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: primary,
+      foregroundColor: onPrimary,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: primary,
+        foregroundColor: onPrimary,
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8), // BorderRadiusGeometry ok
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     ),
   );
