@@ -12,6 +12,7 @@ class LayoutConfig {
 
   static const double horizontalPadding = 8;
   static const double verticalPadding = 4;
+  static const double columnInnerPadding = 2;
   static const double minColumnWidthMobile = 140;
   static const double minColumnWidthDesktop = 160;
   static const double borderRadius = 8;

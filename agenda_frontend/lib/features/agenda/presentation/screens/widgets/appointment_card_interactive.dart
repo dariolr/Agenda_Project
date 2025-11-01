@@ -827,9 +827,10 @@ class _AppointmentCardInteractiveState
     final link = ref.watch(dragLayerLinkProvider);
 
     final highlightedId = ref.watch(highlightedStaffIdProvider);
-   final columnsRects = ref.watch(staffColumnsGeometryProvider);
+    final columnsRects = ref.watch(staffColumnsGeometryProvider);
 
-    final w = widget.columnWidth ?? _lastSize?.width ?? 180.0;
+    final padding = LayoutConfig.columnInnerPadding;
+    final effectiveWidth = widget.columnWidth ?? _lastSize?.width ?? 180.0;
     final h = _lastSize?.height ?? 50.0;
     final hourW = layoutConfig.hourColumnWidth;
 
@@ -857,13 +858,15 @@ class _AppointmentCardInteractiveState
     double left;
     final rect = highlightedId != null ? columnsRects[highlightedId] : null;
 
+    final minLeft = hourW + padding;
+
     if (rect != null) {
-      left = rect.left + (rect.width - w) / 2;
-      if (left < hourW) left = hourW;
+      left = rect.left + padding;
+      if (left < minLeft) left = minLeft;
     } else {
-      left = dragPos.dx - offX;
-      if (widget.expandToLeft) left -= (w / 2);
-      if (left < hourW) left = hourW;
+      left = dragPos.dx - offX - padding;
+      if (widget.expandToLeft) left -= (effectiveWidth / 2);
+      if (left < minLeft) left = minLeft;
     }
 
     final dpr = MediaQuery.of(context).devicePixelRatio;
@@ -877,7 +880,7 @@ class _AppointmentCardInteractiveState
         showWhenUnlinked: false,
         offset: Offset(left, top),
         child: SizedBox(
-          width: w - 4,
+          width: effectiveWidth,
           height: h,
           child: ClipRect(
             child: Transform.translate(

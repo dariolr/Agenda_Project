@@ -438,19 +438,24 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         double opacity = isDragged ? AgendaTheme.ghostOpacity : 1.0;
 
         // 🔹 Costruisci la card
+        final padding = LayoutConfig.columnInnerPadding;
+        final cardLeft = leftFraction * widget.columnWidth + padding;
+        final cardWidth =
+            widget.columnWidth * widthFraction - padding * 2;
+
         positionedAppointments.add(
           Positioned(
             key: ValueKey(originalAppt.id),
             top: top,
-            left: leftFraction * widget.columnWidth + 2,
-            width: widget.columnWidth * widthFraction - 4,
+            left: cardLeft,
+            width: cardWidth,
             height: height,
             child: Opacity(
               opacity: opacity,
               child: AppointmentCard(
                 appointment: originalAppt,
                 color: widget.staff.color,
-                columnWidth: widget.columnWidth,
+                columnWidth: cardWidth,
                 expandToLeft: i > 0,
               ),
             ),
