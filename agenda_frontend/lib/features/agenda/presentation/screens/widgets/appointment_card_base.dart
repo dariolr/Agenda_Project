@@ -11,6 +11,7 @@ class AppointmentCard extends ConsumerWidget {
   final Color color;
   final double? columnWidth;
   final double? columnOffset;
+  final double? dragTargetWidth;
   final bool expandToLeft;
 
   const AppointmentCard({
@@ -19,6 +20,7 @@ class AppointmentCard extends ConsumerWidget {
     required this.color,
     this.columnWidth,
     this.columnOffset,
+    this.dragTargetWidth,
     this.expandToLeft = false,
   });
 
@@ -29,6 +31,7 @@ class AppointmentCard extends ConsumerWidget {
       color: color,
       columnWidth: columnWidth,
       columnOffset: columnOffset,
+      dragTargetWidth: dragTargetWidth,
       expandToLeft: expandToLeft,
     );
   }

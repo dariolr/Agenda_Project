@@ -34,6 +34,7 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
   final Color color;
   final double? columnWidth;
   final double? columnOffset;
+  final double? dragTargetWidth;
   final bool expandToLeft;
 
   const AppointmentCardInteractive({
@@ -42,6 +43,7 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
     required this.color,
     this.columnWidth,
     this.columnOffset,
+    this.dragTargetWidth,
     this.expandToLeft = false,
   });
 
@@ -832,7 +834,13 @@ class _AppointmentCardInteractiveState
     final columnsRects = ref.watch(staffColumnsGeometryProvider);
 
     final padding = LayoutConfig.columnInnerPadding;
-    final effectiveWidth = widget.columnWidth ?? _lastSize?.width ?? 180.0;
+    final fallbackWidth =
+        widget.columnWidth ?? _lastSize?.width ?? 180.0;
+    double effectiveWidth =
+        widget.dragTargetWidth ?? fallbackWidth;
+    if (effectiveWidth <= 0) {
+      effectiveWidth = fallbackWidth > 0 ? fallbackWidth : 180.0;
+    }
     final h = _lastSize?.height ?? 50.0;
     final hourW = layoutConfig.hourColumnWidth;
 
@@ -863,11 +871,12 @@ class _AppointmentCardInteractiveState
     final minLeft = hourW + padding;
 
     if (rect != null) {
-      if (highlightedId == widget.appointment.staffId &&
-          widget.columnOffset != null) {
-        left = rect.left + widget.columnOffset!;
-      } else {
-        left = rect.left + padding;
+      left = rect.left + padding;
+      final availableWidth = rect.width - padding * 2;
+      if (availableWidth > 0 && availableWidth < effectiveWidth) {
+        effectiveWidth = availableWidth;
+      } else if (availableWidth > 0 && widget.dragTargetWidth == null) {
+        effectiveWidth = availableWidth;
       }
       if (left < minLeft) left = minLeft;
     } else {

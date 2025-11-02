@@ -471,6 +471,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         // 🔹 Costruisci la card
         final padding = LayoutConfig.columnInnerPadding;
+        final fullColumnWidth = math.max(widget.columnWidth - padding * 2, 0.0);
         final cardLeft =
             widget.columnWidth * geometry.leftFraction + padding;
         final cardWidth = math.max(
@@ -492,6 +493,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                 color: widget.staff.color,
                 columnWidth: cardWidth,
                 columnOffset: cardLeft,
+                dragTargetWidth: fullColumnWidth,
                 expandToLeft: i > 0,
               ),
             ),
