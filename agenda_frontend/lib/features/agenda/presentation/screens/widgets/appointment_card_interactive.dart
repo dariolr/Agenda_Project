@@ -33,6 +33,7 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
   final Appointment appointment;
   final Color color;
   final double? columnWidth;
+  final double? columnOffset;
   final bool expandToLeft;
 
   const AppointmentCardInteractive({
@@ -40,6 +41,7 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
     required this.appointment,
     required this.color,
     this.columnWidth,
+    this.columnOffset,
     this.expandToLeft = false,
   });
 
@@ -861,7 +863,12 @@ class _AppointmentCardInteractiveState
     final minLeft = hourW + padding;
 
     if (rect != null) {
-      left = rect.left + padding;
+      if (highlightedId == widget.appointment.staffId &&
+          widget.columnOffset != null) {
+        left = rect.left + widget.columnOffset!;
+      } else {
+        left = rect.left + padding;
+      }
       if (left < minLeft) left = minLeft;
     } else {
       left = dragPos.dx - offX - padding;
