@@ -23,6 +23,8 @@ import '../../../providers/temp_drag_time_provider.dart';
 import '../../../providers/selected_appointment_provider.dart'; // Added missing import
 import '../widgets/agenda_dividers.dart';
 import '../widgets/appointment_card_base.dart';
+import 'drag_drop_helper.dart';
+import 'layout_geometry_helper.dart';
 
 class StaffColumn extends ConsumerStatefulWidget {
   final Staff staff;
@@ -300,79 +302,24 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final localPointer = box.globalToLocal(pointerGlobal);
         final draggedCardHeightPx =
             ref.read(draggedCardSizeProvider)?.height ?? 50.0;
-        final maxYStartPx = (box.size.height - draggedCardHeightPx)
-            .clamp(0, box.size.height)
-            .toDouble();
-        final clampedLocalDy =
-            localPointer.dy.clamp(0.0, box.size.height.toDouble());
-        final double effectiveDy =
-            (clampedLocalDy - dragOffsetY).clamp(0.0, maxYStartPx).toDouble();
 
-        final double rawTop = localPointer.dy - dragOffsetY;
-        final double rawBottom = rawTop + draggedCardHeightPx;
-        final bool isAboveBounds = rawTop < 0;
-        final bool isBelowBounds = rawBottom > box.size.height;
-
-        final duration = details.data.endTime.difference(
-          details.data.startTime,
+        final dropResult = computeDropResult(
+          DropComputationParams(
+            appointment: details.data,
+            layoutConfig: layoutConfig,
+            columnHeight: box.size.height,
+            localPointer: localPointer,
+            dragOffsetY: dragOffsetY,
+            draggedCardHeightPx: draggedCardHeightPx,
+            previewTimes: previewTimes,
+          ),
         );
-        final durationMinutes = duration.inMinutes;
-
-        final baseDate = DateTime(
-          details.data.startTime.year,
-          details.data.startTime.month,
-          details.data.startTime.day,
-        );
-        const totalMinutes = LayoutConfig.hoursInDay * 60; // 1440
-
-        DateTime newStart;
-        DateTime newEnd;
-
-        if (previewTimes != null) {
-          newStart = previewTimes.$1;
-          newEnd = previewTimes.$2;
-        } else {
-          final minutesFromTop =
-              (effectiveDy / slotHeight) * layoutConfig.minutesPerSlot;
-          double roundedMinutes = (minutesFromTop / 5).round() * 5;
-
-          final maxStartMinutesNum =
-              (totalMinutes - durationMinutes).clamp(0, totalMinutes);
-
-          int startMinutes = roundedMinutes.toInt();
-          final maxStartMinutes = maxStartMinutesNum.toInt();
-
-          if (startMinutes > maxStartMinutes) startMinutes = maxStartMinutes;
-          if (startMinutes < 0) startMinutes = 0;
-
-          final endMinutes =
-              (startMinutes + durationMinutes).clamp(0, totalMinutes).toInt();
-
-          newStart = baseDate.add(Duration(minutes: startMinutes));
-          newEnd = baseDate.add(Duration(minutes: endMinutes));
-        }
-
-        if (isAboveBounds) {
-          newStart = baseDate;
-          final cappedEnd = baseDate.add(Duration(minutes: durationMinutes));
-          final dayEnd = baseDate.add(const Duration(days: 1));
-          newEnd =
-              cappedEnd.isBefore(dayEnd) ? cappedEnd : dayEnd;
-        }
-
-        if (isBelowBounds) {
-          final dayEnd = baseDate.add(const Duration(days: 1));
-          newEnd = dayEnd;
-          final candidateStart =
-              dayEnd.subtract(Duration(minutes: durationMinutes));
-          newStart = candidateStart.isAfter(baseDate) ? candidateStart : baseDate;
-        }
 
         appointmentsNotifier.moveAppointment(
           appointmentId: details.data.id,
           newStaffId: widget.staff.id,
-          newStart: newStart,
-          newEnd: newEnd,
+          newStart: dropResult.newStart,
+          newEnd: dropResult.newEnd,
         );
       },
       builder: (context, candidateData, rejectedData) {
@@ -440,16 +387,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final positionedAppointments = <Widget>[];
 
     final originalAppointmentsMap = {for (var a in appointments) a.id: a};
-    final layoutInputs = layoutAppointments
+    final layoutEntries = layoutAppointments
         .map(
-          (a) => _LayoutEntry(
+          (a) => LayoutEntry(
             id: a.id,
             start: a.startTime,
             end: a.endTime,
           ),
         )
         .toList();
-    final layoutGeometry = _computeLayoutGeometry(layoutInputs);
+    final layoutGeometry = computeLayoutGeometry(layoutEntries);
 
     for (final group in overlapGroups) {
       final groupWidgets = <Widget>[];
@@ -485,7 +432,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         }
 
         final geometry = layoutGeometry[originalAppt.id] ??
-            const _EventGeometry(leftFraction: 0, widthFraction: 1);
+            const EventGeometry(leftFraction: 0, widthFraction: 1);
         double opacity = isDragged ? AgendaTheme.ghostOpacity : 1.0;
 
         // 🔹 Costruisci la card
@@ -529,155 +476,4 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     return positionedAppointments;
   }
 
-  Map<int, _EventGeometry> _computeLayoutGeometry(List<_LayoutEntry> entries) {
-    if (entries.isEmpty) return const {};
-
-    final sorted = entries.toList()
-      ..sort((a, b) => a.start.compareTo(b.start));
-    final clusters = <List<_LayoutEntry>>[];
-
-    var currentCluster = <_LayoutEntry>[];
-    DateTime? currentMaxEnd;
-
-    for (final entry in sorted) {
-      if (currentCluster.isEmpty) {
-        currentCluster = [entry];
-        currentMaxEnd = entry.end;
-        continue;
-      }
-
-      if (entry.start.isBefore(currentMaxEnd!)) {
-        currentCluster.add(entry);
-        if (entry.end.isAfter(currentMaxEnd)) {
-          currentMaxEnd = entry.end;
-        }
-      } else {
-        clusters.add(List<_LayoutEntry>.from(currentCluster));
-        currentCluster = [entry];
-        currentMaxEnd = entry.end;
-      }
-    }
-
-    if (currentCluster.isNotEmpty) {
-      clusters.add(List<_LayoutEntry>.from(currentCluster));
-    }
-
-    final geometryMap = <int, _EventGeometry>{};
-
-    for (final cluster in clusters) {
-      final columnAssignments = _assignColumns(cluster);
-      final concurrencyMap = _computeConcurrency(cluster);
-
-      for (final entry in cluster) {
-        final concurrency = concurrencyMap[entry.id] ?? 1;
-        final widthFraction = 1 / concurrency;
-        final columnIndex = columnAssignments[entry.id] ?? 0;
-        final leftFraction = columnIndex * widthFraction;
-        geometryMap[entry.id] = _EventGeometry(
-          leftFraction: leftFraction,
-          widthFraction: widthFraction,
-        );
-      }
-    }
-
-    return geometryMap;
-  }
-
-  Map<int, int> _assignColumns(List<_LayoutEntry> cluster) {
-    final assignments = <int, int>{};
-    final columnEndTimes = <DateTime>[];
-
-    final ordered = cluster.toList()
-      ..sort((a, b) {
-        final compareStart = a.start.compareTo(b.start);
-        if (compareStart != 0) return compareStart;
-        return a.end.compareTo(b.end);
-      });
-
-    for (final entry in ordered) {
-      int assignedColumn = -1;
-      for (int i = 0; i < columnEndTimes.length; i++) {
-        if (!entry.start.isBefore(columnEndTimes[i])) {
-          assignedColumn = i;
-          columnEndTimes[i] = entry.end;
-          break;
-        }
-      }
-
-      if (assignedColumn == -1) {
-        assignedColumn = columnEndTimes.length;
-        columnEndTimes.add(entry.end);
-      }
-
-      assignments[entry.id] = assignedColumn;
-    }
-
-    return assignments;
-  }
-
-  Map<int, int> _computeConcurrency(List<_LayoutEntry> cluster) {
-    final concurrencyMap = <int, int>{};
-
-    for (final entry in cluster) {
-      final edges = <_Edge>[];
-
-      for (final other in cluster) {
-        final overlapStart = entry.start.isAfter(other.start)
-            ? entry.start
-            : other.start;
-        final overlapEnd = entry.end.isBefore(other.end)
-            ? entry.end
-            : other.end;
-
-        if (overlapStart.isBefore(overlapEnd)) {
-          edges.add(_Edge(overlapStart, 1));
-          edges.add(_Edge(overlapEnd, -1));
-        }
-      }
-
-      edges.sort((a, b) {
-        final compare = a.instant.compareTo(b.instant);
-        if (compare != 0) return compare;
-        if (a.delta == b.delta) return 0;
-        // Process exits (-1) before entries (+1) at the same instant to avoid
-        // over-counting appointments that only touch at boundaries.
-        return a.delta == -1 ? -1 : 1;
-      });
-
-      int active = 0;
-      int maxActive = 0;
-      for (final edge in edges) {
-        active += edge.delta;
-        if (active > maxActive) {
-          maxActive = active;
-        }
-      }
-
-      concurrencyMap[entry.id] = math.max(maxActive, 1);
-    }
-
-    return concurrencyMap;
-  }
-}
-
-class _LayoutEntry {
-  const _LayoutEntry({required this.id, required this.start, required this.end});
-
-  final int id;
-  final DateTime start;
-  final DateTime end;
-}
-
-class _EventGeometry {
-  const _EventGeometry({required this.leftFraction, required this.widthFraction});
-
-  final double leftFraction;
-  final double widthFraction;
-}
-
-class _Edge {
-  const _Edge(this.instant, this.delta);
-
-  final DateTime instant;
-  final int delta;
 }
