@@ -858,10 +858,10 @@ class _AppointmentCardInteractiveState
     if (maxTop < 0) maxTop = 0;
 
     if (unconstrainedTop < 0) {
-      translateY = unconstrainedTop;
+      translateY = 0;
       top = 0;
     } else if (unconstrainedTop > maxTop) {
-      translateY = unconstrainedTop - maxTop;
+      translateY = 0;
       top = maxTop;
     }
 

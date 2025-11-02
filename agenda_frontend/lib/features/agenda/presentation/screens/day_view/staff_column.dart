@@ -308,6 +308,23 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final double effectiveDy =
             (clampedLocalDy - dragOffsetY).clamp(0.0, maxYStartPx).toDouble();
 
+        final double rawTop = localPointer.dy - dragOffsetY;
+        final double rawBottom = rawTop + draggedCardHeightPx;
+        final bool isAboveBounds = rawTop < 0;
+        final bool isBelowBounds = rawBottom > box.size.height;
+
+        final duration = details.data.endTime.difference(
+          details.data.startTime,
+        );
+        final durationMinutes = duration.inMinutes;
+
+        final baseDate = DateTime(
+          details.data.startTime.year,
+          details.data.startTime.month,
+          details.data.startTime.day,
+        );
+        const totalMinutes = LayoutConfig.hoursInDay * 60; // 1440
+
         DateTime newStart;
         DateTime newEnd;
 
@@ -319,20 +336,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               (effectiveDy / slotHeight) * layoutConfig.minutesPerSlot;
           double roundedMinutes = (minutesFromTop / 5).round() * 5;
 
-          final duration = details.data.endTime.difference(
-            details.data.startTime,
-          );
-          final durationMinutes = duration.inMinutes;
-
-          // ✅ Data base dell'app originale
-          final baseDate = DateTime(
-            details.data.startTime.year,
-            details.data.startTime.month,
-            details.data.startTime.day,
-          );
-
-          // 🔒 Limiti della giornata in minuti
-          const totalMinutes = LayoutConfig.hoursInDay * 60; // 1440
           final maxStartMinutesNum =
               (totalMinutes - durationMinutes).clamp(0, totalMinutes);
 
@@ -347,6 +350,22 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
           newStart = baseDate.add(Duration(minutes: startMinutes));
           newEnd = baseDate.add(Duration(minutes: endMinutes));
+        }
+
+        if (isAboveBounds) {
+          newStart = baseDate;
+          final cappedEnd = baseDate.add(Duration(minutes: durationMinutes));
+          final dayEnd = baseDate.add(const Duration(days: 1));
+          newEnd =
+              cappedEnd.isBefore(dayEnd) ? cappedEnd : dayEnd;
+        }
+
+        if (isBelowBounds) {
+          final dayEnd = baseDate.add(const Duration(days: 1));
+          newEnd = dayEnd;
+          final candidateStart =
+              dayEnd.subtract(Duration(minutes: durationMinutes));
+          newStart = candidateStart.isAfter(baseDate) ? candidateStart : baseDate;
         }
 
         appointmentsNotifier.moveAppointment(
