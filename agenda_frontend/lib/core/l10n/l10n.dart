@@ -229,6 +229,66 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Oggi`
+  String get agendaToday {
+    return Intl.message(
+      'Oggi',
+      name: 'agendaToday',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Giorno precedente`
+  String get agendaPrevDay {
+    return Intl.message(
+      'Giorno precedente',
+      name: 'agendaPrevDay',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Giorno successivo`
+  String get agendaNextDay {
+    return Intl.message(
+      'Giorno successivo',
+      name: 'agendaNextDay',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna sede disponibile`
+  String get agendaNoLocations {
+    return Intl.message(
+      'Nessuna sede disponibile',
+      name: 'agendaNoLocations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona sede`
+  String get agendaSelectLocation {
+    return Intl.message(
+      'Seleziona sede',
+      name: 'agendaSelectLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun servizio disponibile per questa categoria.`
+  String get servicesCategoryEmpty {
+    return Intl.message(
+      'Nessun servizio disponibile per questa categoria.',
+      name: 'servicesCategoryEmpty',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,6 +34,8 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   bool _isSyncing = false;
   Offset? _initialDragPosition;
   bool _autoScrollArmed = false;
+  ScrollController? _bodyHorizontalCtrl;
+  List<int>? _staffSignature;
 
   static const double _scrollEdgeMargin = 100;
   static const double _scrollSpeed = 20;
@@ -62,7 +65,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _registerBodyBox();
       _centerCurrentTimeLine();
-      _setupHorizontalSync();
+      _setupHorizontalSync(force: true);
     });
   }
 
@@ -73,28 +76,52 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     }
   }
 
-  void _setupHorizontalSync() {
+  void _setupHorizontalSync({bool force = false}) {
+    final newSignature = widget.staffList.map((s) => s.id).toList();
+    if (!force && _staffSignature != null && listEquals(_staffSignature, newSignature)) {
+      return;
+    }
+    _staffSignature = newSignature;
+
     final bodyCtrl = ref
         .read(agendaScrollProvider(widget.staffList))
         .horizontalScrollCtrl;
 
-    if (_headerHCtrl.hasClients && bodyCtrl.hasClients) {
-      _headerHCtrl.jumpTo(bodyCtrl.offset);
+    if (!force && identical(_bodyHorizontalCtrl, bodyCtrl)) {
+      return;
     }
 
-    bodyCtrl.addListener(() {
-      if (_isSyncing || !_headerHCtrl.hasClients) return;
-      _isSyncing = true;
-      _headerHCtrl.jumpTo(bodyCtrl.offset);
-      _isSyncing = false;
-    });
+    _bodyHorizontalCtrl?.removeListener(_onBodyHorizontalScroll);
+    _headerHCtrl.removeListener(_onHeaderHorizontalScroll);
 
-    _headerHCtrl.addListener(() {
-      if (_isSyncing || !bodyCtrl.hasClients) return;
-      _isSyncing = true;
-      bodyCtrl.jumpTo(_headerHCtrl.offset);
-      _isSyncing = false;
-    });
+    _bodyHorizontalCtrl = bodyCtrl;
+
+    _bodyHorizontalCtrl?.addListener(_onBodyHorizontalScroll);
+    _headerHCtrl.addListener(_onHeaderHorizontalScroll);
+
+    if (_headerHCtrl.hasClients && _bodyHorizontalCtrl!.hasClients) {
+      _headerHCtrl.jumpTo(_bodyHorizontalCtrl!.offset);
+    }
+  }
+
+  void _onBodyHorizontalScroll() {
+    final bodyCtrl = _bodyHorizontalCtrl;
+    if (_isSyncing || bodyCtrl == null) return;
+    if (!bodyCtrl.hasClients || !_headerHCtrl.hasClients) return;
+
+    _isSyncing = true;
+    _headerHCtrl.jumpTo(bodyCtrl.offset);
+    _isSyncing = false;
+  }
+
+  void _onHeaderHorizontalScroll() {
+    final bodyCtrl = _bodyHorizontalCtrl;
+    if (_isSyncing || bodyCtrl == null) return;
+    if (!bodyCtrl.hasClients || !_headerHCtrl.hasClients) return;
+
+    _isSyncing = true;
+    bodyCtrl.jumpTo(_headerHCtrl.offset);
+    _isSyncing = false;
   }
 
   void _centerCurrentTimeLine() {
@@ -174,8 +201,19 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   void dispose() {
     _dragSub.close();
     _stopAutoScroll();
+    _bodyHorizontalCtrl?.removeListener(_onBodyHorizontalScroll);
+    _headerHCtrl.removeListener(_onHeaderHorizontalScroll);
     _headerHCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(MultiStaffDayView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _setupHorizontalSync(force: true);
+    });
   }
 
   @override

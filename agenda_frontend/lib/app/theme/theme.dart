@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'extensions.dart';
 import 'theme_config.dart';
 
 /// Crea un tema coerente partendo dal seed definito in [AppThemeConfig].
@@ -42,7 +43,14 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
       base.textTheme.titleLarge ??
       const TextStyle(fontSize: 18, fontWeight: FontWeight.w600);
 
-  return base.copyWith(
+  final hoverFill = isDark
+      ? colorPrimary2.withOpacity(0.12)
+      : colorPrimary1.withOpacity(0.06);
+  final pressedFill = isDark
+      ? colorPrimary2.withOpacity(0.18)
+      : colorPrimary1.withOpacity(0.1);
+
+  final themeWithPalette = base.copyWith(
     appBarTheme: AppBarTheme(
       backgroundColor: colorPrimary2,
       foregroundColor: colorPrimary1,
@@ -100,5 +108,14 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     ),
+  );
+
+  return themeWithPalette.copyWith(
+    extensions: <ThemeExtension<dynamic>>[
+      AppInteractionColors(
+        hoverFill: hoverFill,
+        pressedFill: pressedFill,
+      ),
+    ],
   );
 }

@@ -24,5 +24,11 @@
   "actionCancel": "Cancel",
   "actionConfirm": "Confirm",
   "deleteConfirmationTitle": "Confirm deletion?",
-  "appointmentDeletedMessage": "Appointment deleted"  
+  "appointmentDeletedMessage": "Appointment deleted",
+  "agendaToday": "Today",
+  "agendaPrevDay": "Previous day",
+  "agendaNextDay": "Next day",
+  "agendaNoLocations": "No locations available",
+  "agendaSelectLocation": "Select location",
+  "servicesCategoryEmpty": "No services available for this category."
 }

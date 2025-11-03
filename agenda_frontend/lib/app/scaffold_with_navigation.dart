@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/l10n/l10_extension.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
+import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
 // 2. Importa il nuovo provider globale
 import 'providers/form_factor_provider.dart';
 
@@ -19,7 +20,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 4. Aggiungi WidgetRef
-    final destinations = _getDestinations(context);
+    final destinations =
+        _ScaffoldWithNavigationHelpers.getDestinations(context);
 
     // 5. LEGGI IL PROVIDER GLOBALE!
     final formFactor = ref.watch(formFactorProvider);
@@ -29,14 +31,22 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       final layoutConfig = ref.watch(layoutConfigProvider);
       final dividerColor = Theme.of(context).dividerColor;
       const dividerThickness = 1.0;
+      final railDestinations =
+          _ScaffoldWithNavigationHelpers.toRailDestinations(destinations);
+      final isAgenda = navigationShell.currentIndex == 0;
 
-      // 🎯 TARGET WEB/DESKTOP/TABLET: NavigationRail
       return Scaffold(
         appBar: AppBar(
-          title: Text(
-            _getLocalizedTitle(context, navigationShell.currentIndex),
-          ),
+          title: isAgenda
+              ? const AgendaTopControls()
+              : Text(
+                  _ScaffoldWithNavigationHelpers.getLocalizedTitle(
+                    context,
+                    navigationShell.currentIndex,
+                  ),
+                ),
           centerTitle: false,
+          toolbarHeight: 72,
         ),
         body: Row(
           children: [
@@ -44,16 +54,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: (index) => _goBranch(index),
               labelType: NavigationRailLabelType.none,
-              destinations: destinations
-                  .map(
-                    (d) => NavigationRailDestination(
-                      icon: Tooltip(message: d.label, child: d.icon),
-                      selectedIcon:
-                          Tooltip(message: d.label, child: d.selectedIcon),
-                      label: Text(d.label),
-                    ),
-                  )
-                  .toList(),
+              destinations: railDestinations,
             ),
             _RailDivider(
               topInset: layoutConfig.headerHeight,
@@ -69,7 +70,12 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     // 🎯 TARGET MOBILE: BottomNavigationBar
     return Scaffold(
       appBar: AppBar(
-        title: Text(_getLocalizedTitle(context, navigationShell.currentIndex)),
+        title: Text(
+          _ScaffoldWithNavigationHelpers.getLocalizedTitle(
+            context,
+            navigationShell.currentIndex,
+          ),
+        ),
       ),
       body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
@@ -98,7 +104,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   }
 
   // ... (le funzioni helper omesse prima) ...
-  String _getLocalizedTitle(BuildContext context, int index) {
+}
+
+class _ScaffoldWithNavigationHelpers {
+  static String getLocalizedTitle(BuildContext context, int index) {
     final l10n = context.l10n;
     switch (index) {
       case 0:
@@ -114,30 +123,44 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
   }
 
-  List<NavigationDestination> _getDestinations(BuildContext context) {
+  static List<NavigationDestination> getDestinations(BuildContext context) {
     final l10n = context.l10n;
     return [
       NavigationDestination(
-        icon: _NavIcon(icon: Icons.calendar_month_outlined),
-        selectedIcon: _NavIcon(icon: Icons.calendar_month, selected: true),
+        icon: const _NavIcon(icon: Icons.calendar_month_outlined),
+        selectedIcon: const _NavIcon(icon: Icons.calendar_month, selected: true),
         label: l10n.navAgenda,
       ),
       NavigationDestination(
-        icon: _NavIcon(icon: Icons.people_outline),
-        selectedIcon: _NavIcon(icon: Icons.people, selected: true),
+        icon: const _NavIcon(icon: Icons.people_outline),
+        selectedIcon: const _NavIcon(icon: Icons.people, selected: true),
         label: l10n.navClients,
       ),
       NavigationDestination(
-        icon: _NavIcon(icon: Icons.cut_outlined),
-        selectedIcon: _NavIcon(icon: Icons.cut, selected: true),
+        icon: const _NavIcon(icon: Icons.cut_outlined),
+        selectedIcon: const _NavIcon(icon: Icons.cut, selected: true),
         label: l10n.navServices,
       ),
       NavigationDestination(
-        icon: _NavIcon(icon: Icons.badge_outlined),
-        selectedIcon: _NavIcon(icon: Icons.badge, selected: true),
+        icon: const _NavIcon(icon: Icons.badge_outlined),
+        selectedIcon: const _NavIcon(icon: Icons.badge, selected: true),
         label: l10n.navStaff,
       ),
     ];
+  }
+
+  static List<NavigationRailDestination> toRailDestinations(
+    List<NavigationDestination> destinations,
+  ) {
+    return destinations
+        .map(
+          (d) => NavigationRailDestination(
+            icon: Tooltip(message: d.label, child: d.icon),
+            selectedIcon: Tooltip(message: d.label, child: d.selectedIcon),
+            label: Text(d.label),
+          ),
+        )
+        .toList();
   }
 }
 
@@ -188,15 +211,17 @@ class _NavIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final cardColor = theme.cardTheme.color ?? colorScheme.surface;
-    final iconColor = selected ? colorScheme.primary : colorScheme.onPrimary;
+    final accentColor = colorScheme.secondary;
+    final iconColor = colorScheme.onSecondary.withOpacity(selected ? 0.9 : 0.7);
+    final backgroundColor =
+        selected ? accentColor : accentColor.withOpacity(0.35);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeInOut,
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: selected ? cardColor : Colors.transparent,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(icon, color: iconColor),

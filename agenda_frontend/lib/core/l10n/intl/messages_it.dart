@@ -32,6 +32,15 @@ class MessageLookup extends MessageLookupByLibrary {
         "appTitle": MessageLookupByLibrary.simpleMessage("Agenda"),
         "appointmentDeletedMessage":
             MessageLookupByLibrary.simpleMessage("Appuntamento eliminato"),
+        "agendaNextDay":
+            MessageLookupByLibrary.simpleMessage("Giorno successivo"),
+        "agendaNoLocations": MessageLookupByLibrary.simpleMessage(
+            "Nessuna sede disponibile"),
+        "agendaPrevDay":
+            MessageLookupByLibrary.simpleMessage("Giorno precedente"),
+        "agendaSelectLocation":
+            MessageLookupByLibrary.simpleMessage("Seleziona sede"),
+        "agendaToday": MessageLookupByLibrary.simpleMessage("Oggi"),
         "clientsTitle": MessageLookupByLibrary.simpleMessage("Elenco Clienti"),
         "deleteConfirmationTitle":
             MessageLookupByLibrary.simpleMessage("Confermi l’eliminazione?"),
@@ -41,6 +50,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "navClients": MessageLookupByLibrary.simpleMessage("Clienti"),
         "navServices": MessageLookupByLibrary.simpleMessage("Servizi"),
         "navStaff": MessageLookupByLibrary.simpleMessage("Staff"),
+        "servicesCategoryEmpty": MessageLookupByLibrary.simpleMessage(
+            "Nessun servizio disponibile per questa categoria."),
         "servicesTitle": MessageLookupByLibrary.simpleMessage("Elenco Servizi"),
         "staffScreenPlaceholder":
             MessageLookupByLibrary.simpleMessage("Schermata Staff"),

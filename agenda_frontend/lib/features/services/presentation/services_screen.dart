@@ -45,7 +45,7 @@ class ServicesScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Nessun servizio disponibile per questa categoria.',
+                    context.l10n.servicesCategoryEmpty,
                     style: Theme.of(context)
                         .textTheme
                         .bodyMedium
