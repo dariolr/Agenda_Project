@@ -24,6 +24,7 @@ import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/staff_providers.dart';
+import '../../../../services/providers/services_provider.dart';
 
 /// 🔹 Versione unificata per DESKTOP e MOBILE.
 /// Mantiene drag, resize, ghost, select, ma cambia il comportamento del tap:
@@ -497,7 +498,13 @@ class _AppointmentCardInteractiveState
     );
     final dayBoundary = dayStart.add(const Duration(days: 1));
 
-    final staffList = ref.read(staffProvider);
+    final eligibleStaffIds =
+        ref.read(eligibleStaffForServiceProvider(widget.appointment.serviceId));
+    final staffList = ref
+        .read(staffForCurrentLocationProvider)
+        .where((s) => eligibleStaffIds.contains(s.id))
+        .toList();
+    if (staffList.isEmpty) return false;
     int targetStaffId = appointment.staffId;
     if (staffList.length > 1) {
       final chosen = await AppBottomSheet.show<int>(

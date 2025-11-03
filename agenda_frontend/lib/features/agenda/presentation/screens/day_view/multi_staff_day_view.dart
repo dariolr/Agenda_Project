@@ -180,7 +180,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
   @override
   Widget build(BuildContext context) {
-    final appointments = ref.watch(appointmentsProvider);
+    final appointments = ref.watch(appointmentsForCurrentLocationProvider);
     final scrollState = ref.watch(agendaScrollProvider(widget.staffList));
     final layoutConfig = ref.watch(layoutConfigProvider);
     final layout = ResponsiveLayout.of(

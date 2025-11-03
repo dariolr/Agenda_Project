@@ -27,7 +27,7 @@ class SelectedAppointmentNotifier
   void toggleByAppointment(Appointment appointment) {
     final current = state;
     final alreadySelected =
-        current.bookingId == appointment.idBooking &&
+        current.bookingId == appointment.bookingId &&
             current.contains(appointment.id);
     if (alreadySelected) {
       clear();
@@ -36,12 +36,12 @@ class SelectedAppointmentNotifier
 
     final allAppointments = ref.read(appointmentsProvider);
     final bookingAppointments = allAppointments
-        .where((a) => a.idBooking == appointment.idBooking)
+        .where((a) => a.bookingId == appointment.bookingId)
         .map((a) => a.id)
         .toSet();
 
     state = SelectedAppointmentsState(
-      bookingId: appointment.idBooking,
+      bookingId: appointment.bookingId,
       appointmentIds: bookingAppointments,
     );
   }

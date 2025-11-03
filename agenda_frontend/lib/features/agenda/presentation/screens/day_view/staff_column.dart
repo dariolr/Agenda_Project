@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/appointment.dart';
 import '/core/models/staff.dart';
+import '/core/utils/color_utils.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
@@ -220,7 +221,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
   @override
   Widget build(BuildContext context) {
-    final allAppointments = ref.watch(appointmentsProvider);
+    final allAppointments = ref.watch(appointmentsForCurrentLocationProvider);
     final staffAppointments = allAppointments
         .where((a) => a.staffId == widget.staff.id)
         .toList();
@@ -451,11 +452,19 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         Color cardColor = widget.staff.color;
         if (layoutConfig.useServiceColorsForAppointments) {
-          final serviceColor = ref.watch(
-            serviceColorByNameProvider(originalAppt.serviceName),
+          final variant = ref.watch(
+            serviceVariantByIdProvider(originalAppt.serviceVariantId),
           );
-          if (serviceColor != null) {
-            cardColor = serviceColor;
+          if (variant != null && variant.colorHex != null) {
+            cardColor = ColorUtils.fromHex(variant.colorHex!);
+          } else {
+            final services = ref.watch(servicesProvider);
+            for (final service in services) {
+              if (service.id == originalAppt.serviceId && service.color != null) {
+                cardColor = service.color!;
+                break;
+              }
+            }
           }
         }
 

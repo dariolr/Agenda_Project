@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/appointment.dart';
+import 'business_providers.dart';
+import 'location_providers.dart';
 
-/// ✅ Gestione degli appuntamenti (mock persistente in memoria)
 class AppointmentsNotifier extends Notifier<List<Appointment>> {
   bool _initialized = false;
 
@@ -18,93 +19,92 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
   List<Appointment> _mockAppointments() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final business = ref.read(currentBusinessProvider);
 
     return [
-      // Staff 1
       Appointment(
         id: 1,
-        idBooking: 101,
+        bookingId: 5001,
+        businessId: business.id,
+        locationId: 101,
         staffId: 1,
+        serviceId: 1,
+        serviceVariantId: 1001,
         clientName: 'Anna Rossi',
-        serviceName: 'service name',
+        serviceName: 'Massaggio Relax',
         startTime: today.add(const Duration(hours: 9, minutes: 10)),
         endTime: today.add(const Duration(hours: 9, minutes: 35)),
+        price: 45,
       ),
       Appointment(
         id: 2,
-        idBooking: 101,
+        bookingId: 5001,
+        businessId: business.id,
+        locationId: 101,
         staffId: 1,
+        serviceId: 1,
+        serviceVariantId: 1001,
         clientName: 'Anna Rossi',
-        serviceName: 'service name',
+        serviceName: 'Massaggio Relax',
         startTime: today.add(const Duration(hours: 9, minutes: 35)),
-        endTime: today.add(const Duration(hours: 10, minutes: 40)),
+        endTime: today.add(const Duration(hours: 10, minutes: 30)),
+        price: 45,
       ),
       Appointment(
         id: 3,
-        idBooking: 103,
-        staffId: 1,
+        bookingId: 5002,
+        businessId: business.id,
+        locationId: 101,
+        staffId: 3,
+        serviceId: 2,
+        serviceVariantId: 2001,
         clientName: 'Paolo Verdi',
-        serviceName: 'service name',
+        serviceName: 'Massaggio Sportivo',
         startTime: today.add(const Duration(hours: 11)),
         endTime: today.add(const Duration(hours: 12)),
+        price: 62,
       ),
-
-      // Staff 2
       Appointment(
         id: 4,
-        idBooking: 104,
+        bookingId: 6001,
+        businessId: business.id,
+        locationId: 102,
         staffId: 2,
+        serviceId: 1,
+        serviceVariantId: 1002,
         clientName: 'Giulia Neri',
-        serviceName: 'service name',
+        serviceName: 'Massaggio Relax',
         startTime: today.add(const Duration(hours: 10)),
         endTime: today.add(const Duration(hours: 11)),
+        price: 48,
       ),
       Appointment(
         id: 5,
-        idBooking: 105,
-        staffId: 2,
+        bookingId: 6002,
+        businessId: business.id,
+        locationId: 102,
+        staffId: 5,
+        serviceId: 2,
+        serviceVariantId: 2002,
         clientName: 'Marco Gialli',
-        serviceName: 'service name',
+        serviceName: 'Massaggio Sportivo',
         startTime: today.add(const Duration(hours: 10, minutes: 15)),
-        endTime: today.add(const Duration(hours: 10, minutes: 45)),
+        endTime: today.add(const Duration(hours: 11)),
+        price: 65,
       ),
       Appointment(
         id: 6,
-        idBooking: 106,
-        staffId: 2,
+        bookingId: 6003,
+        businessId: business.id,
+        locationId: 102,
+        staffId: 3,
+        serviceId: 3,
+        serviceVariantId: 3002,
         clientName: 'Chiara Blu',
-        serviceName: 'service name',
+        serviceName: 'Trattamento Viso',
         startTime: today.add(const Duration(hours: 14)),
         endTime: today.add(const Duration(hours: 15)),
-      ),
-
-      // Staff 3
-      Appointment(
-        id: 7,
-        idBooking: 107,
-        staffId: 3,
-        clientName: 'Valentina',
-        serviceName: 'service name',
-        startTime: today.add(const Duration(hours: 9)),
-        endTime: today.add(const Duration(hours: 9, minutes: 45)),
-      ),
-      Appointment(
-        id: 8,
-        idBooking: 108,
-        staffId: 3,
-        clientName: 'Francesco',
-        serviceName: 'service name',
-        startTime: today.add(const Duration(hours: 9, minutes: 30)),
-        endTime: today.add(const Duration(hours: 10, minutes: 15)),
-      ),
-      Appointment(
-        id: 9,
-        idBooking: 109,
-        staffId: 3,
-        clientName: 'Elisa',
-        serviceName: 'service name',
-        startTime: today.add(const Duration(hours: 10, minutes: 30)),
-        endTime: today.add(const Duration(hours: 11)),
+        price: 58,
       ),
     ];
   }
@@ -116,24 +116,33 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     required DateTime newEnd,
   }) async {
     state = [
-      for (final a in state)
-        if (a.id == appointmentId)
-          a.copyWith(staffId: newStaffId, startTime: newStart, endTime: newEnd)
+      for (final appt in state)
+        if (appt.id == appointmentId)
+          appt.copyWith(staffId: newStaffId, startTime: newStart, endTime: newEnd)
         else
-          a,
+          appt,
     ];
     await Future.delayed(Duration.zero);
   }
 
   void deleteAppointment(int appointmentId) {
     state = [
-      for (final a in state)
-        if (a.id != appointmentId) a,
+      for (final appt in state)
+        if (appt.id != appointmentId) appt,
     ];
   }
 }
 
 final appointmentsProvider =
     NotifierProvider<AppointmentsNotifier, List<Appointment>>(
-      AppointmentsNotifier.new,
-    );
+  AppointmentsNotifier.new,
+);
+
+final appointmentsForCurrentLocationProvider = Provider<List<Appointment>>((ref) {
+  final location = ref.watch(currentLocationProvider);
+  final appointments = ref.watch(appointmentsProvider);
+  return [
+    for (final appt in appointments)
+      if (appt.locationId == location.id) appt,
+  ];
+});

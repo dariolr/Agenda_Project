@@ -9,8 +9,8 @@ class AgendaScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ✅ Recupera la lista dello staff dal provider
-    final staffList = ref.watch(staffProvider);
+    // ✅ Recupera la lista dello staff filtrata sulla location corrente
+    final staffList = ref.watch(staffForCurrentLocationProvider);
 
     return SafeArea(
       // Passa la lista dello staff alla view
