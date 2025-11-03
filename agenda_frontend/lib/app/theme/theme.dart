@@ -7,13 +7,14 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
   final isDark = brightness == Brightness.dark;
 
   const colorPrimary1 = Colors.black; // colore base scuro
-  const colorPrimary2 = Colors.white; // colore contrasto chiaro
+  const colorPrimary2 = Color(0xFFFEFEFE); // colore contrasto chiaro
+  const colorPrimary3 = Color(0xFFE5B24F); // accento caldo
 
-  final background = isDark ? Colors.black : Colors.white;
+  final background = isDark ? colorPrimary1 : colorPrimary2;
   final surface = background;
   final primary = colorPrimary1;
   final onPrimary = colorPrimary2;
-  final onBackground = isDark ? Colors.white : Colors.black;
+  final onBackground = isDark ? colorPrimary2 : colorPrimary1;
 
   final colorScheme = ColorScheme(
     brightness: brightness,
@@ -22,7 +23,7 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
     secondary: primary,
     onSecondary: onPrimary,
     error: Colors.red,
-    onError: Colors.white,
+    onError: colorPrimary2,
     background: background,
     onBackground: onBackground,
     surface: surface,
@@ -79,9 +80,7 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
         color: colorPrimary2,
         fontWeight: FontWeight.w600,
       ),
-      unselectedLabelTextStyle: const TextStyle(
-        color: colorPrimary2,
-      ),
+      unselectedLabelTextStyle: const TextStyle(color: colorPrimary2),
       minWidth: 68,
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(

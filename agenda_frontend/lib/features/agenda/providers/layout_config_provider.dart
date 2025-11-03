@@ -95,4 +95,12 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
     }
     state = state.copyWith(useClusterMaxConcurrency: enabled);
   }
+
+  /// Permette di scegliere se usare il colore del servizio per le card.
+  void setUseServiceColors(bool enabled) {
+    if (state.useServiceColorsForAppointments == enabled) {
+      return;
+    }
+    state = state.copyWith(useServiceColorsForAppointments: enabled);
+  }
 }

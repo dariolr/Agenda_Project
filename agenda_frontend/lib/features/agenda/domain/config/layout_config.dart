@@ -28,6 +28,7 @@ class LayoutConfig {
     hourColumnWidth: defaultHourColumnWidth,
     minutesPerSlot: 15,
     useClusterMaxConcurrency: true,
+    useServiceColorsForAppointments: true,
   );
 
   // ──────────────────────────────────────────────
@@ -39,6 +40,7 @@ class LayoutConfig {
   final double hourColumnWidth;
   final int minutesPerSlot;
   final bool useClusterMaxConcurrency;
+  final bool useServiceColorsForAppointments;
 
   const LayoutConfig({
     required this.slotHeight,
@@ -46,6 +48,7 @@ class LayoutConfig {
     required this.hourColumnWidth,
     required this.minutesPerSlot,
     required this.useClusterMaxConcurrency,
+    required this.useServiceColorsForAppointments,
   });
 
   LayoutConfig copyWith({
@@ -54,6 +57,7 @@ class LayoutConfig {
     double? hourColumnWidth,
     int? minutesPerSlot,
     bool? useClusterMaxConcurrency,
+    bool? useServiceColorsForAppointments,
   }) {
     return LayoutConfig(
       slotHeight: slotHeight ?? this.slotHeight,
@@ -62,6 +66,8 @@ class LayoutConfig {
       minutesPerSlot: minutesPerSlot ?? this.minutesPerSlot,
       useClusterMaxConcurrency:
           useClusterMaxConcurrency ?? this.useClusterMaxConcurrency,
+      useServiceColorsForAppointments:
+          useServiceColorsForAppointments ?? this.useServiceColorsForAppointments,
     );
   }
 

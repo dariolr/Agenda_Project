@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:agenda_frontend/features/agenda/providers/dragged_card_size_provider.dart';
+import 'package:agenda_frontend/features/services/providers/services_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -448,6 +449,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           0.0,
         );
 
+        Color cardColor = widget.staff.color;
+        if (layoutConfig.useServiceColorsForAppointments) {
+          final serviceColor = ref.watch(
+            serviceColorByNameProvider(originalAppt.serviceName),
+          );
+          if (serviceColor != null) {
+            cardColor = serviceColor;
+          }
+        }
+
         groupWidgets.add(
           Positioned(
             key: ValueKey(originalAppt.id),
@@ -459,7 +470,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               opacity: opacity,
               child: AppointmentCard(
                 appointment: originalAppt,
-                color: widget.staff.color,
+                color: cardColor,
                 columnWidth: cardWidth,
                 columnOffset: cardLeft,
                 dragTargetWidth: fullColumnWidth,
