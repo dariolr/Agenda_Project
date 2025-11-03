@@ -19,6 +19,7 @@ import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/dragged_base_range_provider.dart';
 import '../../../providers/dragged_last_staff_provider.dart';
+import '../../../providers/drag_session_provider.dart';
 import '../../../providers/resizing_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
@@ -317,6 +318,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           ),
         );
 
+        ref.read(dragSessionProvider.notifier).markHandled();
         appointmentsNotifier.moveAppointment(
           appointmentId: details.data.id,
           newStaffId: widget.staff.id,

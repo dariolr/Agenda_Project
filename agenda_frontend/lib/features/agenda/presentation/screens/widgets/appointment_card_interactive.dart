@@ -16,6 +16,7 @@ import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/dragged_base_range_provider.dart';
 import '../../../providers/dragged_last_staff_provider.dart';
+import '../../../providers/drag_session_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/resizing_provider.dart';
@@ -62,6 +63,7 @@ class _AppointmentCardInteractiveState
   bool _isDraggingResize = false;
   bool _blockDragDuringResize = false;
   bool _selectedFromHover = false;
+  int? _currentDragSessionId;
 
   static const double _dragBlockZoneHeight = 28.0;
   static const int _minSlotsForDragBlock = 3;
@@ -188,6 +190,8 @@ class _AppointmentCardInteractiveState
                 ),
 
                 onDragStarted: () {
+                  _currentDragSessionId =
+                      ref.read(dragSessionProvider.notifier).start();
                   ref
                       .read(draggedBaseRangeProvider.notifier)
                       .set(
@@ -239,6 +243,8 @@ class _AppointmentCardInteractiveState
   }
 
   void _handleEnd(WidgetRef ref, {bool keepSelection = false}) {
+    ref.read(dragSessionProvider.notifier).clear();
+    _currentDragSessionId = null;
     ref.read(draggedAppointmentIdProvider.notifier).clear();
     ref.read(dragOffsetProvider.notifier).clear();
     ref.read(dragOffsetXProvider.notifier).clear();
@@ -261,6 +267,14 @@ class _AppointmentCardInteractiveState
 
   void _handleDragEnd(WidgetRef ref, DraggableDetails details) {
     if (details.wasAccepted) {
+      _handleEnd(ref, keepSelection: true);
+      return;
+    }
+
+    final session = ref.read(dragSessionProvider);
+    final handledByTarget =
+        session.dropHandled && session.id != null && session.id == _currentDragSessionId;
+    if (handledByTarget) {
       _handleEnd(ref, keepSelection: true);
       return;
     }
