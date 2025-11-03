@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/staff.dart';
@@ -11,6 +12,7 @@ import '../../../providers/appointment_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/is_resizing_provider.dart'; // 👈 nuovo import
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/selected_appointment_provider.dart';
 import '../widgets/agenda_dividers.dart';
 import '../widgets/current_time_line.dart';
 import 'hour_column.dart';
@@ -199,25 +201,40 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     // Aggiorna periodicamente il bodyBox (in caso di resize)
     WidgetsBinding.instance.addPostFrameCallback((_) => _registerBodyBox());
 
-    return Stack(
-      children: [
-        // BODY scrollabile con leader
-        Positioned.fill(
-          top: headerHeight,
-          child: CompositedTransformTarget(
-            key: _bodyKey,
-            link: link,
-            child: ScrollConfiguration(
-              behavior: const NoScrollbarBehavior(),
-              child: SingleChildScrollView(
-                controller: scrollState.verticalScrollCtrl,
-                // 👇 blocco dinamico scroll verticale
-                physics: isResizing
-                    ? const NeverScrollableScrollPhysics()
-                    : const ClampingScrollPhysics(),
-                child: Stack(
-                  children: [
-                    Row(
+    return Shortcuts(
+      shortcuts: const <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+      },
+      child: Actions(
+        actions: {
+          DismissIntent: CallbackAction<DismissIntent>(
+            onInvoke: (_) {
+              ref.read(selectedAppointmentProvider.notifier).clear();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Stack(
+            children: [
+              // BODY scrollabile con leader
+              Positioned.fill(
+                top: headerHeight,
+                child: CompositedTransformTarget(
+                  key: _bodyKey,
+                  link: link,
+                  child: ScrollConfiguration(
+                    behavior: const NoScrollbarBehavior(),
+                    child: SingleChildScrollView(
+                      controller: scrollState.verticalScrollCtrl,
+                      // 👇 blocco dinamico scroll verticale
+                      physics: isResizing
+                          ? const NeverScrollableScrollPhysics()
+                          : const ClampingScrollPhysics(),
+                      child: Stack(
+                        children: [
+                          Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(width: hourW, child: const HourColumn()),
