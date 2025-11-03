@@ -1,12 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-
 import 'package:agenda_frontend/app/theme/extensions.dart';
 import 'package:agenda_frontend/core/l10n/l10_extension.dart';
 import 'package:agenda_frontend/core/models/location.dart';
 import 'package:agenda_frontend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_frontend/features/agenda/providers/location_providers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 class AgendaTopControls extends ConsumerWidget {
   const AgendaTopControls({super.key});
@@ -14,7 +13,9 @@ class AgendaTopControls extends ConsumerWidget {
   static const double _controlHeight = 40;
   static const double _horizontalPadding = 20;
   static const double _minDateLabelWidth = 120;
-  static const BorderRadius _pillRadius = BorderRadius.all(Radius.circular(999));
+  static const BorderRadius _pillRadius = BorderRadius.all(
+    Radius.circular(999),
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,10 +34,7 @@ class AgendaTopControls extends ConsumerWidget {
 
     return Row(
       children: [
-        _RoundedButton(
-          label: l10n.agendaToday,
-          onTap: dateController.setToday,
-        ),
+        _RoundedButton(label: l10n.agendaToday, onTap: dateController.setToday),
         const SizedBox(width: 12),
         _DateSwitcher(
           label: formattedDate,
@@ -70,28 +68,29 @@ class _RoundedButton extends StatelessWidget {
     return SizedBox(
       height: AgendaTopControls._controlHeight,
       child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: AgendaTopControls._pillRadius,
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AgendaTopControls._horizontalPadding,
-          ),
-          side: BorderSide(color: Colors.grey.withOpacity(0.35)),
-        ).copyWith(
-          backgroundColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.pressed)) return pressedFill;
-            if (states.contains(MaterialState.hovered)) return hoverFill;
-            return colorScheme.surface;
-          }),
-          overlayColor:
-              MaterialStateProperty.all(Colors.transparent),
-          elevation: MaterialStateProperty.resolveWith(
-            (states) => states.contains(MaterialState.hovered) ? 6 : 0,
-          ),
-          shadowColor:
-              MaterialStateProperty.all(Colors.black.withOpacity(0.08)),
-        ),
+        style:
+            OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: AgendaTopControls._pillRadius,
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AgendaTopControls._horizontalPadding,
+              ),
+              side: BorderSide(color: Colors.grey.withOpacity(0.35)),
+            ).copyWith(
+              backgroundColor: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.pressed)) return pressedFill;
+                if (states.contains(MaterialState.hovered)) return hoverFill;
+                return colorScheme.surface;
+              }),
+              overlayColor: MaterialStateProperty.all(Colors.transparent),
+              elevation: MaterialStateProperty.resolveWith(
+                (states) => states.contains(MaterialState.hovered) ? 6 : 0,
+              ),
+              shadowColor: MaterialStateProperty.all(
+                Colors.black.withOpacity(0.08),
+              ),
+            ),
         onPressed: onTap,
         child: Text(label),
       ),
@@ -200,7 +199,8 @@ class _DateArrowButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final interactions = Theme.of(context).extension<AppInteractionColors>();
     final splashColor =
-        interactions?.pressedFill ?? Theme.of(context).colorScheme.primary.withOpacity(0.1);
+        interactions?.pressedFill ??
+        Theme.of(context).colorScheme.primary.withOpacity(0.1);
 
     return Semantics(
       button: true,
@@ -214,9 +214,7 @@ class _DateArrowButton extends StatelessWidget {
         child: SizedBox(
           width: AgendaTopControls._controlHeight,
           height: AgendaTopControls._controlHeight,
-          child: Center(
-            child: Icon(icon, size: 18),
-          ),
+          child: Center(child: Icon(icon, size: 18)),
         ),
       ),
     );
@@ -253,54 +251,70 @@ class _LocationSelectorState extends State<_LocationSelector> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: TooltipVisibility(
-        visible: false,
-        child: PopupMenuButton<int>(
-          tooltip: '',
-          onOpened: () => setState(() => _isHovered = true),
-          onCanceled: () => setState(() => _isHovered = false),
-          onSelected: (value) {
-            widget.onSelected(value);
-            setState(() => _isHovered = false);
-          },
-          itemBuilder: (context) => [
-            for (final location in widget.locations)
-              PopupMenuItem<int>(
-                value: location.id,
-                child: Text(location.name),
-              ),
-          ],
-          child: Semantics(
-            button: true,
-            label: l10n.agendaSelectLocation,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeInOut,
-              height: AgendaTopControls._controlHeight,
-              decoration: BoxDecoration(
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          hoverColor: Colors.transparent,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          popupMenuTheme: const PopupMenuThemeData(
+            shape: RoundedRectangleBorder(
+              borderRadius: AgendaTopControls._pillRadius,
+            ),
+          ),
+        ),
+        child: TooltipVisibility(
+          visible: false,
+          child: PopupMenuButton<int>(
+            tooltip: '',
+            onOpened: () => setState(() => _isHovered = true),
+            onCanceled: () => setState(() => _isHovered = false),
+            onSelected: (value) {
+              widget.onSelected(value);
+              setState(() => _isHovered = false);
+            },
+            itemBuilder: (context) => [
+              for (final location in widget.locations)
+                PopupMenuItem<int>(
+                  value: location.id,
+                  child: Text(location.name),
+                ),
+            ],
+            child: Semantics(
+              button: true,
+              label: l10n.agendaSelectLocation,
+              child: ClipRRect(
                 borderRadius: AgendaTopControls._pillRadius,
-                border: Border.all(color: Colors.grey.withOpacity(0.35)),
-                color: backgroundColor,
-                boxShadow: _isHovered
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AgendaTopControls._horizontalPadding,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(widget.current.name),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
-                ],
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  curve: Curves.easeInOut,
+                  height: AgendaTopControls._controlHeight,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    borderRadius: AgendaTopControls._pillRadius,
+                    border: Border.all(color: Colors.grey.withOpacity(0.35)),
+                    color: backgroundColor,
+                    boxShadow: _isHovered
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AgendaTopControls._horizontalPadding,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(widget.current.name),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
