@@ -89,10 +89,19 @@ Map<int, EventGeometry> computeLayoutGeometry(
                     other.id != entry.id,
               ) ??
               false;
+
           if (hasOverlap) {
             break;
           }
+
           widthInColumns++;
+        }
+
+        for (int col = columnIndex; col < columnIndex + widthInColumns; col++) {
+          final list = columnMap.putIfAbsent(col, () => []);
+          if (!list.contains(entry)) {
+            list.add(entry);
+          }
         }
 
         final widthFraction = widthInColumns / totalColumns;
