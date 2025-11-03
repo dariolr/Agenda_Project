@@ -69,11 +69,11 @@ class _AppointmentCardInteractiveState
 
   @override
   Widget build(BuildContext context) {
-    final selectedId = ref.watch(selectedAppointmentProvider);
+    final selection = ref.watch(selectedAppointmentProvider);
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final formFactor = ref.watch(formFactorProvider);
 
-    final isSelected = selectedId == widget.appointment.id;
+    final isSelected = selection.contains(widget.appointment.id);
     final isDragging = draggedId == widget.appointment.id;
     final showThickBorder = isSelected || isDragging;
 
@@ -81,7 +81,7 @@ class _AppointmentCardInteractiveState
       onEnter: (_) => _selectAppointment(ref, fromHover: true),
       onExit: (_) {
         if (_selectedFromHover &&
-            ref.read(selectedAppointmentProvider) == widget.appointment.id &&
+            ref.read(selectedAppointmentProvider).contains(widget.appointment.id) &&
             ref.read(draggedAppointmentIdProvider) != widget.appointment.id &&
             !ref.read(isResizingProvider)) {
           ref.read(selectedAppointmentProvider.notifier).clear();
@@ -255,8 +255,7 @@ class _AppointmentCardInteractiveState
   void _selectAppointment(WidgetRef ref, {bool fromHover = false}) {
     _selectedFromHover = fromHover;
     final sel = ref.read(selectedAppointmentProvider.notifier);
-    sel.clear();
-    sel.toggle(widget.appointment.id);
+    sel.toggleByAppointment(widget.appointment);
   }
 
   void _handleDragEnd(WidgetRef ref, DraggableDetails details) {
@@ -361,8 +360,8 @@ class _AppointmentCardInteractiveState
       return;
     }
 
-    final selectedId = ref.read(selectedAppointmentProvider);
-    if (selectedId != widget.appointment.id) {
+    final selection = ref.read(selectedAppointmentProvider);
+    if (!selection.contains(widget.appointment.id)) {
       _updateDragBlock(false);
       return;
     }

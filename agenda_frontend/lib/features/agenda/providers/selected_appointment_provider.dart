@@ -1,24 +1,56 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 🔹 Tiene traccia dell'ID dell'appuntamento selezionato (clic singolo)
-class SelectedAppointmentNotifier extends Notifier<int?> {
-  @override
-  int? build() => null;
+import '../../../core/models/appointment.dart';
+import 'appointment_providers.dart';
 
-  /// Seleziona un appuntamento; se è già selezionato, lo deseleziona
-  void toggle(int id) {
-    if (state == id) {
-      state = null;
-    } else {
-      state = id;
+class SelectedAppointmentsState {
+  const SelectedAppointmentsState({
+    this.bookingId,
+    this.appointmentIds = const <int>{},
+  });
+
+  final int? bookingId;
+  final Set<int> appointmentIds;
+
+  bool contains(int appointmentId) => appointmentIds.contains(appointmentId);
+  bool get isEmpty => appointmentIds.isEmpty;
+}
+
+/// 🔹 Tiene traccia degli appuntamenti selezionati (tutti quelli della stessa prenotazione)
+class SelectedAppointmentNotifier
+    extends Notifier<SelectedAppointmentsState> {
+  @override
+  SelectedAppointmentsState build() => const SelectedAppointmentsState();
+
+  /// Seleziona tutti gli appuntamenti collegati allo stesso booking dell'appuntamento dato.
+  /// Se già selezionati, deseleziona tutto.
+  void toggleByAppointment(Appointment appointment) {
+    final current = state;
+    final alreadySelected =
+        current.bookingId == appointment.idBooking &&
+            current.contains(appointment.id);
+    if (alreadySelected) {
+      clear();
+      return;
     }
+
+    final allAppointments = ref.read(appointmentsProvider);
+    final bookingAppointments = allAppointments
+        .where((a) => a.idBooking == appointment.idBooking)
+        .map((a) => a.id)
+        .toSet();
+
+    state = SelectedAppointmentsState(
+      bookingId: appointment.idBooking,
+      appointmentIds: bookingAppointments,
+    );
   }
 
-  /// Deseleziona tutto
-  void clear() => state = null;
+  /// Deseleziona tutti gli appuntamenti
+  void clear() => state = const SelectedAppointmentsState();
 }
 
 final selectedAppointmentProvider =
-    NotifierProvider<SelectedAppointmentNotifier, int?>(
+    NotifierProvider<SelectedAppointmentNotifier, SelectedAppointmentsState>(
       SelectedAppointmentNotifier.new,
     );

@@ -32,7 +32,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       ),
       Appointment(
         id: 2,
-        idBooking: 102,
+        idBooking: 101,
         staffId: 1,
         clientName: 'Anna Rossi',
         serviceName: 'service name',
@@ -128,8 +128,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
   void deleteAppointment(int appointmentId) {
     state = [
       for (final a in state)
-        if (a.id != appointmentId)
-          a,
+        if (a.id != appointmentId) a,
     ];
   }
 }
