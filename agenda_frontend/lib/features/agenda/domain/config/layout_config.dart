@@ -27,6 +27,7 @@ class LayoutConfig {
     headerHeight: defaultHeaderHeight,
     hourColumnWidth: defaultHourColumnWidth,
     minutesPerSlot: 15,
+    useClusterMaxConcurrency: true,
   );
 
   // ──────────────────────────────────────────────
@@ -37,12 +38,14 @@ class LayoutConfig {
   final double headerHeight;
   final double hourColumnWidth;
   final int minutesPerSlot;
+  final bool useClusterMaxConcurrency;
 
   const LayoutConfig({
     required this.slotHeight,
     required this.headerHeight,
     required this.hourColumnWidth,
     required this.minutesPerSlot,
+    required this.useClusterMaxConcurrency,
   });
 
   LayoutConfig copyWith({
@@ -50,12 +53,15 @@ class LayoutConfig {
     double? headerHeight,
     double? hourColumnWidth,
     int? minutesPerSlot,
+    bool? useClusterMaxConcurrency,
   }) {
     return LayoutConfig(
       slotHeight: slotHeight ?? this.slotHeight,
       headerHeight: headerHeight ?? this.headerHeight,
       hourColumnWidth: hourColumnWidth ?? this.hourColumnWidth,
       minutesPerSlot: minutesPerSlot ?? this.minutesPerSlot,
+      useClusterMaxConcurrency:
+          useClusterMaxConcurrency ?? this.useClusterMaxConcurrency,
     );
   }
 

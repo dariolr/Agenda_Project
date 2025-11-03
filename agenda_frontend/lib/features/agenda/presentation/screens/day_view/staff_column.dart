@@ -396,7 +396,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           ),
         )
         .toList();
-    final layoutGeometry = computeLayoutGeometry(layoutEntries);
+    final layoutGeometry = computeLayoutGeometry(
+      layoutEntries,
+      useClusterMaxConcurrency: layoutConfig.useClusterMaxConcurrency,
+    );
 
     for (final group in overlapGroups) {
       final groupWidgets = <Widget>[];

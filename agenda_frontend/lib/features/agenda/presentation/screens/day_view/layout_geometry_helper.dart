@@ -22,7 +22,10 @@ class EventGeometry {
   final double widthFraction;
 }
 
-Map<int, EventGeometry> computeLayoutGeometry(List<LayoutEntry> entries) {
+Map<int, EventGeometry> computeLayoutGeometry(
+  List<LayoutEntry> entries, {
+  bool useClusterMaxConcurrency = false,
+}) {
   if (entries.isEmpty) return const {};
 
   final sorted = entries.toList()
@@ -61,19 +64,64 @@ Map<int, EventGeometry> computeLayoutGeometry(List<LayoutEntry> entries) {
     final columnAssignments = _assignColumns(cluster);
     final concurrencyMap = _computeConcurrency(cluster);
 
-    for (final entry in cluster) {
-      final concurrency = concurrencyMap[entry.id] ?? 1;
-      final widthFraction = 1 / concurrency;
-      final columnIndex = columnAssignments[entry.id] ?? 0;
-      final leftFraction = columnIndex * widthFraction;
-      geometryMap[entry.id] = EventGeometry(
-        leftFraction: leftFraction,
-        widthFraction: widthFraction,
-      );
+    if (useClusterMaxConcurrency) {
+      final clusterMaxConcurrency =
+          concurrencyMap.values.fold<int>(1, math.max);
+      final totalColumns =
+          math.max(clusterMaxConcurrency, 1); // evita divisione per zero
+
+      final columnMap = <int, List<LayoutEntry>>{};
+      for (final entry in cluster) {
+        final columnIndex = columnAssignments[entry.id] ?? 0;
+        columnMap.putIfAbsent(columnIndex, () => []).add(entry);
+      }
+
+      for (final entry in cluster) {
+        final columnIndex = columnAssignments[entry.id] ?? 0;
+        int widthInColumns = 1;
+
+        while (columnIndex + widthInColumns < totalColumns) {
+          final candidateColumn = columnIndex + widthInColumns;
+          final occupants = columnMap[candidateColumn];
+          final hasOverlap = occupants?.any(
+                (other) =>
+                    _entriesOverlap(entry, other) &&
+                    other.id != entry.id,
+              ) ??
+              false;
+          if (hasOverlap) {
+            break;
+          }
+          widthInColumns++;
+        }
+
+        final widthFraction = widthInColumns / totalColumns;
+        final leftFraction = columnIndex / totalColumns;
+        geometryMap[entry.id] = EventGeometry(
+          leftFraction: leftFraction,
+          widthFraction: widthFraction,
+        );
+      }
+    } else {
+      for (final entry in cluster) {
+        final concurrency = concurrencyMap[entry.id] ?? 1;
+        final widthFraction = 1 / concurrency;
+        final columnIndex = columnAssignments[entry.id] ?? 0;
+        final leftFraction = columnIndex * widthFraction;
+        geometryMap[entry.id] = EventGeometry(
+          leftFraction: leftFraction,
+          widthFraction: widthFraction,
+        );
+      }
     }
   }
 
   return geometryMap;
+}
+
+bool _entriesOverlap(LayoutEntry a, LayoutEntry b) {
+  if (identical(a, b)) return false;
+  return a.start.isBefore(b.end) && a.end.isAfter(b.start);
 }
 
 Map<int, int> _assignColumns(List<LayoutEntry> cluster) {

@@ -87,4 +87,12 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
 
     state = state.copyWith(minutesPerSlot: minutes);
   }
+
+  /// Permette di scegliere se usare la larghezza uniforme sul picco di overlap.
+  void setUseClusterMaxConcurrency(bool enabled) {
+    if (state.useClusterMaxConcurrency == enabled) {
+      return;
+    }
+    state = state.copyWith(useClusterMaxConcurrency: enabled);
+  }
 }
