@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 const double kAgendaControlHeight = 40;
 const double kAgendaControlHorizontalPadding = 20;
-const double kAgendaMinDateLabelWidth = 140;
+const double kAgendaMinDateLabelWidth = 120;
 const BorderRadius kAgendaPillRadius = BorderRadius.all(Radius.circular(999));
 
 class AgendaRoundedButton extends StatelessWidget {
@@ -85,30 +85,28 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
     final interactions = Theme.of(context).extension<AppInteractionColors>();
     final hoverFill =
         interactions?.hoverFill ?? colorScheme.primary.withOpacity(0.06);
-    final backgroundColor = _isHovered ? hoverFill : colorScheme.surface;
-    final borderColor = Colors.grey.withOpacity(0.35);
+    final backgroundColor = _isHovered
+        ? Color.alphaBlend(hoverFill, colorScheme.surface)
+        : colorScheme.surface;
     final l10n = context.l10n;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeInOut,
+    final borderColor = Colors.grey.withOpacity(0.35);
+    return InkWell(
+      onHover: (hovering) {
+        if (hovering != _isHovered) {
+          setState(() => _isHovered = hovering);
+        }
+      },
+      onTap: () {},
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      borderRadius: kAgendaPillRadius,
+      child: Container(
         height: kAgendaControlHeight,
         decoration: BoxDecoration(
           borderRadius: kAgendaPillRadius,
           border: Border.all(color: borderColor),
           color: backgroundColor,
-          boxShadow: _isHovered
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
+          boxShadow: null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -160,19 +158,10 @@ class _DateArrowButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final interactions = Theme.of(context).extension<AppInteractionColors>();
-    final splashColor =
-        interactions?.pressedFill ??
-        Theme.of(context).colorScheme.primary.withOpacity(0.1);
-
     return Semantics(
       button: true,
       label: semanticsLabel,
-      child: InkWell(
-        borderRadius: kAgendaPillRadius,
-        hoverColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        splashColor: splashColor,
+      child: GestureDetector(
         onTap: onTap,
         child: SizedBox(
           width: kAgendaControlHeight,
@@ -209,20 +198,26 @@ class _AgendaLocationSelectorState extends State<AgendaLocationSelector> {
     final interactions = Theme.of(context).extension<AppInteractionColors>();
     final hoverFill =
         interactions?.hoverFill ?? colorScheme.primary.withOpacity(0.06);
-    final backgroundColor = _isHovered ? hoverFill : colorScheme.surface;
+    final backgroundColor = _isHovered
+        ? Color.alphaBlend(hoverFill, colorScheme.surface)
+        : colorScheme.surface;
     final l10n = context.l10n;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
+    return InkWell(
+      onHover: (hovering) {
+        if (hovering != _isHovered) {
+          setState(() => _isHovered = hovering);
+        }
+      },
+      onTap: () {},
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      borderRadius: kAgendaPillRadius,
       child: Theme(
         data: Theme.of(context).copyWith(
           hoverColor: Colors.transparent,
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
-          popupMenuTheme: const PopupMenuThemeData(
-            shape: RoundedRectangleBorder(borderRadius: kAgendaPillRadius),
-          ),
         ),
         child: TooltipVisibility(
           visible: false,
@@ -246,24 +241,13 @@ class _AgendaLocationSelectorState extends State<AgendaLocationSelector> {
               label: l10n.agendaSelectLocation,
               child: ClipRRect(
                 borderRadius: kAgendaPillRadius,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  curve: Curves.easeInOut,
+                child: Container(
                   height: kAgendaControlHeight,
-                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     borderRadius: kAgendaPillRadius,
                     border: Border.all(color: Colors.grey.withOpacity(0.35)),
                     color: backgroundColor,
-                    boxShadow: _isHovered
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ]
-                        : null,
+                    boxShadow: null,
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: kAgendaControlHorizontalPadding,

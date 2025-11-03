@@ -45,7 +45,7 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
 
   final hoverFill = isDark
       ? colorPrimary2.withOpacity(0.12)
-      : colorPrimary1.withOpacity(0.06);
+      : colorPrimary1.withOpacity(0.01);
   final pressedFill = isDark
       ? colorPrimary2.withOpacity(0.18)
       : colorPrimary1.withOpacity(0.1);
@@ -112,10 +112,7 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
 
   return themeWithPalette.copyWith(
     extensions: <ThemeExtension<dynamic>>[
-      AppInteractionColors(
-        hoverFill: hoverFill,
-        pressedFill: pressedFill,
-      ),
+      AppInteractionColors(hoverFill: hoverFill, pressedFill: pressedFill),
     ],
   );
 }
