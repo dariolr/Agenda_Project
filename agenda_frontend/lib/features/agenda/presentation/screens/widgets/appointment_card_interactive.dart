@@ -60,6 +60,7 @@ class _AppointmentCardInteractiveState
   Offset? _lastPointerGlobalPosition;
   bool _isDraggingResize = false;
   bool _blockDragDuringResize = false;
+  bool _selectedFromHover = false;
 
   static const double _dragBlockZoneHeight = 28.0;
   static const int _minSlotsForDragBlock = 3;
@@ -77,7 +78,16 @@ class _AppointmentCardInteractiveState
     final showThickBorder = isSelected || isDragging;
 
     return MouseRegion(
-      onEnter: (_) => _selectAppointment(ref),
+      onEnter: (_) => _selectAppointment(ref, fromHover: true),
+      onExit: (_) {
+        if (_selectedFromHover &&
+            ref.read(selectedAppointmentProvider) == widget.appointment.id &&
+            ref.read(draggedAppointmentIdProvider) != widget.appointment.id &&
+            !ref.read(isResizingProvider)) {
+          ref.read(selectedAppointmentProvider.notifier).clear();
+          _selectedFromHover = false;
+        }
+      },
       child: LayoutBuilder(
         builder: (context, constraints) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -242,7 +252,8 @@ class _AppointmentCardInteractiveState
     ref.read(draggedLastStaffIdProvider.notifier).clear();
   }
 
-  void _selectAppointment(WidgetRef ref) {
+  void _selectAppointment(WidgetRef ref, {bool fromHover = false}) {
+    _selectedFromHover = fromHover;
     final sel = ref.read(selectedAppointmentProvider.notifier);
     sel.clear();
     sel.toggle(widget.appointment.id);
