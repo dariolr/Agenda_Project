@@ -8,7 +8,7 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
 
   const colorPrimary1 = Colors.black; // colore base scuro
   const colorPrimary2 = Color(0xFFFEFEFE); // colore contrasto chiaro
-  const colorPrimary3 = Color(0xFFE5B24F); // accento caldo
+  //const colorPrimary3 = Color(0xFFE5B24F); // accento caldo
 
   final background = isDark ? colorPrimary1 : colorPrimary2;
   final surface = background;
