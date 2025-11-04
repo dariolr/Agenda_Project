@@ -22,6 +22,7 @@ class AgendaStaffBody extends StatelessWidget {
     required this.isResizing,
     required this.dragLayerLink,
     required this.bodyKey,
+    this.onHorizontalScrollMetrics,
   });
 
   final ScrollController verticalController;
@@ -33,6 +34,7 @@ class AgendaStaffBody extends StatelessWidget {
   final bool isResizing;
   final LayerLink dragLayerLink;
   final GlobalKey bodyKey;
+  final ValueChanged<ScrollMetrics>? onHorizontalScrollMetrics;
 
   @override
   Widget build(BuildContext context) {
@@ -69,29 +71,37 @@ class AgendaStaffBody extends StatelessWidget {
                   Expanded(
                     child: ScrollConfiguration(
                       behavior: const NoScrollbarBehavior(),
-                      child: SingleChildScrollView(
-                        controller: horizontalController,
-                        scrollDirection: Axis.horizontal,
-                        physics: const ClampingScrollPhysics(),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: staffList.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final staff = entry.value;
-                            final isLast = index == staffList.length - 1;
-                            final staffAppointments = appointments
-                                .where((appointment) =>
-                                    appointment.staffId == staff.id)
-                                .toList();
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (notification) {
+                          if (notification.metrics.axis == Axis.horizontal) {
+                            onHorizontalScrollMetrics?.call(notification.metrics);
+                          }
+                          return false;
+                        },
+                        child: SingleChildScrollView(
+                          controller: horizontalController,
+                          scrollDirection: Axis.horizontal,
+                          physics: const ClampingScrollPhysics(),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: staffList.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final staff = entry.value;
+                              final isLast = index == staffList.length - 1;
+                              final staffAppointments = appointments
+                                  .where((appointment) =>
+                                      appointment.staffId == staff.id)
+                                  .toList();
 
-                            return StaffColumn(
-                              staff: staff,
-                              appointments: staffAppointments,
-                              columnWidth: layout.columnWidth,
-                              showRightBorder:
-                                  staffList.length > 1 && !isLast,
-                            );
-                          }).toList(),
+                              return StaffColumn(
+                                staff: staff,
+                                appointments: staffAppointments,
+                                columnWidth: layout.columnWidth,
+                                showRightBorder:
+                                    staffList.length > 1 && !isLast,
+                              );
+                            }).toList(),
+                          ),
                         ),
                       ),
                     ),
