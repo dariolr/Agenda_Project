@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,8 +23,9 @@ class ResponsiveLayout {
     BuildContext context, {
     required int staffCount,
     required LayoutConfig config,
+    double? availableWidth,
   }) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = availableWidth ?? MediaQuery.of(context).size.width;
     final container = ProviderScope.containerOf(context, listen: false);
     final formFactor = container.read(formFactorProvider);
 
@@ -42,9 +45,17 @@ class ResponsiveLayout {
       visibleStaffCount: visibleStaff,
       formFactor: formFactor,
     );
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final snappedColumnWidth = devicePixelRatio > 0
+        ? (columnWidth * devicePixelRatio).floorToDouble() / devicePixelRatio
+        : columnWidth;
+    final minWidth = formFactor == AppFormFactor.mobile
+        ? LayoutConfig.minColumnWidthMobile
+        : LayoutConfig.minColumnWidthDesktop;
+    final resolvedColumnWidth = math.max(snappedColumnWidth, minWidth);
 
     return ResponsiveLayout(
-      columnWidth: columnWidth,
+      columnWidth: resolvedColumnWidth,
       slotHeight: config.slotHeight,
       maxVisibleStaff: dynamicMaxVisible,
       totalSlots: config.totalSlots,
