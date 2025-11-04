@@ -5,19 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/staff.dart';
-import '../../../../../core/widgets/no_scrollbar_behavior.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/is_resizing_provider.dart'; // 👈 nuovo import
 import '../../../providers/layout_config_provider.dart';
-import '../widgets/agenda_dividers.dart';
-import '../widgets/current_time_line.dart';
-import 'hour_column.dart';
+import 'agenda_staff_body.dart';
+import 'agenda_staff_header.dart';
 import 'responsive_layout.dart';
-import 'staff_column.dart';
-import 'staff_header_row.dart';
 
 class MultiStaffDayView extends ConsumerStatefulWidget {
   final List<Staff> staffList;
@@ -257,70 +253,16 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
             // BODY scrollabile con leader
             Positioned.fill(
               top: headerHeight,
-              child: CompositedTransformTarget(
-                key: _bodyKey,
-                link: link,
-                child: ScrollConfiguration(
-                  behavior: const NoScrollbarBehavior(),
-                  child: SingleChildScrollView(
-                    controller: scrollState.verticalScrollCtrl,
-                    // 👇 blocco dinamico scroll verticale
-                    physics: isResizing
-                        ? const NeverScrollableScrollPhysics()
-                        : const ClampingScrollPhysics(),
-                    child: Stack(
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(width: hourW, child: const HourColumn()),
-                            AgendaVerticalDivider(
-                              height: totalHeight,
-                              thickness: 1,
-                            ),
-                            Expanded(
-                              child: ScrollConfiguration(
-                                behavior: const NoScrollbarBehavior(),
-                                child: SingleChildScrollView(
-                                  controller: scrollState.horizontalScrollCtrl,
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const ClampingScrollPhysics(),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: widget.staffList
-                                        .asMap()
-                                        .entries
-                                        .map((e) {
-                                          final i = e.key;
-                                          final s = e.value;
-                                          final last =
-                                              i == widget.staffList.length - 1;
-                                          final staffAppts = appointments
-                                              .where((a) => a.staffId == s.id)
-                                              .toList();
-
-                                          return StaffColumn(
-                                            staff: s,
-                                            appointments: staffAppts,
-                                            columnWidth: layout.columnWidth,
-                                            showRightBorder:
-                                                widget.staffList.length > 1 &&
-                                                !last,
-                                          );
-                                        })
-                                        .toList(),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        CurrentTimeLine(hourColumnWidth: hourW),
-                      ],
-                    ),
-                  ),
-                ),
+              child: AgendaStaffBody(
+                verticalController: scrollState.verticalScrollCtrl,
+                horizontalController: scrollState.horizontalScrollCtrl,
+                staffList: widget.staffList,
+                appointments: appointments,
+                layoutConfig: layoutConfig,
+                availableWidth: availableWidth,
+                isResizing: isResizing,
+                dragLayerLink: link,
+                bodyKey: _bodyKey,
               ),
             ),
 
@@ -330,58 +272,13 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
               left: 0,
               right: 0,
               height: headerHeight,
-              child: Material(
-                elevation: 8,
-                shadowColor: Colors.black.withOpacity(0.3),
-                surfaceTintColor: Colors.transparent,
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Color(0x1F000000), width: 0.5),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
-                              offset: const Offset(3, 0),
-                              blurRadius: 12,
-                              spreadRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: SizedBox(width: hourW, height: double.infinity),
-                      ),
-                      AgendaVerticalDivider(
-                        height: totalHeight,
-                        thickness: 1,
-                        color: widget.staffList.isEmpty
-                            ? Colors.transparent
-                            : widget.staffList.first.color.withOpacity(0.10),
-                      ),
-                      Expanded(
-                        child: ScrollConfiguration(
-                          behavior: const NoScrollbarBehavior(),
-                          child: SingleChildScrollView(
-                            controller: _headerHCtrl,
-                            scrollDirection: Axis.horizontal,
-                            physics: const ClampingScrollPhysics(),
-                            child: StaffHeaderRow(
-                              staffList: widget.staffList,
-                              scrollController: _headerHCtrl,
-                              columnWidth: layout.columnWidth,
-                              hourColumnWidth: hourW,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              child: AgendaStaffHeader(
+                staffList: widget.staffList,
+                hourColumnWidth: hourW,
+                totalHeight: totalHeight,
+                headerHeight: headerHeight,
+                columnWidth: layout.columnWidth,
+                scrollController: _headerHCtrl,
               ),
             ),
           ],
