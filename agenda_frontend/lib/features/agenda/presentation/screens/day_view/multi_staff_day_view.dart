@@ -49,10 +49,10 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   ScrollController? _verticalCtrl;
 
   AgendaScrollKey get _scrollKey => AgendaScrollKey(
-        staff: widget.staffList,
-        date: widget.date,
-        initialOffset: widget.initialScrollOffset,
-      );
+    staff: widget.staffList,
+    date: widget.date,
+    initialOffset: widget.initialScrollOffset,
+  );
 
   static const double _scrollEdgeMargin = 100;
   static const double _scrollSpeed = 20;
@@ -94,7 +94,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
   void _setupHorizontalSync({bool force = false}) {
     final newSignature = widget.staffList.map((s) => s.id).toList();
-    if (!force && _staffSignature != null && listEquals(_staffSignature, newSignature)) {
+    if (!force &&
+        _staffSignature != null &&
+        listEquals(_staffSignature, newSignature)) {
       return;
     }
     _staffSignature = newSignature;
@@ -163,7 +165,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         _autoScrollArmed = true;
       }
 
-    final scrollState = ref.read(agendaScrollProvider(_scrollKey));
+      final scrollState = ref.read(agendaScrollProvider(_scrollKey));
       final verticalCtrl = scrollState.verticalScrollCtrl;
       if (!verticalCtrl.hasClients) return;
 
@@ -229,7 +231,8 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
           _verticalCtrl?.addListener(_onVerticalScrollChanged);
         }
         final layoutConfig = ref.watch(layoutConfigProvider);
-        final availableWidth = constraints.hasBoundedWidth && constraints.maxWidth.isFinite
+        final availableWidth =
+            constraints.hasBoundedWidth && constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.of(context).size.width;
         final layout = ResponsiveLayout.of(
@@ -283,25 +286,30 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                                   scrollDirection: Axis.horizontal,
                                   physics: const ClampingScrollPhysics(),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children:
-                                        widget.staffList.asMap().entries.map((e) {
-                                      final i = e.key;
-                                      final s = e.value;
-                                      final last =
-                                          i == widget.staffList.length - 1;
-                                      final staffAppts = appointments
-                                          .where((a) => a.staffId == s.id)
-                                          .toList();
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: widget.staffList
+                                        .asMap()
+                                        .entries
+                                        .map((e) {
+                                          final i = e.key;
+                                          final s = e.value;
+                                          final last =
+                                              i == widget.staffList.length - 1;
+                                          final staffAppts = appointments
+                                              .where((a) => a.staffId == s.id)
+                                              .toList();
 
-                                      return StaffColumn(
-                                        staff: s,
-                                        appointments: staffAppts,
-                                        columnWidth: layout.columnWidth,
-                                        showRightBorder:
-                                            widget.staffList.length > 1 && !last,
-                                      );
-                                    }).toList(),
+                                          return StaffColumn(
+                                            staff: s,
+                                            appointments: staffAppts,
+                                            columnWidth: layout.columnWidth,
+                                            showRightBorder:
+                                                widget.staffList.length > 1 &&
+                                                !last,
+                                          );
+                                        })
+                                        .toList(),
                                   ),
                                 ),
                               ),
@@ -346,10 +354,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                             ),
                           ],
                         ),
-                        child: SizedBox(
-                          width: hourW,
-                          height: double.infinity,
-                        ),
+                        child: SizedBox(width: hourW, height: double.infinity),
                       ),
                       AgendaVerticalDivider(
                         height: totalHeight,
