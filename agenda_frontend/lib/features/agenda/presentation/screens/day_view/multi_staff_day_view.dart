@@ -218,140 +218,148 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
   @override
   Widget build(BuildContext context) {
-    final appointments = ref.watch(appointmentsForCurrentLocationProvider);
-    final scrollState = ref.watch(agendaScrollProvider(widget.staffList));
-    final layoutConfig = ref.watch(layoutConfigProvider);
-    final layout = ResponsiveLayout.of(
-      context,
-      staffCount: widget.staffList.length,
-      config: layoutConfig,
-    );
-    final totalHeight = layoutConfig.totalHeight;
-    final hourW = layoutConfig.hourColumnWidth;
-    final headerHeight = layoutConfig.headerHeight;
-    final link = ref.watch(dragLayerLinkProvider);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final appointments = ref.watch(appointmentsForCurrentLocationProvider);
+        final scrollState = ref.watch(agendaScrollProvider(widget.staffList));
+        final layoutConfig = ref.watch(layoutConfigProvider);
+        final availableWidth = constraints.hasBoundedWidth && constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width;
+        final layout = ResponsiveLayout.of(
+          context,
+          staffCount: widget.staffList.length,
+          config: layoutConfig,
+          availableWidth: availableWidth,
+        );
+        final totalHeight = layoutConfig.totalHeight;
+        final hourW = layoutConfig.hourColumnWidth;
+        final headerHeight = layoutConfig.headerHeight;
+        final link = ref.watch(dragLayerLinkProvider);
 
-    // 🔹 blocca scroll se stiamo ridimensionando
-    final isResizing = ref.watch(isResizingProvider);
+        // 🔹 blocca scroll se stiamo ridimensionando
+        final isResizing = ref.watch(isResizingProvider);
 
-    // Aggiorna periodicamente il bodyBox (in caso di resize)
-    WidgetsBinding.instance.addPostFrameCallback((_) => _registerBodyBox());
+        // Aggiorna periodicamente il bodyBox (in caso di resize)
+        WidgetsBinding.instance.addPostFrameCallback((_) => _registerBodyBox());
 
-    return Stack(
-      children: [
-        // BODY scrollabile con leader
-        Positioned.fill(
-          top: headerHeight,
-          child: CompositedTransformTarget(
-            key: _bodyKey,
-            link: link,
-            child: ScrollConfiguration(
-              behavior: const NoScrollbarBehavior(),
-              child: SingleChildScrollView(
-                controller: scrollState.verticalScrollCtrl,
-                // 👇 blocco dinamico scroll verticale
-                physics: isResizing
-                    ? const NeverScrollableScrollPhysics()
-                    : const ClampingScrollPhysics(),
-                child: Stack(
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+        return Stack(
+          children: [
+            // BODY scrollabile con leader
+            Positioned.fill(
+              top: headerHeight,
+              child: CompositedTransformTarget(
+                key: _bodyKey,
+                link: link,
+                child: ScrollConfiguration(
+                  behavior: const NoScrollbarBehavior(),
+                  child: SingleChildScrollView(
+                    controller: scrollState.verticalScrollCtrl,
+                    // 👇 blocco dinamico scroll verticale
+                    physics: isResizing
+                        ? const NeverScrollableScrollPhysics()
+                        : const ClampingScrollPhysics(),
+                    child: Stack(
                       children: [
-                        SizedBox(width: hourW, child: const HourColumn()),
-                        AgendaVerticalDivider(
-                          height: totalHeight,
-                          thickness: 1,
-                        ),
-                        Expanded(
-                          child: ScrollConfiguration(
-                            behavior: const NoScrollbarBehavior(),
-                            child: SingleChildScrollView(
-                              controller: scrollState.horizontalScrollCtrl,
-                              scrollDirection: Axis.horizontal,
-                              physics: const ClampingScrollPhysics(),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: widget.staffList.asMap().entries.map((
-                                  e,
-                                ) {
-                                  final i = e.key;
-                                  final s = e.value;
-                                  final last = i == widget.staffList.length - 1;
-                                  final staffAppts = appointments
-                                      .where((a) => a.staffId == s.id)
-                                      .toList();
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(width: hourW, child: const HourColumn()),
+                            AgendaVerticalDivider(
+                              height: totalHeight,
+                              thickness: 1,
+                            ),
+                            Expanded(
+                              child: ScrollConfiguration(
+                                behavior: const NoScrollbarBehavior(),
+                                child: SingleChildScrollView(
+                                  controller: scrollState.horizontalScrollCtrl,
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const ClampingScrollPhysics(),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children:
+                                        widget.staffList.asMap().entries.map((e) {
+                                      final i = e.key;
+                                      final s = e.value;
+                                      final last =
+                                          i == widget.staffList.length - 1;
+                                      final staffAppts = appointments
+                                          .where((a) => a.staffId == s.id)
+                                          .toList();
 
-                                  return StaffColumn(
-                                    staff: s,
-                                    appointments: staffAppts,
-                                    columnWidth: layout.columnWidth,
-                                    showRightBorder:
-                                        widget.staffList.length > 1 && !last,
-                                  );
-                                }).toList(),
+                                      return StaffColumn(
+                                        staff: s,
+                                        appointments: staffAppts,
+                                        columnWidth: layout.columnWidth,
+                                        showRightBorder:
+                                            widget.staffList.length > 1 && !last,
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
                               ),
+                            ),
+                          ],
+                        ),
+                        CurrentTimeLine(hourColumnWidth: hourW),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // HEADER staff
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: headerHeight,
+              child: Material(
+                elevation: 8,
+                shadowColor: Colors.black.withOpacity(0.3),
+                surfaceTintColor: Colors.transparent,
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Color(0x1F000000), width: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(width: hourW),
+                      AgendaVerticalDivider(
+                        height: totalHeight,
+                        thickness: 1,
+                        color: widget.staffList.isEmpty
+                            ? Colors.transparent
+                            : widget.staffList.first.color.withOpacity(0.10),
+                      ),
+                      Expanded(
+                        child: ScrollConfiguration(
+                          behavior: const NoScrollbarBehavior(),
+                          child: SingleChildScrollView(
+                            controller: _headerHCtrl,
+                            scrollDirection: Axis.horizontal,
+                            physics: const ClampingScrollPhysics(),
+                            child: StaffHeaderRow(
+                              staffList: widget.staffList,
+                              scrollController: _headerHCtrl,
+                              columnWidth: layout.columnWidth,
+                              hourColumnWidth: hourW,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    CurrentTimeLine(hourColumnWidth: hourW),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-
-        // HEADER staff
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: headerHeight,
-          child: Material(
-            elevation: 8,
-            shadowColor: Colors.black.withOpacity(0.3),
-            surfaceTintColor: Colors.transparent,
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Color(0x1F000000), width: 0.5),
-                ),
-              ),
-              child: Row(
-                children: [
-                  SizedBox(width: hourW),
-                  AgendaVerticalDivider(
-                    height: totalHeight,
-                    thickness: 1,
-                    color: widget.staffList.isEmpty
-                        ? Colors.transparent
-                        : widget.staffList.first.color.withOpacity(0.10),
-                  ),
-                  Expanded(
-                    child: ScrollConfiguration(
-                      behavior: const NoScrollbarBehavior(),
-                      child: SingleChildScrollView(
-                        controller: _headerHCtrl,
-                        scrollDirection: Axis.horizontal,
-                        physics: const ClampingScrollPhysics(),
-                        child: StaffHeaderRow(
-                          staffList: widget.staffList,
-                          scrollController: _headerHCtrl,
-                          columnWidth: layout.columnWidth,
-                          hourColumnWidth: hourW,
-                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
