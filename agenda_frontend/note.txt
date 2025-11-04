@@ -1,4 +1,4 @@
-
+dart run intl_utils:generate
 
 flutter build web --release --no-tree-shake-icons
 
