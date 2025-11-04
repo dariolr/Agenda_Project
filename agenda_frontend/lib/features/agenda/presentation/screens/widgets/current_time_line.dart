@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/config/layout_config.dart';
+import '../../../providers/date_range_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 
 /// 🔹 Widget autonomo che disegna e aggiorna la riga rossa dell’orario corrente
@@ -74,6 +75,13 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedDate = ref.watch(agendaDateProvider);
+    final today = DateUtils.dateOnly(DateTime.now());
+    final isToday = DateUtils.isSameDay(selectedDate, today);
+    if (!isToday) {
+      return const SizedBox.shrink();
+    }
+
     // 1. La linea viene posizionata esattamente a _offset
     return Positioned(
       top: _offset,
