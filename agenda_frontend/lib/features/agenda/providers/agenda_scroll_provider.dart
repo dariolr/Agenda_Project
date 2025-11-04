@@ -1,9 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/staff.dart';
-
-part 'agenda_scroll_provider.g.dart';
 
 /// Stato con tutti i controller di scroll sincronizzati
 class AgendaScrollState {
@@ -18,34 +17,50 @@ class AgendaScrollState {
   });
 }
 
-@riverpod
-class AgendaScroll extends _$AgendaScroll {
+@immutable
+class AgendaScrollKey {
+  final List<Staff> staff;
+  final DateTime date;
+  final double initialOffset;
+
+  const AgendaScrollKey({
+    required this.staff,
+    required this.date,
+    required this.initialOffset,
+  });
+
+  List<int> get staffIds => staff.map((s) => s.id).toList(growable: false);
+
   @override
-  AgendaScrollState build(List<Staff> staffList) {
-    final verticalCtrl = ScrollController();
-    final horizontalCtrl = ScrollController();
-    final staffCtrls = {for (final s in staffList) s.id: ScrollController()};
-
-    ref.onDispose(() {
-      verticalCtrl.dispose();
-      horizontalCtrl.dispose();
-      for (final c in staffCtrls.values) {
-        c.dispose();
-      }
-    });
-
-    return AgendaScrollState(
-      verticalScrollCtrl: verticalCtrl,
-      horizontalScrollCtrl: horizontalCtrl,
-      staffScrollCtrls: staffCtrls,
-    );
+  bool operator ==(Object other) {
+    return other is AgendaScrollKey &&
+        other.date == date &&
+        listEquals(other.staffIds, staffIds);
   }
 
-  /// Sincronizza orizzontalmente lo scroll (se serve)
-  void syncHorizontal(double offset) {
-    final st = state;
-    if (st.horizontalScrollCtrl.hasClients) {
-      st.horizontalScrollCtrl.jumpTo(offset);
-    }
-  }
+  @override
+  int get hashCode => Object.hash(date, Object.hashAll(staffIds));
 }
+
+final agendaScrollProvider = Provider.family.autoDispose<AgendaScrollState, AgendaScrollKey>((ref, key) {
+  final staffList = key.staff;
+  final verticalCtrl = ScrollController(initialScrollOffset: key.initialOffset);
+  final horizontalCtrl = ScrollController();
+  final Map<int, ScrollController> staffCtrls = {
+    for (final s in staffList) s.id: ScrollController(),
+  };
+
+  ref.onDispose(() {
+    verticalCtrl.dispose();
+    horizontalCtrl.dispose();
+    for (final controller in staffCtrls.values) {
+      controller.dispose();
+    }
+  });
+
+  return AgendaScrollState(
+    verticalScrollCtrl: verticalCtrl,
+    horizontalScrollCtrl: horizontalCtrl,
+    staffScrollCtrls: staffCtrls,
+  );
+});

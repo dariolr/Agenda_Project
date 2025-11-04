@@ -20,13 +20,13 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
       _resizeDebounce?.cancel();
     });
     final dispatcher = WidgetsBinding.instance.platformDispatcher;
-    Size logicalSize = Size.zero;
-
-    if (dispatcher.views.isNotEmpty) {
-      logicalSize = _logicalSizeFromView(dispatcher.views.first);
-    } else if (dispatcher.implicitView case final view?) {
-      logicalSize = _logicalSizeFromView(view);
-    }
+    final view = dispatcher.implicitView;
+    final logicalSize = view != null
+        ? Size(
+            view.physicalSize.width / view.devicePixelRatio,
+            view.physicalSize.height / view.devicePixelRatio,
+          )
+        : ui.window.physicalSize / ui.window.devicePixelRatio;
 
     final initialHeaderHeight = logicalSize.width > 0
         ? LayoutConfig.headerHeightForWidth(logicalSize.width)
@@ -78,29 +78,9 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
   double _deriveHeaderHeight(double screenWidth) =>
       LayoutConfig.headerHeightForWidth(screenWidth);
 
-  Size _logicalSizeFromView(ui.FlutterView view) {
-    final ratio = view.devicePixelRatio == 0 ? 1.0 : view.devicePixelRatio;
-    return Size(
-      view.physicalSize.width / ratio,
-      view.physicalSize.height / ratio,
-    );
-  }
-
   double _initialHourColumnWidth() {
-    final rootContext = WidgetsBinding.instance.renderViewElement;
-    final textDirection = rootContext != null
-        ? Directionality.maybeOf(rootContext) ?? TextDirection.ltr
-        : TextDirection.ltr;
-    TextTheme? textTheme;
-    if (rootContext != null) {
-      try {
-        textTheme = Theme.of(rootContext).textTheme;
-      } catch (_) {
-        textTheme = null;
-      }
-    }
-    final style = textTheme?.bodyMedium ?? AgendaTheme.hourTextStyle;
-
+    const textDirection = TextDirection.ltr;
+    const style = AgendaTheme.hourTextStyle;
     return _computeHourColumnWidth(style, textDirection);
   }
 

@@ -51,10 +51,22 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   bool _isHighlighted = false;
   double? _hoverY;
   late final ProviderSubscription<Offset?> _dragListener;
+  late final HighlightedStaffIdNotifier _highlightedNotifier;
+  late final StaffColumnsGeometryNotifier _geometryNotifier;
+  late final ProviderSubscription<int?> _highlightSubscription;
+  int? _latestHighlightedId;
 
   @override
   void initState() {
     super.initState();
+
+    _highlightedNotifier = ref.read(highlightedStaffIdProvider.notifier);
+    _geometryNotifier = ref.read(staffColumnsGeometryProvider.notifier);
+    _latestHighlightedId = ref.read(highlightedStaffIdProvider);
+    _highlightSubscription = ref.listenManual<int?>(
+      highlightedStaffIdProvider,
+      (previous, next) => _latestHighlightedId = next,
+    );
 
     _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
@@ -62,7 +74,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     ) {
       if (!mounted) return;
 
-      final highlightNotifier = ref.read(highlightedStaffIdProvider.notifier);
       final tempTimeNotifier = ref.read(tempDragTimeProvider.notifier);
 
       if (next == null) {
@@ -72,7 +83,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             _hoverY = null;
           });
         }
-        highlightNotifier.clear();
+        _highlightedNotifier.clear();
         tempTimeNotifier.clear();
         return;
       }
@@ -84,17 +95,15 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       final columnTopLeftInBody = bodyBox.globalToLocal(
         box.localToGlobal(Offset.zero),
       );
-      ref
-          .read(staffColumnsGeometryProvider.notifier)
-          .setRect(
-            widget.staff.id,
-            Rect.fromLTWH(
-              columnTopLeftInBody.dx,
-              columnTopLeftInBody.dy,
-              box.size.width,
-              box.size.height,
-            ),
-          );
+      _geometryNotifier.setRect(
+        widget.staff.id,
+        Rect.fromLTWH(
+          columnTopLeftInBody.dx,
+          columnTopLeftInBody.dy,
+          box.size.width,
+          box.size.height,
+        ),
+      );
 
       final localInColumn = Offset(
         next.dx - columnTopLeftInBody.dx,
@@ -126,7 +135,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           _hoverY = effectiveY;
           _isHighlighted = true;
         });
-        highlightNotifier.set(widget.staff.id);
+        _highlightedNotifier.set(widget.staff.id);
         ref.read(draggedLastStaffIdProvider.notifier).set(widget.staff.id);
 
         // ─────────────────────────────────────────
@@ -203,7 +212,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           _isHighlighted = false;
           _hoverY = null;
         });
-        highlightNotifier.clear();
+        _highlightedNotifier.clear();
         tempTimeNotifier.clear();
       }
     }, fireImmediately: false);
@@ -212,11 +221,15 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   @override
   void dispose() {
     _dragListener.close();
-    final highlightedId = ref.read(highlightedStaffIdProvider);
-    if (highlightedId == widget.staff.id) {
-      ref.read(highlightedStaffIdProvider.notifier).clear();
-    }
-    ref.read(staffColumnsGeometryProvider.notifier).clearFor(widget.staff.id);
+    _highlightSubscription.close();
+    final shouldClearHighlight = _latestHighlightedId == widget.staff.id;
+    final staffId = widget.staff.id;
+    Future.microtask(() {
+      if (shouldClearHighlight) {
+        _highlightedNotifier.clear();
+      }
+      _geometryNotifier.clearFor(staffId);
+    });
     super.dispose();
   }
 

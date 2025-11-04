@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/staff_providers.dart';
-import 'screens/day_view/multi_staff_day_view.dart';
+import 'screens/day_view/agenda_day_pager.dart';
 
 class AgendaScreen extends ConsumerWidget {
   const AgendaScreen({super.key});
@@ -14,7 +14,7 @@ class AgendaScreen extends ConsumerWidget {
 
     return SafeArea(
       // Passa la lista dello staff alla view
-      child: MultiStaffDayView(staffList: staffList),
+      child: AgendaDayPager(staffList: staffList),
     );
   }
 }

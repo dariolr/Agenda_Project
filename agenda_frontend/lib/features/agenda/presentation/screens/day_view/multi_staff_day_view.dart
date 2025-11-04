@@ -21,7 +21,17 @@ import 'staff_header_row.dart';
 
 class MultiStaffDayView extends ConsumerStatefulWidget {
   final List<Staff> staffList;
-  const MultiStaffDayView({super.key, required this.staffList});
+  final DateTime date;
+  final double initialScrollOffset;
+  final ValueChanged<double>? onScrollOffsetChanged;
+
+  const MultiStaffDayView({
+    super.key,
+    required this.staffList,
+    required this.date,
+    required this.initialScrollOffset,
+    this.onScrollOffsetChanged,
+  });
 
   @override
   ConsumerState<MultiStaffDayView> createState() => _MultiStaffDayViewState();
@@ -36,6 +46,13 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   bool _autoScrollArmed = false;
   ScrollController? _bodyHorizontalCtrl;
   List<int>? _staffSignature;
+  ScrollController? _verticalCtrl;
+
+  AgendaScrollKey get _scrollKey => AgendaScrollKey(
+        staff: widget.staffList,
+        date: widget.date,
+        initialOffset: widget.initialScrollOffset,
+      );
 
   static const double _scrollEdgeMargin = 100;
   static const double _scrollSpeed = 20;
@@ -64,7 +81,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _registerBodyBox();
-      _centerCurrentTimeLine();
       _setupHorizontalSync(force: true);
     });
   }
@@ -84,7 +100,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _staffSignature = newSignature;
 
     final bodyCtrl = ref
-        .read(agendaScrollProvider(widget.staffList))
+        .read(agendaScrollProvider(_scrollKey))
         .horizontalScrollCtrl;
 
     if (!force && identical(_bodyHorizontalCtrl, bodyCtrl)) {
@@ -124,27 +140,10 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _isSyncing = false;
   }
 
-  void _centerCurrentTimeLine() {
-    final scrollState = ref.read(agendaScrollProvider(widget.staffList));
-    final verticalCtrl = scrollState.verticalScrollCtrl;
-    if (!verticalCtrl.hasClients) return;
-
-    final now = DateTime.now();
-    final minutes = now.hour * 60 + now.minute;
-    final config = ref.read(layoutConfigProvider);
-    final offset = (minutes / config.minutesPerSlot) * config.slotHeight;
-
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    final viewHeight = renderBox.size.height;
-    final availableHeight = viewHeight - config.headerHeight;
-
-    const bias = 0.4;
-    final target = (offset - availableHeight * bias).clamp(
-      0.0,
-      verticalCtrl.position.maxScrollExtent,
-    );
-    verticalCtrl.jumpTo(target);
+  void _onVerticalScrollChanged() {
+    final controller = _verticalCtrl;
+    if (controller == null) return;
+    widget.onScrollOffsetChanged?.call(controller.offset);
   }
 
   void _startAutoScroll() {
@@ -164,7 +163,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         _autoScrollArmed = true;
       }
 
-      final scrollState = ref.read(agendaScrollProvider(widget.staffList));
+    final scrollState = ref.read(agendaScrollProvider(_scrollKey));
       final verticalCtrl = scrollState.verticalScrollCtrl;
       if (!verticalCtrl.hasClients) return;
 
@@ -203,6 +202,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _stopAutoScroll();
     _bodyHorizontalCtrl?.removeListener(_onBodyHorizontalScroll);
     _headerHCtrl.removeListener(_onHeaderHorizontalScroll);
+    _verticalCtrl?.removeListener(_onVerticalScrollChanged);
     _headerHCtrl.dispose();
     super.dispose();
   }
@@ -221,7 +221,13 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final appointments = ref.watch(appointmentsForCurrentLocationProvider);
-        final scrollState = ref.watch(agendaScrollProvider(widget.staffList));
+        final scrollState = ref.watch(agendaScrollProvider(_scrollKey));
+        final verticalCtrl = scrollState.verticalScrollCtrl;
+        if (_verticalCtrl != verticalCtrl) {
+          _verticalCtrl?.removeListener(_onVerticalScrollChanged);
+          _verticalCtrl = verticalCtrl;
+          _verticalCtrl?.addListener(_onVerticalScrollChanged);
+        }
         final layoutConfig = ref.watch(layoutConfigProvider);
         final availableWidth = constraints.hasBoundedWidth && constraints.maxWidth.isFinite
             ? constraints.maxWidth
