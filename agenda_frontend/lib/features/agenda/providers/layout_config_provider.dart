@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -17,7 +18,27 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
     ref.onDispose(() {
       _resizeDebounce?.cancel();
     });
-    return LayoutConfig.initial;
+    final dispatcher = WidgetsBinding.instance.platformDispatcher;
+    Size logicalSize = Size.zero;
+
+    if (dispatcher.views.isNotEmpty) {
+      final view = dispatcher.views.first;
+      logicalSize = _logicalSizeFromView(view);
+    } else if (dispatcher.implicitView != null) {
+      logicalSize = _logicalSizeFromView(dispatcher.implicitView!);
+    }
+
+    final initialHeaderHeight = logicalSize.width > 0
+        ? LayoutConfig.headerHeightForWidth(logicalSize.width)
+        : LayoutConfig.defaultHeaderHeight;
+    final initialSlotHeight = logicalSize.height > 0
+        ? _deriveSlotHeight(logicalSize.height)
+        : LayoutConfig.defaultSlotHeight;
+
+    return LayoutConfig.initial.copyWith(
+      headerHeight: initialHeaderHeight,
+      slotHeight: initialSlotHeight,
+    );
   }
 
   /// Aggiorna dinamicamente l’altezza degli slot e dell’header
@@ -54,6 +75,14 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
 
   double _deriveHeaderHeight(double screenWidth) =>
       LayoutConfig.headerHeightForWidth(screenWidth);
+
+  Size _logicalSizeFromView(ui.FlutterView view) {
+    final ratio = view.devicePixelRatio == 0 ? 1.0 : view.devicePixelRatio;
+    return Size(
+      view.physicalSize.width / ratio,
+      view.physicalSize.height / ratio,
+    );
+  }
 
   double _deriveHourColumnWidth(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;

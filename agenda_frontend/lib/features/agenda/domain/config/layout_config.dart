@@ -51,6 +51,29 @@ class LayoutConfig {
     required this.useServiceColorsForAppointments,
   });
 
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! LayoutConfig) return false;
+    return slotHeight == other.slotHeight &&
+        headerHeight == other.headerHeight &&
+        hourColumnWidth == other.hourColumnWidth &&
+        minutesPerSlot == other.minutesPerSlot &&
+        useClusterMaxConcurrency == other.useClusterMaxConcurrency &&
+        useServiceColorsForAppointments ==
+            other.useServiceColorsForAppointments;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        slotHeight,
+        headerHeight,
+        hourColumnWidth,
+        minutesPerSlot,
+        useClusterMaxConcurrency,
+        useServiceColorsForAppointments,
+      );
+
   LayoutConfig copyWith({
     double? slotHeight,
     double? headerHeight,
