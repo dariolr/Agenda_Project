@@ -52,16 +52,23 @@ class AgendaTopControls extends ConsumerWidget {
               onTap: dateController.setToday,
             ),
             const SizedBox(width: 12),
-            AgendaDateSwitcher(
-              label: formattedDate,
-              onPrevious: dateController.previousDay,
-              onNext: dateController.nextDay,
+            Flexible(
+              child: AgendaDateSwitcher(
+                label: formattedDate,
+                onPrevious: dateController.previousDay,
+                onNext: dateController.nextDay,
+              ),
             ),
             const SizedBox(width: 12),
-            AgendaLocationSelector(
-              locations: locations,
-              current: currentLocation,
-              onSelected: locationController.set,
+            Flexible(
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AgendaLocationSelector(
+                  locations: locations,
+                  current: currentLocation,
+                  onSelected: locationController.set,
+                ),
+              ),
             ),
           ],
         ),

@@ -89,11 +89,16 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
   double _initialHourColumnWidth() {
     final rootContext = WidgetsBinding.instance.renderViewElement;
     final textDirection = rootContext != null
-        ? Directionality.of(rootContext)
+        ? Directionality.maybeOf(rootContext) ?? TextDirection.ltr
         : TextDirection.ltr;
-    final textTheme = rootContext != null
-        ? Theme.of(rootContext).textTheme
-        : null;
+    TextTheme? textTheme;
+    if (rootContext != null) {
+      try {
+        textTheme = Theme.of(rootContext).textTheme;
+      } catch (_) {
+        textTheme = null;
+      }
+    }
     final style = textTheme?.bodyMedium ?? AgendaTheme.hourTextStyle;
 
     return _computeHourColumnWidth(style, textDirection);

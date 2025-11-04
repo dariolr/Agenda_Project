@@ -82,6 +82,7 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final interactions = Theme.of(context).extension<AppInteractionColors>();
     final hoverFill =
         interactions?.hoverFill ?? colorScheme.primary.withOpacity(0.06);
@@ -108,37 +109,62 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
           color: backgroundColor,
           boxShadow: null,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _DateArrowButton(
-              icon: Icons.chevron_left,
-              onTap: widget.onPrevious,
-              semanticsLabel: l10n.agendaPrevDay,
-            ),
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                minWidth: kAgendaMinDateLabelWidth,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: kAgendaControlHorizontalPadding,
-                ),
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Text(
-                    widget.label,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final maxWidth = constraints.maxWidth;
+            const compactBreakpoint = 260.0;
+            final isCompact =
+                maxWidth.isFinite && maxWidth > 0 && maxWidth < compactBreakpoint;
+            final horizontalPadding = isCompact
+                ? 12.0
+                : kAgendaControlHorizontalPadding;
+            final arrowExtent = isCompact ? 32.0 : kAgendaControlHeight;
+
+            Widget label = Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Align(
+                alignment: Alignment.center,
+                child: Text(
+                  widget.label,
+                  style: textTheme.titleMedium,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
-            ),
-            _DateArrowButton(
-              icon: Icons.chevron_right,
-              onTap: widget.onNext,
-              semanticsLabel: l10n.agendaNextDay,
-            ),
-          ],
+            );
+
+            if (!isCompact) {
+              label = ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: kAgendaMinDateLabelWidth,
+                ),
+                child: label,
+              );
+            }
+
+            return Row(
+              mainAxisSize:
+                  isCompact ? MainAxisSize.max : MainAxisSize.min,
+              children: [
+                _DateArrowButton(
+                  icon: Icons.chevron_left,
+                  onTap: widget.onPrevious,
+                  semanticsLabel: l10n.agendaPrevDay,
+                  dimension: arrowExtent,
+                ),
+                if (isCompact)
+                  Expanded(child: label)
+                else
+                  label,
+                _DateArrowButton(
+                  icon: Icons.chevron_right,
+                  onTap: widget.onNext,
+                  semanticsLabel: l10n.agendaNextDay,
+                  dimension: arrowExtent,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -150,23 +176,26 @@ class _DateArrowButton extends StatelessWidget {
     required this.icon,
     required this.onTap,
     required this.semanticsLabel,
+    this.dimension = kAgendaControlHeight,
   });
 
   final IconData icon;
   final VoidCallback onTap;
   final String semanticsLabel;
+  final double dimension;
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = dimension <= 32 ? 16.0 : 18.0;
     return Semantics(
       button: true,
       label: semanticsLabel,
       child: GestureDetector(
         onTap: onTap,
         child: SizedBox(
-          width: kAgendaControlHeight,
-          height: kAgendaControlHeight,
-          child: Center(child: Icon(icon, size: 18)),
+          width: dimension,
+          height: dimension,
+          child: Center(child: Icon(icon, size: iconSize)),
         ),
       ),
     );
@@ -249,16 +278,39 @@ class _AgendaLocationSelectorState extends State<AgendaLocationSelector> {
                     color: backgroundColor,
                     boxShadow: null,
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: kAgendaControlHorizontalPadding,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(widget.current.name),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
-                    ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const compactBreakpoint = 220.0;
+                      final maxWidth = constraints.maxWidth;
+                      final isCompact = maxWidth.isFinite &&
+                          maxWidth > 0 &&
+                          maxWidth < compactBreakpoint;
+                      final horizontalPadding = isCompact
+                          ? 12.0
+                          : kAgendaControlHorizontalPadding;
+
+                      return Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                widget.current.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
