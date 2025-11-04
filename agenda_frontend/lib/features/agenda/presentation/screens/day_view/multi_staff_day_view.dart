@@ -334,7 +334,23 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                   ),
                   child: Row(
                     children: [
-                      SizedBox(width: hourW),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.12),
+                              offset: const Offset(3, 0),
+                              blurRadius: 12,
+                              spreadRadius: 0,
+                            ),
+                          ],
+                        ),
+                        child: SizedBox(
+                          width: hourW,
+                          height: double.infinity,
+                        ),
+                      ),
                       AgendaVerticalDivider(
                         height: totalHeight,
                         thickness: 1,
