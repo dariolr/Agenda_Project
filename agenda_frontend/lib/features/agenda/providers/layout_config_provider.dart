@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../domain/config/agenda_theme.dart';
 import '../domain/config/layout_config.dart';
 
 part 'layout_config_provider.g.dart';
@@ -22,10 +23,9 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
     Size logicalSize = Size.zero;
 
     if (dispatcher.views.isNotEmpty) {
-      final view = dispatcher.views.first;
+      logicalSize = _logicalSizeFromView(dispatcher.views.first);
+    } else if (dispatcher.implicitView case final view?) {
       logicalSize = _logicalSizeFromView(view);
-    } else if (dispatcher.implicitView != null) {
-      logicalSize = _logicalSizeFromView(dispatcher.implicitView!);
     }
 
     final initialHeaderHeight = logicalSize.width > 0
@@ -34,10 +34,12 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
     final initialSlotHeight = logicalSize.height > 0
         ? _deriveSlotHeight(logicalSize.height)
         : LayoutConfig.defaultSlotHeight;
+    final initialHourWidth = _initialHourColumnWidth();
 
     return LayoutConfig.initial.copyWith(
       headerHeight: initialHeaderHeight,
       slotHeight: initialSlotHeight,
+      hourColumnWidth: initialHourWidth,
     );
   }
 
@@ -84,11 +86,28 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
     );
   }
 
+  double _initialHourColumnWidth() {
+    final rootContext = WidgetsBinding.instance.renderViewElement;
+    final textDirection = rootContext != null
+        ? Directionality.of(rootContext)
+        : TextDirection.ltr;
+    final textTheme = rootContext != null
+        ? Theme.of(rootContext).textTheme
+        : null;
+    final style = textTheme?.bodyMedium ?? AgendaTheme.hourTextStyle;
+
+    return _computeHourColumnWidth(style, textDirection);
+  }
+
   double _deriveHourColumnWidth(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final style = textTheme.bodyMedium ?? const TextStyle(fontSize: 14);
+    final style = textTheme.bodyMedium ?? AgendaTheme.hourTextStyle;
     final textDirection = Directionality.maybeOf(context) ?? TextDirection.ltr;
 
+    return _computeHourColumnWidth(style, textDirection);
+  }
+
+  double _computeHourColumnWidth(TextStyle style, TextDirection textDirection) {
     final painter = TextPainter(
       text: TextSpan(text: '23:59', style: style),
       textDirection: textDirection,
@@ -100,7 +119,6 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
     const safety = 6.0; // margine ridotto oltre il testo
 
     final computed = baseWidth + extraPadding + safety;
-
     return computed.clamp(48.0, 80.0);
   }
 
