@@ -1,6 +1,10 @@
+import 'dart:math' as math;
+
+import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_frontend/core/l10n/l10_extension.dart';
 import 'package:agenda_frontend/features/agenda/providers/date_range_provider.dart';
+import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_frontend/features/agenda/providers/location_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +17,8 @@ class AgendaTopControls extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final agendaDate = ref.watch(agendaDateProvider);
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
     final locations = ref.watch(locationsProvider);
     if (locations.isEmpty) {
       return Text(l10n.agendaNoLocations);
@@ -24,25 +30,42 @@ class AgendaTopControls extends ConsumerWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
     final formattedDate = DateFormat('EEE d MMM', locale).format(agendaDate);
 
-    return Row(
-      children: [
-        AgendaRoundedButton(
-          label: l10n.agendaToday,
-          onTap: dateController.setToday,
+    final railTheme = NavigationRailTheme.of(context);
+    final railWidth = railTheme.minWidth ?? 72.0;
+    const railDividerWidth = 1.0;
+
+    final baseInset =
+        layoutConfig.hourColumnWidth - NavigationToolbar.kMiddleSpacing;
+    final railInset =
+        formFactor == AppFormFactor.tabletOrDesktop ? railWidth + railDividerWidth : 0.0;
+
+    final leftInset = math.max(0.0, baseInset + railInset);
+
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(start: leftInset),
+        child: Row(
+          children: [
+            AgendaRoundedButton(
+              label: l10n.agendaToday,
+              onTap: dateController.setToday,
+            ),
+            const SizedBox(width: 12),
+            AgendaDateSwitcher(
+              label: formattedDate,
+              onPrevious: dateController.previousDay,
+              onNext: dateController.nextDay,
+            ),
+            const SizedBox(width: 12),
+            AgendaLocationSelector(
+              locations: locations,
+              current: currentLocation,
+              onSelected: locationController.set,
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        AgendaDateSwitcher(
-          label: formattedDate,
-          onPrevious: dateController.previousDay,
-          onNext: dateController.nextDay,
-        ),
-        const SizedBox(width: 12),
-        AgendaLocationSelector(
-          locations: locations,
-          current: currentLocation,
-          onSelected: locationController.set,
-        ),
-      ],
+      ),
     );
   }
 }
