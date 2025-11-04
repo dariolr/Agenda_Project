@@ -20,6 +20,7 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
   final DateTime date;
   final double initialScrollOffset;
   final ValueChanged<double>? onScrollOffsetChanged;
+  final ValueChanged<AxisDirection>? onHorizontalEdge;
 
   const MultiStaffDayView({
     super.key,
@@ -27,6 +28,7 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
     required this.date,
     required this.initialScrollOffset,
     this.onScrollOffsetChanged,
+    this.onHorizontalEdge,
   });
 
   @override
@@ -43,7 +45,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   ScrollController? _bodyHorizontalCtrl;
   List<int>? _staffSignature;
   ScrollController? _verticalCtrl;
-
   AgendaScrollKey get _scrollKey => AgendaScrollKey(
     staff: widget.staffList,
     date: widget.date,
@@ -263,6 +264,15 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 isResizing: isResizing,
                 dragLayerLink: link,
                 bodyKey: _bodyKey,
+                onHorizontalScrollMetrics: (metrics) {
+                  if (!metrics.atEdge) {
+                    return;
+                  }
+                  final direction = metrics.pixels <= metrics.minScrollExtent
+                      ? AxisDirection.left
+                      : AxisDirection.right;
+                  widget.onHorizontalEdge?.call(direction);
+                },
               ),
             ),
 
