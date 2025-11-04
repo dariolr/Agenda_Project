@@ -1,8 +1,6 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'dart:math';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/appointment.dart';
@@ -105,7 +103,8 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
 
         int generated = 0;
         while (generated < slotsPerDay) {
-          final startMinute = 8 * 60 + random.nextInt(10 * 60); // tra 08:00 e 18:00
+          final startMinute =
+              8 * 60 + random.nextInt(10 * 60); // tra 08:00 e 18:00
           final durationMinutes = 15 * (1 + random.nextInt(8)); // 15-120
           final start = dayDate.add(Duration(minutes: startMinute));
           final end = start.add(Duration(minutes: durationMinutes));
@@ -139,8 +138,9 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
             final secondStart = end.add(Duration(minutes: separationMinutes));
             final secondDurationMinutes =
                 15 * (1 + random.nextInt(8)); // 15-120 minuti
-            final secondEnd =
-                secondStart.add(Duration(minutes: secondDurationMinutes));
+            final secondEnd = secondStart.add(
+              Duration(minutes: secondDurationMinutes),
+            );
 
             appointments.add(
               Appointment(

@@ -99,7 +99,7 @@ class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
 
     final layoutConfig = ref.watch(layoutConfigProvider);
 
-    double _currentTimeOffset() {
+    double currentTimeOffset() {
       final now = DateTime.now();
       final minutes = now.hour * 60 + now.minute;
       return (minutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
@@ -123,8 +123,7 @@ class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
         }
         _isUpdatingDateFromPage = true;
         notifier.set(newDate);
-        _currentScrollOffset =
-            _verticalOffsets[index] ?? _currentScrollOffset;
+        _currentScrollOffset = _verticalOffsets[index] ?? _currentScrollOffset;
       },
       itemBuilder: (context, index) {
         final staffListForPage = _staffListCache.putIfAbsent(
@@ -139,9 +138,8 @@ class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
         if (storedOffset != null) {
           initialOffset = storedOffset;
         } else if (isToday) {
-          initialOffset = _currentTimeOffset();
+          initialOffset = currentTimeOffset();
           _verticalOffsets[index] = initialOffset;
-          _currentScrollOffset = initialOffset;
         } else {
           initialOffset = _currentScrollOffset;
           _verticalOffsets[index] = initialOffset;
