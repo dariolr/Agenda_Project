@@ -221,7 +221,6 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
         }
       },
       onTap: () => _handleTap(context),
-      splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       borderRadius: kAgendaPillRadius,
       child: Container(
@@ -292,7 +291,6 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
                 child: InkWell(
                   hoverColor: Colors.transparent,
                   highlightColor: Colors.transparent,
-                  splashColor: Colors.transparent,
                   onTap: onTap,
                   child: SizedBox(
                     width: arrowExtent,
@@ -316,8 +314,7 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
                 child: InkWell(
                   hoverColor: Colors.transparent,
                   highlightColor: Colors.transparent,
-                  splashColor: Colors.transparent,
-                  onTap: () => _handleTap(context),
+                      onTap: () => _handleTap(context),
                   child: Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: horizontalPadding,
@@ -424,13 +421,11 @@ class _AgendaLocationSelectorState extends State<AgendaLocationSelector> {
         }
       },
       onTap: () {},
-      splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       borderRadius: kAgendaPillRadius,
       child: Theme(
         data: Theme.of(context).copyWith(
           hoverColor: Colors.transparent,
-          splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
         ),
         child: TooltipVisibility(
