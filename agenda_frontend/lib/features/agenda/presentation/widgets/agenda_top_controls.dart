@@ -36,8 +36,9 @@ class AgendaTopControls extends ConsumerWidget {
 
     final baseInset =
         layoutConfig.hourColumnWidth - NavigationToolbar.kMiddleSpacing;
-    final railInset =
-        formFactor == AppFormFactor.tabletOrDesktop ? railWidth + railDividerWidth : 0.0;
+    final railInset = formFactor == AppFormFactor.tabletOrDesktop
+        ? railWidth + railDividerWidth
+        : 0.0;
 
     final leftInset = math.max(0.0, baseInset + railInset);
 
@@ -49,14 +50,22 @@ class AgendaTopControls extends ConsumerWidget {
           children: [
             AgendaRoundedButton(
               label: l10n.agendaToday,
-              onTap: dateController.setToday,
+              onTap: DateUtils.isSameDay(agendaDate, DateTime.now())
+                  ? null
+                  : dateController.setToday,
             ),
             const SizedBox(width: 12),
             Flexible(
               child: AgendaDateSwitcher(
                 label: formattedDate,
+                selectedDate: agendaDate,
                 onPrevious: dateController.previousDay,
                 onNext: dateController.nextDay,
+                onPreviousWeek: dateController.previousWeek,
+                onNextWeek: dateController.nextWeek,
+                onSelectDate: (date) {
+                  dateController.set(DateUtils.dateOnly(date));
+                },
               ),
             ),
             const SizedBox(width: 12),
