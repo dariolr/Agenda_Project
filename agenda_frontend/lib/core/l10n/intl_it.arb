@@ -28,6 +28,8 @@
   "agendaToday": "Oggi",
   "agendaPrevDay": "Giorno precedente",
   "agendaNextDay": "Giorno successivo",
+  "agendaPrevWeek": "Settimana precedente",
+  "agendaNextWeek": "Settimana successivo",
   "agendaNoLocations": "Nessuna sede disponibile",
   "agendaSelectLocation": "Seleziona sede",
   "servicesCategoryEmpty": "Nessun servizio disponibile per questa categoria."
