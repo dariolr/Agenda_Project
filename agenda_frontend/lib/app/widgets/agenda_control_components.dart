@@ -107,8 +107,6 @@ class AgendaDateSwitcher extends StatefulWidget {
 }
 
 class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
-  bool _isHovered = false;
-
   Future<void> _handleTap(BuildContext context) async {
     final initialDate = widget.selectedDate;
     final firstDate = DateTime(initialDate.year - 3);
@@ -121,10 +119,7 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       transitionDuration: const Duration(milliseconds: 180),
       transitionBuilder: (context, animation, secondaryAnimation, child) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOut,
-        );
+        final curved = CurvedAnimation(parent: animation, curve: Curves.easeOut);
         return FadeTransition(
           opacity: curved,
           child: ScaleTransition(
@@ -142,9 +137,7 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
             theme.textTheme.titleLarge ??
             const TextStyle(fontSize: 18);
         final datePickerTheme = theme.datePickerTheme.copyWith(
-          headerHeadlineStyle: baseHeadline.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          headerHeadlineStyle: baseHeadline.copyWith(fontWeight: FontWeight.w700),
         );
 
         return Center(
@@ -171,9 +164,8 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
                           firstDate: firstDate,
                           lastDate: lastDate,
                           onDateChanged: (selected) {
-                            Navigator.of(
-                              dialogContext,
-                            ).pop(DateUtils.dateOnly(selected));
+                            Navigator.of(dialogContext)
+                                .pop(DateUtils.dateOnly(selected));
                           },
                         ),
                       ),
@@ -209,181 +201,212 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
     final interactions = Theme.of(context).extension<AppInteractionColors>();
     final hoverFill =
         interactions?.hoverFill ?? colorScheme.primary.withOpacity(0.06);
-    final backgroundColor = _isHovered
-        ? Color.alphaBlend(hoverFill, colorScheme.surface)
-        : colorScheme.surface;
+    final backgroundColor = colorScheme.surface;
     final l10n = context.l10n;
     final borderColor = Colors.grey.withOpacity(0.35);
-    return InkWell(
-      onHover: (hovering) {
-        if (hovering != _isHovered) {
-          setState(() => _isHovered = hovering);
-        }
-      },
-      onTap: () => _handleTap(context),
-      highlightColor: Colors.transparent,
-      borderRadius: kAgendaPillRadius,
-      child: Container(
-        height: kAgendaControlHeight,
-        decoration: BoxDecoration(
-          borderRadius: kAgendaPillRadius,
-          border: Border.all(color: borderColor),
-          color: backgroundColor,
-          boxShadow: null,
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final maxWidth = constraints.maxWidth;
-            const compactBreakpoint = 260.0;
-            final isCompact =
-                maxWidth.isFinite &&
-                maxWidth > 0 &&
-                maxWidth < compactBreakpoint;
-            final horizontalPadding = isCompact
-                ? 12.0
-                : kAgendaControlHorizontalPadding;
-            final arrowExtent = isCompact ? 32.0 : kAgendaControlHeight;
 
-            Widget label = Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: Align(
-                alignment: Alignment.center,
-                child: Text(
-                  widget.label,
-                  style: textTheme.titleMedium,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ),
-            );
+    const double dividerWidth = kAgendaDividerWidth;
+    final double arrowExtent = kAgendaControlHeight;
+    const BorderRadius leftRadius = BorderRadius.only(
+      topLeft: Radius.circular(999),
+      bottomLeft: Radius.circular(999),
+    );
+    const BorderRadius rightRadius = BorderRadius.only(
+      topRight: Radius.circular(999),
+      bottomRight: Radius.circular(999),
+    );
 
-            if (!isCompact) {
-              label = ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minWidth: kAgendaMinDateLabelWidth,
-                ),
-                child: label,
-              );
-            }
+    return Container(
+      height: kAgendaControlHeight,
+      decoration: BoxDecoration(
+        borderRadius: kAgendaPillRadius,
+        border: Border.all(color: borderColor),
+        color: backgroundColor,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxWidth = constraints.maxWidth;
+          const compactBreakpoint = 260.0;
+          final isCompact =
+              maxWidth.isFinite && maxWidth > 0 && maxWidth < compactBreakpoint;
+          final horizontalPadding = isCompact
+              ? 12.0
+              : kAgendaControlHorizontalPadding;
+          final labelSemantics =
+              MaterialLocalizations.of(context).datePickerHelpText;
 
-            Widget buildDivider(VoidCallback onTap) => GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onTap,
-              child: SizedBox(
-                width: kAgendaDividerWidth,
-                height: kAgendaControlHeight,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: borderColor.withOpacity(0.5),
-                  ),
-                ),
-              ),
-            );
-
-            Widget buildArrowButton({
-              required IconData icon,
-              required VoidCallback onTap,
-              required String semanticsLabel,
-            }) {
-              return Semantics(
-                button: true,
-                label: semanticsLabel,
-                child: InkWell(
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: onTap,
-                  child: SizedBox(
-                    width: arrowExtent,
-                    height: kAgendaControlHeight,
-                    child: Center(
-                      child: Icon(icon, size: arrowExtent <= 32 ? 16.0 : 18.0),
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            Widget buildLabelArea() {
-              final semanticsLabel = MaterialLocalizations.of(
-                context,
-              ).datePickerHelpText;
-
-              final labelInkWell = Semantics(
-                button: true,
-                label: semanticsLabel,
-                child: InkWell(
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                      onTap: () => _handleTap(context),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: Text(
-                        widget.label,
-                        style: textTheme.titleMedium,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-
-              if (isCompact) {
-                return Expanded(child: labelInkWell);
-              }
-
-              return ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minWidth: kAgendaMinDateLabelWidth,
-                ),
+          Widget buildDivider(VoidCallback onTap) => GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onTap,
                 child: SizedBox(
+                  width: dividerWidth,
                   height: kAgendaControlHeight,
-                  child: labelInkWell,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: borderColor.withOpacity(0.5),
+                    ),
+                  ),
                 ),
               );
-            }
 
-            return Row(
-              mainAxisSize: isCompact ? MainAxisSize.max : MainAxisSize.min,
-              children: [
-                buildArrowButton(
-                  icon: Icons.keyboard_double_arrow_left,
-                  onTap: widget.onPreviousWeek,
-                  semanticsLabel: l10n.agendaPrevWeek,
+          Widget buildArrowButton({
+            required IconData icon,
+            required VoidCallback onTap,
+            required String semanticsLabel,
+            required BorderRadius borderRadius,
+          }) {
+            return _HoverableRegion(
+              onTap: onTap,
+              semanticsLabel: semanticsLabel,
+              hoverColor: hoverFill,
+              width: arrowExtent,
+              borderRadius: borderRadius,
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: arrowExtent <= 32 ? 16.0 : 18.0,
                 ),
-                buildDivider(widget.onPreviousWeek),
-                buildArrowButton(
-                  icon: Icons.keyboard_arrow_left,
-                  onTap: widget.onPrevious,
-                  semanticsLabel: l10n.agendaPrevDay,
-                ),
-                buildDivider(() => _handleTap(context)),
-                buildLabelArea(),
-                buildDivider(() => _handleTap(context)),
-                buildArrowButton(
-                  icon: Icons.keyboard_arrow_right,
-                  onTap: widget.onNext,
-                  semanticsLabel: l10n.agendaNextDay,
-                ),
-                buildDivider(widget.onNextWeek),
-                buildArrowButton(
-                  icon: Icons.keyboard_double_arrow_right,
-                  onTap: widget.onNextWeek,
-                  semanticsLabel: l10n.agendaNextWeek,
-                ),
-              ],
+              ),
             );
-          },
-        ),
+          }
+
+          Widget buildLabelRegion() => _HoverableRegion(
+                onTap: () => _handleTap(context),
+                semanticsLabel: labelSemantics,
+                hoverColor: hoverFill,
+                minWidth: kAgendaMinDateLabelWidth,
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    widget.label,
+                    style: textTheme.titleMedium,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              );
+
+          final labelRegion = buildLabelRegion();
+          final children = <Widget>[
+            buildArrowButton(
+              icon: Icons.keyboard_double_arrow_left,
+              onTap: widget.onPreviousWeek,
+              semanticsLabel: l10n.agendaPrevWeek,
+              borderRadius: leftRadius,
+            ),
+            buildDivider(widget.onPreviousWeek),
+            buildArrowButton(
+              icon: Icons.keyboard_arrow_left,
+              onTap: widget.onPrevious,
+              semanticsLabel: l10n.agendaPrevDay,
+              borderRadius: BorderRadius.zero,
+            ),
+            buildDivider(() => _handleTap(context)),
+          ];
+
+          if (isCompact) {
+            children.add(Expanded(child: labelRegion));
+          } else {
+            children.add(labelRegion);
+          }
+
+          children.addAll([
+            buildDivider(() => _handleTap(context)),
+            buildArrowButton(
+              icon: Icons.keyboard_arrow_right,
+              onTap: widget.onNext,
+              semanticsLabel: l10n.agendaNextDay,
+              borderRadius: BorderRadius.zero,
+            ),
+            buildDivider(widget.onNextWeek),
+            buildArrowButton(
+              icon: Icons.keyboard_double_arrow_right,
+              onTap: widget.onNextWeek,
+              semanticsLabel: l10n.agendaNextWeek,
+              borderRadius: rightRadius,
+            ),
+          ]);
+
+          return Row(
+            mainAxisSize: isCompact ? MainAxisSize.max : MainAxisSize.min,
+            children: children,
+          );
+        },
       ),
     );
   }
 }
 
+class _HoverableRegion extends StatefulWidget {
+  const _HoverableRegion({
+    required this.onTap,
+    required this.semanticsLabel,
+    required this.hoverColor,
+    required this.child,
+    this.width,
+    this.minWidth,
+    this.padding,
+    this.borderRadius = BorderRadius.zero,
+  });
+
+  final VoidCallback onTap;
+  final String semanticsLabel;
+  final Color hoverColor;
+  final Widget child;
+  final double? width;
+  final double? minWidth;
+  final EdgeInsetsGeometry? padding;
+  final BorderRadius borderRadius;
+
+  @override
+  State<_HoverableRegion> createState() => _HoverableRegionState();
+}
+
+class _HoverableRegionState extends State<_HoverableRegion> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final constraints = widget.minWidth != null
+        ? BoxConstraints(minWidth: widget.minWidth!)
+        : const BoxConstraints();
+
+    Widget content = widget.child;
+    if (widget.padding != null) {
+      content = Padding(
+        padding: widget.padding!,
+        child: content,
+      );
+    }
+
+    return Semantics(
+      button: true,
+      label: widget.semanticsLabel,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          child: ClipRRect(
+            borderRadius: widget.borderRadius,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              curve: Curves.easeOut,
+              width: widget.width,
+              constraints: constraints,
+              height: kAgendaControlHeight,
+              color: _hovered ? widget.hoverColor : Colors.transparent,
+              child: content,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 class AgendaLocationSelector extends StatefulWidget {
   const AgendaLocationSelector({
     super.key,
