@@ -241,22 +241,22 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         .toList();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final box = context.findRenderObject() as RenderBox?;
       final bodyBox = ref.read(dragBodyBoxProvider);
-      if (box != null && bodyBox != null) {
-        final topLeft = bodyBox.globalToLocal(box.localToGlobal(Offset.zero));
-        ref
-            .read(staffColumnsGeometryProvider.notifier)
-            .setRect(
-              widget.staff.id,
-              Rect.fromLTWH(
-                topLeft.dx,
-                topLeft.dy,
-                box.size.width,
-                box.size.height,
-              ),
-            );
-      }
+      if (box == null || bodyBox == null) return;
+      if (!box.attached || !bodyBox.attached) return;
+
+      final topLeft = bodyBox.globalToLocal(box.localToGlobal(Offset.zero));
+      ref.read(staffColumnsGeometryProvider.notifier).setRect(
+            widget.staff.id,
+            Rect.fromLTWH(
+              topLeft.dx,
+              topLeft.dy,
+              box.size.width,
+              box.size.height,
+            ),
+          );
     });
 
     final layoutConfig = ref.watch(layoutConfigProvider);

@@ -22,6 +22,7 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
   final ValueChanged<double>? onScrollOffsetChanged;
   final ValueChanged<AxisDirection>? onHorizontalEdge;
   final ValueChanged<ScrollController>? onVerticalControllerChanged;
+  final bool isPrimary;
 
   const MultiStaffDayView({
     super.key,
@@ -31,6 +32,7 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
     this.onScrollOffsetChanged,
     this.onHorizontalEdge,
     this.onVerticalControllerChanged,
+    this.isPrimary = false,
   });
 
   @override
@@ -47,6 +49,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   ScrollController? _bodyHorizontalCtrl;
   List<int>? _staffSignature;
   ScrollController? _verticalCtrl;
+  late final DragBodyBoxNotifier _dragBodyNotifier;
   AgendaScrollKey get _scrollKey => AgendaScrollKey(
     staff: widget.staffList,
     date: widget.date,
@@ -63,6 +66,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   @override
   void initState() {
     super.initState();
+    _dragBodyNotifier = ref.read(dragBodyBoxProvider.notifier);
 
     _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (prev, next) {
       if (next != null) {
@@ -85,10 +89,15 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     });
   }
 
+  void _clearBodyBox() {
+    _dragBodyNotifier.scheduleClear();
+  }
+
   void _registerBodyBox() {
+    if (!widget.isPrimary) return;
     final box = _bodyKey.currentContext?.findRenderObject() as RenderBox?;
     if (box != null) {
-      ref.read(dragBodyBoxProvider.notifier).set(box);
+      _dragBodyNotifier.set(box);
     }
   }
 
@@ -208,6 +217,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _bodyHorizontalCtrl?.removeListener(_onBodyHorizontalScroll);
     _headerHCtrl.removeListener(_onHeaderHorizontalScroll);
     _verticalCtrl?.removeListener(_onVerticalScrollChanged);
+    if (widget.isPrimary) {
+      _clearBodyBox();
+    }
     _headerHCtrl.dispose();
     super.dispose();
   }
@@ -219,6 +231,17 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       if (!mounted) return;
       _setupHorizontalSync(force: true);
     });
+
+    if (oldWidget.isPrimary != widget.isPrimary) {
+      if (widget.isPrimary) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _registerBodyBox();
+        });
+      } else {
+        _clearBodyBox();
+      }
+    }
   }
 
   @override
@@ -248,16 +271,20 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         final totalHeight = layoutConfig.totalHeight;
         final hourW = layoutConfig.hourColumnWidth;
         final headerHeight = layoutConfig.headerHeight;
-        final link = ref.watch(dragLayerLinkProvider);
+        final LayerLink? link = widget.isPrimary
+            ? ref.watch(dragLayerLinkProvider)
+            : null;
 
         // 🔹 blocca scroll se stiamo ridimensionando
         final isResizing = ref.watch(isResizingProvider);
 
         // Aggiorna periodicamente il bodyBox (in caso di resize)
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _registerBodyBox();
-        });
+        if (widget.isPrimary) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _registerBodyBox();
+          });
+        }
 
         return Stack(
           children: [

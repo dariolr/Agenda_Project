@@ -30,7 +30,7 @@ class AgendaStaffBody extends StatelessWidget {
   final LayoutConfig layoutConfig;
   final double availableWidth;
   final bool isResizing;
-  final LayerLink dragLayerLink;
+  final LayerLink? dragLayerLink;
   final GlobalKey bodyKey;
   final ValueChanged<AxisDirection>? onHorizontalEdge;
 
@@ -45,62 +45,73 @@ class AgendaStaffBody extends StatelessWidget {
 
     final hourColumnWidth = layoutConfig.hourColumnWidth;
 
-    return CompositedTransformTarget(
-      key: bodyKey,
-      link: dragLayerLink,
-      child: ScrollConfiguration(
-        // mantiene l'assenza di scrollbar come prima
-        behavior: const NoScrollbarBehavior(),
-        child: SingleChildScrollView(
-          controller: verticalController,
-          physics: isResizing ? const NeverScrollableScrollPhysics() : null,
-          child: Stack(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: ScrollConfiguration(
-                      behavior: const NoScrollbarBehavior(),
-                      child: NotificationListener<ScrollNotification>(
-                        onNotification: _handleHorizontalNotification,
-                        child: SingleChildScrollView(
-                          controller: horizontalController,
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: staffList.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final staff = entry.value;
-                              final isLast = index == staffList.length - 1;
-                              final staffAppointments = appointments
-                                  .where(
-                                    (appointment) =>
-                                        appointment.staffId == staff.id,
-                                  )
-                                  .toList();
+    Widget content = ScrollConfiguration(
+      // mantiene l'assenza di scrollbar come prima
+      behavior: const NoScrollbarBehavior(),
+      child: SingleChildScrollView(
+        controller: verticalController,
+        physics: isResizing ? const NeverScrollableScrollPhysics() : null,
+        child: Stack(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: ScrollConfiguration(
+                    behavior: const NoScrollbarBehavior(),
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: _handleHorizontalNotification,
+                      child: SingleChildScrollView(
+                        controller: horizontalController,
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: staffList.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final staff = entry.value;
+                            final isLast = index == staffList.length - 1;
+                            final staffAppointments = appointments
+                                .where(
+                                  (appointment) =>
+                                      appointment.staffId == staff.id,
+                                )
+                                .toList();
 
-                              return StaffColumn(
-                                staff: staff,
-                                appointments: staffAppointments,
-                                columnWidth: layout.columnWidth,
-                                showRightBorder:
-                                    staffList.length > 1 && !isLast,
-                              );
-                            }).toList(),
-                          ),
+                            return StaffColumn(
+                              staff: staff,
+                              appointments: staffAppointments,
+                              columnWidth: layout.columnWidth,
+                              showRightBorder:
+                                  staffList.length > 1 && !isLast,
+                            );
+                          }).toList(),
                         ),
                       ),
                     ),
                   ),
-                ],
-              ),
-              CurrentTimeLine(hourColumnWidth: hourColumnWidth),
-            ],
-          ),
+                ),
+              ],
+            ),
+            CurrentTimeLine(hourColumnWidth: hourColumnWidth),
+          ],
         ),
       ),
     );
+
+    if (dragLayerLink != null) {
+      content = CompositedTransformTarget(
+        key: bodyKey,
+        link: dragLayerLink!,
+        child: content,
+      );
+    } else {
+      content = KeyedSubtree(
+        key: bodyKey,
+        child: content,
+      );
+    }
+
+    return content;
   }
 
   bool _handleHorizontalNotification(ScrollNotification notification) {

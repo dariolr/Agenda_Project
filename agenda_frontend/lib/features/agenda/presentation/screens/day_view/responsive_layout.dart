@@ -41,7 +41,7 @@ class ResponsiveLayout {
     final visibleStaff = staffCount.clamp(1, dynamicMaxVisible);
 
     final columnWidth = config.computeAdaptiveColumnWidth(
-      screenWidth: screenWidth,
+      contentWidth: screenWidth,
       visibleStaffCount: visibleStaff,
       formFactor: formFactor,
     );

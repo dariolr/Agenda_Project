@@ -21,7 +21,7 @@ void main() {
         formFactor: AppFormFactor.tabletOrDesktop,
       );
 
-      expect(mobileResult, 3); // (500 - 60) / 140 = 3.14 -> floor = 3
+      expect(mobileResult, 3); // 500 / 140 = 3.57 -> floor = 3
       expect(desktopResult, LayoutConfig.maxVisibleStaff);
     });
 
@@ -30,20 +30,19 @@ void main() {
       final config = LayoutConfig.initial;
 
       final narrowMobile = config.computeAdaptiveColumnWidth(
-        screenWidth: 420,
+        contentWidth: 420,
         visibleStaffCount: 3,
         formFactor: AppFormFactor.mobile,
       );
 
       final spaciousDesktop = config.computeAdaptiveColumnWidth(
-        screenWidth: 1920,
+        contentWidth: 1920,
         visibleStaffCount: 4,
         formFactor: AppFormFactor.tabletOrDesktop,
       );
 
       expect(narrowMobile, LayoutConfig.minColumnWidthMobile);
-      expect(spaciousDesktop,
-          closeTo((1920 - config.hourColumnWidth) / 4, 0.0001));
+      expect(spaciousDesktop, closeTo(1920 / 4, 0.0001));
     });
 
     test('headerHeightForWidth returns responsive breakpoints', () {
