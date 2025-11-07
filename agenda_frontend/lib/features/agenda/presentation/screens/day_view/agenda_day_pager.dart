@@ -9,10 +9,50 @@ import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import 'multi_staff_day_view.dart';
 
+class AgendaDayPagerController {
+  _AgendaDayPagerState? _state;
+  double? _pendingOffset;
+
+  void _attach(_AgendaDayPagerState state) {
+    _state = state;
+    if (_pendingOffset != null) {
+      state._jumpToExternalOffset(_pendingOffset!);
+      _pendingOffset = null;
+    }
+  }
+
+  void _detach(_AgendaDayPagerState state) {
+    if (_state == state) {
+      _state = null;
+    }
+  }
+
+  void jumpTo(double offset) {
+    final state = _state;
+    if (state == null) {
+      _pendingOffset = offset;
+      return;
+    }
+    state._jumpToExternalOffset(offset);
+  }
+
+  void dispose() {
+    _state = null;
+    _pendingOffset = null;
+  }
+}
+
 class AgendaDayPager extends ConsumerStatefulWidget {
-  const AgendaDayPager({super.key, required this.staffList});
+  const AgendaDayPager({
+    super.key,
+    required this.staffList,
+    this.onVerticalOffsetChanged,
+    this.controller,
+  });
 
   final List<Staff> staffList;
+  final ValueChanged<double>? onVerticalOffsetChanged;
+  final AgendaDayPagerController? controller;
 
   @override
   ConsumerState<AgendaDayPager> createState() => _AgendaDayPagerState();
@@ -28,18 +68,23 @@ class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
   double _currentScrollOffset = 0.0;
   double _lastScrollOffset = 0.0;
   bool _hasAutoCenteredToday = false;
+  ScrollController? _centerVerticalController;
   static const Duration _edgeSwipeDuration = Duration(milliseconds: 220);
   static const Curve _edgeSwipeCurve = Curves.easeOut;
 
   @override
   void initState() {
     super.initState();
+    widget.controller?._attach(this);
     _centerDate = DateUtils.dateOnly(ref.read(agendaDateProvider));
     _visibleDates = _buildVisibleDates(_centerDate);
     _pageController = PageController(initialPage: 1);
     final layoutConfig = ref.read(layoutConfigProvider);
     _currentScrollOffset = _timelineOffsetForToday(layoutConfig);
     _lastScrollOffset = _currentScrollOffset;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onVerticalOffsetChanged?.call(_currentScrollOffset);
+    });
     _dateSubscription = ref.listenManual<DateTime>(
       agendaDateProvider,
       _onExternalDateChanged,
@@ -57,7 +102,17 @@ class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
   void dispose() {
     _dateSubscription?.close();
     _pageController.dispose();
+    widget.controller?._detach(this);
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant AgendaDayPager oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?._detach(this);
+      widget.controller?._attach(this);
+    }
   }
 
   @override
@@ -85,9 +140,13 @@ class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
             onScrollOffsetChanged: (offset) {
               if (isCenter) {
                 _currentScrollOffset = offset;
+                widget.onVerticalOffsetChanged?.call(offset);
               }
             },
             onHorizontalEdge: isCenter ? _handleHorizontalEdge : null,
+            onVerticalControllerChanged: isCenter
+                ? _handleCenterVerticalController
+                : null,
           );
 
           if (allowAutoCenter) {
@@ -131,9 +190,34 @@ class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
       _centerDate = newCenter;
       _visibleDates = _buildVisibleDates(newCenter);
       _currentScrollOffset = inheritedOffset;
+      _centerVerticalController = null;
     });
+    widget.onVerticalOffsetChanged?.call(_currentScrollOffset);
   }
 
+  void _handleCenterVerticalController(ScrollController controller) {
+    if (_centerVerticalController == controller) return;
+    _centerVerticalController = controller;
+  }
+
+  void _jumpToExternalOffset(double offset) {
+    final controller = _centerVerticalController;
+    if (controller == null || !controller.hasClients) {
+      _currentScrollOffset = offset;
+      return;
+    }
+    final clamped = offset.clamp(
+      controller.position.minScrollExtent,
+      controller.position.maxScrollExtent,
+    );
+    if ((controller.offset - clamped).abs() < 0.5) {
+      _currentScrollOffset = clamped;
+      return;
+    }
+    controller.jumpTo(clamped);
+    _currentScrollOffset = clamped;
+    widget.onVerticalOffsetChanged?.call(clamped);
+  }
 
   void _jumpToCenter() {
     if (!_pageController.hasClients) return;
