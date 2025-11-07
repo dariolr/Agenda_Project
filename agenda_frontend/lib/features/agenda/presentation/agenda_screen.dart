@@ -10,11 +10,101 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/staff_providers.dart';
 import 'screens/day_view/agenda_day_pager.dart';
 
-class AgendaScreen extends ConsumerWidget {
+class AgendaScreen extends ConsumerStatefulWidget {
   const AgendaScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AgendaScreen> createState() => _AgendaScreenState();
+}
+
+class _AgendaScreenState extends ConsumerState<AgendaScreen> {
+  final ScrollController _hourColumnController = ScrollController();
+  final AgendaDayPagerController _pagerController = AgendaDayPagerController();
+  double? _pendingHourOffset;
+  bool _pendingApplyScheduled = false;
+  bool _isSyncingFromMaster = false;
+
+  @override
+  void dispose() {
+    _pagerController.dispose();
+    _hourColumnController.dispose();
+    super.dispose();
+  }
+
+  void _handleMasterScroll(double offset) {
+    if (!_hourColumnController.hasClients) {
+      _pendingHourOffset = offset;
+      _schedulePendingApply();
+      return;
+    }
+
+    final position = _hourColumnController.position;
+    final target = offset.clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+
+    if ((position.pixels - target).abs() < 0.5) {
+      return;
+    }
+
+    _isSyncingFromMaster = true;
+    try {
+      _hourColumnController.jumpTo(target);
+    } finally {
+      _isSyncingFromMaster = false;
+    }
+  }
+
+  void _applyPendingOffset() {
+    if (!mounted) return;
+    if (_pendingHourOffset == null) {
+      return;
+    }
+
+    if (!_hourColumnController.hasClients) {
+      _schedulePendingApply();
+      return;
+    }
+
+    final position = _hourColumnController.position;
+    final target = _pendingHourOffset!.clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+
+    _hourColumnController.jumpTo(target);
+    _pendingHourOffset = null;
+  }
+
+  void _schedulePendingApply() {
+    if (_pendingApplyScheduled) return;
+    _pendingApplyScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pendingApplyScheduled = false;
+      if (!mounted) return;
+      _applyPendingOffset();
+    });
+  }
+
+  bool _handleHourColumnScroll(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    if (_isSyncingFromMaster) {
+      return false;
+    }
+
+    if (notification is ScrollUpdateNotification) {
+      final offset = notification.metrics.pixels;
+      _pagerController.jumpTo(offset);
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
     // ✅ Recupera la lista dello staff filtrata sulla location corrente
     final staffList = ref.watch(staffForCurrentLocationProvider);
     final isResizing = ref.watch(isResizingProvider);
@@ -53,14 +143,17 @@ class AgendaScreen extends ConsumerWidget {
                     child: ScrollConfiguration(
                       // mantiene l'assenza di scrollbar come prima
                       behavior: const NoScrollbarBehavior(),
-                      child: SingleChildScrollView(
-                        // controller: verticalController,
-                        physics: isResizing
-                            ? const NeverScrollableScrollPhysics()
-                            : null,
-                        child: SizedBox(
-                          width: hourColumnWidth,
-                          child: const HourColumn(),
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: _handleHourColumnScroll,
+                        child: SingleChildScrollView(
+                          controller: _hourColumnController,
+                          physics: isResizing
+                              ? const NeverScrollableScrollPhysics()
+                              : null,
+                          child: SizedBox(
+                            width: hourColumnWidth,
+                            child: const HourColumn(),
+                          ),
                         ),
                       ),
                     ),
@@ -68,7 +161,13 @@ class AgendaScreen extends ConsumerWidget {
                 ],
               ),
               AgendaVerticalDivider(height: totalHeight, thickness: 1),
-              Expanded(child: AgendaDayPager(staffList: staffList)),
+              Expanded(
+                child: AgendaDayPager(
+                  staffList: staffList,
+                  onVerticalOffsetChanged: _handleMasterScroll,
+                  controller: _pagerController,
+                ),
+              ),
             ],
           ),
           CurrentTimeLine(hourColumnWidth: hourColumnWidth),

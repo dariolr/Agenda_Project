@@ -21,6 +21,7 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
   final double initialScrollOffset;
   final ValueChanged<double>? onScrollOffsetChanged;
   final ValueChanged<AxisDirection>? onHorizontalEdge;
+  final ValueChanged<ScrollController>? onVerticalControllerChanged;
 
   const MultiStaffDayView({
     super.key,
@@ -29,6 +30,7 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
     required this.initialScrollOffset,
     this.onScrollOffsetChanged,
     this.onHorizontalEdge,
+    this.onVerticalControllerChanged,
   });
 
   @override
@@ -230,6 +232,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
           _verticalCtrl?.removeListener(_onVerticalScrollChanged);
           _verticalCtrl = verticalCtrl;
           _verticalCtrl?.addListener(_onVerticalScrollChanged);
+          widget.onVerticalControllerChanged?.call(verticalCtrl);
         }
         final layoutConfig = ref.watch(layoutConfigProvider);
         final availableWidth =
