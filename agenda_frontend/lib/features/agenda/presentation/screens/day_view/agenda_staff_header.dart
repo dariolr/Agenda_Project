@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../../core/models/staff.dart';
 import '../../../../../core/widgets/no_scrollbar_behavior.dart';
-import '../widgets/agenda_dividers.dart';
 import 'staff_header_row.dart';
 
 class AgendaStaffHeader extends StatelessWidget {
@@ -35,32 +34,19 @@ class AgendaStaffHeader extends StatelessWidget {
             bottom: BorderSide(color: Color(0x1F000000), width: 0.5),
           ),
         ),
-        child: Row(
-          children: [
-            AgendaVerticalDivider(
-              height: totalHeight,
-              thickness: 1,
-              color: staffList.isEmpty
-                  ? Colors.transparent
-                  : staffList.first.color.withOpacity(0.10),
+        child: ScrollConfiguration(
+          behavior: const NoScrollbarBehavior(),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            scrollDirection: Axis.horizontal,
+            physics: const ClampingScrollPhysics(),
+            child: StaffHeaderRow(
+              staffList: staffList,
+              scrollController: scrollController,
+              columnWidth: columnWidth,
+              hourColumnWidth: hourColumnWidth,
             ),
-            Expanded(
-              child: ScrollConfiguration(
-                behavior: const NoScrollbarBehavior(),
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  scrollDirection: Axis.horizontal,
-                  physics: const ClampingScrollPhysics(),
-                  child: StaffHeaderRow(
-                    staffList: staffList,
-                    scrollController: scrollController,
-                    columnWidth: columnWidth,
-                    hourColumnWidth: hourColumnWidth,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
