@@ -20,6 +20,7 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
   final DateTime date;
   final double initialScrollOffset;
   final ValueChanged<double>? onScrollOffsetChanged;
+  final ValueChanged<AxisDirection>? onHorizontalEdge;
 
   const MultiStaffDayView({
     super.key,
@@ -27,6 +28,7 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
     required this.date,
     required this.initialScrollOffset,
     this.onScrollOffsetChanged,
+    this.onHorizontalEdge,
   });
 
   @override
@@ -43,8 +45,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   ScrollController? _bodyHorizontalCtrl;
   List<int>? _staffSignature;
   ScrollController? _verticalCtrl;
-  bool _hasCenteredCurrentTime = false;
-
   AgendaScrollKey get _scrollKey => AgendaScrollKey(
     staff: widget.staffList,
     date: widget.date,
@@ -77,6 +77,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _registerBodyBox();
       _setupHorizontalSync(force: true);
     });
@@ -117,6 +118,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     if (_headerHCtrl.hasClients && _bodyHorizontalCtrl!.hasClients) {
       _headerHCtrl.jumpTo(_bodyHorizontalCtrl!.offset);
     }
+
   }
 
   void _onBodyHorizontalScroll() {
@@ -127,6 +129,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _isSyncing = true;
     _headerHCtrl.jumpTo(bodyCtrl.offset);
     _isSyncing = false;
+
   }
 
   void _onHeaderHorizontalScroll() {
@@ -138,6 +141,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     bodyCtrl.jumpTo(_headerHCtrl.offset);
     _isSyncing = false;
   }
+
 
   void _onVerticalScrollChanged() {
     final controller = _verticalCtrl;
@@ -213,10 +217,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       if (!mounted) return;
       _setupHorizontalSync(force: true);
     });
-    if (!DateUtils.isSameDay(oldWidget.date, widget.date) ||
-        oldWidget.initialScrollOffset != widget.initialScrollOffset) {
-      _hasCenteredCurrentTime = false;
-    }
   }
 
   @override
@@ -251,43 +251,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         final isResizing = ref.watch(isResizingProvider);
 
         // Aggiorna periodicamente il bodyBox (in caso di resize)
-        WidgetsBinding.instance.addPostFrameCallback((_) => _registerBodyBox());
-
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted || _hasCenteredCurrentTime) {
-            return;
-          }
-          final now = DateTime.now();
-          if (!DateUtils.isSameDay(widget.date, now)) {
-            _hasCenteredCurrentTime = true;
-            return;
-          }
-          final expectedOffset = (now.hour * 60 + now.minute) /
-              layoutConfig.minutesPerSlot *
-              layoutConfig.slotHeight;
-          if ((widget.initialScrollOffset - expectedOffset).abs() >
-              layoutConfig.slotHeight) {
-            _hasCenteredCurrentTime = true;
-            return;
-          }
-          final controller = _verticalCtrl;
-          if (controller == null || !controller.hasClients) {
-            return;
-          }
-          final position = controller.position;
-          if (!position.haveDimensions) {
-            return;
-          }
-          final viewport = position.viewportDimension;
-          if (viewport <= 0) {
-            return;
-          }
-          final target = (expectedOffset - viewport / 2)
-              .clamp(0.0, position.maxScrollExtent);
-          if ((controller.offset - target).abs() > 1) {
-            controller.jumpTo(target);
-          }
-          _hasCenteredCurrentTime = true;
+          if (!mounted) return;
+          _registerBodyBox();
         });
 
         return Stack(
@@ -305,6 +271,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 isResizing: isResizing,
                 dragLayerLink: link,
                 bodyKey: _bodyKey,
+                onHorizontalEdge: widget.onHorizontalEdge,
               ),
             ),
 

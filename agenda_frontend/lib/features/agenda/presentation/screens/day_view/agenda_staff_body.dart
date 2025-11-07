@@ -22,6 +22,7 @@ class AgendaStaffBody extends StatelessWidget {
     required this.isResizing,
     required this.dragLayerLink,
     required this.bodyKey,
+    this.onHorizontalEdge,
   });
 
   final ScrollController verticalController;
@@ -33,6 +34,7 @@ class AgendaStaffBody extends StatelessWidget {
   final bool isResizing;
   final LayerLink dragLayerLink;
   final GlobalKey bodyKey;
+  final ValueChanged<AxisDirection>? onHorizontalEdge;
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +57,7 @@ class AgendaStaffBody extends StatelessWidget {
           controller: verticalController,
           physics: isResizing
               ? const NeverScrollableScrollPhysics()
-              : const ClampingScrollPhysics(),
+              : null,
           child: Stack(
             children: [
               Row(
@@ -69,11 +71,12 @@ class AgendaStaffBody extends StatelessWidget {
                   Expanded(
                     child: ScrollConfiguration(
                       behavior: const NoScrollbarBehavior(),
-                      child: SingleChildScrollView(
-                        controller: horizontalController,
-                        scrollDirection: Axis.horizontal,
-                        physics: const ClampingScrollPhysics(),
-                        child: Row(
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: _handleHorizontalNotification,
+                        child: SingleChildScrollView(
+                          controller: horizontalController,
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: staffList.asMap().entries.map((entry) {
                             final index = entry.key;
@@ -92,6 +95,7 @@ class AgendaStaffBody extends StatelessWidget {
                                   staffList.length > 1 && !isLast,
                             );
                           }).toList(),
+                          ),
                         ),
                       ),
                     ),
@@ -104,5 +108,37 @@ class AgendaStaffBody extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool _handleHorizontalNotification(ScrollNotification notification) {
+    if (onHorizontalEdge == null) return false;
+    if (notification.metrics.axis != Axis.horizontal) return false;
+
+    const edgeSlack = 8.0;
+    final metrics = notification.metrics;
+
+    if (notification is OverscrollNotification) {
+      if (notification.overscroll < 0) {
+        onHorizontalEdge?.call(AxisDirection.left);
+      } else if (notification.overscroll > 0) {
+        onHorizontalEdge?.call(AxisDirection.right);
+      }
+      return false;
+    }
+
+    if (notification is ScrollUpdateNotification &&
+        notification.dragDetails != null) {
+      final delta = notification.dragDetails!.primaryDelta ?? 0;
+      final atStart = metrics.pixels <= metrics.minScrollExtent + edgeSlack;
+      final atEnd = metrics.pixels >= metrics.maxScrollExtent - edgeSlack;
+
+      if (atStart && delta > 0) {
+        onHorizontalEdge?.call(AxisDirection.left);
+      } else if (atEnd && delta < 0) {
+        onHorizontalEdge?.call(AxisDirection.right);
+      }
+    }
+
+    return false;
   }
 }

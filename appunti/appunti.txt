@@ -1,1 +1,0 @@
-togliere lo splash color a livello di applicazione e bonificare il progetto togliendo i riferimenti a splash color visto che non c'è a livello di app?
