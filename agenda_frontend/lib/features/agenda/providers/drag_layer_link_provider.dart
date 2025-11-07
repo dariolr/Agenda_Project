@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +9,9 @@ class DragLayerLinkNotifier extends Notifier<LayerLink> {
   LayerLink build() => LayerLink();
 
   void reset() => state = LayerLink();
+  void resetOnMicrotask() {
+    Future.microtask(() => state = LayerLink());
+  }
 }
 
 final dragLayerLinkProvider =
@@ -20,7 +25,9 @@ class DragBodyBoxNotifier extends Notifier<RenderBox?> {
   RenderBox? build() => null;
 
   void set(RenderBox box) => state = box;
-  void clear() => state = null;
+  void scheduleClear() {
+    Future.microtask(() => state = null);
+  }
 }
 
 final dragBodyBoxProvider = NotifierProvider<DragBodyBoxNotifier, RenderBox?>(

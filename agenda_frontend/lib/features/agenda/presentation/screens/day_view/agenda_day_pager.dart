@@ -1,9 +1,11 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/staff.dart';
+import '../../../domain/config/layout_config.dart';
+import '../../../providers/agenda_providers.dart';
 import '../../../providers/date_range_provider.dart';
+import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import 'multi_staff_day_view.dart';
 
@@ -17,155 +19,185 @@ class AgendaDayPager extends ConsumerStatefulWidget {
 }
 
 class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
-  static const int _initialPage = 10000;
-
-  late final DateTime _baseDate;
+  late DateTime _centerDate;
+  late List<DateTime> _visibleDates;
   late final PageController _pageController;
-  bool _isAnimatingFromDateChange = false;
-  bool _isUpdatingDateFromPage = false;
-  bool _didAttachDateListener = false;
-  final Map<int, List<Staff>> _staffListCache = {};
-  final Map<int, double> _verticalOffsets = {};
+  ProviderSubscription<DateTime>? _dateSubscription;
+  bool _isAnimatingFromPager = false;
+  bool _isUpdatingFromPager = false;
   double _currentScrollOffset = 0.0;
+  double _lastScrollOffset = 0.0;
+  bool _hasAutoCenteredToday = false;
+  static const Duration _edgeSwipeDuration = Duration(milliseconds: 220);
+  static const Curve _edgeSwipeCurve = Curves.easeOut;
 
   @override
   void initState() {
     super.initState();
-    final initialDate = DateUtils.dateOnly(ref.read(agendaDateProvider));
-    _baseDate = initialDate;
-    _pageController = PageController(initialPage: _initialPage);
+    _centerDate = DateUtils.dateOnly(ref.read(agendaDateProvider));
+    _visibleDates = _buildVisibleDates(_centerDate);
+    _pageController = PageController(initialPage: 1);
+    final layoutConfig = ref.read(layoutConfigProvider);
+    _currentScrollOffset = _timelineOffsetForToday(layoutConfig);
+    _lastScrollOffset = _currentScrollOffset;
+    _dateSubscription = ref.listenManual<DateTime>(
+      agendaDateProvider,
+      _onExternalDateChanged,
+      fireImmediately: true,
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_pageController.hasClients) return;
-      final targetIndex = _indexForDate(ref.read(agendaDateProvider));
-      _pageController.jumpToPage(targetIndex);
-      _currentScrollOffset = _verticalOffsets[targetIndex] ?? 0.0;
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(1);
+      }
     });
   }
 
   @override
   void dispose() {
-    _staffListCache.clear();
+    _dateSubscription?.close();
     _pageController.dispose();
     super.dispose();
   }
 
   @override
-  void didUpdateWidget(covariant AgendaDayPager oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!listEquals(oldWidget.staffList, widget.staffList)) {
-      _staffListCache.clear();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (!_didAttachDateListener) {
-      _didAttachDateListener = true;
-      ref.listen<DateTime>(agendaDateProvider, (previous, next) {
-        if (_isUpdatingDateFromPage) {
-          _isUpdatingDateFromPage = false;
-          return;
-        }
+    return SizedBox.expand(
+      child: PageView.builder(
+        controller: _pageController,
+        itemCount: _visibleDates.length,
+        physics: const PageScrollPhysics(),
+        onPageChanged: _handlePageChanged,
+        itemBuilder: (context, index) {
+          debugPrint('_visibleDates length: ${_visibleDates.length} ');
+          final date = _visibleDates[index];
+          debugPrint('AgendaDayPager: Building page $index with date $date');
 
-        if (_isAnimatingFromDateChange) {
-          return;
-        }
-        if (!_pageController.hasClients) {
-          return;
-        }
-        final lastDate = previous ?? next;
-        final currentIndex = _indexForDate(lastDate);
-        _verticalOffsets[currentIndex] = _currentScrollOffset;
-        _currentScrollOffset =
-            _verticalOffsets[_indexForDate(next)] ?? _currentScrollOffset;
-        final targetIndex = _indexForDate(next);
-        final currentPage = _pageController.page;
-        if (currentPage != null && (currentPage - targetIndex).abs() < 0.001) {
-          return;
-        }
-        _isAnimatingFromDateChange = true;
-        _pageController
-            .animateToPage(
-              targetIndex,
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-            )
-            .whenComplete(() {
-              _isAnimatingFromDateChange = false;
-            });
-      });
-    }
+          final isCenter = DateUtils.isSameDay(date, _centerDate);
+          final isToday = DateUtils.isSameDay(date, DateTime.now());
+          final allowAutoCenter = isToday && !_hasAutoCenteredToday;
 
-    final layoutConfig = ref.watch(layoutConfigProvider);
+          final view = MultiStaffDayView(
+            key: ValueKey(date),
+            staffList: widget.staffList,
+            date: date,
+            initialScrollOffset: _currentScrollOffset,
+            onScrollOffsetChanged: (offset) {
+              if (isCenter) {
+                _currentScrollOffset = offset;
+              }
+            },
+            onHorizontalEdge: isCenter ? _handleHorizontalEdge : null,
+          );
 
-    double currentTimeOffset() {
-      final now = DateTime.now();
-      final minutes = now.hour * 60 + now.minute;
-      return (minutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
-    }
+          if (allowAutoCenter) {
+            _hasAutoCenteredToday = true;
+          }
 
-    return PageView.builder(
-      controller: _pageController,
-      onPageChanged: (index) {
-        final newDate = _dateForIndex(index);
-        final notifier = ref.read(agendaDateProvider.notifier);
-        if (_isAnimatingFromDateChange) {
-          _isAnimatingFromDateChange = false;
-          return;
-        }
-
-        final currentIndex = _indexForDate(ref.read(agendaDateProvider));
-        _verticalOffsets[currentIndex] = _currentScrollOffset;
-
-        if (DateUtils.isSameDay(newDate, ref.read(agendaDateProvider))) {
-          return;
-        }
-        _isUpdatingDateFromPage = true;
-        notifier.set(newDate);
-        _currentScrollOffset = _verticalOffsets[index] ?? _currentScrollOffset;
-      },
-      itemBuilder: (context, index) {
-        final staffListForPage = _staffListCache.putIfAbsent(
-          index,
-          () => List<Staff>.unmodifiable(widget.staffList),
-        );
-        final pageDate = _dateForIndex(index);
-        final today = DateUtils.dateOnly(DateTime.now());
-        final isToday = DateUtils.isSameDay(pageDate, today);
-        final storedOffset = _verticalOffsets[index];
-        double initialOffset;
-        if (storedOffset != null) {
-          initialOffset = storedOffset;
-        } else if (isToday) {
-          initialOffset = currentTimeOffset();
-          _verticalOffsets[index] = initialOffset;
-        } else {
-          initialOffset = _currentScrollOffset;
-          _verticalOffsets[index] = initialOffset;
-        }
-        return MultiStaffDayView(
-          key: ValueKey(_dateForIndex(index)),
-          staffList: staffListForPage,
-          date: pageDate,
-          initialScrollOffset: initialOffset,
-          onScrollOffsetChanged: (offset) {
-            _verticalOffsets[index] = offset;
-            _currentScrollOffset = offset;
-          },
-        );
-      },
+          return view;
+        },
+      ),
     );
   }
 
-  int _indexForDate(DateTime date) {
-    final normalized = DateUtils.dateOnly(date);
-    final days = normalized.difference(_baseDate).inDays;
-    return _initialPage + days;
+  void _handlePageChanged(int index) {
+    debugPrint('AgendaDayPager: Page changed to index $index');
+    if (index == 1) return;
+    final targetDate = _visibleDates[index];
+    _lastScrollOffset = _currentScrollOffset;
+    _updateCenter(targetDate, _lastScrollOffset);
+    _isUpdatingFromPager = true;
+    ref.read(agendaDateProvider.notifier).set(targetDate);
+    _jumpToCenter();
   }
 
-  DateTime _dateForIndex(int index) {
-    final offset = index - _initialPage;
-    return DateUtils.addDaysToDate(_baseDate, offset);
+  void _onExternalDateChanged(DateTime? previous, DateTime next) {
+    final normalized = DateUtils.dateOnly(next);
+    if (_isUpdatingFromPager) {
+      _isUpdatingFromPager = false;
+      return;
+    }
+    if (DateUtils.isSameDay(normalized, _centerDate)) {
+      return;
+    }
+    _lastScrollOffset = _currentScrollOffset;
+    _updateCenter(normalized, _lastScrollOffset);
+    _jumpToCenter();
+  }
+
+  void _updateCenter(DateTime newCenter, double inheritedOffset) {
+    _resetDragState();
+    setState(() {
+      _centerDate = newCenter;
+      _visibleDates = _buildVisibleDates(newCenter);
+      _currentScrollOffset = inheritedOffset;
+    });
+  }
+
+
+  void _jumpToCenter() {
+    if (!_pageController.hasClients) return;
+    _isAnimatingFromPager = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(1);
+      }
+      _isAnimatingFromPager = false;
+    });
+  }
+
+  void _handleHorizontalEdge(AxisDirection direction) {
+    if (_isAnimatingFromPager || !_pageController.hasClients) {
+      return;
+    }
+
+    final currentPage =
+        _pageController.page ?? _pageController.initialPage.toDouble();
+    const double centerPage = 1.0;
+    if ((currentPage - centerPage).abs() > 0.05) {
+      return;
+    }
+
+    final int? targetPage = switch (direction) {
+      AxisDirection.left => 0,
+      AxisDirection.right => 2,
+      _ => null,
+    };
+
+    if (targetPage == null) {
+      return;
+    }
+
+    _isAnimatingFromPager = true;
+    _pageController
+        .animateToPage(
+          targetPage,
+          duration: _edgeSwipeDuration,
+          curve: _edgeSwipeCurve,
+        )
+        .whenComplete(() {
+          if (!mounted) return;
+          // in caso l'onPageChanged non sia scattato (es. gesture annullata)
+          _isAnimatingFromPager = false;
+        });
+  }
+
+  List<DateTime> _buildVisibleDates(DateTime center) {
+    final base = DateUtils.dateOnly(center);
+    final prev = DateUtils.addDaysToDate(base, -1);
+    final next = DateUtils.addDaysToDate(base, 1);
+    return [prev, base, next];
+  }
+
+  void _resetDragState() {
+    ref.read(dragPositionProvider.notifier).clear();
+    ref.read(dragBodyBoxProvider.notifier).scheduleClear();
+    ref.read(dragLayerLinkProvider.notifier).resetOnMicrotask();
+  }
+
+  double _timelineOffsetForToday(LayoutConfig layoutConfig) {
+    final now = DateTime.now();
+    final minutes = now.hour * 60 + now.minute;
+    return (minutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
   }
 }
