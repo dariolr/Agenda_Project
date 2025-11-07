@@ -103,21 +103,21 @@ class LayoutConfig {
 
   /// Calcola quanti staff possono essere mostrati in base alla larghezza schermo.
   int computeMaxVisibleStaff(
-    double screenWidth, {
+    double contentWidth, {
     required AppFormFactor formFactor,
   }) {
     final minWidth = formFactor == AppFormFactor.mobile
         ? minColumnWidthMobile
         : minColumnWidthDesktop;
 
-    final availableWidth = screenWidth - hourColumnWidth;
-    final maxStaff = (availableWidth / minWidth).floor();
+    final usableWidth = contentWidth.clamp(0, double.infinity);
+    final maxStaff = (usableWidth / minWidth).floor();
     return maxStaff.clamp(1, maxVisibleStaff);
   }
 
   /// Calcola dinamicamente la larghezza di ogni colonna staff.
   double computeAdaptiveColumnWidth({
-    required double screenWidth,
+    required double contentWidth,
     required int visibleStaffCount,
     required AppFormFactor formFactor,
   }) {
@@ -129,8 +129,8 @@ class LayoutConfig {
       return minWidth;
     }
 
-    final availableWidth = screenWidth - hourColumnWidth;
-    final idealWidth = availableWidth / visibleStaffCount;
+    final usableWidth = contentWidth.clamp(0, double.infinity);
+    final idealWidth = usableWidth / visibleStaffCount;
 
     return idealWidth < minWidth ? minWidth : idealWidth;
   }

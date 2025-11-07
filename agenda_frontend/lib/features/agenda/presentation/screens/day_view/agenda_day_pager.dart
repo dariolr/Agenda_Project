@@ -147,6 +147,7 @@ class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
             onVerticalControllerChanged: isCenter
                 ? _handleCenterVerticalController
                 : null,
+            isPrimary: isCenter,
           );
 
           if (allowAutoCenter) {
