@@ -4,9 +4,7 @@ import '../../../../../core/models/appointment.dart';
 import '../../../../../core/models/staff.dart';
 import '../../../../../core/widgets/no_scrollbar_behavior.dart';
 import '../../../domain/config/layout_config.dart';
-import '../widgets/agenda_dividers.dart';
 import '../widgets/current_time_line.dart';
-import 'hour_column.dart';
 import 'responsive_layout.dart';
 import 'staff_column.dart';
 
@@ -46,28 +44,21 @@ class AgendaStaffBody extends StatelessWidget {
     );
 
     final hourColumnWidth = layoutConfig.hourColumnWidth;
-    final totalHeight = layoutConfig.totalHeight;
 
     return CompositedTransformTarget(
       key: bodyKey,
       link: dragLayerLink,
-      child: ScrollConfiguration( // mantiene l'assenza di scrollbar come prima
+      child: ScrollConfiguration(
+        // mantiene l'assenza di scrollbar come prima
         behavior: const NoScrollbarBehavior(),
         child: SingleChildScrollView(
           controller: verticalController,
-          physics: isResizing
-              ? const NeverScrollableScrollPhysics()
-              : null,
+          physics: isResizing ? const NeverScrollableScrollPhysics() : null,
           child: Stack(
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(width: hourColumnWidth, child: const HourColumn()),
-                  AgendaVerticalDivider(
-                    height: totalHeight,
-                    thickness: 1,
-                  ),
                   Expanded(
                     child: ScrollConfiguration(
                       behavior: const NoScrollbarBehavior(),
@@ -77,24 +68,26 @@ class AgendaStaffBody extends StatelessWidget {
                           controller: horizontalController,
                           scrollDirection: Axis.horizontal,
                           child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: staffList.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final staff = entry.value;
-                            final isLast = index == staffList.length - 1;
-                            final staffAppointments = appointments
-                                .where((appointment) =>
-                                    appointment.staffId == staff.id)
-                                .toList();
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: staffList.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final staff = entry.value;
+                              final isLast = index == staffList.length - 1;
+                              final staffAppointments = appointments
+                                  .where(
+                                    (appointment) =>
+                                        appointment.staffId == staff.id,
+                                  )
+                                  .toList();
 
-                            return StaffColumn(
-                              staff: staff,
-                              appointments: staffAppointments,
-                              columnWidth: layout.columnWidth,
-                              showRightBorder:
-                                  staffList.length > 1 && !isLast,
-                            );
-                          }).toList(),
+                              return StaffColumn(
+                                staff: staff,
+                                appointments: staffAppointments,
+                                columnWidth: layout.columnWidth,
+                                showRightBorder:
+                                    staffList.length > 1 && !isLast,
+                              );
+                            }).toList(),
                           ),
                         ),
                       ),
