@@ -155,7 +155,14 @@ class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
           }
 
           if (!AgendaDayPager.debugShowColoredPages) {
-            return view;
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: view,
+            );
           }
 
           final Color bgColor = switch (index) {
