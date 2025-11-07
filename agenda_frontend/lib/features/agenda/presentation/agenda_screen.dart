@@ -1,7 +1,6 @@
 import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/hour_column.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
-import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/current_time_line.dart';
 import 'package:agenda_frontend/features/agenda/providers/is_resizing_provider.dart';
 import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
 import 'package:flutter/material.dart';
@@ -170,7 +169,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
               ),
             ],
           ),
-          CurrentTimeLine(hourColumnWidth: hourColumnWidth),
+          //CurrentTimeLine(hourColumnWidth: hourColumnWidth),
         ],
       ),
     );

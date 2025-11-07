@@ -15,6 +15,8 @@ import 'agenda_staff_body.dart';
 import 'agenda_staff_header.dart';
 import 'responsive_layout.dart';
 
+const bool _debugLogSizes = true;
+
 class MultiStaffDayView extends ConsumerStatefulWidget {
   final List<Staff> staffList;
   final DateTime date;
@@ -62,6 +64,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   static const double _autoScrollActivationThreshold = 16;
 
   final GlobalKey _bodyKey = GlobalKey(); // registrazione RenderBox body
+  final GlobalKey _headerKey = GlobalKey();
 
   @override
   void initState() {
@@ -271,6 +274,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         final totalHeight = layoutConfig.totalHeight;
         final hourW = layoutConfig.hourColumnWidth;
         final headerHeight = layoutConfig.headerHeight;
+        final columnsWidth = layout.columnWidth * widget.staffList.length;
         final LayerLink? link = widget.isPrimary
             ? ref.watch(dragLayerLinkProvider)
             : null;
@@ -285,6 +289,11 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
             _registerBodyBox();
           });
         }
+
+        _scheduleSizeLog(
+          pageWidth: availableWidth,
+          columnsWidth: columnsWidth,
+        );
 
         return Stack(
           children: [
@@ -311,18 +320,37 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
               left: 0,
               right: 0,
               height: headerHeight,
-              child: AgendaStaffHeader(
-                staffList: widget.staffList,
-                hourColumnWidth: hourW,
-                totalHeight: totalHeight,
-                headerHeight: headerHeight,
-                columnWidth: layout.columnWidth,
-                scrollController: _headerHCtrl,
+              child: KeyedSubtree(
+                key: _headerKey,
+                child: AgendaStaffHeader(
+                  staffList: widget.staffList,
+                  hourColumnWidth: hourW,
+                  totalHeight: totalHeight,
+                  headerHeight: headerHeight,
+                  columnWidth: layout.columnWidth,
+                  scrollController: _headerHCtrl,
+                ),
               ),
             ),
           ],
         );
       },
     );
+  }
+
+  void _scheduleSizeLog({required double pageWidth, required double columnsWidth}) {
+    if (!_debugLogSizes) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final bodySize = _bodyKey.currentContext?.size;
+      final headerSize = _headerKey.currentContext?.size;
+      if (bodySize == null && headerSize == null) return;
+      debugPrint(
+        '[SizeLog] date=${widget.date.toIso8601String()} '
+        'page=${pageWidth.toStringAsFixed(1)} '
+        'columns=${columnsWidth.toStringAsFixed(1)} '
+        'body=${bodySize?.width.toStringAsFixed(1) ?? 'null'} '
+        'header=${headerSize?.width.toStringAsFixed(1) ?? 'null'}',
+      );
+    });
   }
 }

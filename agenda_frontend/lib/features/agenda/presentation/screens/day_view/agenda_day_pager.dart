@@ -53,6 +53,7 @@ class AgendaDayPager extends ConsumerStatefulWidget {
   final List<Staff> staffList;
   final ValueChanged<double>? onVerticalOffsetChanged;
   final AgendaDayPagerController? controller;
+  static const bool debugShowColoredPages = false;
 
   @override
   ConsumerState<AgendaDayPager> createState() => _AgendaDayPagerState();
@@ -122,11 +123,10 @@ class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
         controller: _pageController,
         itemCount: _visibleDates.length,
         physics: const PageScrollPhysics(),
+        padEnds: false,
         onPageChanged: _handlePageChanged,
         itemBuilder: (context, index) {
-          debugPrint('_visibleDates length: ${_visibleDates.length} ');
           final date = _visibleDates[index];
-          debugPrint('AgendaDayPager: Building page $index with date $date');
 
           final isCenter = DateUtils.isSameDay(date, _centerDate);
           final isToday = DateUtils.isSameDay(date, DateTime.now());
@@ -154,14 +154,24 @@ class _AgendaDayPagerState extends ConsumerState<AgendaDayPager> {
             _hasAutoCenteredToday = true;
           }
 
-          return view;
+          if (!AgendaDayPager.debugShowColoredPages) {
+            return view;
+          }
+
+          final Color bgColor = switch (index) {
+            0 => Colors.red.withOpacity(0.15),
+            1 => Colors.green.withOpacity(0.15),
+            2 => Colors.blue.withOpacity(0.15),
+            _ => Colors.grey.withOpacity(0.15),
+          };
+
+          return Container(color: bgColor, child: view);
         },
       ),
     );
   }
 
   void _handlePageChanged(int index) {
-    debugPrint('AgendaDayPager: Page changed to index $index');
     if (index == 1) return;
     final targetDate = _visibleDates[index];
     _lastScrollOffset = _currentScrollOffset;
