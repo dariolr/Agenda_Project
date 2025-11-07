@@ -4,7 +4,6 @@ import '../../../../../core/models/appointment.dart';
 import '../../../../../core/models/staff.dart';
 import '../../../../../core/widgets/no_scrollbar_behavior.dart';
 import '../../../domain/config/layout_config.dart';
-import '../widgets/current_time_line.dart';
 import 'responsive_layout.dart';
 import 'staff_column.dart';
 
@@ -43,7 +42,7 @@ class AgendaStaffBody extends StatelessWidget {
       availableWidth: availableWidth,
     );
 
-    final hourColumnWidth = layoutConfig.hourColumnWidth;
+    // final hourColumnWidth = layoutConfig.hourColumnWidth;
 
     Widget content = ScrollConfiguration(
       // mantiene l'assenza di scrollbar come prima
@@ -81,8 +80,7 @@ class AgendaStaffBody extends StatelessWidget {
                               staff: staff,
                               appointments: staffAppointments,
                               columnWidth: layout.columnWidth,
-                              showRightBorder:
-                                  staffList.length > 1 && !isLast,
+                              showRightBorder: staffList.length > 1 && !isLast,
                             );
                           }).toList(),
                         ),
@@ -92,7 +90,7 @@ class AgendaStaffBody extends StatelessWidget {
                 ),
               ],
             ),
-            CurrentTimeLine(hourColumnWidth: hourColumnWidth),
+            //CurrentTimeLine(hourColumnWidth: hourColumnWidth),
           ],
         ),
       ),
@@ -105,10 +103,7 @@ class AgendaStaffBody extends StatelessWidget {
         child: content,
       );
     } else {
-      content = KeyedSubtree(
-        key: bodyKey,
-        child: content,
-      );
+      content = KeyedSubtree(key: bodyKey, child: content);
     }
 
     return content;
