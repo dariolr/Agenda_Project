@@ -63,6 +63,8 @@ class AgendaStaffBody extends StatelessWidget {
                       child: SingleChildScrollView(
                         controller: horizontalController,
                         scrollDirection: Axis.horizontal,
+                        physics: const ClampingScrollPhysics(),
+                        clipBehavior: Clip.hardEdge,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: staffList.asMap().entries.map((entry) {
