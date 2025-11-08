@@ -1,4 +1,5 @@
 import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
+import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/agenda_day_scroller.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/hour_column.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_frontend/features/agenda/providers/is_resizing_provider.dart';
@@ -7,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/staff_providers.dart';
-import 'screens/day_view/agenda_day_pager.dart';
 
 class AgendaScreen extends ConsumerStatefulWidget {
   const AgendaScreen({super.key});
@@ -18,14 +18,16 @@ class AgendaScreen extends ConsumerStatefulWidget {
 
 class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   final ScrollController _hourColumnController = ScrollController();
-  final AgendaDayPagerController _pagerController = AgendaDayPagerController();
+  final AgendaDayScrollerController _scrollerController =
+      AgendaDayScrollerController();
   double? _pendingHourOffset;
   bool _pendingApplyScheduled = false;
   bool _isSyncingFromMaster = false;
 
   @override
   void dispose() {
-    _pagerController.dispose();
+    //_pagerController.dispose();
+    _scrollerController.dispose();
     _hourColumnController.dispose();
     super.dispose();
   }
@@ -96,7 +98,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
     if (notification is ScrollUpdateNotification) {
       final offset = notification.metrics.pixels;
-      _pagerController.jumpTo(offset);
+      _scrollerController.jumpTo(offset);
     }
     return false;
   }
@@ -161,10 +163,10 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
               ),
               AgendaVerticalDivider(height: totalHeight, thickness: 1),
               Expanded(
-                child: AgendaDayPager(
+                child: AgendaDayScroller(
                   staffList: staffList,
                   onVerticalOffsetChanged: _handleMasterScroll,
-                  controller: _pagerController,
+                  controller: _scrollerController,
                 ),
               ),
             ],
