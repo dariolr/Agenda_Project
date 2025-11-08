@@ -75,7 +75,9 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
   static const Curve _edgeSwipeCurve = Curves.easeOut;
   static const bool _debugTimings = true;
   DateTime? _swipeStartTime;
-  int? _pendingEdge;
+  bool _isUserDragging = false;
+  bool _edgeAnimationInFlight = false;
+  bool _centerRebuildScheduled = false;
 
   @override
   void initState() {
@@ -83,8 +85,7 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
     widget.controller?._attach(this);
     _centerDate = DateUtils.dateOnly(ref.read(agendaDateProvider));
     _visibleDates = _buildVisibleDates(_centerDate);
-    _pageController = PageController(initialPage: 1)
-      ..addListener(_handlePageOffsetChanged);
+    _pageController = PageController(initialPage: 1);
     final layoutConfig = ref.read(layoutConfigProvider);
     _currentScrollOffset = _timelineOffsetForToday(layoutConfig);
     _lastScrollOffset = _currentScrollOffset;
@@ -101,7 +102,6 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
   @override
   void dispose() {
     _dateSubscription?.close();
-    _pageController.removeListener(_handlePageOffsetChanged);
     _pageController.dispose();
     widget.controller?._detach(this);
     super.dispose();
@@ -128,10 +128,12 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
             return false;
           }
           final dragging = notification.direction != ScrollDirection.idle;
-          if (dragging && _swipeStartTime == null) {
+          if (dragging && !_isUserDragging) {
+            _isUserDragging = true;
             _swipeStartTime = DateTime.now();
             _log('Swipe start');
-          } else if (!dragging && _swipeStartTime != null) {
+          } else if (!dragging && _isUserDragging) {
+            _isUserDragging = false;
             _log('Swipe end');
           }
           return false;
@@ -198,41 +200,16 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
     );
   }
 
-  void _handlePageOffsetChanged() {
-    final page = _pageController.page;
-    if (page == null) {
-      return;
-    }
-    final delta = page - 1.0;
-    if (delta >= 0.5) {
-      _maybeTriggerEdge(2);
-    } else if (delta <= -0.5) {
-      _maybeTriggerEdge(0);
-    }
-  }
-
-  void _maybeTriggerEdge(int target) {
-    if (_pendingEdge == target) return;
-    _pendingEdge = target;
-    _log('Programmatic edge → page $target');
-    _pageController.animateToPage(
-      target,
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-    );
-  }
 
   void _handlePageChanged(int index) {
     _log('onPageChanged index=$index');
     _logSwipeElapsed();
-    _pendingEdge = null;
     if (index == 1) return;
     final targetDate = _visibleDates[index];
     _lastScrollOffset = _currentScrollOffset;
     _updateCenter(targetDate, _lastScrollOffset);
     _isUpdatingFromPager = true;
     ref.read(agendaDateProvider.notifier).set(targetDate);
-    _jumpToCenter();
   }
 
   void _onExternalDateChanged(DateTime? previous, DateTime next) {
@@ -246,7 +223,6 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
     }
     _lastScrollOffset = _currentScrollOffset;
     _updateCenter(normalized, _lastScrollOffset);
-    _jumpToCenter();
   }
 
   void _updateCenter(DateTime newCenter, double inheritedOffset) {
@@ -258,6 +234,7 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
       _centerVerticalController = null;
     });
     widget.onVerticalOffsetChanged?.call(_currentScrollOffset);
+    _schedulePageRecentering();
   }
 
   void _handleCenterVerticalController(ScrollController controller) {
@@ -284,18 +261,26 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
     widget.onVerticalOffsetChanged?.call(clamped);
   }
 
-  void _jumpToCenter() {
-    if (!_pageController.hasClients) return;
+  void _schedulePageRecentering() {
+    if (_centerRebuildScheduled) return;
+    _centerRebuildScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_pageController.hasClients) {
-        _log('Center snap');
-        _pageController.jumpToPage(1);
-      }
+      _centerRebuildScheduled = false;
+      if (!_pageController.hasClients) return;
+      final current = _pageController.page ?? _pageController.initialPage.toDouble();
+      if (current.round() == 1) return;
+      _log('Center snap');
+      _pageController.jumpToPage(1);
     });
   }
 
   void _handleHorizontalEdge(AxisDirection direction) {
     if (!_pageController.hasClients) {
+      return;
+    }
+
+    if (_isUserDragging || _edgeAnimationInFlight) {
+      _log('Ignoring edge while dragging=$_isUserDragging inFlight=$_edgeAnimationInFlight');
       return;
     }
 
@@ -309,7 +294,13 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
       return;
     }
 
+    final currentPage = _pageController.page ?? _pageController.initialPage.toDouble();
+    if ((currentPage - targetPage).abs() < 0.1) {
+      return;
+    }
+
     _log('Horizontal edge swipe → page $targetPage');
+    _edgeAnimationInFlight = true;
     _pageController
         .animateToPage(
           targetPage,
@@ -317,6 +308,7 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
           curve: _edgeSwipeCurve,
         )
         .whenComplete(() {
+          _edgeAnimationInFlight = false;
           _log('Edge swipe complete');
         });
   }
