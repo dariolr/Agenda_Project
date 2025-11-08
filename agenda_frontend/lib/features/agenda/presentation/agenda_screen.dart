@@ -148,6 +148,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
                         onNotification: _handleHourColumnScroll,
                         child: SingleChildScrollView(
                           controller: _hourColumnController,
+                          scrollDirection: Axis.vertical,
                           physics: isResizing
                               ? const NeverScrollableScrollPhysics()
                               : null,

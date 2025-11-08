@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/staff.dart';
 import '../../../domain/config/layout_config.dart';
+import '../../../providers/agenda_interaction_lock_provider.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/drag_layer_link_provider.dart';
@@ -117,9 +118,15 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
 
   @override
   Widget build(BuildContext context) {
+    final isPageScrollLocked = ref.watch(agendaDayScrollLockProvider);
+
     return SizedBox.expand(
       child: NotificationListener<UserScrollNotification>(
         onNotification: (notification) {
+          final metrics = notification.metrics;
+          if (metrics is! PageMetrics || metrics.axis != Axis.horizontal) {
+            return false;
+          }
           final dragging = notification.direction != ScrollDirection.idle;
           if (dragging && _swipeStartTime == null) {
             _swipeStartTime = DateTime.now();
@@ -132,7 +139,10 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
         child: PageView.builder(
           controller: _pageController,
           itemCount: _visibleDates.length,
-          physics: const _FastPageScrollPhysics(),
+          scrollDirection: Axis.horizontal,
+          physics: isPageScrollLocked
+              ? const NeverScrollableScrollPhysics()
+              : const _FastPageScrollPhysics(),
           padEnds: false,
           onPageChanged: _handlePageChanged,
           itemBuilder: (context, index) {
@@ -354,9 +364,6 @@ class _FastPageScrollPhysics extends PageScrollPhysics {
   }
 
   @override
-  SpringDescription get spring => const SpringDescription(
-        mass: 0.6,
-        stiffness: 500,
-        damping: 1.9,
-      );
+  SpringDescription get spring =>
+      const SpringDescription(mass: 0.6, stiffness: 500, damping: 1.9);
 }

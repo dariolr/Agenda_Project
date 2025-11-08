@@ -9,6 +9,7 @@ import '/core/widgets/app_buttons.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
+import '../../../providers/agenda_interaction_lock_provider.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
@@ -64,11 +65,18 @@ class _AppointmentCardInteractiveState
   bool _blockDragDuringResize = false;
   bool _selectedFromHover = false;
   int? _currentDragSessionId;
+  late final AgendaCardHoverNotifier _hoverNotifier;
 
   static const double _dragBlockZoneHeight = 28.0;
   static const int _minSlotsForDragBlock = 3;
 
   LayoutConfig get _layoutConfig => ref.read(layoutConfigProvider);
+
+  @override
+  void initState() {
+    super.initState();
+    _hoverNotifier = ref.read(agendaCardHoverProvider.notifier);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +89,12 @@ class _AppointmentCardInteractiveState
     final showThickBorder = isSelected || isDragging;
 
     return MouseRegion(
-      onEnter: (_) => _selectAppointment(ref, fromHover: true),
+      onEnter: (_) {
+        _hoverNotifier.enter();
+        _selectAppointment(ref, fromHover: true);
+      },
       onExit: (_) {
+        _hoverNotifier.exit();
         if (_selectedFromHover &&
             ref.read(selectedAppointmentProvider).contains(widget.appointment.id) &&
             ref.read(draggedAppointmentIdProvider) != widget.appointment.id &&
@@ -240,6 +252,14 @@ class _AppointmentCardInteractiveState
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _hoverNotifier.exit();
+    });
+    super.dispose();
   }
 
   void _handleEnd(WidgetRef ref, {bool keepSelection = false}) {
