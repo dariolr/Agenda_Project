@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,27 +18,25 @@ class AgendaScrollState {
 
 @immutable
 class AgendaScrollKey {
+  final Object identity;
   final List<Staff> staff;
   final DateTime date;
   final double initialOffset;
 
   const AgendaScrollKey({
+    required this.identity,
     required this.staff,
     required this.date,
     required this.initialOffset,
   });
 
-  List<int> get staffIds => staff.map((s) => s.id).toList(growable: false);
-
   @override
   bool operator ==(Object other) {
-    return other is AgendaScrollKey &&
-        other.date == date &&
-        listEquals(other.staffIds, staffIds);
+    return other is AgendaScrollKey && identical(other.identity, identity);
   }
 
   @override
-  int get hashCode => Object.hash(date, Object.hashAll(staffIds));
+  int get hashCode => identity.hashCode;
 }
 
 final agendaScrollProvider = Provider.family.autoDispose<AgendaScrollState, AgendaScrollKey>((ref, key) {

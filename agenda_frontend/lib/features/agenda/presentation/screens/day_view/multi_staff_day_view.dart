@@ -15,7 +15,7 @@ import 'agenda_staff_body.dart';
 import 'agenda_staff_header.dart';
 import 'responsive_layout.dart';
 
-const bool _debugLogSizes = true;
+const bool _debugLogSizes = false;
 
 class MultiStaffDayView extends ConsumerStatefulWidget {
   final List<Staff> staffList;
@@ -52,7 +52,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   List<int>? _staffSignature;
   ScrollController? _verticalCtrl;
   late final DragBodyBoxNotifier _dragBodyNotifier;
+  late final Object _scrollIdentity = Object();
   AgendaScrollKey get _scrollKey => AgendaScrollKey(
+    identity: _scrollIdentity,
     staff: widget.staffList,
     date: widget.date,
     initialOffset: widget.initialScrollOffset,
@@ -132,7 +134,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     if (_headerHCtrl.hasClients && _bodyHorizontalCtrl!.hasClients) {
       _headerHCtrl.jumpTo(_bodyHorizontalCtrl!.offset);
     }
-
   }
 
   void _onBodyHorizontalScroll() {
@@ -143,7 +144,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _isSyncing = true;
     _headerHCtrl.jumpTo(bodyCtrl.offset);
     _isSyncing = false;
-
   }
 
   void _onHeaderHorizontalScroll() {
@@ -155,7 +155,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     bodyCtrl.jumpTo(_headerHCtrl.offset);
     _isSyncing = false;
   }
-
 
   void _onVerticalScrollChanged() {
     final controller = _verticalCtrl;
@@ -290,10 +289,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
           });
         }
 
-        _scheduleSizeLog(
-          pageWidth: availableWidth,
-          columnsWidth: columnsWidth,
-        );
+        _scheduleSizeLog(pageWidth: availableWidth, columnsWidth: columnsWidth);
 
         return Stack(
           children: [
@@ -338,7 +334,10 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     );
   }
 
-  void _scheduleSizeLog({required double pageWidth, required double columnsWidth}) {
+  void _scheduleSizeLog({
+    required double pageWidth,
+    required double columnsWidth,
+  }) {
     if (!_debugLogSizes) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final bodySize = _bodyKey.currentContext?.size;
