@@ -78,6 +78,7 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
   bool _isUserDragging = false;
   bool _edgeAnimationInFlight = false;
   bool _centerRebuildScheduled = false;
+  AxisDirection? _pendingEdgeDirection;
 
   @override
   void initState() {
@@ -131,10 +132,12 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
           if (dragging && !_isUserDragging) {
             _isUserDragging = true;
             _swipeStartTime = DateTime.now();
+            _pendingEdgeDirection = null;
             _log('Swipe start');
           } else if (!dragging && _isUserDragging) {
             _isUserDragging = false;
             _log('Swipe end');
+            _consumePendingEdge();
           }
           return false;
         },
@@ -164,7 +167,7 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
                   widget.onVerticalOffsetChanged?.call(offset);
                 }
               },
-              onHorizontalEdge: isCenter ? _handleHorizontalEdge : null,
+              onHorizontalEdge: _handleHorizontalEdge,
               onVerticalControllerChanged: isCenter
                   ? _handleCenterVerticalController
                   : null,
@@ -268,18 +271,31 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
       _centerRebuildScheduled = false;
       if (!_pageController.hasClients) return;
       final current = _pageController.page ?? _pageController.initialPage.toDouble();
-      if (current.round() == 1) return;
+      if ((current - 1).abs() < 0.01) {
+        return;
+      }
       _log('Center snap');
       _pageController.jumpToPage(1);
     });
   }
 
   void _handleHorizontalEdge(AxisDirection direction) {
-    if (!_pageController.hasClients) {
+    if (_isUserDragging) {
+      _pendingEdgeDirection = direction;
       return;
     }
+    _startEdgeAnimation(direction);
+  }
 
-    if (_isUserDragging || _edgeAnimationInFlight) {
+  void _consumePendingEdge() {
+    final direction = _pendingEdgeDirection;
+    if (direction == null) return;
+    _pendingEdgeDirection = null;
+    _startEdgeAnimation(direction);
+  }
+
+  void _startEdgeAnimation(AxisDirection direction) {
+    if (!_pageController.hasClients || _edgeAnimationInFlight) {
       _log('Ignoring edge while dragging=$_isUserDragging inFlight=$_edgeAnimationInFlight');
       return;
     }
@@ -294,8 +310,8 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
       return;
     }
 
-    final currentPage = _pageController.page ?? _pageController.initialPage.toDouble();
-    if ((currentPage - targetPage).abs() < 0.1) {
+    final current = _pageController.page ?? _pageController.initialPage.toDouble();
+    if ((current - targetPage).abs() < 0.05) {
       return;
     }
 
