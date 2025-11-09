@@ -1,5 +1,5 @@
 import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
-import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/agenda_day_scroller.dart';
+import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/agenda_day_timeline.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/hour_column.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_frontend/features/agenda/providers/is_resizing_provider.dart';
@@ -18,8 +18,8 @@ class AgendaScreen extends ConsumerStatefulWidget {
 
 class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   final ScrollController _hourColumnController = ScrollController();
-  final AgendaDayScrollerController _scrollerController =
-      AgendaDayScrollerController();
+  final AgendaDayTimelineController _timelineController =
+      AgendaDayTimelineController();
   double? _pendingHourOffset;
   bool _pendingApplyScheduled = false;
   bool _isSyncingFromMaster = false;
@@ -27,7 +27,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   @override
   void dispose() {
     //_pagerController.dispose();
-    _scrollerController.dispose();
+    _timelineController.dispose();
     _hourColumnController.dispose();
     super.dispose();
   }
@@ -98,7 +98,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
     if (notification is ScrollUpdateNotification) {
       final offset = notification.metrics.pixels;
-      _scrollerController.jumpTo(offset);
+      _timelineController.jumpTo(offset);
     }
     return false;
   }
@@ -164,10 +164,10 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
               ),
               AgendaVerticalDivider(height: totalHeight, thickness: 1),
               Expanded(
-                child: AgendaDayScroller(
+                child: AgendaDayTimeline(
                   staffList: staffList,
                   onVerticalOffsetChanged: _handleMasterScroll,
-                  controller: _scrollerController,
+                  controller: _timelineController,
                 ),
               ),
             ],
