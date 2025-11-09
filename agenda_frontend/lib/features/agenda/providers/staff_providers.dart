@@ -48,6 +48,46 @@ final allStaffProvider = Provider<List<Staff>>((ref) {
       color: Colors.purpleAccent,
       locationIds: const [102],
     ),
+    Staff(
+      id: 6,
+      businessId: business.id,
+      name: 'Marco',
+      surname: 'Rossi',
+      color: Colors.lime,
+      locationIds: const [101],
+    ),
+    Staff(
+      id: 7,
+      businessId: business.id,
+      name: 'Elena',
+      surname: 'Fontana',
+      color: Colors.indigo,
+      locationIds: const [101],
+    ),
+    Staff(
+      id: 8,
+      businessId: business.id,
+      name: 'Giorgio',
+      surname: 'Ferrari',
+      color: Colors.teal,
+      locationIds: const [102],
+    ),
+    Staff(
+      id: 9,
+      businessId: business.id,
+      name: 'Clara',
+      surname: 'Almeida',
+      color: Colors.deepOrange,
+      locationIds: const [102],
+    ),
+    Staff(
+      id: 10,
+      businessId: business.id,
+      name: 'Michele',
+      surname: 'Berti',
+      color: Colors.blueGrey,
+      locationIds: const [101, 102],
+    ),
   ];
 });
 
@@ -59,4 +99,3 @@ final staffForCurrentLocationProvider = Provider<List<Staff>>((ref) {
       if (member.worksAtLocation(location.id)) member,
   ];
 });
-
