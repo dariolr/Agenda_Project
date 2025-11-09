@@ -262,21 +262,23 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
 
           final view = SizedBox(
             width: _viewportWidth,
-            child: MultiStaffDayView(
-              key: ValueKey(date),
-              staffList: widget.staffList,
-              date: date,
-              initialScrollOffset: _currentScrollOffset,
-              onScrollOffsetChanged: (offset) {
-                if (isCenter) {
-                  _currentScrollOffset = offset;
-                  widget.onVerticalOffsetChanged?.call(offset);
-                }
-              },
-              onVerticalControllerChanged: isCenter
-                  ? _handleCenterVerticalController
-                  : null,
-              isPrimary: isCenter,
+            child: RepaintBoundary(
+              child: MultiStaffDayView(
+                key: ValueKey(date),
+                staffList: widget.staffList,
+                date: date,
+                initialScrollOffset: _currentScrollOffset,
+                onScrollOffsetChanged: (offset) {
+                  if (isCenter) {
+                    _currentScrollOffset = offset;
+                    widget.onVerticalOffsetChanged?.call(offset);
+                  }
+                },
+                onVerticalControllerChanged: isCenter
+                    ? _handleCenterVerticalController
+                    : null,
+                isPrimary: isCenter,
+              ),
             ),
           );
 
