@@ -88,6 +88,38 @@ final allStaffProvider = Provider<List<Staff>>((ref) {
       color: Colors.blueGrey,
       locationIds: const [101, 102],
     ),
+    Staff(
+      id: 11,
+      businessId: business.id,
+      name: 'Giulia',
+      surname: 'Sala',
+      color: Colors.lightGreen,
+      locationIds: const [101, 102],
+    ),
+    Staff(
+      id: 12,
+      businessId: business.id,
+      name: 'Matteo',
+      surname: 'Corsi',
+      color: Colors.deepPurple,
+      locationIds: const [101, 102],
+    ),
+    Staff(
+      id: 13,
+      businessId: business.id,
+      name: 'Chiara',
+      surname: 'Rinaldi',
+      color: Colors.amber,
+      locationIds: const [101, 102],
+    ),
+    Staff(
+      id: 14,
+      businessId: business.id,
+      name: 'Federico',
+      surname: 'Gatti',
+      color: Colors.tealAccent,
+      locationIds: const [101, 102],
+    ),
   ];
 });
 
