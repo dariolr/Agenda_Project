@@ -14,16 +14,16 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
+import '../../../providers/drag_session_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
-import '../../../providers/highlighted_staff_provider.dart';
-import '../../../providers/layout_config_provider.dart';
 import '../../../providers/dragged_base_range_provider.dart';
 import '../../../providers/dragged_last_staff_provider.dart';
-import '../../../providers/drag_session_provider.dart';
+import '../../../providers/highlighted_staff_provider.dart';
+import '../../../providers/layout_config_provider.dart';
 import '../../../providers/resizing_provider.dart';
+import '../../../providers/selected_appointment_provider.dart'; // Added missing import
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
-import '../../../providers/selected_appointment_provider.dart'; // Added missing import
 import '../widgets/agenda_dividers.dart';
 import '../widgets/appointment_card_base.dart';
 import 'drag_drop_helper.dart';
@@ -126,10 +126,13 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             .toDouble();
 
         // 🔹 Y effettiva del "top" della card, clampata ai limiti verticali
-        final clampedLocalDy =
-            localInColumn.dy.clamp(0.0, box.size.height.toDouble());
-        final double effectiveY =
-            (clampedLocalDy - (dragOffset ?? 0)).clamp(0, maxYStartPx).toDouble();
+        final clampedLocalDy = localInColumn.dy.clamp(
+          0.0,
+          box.size.height.toDouble(),
+        );
+        final double effectiveY = (clampedLocalDy - (dragOffset ?? 0))
+            .clamp(0, maxYStartPx)
+            .toDouble();
 
         setState(() {
           _hoverY = effectiveY;
@@ -182,8 +185,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         // 🔒 Limiti nell'arco della giornata
         const totalMinutes = LayoutConfig.hoursInDay * 60; // 1440
-        final maxStartMinutesNum =
-            (totalMinutes - durationMinutes).clamp(0, totalMinutes);
+        final maxStartMinutesNum = (totalMinutes - durationMinutes).clamp(
+          0,
+          totalMinutes,
+        );
 
         if (roundedMinutes > maxStartMinutesNum) {
           roundedMinutes = maxStartMinutesNum.toDouble();
@@ -192,8 +197,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         }
 
         final startMinutes = roundedMinutes.toInt();
-        final endMinutes =
-            (startMinutes + durationMinutes).clamp(0, totalMinutes).toInt();
+        final endMinutes = (startMinutes + durationMinutes)
+            .clamp(0, totalMinutes)
+            .toInt();
 
         final start = baseDate.add(Duration(minutes: startMinutes));
         var end = baseDate.add(Duration(minutes: endMinutes));
@@ -248,7 +254,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       if (!box.attached || !bodyBox.attached) return;
 
       final topLeft = bodyBox.globalToLocal(box.localToGlobal(Offset.zero));
-      ref.read(staffColumnsGeometryProvider.notifier).setRect(
+      ref
+          .read(staffColumnsGeometryProvider.notifier)
+          .setRect(
             widget.staff.id,
             Rect.fromLTWH(
               topLeft.dx,
@@ -313,8 +321,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         final dragOffsetY = ref.read(dragOffsetProvider) ?? 0.0;
         final dragOffsetX = ref.read(dragOffsetXProvider) ?? 0.0;
-        final pointerGlobal =
-            details.offset + Offset(dragOffsetX, dragOffsetY);
+        final pointerGlobal = details.offset + Offset(dragOffsetX, dragOffsetY);
         final localPointer = box.globalToLocal(pointerGlobal);
         final draggedCardHeightPx =
             ref.read(draggedCardSizeProvider)?.height ?? 50.0;
@@ -346,22 +353,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           },
           child: SizedBox(
             width: widget.columnWidth,
-            child: Container(
-              decoration: BoxDecoration(
-                color: _isHighlighted
-                    ? widget.staff.color.withOpacity(0.01)
-                    : Colors.transparent,
-                border: widget.showRightBorder
-                    ? Border(
-                        right: BorderSide(
-                          color: Colors.grey.withOpacity(0.5),
-                          width: 0.5,
-                        ),
-                      )
-                    : null,
-              ),
-              child: Stack(children: stackChildren),
-            ),
+            child: Stack(children: stackChildren),
           ),
         );
       },
@@ -388,9 +380,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     for (final appt in layoutAppointments) {
       bool added = false;
       for (final group in overlapGroups) {
-        if (group.any((g) =>
-            appt.startTime.isBefore(g.endTime) &&
-            appt.endTime.isAfter(g.startTime))) {
+        if (group.any(
+          (g) =>
+              appt.startTime.isBefore(g.endTime) &&
+              appt.endTime.isAfter(g.startTime),
+        )) {
           group.add(appt);
           added = true;
           break;
@@ -405,13 +399,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     final originalAppointmentsMap = {for (var a in appointments) a.id: a};
     final layoutEntries = layoutAppointments
-        .map(
-          (a) => LayoutEntry(
-            id: a.id,
-            start: a.startTime,
-            end: a.endTime,
-          ),
-        )
+        .map((a) => LayoutEntry(id: a.id, start: a.startTime, end: a.endTime))
         .toList();
     final layoutGeometry = computeLayoutGeometry(
       layoutEntries,
@@ -435,8 +423,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           originalAppt.startTime.day,
         );
 
-        final startMinutes =
-            originalAppt.startTime.difference(dayStart).inMinutes;
+        final startMinutes = originalAppt.startTime
+            .difference(dayStart)
+            .inMinutes;
 
         final endMinutes = layoutAppt.endTime.difference(dayStart).inMinutes;
 
@@ -444,22 +433,22 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             (startMinutes / layoutConfig.minutesPerSlot) * slotHeight;
         double height =
             ((endMinutes - startMinutes) / layoutConfig.minutesPerSlot) *
-                slotHeight;
+            slotHeight;
 
         final entry = ref.watch(resizingEntryProvider(originalAppt.id));
         if (entry != null) {
           height = entry.currentPreviewHeightPx;
         }
 
-        final geometry = layoutGeometry[originalAppt.id] ??
+        final geometry =
+            layoutGeometry[originalAppt.id] ??
             const EventGeometry(leftFraction: 0, widthFraction: 1);
         double opacity = isDragged ? AgendaTheme.ghostOpacity : 1.0;
 
         // 🔹 Costruisci la card
         final padding = LayoutConfig.columnInnerPadding;
         final fullColumnWidth = math.max(widget.columnWidth - padding * 2, 0.0);
-        final cardLeft =
-            widget.columnWidth * geometry.leftFraction + padding;
+        final cardLeft = widget.columnWidth * geometry.leftFraction + padding;
         final cardWidth = math.max(
           widget.columnWidth * geometry.widthFraction - padding * 2,
           0.0,
@@ -475,7 +464,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           } else {
             final services = ref.watch(servicesProvider);
             for (final service in services) {
-              if (service.id == originalAppt.serviceId && service.color != null) {
+              if (service.id == originalAppt.serviceId &&
+                  service.color != null) {
                 cardColor = service.color!;
                 break;
               }
@@ -513,5 +503,4 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     return positionedAppointments;
   }
-
 }
