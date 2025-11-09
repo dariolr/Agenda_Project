@@ -2,6 +2,7 @@ import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/agenda_day_timeline.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/hour_column.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
+import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/current_time_line.dart';
 import 'package:agenda_frontend/features/agenda/providers/is_resizing_provider.dart';
 import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
 import 'package:flutter/material.dart';
@@ -20,19 +21,30 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   final ScrollController _hourColumnController = ScrollController();
   final AgendaDayTimelineController _timelineController =
       AgendaDayTimelineController();
+
   double? _pendingHourOffset;
   bool _pendingApplyScheduled = false;
   bool _isSyncingFromMaster = false;
 
+  // 🔹 offset verticale "master" della giornata (usato anche dalla CurrentTimeLine)
+  double _verticalOffset = 0;
+
   @override
   void dispose() {
-    //_pagerController.dispose();
     _timelineController.dispose();
     _hourColumnController.dispose();
     super.dispose();
   }
 
   void _handleMasterScroll(double offset) {
+    // aggiorna l'offset usato dalla CurrentTimeLine
+    if (mounted) {
+      setState(() {
+        _verticalOffset = offset;
+      });
+    }
+
+    // sincronizza lo scroll della colonna oraria con la timeline
     if (!_hourColumnController.hasClients) {
       _pendingHourOffset = offset;
       _schedulePendingApply();
@@ -58,10 +70,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   }
 
   void _applyPendingOffset() {
-    if (!mounted) return;
-    if (_pendingHourOffset == null) {
-      return;
-    }
+    if (!mounted || _pendingHourOffset == null) return;
 
     if (!_hourColumnController.hasClients) {
       _schedulePendingApply();
@@ -106,15 +115,14 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
-    // ✅ Recupera la lista dello staff filtrata sulla location corrente
     final staffList = ref.watch(staffForCurrentLocationProvider);
     final isResizing = ref.watch(isResizingProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
 
     final hourColumnWidth = layoutConfig.hourColumnWidth;
     final totalHeight = layoutConfig.totalHeight;
+
     return SafeArea(
-      // Passa la lista dello staff alla view
       child: Stack(
         children: [
           Row(
@@ -139,10 +147,8 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
                       height: layoutConfig.headerHeight,
                     ),
                   ),
-
                   Expanded(
                     child: ScrollConfiguration(
-                      // mantiene l'assenza di scrollbar come prima
                       behavior: const NoScrollbarBehavior(),
                       child: NotificationListener<ScrollNotification>(
                         onNotification: _handleHourColumnScroll,
@@ -172,7 +178,12 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
               ),
             ],
           ),
-          //CurrentTimeLine(hourColumnWidth: hourColumnWidth),
+
+          // 🔴 Current time line sincronizzata con lo scroll (via _verticalOffset)
+          CurrentTimeLine(
+            hourColumnWidth: hourColumnWidth,
+            verticalOffset: _verticalOffset,
+          ),
         ],
       ),
     );

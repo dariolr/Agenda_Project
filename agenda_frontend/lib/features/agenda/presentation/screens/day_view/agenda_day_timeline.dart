@@ -87,9 +87,6 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
     final layoutConfig = ref.read(layoutConfigProvider);
     _currentScrollOffset = _timelineOffsetForToday(layoutConfig);
     _lastScrollOffset = _currentScrollOffset;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.onVerticalOffsetChanged?.call(_currentScrollOffset);
-    });
 
     _timelineController.addListener(_handleTimelineScroll);
     _dateSubscription = ref.listenManual<DateTime>(
@@ -182,6 +179,25 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
   void _handleCenterVerticalController(ScrollController controller) {
     if (_centerVerticalController == controller) return;
     _centerVerticalController = controller;
+
+    // 🔹 Appena il controller è pronto, scorri all'orario corrente
+    final layoutConfig = ref.read(layoutConfigProvider);
+    final initialOffset = _timelineOffsetForToday(layoutConfig);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (controller.hasClients) {
+        final target = (initialOffset - 200)
+            .clamp(
+              controller.position.minScrollExtent,
+              controller.position.maxScrollExtent,
+            )
+            .toDouble();
+        controller.jumpTo(target);
+        // 🔹 Aggiorna anche lo stato interno
+        _currentScrollOffset = target;
+        widget.onVerticalOffsetChanged?.call(target);
+      }
+    });
   }
 
   void _jumpToExternalOffset(double offset) {
@@ -223,8 +239,8 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableWidth = constraints.hasBoundedWidth &&
-                constraints.maxWidth.isFinite
+        final availableWidth =
+            constraints.hasBoundedWidth && constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.of(context).size.width;
 
@@ -257,8 +273,9 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
                   widget.onVerticalOffsetChanged?.call(offset);
                 }
               },
-              onVerticalControllerChanged:
-                  isCenter ? _handleCenterVerticalController : null,
+              onVerticalControllerChanged: isCenter
+                  ? _handleCenterVerticalController
+                  : null,
               isPrimary: isCenter,
             ),
           );
