@@ -115,7 +115,7 @@ class AgendaStaffBody extends StatelessWidget {
     if (onHorizontalEdge == null) return false;
     if (notification.metrics.axis != Axis.horizontal) return false;
 
-    const edgeSlack = 8.0;
+    const edgeSlack = 0.0;
     final metrics = notification.metrics;
 
     if (notification is OverscrollNotification) {
@@ -142,4 +142,5 @@ class AgendaStaffBody extends StatelessWidget {
 
     return false;
   }
+
 }

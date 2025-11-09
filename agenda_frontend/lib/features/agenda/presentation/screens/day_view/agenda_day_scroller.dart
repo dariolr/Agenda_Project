@@ -79,6 +79,8 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
   bool _edgeAnimationInFlight = false;
   bool _centerRebuildScheduled = false;
   AxisDirection? _pendingEdgeDirection;
+  bool _edgeArmed = false;
+  AxisDirection? _armedEdgeDirection;
 
   @override
   void initState() {
@@ -203,7 +205,6 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
     );
   }
 
-
   void _handlePageChanged(int index) {
     _log('onPageChanged index=$index');
     _logSwipeElapsed();
@@ -270,7 +271,8 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerRebuildScheduled = false;
       if (!_pageController.hasClients) return;
-      final current = _pageController.page ?? _pageController.initialPage.toDouble();
+      final current =
+          _pageController.page ?? _pageController.initialPage.toDouble();
       if ((current - 1).abs() < 0.01) {
         return;
       }
@@ -280,6 +282,7 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
   }
 
   void _handleHorizontalEdge(AxisDirection direction) {
+    if (!_consumeEdgeArm(direction)) return;
     if (_isUserDragging) {
       _pendingEdgeDirection = direction;
       return;
@@ -289,14 +292,19 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
 
   void _consumePendingEdge() {
     final direction = _pendingEdgeDirection;
-    if (direction == null) return;
     _pendingEdgeDirection = null;
+    if (direction == null) {
+      _resetEdgeArm();
+      return;
+    }
     _startEdgeAnimation(direction);
   }
 
   void _startEdgeAnimation(AxisDirection direction) {
     if (!_pageController.hasClients || _edgeAnimationInFlight) {
-      _log('Ignoring edge while dragging=$_isUserDragging inFlight=$_edgeAnimationInFlight');
+      _log(
+        'Ignoring edge while dragging=$_isUserDragging inFlight=$_edgeAnimationInFlight',
+      );
       return;
     }
 
@@ -310,7 +318,8 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
       return;
     }
 
-    final current = _pageController.page ?? _pageController.initialPage.toDouble();
+    final current =
+        _pageController.page ?? _pageController.initialPage.toDouble();
     if ((current - targetPage).abs() < 0.05) {
       return;
     }
@@ -337,9 +346,30 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
   }
 
   void _resetDragState() {
+    _resetEdgeArm();
     ref.read(dragPositionProvider.notifier).clear();
     ref.read(dragBodyBoxProvider.notifier).scheduleClear();
     ref.read(dragLayerLinkProvider.notifier).resetOnMicrotask();
+  }
+
+  bool _consumeEdgeArm(AxisDirection direction) {
+    if (!_edgeArmed) {
+      _edgeArmed = true;
+      _armedEdgeDirection = direction;
+      return false;
+    }
+    if (_armedEdgeDirection != direction) {
+      _armedEdgeDirection = direction;
+      return false;
+    }
+    _edgeArmed = false;
+    _armedEdgeDirection = null;
+    return true;
+  }
+
+  void _resetEdgeArm() {
+    _edgeArmed = false;
+    _armedEdgeDirection = null;
   }
 
   double _timelineOffsetForToday(LayoutConfig layoutConfig) {
