@@ -32,6 +32,11 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   String _label = '';
   late final ProviderSubscription<LayoutConfig> _layoutConfigSub;
 
+  // 🔹 Definiamo l'altezza della linea come costante
+  static const double _lineHeight = 1.0;
+  // 🔹 Definiamo il margine/gap che conterrà la linea
+  static const double _lineMargin = 4.0;
+
   @override
   void initState() {
     super.initState();
@@ -73,7 +78,6 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
     if (!mounted) return;
     setState(() {
       _offset = offset;
-      debugPrint('CurrentTimeLine updated: offset=$_offset, label=$label');
       _label = label;
     });
   }
@@ -95,54 +99,65 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
       return const SizedBox.shrink();
     }
 
-    // posizione visibile = posizione teorica - offset di scroll
     final layout = ref.read(layoutConfigProvider);
-    final visibleTop = _offset - widget.verticalOffset + layout.headerHeight;
+
+    // 🔹 Calcoliamo la posizione Y del CENTRO della linea
+    final lineCenterY = _offset - widget.verticalOffset + layout.headerHeight;
+    // 🔹 Calcoliamo il 'top' per il Positioned
+    final lineTopY = lineCenterY - (_lineHeight / 2);
 
     return Positioned(
-      top: visibleTop,
+      top: lineTopY,
       left: 0,
       right: 0,
-      child: Stack(
-        clipBehavior: Clip.none,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 🔴 Linea rossa continua su tutta la larghezza (inclusa colonna orari)
-          Container(height: 1.5, color: Colors.redAccent),
-
-          // 🕒 Etichetta orario + pallino dentro la colonna oraria
-          Positioned(
-            left: 0,
-            top: -6,
-            child: SizedBox(
-              width: widget.hourColumnWidth,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
+          // --- 1. Colonna Oraria (Box + 4px di linea) ---
+          SizedBox(
+            width: widget.hourColumnWidth,
+            // 💡 Usiamo una Row interna per separare Box e 4px di linea
+            child: Row(
+              children: [
+                // 1a. Spazio flessibile con il Box
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    // Il Box rosso
+                    child: Container(
+                      decoration: BoxDecoration(
                         color: Colors.redAccent,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      child: Text(
+                        _label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _label,
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                  ],
+                  ),
                 ),
-              ),
+
+                // 1b. Il "margine" di 4px, che è la linea rossa
+                Container(
+                  width: _lineMargin,
+                  height: _lineHeight,
+                  color: Colors.redAccent,
+                ),
+              ],
             ),
+          ),
+
+          // --- 2. La linea rossa nel corpo principale ---
+          Expanded(
+            child: Container(height: _lineHeight, color: Colors.redAccent),
           ),
         ],
       ),

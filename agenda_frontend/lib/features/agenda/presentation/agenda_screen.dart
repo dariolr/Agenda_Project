@@ -157,7 +157,10 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
                           scrollDirection: Axis.vertical,
                           physics: isResizing
                               ? const NeverScrollableScrollPhysics()
-                              : null,
+                              : const ClampingScrollPhysics(
+                                  // 👈 Usa ClampingScrollPhysics
+                                  parent: AlwaysScrollableScrollPhysics(),
+                                ),
                           child: SizedBox(
                             width: hourColumnWidth,
                             child: const HourColumn(),
