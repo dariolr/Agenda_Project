@@ -1,3 +1,4 @@
+import 'package:agenda_frontend/features/agenda/presentation/screens/day_view_paginated/multi_staff_day_for_paging_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,6 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/layout_config_provider.dart';
-import 'multi_staff_day_view.dart';
 
 class AgendaDayScrollerController {
   _AgendaDayScrollerState? _state;
@@ -158,7 +158,7 @@ class _AgendaDayScrollerState extends ConsumerState<AgendaDayScroller> {
             final isToday = DateUtils.isSameDay(date, DateTime.now());
             final allowAutoCenter = isToday && !_hasAutoCenteredToday;
 
-            final view = MultiStaffDayView(
+            final view = MultiStaffDayViewForPaging(
               key: ValueKey(date),
               staffList: widget.staffList,
               date: date,

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/config/agenda_theme.dart';
-import '../../../providers/layout_config_provider.dart';
-import '../widgets/agenda_dividers.dart';
+import '../../../../domain/config/agenda_theme.dart';
+import '../../../../providers/layout_config_provider.dart';
+import '../../widgets/agenda_dividers.dart';
 
 class HourColumn extends ConsumerWidget {
   const HourColumn({super.key});

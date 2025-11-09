@@ -1,6 +1,6 @@
 import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
-import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/agenda_day_timeline.dart';
-import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/hour_column.dart';
+import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/agenda_day.dart';
+import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/components/hour_column.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/current_time_line.dart';
 import 'package:agenda_frontend/features/agenda/providers/is_resizing_provider.dart';
@@ -19,8 +19,7 @@ class AgendaScreen extends ConsumerStatefulWidget {
 
 class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   final ScrollController _hourColumnController = ScrollController();
-  final AgendaDayTimelineController _timelineController =
-      AgendaDayTimelineController();
+  final AgendaDayController _timelineController = AgendaDayController();
 
   double? _pendingHourOffset;
   bool _pendingApplyScheduled = false;
@@ -157,10 +156,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
                           scrollDirection: Axis.vertical,
                           physics: isResizing
                               ? const NeverScrollableScrollPhysics()
-                              : const ClampingScrollPhysics(
-                                  // 👈 Usa ClampingScrollPhysics
-                                  parent: AlwaysScrollableScrollPhysics(),
-                                ),
+                              : null,
                           child: SizedBox(
                             width: hourColumnWidth,
                             child: const HourColumn(),
@@ -173,7 +169,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
               ),
               AgendaVerticalDivider(height: totalHeight, thickness: 1),
               Expanded(
-                child: AgendaDayTimeline(
+                child: AgendaDay(
                   staffList: staffList,
                   onVerticalOffsetChanged: _handleMasterScroll,
                   controller: _timelineController,

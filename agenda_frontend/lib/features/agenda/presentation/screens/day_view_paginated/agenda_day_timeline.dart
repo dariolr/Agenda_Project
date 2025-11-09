@@ -1,3 +1,4 @@
+import 'package:agenda_frontend/features/agenda/presentation/screens/day_view_paginated/multi_staff_day_for_paging_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,10 +8,7 @@ import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_interaction_lock_provider.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/layout_config_provider.dart';
-import 'multi_staff_day_view.dart';
 
-/// Controller analogo a [AgendaDayScrollerController] che consente di
-/// sincronizzare l'offset verticale con la colonna delle ore.
 class AgendaDayTimelineController {
   _AgendaDayTimelineState? _state;
   double? _pendingOffset;
@@ -24,9 +22,7 @@ class AgendaDayTimelineController {
   }
 
   void _detach(_AgendaDayTimelineState state) {
-    if (_state == state) {
-      _state = null;
-    }
+    if (_state == state) _state = null;
   }
 
   void jumpTo(double offset) {
@@ -44,8 +40,6 @@ class AgendaDayTimelineController {
   }
 }
 
-/// Timeline continua composta da tre giornate (precedente, corrente, successiva)
-/// all'interno della stessa scroll view orizzontale.
 class AgendaDayTimeline extends ConsumerStatefulWidget {
   const AgendaDayTimeline({
     super.key,
@@ -63,24 +57,29 @@ class AgendaDayTimeline extends ConsumerStatefulWidget {
 }
 
 class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
-  final ScrollController _timelineController = ScrollController();
+  ScrollController? _timelineController;
+  ScrollController? _centerVerticalController;
+
   late DateTime _centerDate;
   late List<DateTime> _windowDates;
   ProviderSubscription<DateTime>? _dateSubscription;
+
   double _viewportWidth = 0;
   double _currentScrollOffset = 0;
   double _lastScrollOffset = 0;
-  bool _hasAutoCenteredToday = false;
-  bool _suppressTimelineListener = false;
+
   bool _pendingRecentering = true;
-  bool _isUserInteracting = false;
-  ScrollController? _centerVerticalController;
+  bool _isTransitioning = false;
+  AxisDirection? _horizontalEdge;
+
   static const double _edgeThresholdFactor = 0.35;
 
   @override
   void initState() {
     super.initState();
     widget.controller?._attach(this);
+    _timelineController = ScrollController();
+
     _centerDate = DateUtils.dateOnly(ref.read(agendaDateProvider));
     _windowDates = _buildWindow(_centerDate);
 
@@ -88,7 +87,6 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
     _currentScrollOffset = _timelineOffsetForToday(layoutConfig);
     _lastScrollOffset = _currentScrollOffset;
 
-    _timelineController.addListener(_handleTimelineScroll);
     _dateSubscription = ref.listenManual<DateTime>(
       agendaDateProvider,
       _onExternalDateChanged,
@@ -99,48 +97,109 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
   @override
   void dispose() {
     _dateSubscription?.close();
-    _timelineController
-      ..removeListener(_handleTimelineScroll)
-      ..dispose();
+    _timelineController?.dispose();
     widget.controller?._detach(this);
     super.dispose();
   }
 
   void _onExternalDateChanged(DateTime? previous, DateTime next) {
     final normalized = DateUtils.dateOnly(next);
-    if (DateUtils.isSameDay(normalized, _centerDate)) {
-      return;
-    }
+    if (DateUtils.isSameDay(normalized, _centerDate)) return;
+
     _lastScrollOffset = _currentScrollOffset;
     _updateCenter(normalized, _lastScrollOffset, recenterTimeline: true);
   }
 
-  void _handleTimelineScroll() {
-    if (_suppressTimelineListener || !_timelineController.hasClients) {
+  Future<void> _handleHorizontalEdge(AxisDirection direction) async {
+    final controller = _timelineController;
+    if (_isTransitioning ||
+        controller == null ||
+        !controller.hasClients ||
+        _viewportWidth == 0) {
       return;
     }
-    _isUserInteracting = true;
 
-    if (_viewportWidth <= 0) {
+    _isTransitioning = true;
+    _horizontalEdge = direction;
+
+    double target = _viewportWidth;
+    int shift = 0;
+
+    if (direction == AxisDirection.right) {
+      target = _viewportWidth * 2;
+      shift = 1;
+    } else if (direction == AxisDirection.left) {
+      target = 0;
+      shift = -1;
+    } else {
+      _isTransitioning = false;
       return;
     }
 
-    final offset = _timelineController.offset;
-    final forwardThreshold = _viewportWidth * (1 + _edgeThresholdFactor);
-    final backwardThreshold = _viewportWidth * (1 - _edgeThresholdFactor);
+    try {
+      await controller.animateTo(
+        target,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    } catch (_) {
+      // ignora animazioni interrotte
+    }
 
-    if (offset >= forwardThreshold) {
+    if (!mounted) return;
+
+    await Future.delayed(const Duration(milliseconds: 16));
+    _shiftWindow(shift);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _animateToCenter();
+    });
+
+    _isTransitioning = false;
+  }
+
+  void _handleDragEnd() {
+    final controller = _timelineController;
+    if (_isTransitioning ||
+        controller == null ||
+        !controller.hasClients ||
+        _viewportWidth <= 0)
+      return;
+
+    final offset = controller.offset;
+    final delta = offset - _viewportWidth;
+    final fraction = delta / _viewportWidth;
+
+    final atEdge =
+        _horizontalEdge == AxisDirection.left ||
+        _horizontalEdge == AxisDirection.right;
+
+    if (!atEdge) {
+      _animateToCenter();
+      return;
+    }
+
+    if (fraction >= _edgeThresholdFactor) {
       _shiftWindow(1);
-    } else if (offset <= backwardThreshold) {
+    } else if (fraction <= -_edgeThresholdFactor) {
       _shiftWindow(-1);
+    } else {
+      _animateToCenter();
     }
   }
 
   void _shiftWindow(int direction) {
-    if (_viewportWidth == 0) return;
+    if (!mounted || _viewportWidth == 0) return;
+
     final nextCenter = DateUtils.addDaysToDate(_centerDate, direction);
+    debugPrint('🔄 Cambio giorno da $_centerDate → $nextCenter');
     _lastScrollOffset = _currentScrollOffset;
-    _updateCenter(nextCenter, _lastScrollOffset);
+
+    // ricrea controller per evitare doppi attach
+    _timelineController?.dispose();
+    _timelineController = ScrollController();
+
+    _updateCenter(nextCenter, _lastScrollOffset, recenterTimeline: true);
     ref.read(agendaDateProvider.notifier).set(nextCenter);
   }
 
@@ -155,48 +214,53 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
       _currentScrollOffset = inheritedOffset;
       _centerVerticalController = null;
     });
+
     widget.onVerticalOffsetChanged?.call(_currentScrollOffset);
-    if (recenterTimeline || _isUserInteracting) {
-      _scheduleRecentering();
+
+    if (recenterTimeline) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final controller = _timelineController;
+        if (mounted && controller != null && controller.hasClients) {
+          controller.jumpTo(_viewportWidth);
+        }
+      });
     }
   }
 
-  void _scheduleRecentering() {
-    if (_viewportWidth == 0) {
-      _pendingRecentering = true;
+  void _animateToCenter() {
+    final controller = _timelineController;
+    if (controller == null || !controller.hasClients || _viewportWidth == 0)
       return;
+
+    try {
+      controller.animateTo(
+        _viewportWidth,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    } catch (_) {
+      // ignora se smontato
     }
-    _pendingRecentering = false;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_timelineController.hasClients) return;
-      _suppressTimelineListener = true;
-      _timelineController.jumpTo(_viewportWidth);
-      _suppressTimelineListener = false;
-      _isUserInteracting = false;
-    });
   }
 
   void _handleCenterVerticalController(ScrollController controller) {
     if (_centerVerticalController == controller) return;
     _centerVerticalController = controller;
 
-    // 🔹 Appena il controller è pronto, scorri all'orario corrente
     final layoutConfig = ref.read(layoutConfigProvider);
     final initialOffset = _timelineOffsetForToday(layoutConfig);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (controller.hasClients) {
-        final target = (initialOffset - 200)
-            .clamp(
-              controller.position.minScrollExtent,
-              controller.position.maxScrollExtent,
-            )
-            .toDouble();
-        controller.jumpTo(target);
-        // 🔹 Aggiorna anche lo stato interno
-        _currentScrollOffset = target;
-        widget.onVerticalOffsetChanged?.call(target);
-      }
+      if (!mounted || !controller.hasClients) return;
+      final target = (initialOffset - 200)
+          .clamp(
+            controller.position.minScrollExtent,
+            controller.position.maxScrollExtent,
+          )
+          .toDouble();
+      controller.jumpTo(target);
+      _currentScrollOffset = target;
+      widget.onVerticalOffsetChanged?.call(target);
     });
   }
 
@@ -206,29 +270,28 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
       _currentScrollOffset = offset;
       return;
     }
+
     final clamped = offset.clamp(
       controller.position.minScrollExtent,
       controller.position.maxScrollExtent,
     );
+
     if ((controller.offset - clamped).abs() < 0.5) {
       _currentScrollOffset = clamped;
       return;
     }
+
     controller.jumpTo(clamped);
     _currentScrollOffset = clamped;
     widget.onVerticalOffsetChanged?.call(clamped);
   }
 
   bool _handleHorizontalNotification(ScrollNotification notification) {
-    if (notification.metrics.axis != Axis.horizontal) {
-      return false;
-    }
+    if (notification.metrics.axis != Axis.horizontal) return false;
 
     if (notification is UserScrollNotification) {
       final isDragging = notification.direction != ScrollDirection.idle;
-      if (!isDragging) {
-        _scheduleRecentering();
-      }
+      if (!isDragging) _handleDragEnd();
     }
     return false;
   }
@@ -246,24 +309,18 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
 
         if ((_viewportWidth - availableWidth).abs() > 0.5) {
           _viewportWidth = availableWidth;
-          if (_pendingRecentering) {
-            _scheduleRecentering();
-          }
+          if (_pendingRecentering) _scheduleRecentering();
         }
 
-        if (_viewportWidth == 0) {
-          return const SizedBox.shrink();
-        }
+        if (_viewportWidth == 0) return const SizedBox.shrink();
 
         final children = _windowDates.map((date) {
           final isCenter = DateUtils.isSameDay(date, _centerDate);
-          final isToday = DateUtils.isSameDay(date, DateTime.now());
-          final allowAutoCenter = isToday && !_hasAutoCenteredToday;
 
-          final view = SizedBox(
+          return SizedBox(
             width: _viewportWidth,
             child: RepaintBoundary(
-              child: MultiStaffDayView(
+              child: MultiStaffDayViewForPaging(
                 key: ValueKey(date),
                 staffList: widget.staffList,
                 date: date,
@@ -274,6 +331,7 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
                     widget.onVerticalOffsetChanged?.call(offset);
                   }
                 },
+                onHorizontalEdge: isCenter ? _handleHorizontalEdge : null,
                 onVerticalControllerChanged: isCenter
                     ? _handleCenterVerticalController
                     : null,
@@ -281,34 +339,45 @@ class _AgendaDayTimelineState extends ConsumerState<AgendaDayTimeline> {
               ),
             ),
           );
-
-          if (allowAutoCenter) {
-            _hasAutoCenteredToday = true;
-          }
-
-          return view;
         }).toList();
-
-        if (_timelineController.hasClients && !_pendingRecentering) {
-          if (_timelineController.offset == 0) {
-            _scheduleRecentering();
-          }
-        }
 
         return NotificationListener<ScrollNotification>(
           onNotification: _handleHorizontalNotification,
-          child: SingleChildScrollView(
-            controller: _timelineController,
-            scrollDirection: Axis.horizontal,
-            physics: isScrollLocked
-                ? const NeverScrollableScrollPhysics()
-                : const ClampingScrollPhysics(),
-            clipBehavior: Clip.hardEdge,
-            child: Row(children: children),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: Builder(
+              key: ValueKey(_centerDate),
+              builder: (context) => SingleChildScrollView(
+                controller: _timelineController,
+                scrollDirection: Axis.horizontal,
+                physics: isScrollLocked
+                    ? const NeverScrollableScrollPhysics()
+                    : const ClampingScrollPhysics(),
+                clipBehavior: Clip.hardEdge,
+                child: Row(children: children),
+              ),
+            ),
           ),
         );
       },
     );
+  }
+
+  void _scheduleRecentering() {
+    if (_viewportWidth == 0) {
+      _pendingRecentering = true;
+      return;
+    }
+    _pendingRecentering = false;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final controller = _timelineController;
+      if (mounted && controller != null && controller.hasClients) {
+        _animateToCenter();
+      }
+    });
   }
 
   List<DateTime> _buildWindow(DateTime center) {

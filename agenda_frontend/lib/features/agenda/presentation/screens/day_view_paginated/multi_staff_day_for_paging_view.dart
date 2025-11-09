@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:agenda_frontend/features/agenda/presentation/screens/day_view_paginated/agenda_staff_body_for_paging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,29 +13,36 @@ import '../../../providers/appointment_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../day_view/components/agenda_staff_header.dart';
 import '../helper/responsive_layout.dart';
-import 'agenda_staff_body.dart';
-import 'components/agenda_staff_header.dart';
 
-class MultiStaffDayView extends ConsumerStatefulWidget {
+class MultiStaffDayViewForPaging extends ConsumerStatefulWidget {
   final List<Staff> staffList;
+  final DateTime date;
   final double initialScrollOffset;
   final ValueChanged<double>? onScrollOffsetChanged;
+  final ValueChanged<AxisDirection>? onHorizontalEdge;
   final ValueChanged<ScrollController>? onVerticalControllerChanged;
+  final bool isPrimary;
 
-  const MultiStaffDayView({
+  const MultiStaffDayViewForPaging({
     super.key,
     required this.staffList,
+    required this.date,
     required this.initialScrollOffset,
     this.onScrollOffsetChanged,
+    this.onHorizontalEdge,
     this.onVerticalControllerChanged,
+    this.isPrimary = false,
   });
 
   @override
-  ConsumerState<MultiStaffDayView> createState() => _MultiStaffDayViewState();
+  ConsumerState<MultiStaffDayViewForPaging> createState() =>
+      _MultiStaffDayViewForPagingState();
 }
 
-class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
+class _MultiStaffDayViewForPagingState
+    extends ConsumerState<MultiStaffDayViewForPaging> {
   // Auto scroll durante il drag
   Timer? _autoScrollTimer;
   static const double _scrollEdgeMargin = 100;
@@ -65,7 +73,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   AgendaScrollKey get _scrollKey => AgendaScrollKey(
     identity: _scrollIdentity,
     staff: widget.staffList,
-    date: DateTime.now(),
+    date: widget.date,
     initialOffset: widget.initialScrollOffset,
   );
 
@@ -116,6 +124,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   }
 
   void _registerBodyBox() {
+    if (!widget.isPrimary) return;
     final box = _bodyKey.currentContext?.findRenderObject() as RenderBox?;
     if (box != null) {
       _dragBodyNotifier.set(box);
@@ -242,22 +251,30 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _headerHCtrl.removeListener(_onHeaderHorizontalScroll);
     _verticalCtrl?.removeListener(_onVerticalScrollChanged);
 
-    _clearBodyBox();
+    if (widget.isPrimary) {
+      _clearBodyBox();
+    }
 
     _headerHCtrl.dispose();
     super.dispose();
   }
 
   @override
-  void didUpdateWidget(MultiStaffDayView oldWidget) {
+  void didUpdateWidget(MultiStaffDayViewForPaging oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     // ogni cambio staffList/date → resync orizzontale
     _scheduleSyncUpdate();
 
     // stesso comportamento di prima per isPrimary
-    // quando smette di essere primary: pulisce il body
-    _clearBodyBox();
+    if (oldWidget.isPrimary != widget.isPrimary) {
+      if (widget.isPrimary) {
+        // quando diventa primary: _scheduleSyncUpdate registrerà il bodyBox
+      } else {
+        // quando smette di essere primary: pulisce il body
+        _clearBodyBox();
+      }
+    }
   }
 
   @override
@@ -291,7 +308,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         final totalHeight = layoutConfig.totalHeight;
         final hourW = layoutConfig.hourColumnWidth;
         final headerHeight = layoutConfig.headerHeight;
-        final LayerLink? link = ref.watch(dragLayerLinkProvider);
+        final LayerLink? link = widget.isPrimary
+            ? ref.watch(dragLayerLinkProvider)
+            : null;
 
         final isResizing = ref.watch(isResizingProvider);
 
@@ -300,7 +319,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
             // BODY scrollabile
             Positioned.fill(
               top: headerHeight,
-              child: AgendaStaffBody(
+              child: AgendaStaffBodyForPaging(
                 verticalController: scrollState.verticalScrollCtrl,
                 horizontalController: scrollState.horizontalScrollCtrl,
                 staffList: widget.staffList,
@@ -310,6 +329,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 isResizing: isResizing,
                 dragLayerLink: link,
                 bodyKey: _bodyKey,
+                onHorizontalEdge: widget.onHorizontalEdge,
               ),
             ),
             // HEADER staff

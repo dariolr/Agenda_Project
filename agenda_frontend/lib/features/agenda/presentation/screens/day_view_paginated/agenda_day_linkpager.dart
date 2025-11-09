@@ -1,3 +1,4 @@
+import 'package:agenda_frontend/features/agenda/presentation/screens/day_view_paginated/multi_staff_day_for_paging_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +9,6 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/layout_config_provider.dart';
-import 'multi_staff_day_view.dart';
 
 class AgendaDayLinkPagerController {
   _AgendaDayLinkPagerState? _state;
@@ -125,58 +125,55 @@ class _AgendaDayLinkPagerState extends ConsumerState<AgendaDayLinkPager> {
           slivers: [
             SliverFillViewport(
               padEnds: false,
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final date = _visibleDates[index];
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final date = _visibleDates[index];
 
-                  final isCenter = DateUtils.isSameDay(date, _centerDate);
-                  final isToday = DateUtils.isSameDay(date, DateTime.now());
-                  final allowAutoCenter = isToday && !_hasAutoCenteredToday;
+                final isCenter = DateUtils.isSameDay(date, _centerDate);
+                final isToday = DateUtils.isSameDay(date, DateTime.now());
+                final allowAutoCenter = isToday && !_hasAutoCenteredToday;
 
-                  final view = MultiStaffDayView(
-                    key: ValueKey(date),
-                    staffList: widget.staffList,
-                    date: date,
-                    initialScrollOffset: _currentScrollOffset,
-                    onScrollOffsetChanged: (offset) {
-                      if (isCenter) {
-                        _currentScrollOffset = offset;
-                        widget.onVerticalOffsetChanged?.call(offset);
-                      }
-                    },
-                    onHorizontalEdge: isCenter ? _handleHorizontalEdge : null,
-                    onVerticalControllerChanged: isCenter
-                        ? _handleCenterVerticalController
-                        : null,
-                    isPrimary: isCenter,
+                final view = MultiStaffDayViewForPaging(
+                  key: ValueKey(date),
+                  staffList: widget.staffList,
+                  date: date,
+                  initialScrollOffset: _currentScrollOffset,
+                  onScrollOffsetChanged: (offset) {
+                    if (isCenter) {
+                      _currentScrollOffset = offset;
+                      widget.onVerticalOffsetChanged?.call(offset);
+                    }
+                  },
+                  onHorizontalEdge: isCenter ? _handleHorizontalEdge : null,
+                  onVerticalControllerChanged: isCenter
+                      ? _handleCenterVerticalController
+                      : null,
+                  isPrimary: isCenter,
+                );
+
+                if (allowAutoCenter) {
+                  _hasAutoCenteredToday = true;
+                }
+
+                if (!AgendaDayLinkPager.debugShowColoredPages) {
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
+                    child: view,
                   );
+                }
 
-                  if (allowAutoCenter) {
-                    _hasAutoCenteredToday = true;
-                  }
+                final Color bgColor = switch (index) {
+                  0 => Colors.red.withOpacity(0.15),
+                  1 => Colors.green.withOpacity(0.15),
+                  2 => Colors.blue.withOpacity(0.15),
+                  _ => Colors.grey.withOpacity(0.15),
+                };
 
-                  if (!AgendaDayLinkPager.debugShowColoredPages) {
-                    return AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
-                      transitionBuilder: (child, animation) =>
-                          FadeTransition(opacity: animation, child: child),
-                      child: view,
-                    );
-                  }
-
-                  final Color bgColor = switch (index) {
-                    0 => Colors.red.withOpacity(0.15),
-                    1 => Colors.green.withOpacity(0.15),
-                    2 => Colors.blue.withOpacity(0.15),
-                    _ => Colors.grey.withOpacity(0.15),
-                  };
-
-                  return Container(color: bgColor, child: view);
-                },
-                childCount: _visibleDates.length,
-              ),
+                return Container(color: bgColor, child: view);
+              }, childCount: _visibleDates.length),
             ),
           ],
         ),
@@ -320,11 +317,7 @@ class _AgendaDayLinkPagerState extends ConsumerState<AgendaDayLinkPager> {
         ? const Duration(milliseconds: 160)
         : const Duration(milliseconds: 220);
     _scrollController
-        .animateTo(
-          targetPixels,
-          duration: duration,
-          curve: Curves.easeOut,
-        )
+        .animateTo(targetPixels, duration: duration, curve: Curves.easeOut)
         .whenComplete(() {
           if (!mounted) return;
           _isSettling = false;

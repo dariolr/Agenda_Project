@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/models/staff.dart';
-import '../../../../../core/widgets/no_scrollbar_behavior.dart';
+import '../../../../../../core/models/staff.dart';
+import '../../../../../../core/widgets/no_scrollbar_behavior.dart';
 import 'staff_header_row.dart';
 
 class AgendaStaffHeader extends StatelessWidget {
