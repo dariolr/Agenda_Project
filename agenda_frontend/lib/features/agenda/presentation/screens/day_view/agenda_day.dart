@@ -1,4 +1,5 @@
 import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/multi_staff_day_view.dart';
+import 'package:agenda_frontend/features/agenda/providers/date_range_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -55,8 +56,11 @@ class AgendaDay extends ConsumerStatefulWidget {
 
 class _AgendaDayState extends ConsumerState<AgendaDay> {
   ScrollController? _centerVerticalController;
-
   double _currentScrollOffset = 0;
+
+  DateTime? _previousDate;
+  bool _slideFromRight = true;
+
   @override
   void initState() {
     super.initState();
@@ -117,18 +121,47 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return MultiStaffDayView(
-          staffList: widget.staffList,
-          initialScrollOffset: _currentScrollOffset,
-          onScrollOffsetChanged: (offset) {
-            _currentScrollOffset = offset;
-            widget.onVerticalOffsetChanged?.call(offset);
-          },
-          onVerticalControllerChanged: _handleCenterVerticalController,
-        );
+    final date = ref.watch(agendaDateProvider);
+
+    // calcola direzione
+    if (_previousDate != null && _previousDate != date) {
+      _slideFromRight = date.isAfter(_previousDate!);
+    }
+    _previousDate = date;
+
+    // 👇 AnimatedSwitcher forza animazione visibile anche se Flutter riusa il widget
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      layoutBuilder: (currentChild, previousChildren) => Stack(
+        clipBehavior: Clip.none,
+        children: [...previousChildren, if (currentChild != null) currentChild],
+      ),
+      transitionBuilder: (child, animation) {
+        final beginOffset = _slideFromRight
+            ? const Offset(1.0, 0.0)
+            : const Offset(-1.0, 0.0);
+        final slide = Tween(
+          begin: beginOffset,
+          end: Offset.zero,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)).animate(animation);
+        return SlideTransition(position: slide, child: child);
       },
+      child: LayoutBuilder(
+        key: ValueKey(date.toIso8601String()),
+        builder: (context, constraints) {
+          return MultiStaffDayView(
+            staffList: widget.staffList,
+            initialScrollOffset: _currentScrollOffset,
+            onScrollOffsetChanged: (offset) {
+              _currentScrollOffset = offset;
+              widget.onVerticalOffsetChanged?.call(offset);
+            },
+            onVerticalControllerChanged: _handleCenterVerticalController,
+          );
+        },
+      ),
     );
   }
 
