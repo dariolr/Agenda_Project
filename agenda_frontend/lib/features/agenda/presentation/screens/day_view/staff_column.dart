@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:agenda_frontend/features/agenda/providers/dragged_card_size_provider.dart';
@@ -21,7 +22,7 @@ import '../../../providers/dragged_last_staff_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/resizing_provider.dart';
-import '../../../providers/selected_appointment_provider.dart'; // Added missing import
+import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../widgets/agenda_dividers.dart';
@@ -56,6 +57,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   late final ProviderSubscription<int?> _highlightSubscription;
   int? _latestHighlightedId;
 
+  // 1. Aggiunta sottoscrizione per il layout
+  late final ProviderSubscription<LayoutConfig> _layoutConfigSub;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +71,22 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       highlightedStaffIdProvider,
       (previous, next) => _latestHighlightedId = next,
     );
+
+    // 2. Pianifica l'aggiornamento della geometria dopo il primo frame
+    _scheduleGeometryUpdate();
+
+    // 3. Ascolta i cambi di layout per ri-pianificare l'aggiornamento
+    _layoutConfigSub = ref.listenManual<LayoutConfig>(layoutConfigProvider, (
+      prev,
+      next,
+    ) {
+      // Aggiorna la geometria solo se le dimensioni cambiano
+      if (prev == null ||
+          prev.slotHeight != next.slotHeight ||
+          prev.headerHeight != next.headerHeight) {
+        _scheduleGeometryUpdate();
+      }
+    });
 
     _dragListener = ref.listenManual<Offset?>(dragPositionProvider, (
       previous,
@@ -95,15 +115,23 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       final columnTopLeftInBody = bodyBox.globalToLocal(
         box.localToGlobal(Offset.zero),
       );
-      _geometryNotifier.setRect(
-        widget.staff.id,
-        Rect.fromLTWH(
-          columnTopLeftInBody.dx,
-          columnTopLeftInBody.dy,
-          box.size.width,
-          box.size.height,
-        ),
+
+      // ✅ Aggiorna la geometria solo se cambia realmente (scroll o resize)
+      final newRect = Rect.fromLTWH(
+        columnTopLeftInBody.dx,
+        columnTopLeftInBody.dy,
+        box.size.width,
+        box.size.height,
       );
+
+      if (_lastGeometryRect == null ||
+          (newRect.top - _lastGeometryRect!.top).abs() > 0.5 ||
+          (newRect.left - _lastGeometryRect!.left).abs() > 0.5 ||
+          (newRect.width - _lastGeometryRect!.width).abs() > 0.5 ||
+          (newRect.height - _lastGeometryRect!.height).abs() > 0.5) {
+        _lastGeometryRect = newRect;
+        _geometryNotifier.setRect(widget.staff.id, newRect);
+      }
 
       final localInColumn = Offset(
         next.dx - columnTopLeftInBody.dx,
@@ -224,10 +252,51 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }, fireImmediately: false);
   }
 
+  bool _geometryInitialized = false;
+  Timer? _geometryDebounce;
+  Rect? _lastGeometryRect;
+
+  void _scheduleGeometryUpdate() {
+    // Se già inizializzato e debounce attivo, salta
+    if (_geometryInitialized && _geometryDebounce != null) return;
+
+    _geometryDebounce?.cancel();
+    _geometryDebounce = Timer(const Duration(milliseconds: 220), () {
+      if (!mounted) return;
+      final box = context.findRenderObject() as RenderBox?;
+      final bodyBox = ref.read(dragBodyBoxProvider);
+      if (box == null || bodyBox == null) return;
+      if (!box.attached || !bodyBox.attached) return;
+
+      final topLeft = bodyBox.globalToLocal(box.localToGlobal(Offset.zero));
+      final newRect = Rect.fromLTWH(
+        topLeft.dx,
+        topLeft.dy,
+        box.size.width,
+        box.size.height,
+      );
+
+      // ignora microvariazioni
+      if (_lastGeometryRect != null &&
+          (newRect.top - _lastGeometryRect!.top).abs() < 1.0 &&
+          (newRect.left - _lastGeometryRect!.left).abs() < 1.0 &&
+          (newRect.width - _lastGeometryRect!.width).abs() < 1.0 &&
+          (newRect.height - _lastGeometryRect!.height).abs() < 1.0) {
+        return;
+      }
+
+      _lastGeometryRect = newRect;
+      _geometryInitialized = true; // ✅ segna come inizializzato
+      debugPrint('[Geometry] Updated for staff ${widget.staff.name}');
+      _geometryNotifier.setRect(widget.staff.id, newRect);
+    });
+  }
+
   @override
   void dispose() {
     _dragListener.close();
     _highlightSubscription.close();
+    _layoutConfigSub.close(); // 5. Ricorda di chiudere la sottoscrizione
     final shouldClearHighlight = _latestHighlightedId == widget.staff.id;
     final staffId = widget.staff.id;
     Future.microtask(() {
@@ -246,26 +315,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         .where((a) => a.staffId == widget.staff.id)
         .toList();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final box = context.findRenderObject() as RenderBox?;
-      final bodyBox = ref.read(dragBodyBoxProvider);
-      if (box == null || bodyBox == null) return;
-      if (!box.attached || !bodyBox.attached) return;
-
-      final topLeft = bodyBox.globalToLocal(box.localToGlobal(Offset.zero));
-      ref
-          .read(staffColumnsGeometryProvider.notifier)
-          .setRect(
-            widget.staff.id,
-            Rect.fromLTWH(
-              topLeft.dx,
-              topLeft.dy,
-              box.size.width,
-              box.size.height,
-            ),
-          );
-    });
+    // 6. RIMOSSO il blocco addPostFrameCallback da qui
 
     final layoutConfig = ref.watch(layoutConfigProvider);
     final slotHeight = layoutConfig.slotHeight;
@@ -353,7 +403,22 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           },
           child: SizedBox(
             width: widget.columnWidth,
-            child: Stack(children: stackChildren),
+            child: Container(
+              decoration: BoxDecoration(
+                color: _isHighlighted
+                    ? widget.staff.color.withOpacity(0.01)
+                    : Colors.transparent,
+                border: widget.showRightBorder
+                    ? Border(
+                        right: BorderSide(
+                          color: Colors.grey.withOpacity(0.5),
+                          width: 1.0,
+                        ),
+                      )
+                    : null,
+              ),
+              child: Stack(children: stackChildren),
+            ),
           ),
         );
       },

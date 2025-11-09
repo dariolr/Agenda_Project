@@ -5,17 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/staff.dart';
+import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
-import '../../../providers/is_resizing_provider.dart'; // 👈 nuovo import
+import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import 'agenda_staff_body.dart';
 import 'agenda_staff_header.dart';
 import 'responsive_layout.dart';
-
-const bool _debugLogSizes = false;
 
 class MultiStaffDayView extends ConsumerStatefulWidget {
   final List<Staff> staffList;
@@ -42,16 +41,32 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
 }
 
 class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
+  // Auto scroll durante il drag
   Timer? _autoScrollTimer;
+  static const double _scrollEdgeMargin = 100;
+  static const double _scrollSpeed = 20;
+  static const Duration _scrollInterval = Duration(milliseconds: 50);
+  static const double _autoScrollActivationThreshold = 16;
+
   late final ProviderSubscription<Offset?> _dragSub;
+  late final ProviderSubscription<LayoutConfig> _layoutSub;
+
   final ScrollController _headerHCtrl = ScrollController();
   bool _isSyncing = false;
   Offset? _initialDragPosition;
   bool _autoScrollArmed = false;
+
   ScrollController? _bodyHorizontalCtrl;
-  List<int>? _staffSignature;
   ScrollController? _verticalCtrl;
+  List<int>? _staffSignature;
+
   late final DragBodyBoxNotifier _dragBodyNotifier;
+
+  Timer? _syncDebounce;
+
+  final GlobalKey _bodyKey = GlobalKey();
+  final GlobalKey _headerKey = GlobalKey();
+
   late final Object _scrollIdentity = Object();
   AgendaScrollKey get _scrollKey => AgendaScrollKey(
     identity: _scrollIdentity,
@@ -60,19 +75,12 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     initialOffset: widget.initialScrollOffset,
   );
 
-  static const double _scrollEdgeMargin = 100;
-  static const double _scrollSpeed = 20;
-  static const Duration _scrollInterval = Duration(milliseconds: 50);
-  static const double _autoScrollActivationThreshold = 16;
-
-  final GlobalKey _bodyKey = GlobalKey(); // registrazione RenderBox body
-  final GlobalKey _headerKey = GlobalKey();
-
   @override
   void initState() {
     super.initState();
     _dragBodyNotifier = ref.read(dragBodyBoxProvider.notifier);
 
+    // Listener drag → auto scroll verticale
     _dragSub = ref.listenManual<Offset?>(dragPositionProvider, (prev, next) {
       if (next != null) {
         if (prev == null) {
@@ -87,15 +95,30 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       }
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Listener layoutConfig → solo quando cambiano dimensioni rilevanti
+    _layoutSub = ref.listenManual<LayoutConfig>(layoutConfigProvider, (
+      prev,
+      next,
+    ) {
+      if (prev == null ||
+          prev.headerHeight != next.headerHeight ||
+          prev.slotHeight != next.slotHeight ||
+          prev.hourColumnWidth != next.hourColumnWidth) {
+        _scheduleSyncUpdate();
+      }
+    });
+
+    // Prima inizializzazione
+    _scheduleSyncUpdate();
+  }
+
+  void _scheduleSyncUpdate() {
+    _syncDebounce?.cancel();
+    _syncDebounce = Timer(const Duration(milliseconds: 180), () {
       if (!mounted) return;
       _registerBodyBox();
       _setupHorizontalSync(force: true);
     });
-  }
-
-  void _clearBodyBox() {
-    _dragBodyNotifier.scheduleClear();
   }
 
   void _registerBodyBox() {
@@ -104,6 +127,10 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     if (box != null) {
       _dragBodyNotifier.set(box);
     }
+  }
+
+  void _clearBodyBox() {
+    _dragBodyNotifier.scheduleClear();
   }
 
   void _setupHorizontalSync({bool force = false}) {
@@ -127,7 +154,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _headerHCtrl.removeListener(_onHeaderHorizontalScroll);
 
     _bodyHorizontalCtrl = bodyCtrl;
-
     _bodyHorizontalCtrl?.addListener(_onBodyHorizontalScroll);
     _headerHCtrl.addListener(_onHeaderHorizontalScroll);
 
@@ -215,13 +241,18 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   @override
   void dispose() {
     _dragSub.close();
+    _layoutSub.close();
     _stopAutoScroll();
+    _syncDebounce?.cancel();
+
     _bodyHorizontalCtrl?.removeListener(_onBodyHorizontalScroll);
     _headerHCtrl.removeListener(_onHeaderHorizontalScroll);
     _verticalCtrl?.removeListener(_onVerticalScrollChanged);
+
     if (widget.isPrimary) {
       _clearBodyBox();
     }
+
     _headerHCtrl.dispose();
     super.dispose();
   }
@@ -229,18 +260,16 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   @override
   void didUpdateWidget(MultiStaffDayView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _setupHorizontalSync(force: true);
-    });
 
+    // ogni cambio staffList/date → resync orizzontale
+    _scheduleSyncUpdate();
+
+    // stesso comportamento di prima per isPrimary
     if (oldWidget.isPrimary != widget.isPrimary) {
       if (widget.isPrimary) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _registerBodyBox();
-        });
+        // quando diventa primary: _scheduleSyncUpdate registrerà il bodyBox
       } else {
+        // quando smette di essere primary: pulisce il body
         _clearBodyBox();
       }
     }
@@ -248,52 +277,44 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
   @override
   Widget build(BuildContext context) {
+    final appointments = ref.watch(appointmentsForCurrentLocationProvider);
+    final scrollState = ref.watch(agendaScrollProvider(_scrollKey));
+    final layoutConfig = ref.watch(layoutConfigProvider);
+
+    final verticalCtrl = scrollState.verticalScrollCtrl;
+    if (_verticalCtrl != verticalCtrl) {
+      _verticalCtrl?.removeListener(_onVerticalScrollChanged);
+      _verticalCtrl = verticalCtrl;
+      _verticalCtrl?.addListener(_onVerticalScrollChanged);
+      widget.onVerticalControllerChanged?.call(verticalCtrl);
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final appointments = ref.watch(appointmentsForCurrentLocationProvider);
-        final scrollState = ref.watch(agendaScrollProvider(_scrollKey));
-        final verticalCtrl = scrollState.verticalScrollCtrl;
-        if (_verticalCtrl != verticalCtrl) {
-          _verticalCtrl?.removeListener(_onVerticalScrollChanged);
-          _verticalCtrl = verticalCtrl;
-          _verticalCtrl?.addListener(_onVerticalScrollChanged);
-          widget.onVerticalControllerChanged?.call(verticalCtrl);
-        }
-        final layoutConfig = ref.watch(layoutConfigProvider);
         final availableWidth =
             constraints.hasBoundedWidth && constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.of(context).size.width;
+
         final layout = ResponsiveLayout.of(
           context,
           staffCount: widget.staffList.length,
           config: layoutConfig,
           availableWidth: availableWidth,
         );
+
         final totalHeight = layoutConfig.totalHeight;
         final hourW = layoutConfig.hourColumnWidth;
         final headerHeight = layoutConfig.headerHeight;
-        final columnsWidth = layout.columnWidth * widget.staffList.length;
         final LayerLink? link = widget.isPrimary
             ? ref.watch(dragLayerLinkProvider)
             : null;
 
-        // 🔹 blocca scroll se stiamo ridimensionando
         final isResizing = ref.watch(isResizingProvider);
-
-        // Aggiorna periodicamente il bodyBox (in caso di resize)
-        if (widget.isPrimary) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            _registerBodyBox();
-          });
-        }
-
-        _scheduleSizeLog(pageWidth: availableWidth, columnsWidth: columnsWidth);
 
         return Stack(
           children: [
-            // BODY scrollabile con leader
+            // BODY scrollabile
             Positioned.fill(
               top: headerHeight,
               child: AgendaStaffBody(
@@ -309,7 +330,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 onHorizontalEdge: widget.onHorizontalEdge,
               ),
             ),
-
             // HEADER staff
             Positioned(
               top: 0,
@@ -332,24 +352,5 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         );
       },
     );
-  }
-
-  void _scheduleSizeLog({
-    required double pageWidth,
-    required double columnsWidth,
-  }) {
-    if (!_debugLogSizes) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final bodySize = _bodyKey.currentContext?.size;
-      final headerSize = _headerKey.currentContext?.size;
-      if (bodySize == null && headerSize == null) return;
-      debugPrint(
-        '[SizeLog] date=${widget.date.toIso8601String()} '
-        'page=${pageWidth.toStringAsFixed(1)} '
-        'columns=${columnsWidth.toStringAsFixed(1)} '
-        'body=${bodySize?.width.toStringAsFixed(1) ?? 'null'} '
-        'header=${headerSize?.width.toStringAsFixed(1) ?? 'null'}',
-      );
-    });
   }
 }
