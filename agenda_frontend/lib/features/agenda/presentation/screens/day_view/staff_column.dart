@@ -25,10 +25,10 @@ import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
+import '../helper/drag_drop_helper.dart';
+import '../helper/layout_geometry_helper.dart';
 import '../widgets/agenda_dividers.dart';
 import '../widgets/appointment_card_base.dart';
-import 'drag_drop_helper.dart';
-import 'layout_geometry_helper.dart';
 
 class StaffColumn extends ConsumerStatefulWidget {
   final Staff staff;

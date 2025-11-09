@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../core/models/staff.dart';
-import '../../../providers/highlighted_staff_provider.dart';
-import '../../../providers/layout_config_provider.dart';
+import '../../../../../../core/models/staff.dart';
+import '../../../../providers/highlighted_staff_provider.dart';
+import '../../../../providers/layout_config_provider.dart';
 
 class StaffHeaderRow extends ConsumerWidget {
   final List<Staff> staffList;
@@ -29,9 +29,11 @@ class StaffHeaderRow extends ConsumerWidget {
     final initialsMap = {
       for (final staff in staffList) staff.id: _buildInitials(staff),
     };
-    final hasThreeLetterInitials =
-        initialsMap.values.any((value) => value.length == 3);
-    final initialsFontSize = headerHeight * (hasThreeLetterInitials ? 0.30 : 0.35);
+    final hasThreeLetterInitials = initialsMap.values.any(
+      (value) => value.length == 3,
+    );
+    final initialsFontSize =
+        headerHeight * (hasThreeLetterInitials ? 0.30 : 0.35);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
