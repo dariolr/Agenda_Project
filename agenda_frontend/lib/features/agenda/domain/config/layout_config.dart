@@ -16,6 +16,7 @@ class LayoutConfig {
   static const double minColumnWidthMobile = 140;
   static const double minColumnWidthDesktop = 160;
   static const double borderRadius = 8;
+  static const double borderWidth = 1;
   static const int maxVisibleStaff = 6;
 
   static const double defaultHourColumnWidth = 60;
@@ -66,13 +67,13 @@ class LayoutConfig {
 
   @override
   int get hashCode => Object.hash(
-        slotHeight,
-        headerHeight,
-        hourColumnWidth,
-        minutesPerSlot,
-        useClusterMaxConcurrency,
-        useServiceColorsForAppointments,
-      );
+    slotHeight,
+    headerHeight,
+    hourColumnWidth,
+    minutesPerSlot,
+    useClusterMaxConcurrency,
+    useServiceColorsForAppointments,
+  );
 
   LayoutConfig copyWith({
     double? slotHeight,
@@ -90,7 +91,8 @@ class LayoutConfig {
       useClusterMaxConcurrency:
           useClusterMaxConcurrency ?? this.useClusterMaxConcurrency,
       useServiceColorsForAppointments:
-          useServiceColorsForAppointments ?? this.useServiceColorsForAppointments,
+          useServiceColorsForAppointments ??
+          this.useServiceColorsForAppointments,
     );
   }
 
