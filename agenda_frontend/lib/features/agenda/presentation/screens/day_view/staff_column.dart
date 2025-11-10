@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/hover_slot.dart';
 import 'package:agenda_frontend/features/agenda/providers/dragged_card_size_provider.dart';
 import 'package:agenda_frontend/features/services/providers/services_provider.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/date_range_provider.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/drag_session_provider.dart';
@@ -321,6 +323,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final slotHeight = layoutConfig.slotHeight;
     final totalSlots = layoutConfig.totalSlots;
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
+    final agendaDate = ref.watch(agendaDateProvider);
 
     final stackChildren = <Widget>[];
 
@@ -341,6 +344,34 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             ),
           );
         }),
+      ),
+    );
+    // 🔹 Layer interattivo HoverSlot (effetto all'hover del mouse)
+    stackChildren.add(
+      IgnorePointer(
+        ignoring: false, // permette l'hover
+        child: Column(
+          children: List.generate(totalSlots, (index) {
+            final slotTime = agendaDate.add(
+              Duration(minutes: index * layoutConfig.minutesPerSlot),
+            );
+
+            // puoi eventualmente calcolare una durata libera reale,
+            // ma qui va bene anche una costante per testare il layout
+            final freeDuration = _computeFreeDurationForSlot(
+              index,
+              staffAppointments,
+              layoutConfig,
+            );
+
+            return HoverSlot(
+              slotTime: slotTime,
+              height: slotHeight,
+              freeDuration: freeDuration,
+              colorPrimary1: Theme.of(context).colorScheme.primary,
+            );
+          }),
+        ),
       ),
     );
 
@@ -567,5 +598,51 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }
 
     return positionedAppointments;
+  }
+
+  Duration _computeFreeDurationForSlot(
+    int index,
+    List<Appointment> appointments,
+    LayoutConfig layout,
+  ) {
+    final slotStart = Duration(minutes: index * layout.minutesPerSlot);
+    final slotEnd = Duration(minutes: (index + 1) * layout.minutesPerSlot);
+
+    // se lo slot corrente è occupato, non ha durata libera
+    final occupied = appointments.any((a) {
+      final start = Duration(
+        hours: a.startTime.hour,
+        minutes: a.startTime.minute,
+      );
+      final end = Duration(hours: a.endTime.hour, minutes: a.endTime.minute);
+      return slotStart < end && slotEnd > start;
+    });
+
+    if (occupied) return Duration.zero;
+
+    // cerca il prossimo slot occupato
+    int nextBusy = layout.totalSlots;
+    for (int i = index + 1; i < layout.totalSlots; i++) {
+      final sStart = Duration(minutes: i * layout.minutesPerSlot);
+      final sEnd = Duration(minutes: (i + 1) * layout.minutesPerSlot);
+      final isBusy = appointments.any((a) {
+        final start = Duration(
+          hours: a.startTime.hour,
+          minutes: a.startTime.minute,
+        );
+        final end = Duration(hours: a.endTime.hour, minutes: a.endTime.minute);
+        return sStart < end && sEnd > start;
+      });
+      if (isBusy) {
+        nextBusy = i;
+        break;
+      }
+    }
+
+    // 🔹 calcola la durata libera includendo lo slot corrente
+    final freeSlotsCount = nextBusy - index;
+    final freeMinutes = freeSlotsCount * layout.minutesPerSlot;
+    debugPrint('Free duration from slot $index: $freeMinutes minutes');
+    return Duration(minutes: freeMinutes);
   }
 }

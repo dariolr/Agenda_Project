@@ -105,8 +105,9 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         while (generated < slotsPerDay) {
           final startMinute =
               8 * 60 + random.nextInt(10 * 60); // tra 08:00 e 18:00
+          final roundedStartMinute = (startMinute / 5).round() * 5;
           final durationMinutes = 15 * (1 + random.nextInt(8)); // 15-120
-          final start = dayDate.add(Duration(minutes: startMinute));
+          final start = dayDate.add(Duration(minutes: roundedStartMinute));
           final end = start.add(Duration(minutes: durationMinutes));
 
           final currentBookingId = bookingId++;
