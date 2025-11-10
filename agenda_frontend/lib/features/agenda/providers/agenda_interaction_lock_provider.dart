@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'agenda_providers.dart';
@@ -16,8 +17,7 @@ class AgendaCardHoverNotifier extends Notifier<bool> {
   void exit() => state = false;
 }
 
-final agendaCardHoverProvider =
-    NotifierProvider<AgendaCardHoverNotifier, bool>(
+final agendaCardHoverProvider = NotifierProvider<AgendaCardHoverNotifier, bool>(
   AgendaCardHoverNotifier.new,
 );
 
@@ -28,5 +28,8 @@ final agendaDayScrollLockProvider = Provider<bool>((ref) {
   final isDragging = ref.watch(dragPositionProvider) != null;
   final hasSelection = !ref.watch(selectedAppointmentProvider).isEmpty;
   final isHovering = ref.watch(agendaCardHoverProvider);
+  debugPrint(
+    'agendaDayScrollLockProvider: isResizing=$isResizing, isDragging=$isDragging, hasSelection=$hasSelection, isHovering=$isHovering',
+  );
   return isResizing || isDragging || hasSelection || isHovering;
 });

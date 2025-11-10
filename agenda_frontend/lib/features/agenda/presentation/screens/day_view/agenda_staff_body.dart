@@ -19,6 +19,7 @@ class AgendaStaffBody extends StatelessWidget {
     required this.isResizing,
     required this.dragLayerLink,
     required this.bodyKey,
+    required this.isInteractionLocked,
   });
 
   final ScrollController verticalController;
@@ -30,6 +31,7 @@ class AgendaStaffBody extends StatelessWidget {
   final bool isResizing;
   final LayerLink? dragLayerLink;
   final GlobalKey bodyKey;
+  final bool isInteractionLocked;
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +85,7 @@ class AgendaStaffBody extends StatelessWidget {
                                 staff: staff,
                                 appointments: staffAppointments,
                                 columnWidth: layout.columnWidth,
+                                isInteractionLocked: isInteractionLocked,
                                 // Questo flag ora è ignorato all'interno di StaffColumn,
                                 // ma lo manteniamo per compatibilità.
                                 showRightBorder:

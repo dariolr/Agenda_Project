@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '/core/l10n/l10_extension.dart';
 import '/core/models/appointment.dart';
 import '/core/models/staff.dart';
-import '/core/l10n/l10_extension.dart';
 import '/core/widgets/app_bottom_sheet.dart';
 import '/core/widgets/app_buttons.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
+import '../../../../services/providers/services_provider.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_interaction_lock_provider.dart';
@@ -14,19 +15,18 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
+import '../../../providers/drag_session_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/dragged_base_range_provider.dart';
 import '../../../providers/dragged_last_staff_provider.dart';
-import '../../../providers/drag_session_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
+import '../../../providers/layout_config_provider.dart';
 import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
-import '../../../providers/temp_drag_time_provider.dart';
-import '../../../providers/layout_config_provider.dart';
 import '../../../providers/staff_providers.dart';
-import '../../../../services/providers/services_provider.dart';
+import '../../../providers/temp_drag_time_provider.dart';
 
 /// 🔹 Versione unificata per DESKTOP e MOBILE.
 /// Mantiene drag, resize, ghost, select, ma cambia il comportamento del tap:
@@ -96,7 +96,9 @@ class _AppointmentCardInteractiveState
       onExit: (_) {
         _hoverNotifier.exit();
         if (_selectedFromHover &&
-            ref.read(selectedAppointmentProvider).contains(widget.appointment.id) &&
+            ref
+                .read(selectedAppointmentProvider)
+                .contains(widget.appointment.id) &&
             ref.read(draggedAppointmentIdProvider) != widget.appointment.id &&
             !ref.read(isResizingProvider)) {
           ref.read(selectedAppointmentProvider.notifier).clear();
@@ -202,8 +204,9 @@ class _AppointmentCardInteractiveState
                 ),
 
                 onDragStarted: () {
-                  _currentDragSessionId =
-                      ref.read(dragSessionProvider.notifier).start();
+                  _currentDragSessionId = ref
+                      .read(dragSessionProvider.notifier)
+                      .start();
                   ref
                       .read(draggedBaseRangeProvider.notifier)
                       .set(
@@ -293,7 +296,9 @@ class _AppointmentCardInteractiveState
 
     final session = ref.read(dragSessionProvider);
     final handledByTarget =
-        session.dropHandled && session.id != null && session.id == _currentDragSessionId;
+        session.dropHandled &&
+        session.id != null &&
+        session.id == _currentDragSessionId;
     if (handledByTarget) {
       _handleEnd(ref, keepSelection: true);
       return;
@@ -378,7 +383,9 @@ class _AppointmentCardInteractiveState
     final dayBoundary = baseDate.add(const Duration(days: 1));
     if (newEnd.isAfter(dayBoundary)) newEnd = dayBoundary;
 
-    ref.read(appointmentsProvider.notifier).moveAppointment(
+    ref
+        .read(appointmentsProvider.notifier)
+        .moveAppointment(
           appointmentId: widget.appointment.id,
           newStaffId: dropStaffId,
           newStart: newStart,
@@ -408,7 +415,8 @@ class _AppointmentCardInteractiveState
     final minHeightForBlocking =
         _layoutConfig.slotHeight * _minSlotsForDragBlock;
 
-    final shouldBlock = distanceFromBottom >= 0 &&
+    final shouldBlock =
+        distanceFromBottom >= 0 &&
         distanceFromBottom <= _dragBlockZoneHeight &&
         cardHeight >= minHeightForBlocking;
 
@@ -504,7 +512,9 @@ class _AppointmentCardInteractiveState
 
     if (newEnd == appointment.endTime) return false;
 
-    ref.read(appointmentsProvider.notifier).moveAppointment(
+    ref
+        .read(appointmentsProvider.notifier)
+        .moveAppointment(
           appointmentId: appointment.id,
           newStaffId: appointment.staffId,
           newStart: start,
@@ -532,8 +542,9 @@ class _AppointmentCardInteractiveState
     );
     final dayBoundary = dayStart.add(const Duration(days: 1));
 
-    final eligibleStaffIds =
-        ref.read(eligibleStaffForServiceProvider(widget.appointment.serviceId));
+    final eligibleStaffIds = ref.read(
+      eligibleStaffForServiceProvider(widget.appointment.serviceId),
+    );
     final staffList = ref
         .read(staffForCurrentLocationProvider)
         .where((s) => eligibleStaffIds.contains(s.id))
@@ -543,10 +554,8 @@ class _AppointmentCardInteractiveState
     if (staffList.length > 1) {
       final chosen = await AppBottomSheet.show<int>(
         context: context,
-        builder: (_) => _StaffPickerSheet(
-          staff: staffList,
-          selectedStaffId: targetStaffId,
-        ),
+        builder: (_) =>
+            _StaffPickerSheet(staff: staffList, selectedStaffId: targetStaffId),
       );
       if (!mounted) return false;
       if (chosen == null) return false;
@@ -577,11 +586,14 @@ class _AppointmentCardInteractiveState
       }
     }
 
-    if (newStart == appointment.startTime && targetStaffId == appointment.staffId) {
+    if (newStart == appointment.startTime &&
+        targetStaffId == appointment.staffId) {
       return false;
     }
 
-    ref.read(appointmentsProvider.notifier).moveAppointment(
+    ref
+        .read(appointmentsProvider.notifier)
+        .moveAppointment(
           appointmentId: appointment.id,
           newStaffId: targetStaffId,
           newStart: newStart,
@@ -772,7 +784,9 @@ class _AppointmentCardInteractiveState
       widget.appointment.startTime.day,
     ).add(const Duration(days: 1));
 
-    ref.read(resizingProvider.notifier).updateDuringResize(
+    ref
+        .read(resizingProvider.notifier)
+        .updateDuringResize(
           appointmentId: widget.appointment.id,
           deltaDy: deltaY,
           pixelsPerMinute: pixelsPerMinute,
@@ -790,7 +804,9 @@ class _AppointmentCardInteractiveState
     if (newEnd != null) {
       final appt = widget.appointment;
       final minEnd = appt.startTime.add(const Duration(minutes: 5));
-      ref.read(appointmentsProvider.notifier).moveAppointment(
+      ref
+          .read(appointmentsProvider.notifier)
+          .moveAppointment(
             appointmentId: appt.id,
             newStaffId: appt.staffId,
             newStart: appt.startTime,
@@ -804,6 +820,9 @@ class _AppointmentCardInteractiveState
     _updateDragBlock(false);
     ref.read(isResizingProvider.notifier).stop();
     ref.invalidate(resizingProvider);
+    if (ref.read(dragPositionProvider) != null) {
+      ref.read(dragPositionProvider.notifier).clear();
+    }
   }
 
   void _performResizeCancel() {
@@ -811,10 +830,14 @@ class _AppointmentCardInteractiveState
         .read(resizingProvider.notifier)
         .cancelResize(appointmentId: widget.appointment.id);
     ref.read(isResizingProvider.notifier).stop();
+
     if (mounted) {
       setState(() => _isDraggingResize = false);
     }
     _updateDragBlock(false);
+    if (ref.read(dragPositionProvider) != null) {
+      ref.read(dragPositionProvider.notifier).clear();
+    }
   }
 
   // 🔹 Resize identico all’originale
@@ -885,10 +908,8 @@ class _AppointmentCardInteractiveState
     final columnsRects = ref.watch(staffColumnsGeometryProvider);
 
     final padding = LayoutConfig.columnInnerPadding;
-    final fallbackWidth =
-        widget.columnWidth ?? _lastSize?.width ?? 180.0;
-    double effectiveWidth =
-        widget.dragTargetWidth ?? fallbackWidth;
+    final fallbackWidth = widget.columnWidth ?? _lastSize?.width ?? 180.0;
+    double effectiveWidth = widget.dragTargetWidth ?? fallbackWidth;
     if (effectiveWidth <= 0) {
       effectiveWidth = fallbackWidth > 0 ? fallbackWidth : 180.0;
     }
@@ -1151,10 +1172,7 @@ class _AppointmentActionSheetState
 }
 
 class _StaffPickerSheet extends StatelessWidget {
-  const _StaffPickerSheet({
-    required this.staff,
-    required this.selectedStaffId,
-  });
+  const _StaffPickerSheet({required this.staff, required this.selectedStaffId});
 
   final List<Staff> staff;
   final int selectedStaffId;
@@ -1172,13 +1190,9 @@ class _StaffPickerSheet extends StatelessWidget {
         const SizedBox(height: 12),
         ...staff.map(
           (s) => ListTile(
-            leading: CircleAvatar(
-              radius: 12,
-              backgroundColor: s.color,
-            ),
+            leading: CircleAvatar(radius: 12, backgroundColor: s.color),
             title: Text(s.name),
-            trailing:
-                s.id == selectedStaffId ? const Icon(Icons.check) : null,
+            trailing: s.id == selectedStaffId ? const Icon(Icons.check) : null,
             onTap: () => Navigator.pop(context, s.id),
           ),
         ),

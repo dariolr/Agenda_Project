@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/staff.dart';
 import '../../../domain/config/layout_config.dart';
+import '../../../providers/agenda_interaction_lock_provider.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
@@ -265,6 +266,11 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     final appointments = ref.watch(appointmentsForCurrentLocationProvider);
     final scrollState = ref.watch(agendaScrollProvider(_scrollKey));
     final layoutConfig = ref.watch(layoutConfigProvider);
+    // Evaluate the interaction lock once here for the current visible group
+    final isInteractionLocked = ref.watch(agendaDayScrollLockProvider);
+    debugPrint(
+      'MultiStaffDayViewForPaging build: isInteractionLocked=$isInteractionLocked',
+    );
 
     final verticalCtrl = scrollState.verticalScrollCtrl;
     if (_verticalCtrl != verticalCtrl) {
@@ -310,6 +316,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 isResizing: isResizing,
                 dragLayerLink: link,
                 bodyKey: _bodyKey,
+                isInteractionLocked: isInteractionLocked,
               ),
             ),
             // HEADER staff
