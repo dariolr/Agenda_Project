@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/staff.dart';
 import '../../../domain/config/layout_config.dart';
+import '../../../providers/agenda_interaction_lock_provider.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
@@ -282,7 +283,7 @@ class _MultiStaffDayViewForPagingState
     final appointments = ref.watch(appointmentsForCurrentLocationProvider);
     final scrollState = ref.watch(agendaScrollProvider(_scrollKey));
     final layoutConfig = ref.watch(layoutConfigProvider);
-
+    final isInteractionLocked = ref.watch(agendaDayScrollLockProvider);
     final verticalCtrl = scrollState.verticalScrollCtrl;
     if (_verticalCtrl != verticalCtrl) {
       _verticalCtrl?.removeListener(_onVerticalScrollChanged);
@@ -330,6 +331,7 @@ class _MultiStaffDayViewForPagingState
                 dragLayerLink: link,
                 bodyKey: _bodyKey,
                 onHorizontalEdge: widget.onHorizontalEdge,
+                isInteractionLocked: isInteractionLocked,
               ),
             ),
             // HEADER staff

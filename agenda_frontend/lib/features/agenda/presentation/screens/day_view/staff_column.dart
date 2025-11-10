@@ -22,6 +22,8 @@ import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/dragged_base_range_provider.dart';
 import '../../../providers/dragged_last_staff_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
+// Nota: isResizingProvider viene gestito a un livello superiore (MultiStaffDayView),
+// non è necessario importarlo qui.
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
@@ -37,12 +39,14 @@ class StaffColumn extends ConsumerStatefulWidget {
   final List<Appointment> appointments;
   final double columnWidth;
   final bool showRightBorder;
+  final bool isInteractionLocked;
 
   const StaffColumn({
     super.key,
     required this.staff,
     required this.appointments,
     required this.columnWidth,
+    required this.isInteractionLocked,
     this.showRightBorder = true,
   });
 
@@ -325,6 +329,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
     final agendaDate = ref.watch(agendaDateProvider);
 
+    // Interaction lock propagated from parent (evaluated once per visible group)
+    final isInteractionLocked = widget.isInteractionLocked;
+
     final stackChildren = <Widget>[];
 
     // 🔹 Griglia oraria
@@ -355,21 +362,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             final slotTime = agendaDate.add(
               Duration(minutes: index * layoutConfig.minutesPerSlot),
             );
+            if (!isInteractionLocked) {
+              return LazyHoverSlot(
+                slotTime: slotTime,
+                height: slotHeight,
+                colorPrimary1: Theme.of(context).colorScheme.primary,
+              );
+            }
 
-            // puoi eventualmente calcolare una durata libera reale,
-            // ma qui va bene anche una costante per testare il layout
-            final freeDuration = _computeFreeDurationForSlot(
-              index,
-              staffAppointments,
-              layoutConfig,
-            );
-
-            return HoverSlot(
-              slotTime: slotTime,
-              height: slotHeight,
-              freeDuration: freeDuration,
-              colorPrimary1: Theme.of(context).colorScheme.primary,
-            );
+            // Mantieni lo spazio vuoto per evitare salti nel layout.
+            return SizedBox(height: slotHeight, width: double.infinity);
           }),
         ),
       ),
@@ -598,51 +600,5 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }
 
     return positionedAppointments;
-  }
-
-  Duration _computeFreeDurationForSlot(
-    int index,
-    List<Appointment> appointments,
-    LayoutConfig layout,
-  ) {
-    final slotStart = Duration(minutes: index * layout.minutesPerSlot);
-    final slotEnd = Duration(minutes: (index + 1) * layout.minutesPerSlot);
-
-    // se lo slot corrente è occupato, non ha durata libera
-    final occupied = appointments.any((a) {
-      final start = Duration(
-        hours: a.startTime.hour,
-        minutes: a.startTime.minute,
-      );
-      final end = Duration(hours: a.endTime.hour, minutes: a.endTime.minute);
-      return slotStart < end && slotEnd > start;
-    });
-
-    if (occupied) return Duration.zero;
-
-    // cerca il prossimo slot occupato
-    int nextBusy = layout.totalSlots;
-    for (int i = index + 1; i < layout.totalSlots; i++) {
-      final sStart = Duration(minutes: i * layout.minutesPerSlot);
-      final sEnd = Duration(minutes: (i + 1) * layout.minutesPerSlot);
-      final isBusy = appointments.any((a) {
-        final start = Duration(
-          hours: a.startTime.hour,
-          minutes: a.startTime.minute,
-        );
-        final end = Duration(hours: a.endTime.hour, minutes: a.endTime.minute);
-        return sStart < end && sEnd > start;
-      });
-      if (isBusy) {
-        nextBusy = i;
-        break;
-      }
-    }
-
-    // 🔹 calcola la durata libera includendo lo slot corrente
-    final freeSlotsCount = nextBusy - index;
-    final freeMinutes = freeSlotsCount * layout.minutesPerSlot;
-    debugPrint('Free duration from slot $index: $freeMinutes minutes');
-    return Duration(minutes: freeMinutes);
   }
 }
