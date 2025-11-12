@@ -1,3 +1,4 @@
+import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
 import 'package:flutter/material.dart';
 
 import '../../../domain/config/layout_config.dart';
@@ -25,8 +26,11 @@ class _HoverSlotState extends State<HoverSlot> {
 
   @override
   Widget build(BuildContext context) {
-    final timeStr =
-        '${widget.slotTime.hour.toString().padLeft(2, '0')}:${widget.slotTime.minute.toString().padLeft(2, '0')}';
+    final timeStr = DtFmt.hm(
+      context,
+      widget.slotTime.hour,
+      widget.slotTime.minute,
+    );
 
     final radius = BorderRadius.circular(4);
     final margin = EdgeInsets.all(LayoutConfig.columnInnerPadding);

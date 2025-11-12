@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'; // 1. Importa Riverpod
 import 'package:go_router/go_router.dart';
 
 import '../core/l10n/l10_extension.dart';
-import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
+import '../features/agenda/providers/layout_config_provider.dart';
 // 2. Importa il nuovo provider globale
 import 'providers/form_factor_provider.dart';
 
@@ -20,8 +20,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 4. Aggiungi WidgetRef
-    final destinations =
-        _ScaffoldWithNavigationHelpers.getDestinations(context);
+    final destinations = _ScaffoldWithNavigationHelpers.getDestinations(
+      context,
+    );
 
     // 5. LEGGI IL PROVIDER GLOBALE!
     final formFactor = ref.watch(formFactorProvider);
@@ -128,7 +129,10 @@ class _ScaffoldWithNavigationHelpers {
     return [
       NavigationDestination(
         icon: const _NavIcon(icon: Icons.calendar_month_outlined),
-        selectedIcon: const _NavIcon(icon: Icons.calendar_month, selected: true),
+        selectedIcon: const _NavIcon(
+          icon: Icons.calendar_month,
+          selected: true,
+        ),
         label: l10n.navAgenda,
       ),
       NavigationDestination(
@@ -187,9 +191,7 @@ class _RailDivider extends StatelessWidget {
           return Column(
             children: [
               SizedBox(height: inset),
-              Expanded(
-                child: Container(color: color),
-              ),
+              Expanded(child: Container(color: color)),
             ],
           );
         },
@@ -199,10 +201,7 @@ class _RailDivider extends StatelessWidget {
 }
 
 class _NavIcon extends StatelessWidget {
-  const _NavIcon({
-    required this.icon,
-    this.selected = false,
-  });
+  const _NavIcon({required this.icon, this.selected = false});
 
   final IconData icon;
   final bool selected;
@@ -213,8 +212,9 @@ class _NavIcon extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final accentColor = colorScheme.secondary;
     final iconColor = colorScheme.onSecondary.withOpacity(selected ? 0.9 : 0.7);
-    final backgroundColor =
-        selected ? accentColor : accentColor.withOpacity(0.35);
+    final backgroundColor = selected
+        ? accentColor
+        : accentColor.withOpacity(0.35);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),

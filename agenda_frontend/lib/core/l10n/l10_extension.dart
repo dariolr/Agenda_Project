@@ -20,3 +20,19 @@ extension L10nX on BuildContext {
   /// Restituisce l'istanza corrente di [L10n] per questo [BuildContext].
   L10n get l10n => L10n.of(this);
 }
+
+extension DurationLocalization on BuildContext {
+  String localizedDurationLabel(int minutes) {
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    final l10n = this.l10n;
+
+    if (hours > 0 && mins > 0) {
+      return l10n.durationHourMinute(hours, mins);
+    } else if (hours > 0) {
+      return l10n.durationHour(hours);
+    } else {
+      return l10n.durationMinute(mins);
+    }
+  }
+}

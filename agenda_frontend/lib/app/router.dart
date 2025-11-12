@@ -2,14 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/l10n/l10_extension.dart';
 // Importa le nuove schermate
 import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
 import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_screen.dart';
+import '../features/staff/presentation/staff_week_overview_screen.dart';
 // Importa la nostra "Shell"
 import 'scaffold_with_navigation.dart';
-import '../core/l10n/l10_extension.dart';
 
 // 1. Definiamo una chiave globale per la nostra Shell (necessaria)
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -45,8 +46,11 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/agenda',
               name: 'agenda',
-              builder: (BuildContext context, GoRouterState state) =>
-                  const AgendaScreen(),
+              builder: (BuildContext context, GoRouterState state) {
+                final q = state.uri.queryParameters['clientId'];
+                final initialClientId = q == null ? null : int.tryParse(q);
+                return AgendaScreen(initialClientId: initialClientId);
+              },
             ),
           ],
         ),
@@ -83,6 +87,14 @@ final GoRouter appRouter = GoRouter(
               name: 'staff',
               builder: (BuildContext context, GoRouterState state) =>
                   const StaffScreen(),
+              routes: [
+                GoRoute(
+                  path: 'availability',
+                  name: 'staff-availability',
+                  builder: (BuildContext context, GoRouterState state) =>
+                      const StaffWeekOverviewScreen(),
+                ),
+              ],
             ),
           ],
         ),

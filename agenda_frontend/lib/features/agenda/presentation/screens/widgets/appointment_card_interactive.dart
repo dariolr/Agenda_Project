@@ -1114,7 +1114,7 @@ class _AppointmentActionSheetState
             Expanded(
               child: AppDangerButton(
                 onPressed: () {
-                  Navigator.pop(context); // Close the bottom sheet
+                  Navigator.of(context, rootNavigator: true).pop();
                   ref
                       .read(appointmentsProvider.notifier)
                       .deleteAppointment(appointment.id);

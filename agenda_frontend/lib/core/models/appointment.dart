@@ -6,6 +6,7 @@ class Appointment {
   final int staffId;
   final int serviceId;
   final int serviceVariantId;
+  final int? clientId; // opzionale: collegamento al Client
   final String clientName;
   final String serviceName;
   final DateTime startTime;
@@ -20,6 +21,7 @@ class Appointment {
     required this.staffId,
     required this.serviceId,
     required this.serviceVariantId,
+    this.clientId,
     required this.clientName,
     required this.serviceName,
     required this.startTime,
@@ -28,19 +30,20 @@ class Appointment {
   });
 
   factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
-        id: json['id'] as int,
-        bookingId: json['booking_id'] as int,
-        businessId: json['business_id'] as int,
-        locationId: json['location_id'] as int,
-        staffId: json['staff_id'] as int,
-        serviceId: json['service_id'] as int,
-        serviceVariantId: json['service_variant_id'] as int,
-        clientName: json['client_name'] as String? ?? '',
-        serviceName: json['service_name'] as String? ?? '',
-        startTime: DateTime.parse(json['start_time'] as String),
-        endTime: DateTime.parse(json['end_time'] as String),
-        price: json['price'] != null ? (json['price'] as num).toDouble() : null,
-      );
+    id: json['id'] as int,
+    bookingId: json['booking_id'] as int,
+    businessId: json['business_id'] as int,
+    locationId: json['location_id'] as int,
+    staffId: json['staff_id'] as int,
+    serviceId: json['service_id'] as int,
+    serviceVariantId: json['service_variant_id'] as int,
+    clientId: json['client_id'] as int?,
+    clientName: json['client_name'] as String? ?? '',
+    serviceName: json['service_name'] as String? ?? '',
+    startTime: DateTime.parse(json['start_time'] as String),
+    endTime: DateTime.parse(json['end_time'] as String),
+    price: json['price'] != null ? (json['price'] as num).toDouble() : null,
+  );
 
   Appointment copyWith({
     int? id,
@@ -50,6 +53,7 @@ class Appointment {
     int? staffId,
     int? serviceId,
     int? serviceVariantId,
+    int? clientId,
     String? clientName,
     String? serviceName,
     DateTime? startTime,
@@ -64,6 +68,7 @@ class Appointment {
       staffId: staffId ?? this.staffId,
       serviceId: serviceId ?? this.serviceId,
       serviceVariantId: serviceVariantId ?? this.serviceVariantId,
+      clientId: clientId ?? this.clientId,
       clientName: clientName ?? this.clientName,
       serviceName: serviceName ?? this.serviceName,
       startTime: startTime ?? this.startTime,
@@ -81,6 +86,7 @@ class Appointment {
       'staff_id': staffId,
       'service_id': serviceId,
       'service_variant_id': serviceVariantId,
+      if (clientId != null) 'client_id': clientId,
       'client_name': clientName,
       'service_name': serviceName,
       'start_time': startTime.toIso8601String(),

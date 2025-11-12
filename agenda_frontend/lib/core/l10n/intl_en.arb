@@ -23,6 +23,7 @@
   "actionDelete": "Delete",
   "actionCancel": "Cancel",
   "actionConfirm": "Confirm",
+  "actionClose": "Close",
   "deleteConfirmationTitle": "Confirm deletion?",
   "appointmentDeletedMessage": "Appointment deleted",
   "agendaToday": "Today",
@@ -30,7 +31,70 @@
   "agendaNextDay": "Next day",
   "agendaPrevWeek": "Previous Week",
   "agendaNextWeek": "Next Week",
+  "agendaPrevMonth": "Previous month",
+  "agendaNextMonth": "Next month",
   "agendaNoLocations": "No locations available",
   "agendaSelectLocation": "Select location",
-  "servicesCategoryEmpty": "No services available for this category."
+  "servicesCategoryEmpty": "No services available for this category.",
+  "availabilityTitle": "Weekly availability",
+  "availabilityTitleFor": "Availability – {name}",
+  "@availabilityTitleFor": {"placeholders": {"name": {"type": "String"}}},
+  "availabilitySave": "Save changes",
+  "availabilitySaved": "Availability saved (mock).",
+  "availabilitySavedFor": "Availability saved for staff {name} (mock).",
+  "@availabilitySavedFor": {"placeholders": {"name": {"type": "String"}}},
+  "availabilityCopyToAll": "Copy to all",
+  "availabilityClear": "Clear",
+  "currentWeek": "Current week",
+  "hoursMinutesCompact": "{hours}h {minutes}m",
+  "hoursHoursOnly": "{hours}h",
+  "labelStaff": "Staff:",
+  "labelSelect": "Select",
+  "dayMonShort": "Mon",
+  "dayTueShort": "Tue",
+  "dayWedShort": "Wed",
+  "dayThuShort": "Thu",
+  "dayFriShort": "Fri",
+  "daySatShort": "Sat",
+  "daySunShort": "Sun"
+  ,"staffHubAvailabilityTitle": "Availability"
+  ,"staffHubAvailabilitySubtitle": "Configure weekly working hours"
+  ,"staffHubTeamTitle": "Team"
+  ,"staffHubTeamSubtitle": "Manage members and roles"
+  ,"staffHubStatsTitle": "Statistics"
+  ,"staffHubStatsSubtitle": "Performance and workloads"
+  ,"staffHubNotYetAvailable": "Not yet available"
+  ,"availabilitySlotSelectedLabel": "slot {time} selected"
+  ,"availabilitySlotUnselectedLabel": "slot {time} not selected"
+  ,"@availabilitySlotSelectedLabel": {"placeholders": {"time": {"type": "String"}}}
+  ,"@availabilitySlotUnselectedLabel": {"placeholders": {"time": {"type": "String"}}}
+  ,"staffEditHours": "Edit hours"
+  ,"actionEdit": "Edit"
+  ,"durationMinute": "{minutes} min",
+"durationMinute_plural": "{minutes} min",
+"durationHour": "{hours} hour",
+"durationHour_plural": "{hours} hours",
+"durationHourMinute": "{hours} hour {minutes} min",
+"durationHourMinute_plural": "{hours} hours {minutes} min",
+"freeLabel": "Free",
+  "priceStartingFromPrefix": "starting from",
+  "priceNotAvailable": "N/A",
+  "clientsNew": "New client",
+  "clientsEdit": "Edit client",
+  "clientsEmpty": "No clients",
+  "actionSave": "Save",
+  "actionNew": "New",
+  "actionNewBooking": "New booking",
+  "filterAll": "All",
+  "filterVIP": "VIP",
+  "filterInactive": "Inactive",
+  "filterNew": "New",
+  "formName": "Name",
+  "formEmail": "Email",
+  "formPhone": "Phone",
+  "formNotes": "Notes",
+  "validationRequired": "Required",
+  "validationInvalidEmail": "Invalid email",
+  "validationInvalidPhone": "Invalid phone"
+
 }

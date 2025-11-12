@@ -23,6 +23,7 @@
   "actionDelete": "Elimina",
   "actionCancel": "Annulla",
   "actionConfirm": "Conferma",
+  "actionClose": "Conferma",
   "deleteConfirmationTitle": "Confermi l’eliminazione?",
   "appointmentDeletedMessage": "Appuntamento eliminato",
   "agendaToday": "Oggi",
@@ -30,7 +31,70 @@
   "agendaNextDay": "Giorno successivo",
   "agendaPrevWeek": "Settimana precedente",
   "agendaNextWeek": "Settimana successivo",
+  "agendaPrevMonth": "Mese precedente",
+  "agendaNextMonth": "Mese successivo",
   "agendaNoLocations": "Nessuna sede disponibile",
   "agendaSelectLocation": "Seleziona sede",
-  "servicesCategoryEmpty": "Nessun servizio disponibile per questa categoria."
+  "servicesCategoryEmpty": "Nessun servizio disponibile per questa categoria.",
+  "availabilityTitle": "Disponibilità settimanale",
+  "availabilityTitleFor": "Disponibilità – {name}",
+  "@availabilityTitleFor": {"placeholders": {"name": {"type": "String"}}},
+  "availabilitySave": "Salva modifiche",
+  "availabilitySaved": "Disponibilità salvate (mock).",
+  "availabilitySavedFor": "Disponibilità salvate per staff {name} (mock).",
+  "@availabilitySavedFor": {"placeholders": {"name": {"type": "String"}}},
+  "availabilityCopyToAll": "Copia su tutte",
+  "availabilityClear": "Azzera",
+  "currentWeek": "Settimana corrente",
+  "hoursMinutesCompact": "{hours}h {minutes}m",
+  "hoursHoursOnly": "{hours}h",
+  "labelStaff": "Staff:",
+  "labelSelect": "Seleziona",
+  "dayMonShort": "Lun",
+  "dayTueShort": "Mar",
+  "dayWedShort": "Mer",
+  "dayThuShort": "Gio",
+  "dayFriShort": "Ven",
+  "daySatShort": "Sab",
+  "daySunShort": "Dom"
+  ,"staffHubAvailabilityTitle": "Disponibilità"
+  ,"staffHubAvailabilitySubtitle": "Configura gli orari di lavoro settimanali"
+  ,"staffHubTeamTitle": "Team"
+  ,"staffHubTeamSubtitle": "Gestione membri e ruoli"
+  ,"staffHubStatsTitle": "Statistiche"
+  ,"staffHubStatsSubtitle": "Performance e carichi di lavoro"
+  ,"staffHubNotYetAvailable": "Non ancora disponibile"
+  ,"availabilitySlotSelectedLabel": "slot {time} selezionato"
+  ,"availabilitySlotUnselectedLabel": "slot {time} non selezionato"
+  ,"@availabilitySlotSelectedLabel": {"placeholders": {"time": {"type": "String"}}}
+  ,"@availabilitySlotUnselectedLabel": {"placeholders": {"time": {"type": "String"}}}
+    ,"staffEditHours": "Modifica orari"
+    ,"actionEdit": "Modifica"
+  ,"durationMinute": "{minutes} min",
+"durationMinute_plural": "{minutes} min",
+"durationHour": "{hours} ora",
+"durationHour_plural": "{hours} ore",
+"durationHourMinute": "{hours} ora {minutes} min",
+"durationHourMinute_plural": "{hours} ore {minutes} min",
+"freeLabel": "Gratis",
+  "priceStartingFromPrefix": "a partire da",
+  "priceNotAvailable": "N/D",
+  "clientsNew": "Nuovo cliente",
+  "clientsEdit": "Modifica cliente",
+  "clientsEmpty": "Nessun cliente",
+  "actionSave": "Salva",
+  "actionNew": "Nuovo",
+  "actionNewBooking": "Nuova prenotazione",
+  "filterAll": "Tutti",
+  "filterVIP": "VIP",
+  "filterInactive": "Inattivi",
+  "filterNew": "Nuovi",
+  "formName": "Nome",
+  "formEmail": "Email",
+  "formPhone": "Telefono",
+  "formNotes": "Note",
+  "validationRequired": "Richiesto",
+  "validationInvalidEmail": "Email non valida",
+  "validationInvalidPhone": "Telefono non valido"
+
 }
