@@ -27,6 +27,8 @@ import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/staff_providers.dart';
 import '../../../providers/temp_drag_time_provider.dart';
+import '../../widgets/appointment_dialog.dart';
+import '../../widgets/booking_details_overlay.dart';
 
 /// 🔹 Versione unificata per DESKTOP e MOBILE.
 /// Mantiene drag, resize, ghost, select, ma cambia il comportamento del tap:
@@ -719,6 +721,8 @@ class _AppointmentCardInteractiveState
     return '$hours:$minutes';
   }
 
+  // Menu contestuale disabilitato su desktop: rimosso
+
   Widget _buildContent(String start, String end, String client, String info) {
     return ClipRect(
       child: Column(
@@ -1045,6 +1049,55 @@ class _AppointmentActionSheetState
         const SizedBox(height: 12),
         _buildAppointmentDetails(appointment),
         const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            Expanded(
+              child: AppOutlinedActionButton(
+                onPressed: () async {
+                  await showAppointmentDialog(
+                    context,
+                    ref,
+                    initial: widget.appointment,
+                  );
+                  if (!context.mounted) return;
+                  Navigator.of(context).maybePop();
+                },
+                child: Text(context.l10n.actionEdit),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: AppOutlinedActionButton(
+                onPressed: () {
+                  ref
+                      .read(appointmentsProvider.notifier)
+                      .duplicateAppointment(widget.appointment);
+                  Navigator.of(context).pop();
+                },
+                child: Text(context.l10n.actionDuplicate),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: AppOutlinedActionButton(
+                onPressed: () async {
+                  await showBookingDetailsOverlay(
+                    context,
+                    ref,
+                    bookingId: appointment.bookingId,
+                  );
+                },
+                child: Text(context.l10n.bookingDetails),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [

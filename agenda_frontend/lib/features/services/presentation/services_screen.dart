@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/core/utils/price_utils.dart';
 import 'package:agenda_frontend/features/agenda/providers/business_providers.dart';
@@ -15,25 +17,83 @@ import '../providers/services_provider.dart';
 import '../providers/services_reorder_provider.dart';
 import '../providers/services_sorted_providers.dart';
 
-class ServicesScreen extends ConsumerWidget {
+class ServicesScreen extends ConsumerStatefulWidget {
   const ServicesScreen({super.key});
 
+  @override
+  ConsumerState<ServicesScreen> createState() => _ServicesScreenState();
+}
+
+class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   static final ValueNotifier<int?> _hoveredService = ValueNotifier<int?>(null);
   static final ValueNotifier<int?> _selectedService = ValueNotifier<int?>(null);
 
+  final ScrollController _scrollController = ScrollController();
+  Timer? _autoScrollTimer;
+
+  /// Modalità di riordino (mutuamente esclusive)
+  bool isReorderCategories = false;
+  bool isReorderServices = false;
+
+  // ---------- Auto-scroll mentre si trascina ----------
+  void _startAutoScroll(Offset pointerInGlobal) {
+    const threshold = 100.0; // distanza dal bordo
+    const speed = 14.0; // px per tick ~60fps
+
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+      if (!_scrollController.hasClients) return;
+
+      final renderBox = context.findRenderObject() as RenderBox?;
+      if (renderBox == null) return;
+
+      final local = renderBox.globalToLocal(pointerInGlobal);
+      final dy = local.dy;
+
+      final pos = _scrollController.offset;
+      final max = _scrollController.position.maxScrollExtent;
+      final viewH = _scrollController.position.viewportDimension;
+
+      if (dy < threshold && pos > 0) {
+        _scrollController.jumpTo((pos - speed).clamp(0, max));
+      } else if (dy > viewH - threshold && pos < max) {
+        _scrollController.jumpTo((pos + speed).clamp(0, max));
+      }
+    });
+  }
+
+  void _stopAutoScroll() => _autoScrollTimer?.cancel();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isReordering = ref.watch(servicesReorderProvider);
-    final categories = ref.watch(sortedCategoriesProvider);
-    final servicesNotifier = ref.read(servicesProvider.notifier);
-    final formFactor = ref.watch(formFactorProvider);
-    final isWide = formFactor == AppFormFactor.tabletOrDesktop;
+  void dispose() {
+    _autoScrollTimer?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allCategories = ref.watch(sortedCategoriesProvider);
+
+    // In modalità riordino escludiamo le categorie senza servizi
+    final categories = (isReorderCategories || isReorderServices)
+        ? allCategories
+              .where(
+                (c) => ref
+                    .watch(sortedServicesByCategoryProvider(c.id))
+                    .isNotEmpty,
+              )
+              .toList()
+        : allCategories;
+
     final colorScheme = Theme.of(context).colorScheme;
+    final isWide =
+        ref.watch(formFactorProvider) == AppFormFactor.tabletOrDesktop;
 
     if (categories.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24),
           child: Text(
             context.l10n.servicesTitle,
             style: Theme.of(context).textTheme.titleLarge,
@@ -47,550 +107,85 @@ class ServicesScreen extends ConsumerWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () => _selectedService.value = null,
       child: Scaffold(
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _showCategoryDialog(context, ref),
-          icon: const Icon(Icons.add),
-          label: const Text('Nuova categoria'), // TODO: l10n
-        ),
+        floatingActionButton: (isReorderCategories || isReorderServices)
+            ? null
+            : FloatingActionButton.extended(
+                onPressed: () => _showCategoryDialog(context, ref),
+                icon: const Icon(Icons.add),
+                // Per eventuale chiave i18n: createCategoryButtonLabel
+                label: Text(context.l10n.createCategoryButtonLabel),
+              ),
         body: Column(
           children: [
-            // Toolbar azioni
+            // ---------- Toolbar ----------
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
                 children: [
                   TextButton.icon(
                     onPressed: () {
-                      ref.read(servicesReorderProvider.notifier).toggle();
-                      if (isReordering) {
-                        // Quando esci dalla modalità, conferma salvataggio
+                      setState(() {
+                        isReorderCategories = !isReorderCategories;
+                        if (isReorderCategories) isReorderServices = false;
+                      });
+                      if (!isReorderCategories) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Ordine salvato'),
-                          ), // TODO: l10n
+                          SnackBar(
+                            content: Text(context.l10n.orderSavedMessage),
+                          ),
                         );
                       }
                     },
                     icon: Icon(
-                      isReordering ? Icons.check : Icons.drag_indicator,
+                      isReorderCategories ? Icons.check : Icons.drag_indicator,
                     ),
                     label: Text(
-                      isReordering ? 'Fine' : 'Modifica ordine',
-                    ), // TODO: l10n
+                      isReorderCategories
+                          ? context.l10n.doneCategoriesButton
+                          : context.l10n.editCategoriesOrderButton,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        isReorderServices = !isReorderServices;
+                        if (isReorderServices) isReorderCategories = false;
+                      });
+                      if (!isReorderServices) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(context.l10n.orderSavedMessage),
+                          ),
+                        );
+                      }
+                    },
+                    icon: Icon(
+                      isReorderServices ? Icons.check : Icons.drag_indicator,
+                    ),
+                    label: Text(
+                      isReorderServices
+                          ? context.l10n.doneServicesButton
+                          : context.l10n.editServicesOrderButton,
+                    ),
                   ),
                   const Spacer(),
                 ],
               ),
             ),
+
+            // ---------- Corpo ----------
             Expanded(
-              child: isReordering
-                  ? ReorderableListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                      buildDefaultDragHandles: false,
-                      itemCount: categories.length,
-                      onReorder: (oldIndex, newIndex) {
-                        ref
-                            .read(servicesReorderProvider.notifier)
-                            .reorderCategories(oldIndex, newIndex);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Ordine salvato'),
-                          ), // TODO: l10n
-                        );
-                      },
-                      itemBuilder: (context, index) {
-                        final category = categories[index];
-                        final services = ref.watch(
-                          sortedServicesByCategoryProvider(category.id),
-                        );
-                        return Container(
-                          key: ValueKey('cat-${category.id}'),
-                          margin: const EdgeInsets.only(bottom: 16),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: colorScheme.outlineVariant.withOpacity(
-                                0.4,
-                              ),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Header categoria con handle drag
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primaryContainer
-                                      .withOpacity(0.6),
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(12),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    ReorderableDragStartListener(
-                                      index: index,
-                                      child: const Icon(Icons.drag_indicator),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        category.name,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.titleMedium,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Lista servizi riordinabile della categoria
-                              if (services.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.all(12.0),
-                                  child: Text('Nessun servizio'), // TODO: l10n
-                                )
-                              else
-                                ReorderableListView.builder(
-                                  key: ValueKey('svc-list-${category.id}'),
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  buildDefaultDragHandles: false,
-                                  itemCount: services.length,
-                                  onReorder: (oldIndex, newIndex) {
-                                    ref
-                                        .read(servicesReorderProvider.notifier)
-                                        .reorderServices(
-                                          category.id,
-                                          oldIndex,
-                                          newIndex,
-                                        );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Ordine salvato'),
-                                      ), // TODO: l10n
-                                    );
-                                  },
-                                  itemBuilder: (ctx, i) {
-                                    final s = services[i];
-                                    return ListTile(
-                                      key: ValueKey('svc-${s.id}'),
-                                      leading: ReorderableDragStartListener(
-                                        index: i,
-                                        child: const Icon(Icons.drag_indicator),
-                                      ),
-                                      title: Text(s.name),
-                                      subtitle: s.description != null
-                                          ? Text(
-                                              s.description!,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            )
-                                          : null,
-                                    );
-                                  },
-                                ),
-                            ],
-                          ),
-                        );
-                      },
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
-                      itemCount: categories.length,
-                      itemBuilder: (context, index) {
-                        final category = categories[index];
-                        final services = ref.watch(
-                          sortedServicesByCategoryProvider(category.id),
-                        );
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 24),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surface,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 🔹 Header categoria
-                              Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primaryContainer,
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(16),
-                                  ),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 14,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          category.name,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                color: colorScheme
-                                                    .onPrimaryContainer,
-                                              ),
-                                        ),
-                                        if (category.description != null)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                              top: 4,
-                                            ),
-                                            child: Text(
-                                              category.description!,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(
-                                                    color: colorScheme
-                                                        .onPrimaryContainer
-                                                        .withOpacity(0.8),
-                                                  ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    Row(
-                                      children: [
-                                        IconButton(
-                                          tooltip: 'Aggiungi servizio',
-                                          icon: Icon(
-                                            Icons.add,
-                                            color:
-                                                colorScheme.onPrimaryContainer,
-                                          ),
-                                          onPressed: () => _showServiceDialog(
-                                            context,
-                                            ref,
-                                            preselectedCategoryId: category.id,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          tooltip: context.l10n.actionEdit,
-                                          icon: Icon(
-                                            Icons.edit_outlined,
-                                            color:
-                                                colorScheme.onPrimaryContainer,
-                                          ),
-                                          onPressed: () => _showCategoryDialog(
-                                            context,
-                                            ref,
-                                            category: category,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          tooltip: context.l10n.actionDelete,
-                                          icon: const Icon(
-                                            Icons.delete_outline,
-                                          ),
-                                          color: colorScheme.onPrimaryContainer,
-                                          onPressed: () {
-                                            final hasServices =
-                                                services.isNotEmpty;
-                                            if (hasServices) {
-                                              _showCannotDeleteCategoryDialog(
-                                                context,
-                                              );
-                                              return;
-                                            }
-                                            _confirmDeleteCategory(
-                                              context,
-                                              ref,
-                                              category.id,
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              if (services.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Text(
-                                    'Nessun servizio in questa categoria',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: Colors.grey[600]),
-                                  ),
-                                )
-                              else
-                                ValueListenableBuilder2<int?, int?>(
-                                  first: _hoveredService,
-                                  second: _selectedService,
-                                  builder: (context, hoveredId, selectedId, _) {
-                                    return Column(
-                                      children: [
-                                        for (
-                                          int i = 0;
-                                          i < services.length;
-                                          i++
-                                        )
-                                          Builder(
-                                            builder: (context) {
-                                              final service = services[i];
-                                              final isLast =
-                                                  i == services.length - 1;
-
-                                              return MouseRegion(
-                                                onEnter: (_) =>
-                                                    _hoveredService.value =
-                                                        service.id,
-                                                onExit: (_) =>
-                                                    _hoveredService.value =
-                                                        null,
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    _selectedService.value =
-                                                        service.id;
-                                                    _showServiceDialog(
-                                                      context,
-                                                      ref,
-                                                      service: service,
-                                                    );
-                                                  },
-                                                  child: ValueListenableBuilder2<int?, int?>(
-                                                    first: _hoveredService,
-                                                    second: _selectedService,
-                                                    builder:
-                                                        (
-                                                          context,
-                                                          hoveredId,
-                                                          selectedId,
-                                                          _,
-                                                        ) {
-                                                          final isHovered =
-                                                              hoveredId ==
-                                                              service.id;
-                                                          final isSelected =
-                                                              selectedId ==
-                                                              service.id;
-                                                          final baseColor =
-                                                              i.isOdd
-                                                              ? colorScheme
-                                                                    .onSurface
-                                                                    .withOpacity(
-                                                                      0.04,
-                                                                    )
-                                                              : Colors
-                                                                    .transparent;
-
-                                                          // Hover/Selezione hanno priorità
-                                                          final bgColor =
-                                                              (isHovered ||
-                                                                  isSelected)
-                                                              ? colorScheme
-                                                                    .primaryContainer
-                                                                    .withOpacity(
-                                                                      0.1,
-                                                                    )
-                                                              : baseColor;
-
-                                                          // Hover/Selezione hanno priorità
-                                                          return Container(
-                                                            decoration: BoxDecoration(
-                                                              color: bgColor,
-                                                              borderRadius: BorderRadius.only(
-                                                                bottomLeft:
-                                                                    isLast
-                                                                    ? const Radius.circular(
-                                                                        16,
-                                                                      )
-                                                                    : Radius
-                                                                          .zero,
-                                                                bottomRight:
-                                                                    isLast
-                                                                    ? const Radius.circular(
-                                                                        16,
-                                                                      )
-                                                                    : Radius
-                                                                          .zero,
-                                                              ),
-                                                            ),
-                                                            child: ListTile(
-                                                              contentPadding:
-                                                                  const EdgeInsets.symmetric(
-                                                                    horizontal:
-                                                                        16,
-                                                                    vertical: 6,
-                                                                  ),
-                                                              title: Column(
-                                                                crossAxisAlignment:
-                                                                    CrossAxisAlignment
-                                                                        .start,
-                                                                children: [
-                                                                  Text(
-                                                                    service
-                                                                        .name,
-                                                                    style: Theme.of(context)
-                                                                        .textTheme
-                                                                        .titleMedium
-                                                                        ?.copyWith(
-                                                                          fontWeight:
-                                                                              FontWeight.w500,
-                                                                        ),
-                                                                  ),
-                                                                  if (!service
-                                                                      .isBookableOnline)
-                                                                    Padding(
-                                                                      padding:
-                                                                          const EdgeInsets.only(
-                                                                            top:
-                                                                                2,
-                                                                          ),
-                                                                      child: Text(
-                                                                        'Non prenotabile online',
-                                                                        style:
-                                                                            Theme.of(
-                                                                              context,
-                                                                            ).textTheme.bodySmall?.copyWith(
-                                                                              color: Colors.red[600],
-                                                                              fontStyle: FontStyle.italic,
-                                                                            ),
-                                                                      ),
-                                                                    ),
-                                                                ],
-                                                              ),
-                                                              subtitle:
-                                                                  service.description !=
-                                                                      null
-                                                                  ? Text(
-                                                                      service
-                                                                          .description!,
-                                                                      maxLines:
-                                                                          1,
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .ellipsis,
-                                                                    )
-                                                                  : null,
-                                                              trailing: Row(
-                                                                mainAxisSize:
-                                                                    MainAxisSize
-                                                                        .min,
-                                                                children: [
-                                                                  if (service
-                                                                      .isFree)
-                                                                    Container(
-                                                                      padding: const EdgeInsets.symmetric(
-                                                                        horizontal:
-                                                                            8,
-                                                                        vertical:
-                                                                            4,
-                                                                      ),
-                                                                      decoration: BoxDecoration(
-                                                                        color: Colors
-                                                                            .green
-                                                                            .withOpacity(
-                                                                              0.1,
-                                                                            ),
-                                                                        borderRadius:
-                                                                            BorderRadius.circular(
-                                                                              8,
-                                                                            ),
-                                                                        border: Border.all(
-                                                                          color: Colors.green.withOpacity(
-                                                                            0.3,
-                                                                          ),
-                                                                        ),
-                                                                      ),
-                                                                      child: const Text(
-                                                                        'Gratuito',
-                                                                        style: TextStyle(
-                                                                          color:
-                                                                              Colors.green,
-                                                                          fontWeight:
-                                                                              FontWeight.bold,
-                                                                          fontSize:
-                                                                              13,
-                                                                        ),
-                                                                      ),
-                                                                    )
-                                                                  else
-                                                                    Text(
-                                                                      PriceFormatter.formatService(
-                                                                        context:
-                                                                            context,
-                                                                        ref:
-                                                                            ref,
-                                                                        service:
-                                                                            service,
-                                                                      ),
-                                                                      style: const TextStyle(
-                                                                        fontWeight:
-                                                                            FontWeight.w600,
-                                                                      ),
-                                                                    ),
-                                                                  const SizedBox(
-                                                                    width: 8,
-                                                                  ),
-                                                                  if (isWide)
-                                                                    _buildActionIcons(
-                                                                      context,
-                                                                      ref,
-                                                                      service,
-                                                                      servicesNotifier,
-                                                                    )
-                                                                  else
-                                                                    _buildPopupMenu(
-                                                                      context,
-                                                                      ref,
-                                                                      service,
-                                                                      servicesNotifier,
-                                                                    ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                          );
-                                                        },
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        if (services.isNotEmpty)
-                                          Divider(
-                                            color: Colors.grey.withOpacity(0.2),
-                                            height: 1,
-                                            thickness: 1,
-                                          ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                            ],
-                          ),
-                        );
-                      },
+              child: isReorderCategories
+                  ? _buildReorderCategories(context, ref, categories)
+                  : isReorderServices
+                  ? _buildReorderServices(context, ref, categories)
+                  : _buildNormalList(
+                      context,
+                      ref,
+                      categories,
+                      isWide,
+                      colorScheme,
                     ),
             ),
           ],
@@ -598,6 +193,479 @@ class ServicesScreen extends ConsumerWidget {
       ),
     );
   }
+
+  // ============================
+  //  RIORDINO CATEGORIE (solo categorie, servizi nascosti)
+  // ============================
+  Widget _buildReorderCategories(
+    BuildContext context,
+    WidgetRef ref,
+    List<ServiceCategory> cats,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Listener(
+      onPointerMove: (e) => _startAutoScroll(e.position),
+      onPointerUp: (_) => _stopAutoScroll(),
+      child: ReorderableListView.builder(
+        scrollController: _scrollController,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        buildDefaultDragHandles: false,
+        itemCount: cats.length,
+        onReorder: (oldIndex, newIndex) {
+          ref
+              .read(servicesReorderProvider.notifier)
+              .reorderCategories(oldIndex, newIndex);
+        },
+        itemBuilder: (context, index) {
+          final category = cats[index];
+          return Container(
+            key: ValueKey('cat-${category.id}'),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withOpacity(0.4),
+              ),
+            ),
+            child: ListTile(
+              leading: ReorderableDragStartListener(
+                index: index,
+                child: const Icon(Icons.drag_indicator),
+              ),
+              title: Text(category.name),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ============================
+  //  RIORDINO SERVIZI (CROSS-CATEGORIA)
+  // ============================
+  Widget _buildReorderServices(
+    BuildContext context,
+    WidgetRef ref,
+    List<ServiceCategory> cats,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final reorder = ref.read(servicesReorderProvider.notifier);
+
+    // Flatten di tutti i servizi (solo delle categorie visualizzate)
+    final allServices = <Service>[];
+    final servicesByCategory = <int, List<Service>>{};
+    for (final c in cats) {
+      final list = ref.watch(sortedServicesByCategoryProvider(c.id));
+      servicesByCategory[c.id] = list;
+      allServices.addAll(list);
+    }
+
+    // Funzione di supporto: data la posizione "globale" nella lista piatta,
+    // ritorna la coppia (categoryId, indexNellaCategoria) dove verrebbe inserito
+    (int catId, int indexInCat) targetForFlatIndex(
+      int flatIndex, {
+      required bool movingDown,
+      int? movingServiceId,
+    }) {
+      // Clamp e fallback
+      if (allServices.isEmpty) return (cats.first.id, 0);
+      final idx = flatIndex.clamp(0, allServices.length);
+
+      // Inserimento in coda assoluta
+      if (idx == allServices.length) {
+        final last = allServices.last;
+        final inCat = servicesByCategory[last.categoryId] ?? [];
+        return (last.categoryId, inCat.length);
+      }
+
+      // Pivot alla posizione globale idx
+      final pivot = allServices[idx];
+      final pivotCatId = pivot.categoryId;
+
+      // Quanti elementi di quella categoria compaiono prima dell'indice globale,
+      // escludendo il servizio in movimento (per evitare off-by-one)
+      int countBeforeInPivotCat = 0;
+      for (int i = 0; i < idx; i++) {
+        final s = allServices[i];
+        if (s.categoryId == pivotCatId && s.id != movingServiceId) {
+          countBeforeInPivotCat++;
+        }
+      }
+
+      return (pivotCatId, countBeforeInPivotCat);
+    }
+
+    return Listener(
+      onPointerMove: (e) => _startAutoScroll(e.position),
+      onPointerUp: (_) => _stopAutoScroll(),
+      child: ReorderableListView.builder(
+        scrollController: _scrollController,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        buildDefaultDragHandles: false,
+        itemCount: allServices.length,
+        onReorder: (oldIndex, newIndex) {
+          // Normalizzazione Flutter Reorderable semantics
+          final movingDown = newIndex > oldIndex;
+          if (movingDown) newIndex -= 1;
+
+          final sOld = allServices[oldIndex];
+          final oldCatId = sOld.categoryId;
+
+          // Calcola destinazione (categoria e indice relativo nella categoria)
+          final (targetCatId, indexInTargetCat) = targetForFlatIndex(
+            newIndex,
+            movingDown: movingDown,
+            movingServiceId: sOld.id,
+          );
+
+          if (targetCatId == oldCatId) {
+            // stesso gruppo -> semplice riordino interno
+            reorder.reorderServices(
+              oldCatId,
+              // index relativo nella categoria di origine
+              (servicesByCategory[oldCatId] ?? []).indexWhere(
+                (e) => e.id == sOld.id,
+              ),
+              indexInTargetCat,
+            );
+          } else {
+            // Cross-categoria -> sposta
+            reorder.moveServiceBetweenCategories(
+              oldCatId,
+              targetCatId,
+              sOld.id,
+              indexInTargetCat,
+            );
+          }
+        },
+        itemBuilder: (context, index) {
+          final s = allServices[index];
+          final catName = cats.firstWhere((c) => c.id == s.categoryId).name;
+          return Container(
+            key: ValueKey('svc-${s.id}'),
+            margin: const EdgeInsets.only(bottom: 6),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withOpacity(0.7),
+              ),
+            ),
+            child: ListTile(
+              leading: ReorderableDragStartListener(
+                index: index,
+                child: const Icon(Icons.drag_indicator),
+              ),
+              title: Text(s.name),
+              subtitle: Text(
+                catName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 4,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ============================
+  //  VISTA NORMALE (pulsanti visibili, no drag)
+  // ============================
+  Widget _buildNormalList(
+    BuildContext context,
+    WidgetRef ref,
+    List<ServiceCategory> cats,
+    bool isWide,
+    ColorScheme colorScheme,
+  ) {
+    final servicesNotifier = ref.read(servicesProvider.notifier);
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
+      itemCount: cats.length,
+      itemBuilder: (context, index) {
+        final category = cats[index];
+        final services = ref.watch(
+          sortedServicesByCategoryProvider(category.id),
+        );
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 24),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header categoria
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Titolo + descrizione
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          category.name,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onPrimaryContainer,
+                              ),
+                        ),
+                        if (category.description != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              category.description!,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: colorScheme.onPrimaryContainer
+                                        .withOpacity(0.8),
+                                  ),
+                            ),
+                          ),
+                      ],
+                    ),
+
+                    // Pulsanti azione (solo in vista normale)
+                    Row(
+                      children: [
+                        IconButton(
+                          tooltip: context.l10n.addServiceTooltip,
+                          icon: Icon(
+                            Icons.add,
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                          onPressed: () => _showServiceDialog(
+                            context,
+                            ref,
+                            preselectedCategoryId: category.id,
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: context.l10n.actionEdit,
+                          icon: Icon(
+                            Icons.edit_outlined,
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                          onPressed: () => _showCategoryDialog(
+                            context,
+                            ref,
+                            category: category,
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: context.l10n.actionDelete,
+                          icon: const Icon(Icons.delete_outline),
+                          color: colorScheme.onPrimaryContainer,
+                          onPressed: () {
+                            if (services.isNotEmpty) {
+                              _showCannotDeleteCategoryDialog(context);
+                              return;
+                            }
+                            _confirmDeleteCategory(context, ref, category.id);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Body: lista servizi
+              if (services.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    context.l10n.noServicesInCategory,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                  ),
+                )
+              else
+                ValueListenableBuilder2<int?, int?>(
+                  first: _hoveredService,
+                  second: _selectedService,
+                  builder: (context, hoveredId, selectedId, _) {
+                    return Column(
+                      children: [
+                        for (int i = 0; i < services.length; i++)
+                          _buildServiceTile(
+                            context: context,
+                            ref: ref,
+                            service: services[i],
+                            isLast: i == services.length - 1,
+                            isHovered: hoveredId == services[i].id,
+                            isSelected: selectedId == services[i].id,
+                            isWide: isWide,
+                            colorScheme: colorScheme,
+                            servicesNotifier: servicesNotifier,
+                          ),
+                        if (services.isNotEmpty)
+                          Divider(
+                            color: Colors.grey.withOpacity(0.2),
+                            height: 1,
+                            thickness: 1,
+                          ),
+                      ],
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildServiceTile({
+    required BuildContext context,
+    required WidgetRef ref,
+    required Service service,
+    required bool isLast,
+    required bool isHovered,
+    required bool isSelected,
+    required bool isWide,
+    required ColorScheme colorScheme,
+    required dynamic servicesNotifier,
+  }) {
+    final baseColor = (service.id % 2 == 1)
+        ? colorScheme.onSurface.withOpacity(0.04)
+        : Colors.transparent;
+
+    final bgColor = (isHovered || isSelected)
+        ? colorScheme.primaryContainer.withOpacity(0.1)
+        : baseColor;
+
+    return MouseRegion(
+      onEnter: (_) => _hoveredService.value = service.id,
+      onExit: (_) => _hoveredService.value = null,
+      child: GestureDetector(
+        onTap: () {
+          _selectedService.value = service.id;
+          _showServiceDialog(context, ref, service: service);
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.only(
+              bottomLeft: isLast ? const Radius.circular(16) : Radius.zero,
+              bottomRight: isLast ? const Radius.circular(16) : Radius.zero,
+            ),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 6,
+            ),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  service.name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (!service.isBookableOnline)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      context.l10n.notBookableOnline,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.red[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            subtitle: service.description != null
+                ? Text(
+                    service.description!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : null,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (service.isFree)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      context.l10n.freeLabel,
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  )
+                else
+                  Text(
+                    PriceFormatter.formatService(
+                      context: context,
+                      ref: ref,
+                      service: service,
+                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                const SizedBox(width: 8),
+                if (isWide)
+                  _buildActionIcons(context, ref, service, servicesNotifier)
+                else
+                  _buildPopupMenu(context, ref, service, servicesNotifier),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================
+  //  DIALOGS & HELPERS
+  // ============================
 
   void _confirmDeleteCategory(
     BuildContext context,
@@ -631,8 +699,8 @@ class ServicesScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Impossibile eliminare'),
-        content: const Text('La categoria contiene uno o più servizi.'),
+        title: Text(context.l10n.cannotDeleteTitle),
+        content: Text(context.l10n.cannotDeleteCategoryContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
@@ -664,33 +732,40 @@ class ServicesScreen extends ConsumerWidget {
       builder: (_) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(
-            category == null ? 'Nuova categoria' : 'Modifica categoria',
+            category == null
+                ? context.l10n.newCategoryTitle
+                : context.l10n.editCategoryTitle,
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Nome *',
-                  errorText: nameError
-                      ? 'Il nome è obbligatorio'
-                      : duplicateError
-                      ? 'Esiste già una categoria con questo nome'
-                      : null,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.fieldNameRequiredLabel,
+                    errorText: nameError
+                        ? context.l10n.fieldNameRequiredError
+                        : (duplicateError
+                              ? context.l10n.categoryDuplicateError
+                              : null),
+                  ),
                 ),
-              ),
-              TextField(
-                controller: descController,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Descrizione'),
-              ),
-            ],
+                const SizedBox(height: 8),
+                TextField(
+                  controller: descController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.fieldDescriptionLabel,
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Annulla'),
+              child: Text(context.l10n.actionCancel),
             ),
             ElevatedButton(
               onPressed: () {
@@ -736,7 +811,7 @@ class ServicesScreen extends ConsumerWidget {
 
                 Navigator.pop(context);
               },
-              child: const Text('Salva'),
+              child: Text(context.l10n.actionSave),
             ),
           ],
         ),
@@ -744,7 +819,6 @@ class ServicesScreen extends ConsumerWidget {
     );
   }
 
-  /// 🔧 Dialog di aggiunta/modifica servizio
   void _showServiceDialog(
     BuildContext context,
     WidgetRef ref, {
@@ -792,7 +866,9 @@ class ServicesScreen extends ConsumerWidget {
         builder: (context, setState) {
           return AlertDialog(
             title: Text(
-              service == null ? 'Nuovo servizio' : 'Modifica servizio',
+              service == null
+                  ? context.l10n.newServiceTitle
+                  : context.l10n.editServiceTitle,
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -800,7 +876,9 @@ class ServicesScreen extends ConsumerWidget {
                 children: [
                   DropdownButtonFormField<int>(
                     value: selectedCategory,
-                    decoration: const InputDecoration(labelText: 'Categoria'),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.fieldCategoryLabel,
+                    ),
                     items: [
                       for (final c in categories)
                         DropdownMenuItem(value: c.id, child: Text(c.name)),
@@ -810,20 +888,22 @@ class ServicesScreen extends ConsumerWidget {
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
-                      labelText: 'Nome *',
+                      labelText: context.l10n.fieldNameRequiredLabel,
                       errorText: nameError
-                          ? 'Il nome è obbligatorio'
-                          : duplicateError
-                          ? 'Esiste già un servizio con questo nome'
-                          : null,
+                          ? context.l10n.fieldNameRequiredError
+                          : (duplicateError
+                                ? context.l10n.serviceDuplicateError
+                                : null),
                     ),
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<int>(
                     value: selectedDuration,
                     decoration: InputDecoration(
-                      labelText: 'Durata *',
-                      errorText: durationError ? 'Seleziona una durata' : null,
+                      labelText: context.l10n.fieldDurationRequiredLabel,
+                      errorText: durationError
+                          ? context.l10n.fieldDurationRequiredError
+                          : null,
                     ),
                     items: [
                       for (final (minutes, label) in _durationOptions(context))
@@ -838,7 +918,9 @@ class ServicesScreen extends ConsumerWidget {
                   TextField(
                     controller: descController,
                     maxLines: 3,
-                    decoration: const InputDecoration(labelText: 'Descrizione'),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.fieldDescriptionLabel,
+                    ),
                   ),
                   TextField(
                     controller: priceController,
@@ -846,16 +928,14 @@ class ServicesScreen extends ConsumerWidget {
                       decimal: true,
                     ),
                     inputFormatters: [
-                      // consente solo cifre, punto, virgola e segno -
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.,\-]')),
                     ],
                     decoration: InputDecoration(
-                      labelText: 'Prezzo',
+                      labelText: context.l10n.fieldPriceLabel,
                       prefixText: '$currencySymbol ',
                     ),
                     enabled: !isFree,
                     onChanged: (_) {
-                      // se non c'è prezzo, "a partire da" non ha senso
                       if (priceController.text.trim().isEmpty &&
                           isPriceStartingFrom) {
                         setState(() => isPriceStartingFrom = false);
@@ -864,12 +944,12 @@ class ServicesScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 10),
                   SwitchListTile(
-                    title: const Text('Prenotabile online'),
+                    title: Text(context.l10n.bookableOnlineSwitch),
                     value: isBookableOnline,
                     onChanged: (v) => setState(() => isBookableOnline = v),
                   ),
                   SwitchListTile(
-                    title: const Text('Servizio gratuito'),
+                    title: Text(context.l10n.freeServiceSwitch),
                     value: isFree,
                     onChanged: (v) {
                       setState(() {
@@ -882,9 +962,9 @@ class ServicesScreen extends ConsumerWidget {
                     },
                   ),
                   SwitchListTile(
-                    title: const Text('Prezzo "a partire da"'),
+                    title: Text(context.l10n.priceStartingFromSwitch),
                     subtitle: (isFree || priceController.text.trim().isEmpty)
-                        ? const Text('Imposta un prezzo per abilitarlo')
+                        ? Text(context.l10n.setPriceToEnable)
                         : null,
                     value: isPriceStartingFrom,
                     onChanged:
@@ -899,7 +979,7 @@ class ServicesScreen extends ConsumerWidget {
               TextButton(
                 onPressed: () =>
                     Navigator.of(context, rootNavigator: true).pop(),
-                child: const Text('Annulla'),
+                child: Text(context.l10n.actionCancel),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -932,7 +1012,6 @@ class ServicesScreen extends ConsumerWidget {
                   final parsedPrice = PriceFormatter.parse(
                     priceController.text,
                   );
-
                   final effectiveIsFree = isFree;
                   final double? finalPrice = effectiveIsFree
                       ? null
@@ -967,7 +1046,7 @@ class ServicesScreen extends ConsumerWidget {
 
                   Navigator.of(context, rootNavigator: true).pop();
                 },
-                child: const Text('Salva'),
+                child: Text(context.l10n.actionSave),
               ),
             ],
           );
@@ -976,7 +1055,7 @@ class ServicesScreen extends ConsumerWidget {
     ).then((_) => _selectedService.value = null);
   }
 
-  /// Opzioni durata
+  // ---------- Opzioni durata ----------
   List<(int, String)> _durationOptions(BuildContext context) {
     final List<(int, String)> options = [];
     for (int i = 5; i <= 240; i += 5) {
@@ -985,6 +1064,7 @@ class ServicesScreen extends ConsumerWidget {
     return options;
   }
 
+  // ---------- Azioni servizio ----------
   Widget _buildActionIcons(
     BuildContext context,
     WidgetRef ref,
@@ -994,17 +1074,17 @@ class ServicesScreen extends ConsumerWidget {
     return Row(
       children: [
         IconButton(
-          tooltip: 'Modifica',
+          tooltip: context.l10n.actionEdit,
           icon: const Icon(Icons.edit_outlined),
           onPressed: () => _showServiceDialog(context, ref, service: service),
         ),
         IconButton(
-          tooltip: 'Duplica',
+          tooltip: context.l10n.duplicateAction,
           icon: const Icon(Icons.copy_outlined),
           onPressed: () => servicesNotifier.duplicate(service),
         ),
         IconButton(
-          tooltip: 'Elimina',
+          tooltip: context.l10n.actionDelete,
           icon: const Icon(Icons.delete_outline, color: Colors.red),
           onPressed: () => _confirmDelete(
             context,
@@ -1038,10 +1118,13 @@ class ServicesScreen extends ConsumerWidget {
             break;
         }
       },
-      itemBuilder: (context) => const [
-        PopupMenuItem(value: 'edit', child: Text('Modifica')),
-        PopupMenuItem(value: 'duplicate', child: Text('Duplica')),
-        PopupMenuItem(value: 'delete', child: Text('Elimina')),
+      itemBuilder: (context) => [
+        PopupMenuItem(value: 'edit', child: Text(context.l10n.actionEdit)),
+        PopupMenuItem(
+          value: 'duplicate',
+          child: Text(context.l10n.duplicateAction),
+        ),
+        PopupMenuItem(value: 'delete', child: Text(context.l10n.actionDelete)),
       ],
     );
   }
@@ -1050,12 +1133,12 @@ class ServicesScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Eliminare il servizio?'),
-        content: const Text('Questa azione non può essere annullata.'),
+        title: Text(context.l10n.deleteServiceQuestion),
+        content: Text(context.l10n.cannotUndoWarning),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-            child: const Text('Annulla'),
+            child: Text(context.l10n.actionCancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1063,7 +1146,7 @@ class ServicesScreen extends ConsumerWidget {
               Navigator.of(context, rootNavigator: true).pop();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Elimina'),
+            child: Text(context.l10n.actionDelete),
           ),
         ],
       ),
@@ -1071,7 +1154,9 @@ class ServicesScreen extends ConsumerWidget {
   }
 }
 
-/// Helper per due ValueNotifier
+// ============================
+//  Helper per due ValueNotifier
+// ============================
 class ValueListenableBuilder2<A, B> extends StatelessWidget {
   final ValueNotifier<A> first;
   final ValueNotifier<B> second;

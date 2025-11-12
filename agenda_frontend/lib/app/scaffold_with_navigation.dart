@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../core/l10n/l10_extension.dart';
 import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
+import '../features/agenda/presentation/widgets/appointment_dialog.dart';
+import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
 // 2. Importa il nuovo provider globale
 import 'providers/form_factor_provider.dart';
@@ -39,7 +41,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       return Scaffold(
         appBar: AppBar(
           title: isAgenda
-              ? const AgendaTopControls()
+              ? const AgendaTopControls(externalizeAdd: true)
               : Text(
                   _ScaffoldWithNavigationHelpers.getLocalizedTitle(
                     context,
@@ -48,6 +50,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 ),
           centerTitle: false,
           toolbarHeight: 72,
+          actions: isAgenda
+              ? [const _AgendaAddAction(), const SizedBox(width: 16)]
+              : null,
         ),
         body: Row(
           children: [
@@ -69,14 +74,21 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
 
     // 🎯 TARGET MOBILE: BottomNavigationBar
+    final isAgenda = navigationShell.currentIndex == 0;
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _ScaffoldWithNavigationHelpers.getLocalizedTitle(
-            context,
-            navigationShell.currentIndex,
-          ),
-        ),
+        title: isAgenda
+            ? const AgendaTopControls(externalizeAdd: true, compact: true)
+            : Text(
+                _ScaffoldWithNavigationHelpers.getLocalizedTitle(
+                  context,
+                  navigationShell.currentIndex,
+                ),
+              ),
+        centerTitle: false,
+        actions: isAgenda
+            ? const [_AgendaAddAction(compact: true), SizedBox(width: 16)]
+            : null,
       ),
       body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
@@ -105,6 +117,95 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   }
 
   // ... (le funzioni helper omesse prima) ...
+}
+
+class _AgendaAddAction extends ConsumerWidget {
+  const _AgendaAddAction({this.compact = false});
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final agendaDate = ref.watch(agendaDateProvider);
+    if (compact) {
+      return PopupMenuButton<String>(
+        tooltip: l10n.agendaAdd,
+        icon: const Icon(Icons.add_outlined, size: 22),
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'appointment',
+            child: Text(l10n.agendaAddAppointment),
+          ),
+          PopupMenuItem(value: 'block', child: Text(l10n.agendaAddBlock)),
+        ],
+        onSelected: (value) async {
+          if (value == 'appointment') {
+            await showAppointmentDialog(context, ref, date: agendaDate);
+          } else if (value == 'block') {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(l10n.agendaAddBlock)));
+          }
+        },
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: PopupMenuButton<String>(
+        tooltip: l10n.agendaAdd,
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'appointment',
+            child: Text(l10n.agendaAddAppointment),
+          ),
+          PopupMenuItem(value: 'block', child: Text(l10n.agendaAddBlock)),
+        ],
+        onSelected: (value) {
+          if (value == 'appointment') {
+            showAppointmentDialog(context, ref, date: agendaDate);
+          } else if (value == 'block') {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(l10n.agendaAddBlock)));
+          }
+        },
+        child: Builder(
+          builder: (buttonContext) {
+            final scheme = Theme.of(buttonContext).colorScheme;
+            final onContainer = scheme.onSecondaryContainer;
+            return Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_outlined, size: 22, color: onContainer),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.agendaAdd,
+                      style: TextStyle(
+                        color: onContainer,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
 
 class _ScaffoldWithNavigationHelpers {
