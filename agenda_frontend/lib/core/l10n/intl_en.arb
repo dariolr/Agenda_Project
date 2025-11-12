@@ -97,4 +97,54 @@
   "validationInvalidEmail": "Invalid email",
   "validationInvalidPhone": "Invalid phone"
 
+  ,"agendaAdd": "Add"
+  ,"agendaAddAppointment": "Add appointment"
+  ,"agendaAddBlock": "Add block"
+  ,"appointmentDialogTitleNew": "New appointment"
+  ,"appointmentDialogTitleEdit": "Edit appointment"
+  ,"formDate": "Date"
+  ,"formTime": "Time"
+  ,"formService": "Service"
+  ,"formClient": "Client"
+  ,"formStaff": "Staff"
+  ,"actionDuplicate": "Duplicate"
+  ,"actionAddService": "Add service"
+  ,"bookingDetails": "Booking details"
+  ,"bookingNotes": "Booking notes"
+  ,"bookingItems": "Services"
+  ,"bookingTotal": "Total"
+  ,"actionDeleteBooking": "Delete booking"
+  ,"deleteBookingConfirmTitle": "Delete entire booking?"
+  ,"deleteBookingConfirmMessage": "All linked services will be removed. This action cannot be undone.",
+  "createCategoryButtonLabel": "New category",
+  "orderSavedMessage": "Order saved successfully",
+  "doneCategoriesButton": "Done (Categories)",
+  "editCategoriesOrderButton": "Reorder categories",
+  "doneServicesButton": "Done (Services)",
+  "editServicesOrderButton": "Reorder services",
+  "addServiceTooltip": "Add service",
+  "cannotDeleteTitle": "Cannot delete",
+  "cannotDeleteCategoryContent": "This category contains one or more services.",
+  "noServicesInCategory": "No services in this category",
+  "notBookableOnline": "Not bookable online",
+  "duplicateAction": "Duplicate",
+  "deleteServiceQuestion": "Delete this service?",
+  "cannotUndoWarning": "This action cannot be undone.",
+  "newCategoryTitle": "New category",
+  "editCategoryTitle": "Edit category",
+  "fieldNameRequiredLabel": "Name *",
+  "fieldNameRequiredError": "Name is required",
+  "categoryDuplicateError": "A category with this name already exists",
+  "fieldDescriptionLabel": "Description",
+  "newServiceTitle": "New service",
+  "editServiceTitle": "Edit service",
+  "fieldCategoryLabel": "Category",
+  "fieldDurationRequiredLabel": "Duration *",
+  "fieldDurationRequiredError": "Please select a duration",
+  "fieldPriceLabel": "Price",
+  "bookableOnlineSwitch": "Bookable online",
+  "freeServiceSwitch": "Free service",
+  "priceStartingFromSwitch": "Price “starting from”",
+  "setPriceToEnable": "Set a price to enable this option",
+  "serviceDuplicateError": "A service with this name already exists"
 }

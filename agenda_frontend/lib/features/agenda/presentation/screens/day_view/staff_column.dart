@@ -29,6 +29,7 @@ import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
+import '../../widgets/appointment_dialog.dart';
 import '../helper/drag_drop_helper.dart';
 import '../helper/layout_geometry_helper.dart';
 import '../widgets/agenda_dividers.dart';
@@ -367,6 +368,15 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                 slotTime: slotTime,
                 height: slotHeight,
                 colorPrimary1: Theme.of(context).colorScheme.primary,
+                onTap: (dt) {
+                  showAppointmentDialog(
+                    context,
+                    ref,
+                    date: DateUtils.dateOnly(dt),
+                    time: TimeOfDay(hour: dt.hour, minute: dt.minute),
+                    initialStaffId: widget.staff.id,
+                  );
+                },
               );
             }
 

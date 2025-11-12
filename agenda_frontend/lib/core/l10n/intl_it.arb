@@ -97,4 +97,56 @@
   "validationInvalidEmail": "Email non valida",
   "validationInvalidPhone": "Telefono non valido"
 
+  ,"agendaAdd": "Aggiungi"
+  ,"agendaAddAppointment": "Aggiungi appuntamento"
+  ,"agendaAddBlock": "Aggiungi blocco"
+  ,"appointmentDialogTitleNew": "Nuovo appuntamento"
+  ,"appointmentDialogTitleEdit": "Modifica appuntamento"
+  ,"formDate": "Data"
+  ,"formTime": "Orario"
+  ,"formService": "Servizio"
+  ,"formClient": "Cliente"
+  ,"formStaff": "Staff"
+  ,"actionDuplicate": "Duplica"
+  ,"actionAddService": "Aggiungi servizio"
+  ,"bookingDetails": "Dettagli prenotazione"
+  ,"bookingNotes": "Note prenotazione"
+  ,"bookingItems": "Servizi"
+  ,"bookingTotal": "Totale"
+  ,"actionDeleteBooking": "Elimina prenotazione"
+  ,"deleteBookingConfirmTitle": "Eliminare l’intera prenotazione?"
+  ,"deleteBookingConfirmMessage": "Verranno rimossi tutti i servizi collegati. L’operazione non può essere annullata.",
+  "createCategoryButtonLabel": "Nuova categoria",
+  "orderSavedMessage": "Ordine salvato correttamente",
+  "doneCategoriesButton": "Fine categorie",
+  "editCategoriesOrderButton": "Modifica ordine categorie",
+  "doneServicesButton": "Fine servizi",
+  "editServicesOrderButton": "Modifica ordine servizi",
+  "addServiceTooltip": "Aggiungi servizio",
+  "cannotDeleteTitle": "Impossibile eliminare",
+  "cannotDeleteCategoryContent": "La categoria contiene uno o più servizi.",
+  "noServicesInCategory": "Nessun servizio in questa categoria",
+  "notBookableOnline": "Non prenotabile online",
+  "duplicateAction": "Duplica",
+  "deleteServiceQuestion": "Eliminare il servizio?",
+  "cannotUndoWarning": "Questa azione non può essere annullata.",
+  "newCategoryTitle": "Nuova categoria",
+  "editCategoryTitle": "Modifica categoria",
+  "fieldNameRequiredLabel": "Nome *",
+  "fieldNameRequiredError": "Il nome è obbligatorio",
+  "categoryDuplicateError": "Esiste già una categoria con questo nome",
+  "fieldDescriptionLabel": "Descrizione",
+  "newServiceTitle": "Nuovo servizio",
+  "editServiceTitle": "Modifica servizio",
+  "fieldCategoryLabel": "Categoria",
+  "fieldDurationRequiredLabel": "Durata *",
+  "fieldDurationRequiredError": "Seleziona una durata",
+  "fieldPriceLabel": "Prezzo",
+  "bookableOnlineSwitch": "Prenotabile online",
+  "freeServiceSwitch": "Servizio gratuito",
+  "priceStartingFromSwitch": "Prezzo \"a partire da\"",
+  "setPriceToEnable": "Imposta un prezzo per abilitarlo",
+  "serviceDuplicateError": "Esiste già un servizio con questo nome"
+
+
 }

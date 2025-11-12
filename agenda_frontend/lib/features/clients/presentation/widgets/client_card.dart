@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../domain/clients.dart';
@@ -72,8 +73,7 @@ class ClientCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  // Simplified date formatting for now; ideally use intl date formatting
-                  'Ultima visita: ${client.lastVisit!.toIso8601String().substring(0, 10)}', // TODO localize/format date
+                  _buildLastVisitLabel(context, client.lastVisit!),
                   style: theme.textTheme.labelSmall,
                 ),
               ),
@@ -100,5 +100,13 @@ class ClientCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _buildLastVisitLabel(BuildContext context, DateTime date) {
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    // Esempio coerente con altre parti dell'app (e.g. staff widgets): d MMM y
+    final formatted = DateFormat('d MMM y', locale).format(date);
+    // Nota: il label non è ancora in L10n; lasciamo la stringa italiana di default.
+    return 'Ultima visita: $formatted';
   }
 }

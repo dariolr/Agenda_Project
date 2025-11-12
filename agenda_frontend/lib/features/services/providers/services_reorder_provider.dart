@@ -19,13 +19,11 @@ class ServicesReorderNotifier extends Notifier<bool> {
     final notifier = ref.read(serviceCategoriesProvider.notifier);
     final list = [...ref.read(serviceCategoriesProvider)];
 
-    // Flutter ReorderableListView semantics: adjust newIndex when moving down
     if (newIndex > oldIndex) newIndex -= 1;
 
     final item = list.removeAt(oldIndex);
     list.insert(newIndex, item);
 
-    // Ricalcola sortOrder consecutivi
     final reordered = <ServiceCategory>[];
     for (int i = 0; i < list.length; i++) {
       reordered.add(list[i].copyWith(sortOrder: i));
@@ -34,28 +32,22 @@ class ServicesReorderNotifier extends Notifier<bool> {
     notifier.state = reordered;
   }
 
-  /// Riordina i servizi all'interno della categoria
+  /// Riordina i servizi all'interno della stessa categoria
   void reorderServices(int categoryId, int oldIndex, int newIndex) {
     final servicesNotifier = ref.read(servicesProvider.notifier);
     final all = [...ref.read(servicesProvider)];
 
-    // Estrai solo quelli della categoria
-    final byCat = [
-      for (final s in all)
-        if (s.categoryId == categoryId) s,
-    ];
+    final byCat = all.where((s) => s.categoryId == categoryId).toList();
 
     if (newIndex > oldIndex) newIndex -= 1;
     final item = byCat.removeAt(oldIndex);
     byCat.insert(newIndex, item);
 
-    // Ricostruisci sortOrder per la categoria
     final updatedByCat = <Service>[];
     for (int i = 0; i < byCat.length; i++) {
       updatedByCat.add(byCat[i].copyWith(sortOrder: i));
     }
 
-    // Rimonta la lista completa sostituendo gli elementi della categoria
     final updatedAll = [
       for (final s in all)
         if (s.categoryId == categoryId)
@@ -65,6 +57,49 @@ class ServicesReorderNotifier extends Notifier<bool> {
     ];
 
     servicesNotifier.state = updatedAll;
+  }
+
+  /// 🔄 Sposta un servizio da una categoria all'altra (drag cross-categoria)
+  void moveServiceBetweenCategories(
+    int oldCategoryId,
+    int newCategoryId,
+    int serviceId,
+    int newIndex,
+  ) {
+    final servicesNotifier = ref.read(servicesProvider.notifier);
+    final all = [...ref.read(servicesProvider)];
+
+    // servizio selezionato
+    final movedService = all.firstWhere(
+      (s) => s.id == serviceId,
+      orElse: () => throw Exception('Service not found'),
+    );
+
+    // rimuovi da categoria precedente
+    final remainingOldCat = all
+        .where((s) => s.categoryId == oldCategoryId && s.id != serviceId)
+        .toList();
+
+    // aggiungi nella nuova categoria
+    final targetCat = all.where((s) => s.categoryId == newCategoryId).toList();
+    if (newIndex > targetCat.length) newIndex = targetCat.length;
+    targetCat.insert(
+      newIndex,
+      movedService.copyWith(categoryId: newCategoryId),
+    );
+
+    // ricalcola sortOrder in entrambe le categorie
+    final updated = [
+      ...all.where(
+        (s) => s.categoryId != oldCategoryId && s.categoryId != newCategoryId,
+      ),
+      for (int i = 0; i < remainingOldCat.length; i++)
+        remainingOldCat[i].copyWith(sortOrder: i),
+      for (int i = 0; i < targetCat.length; i++)
+        targetCat[i].copyWith(sortOrder: i),
+    ];
+
+    servicesNotifier.state = updated;
   }
 }
 

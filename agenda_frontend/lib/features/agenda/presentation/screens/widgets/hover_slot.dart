@@ -83,12 +83,14 @@ class LazyHoverSlot extends StatefulWidget {
   final DateTime slotTime;
   final double height;
   final Color colorPrimary1;
+  final void Function(DateTime)? onTap;
 
   const LazyHoverSlot({
     super.key,
     required this.slotTime,
     required this.height,
     required this.colorPrimary1,
+    this.onTap,
   });
 
   @override
@@ -130,6 +132,7 @@ class _LazyHoverSlotState extends State<LazyHoverSlot> {
       onExit: _onExit,
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
+        onTap: () => widget.onTap?.call(widget.slotTime),
         onTapDown: _onTapDown,
         onTapUp: _onTapUp,
         onTapCancel: _onTapCancel,

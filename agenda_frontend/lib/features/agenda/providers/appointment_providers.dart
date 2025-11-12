@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/appointment.dart';
 import '../../clients/providers/clients_providers.dart';
 import '../../services/providers/services_provider.dart';
+import 'bookings_provider.dart';
 import 'business_providers.dart';
 import 'date_range_provider.dart';
 import 'location_providers.dart';
@@ -195,9 +196,130 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
   }
 
   void deleteAppointment(int appointmentId) {
+    int? relatedBookingId;
+    for (final appt in state) {
+      if (appt.id == appointmentId) {
+        relatedBookingId = appt.bookingId;
+        break;
+      }
+    }
+
     state = [
       for (final appt in state)
         if (appt.id != appointmentId) appt,
+    ];
+
+    if (relatedBookingId != null) {
+      ref.read(bookingsProvider.notifier).removeIfEmpty(relatedBookingId);
+    }
+  }
+
+  /// Aggiunge un nuovo appuntamento generando id e bookingId
+  Appointment addAppointment({
+    int? bookingId,
+    required int staffId,
+    required int serviceId,
+    required int serviceVariantId,
+    int? clientId,
+    required String clientName,
+    required String serviceName,
+    required DateTime start,
+    required DateTime end,
+    double? price,
+  }) {
+    final business = ref.read(currentBusinessProvider);
+    final location = ref.read(currentLocationProvider);
+
+    final nextId = state.isEmpty
+        ? 1
+        : state.map((e) => e.id).reduce((a, b) => a > b ? a : b) + 1;
+    final nextBookingId =
+        bookingId ??
+        (state.isEmpty
+            ? 100000
+            : state.map((e) => e.bookingId).reduce((a, b) => a > b ? a : b) +
+                  1);
+
+    final appt = Appointment(
+      id: nextId,
+      bookingId: nextBookingId,
+      businessId: business.id,
+      locationId: location.id,
+      staffId: staffId,
+      serviceId: serviceId,
+      serviceVariantId: serviceVariantId,
+      clientId: clientId,
+      clientName: clientName,
+      serviceName: serviceName,
+      startTime: start,
+      endTime: end,
+      price: price,
+    );
+
+    state = [...state, appt];
+    // ensure booking metadata exists
+    ref
+        .read(bookingsProvider.notifier)
+        .ensureBooking(
+          bookingId: nextBookingId,
+          businessId: business.id,
+          locationId: location.id,
+          clientId: clientId,
+          customerName: clientName,
+        );
+    return appt;
+  }
+
+  /// Aggiorna un appuntamento esistente (match per id)
+  void updateAppointment(Appointment updated) {
+    state = [
+      for (final appt in state)
+        if (appt.id == updated.id) updated else appt,
+    ];
+  }
+
+  /// Duplica un appuntamento assegnando un nuovo id e bookingId
+  Appointment duplicateAppointment(
+    Appointment original, {
+    bool intoSameBooking = true,
+  }) {
+    final nextId = state.isEmpty
+        ? 1
+        : state.map((e) => e.id).reduce((a, b) => a > b ? a : b) + 1;
+    final nextBookingId = intoSameBooking
+        ? original.bookingId
+        : (state.isEmpty
+              ? 100000
+              : state.map((e) => e.bookingId).reduce((a, b) => a > b ? a : b) +
+                    1);
+
+    final copy = original.copyWith(
+      id: nextId,
+      bookingId: nextBookingId,
+      clientName: original.clientName,
+      serviceName: original.serviceName,
+    );
+    state = [...state, copy];
+
+    if (!intoSameBooking) {
+      ref
+          .read(bookingsProvider.notifier)
+          .ensureBooking(
+            bookingId: nextBookingId,
+            businessId: original.businessId,
+            locationId: original.locationId,
+            clientId: original.clientId,
+            customerName: original.clientName,
+          );
+    }
+    return copy;
+  }
+
+  /// Cancella tutti gli appuntamenti appartenenti a una prenotazione.
+  void deleteByBooking(int bookingId) {
+    state = [
+      for (final appt in state)
+        if (appt.bookingId != bookingId) appt,
     ];
   }
 
@@ -271,6 +393,15 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     );
 
     state = [...state, appt];
+    ref
+        .read(bookingsProvider.notifier)
+        .ensureBooking(
+          bookingId: nextBookingId,
+          businessId: business.id,
+          locationId: location.id,
+          clientId: client.id,
+          customerName: client.name,
+        );
     return appt;
   }
 }

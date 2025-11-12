@@ -119,16 +119,17 @@ class StaffTopControls extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Flexible(
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: AgendaLocationSelector(
-                  locations: locations,
-                  current: currentLocation,
-                  onSelected: locationController.set,
+            if (locations.length > 1)
+              Flexible(
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: AgendaLocationSelector(
+                    locations: locations,
+                    current: currentLocation,
+                    onSelected: locationController.set,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
