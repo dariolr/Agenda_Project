@@ -131,3 +131,11 @@ final staffForCurrentLocationProvider = Provider<List<Staff>>((ref) {
       if (member.worksAtLocation(location.id)) member,
   ];
 });
+
+/// Holds the staffId that should be pre-selected when navigating to
+/// the single-staff availability edit screen. Cleared after consumption.
+final initialStaffToEditProvider = Provider<ValueNotifier<int?>>((ref) {
+  final vn = ValueNotifier<int?>(null);
+  ref.onDispose(vn.dispose);
+  return vn;
+});

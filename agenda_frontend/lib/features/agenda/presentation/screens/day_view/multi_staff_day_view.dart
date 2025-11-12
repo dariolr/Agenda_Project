@@ -268,9 +268,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     final layoutConfig = ref.watch(layoutConfigProvider);
     // Evaluate the interaction lock once here for the current visible group
     final isInteractionLocked = ref.watch(agendaDayScrollLockProvider);
-    debugPrint(
-      'MultiStaffDayViewForPaging build: isInteractionLocked=$isInteractionLocked',
-    );
 
     final verticalCtrl = scrollState.verticalScrollCtrl;
     if (_verticalCtrl != verticalCtrl) {

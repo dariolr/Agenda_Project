@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/appointment.dart';
+import '../../clients/providers/clients_providers.dart';
+import '../../services/providers/services_provider.dart';
 import 'business_providers.dart';
 import 'date_range_provider.dart';
 import 'location_providers.dart';
@@ -111,6 +113,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
           final end = start.add(Duration(minutes: durationMinutes));
 
           final currentBookingId = bookingId++;
+          final clientId = (generated % 3) + 1; // associa mock clientId ciclico
           final clientBaseName =
               'Cliente ${seed.staffId}-${dayDate.day}-${generated + 1}';
 
@@ -123,6 +126,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
               staffId: seed.staffId,
               serviceId: seed.serviceId,
               serviceVariantId: seed.serviceVariantId,
+              clientId: clientId,
               clientName: clientBaseName,
               serviceName: seed.serviceName,
               startTime: start,
@@ -143,6 +147,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
               Duration(minutes: secondDurationMinutes),
             );
 
+            final clientId2 = ((generated + 1) % 3) + 1;
             appointments.add(
               Appointment(
                 id: appointmentId++,
@@ -152,6 +157,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
                 staffId: seed.staffId,
                 serviceId: seed.serviceId,
                 serviceVariantId: seed.serviceVariantId,
+                clientId: clientId2,
                 clientName: clientBaseName,
                 serviceName: '${seed.serviceName} (Follow-up)',
                 startTime: secondStart,
@@ -193,6 +199,79 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       for (final appt in state)
         if (appt.id != appointmentId) appt,
     ];
+  }
+
+  /// Crea rapidamente una prenotazione per un client con valori di default
+  /// - Usa la sede corrente e la data corrente dell'agenda
+  /// - Sceglie la prima variante servizio disponibile per la sede
+  /// - Sceglie il primo staff idoneo per quel servizio
+  /// - Orario: prossimo slot di 15 minuti a partire da adesso (limitato al giorno corrente)
+  /// Restituisce l'appuntamento creato.
+  Appointment? createQuickBookingForClient(int clientId) {
+    final clientsById = ref.read(clientsByIdProvider);
+    final client = clientsById[clientId];
+    if (client == null) return null;
+
+    final business = ref.read(currentBusinessProvider);
+    final location = ref.read(currentLocationProvider);
+    final agendaDate = ref.read(agendaDateProvider);
+    final variants = ref.read(serviceVariantsProvider);
+    if (variants.isEmpty) return null;
+    final variant = variants.first;
+
+    // Staff idoneo per il servizio e sede corrente
+    final eligibleStaff = ref.read(
+      eligibleStaffForServiceProvider(variant.serviceId),
+    );
+    if (eligibleStaff.isEmpty) return null;
+    final staffId = eligibleStaff.first;
+
+    // Orario: prossimo quarto d'ora oggi alle max 18:00
+    final now = DateTime.now();
+    final dayStart = DateUtils.dateOnly(agendaDate);
+    DateTime base = now.isBefore(dayStart) ? dayStart : now;
+    // clamp to today end
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    if (base.isAfter(dayEnd)) base = dayStart.add(const Duration(hours: 10));
+    final minutes = base.minute;
+    final rounded = minutes % 15 == 0
+        ? base
+        : base.add(Duration(minutes: 15 - (minutes % 15)));
+    final start = DateTime(
+      dayStart.year,
+      dayStart.month,
+      dayStart.day,
+      rounded.hour,
+      rounded.minute,
+    );
+    final end = start.add(Duration(minutes: variant.durationMinutes));
+
+    // Genera id
+    final nextId = state.isEmpty
+        ? 1
+        : state.map((e) => e.id).reduce((a, b) => a > b ? a : b) + 1;
+    final nextBookingId = state.isEmpty
+        ? 100000
+        : state.map((e) => e.bookingId).reduce((a, b) => a > b ? a : b) + 1;
+
+    final appt = Appointment(
+      id: nextId,
+      bookingId: nextBookingId,
+      businessId: business.id,
+      locationId: location.id,
+      staffId: staffId,
+      serviceId: variant.serviceId,
+      serviceVariantId: variant.id,
+      clientId: client.id,
+      clientName: client.name,
+      serviceName: '',
+      startTime: start,
+      endTime: end,
+      price: variant.price,
+    );
+
+    state = [...state, appt];
+    return appt;
   }
 }
 

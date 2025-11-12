@@ -3,6 +3,7 @@ import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/ag
 import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/components/hour_column.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/current_time_line.dart';
+import 'package:agenda_frontend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_frontend/features/agenda/providers/is_resizing_provider.dart';
 import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/staff_providers.dart';
 
 class AgendaScreen extends ConsumerStatefulWidget {
-  const AgendaScreen({super.key});
+  const AgendaScreen({super.key, this.initialClientId});
+
+  /// Se valorizzato, crea automaticamente una prenotazione rapida per il client.
+  final int? initialClientId;
 
   @override
   ConsumerState<AgendaScreen> createState() => _AgendaScreenState();
@@ -24,6 +28,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   double? _pendingHourOffset;
   bool _pendingApplyScheduled = false;
   bool _isSyncingFromMaster = false;
+  bool _quickBookingTriggered = false;
 
   // 🔹 offset verticale "master" della giornata (usato anche dalla CurrentTimeLine)
   double _verticalOffset = 0;
@@ -120,6 +125,19 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
     final hourColumnWidth = layoutConfig.hourColumnWidth;
     final totalHeight = layoutConfig.totalHeight;
+
+    // Se arriviamo con un clientId e non abbiamo ancora creato la prenotazione rapida
+    final initialClientId = widget.initialClientId;
+    if (initialClientId != null && !_quickBookingTriggered) {
+      // Usa addPostFrame per evitare rebuild loop
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _quickBookingTriggered = true;
+        ref
+            .read(appointmentsProvider.notifier)
+            .createQuickBookingForClient(initialClientId);
+      });
+    }
 
     return SafeArea(
       child: Stack(

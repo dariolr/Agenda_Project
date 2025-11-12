@@ -3,7 +3,7 @@
 # Usage: bash setup_structure.sh [feature_name]
 # If no feature name is passed, it defaults to "agenda"
 
-FEATURE=${1:-agenda}
+FEATURE=${1:-business}
 
 echo "📁 Creating Flutter structure for feature: $FEATURE ..."
 
