@@ -2,154 +2,200 @@
 
 These rules teach AI coding agents how to work productively in this repo. Keep it concise, code-first, and consistent with existing patterns.
 
-## Big picture
-- App type: Flutter (web-first, also mobile/tablet). Dart SDK 3.9+.
-- State: Riverpod v3 with generators (riverpod_annotation, riverpod_generator).
-- Routing: go_router with a single top-level StatefulShellRoute exposing 4 branches: agenda, clienti, servizi, staff.
-- Theme/localization: MaterialApp.router with custom theme builders, localization via intl_utils (L10n) with ARB files under `lib/core/l10n`.
+## 📌 1. Architettura del Progetto
 
-Key entry points
-- `lib/main.dart`: wraps app in `ProviderScope`.
-- `lib/app/app.dart`: `MyApp`, theme + router + localization; wraps child with `LayoutConfigAutoListener` and sets app `Title` from `context.l10n`.
-- `lib/app/router.dart`: `appRouter` with `StatefulShellRoute` and branch routes (e.g., `/agenda`, `/clienti`, `/servizi`, `/staff`).
-- `lib/app/scaffold_with_navigation.dart`: Adaptive shell. Uses `formFactorProvider` to pick NavigationRail (desktop/tablet) vs BottomNavigationBar (mobile). Agenda branch shows `AgendaTopControls` in AppBar.
+-   Il progetto utilizza **Flutter/Dart** con focus principale sul
+    **deploy Web**.
+-   Gestione stato con **Riverpod** (providers, notifiers, family,
+    autoDispose).
+-   Struttura modulare orientata per feature:
 
-## Project structure and conventions
-- Features live in `lib/features/<feature>/{data,domain,presentation,providers}`. See `scripts/setup_structure.sh` for the canonical scaffold and naming (e.g., `${feature}_screen.dart`, `${feature}_providers.dart`).
-- Core shared code: `lib/core/{l10n,models,network,utils,widgets}`.
-- App-level config: `lib/app/{providers,theme}`. Use `themeNotifierProvider` with `buildTheme`.
-- Use Riverpod Notifiers for state; avoid ad-hoc singletons. Keep local widget state minimal.
-- Use `context.l10n` for all user-facing strings. Do not hardcode texts.
-- For layout/responsiveness, derive sizes from `LayoutConfig` via providers. Don’t introduce magic numbers; prefer reading `layoutConfigProvider` and `formFactorProvider`.
+```{=html}
+<!-- -->
+```
+    features/
+      agenda/
+      services/
+      clients/
+      staff/
+    core/
+      widgets/
+      utils/
+      l10n/
+    domain/
+      models/
+      config/
 
-## How to extend routing (example)
-- Add a screen under `lib/features/<feature>/presentation/<feature>_screen.dart`.
-- Register route in `lib/app/router.dart` inside the appropriate `StatefulShellBranch`:
-  - Example: Clients
-    - Path: `/clienti`, name: `clienti`, builder: `ClientsScreen()`.
-- Do not create a new top-level `MaterialApp`; screens render inside the shell.
+-   Separazione chiara:
+    -   **presentation/** → UI, screen, widget\
+    -   **domain/** → modelli, costanti, logiche pure\
+    -   **providers/** → Riverpod\
+    -   **controllers/** → logiche operative (drag, reorder,
+        availability...)\
+    -   **utils/** → helper, formatter, validator
 
-## State and UI patterns (examples)
-- Read providers with `WidgetRef`:
-  - `final themeConfig = ref.watch(themeNotifierProvider);`
-  - `final formFactor = ref.watch(formFactorProvider);`
-- Agenda feature layers (don’t break this chain):
-  - `AgendaScreen → AgendaDay → MultiStaffDayView → AgendaStaffBody → StaffColumn`
-  - Scrolling, drag/drop, and overlays rely on dedicated providers; reuse existing calculators like `computeDropResult()` where present.
+------------------------------------------------------------------------
 
-## Localization
-- ARB and generated files live under `lib/core/l10n`. Class name: `L10n`, extension: `context.l10n`.
-- Default locale is Italian (`it`). Keep new keys in ARB, not in code.
+## 📌 2. Invarianti del Progetto (da NON modificare mai)
 
-## Developer workflows
-- Lint/typecheck: `scripts/run_flutter_analyze.sh` (uses `$FLUTTER_HOME/bin/flutter analyze`).
-- Bundle sources for review: `scripts/bundle_lib.sh` creates `lib_bundle.txt` with all Dart files (and `pubspec.yaml`).
-- Tests: use Flutter test layout under `test/` mirrors `lib/` structure. Prefer Riverpod-friendly patterns.
-- MCP integration: a VS Code task "Start MCP Server (Agenda Frontend)" runs `dart mcp-server --log-file mcp.log` from the project root when needed.
+Copilot deve preservare sempre:
 
-## Dos and don’ts for this repo
-- Do: reuse providers/components in `lib/core/widgets` like `LayoutConfigAutoListener` and `NoScrollbarBehavior`.
-- Do: obey theme and interaction colors (`AppThemeConfig`, `AppInteractionColors`). Avoid hardcoded colors and paddings.
-- Don’t: mount independent Scaffolds for feature roots; rely on the shell’s AppBar/navigation.
-- Don’t: bypass `formFactorProvider`/`LayoutConfig` for responsive decisions.
+### 🟦 *UI/UX*
 
-## Where to look first
-- App skeleton: `lib/app/app.dart`, `lib/app/router.dart`, `lib/app/scaffold_with_navigation.dart`.
-- Feature blueprint: `scripts/setup_structure.sh` and any existing folder in `lib/features/*`.
-- Conventions overview: `.github/instructions.md` (project context for AI agents).
+-   Nessun ripple, nessuno splash, nessun effetto Material3.
+-   Layout responsive desktop-first.
+-   Padding, spacing, colori e stile esistenti NON vanno modificati.
+-   Hover, selected state e highlight devono rimanere invariati.
 
-If anything here seems off or missing, prefer the patterns in the referenced files and open an update to this document alongside your change.
+### 🟪 *Agenda / Gestione slot*
 
+-   Sincronizzazione scroll verticale/orizzontale.
+-   Drag & drop con ghost overlay.
+-   Auto-scroll durante il drag.
+-   Scroll lock durante resize.
+-   Gestione offset e position invariata.
+-   Nessun cambiamento alla logica degli slot.
 
-# Agent Context — Feature: Appointment Management in Agenda
+### 🟩 *Servizi / Categorie*
 
-## 🎯 Obiettivo
-Estendere la feature **Agenda** del progetto `agenda_frontend` per consentire all’operatore di:
-- **creare**, **modificare**, **eliminare** e **duplicare** appuntamenti;
-- tramite un nuovo pulsante "Aggiungi" nella top bar (`AgendaTopControls`);
-- e tramite interazioni dirette sugli slot e sugli appuntamenti nella griglia dell’agenda.
+-   Reorder categorie e servizi basato su `sortOrder`.
+-   Logiche di editing esistenti devono rimanere le stesse.
+-   Formattazione prezzi invariata.
+-   Logica di visualizzazione even/odd invariata.
 
----
+### 🟧 *Form / Dialog / Ricerca*
 
-## ⚙️ Contesto architetturale
-- L’agenda è composta da:
-  - `AgendaScreen` → vista principale con top controls e corpo staff.
-  - `AgendaStaffBody` → gestisce colonne dello staff e slot temporali.
-  - `AppointmentCard` → rappresenta un singolo appuntamento.
-  - `appointmentsProvider` (o similare) → fornisce la lista degli appuntamenti.
-- Drag, resize, overlay, scroll e sync verticale/orizzontale sono già implementati.
-- Tutte le modifiche devono rispettare i comportamenti esistenti senza introdurre regressioni.
+-   Nessun cambiamento nella UX.
+-   Validatori e formatter devono stare in file dedicati.
+-   Tipi, nomi e firma dei provider NON vanno modificati.
 
----
+------------------------------------------------------------------------
 
-## 🧩 Step 1 — Aggiungere pulsante “Aggiungi” in `AgendaTopControls`
-Aggiungere un piccolo pulsante “+” o “Aggiungi” accanto ai controlli data dell’agenda.
+## 📌 3. Regole per la Rifattorizzazione
 
-### Comportamento
-Quando cliccato:
-- apre un `PopupMenu` o `DropdownMenu` con due opzioni:
-  1. **Aggiungi appuntamento**
-  2. **Aggiungi blocco** (placeholder per future versioni)
-- Se l’utente sceglie *Aggiungi appuntamento*:
-  - aprire un dialog (`AppointmentDialog`) precompilato con la **data corrente** dell’agenda (`agendaDateProvider`).
+Quando Copilot rifattorizza, deve:
 
----
+-   Estrarre codice in file più piccoli **senza cambiare behavior**.
+-   NON modificare provider, parametri, tipi o logiche.
+-   Creare file completi e coerenti, niente snippet isolati.
+-   Adeguarsi sempre al pattern e ai nomi già presenti nel progetto.
+-   Usare solo librerie già usate nel progetto.
 
-## 🧠 Step 2 — Interazioni nella griglia Agenda
+### Esempi di rifattorizzazione accettabile
 
-### Click su slot vuoto
-- Se l’utente clicca su uno slot vuoto:
-  - aprire `AppointmentDialog` precompilato con:
-    - data corrente dell’agenda,
-    - orario dello slot,
-    - staff relativo alla colonna cliccata.
+-   Spostare widget complessi in `widgets/`.
+-   Spostare logiche reorder in `controllers/`.
+-   Estrarre formatter in `utils/`.
+-   Spostare dialog in `dialogs/`.
 
-### Click su appuntamento esistente
-- Mostrare un menu contestuale con le opzioni:
-  - **Modifica** → apre `AppointmentDialog` con dati esistenti
-  - **Duplica** → crea una copia e la inserisce nel provider
-  - **Elimina** → rimuove dal provider e aggiorna la UI
+### Esempi di rifattorizzazione NON accettabile
 
----
+-   Cambiare comportamento o firme.
+-   Rinominare provider.
+-   Aggiungere animazioni non richieste.
+-   Modificare layout o stile.
 
-## 🎨 Step 3 — `AppointmentDialog` (UI/UX)
+------------------------------------------------------------------------
 
-### Widget
-Creare un nuovo file:
-lib/features/agenda/presentation/widgets/appointment_dialog.dart
+## 📌 4. Linee Guida di Codice
 
+Copilot deve mantenere:
 
-### Comportamento
-Dialog (o `showDialog` / `showModal`) riutilizzabile per creazione e modifica.
+### ✔️ Consistenza
 
-### Campi previsti
-| Campo | Tipo | Note |
-|-------|------|------|
-| **Data** | `DatePicker` o `TextFormField` con validazione | precompilata |
-| **Orario** | `TimePicker` o textfield validato | precompilato |
-| **Servizio** | dropdown o ricerca (`Autocomplete<Service>`) | obbligatorio |
-| **Cliente** | ricerca (`Autocomplete<Client>`) | opzionale |
-| **Staff** | dropdown | precompilato se passato |
-| **Note** | `TextFormField` multiline | opzionale |
+-   Stesse convenzioni di naming.
+-   Stesso stile architecturale.
+-   Stessi provider e stesso modello mentale.
 
-### Azioni
-- **Salva** → chiama `appointmentsProvider.notifier.add()` o `update()`
-- **Annulla** → chiude il dialog
-- **Elimina** → disponibile in modalità modifica
+### ✔️ Pulizia
 
----
+-   Zero warning inutili.
+-   Import puliti.
+-   Nessuna dipendenza aggiuntiva senza richiesta.
 
-## 🔄 Step 4 — Provider logico
+### ✔️ Completezza
 
-Se non esiste già, creare:
-lib/features/agenda/providers/appointments_provider.dart
+-   Ogni file generato deve includere:
+    -   import corretti
+    -   classi complete
+    -   definizioni dei widget
+    -   controller, provider o modelli se necessari
 
+------------------------------------------------------------------------
 
-### Implementazione
-Riverpod `Notifier` o `AsyncNotifier` che gestisce:
-```dart
-void add(Appointment a);
-void update(Appointment a);
-void remove(int id);
-void duplicate(Appointment a);
+## 📌 5. Compatibilità con la Baseline Ufficiale del Progetto
+
+La baseline ufficiale del progetto è il repository GitHub:
+
+👉 **https://github.com/dariolr/Agenda_Project**
+
+Copilot deve:
+
+-   Considerare questo repository come **fonte autorevole** della
+    struttura del progetto.\
+-   Mantenere piena compatibilità con:
+    -   **naming** dei file,
+    -   **struttura delle cartelle**,
+    -   **pattern di organizzazione** (features, providers, domain,
+        core).
+-   Verificare che ogni modifica, refactor o nuovo file rispetti:
+    -   gli stessi pattern usati nel repository,
+    -   la stessa struttura logica,
+    -   la stessa impostazione dei provider e dei controllers.
+-   Non introdurre variazioni che potrebbero rompere la coerenza con il
+    codice già presente nel repository.
+-   Generare nuovo codice rispettando i modelli, i provider, i config e
+    le utilities già definiti nella baseline.
+
+In caso di refactoring, Copilot deve assumere che **tutto ciò presente
+nel repository è la fonte di verità**, e ogni intervento deve integrarsi
+senza disallineare la struttura generale.
+
+------------------------------------------------------------------------
+
+## 📌 6. Quando Copilot Implementa una Nuova Feature
+
+Deve: - Allinearsi ai pattern esistenti. - Integrare provider nella
+forma già utilizzata. - Generare file modulari secondo struttura del
+progetto. - Evitare duplicazioni di logiche già presenti.
+
+------------------------------------------------------------------------
+
+## 📌 7. Best Practice Specifiche del Progetto
+
+-   Nessun accesso a DB o API deve essere hardcoded.
+-   Tutte le funzioni devono essere testabili.
+-   Le feature devono essere facili da estendere.
+-   Le feature devono essere coerenti tra loro (Agenda, Servizi,
+    Clienti, Staff).
+
+------------------------------------------------------------------------
+
+## 📌 8. Regole Generatrici Universali per Copilot
+
+1.  Non cambiare comportamento esistente.
+2.  Non creare regressioni.
+3.  Non introdurre nuove dipendenze.
+4.  Mantenere tutto responsive.
+5.  Evitare ripple e animazioni aggiuntive.
+6.  Mantenere compatibilità con provider e logiche attuali.
+7.  Mantenere un codice leggibile, modulare e allineato al progetto.
+
+------------------------------------------------------------------------
+
+## 📌 9. Output Richiesto da Copilot
+
+Quando Copilot genera codice: - Deve fornire **file interi**, non
+porzioni. - Deve usare import *precisi* già esistenti nel progetto. -
+Deve garantire compatibilità con tutto il sistema. - Deve evitare
+personalizzazioni arbitrarie. - Può proporre miglioramenti, mai
+modificarli senza conferma.
+
+------------------------------------------------------------------------
+
+## 📌 10. Filosofia del Progetto
+
+> "Ogni parte del sistema deve essere modulare, leggibile, stabile e
+> prevedibile.\
+> Nessuna feature deve mai rompere ciò che già funziona."
 
