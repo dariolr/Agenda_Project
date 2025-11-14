@@ -51,7 +51,9 @@ class AgendaStaffBody extends StatelessWidget {
       behavior: const NoScrollbarBehavior(),
       child: SingleChildScrollView(
         controller: verticalController,
-        physics: isResizing ? const NeverScrollableScrollPhysics() : null,
+        physics: isResizing
+            ? const NeverScrollableScrollPhysics()
+            : const ClampingScrollPhysics(),
         child: Stack(
           children: [
             Row(
