@@ -54,78 +54,118 @@ class AgendaTopControls extends ConsumerWidget {
 
     final leftInset = math.max(0.0, baseInset + railInset);
 
-    // Variante compatta per AppBar su mobile: Oggi + Data + Sede (tutti a sinistra ed equidistanti)
-    if (compact || formFactor == AppFormFactor.mobile) {
-      Future<void> pickDate() async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: agendaDate,
-          firstDate: DateTime.now().subtract(const Duration(days: 365)),
-          lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-        );
-        if (picked != null) {
-          dateController.set(DateUtils.dateOnly(picked));
-        }
+    Future<void> pickDate() async {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: agendaDate,
+        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+        lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      );
+      if (picked != null) {
+        dateController.set(DateUtils.dateOnly(picked));
       }
+    }
 
-      return Padding(
-        padding: EdgeInsetsDirectional.only(start: leftInset),
-        child: SizedBox(
-          width: double.infinity,
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              IconButton(
-                tooltip: l10n.agendaToday,
-                icon: const Icon(Icons.today_outlined),
-                iconSize: 22,
-                onPressed: DateUtils.isSameDay(agendaDate, DateTime.now())
-                    ? null
-                    : dateController.setToday,
-              ),
-              const SizedBox(width: 12),
-              TextButton.icon(
-                onPressed: pickDate,
-                icon: const Icon(Icons.calendar_today_outlined, size: 22),
-                label: Text(formattedDate),
-              ),
-              const SizedBox(width: 12),
-              if (locations.length > 1)
-                IconButton(
-                  tooltip: l10n.agendaSelectLocation,
-                  icon: const Icon(Icons.place_outlined),
-                  iconSize: 22,
-                  onPressed: () async {
-                    await showModalBottomSheet(
-                      context: context,
-                      builder: (_) {
-                        return SafeArea(
-                          child: ListView(
-                            shrinkWrap: true,
-                            children: [
-                              for (final loc in locations)
-                                ListTile(
-                                  leading: Icon(
-                                    loc.id == currentLocation.id
-                                        ? Icons.check_circle_outline
-                                        : Icons.place_outlined,
-                                  ),
-                                  title: Text(loc.name),
-                                  onTap: () {
-                                    locationController.set(loc.id);
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                            ],
-                          ),
-                        );
-                      },
+    Widget buildCompactControls() {
+      return Row(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          IconButton(
+            tooltip: l10n.agendaToday,
+            icon: const Icon(Icons.today_outlined),
+            iconSize: 22,
+            onPressed: DateUtils.isSameDay(agendaDate, DateTime.now())
+                ? null
+                : dateController.setToday,
+          ),
+          const SizedBox(width: 12),
+          TextButton.icon(
+            onPressed: pickDate,
+            icon: const Icon(Icons.calendar_today_outlined, size: 22),
+            label: Text(formattedDate),
+          ),
+          const SizedBox(width: 12),
+          if (locations.length > 1)
+            IconButton(
+              tooltip: l10n.agendaSelectLocation,
+              icon: const Icon(Icons.place_outlined),
+              iconSize: 22,
+              onPressed: () async {
+                await showModalBottomSheet(
+                  context: context,
+                  builder: (_) {
+                    return SafeArea(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          for (final loc in locations)
+                            ListTile(
+                              leading: Icon(
+                                loc.id == currentLocation.id
+                                    ? Icons.check_circle_outline
+                                    : Icons.place_outlined,
+                              ),
+                              title: Text(loc.name),
+                              onTap: () {
+                                locationController.set(loc.id);
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                        ],
+                      ),
                     );
                   },
-                ),
-            ],
+                );
+              },
+            ),
+        ],
+      );
+    }
+
+    Widget buildDesktopControls() {
+      return Row(
+        children: [
+          AgendaRoundedButton(
+            label: l10n.agendaToday,
+            onTap: DateUtils.isSameDay(agendaDate, DateTime.now())
+                ? null
+                : dateController.setToday,
           ),
-        ),
+          const SizedBox(width: 16),
+          Flexible(
+            child: AgendaDateSwitcher(
+              label: formattedDate,
+              selectedDate: agendaDate,
+              onPrevious: dateController.previousDay,
+              onNext: dateController.nextDay,
+              onPreviousWeek: dateController.previousWeek,
+              onNextWeek: dateController.nextWeek,
+              onSelectDate: (date) {
+                dateController.set(DateUtils.dateOnly(date));
+              },
+            ),
+          ),
+          const SizedBox(width: 16),
+          if (locations.length > 1)
+            Flexible(
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AgendaLocationSelector(
+                  locations: locations,
+                  current: currentLocation,
+                  onSelected: locationController.set,
+                ),
+              ),
+            ),
+          const SizedBox(width: 16),
+          const Spacer(),
+          if (!externalizeAdd)
+            _AddMenuButton(
+              onAddAppointment: () {
+                showAppointmentDialog(context, ref, date: agendaDate);
+              },
+            ),
+        ],
       );
     }
 
@@ -133,49 +173,17 @@ class AgendaTopControls extends ConsumerWidget {
       padding: EdgeInsetsDirectional.only(start: leftInset),
       child: SizedBox(
         width: double.infinity,
-        child: Row(
-          children: [
-            AgendaRoundedButton(
-              label: l10n.agendaToday,
-              onTap: DateUtils.isSameDay(agendaDate, DateTime.now())
-                  ? null
-                  : dateController.setToday,
-            ),
-            const SizedBox(width: 16),
-            Flexible(
-              child: AgendaDateSwitcher(
-                label: formattedDate,
-                selectedDate: agendaDate,
-                onPrevious: dateController.previousDay,
-                onNext: dateController.nextDay,
-                onPreviousWeek: dateController.previousWeek,
-                onNextWeek: dateController.nextWeek,
-                onSelectDate: (date) {
-                  dateController.set(DateUtils.dateOnly(date));
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
-            if (locations.length > 1)
-              Flexible(
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: AgendaLocationSelector(
-                    locations: locations,
-                    current: currentLocation,
-                    onSelected: locationController.set,
-                  ),
-                ),
-              ),
-            const SizedBox(width: 16),
-            const Spacer(),
-            if (!externalizeAdd)
-              _AddMenuButton(
-                onAddAppointment: () {
-                  showAppointmentDialog(context, ref, date: agendaDate);
-                },
-              ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            const double minDesktopWidth = 620.0;
+            final shouldUseCompact =
+                compact ||
+                formFactor == AppFormFactor.mobile ||
+                constraints.maxWidth < minDesktopWidth;
+            return shouldUseCompact
+                ? buildCompactControls()
+                : buildDesktopControls();
+          },
         ),
       ),
     );

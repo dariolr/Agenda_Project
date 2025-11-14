@@ -188,8 +188,7 @@ class _AppointmentCardInteractiveState
                   _handleDesktopTap();
                 }
               },
-              onLongPress: () => _selectAppointment(ref),
-              child: Draggable<Appointment>(
+              child: LongPressDraggable<Appointment>(
                 data: widget.appointment,
                 feedback: Consumer(
                   builder: (c, r, _) =>
@@ -918,7 +917,6 @@ class _AppointmentCardInteractiveState
       effectiveWidth = fallbackWidth > 0 ? fallbackWidth : 180.0;
     }
     final h = _lastSize?.height ?? 50.0;
-    final hourW = layoutConfig.hourColumnWidth;
 
     if (dragPos == null) return const SizedBox.shrink();
 
@@ -944,7 +942,7 @@ class _AppointmentCardInteractiveState
     double left;
     final rect = highlightedId != null ? columnsRects[highlightedId] : null;
 
-    final minLeft = hourW + padding;
+    final minLeft = rect != null ? rect.left + padding : padding;
 
     if (rect != null) {
       left = rect.left + padding;

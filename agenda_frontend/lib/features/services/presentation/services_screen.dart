@@ -8,6 +8,8 @@ import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/widgets/app_dialogs.dart';
+import '../../../core/widgets/reorder_toggle_button.dart';
+import '../../../core/widgets/reorder_toggle_panel.dart';
 import '../providers/service_categories_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/services_reorder_provider.dart';
@@ -15,7 +17,7 @@ import '../providers/services_sorted_providers.dart';
 // utils e validators spostati nei dialog
 import 'dialogs/category_dialog.dart';
 import 'dialogs/service_dialog.dart';
-import 'widgets/services_list.dart';
+import 'widgets/categories_list.dart';
 
 class ServicesScreen extends ConsumerStatefulWidget {
   const ServicesScreen({super.key});
@@ -64,6 +66,32 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   void _stopAutoScroll() => _autoScrollTimer?.cancel();
 
+  void _showOrderSavedSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.orderSavedMessage),
+      ),
+    );
+  }
+
+  void _toggleCategoryReorder() {
+    final wasActive = isReorderCategories;
+    setState(() {
+      isReorderCategories = !isReorderCategories;
+      if (isReorderCategories) isReorderServices = false;
+    });
+    if (wasActive) _showOrderSavedSnackBar();
+  }
+
+  void _toggleServiceReorder() {
+    final wasActive = isReorderServices;
+    setState(() {
+      isReorderServices = !isReorderServices;
+      if (isReorderServices) isReorderCategories = false;
+    });
+    if (wasActive) _showOrderSavedSnackBar();
+  }
+
   @override
   void dispose() {
     _autoScrollTimer?.cancel();
@@ -107,119 +135,27 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Column(
                 children: [
-                  // Pulsanti: in riga su desktop/tablet, in colonna su mobile
-                  if (isWide)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        TextButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              isReorderCategories = !isReorderCategories;
-                              if (isReorderCategories)
-                                isReorderServices = false;
-                            });
-                            if (!isReorderCategories) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(context.l10n.orderSavedMessage),
-                                ),
-                              );
-                            }
-                          },
-                          icon: Icon(
-                            isReorderCategories
-                                ? Icons.check
-                                : Icons.drag_indicator,
-                          ),
-                          label: Text(
-                            isReorderCategories
-                                ? context.l10n.doneCategoriesButton
-                                : context.l10n.editCategoriesOrderButton,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        TextButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              isReorderServices = !isReorderServices;
-                              if (isReorderServices)
-                                isReorderCategories = false;
-                            });
-                            if (!isReorderServices) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(context.l10n.orderSavedMessage),
-                                ),
-                              );
-                            }
-                          },
-                          icon: Icon(
-                            isReorderServices
-                                ? Icons.check
-                                : Icons.drag_indicator,
-                          ),
-                          label: Text(
-                            isReorderServices
-                                ? context.l10n.doneServicesButton
-                                : context.l10n.editServicesOrderButton,
-                          ),
-                        ),
-                        // Add menu spostato nell'AppBar tramite ScaffoldWithNavigation
-                      ],
-                    )
-                  else ...[
-                    TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          isReorderCategories = !isReorderCategories;
-                          if (isReorderCategories) isReorderServices = false;
-                        });
-                        if (!isReorderCategories) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(context.l10n.orderSavedMessage),
-                            ),
-                          );
-                        }
-                      },
-                      icon: Icon(
-                        isReorderCategories
-                            ? Icons.check
-                            : Icons.drag_indicator,
+                  ReorderTogglePanel(
+                    isWide: isWide,
+                    children: [
+                      ReorderToggleButton(
+                        isActive: isReorderCategories,
+                        onPressed: _toggleCategoryReorder,
+                        activeLabel: context.l10n.doneCategoriesButton,
+                        inactiveLabel: context.l10n.editCategoriesOrderButton,
+                        activeIcon: Icons.check,
+                        inactiveIcon: Icons.drag_indicator,
                       ),
-                      label: Text(
-                        isReorderCategories
-                            ? context.l10n.doneCategoriesButton
-                            : context.l10n.editCategoriesOrderButton,
+                      ReorderToggleButton(
+                        isActive: isReorderServices,
+                        onPressed: _toggleServiceReorder,
+                        activeLabel: context.l10n.doneServicesButton,
+                        inactiveLabel: context.l10n.editServicesOrderButton,
+                        activeIcon: Icons.check,
+                        inactiveIcon: Icons.drag_indicator,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          isReorderServices = !isReorderServices;
-                          if (isReorderServices) isReorderCategories = false;
-                        });
-                        if (!isReorderServices) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(context.l10n.orderSavedMessage),
-                            ),
-                          );
-                        }
-                      },
-                      icon: Icon(
-                        isReorderServices ? Icons.check : Icons.drag_indicator,
-                      ),
-                      label: Text(
-                        isReorderServices
-                            ? context.l10n.doneServicesButton
-                            : context.l10n.editServicesOrderButton,
-                      ),
-                    ),
-                    // Add menu spostato nell'AppBar tramite ScaffoldWithNavigation
-                  ],
+                    ],
+                  ),
                   Padding(
                     padding: const EdgeInsets.all(14),
                     child: Text(
@@ -560,197 +496,41 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   ) {
     final servicesNotifier = ref.read(servicesProvider.notifier);
 
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
-      itemCount: cats.length,
-      itemBuilder: (context, index) {
-        final category = cats[index];
-        final services = ref.watch(
-          sortedServicesByCategoryProvider(category.id),
-        );
-
-        final isEmptyCategory = services.isEmpty;
-        final hasPrev = index > 0;
-        final prevIsNonEmpty = hasPrev
-            ? ref
-                  .watch(sortedServicesByCategoryProvider(cats[index - 1].id))
-                  .isNotEmpty
-            : false;
-        final isFirstEmptyAfterNonEmpty =
-            isEmptyCategory && (!hasPrev || prevIsNonEmpty);
-
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          switchInCurve: Curves.easeInOut,
-          switchOutCurve: Curves.easeInOut,
-          layoutBuilder: (currentChild, previousChildren) => Stack(
-            alignment: Alignment.topCenter,
-            children: [
-              ...previousChildren,
-              if (currentChild != null) currentChild,
-            ],
-          ),
-          transitionBuilder: (child, animation) => FadeTransition(
-            opacity: animation,
-            child: SizeTransition(
-              sizeFactor: animation,
-              axisAlignment: -1.0,
-              child: child,
-            ),
-          ),
-          child: KeyedSubtree(
-            key: ValueKey(
-              'cat-${category.id}-${isEmptyCategory ? 'empty' : 'full'}',
-            ),
-            child: Container(
-              margin: EdgeInsets.only(
-                top: isFirstEmptyAfterNonEmpty ? 32 : 0,
-                bottom: 24,
-              ),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header categoria
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 14,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Titolo + descrizione
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              category.name,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: colorScheme.onPrimaryContainer,
-                                  ),
-                            ),
-                            if (category.description != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  category.description!,
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: colorScheme.onPrimaryContainer
-                                            .withOpacity(0.8),
-                                      ),
-                                ),
-                              ),
-                          ],
-                        ),
-
-                        // Pulsanti azione (solo in vista normale)
-                        Row(
-                          children: [
-                            IconButton(
-                              tooltip: context.l10n.addServiceTooltip,
-                              icon: Icon(
-                                Icons.add,
-                                color: colorScheme.onPrimaryContainer,
-                              ),
-                              onPressed: () => _openServiceDialog(
-                                context,
-                                ref,
-                                preselectedCategoryId: category.id,
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: context.l10n.actionEdit,
-                              icon: Icon(
-                                Icons.edit_outlined,
-                                color: colorScheme.onPrimaryContainer,
-                              ),
-                              onPressed: () => showCategoryDialog(
-                                context,
-                                ref,
-                                category: category,
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: context.l10n.actionDelete,
-                              icon: const Icon(Icons.delete_outline),
-                              color: colorScheme.onPrimaryContainer,
-                              onPressed: () {
-                                if (services.isNotEmpty) {
-                                  _showCannotDeleteCategoryDialog(context);
-                                  return;
-                                }
-                                _confirmDeleteCategory(
-                                  context,
-                                  ref,
-                                  category.id,
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Body: lista servizi con clipping sui bordi inferiori
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(16),
-                    ),
-                    child: services.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              context.l10n.noServicesInCategory,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Colors.grey[600]),
-                            ),
-                          )
-                        : ServicesList(
-                            services: services,
-                            isWide: isWide,
-                            colorScheme: colorScheme,
-                            hoveredService: _hoveredService,
-                            selectedService: _selectedService,
-                            onOpen: (s) =>
-                                _openServiceDialog(context, ref, service: s),
-                            onEdit: (s) =>
-                                _openServiceDialog(context, ref, service: s),
-                            onDuplicate: (s) => servicesNotifier.duplicate(s),
-                            onDelete: (id) => _confirmDelete(
-                              context,
-                              onConfirm: () => servicesNotifier.delete(id),
-                            ),
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+    return CategoriesList(
+      categories: cats,
+      isWide: isWide,
+      colorScheme: colorScheme,
+      hoveredService: _hoveredService,
+      selectedService: _selectedService,
+      scrollController: _scrollController,
+      onAddService: (category) => _openServiceDialog(
+        context,
+        ref,
+        preselectedCategoryId: category.id,
+      ),
+      onEditCategory: (category) => showCategoryDialog(
+        context,
+        ref,
+        category: category,
+      ),
+      onDeleteCategory: (categoryId) =>
+          _confirmDeleteCategory(context, ref, categoryId),
+      onDeleteCategoryBlocked: () => _showCannotDeleteCategoryDialog(context),
+      onServiceOpen: (service) => _openServiceDialog(
+        context,
+        ref,
+        service: service,
+      ),
+      onServiceEdit: (service) => _openServiceDialog(
+        context,
+        ref,
+        service: service,
+      ),
+      onServiceDuplicate: (service) => servicesNotifier.duplicate(service),
+      onServiceDelete: (id) => _confirmDelete(
+        context,
+        onConfirm: () => servicesNotifier.delete(id),
+      ),
     );
   }
 
