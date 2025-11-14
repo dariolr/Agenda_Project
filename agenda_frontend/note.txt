@@ -18,3 +18,10 @@ poi crea un nuovo punto di ripristino, analizza il file lib_bundle.txt d'ora in 
 l'implementazione deve essere fortemente orientata al deploy sul web. 
 
 ora aiutami a risolvere quanto segue:
+
+
+
+https://app.acuityscheduling.com/schedule.php?owner=14459250&location=Dabliu%20COLLIDORO%20-%20via%20Busto%20Arsizio&phone=%2b39
+
+
+https://app.acuityscheduling.com/schedule/cb170d42/?locations=Dabliu%20COLLIDORO%20-%20via%20Busto%20Arsizio%2031

@@ -32,14 +32,42 @@ class ServicesReorderNotifier extends Notifier<bool> {
     notifier.state = reordered;
   }
 
+  /// Riordina solo le categorie NON vuote, mantenendo le vuote in coda e non spostabili.
+  void reorderNonEmptyCategories(int oldIndex, int newIndex) {
+    final catsNotifier = ref.read(serviceCategoriesProvider.notifier);
+    final allCats = [...ref.read(serviceCategoriesProvider)];
+    final services = ref.read(servicesProvider);
+
+    final nonEmpty = <ServiceCategory>[];
+    final empty = <ServiceCategory>[];
+    for (final c in allCats) {
+      final hasServices = services.any((s) => s.categoryId == c.id);
+      if (hasServices) {
+        nonEmpty.add(c);
+      } else {
+        empty.add(c);
+      }
+    }
+
+    final item = nonEmpty.removeAt(oldIndex);
+    final insertIndex = newIndex.clamp(0, nonEmpty.length);
+    nonEmpty.insert(insertIndex, item);
+
+    final merged = [...nonEmpty, ...empty];
+    final reordered = <ServiceCategory>[];
+    for (int i = 0; i < merged.length; i++) {
+      reordered.add(merged[i].copyWith(sortOrder: i));
+    }
+
+    catsNotifier.state = reordered;
+  }
+
   /// Riordina i servizi all'interno della stessa categoria
   void reorderServices(int categoryId, int oldIndex, int newIndex) {
     final servicesNotifier = ref.read(servicesProvider.notifier);
     final all = [...ref.read(servicesProvider)];
 
     final byCat = all.where((s) => s.categoryId == categoryId).toList();
-
-    if (newIndex > oldIndex) newIndex -= 1;
     final item = byCat.removeAt(oldIndex);
     byCat.insert(newIndex, item);
 
@@ -100,6 +128,8 @@ class ServicesReorderNotifier extends Notifier<bool> {
     ];
 
     servicesNotifier.state = updated;
+    // Aggiorna posizionamento categorie vuote vs piene
+    ref.read(serviceCategoriesProvider.notifier).bumpEmptyCategoriesToEnd();
   }
 }
 

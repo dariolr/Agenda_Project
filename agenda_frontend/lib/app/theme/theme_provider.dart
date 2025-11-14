@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'theme.dart';
 import 'theme_config.dart';
 
 /// 🔹 Notifier moderno per gestire il tema dinamico
 class ThemeNotifier extends Notifier<AppThemeConfig> {
   @override
   AppThemeConfig build() => const AppThemeConfig(
-    seedColor: Colors.black,
+    seedColor: colorPrimary1,
     brightness: Brightness.light,
   );
 
