@@ -8,6 +8,8 @@ class Service {
   final int categoryId;
   final String name;
   final int? duration;
+  final int? processingTime; // minuti opzionali post-lavorazione
+  final int? blockedTime; // minuti opzionali bloccati
   final double? price;
   final Color? color;
   final String? description;
@@ -23,6 +25,8 @@ class Service {
     required this.categoryId,
     required this.name,
     this.duration,
+    this.processingTime,
+    this.blockedTime,
     this.price,
     this.color,
     this.description,
@@ -39,6 +43,8 @@ class Service {
     int? categoryId,
     String? name,
     int? duration,
+    int? processingTime,
+    int? blockedTime,
     double? price,
     Color? color,
     String? description,
@@ -53,6 +59,8 @@ class Service {
     categoryId: categoryId ?? this.categoryId,
     name: name ?? this.name,
     duration: duration ?? this.duration,
+    processingTime: processingTime ?? this.processingTime,
+    blockedTime: blockedTime ?? this.blockedTime,
     price: price ?? this.price,
     color: color ?? this.color,
     description: description ?? this.description,
@@ -69,6 +77,8 @@ class Service {
     categoryId: json['category_id'] as int,
     name: json['name'] as String,
     duration: json['duration'] as int?,
+    processingTime: json['processing_time'] as int?,
+    blockedTime: json['blocked_time'] as int?,
     price: json['price'] != null ? (json['price'] as num).toDouble() : null,
     color: json['color_hex'] != null
         ? ColorUtils.fromHex(json['color_hex'] as String)
@@ -87,6 +97,8 @@ class Service {
     'category_id': categoryId,
     'name': name,
     if (duration != null) 'duration': duration,
+    if (processingTime != null) 'processing_time': processingTime,
+    if (blockedTime != null) 'blocked_time': blockedTime,
     if (price != null) 'price': price,
     if (color != null) 'color_hex': ColorUtils.toHex(color!),
     if (description != null) 'description': description,

@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'extensions.dart';
 import 'theme_config.dart';
 
+const colorPrimary1 = Color(0xFF141414); // colore base scuro
+const colorPrimary2 = Color(0xFFFEFEFE); // colore contrasto chiaro
+
 /// Crea un tema coerente partendo dal seed definito in [AppThemeConfig].
 ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
   final isDark = brightness == Brightness.dark;
 
-  const colorPrimary1 = Colors.black; // colore base scuro
-  const colorPrimary2 = Color(0xFFFEFEFE); // colore contrasto chiaro
   //const colorPrimary3 = Color(0xFFE5B24F); // accento caldo
 
   final background = isDark ? colorPrimary1 : colorPrimary2;
@@ -99,6 +100,28 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
       unselectedIconTheme: const IconThemeData(color: colorPrimary2),
       showUnselectedLabels: true,
       type: BottomNavigationBarType.fixed,
+    ),
+    // Colori ON globali per Switch/Radio in linea con il primary dell'app
+    switchTheme: base.switchTheme.copyWith(
+      overlayColor: MaterialStateProperty.all(Colors.transparent),
+      thumbColor: MaterialStateProperty.resolveWith(
+        (states) => states.contains(MaterialState.selected)
+            ? colorScheme.primary
+            : null,
+      ),
+      trackColor: MaterialStateProperty.resolveWith(
+        (states) => states.contains(MaterialState.selected)
+            ? colorScheme.primary.withOpacity(0.35)
+            : null,
+      ),
+    ),
+    radioTheme: base.radioTheme.copyWith(
+      overlayColor: MaterialStateProperty.all(Colors.transparent),
+      fillColor: MaterialStateProperty.resolveWith(
+        (states) => states.contains(MaterialState.selected)
+            ? colorScheme.primary
+            : null,
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(

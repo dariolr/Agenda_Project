@@ -294,7 +294,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
       _lastGeometryRect = newRect;
       _geometryInitialized = true; // ✅ segna come inizializzato
-      debugPrint('[Geometry] Updated for staff ${widget.staff.name}');
       _geometryNotifier.setRect(widget.staff.id, newRect);
     });
   }

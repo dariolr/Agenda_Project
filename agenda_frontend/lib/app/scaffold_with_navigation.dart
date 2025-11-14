@@ -1,5 +1,6 @@
+// Cleaned duplicate header
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // 1. Importa Riverpod
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/l10n/l10_extension.dart';
@@ -7,29 +8,23 @@ import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
 import '../features/agenda/presentation/widgets/appointment_dialog.dart';
 import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
-// 2. Importa il nuovo provider globale
+import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
+import '../features/services/presentation/dialogs/category_dialog.dart';
+import '../features/services/presentation/dialogs/service_dialog.dart';
 import 'providers/form_factor_provider.dart';
 
-// 3. Trasforma in ConsumerWidget
 class ScaffoldWithNavigation extends ConsumerWidget {
   const ScaffoldWithNavigation({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
-  // ... (le funzioni helper _getLocalizedTitle e _getDestinations non cambiano) ...
-  // [CODICE HELPER OMESSO PER BREVITÀ]
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 4. Aggiungi WidgetRef
     final destinations = _ScaffoldWithNavigationHelpers.getDestinations(
       context,
     );
-
-    // 5. LEGGI IL PROVIDER GLOBALE!
     final formFactor = ref.watch(formFactorProvider);
 
-    // 6. Usa il formFactor per decidere il layout
     if (formFactor == AppFormFactor.tabletOrDesktop) {
       final layoutConfig = ref.watch(layoutConfigProvider);
       final dividerColor = Theme.of(context).dividerColor;
@@ -37,6 +32,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       final railDestinations =
           _ScaffoldWithNavigationHelpers.toRailDestinations(destinations);
       final isAgenda = navigationShell.currentIndex == 0;
+      final isServices = navigationShell.currentIndex == 2;
+      final isClients = navigationShell.currentIndex == 1;
 
       return Scaffold(
         appBar: AppBar(
@@ -50,9 +47,13 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 ),
           centerTitle: false,
           toolbarHeight: 72,
-          actions: isAgenda
+            actions: isAgenda
               ? [const _AgendaAddAction(), const SizedBox(width: 16)]
-              : null,
+              : (isServices
+                ? [const _ServicesAddAction(), const SizedBox(width: 16)]
+                : (isClients
+                  ? [const _ClientsAddAction(), const SizedBox(width: 16)]
+                  : null)),
         ),
         body: Row(
           children: [
@@ -73,8 +74,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       );
     }
 
-    // 🎯 TARGET MOBILE: BottomNavigationBar
     final isAgenda = navigationShell.currentIndex == 0;
+    final isServices = navigationShell.currentIndex == 2;
+    final isClients = navigationShell.currentIndex == 1;
     return Scaffold(
       appBar: AppBar(
         title: isAgenda
@@ -88,7 +90,17 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         centerTitle: false,
         actions: isAgenda
             ? const [_AgendaAddAction(compact: true), SizedBox(width: 16)]
-            : null,
+            : (isServices
+                ? const [
+                    _ServicesAddAction(compact: true),
+                    SizedBox(width: 16),
+                  ]
+                : (isClients
+                    ? const [
+                        _ClientsAddAction(compact: true),
+                        SizedBox(width: 16),
+                      ]
+                    : null)),
       ),
       body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
@@ -108,15 +120,12 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     );
   }
 
-  // ... (la funzione _goBranch non cambia) ...
   void _goBranch(int index) {
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,
     );
   }
-
-  // ... (le funzioni helper omesse prima) ...
 }
 
 class _AgendaAddAction extends ConsumerWidget {
@@ -168,6 +177,171 @@ class _AgendaAddAction extends ConsumerWidget {
               context,
             ).showSnackBar(SnackBar(content: Text(l10n.agendaAddBlock)));
           }
+        },
+        child: Builder(
+          builder: (buttonContext) {
+            final scheme = Theme.of(buttonContext).colorScheme;
+            final onContainer = scheme.onSecondaryContainer;
+            return Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_outlined, size: 22, color: onContainer),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.agendaAdd,
+                      style: TextStyle(
+                        color: onContainer,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ServicesAddAction extends ConsumerWidget {
+  const _ServicesAddAction({this.compact = false});
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    if (compact) {
+      return PopupMenuButton<String>(
+        tooltip: l10n.agendaAdd,
+        icon: const Icon(Icons.add_outlined, size: 22),
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'category',
+            child: Text(l10n.createCategoryButtonLabel),
+          ),
+          PopupMenuItem(
+            value: 'service',
+            child: Text(l10n.servicesNewServiceMenu),
+          ),
+        ],
+        onSelected: (value) async {
+          if (value == 'category') {
+            await showCategoryDialog(context, ref);
+          } else if (value == 'service') {
+            await showServiceDialog(
+              context,
+              ref,
+              requireCategorySelection: true,
+            );
+          }
+        },
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: PopupMenuButton<String>(
+        tooltip: l10n.agendaAdd,
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'category',
+            child: Text(l10n.createCategoryButtonLabel),
+          ),
+          PopupMenuItem(
+            value: 'service',
+            child: Text(l10n.servicesNewServiceMenu),
+          ),
+        ],
+        onSelected: (value) async {
+          if (value == 'category') {
+            await showCategoryDialog(context, ref);
+          } else if (value == 'service') {
+            await showServiceDialog(
+              context,
+              ref,
+              requireCategorySelection: true,
+            );
+          }
+        },
+        child: Builder(
+          builder: (buttonContext) {
+            final scheme = Theme.of(buttonContext).colorScheme;
+            final onContainer = scheme.onSecondaryContainer;
+            return Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_outlined, size: 22, color: onContainer),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.agendaAdd,
+                      style: TextStyle(
+                        color: onContainer,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ClientsAddAction extends ConsumerWidget {
+  const _ClientsAddAction({this.compact = false});
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    if (compact) {
+      return IconButton(
+        tooltip: l10n.clientsNew,
+        icon: const Icon(Icons.add_outlined, size: 22),
+        onPressed: () async {
+          await showDialog(
+            context: context,
+            builder: (_) => const ClientEditDialog(),
+          );
+        },
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: GestureDetector(
+        onTap: () async {
+          await showDialog(
+            context: context,
+            builder: (_) => const ClientEditDialog(),
+          );
         },
         child: Builder(
           builder: (buttonContext) {
@@ -330,7 +504,6 @@ class _NavIcon extends StatelessWidget {
   }
 }
 
-// Classe helper (invariata)
 class NavigationDestination {
   const NavigationDestination({
     required this.icon,

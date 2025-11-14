@@ -80,6 +80,7 @@ Quando Copilot rifattorizza, deve:
 -   Creare file completi e coerenti, niente snippet isolati.
 -   Adeguarsi sempre al pattern e ai nomi già presenti nel progetto.
 -   Usare solo librerie già usate nel progetto.
+-   Prediligere composizione e riuso di widget. 
 
 ### Esempi di rifattorizzazione accettabile
 
@@ -157,7 +158,7 @@ senza disallineare la struttura generale.
 
 Deve: - Allinearsi ai pattern esistenti. - Integrare provider nella
 forma già utilizzata. - Generare file modulari secondo struttura del
-progetto. - Evitare duplicazioni di logiche già presenti.
+progetto. - Evitare duplicazioni di logiche già presenti. - Non creare stringhe hardcoded ma utilizzare il sistema di localizzazione. - Mantenere coerenza stilistica e architetturale. - Non introdurre dipendenze esterne senza richiesta.
 
 ------------------------------------------------------------------------
 

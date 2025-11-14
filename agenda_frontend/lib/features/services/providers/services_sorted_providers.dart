@@ -5,11 +5,27 @@ import '../../../core/models/service_category.dart';
 import 'service_categories_provider.dart';
 import 'services_provider.dart';
 
-/// Liste ordinate per sortOrder (e poi per nome come tie-breaker)
+/// Liste ordinate con queste priorità:
+/// 1) Categorie con servizi prima, categorie vuote in coda
+/// 2) sortOrder crescente
+/// 3) nome come tie-breaker
 final sortedCategoriesProvider = Provider<List<ServiceCategory>>((ref) {
   final cats = ref.watch(serviceCategoriesProvider);
+
+  // Pre-calcolo: per ogni categoria verifichiamo se ha servizi.
+  final hasServicesMap = <int, bool>{
+    for (final c in cats)
+      c.id: ref.watch(servicesByCategoryProvider(c.id)).isNotEmpty,
+  };
+
   final copy = [...cats];
   copy.sort((a, b) {
+    final aEmpty = !(hasServicesMap[a.id] ?? false);
+    final bEmpty = !(hasServicesMap[b.id] ?? false);
+
+    // Vuote in coda: una categoria vuota deve venire dopo una non vuota.
+    if (aEmpty != bEmpty) return aEmpty ? 1 : -1;
+
     final so = a.sortOrder.compareTo(b.sortOrder);
     return so != 0 ? so : a.name.toLowerCase().compareTo(b.name.toLowerCase());
   });
