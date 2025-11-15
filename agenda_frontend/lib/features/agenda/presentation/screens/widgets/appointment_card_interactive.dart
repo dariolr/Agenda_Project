@@ -398,7 +398,7 @@ class _AppointmentCardInteractiveState
 
   void _evaluateDragBlock(RenderBox cardBox, Offset globalPosition) {
     final formFactor = ref.read(formFactorProvider);
-    if (formFactor != AppFormFactor.tabletOrDesktop) {
+    if (formFactor == AppFormFactor.mobile) {
       _updateDragBlock(false);
       return;
     }
@@ -696,7 +696,7 @@ class _AppointmentCardInteractiveState
               if (!forFeedback &&
                   !isResizingDisabled &&
                   isSelected &&
-                  formFactor == AppFormFactor.tabletOrDesktop)
+                  formFactor != AppFormFactor.mobile)
                 _buildResizeHandle(),
             ],
           ),

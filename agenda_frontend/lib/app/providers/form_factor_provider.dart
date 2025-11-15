@@ -5,8 +5,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'form_factor_provider.g.dart';
 
-// Definiamo i due layout che ci interessano
-enum AppFormFactor { mobile, tabletOrDesktop }
+// Definiamo i tre layout che ci interessano
+enum AppFormFactor { mobile, tablet, desktop }
+
+AppFormFactor _formFactorForWidth(double width) {
+  if (width >= 1024) return AppFormFactor.desktop;
+  if (width >= 600) return AppFormFactor.tablet;
+  return AppFormFactor.mobile;
+}
 
 @riverpod
 class FormFactorNotifier extends _$FormFactorNotifier {
@@ -20,9 +26,7 @@ class FormFactorNotifier extends _$FormFactorNotifier {
 
     if (view != null) {
       final logicalSize = view.physicalSize / view.devicePixelRatio;
-      return logicalSize.width >= 600
-          ? AppFormFactor.tabletOrDesktop
-          : AppFormFactor.mobile;
+      return _formFactorForWidth(logicalSize.width);
     }
 
     return AppFormFactor.mobile;
@@ -31,9 +35,7 @@ class FormFactorNotifier extends _$FormFactorNotifier {
   /// Aggiorna il form factor in base alla larghezza dello schermo.
   /// Usa lo stesso breakpoint di 600px che usi nel resto dell'app.
   void update(double screenWidth) {
-    final newFactor = screenWidth >= 600
-        ? AppFormFactor.tabletOrDesktop
-        : AppFormFactor.mobile;
+    final newFactor = _formFactorForWidth(screenWidth);
 
     // Aggiorna lo stato solo se il form factor cambia
     if (state != newFactor) {

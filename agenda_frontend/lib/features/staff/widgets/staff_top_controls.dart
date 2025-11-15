@@ -81,7 +81,7 @@ class StaffTopControls extends ConsumerWidget {
 
     final baseInset =
         layoutConfig.hourColumnWidth - NavigationToolbar.kMiddleSpacing;
-    final railInset = formFactor == AppFormFactor.tabletOrDesktop
+    final railInset = formFactor != AppFormFactor.mobile
         ? railWidth + railDividerWidth
         : 0.0;
 
