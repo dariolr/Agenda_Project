@@ -14,3 +14,6 @@ cd "$repo_root"
 
 echo "Eseguo: $FLUTTER_BIN analyze"
 "$FLUTTER_BIN" analyze
+
+
+# Use the VSCode task named dart-analyze instead of running dart analyze directly.
