@@ -942,7 +942,11 @@ class _AppointmentCardInteractiveState
     double left;
     final rect = highlightedId != null ? columnsRects[highlightedId] : null;
 
-    final minLeft = rect != null ? rect.left + padding : padding;
+    // Limitiamo sempre la X minima all'inizio del body (0 + padding),
+    // così il feedback non entra mai nell'area della colonna oraria.
+    final double globalMinLeft = padding;
+    double minLeft = rect != null ? rect.left + padding : padding;
+    if (minLeft < globalMinLeft) minLeft = globalMinLeft;
 
     if (rect != null) {
       left = rect.left + padding;
@@ -964,6 +968,12 @@ class _AppointmentCardInteractiveState
     top = (top * dpr).round() / dpr;
     translateY = (translateY * dpr).round() / dpr;
 
+    // 🔹 Se non abbiamo ancora il bodyBox, evitiamo di disegnare il feedback
+    if (bodyBox == null) {
+      return const SizedBox.shrink();
+    }
+
+    // 🔹 Clip minimo solo verticalmente, manteniamo la larghezza della card.
     return RepaintBoundary(
       child: CompositedTransformFollower(
         link: link,
