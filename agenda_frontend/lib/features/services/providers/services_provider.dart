@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_staff_eligibility.dart';
 import '../../../core/models/service_variant.dart';
+import '../../../core/models/service_variant_resource_requirement.dart';
 import '../../../core/utils/color_utils.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
@@ -278,6 +279,14 @@ final serviceVariantsProvider = Provider<List<ServiceVariant>>((ref) {
       price: 45,
       colorHex: '#6EC5A6',
       currency: currency,
+      resourceRequirements: const [
+        ServiceVariantResourceRequirement(
+          id: 1,
+          serviceVariantId: 1001,
+          resourceId: 1,
+          unitsRequired: 1,
+        ),
+      ],
     ),
     ServiceVariant(
       id: 1002,
@@ -287,6 +296,14 @@ final serviceVariantsProvider = Provider<List<ServiceVariant>>((ref) {
       price: 48,
       colorHex: '#6EC5A6',
       currency: currency,
+      resourceRequirements: const [
+        ServiceVariantResourceRequirement(
+          id: 2,
+          serviceVariantId: 1002,
+          resourceId: 4,
+          unitsRequired: 1,
+        ),
+      ],
     ),
     ServiceVariant(
       id: 2001,
@@ -296,6 +313,14 @@ final serviceVariantsProvider = Provider<List<ServiceVariant>>((ref) {
       price: 62,
       colorHex: '#57A0D3',
       currency: currency,
+      resourceRequirements: const [
+        ServiceVariantResourceRequirement(
+          id: 3,
+          serviceVariantId: 2001,
+          resourceId: 2,
+          unitsRequired: 1,
+        ),
+      ],
     ),
     ServiceVariant(
       id: 2002,
@@ -305,6 +330,14 @@ final serviceVariantsProvider = Provider<List<ServiceVariant>>((ref) {
       price: 65,
       colorHex: '#57A0D3',
       currency: currency,
+      resourceRequirements: const [
+        ServiceVariantResourceRequirement(
+          id: 4,
+          serviceVariantId: 2002,
+          resourceId: 5,
+          unitsRequired: 1,
+        ),
+      ],
     ),
     ServiceVariant(
       id: 3001,
@@ -314,6 +347,14 @@ final serviceVariantsProvider = Provider<List<ServiceVariant>>((ref) {
       price: 55,
       colorHex: '#F4B942',
       currency: currency,
+      resourceRequirements: const [
+        ServiceVariantResourceRequirement(
+          id: 5,
+          serviceVariantId: 3001,
+          resourceId: 3,
+          unitsRequired: 1,
+        ),
+      ],
     ),
     ServiceVariant(
       id: 3002,
@@ -323,6 +364,14 @@ final serviceVariantsProvider = Provider<List<ServiceVariant>>((ref) {
       price: 58,
       colorHex: '#F4B942',
       currency: currency,
+      resourceRequirements: const [
+        ServiceVariantResourceRequirement(
+          id: 6,
+          serviceVariantId: 3002,
+          resourceId: 6,
+          unitsRequired: 1,
+        ),
+      ],
     ),
   ].where((variant) => variant.locationId == location.id).toList();
 });

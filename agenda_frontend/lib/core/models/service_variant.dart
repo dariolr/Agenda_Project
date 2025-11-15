@@ -1,3 +1,5 @@
+import 'service_variant_resource_requirement.dart';
+
 class ServiceVariant {
   final int id;
   final int serviceId;
@@ -6,6 +8,7 @@ class ServiceVariant {
   final double price;
   final String? colorHex;
   final String? currency; // 🔹 Valuta specifica (es. "EUR", "USD")
+  final List<ServiceVariantResourceRequirement> resourceRequirements;
 
   const ServiceVariant({
     required this.id,
@@ -15,6 +18,7 @@ class ServiceVariant {
     required this.price,
     this.colorHex,
     this.currency,
+    this.resourceRequirements = const [],
   });
 
   ServiceVariant copyWith({
@@ -25,6 +29,7 @@ class ServiceVariant {
     double? price,
     String? colorHex,
     String? currency,
+    List<ServiceVariantResourceRequirement>? resourceRequirements,
   }) {
     return ServiceVariant(
       id: id ?? this.id,
@@ -34,6 +39,8 @@ class ServiceVariant {
       price: price ?? this.price,
       colorHex: colorHex ?? this.colorHex,
       currency: currency ?? this.currency,
+      resourceRequirements:
+          resourceRequirements ?? this.resourceRequirements,
     );
   }
 

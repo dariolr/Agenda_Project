@@ -66,7 +66,7 @@ Restituisce solo le risorse della location.
 
 ### 2.3 `serviceVariantResourcesProvider(serviceVariantId)`
 
-Restituisce tutte le risorse richieste dal servizio variant.
+Restituisce tutte le risorse dal servizio variant.
 
 ### 2.4 `resourceBookingsProvider(resourceId, date)`
 
@@ -74,15 +74,16 @@ Restituisce gli appuntamenti che occupano quella risorsa.
 
 ### 2.5 `resourceAvailabilityProvider(serviceVariantId, staffId, start, end)`
 
-Determina se le risorse richieste sono disponibili.
+Determina se le risorse sono disponibili.
 
 ------------------------------------------------------------------------
 
 ## 3. Logica di Disponibilità Risorse
 
-Per ogni appuntamento: 1. Determinare la location\
+Per ogni appuntamento: 
+1. Determinare la location\
 2. Determinare il `serviceVariantId`\
-3. Caricare risorse richieste\
+3. Caricare risorse\
 4. Per ogni risorsa: - caricare booking resource - verificare conflitti
 orari - verificare quantity
 
@@ -92,7 +93,7 @@ Se una risorsa non è disponibile → bloccare il booking.
 
 ## 4. Integrazione nel Dialog di Creazione Appuntamento
 
-Aggiungere: - sezione "Risorse richieste"\
+Aggiungere: - sezione "risorse"\
 - badge disponibile / non disponibile\
 - blocco pulsante conferma se conflitto\
 - aggiornamento in tempo reale cambiando orario/servizio
