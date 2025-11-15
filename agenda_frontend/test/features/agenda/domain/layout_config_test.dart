@@ -18,7 +18,7 @@ void main() {
           config.computeMaxVisibleStaff(500, formFactor: AppFormFactor.mobile);
       final desktopResult = config.computeMaxVisibleStaff(
         1600,
-        formFactor: AppFormFactor.tabletOrDesktop,
+        formFactor: AppFormFactor.desktop,
       );
 
       expect(mobileResult, 3); // 500 / 140 = 3.57 -> floor = 3
@@ -38,7 +38,7 @@ void main() {
       final spaciousDesktop = config.computeAdaptiveColumnWidth(
         contentWidth: 1920,
         visibleStaffCount: 4,
-        formFactor: AppFormFactor.tabletOrDesktop,
+        formFactor: AppFormFactor.desktop,
       );
 
       expect(narrowMobile, LayoutConfig.minColumnWidthMobile);

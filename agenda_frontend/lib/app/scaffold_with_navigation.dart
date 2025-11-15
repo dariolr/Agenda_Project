@@ -25,7 +25,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     );
     final formFactor = ref.watch(formFactorProvider);
 
-    if (formFactor == AppFormFactor.tabletOrDesktop) {
+    if (formFactor != AppFormFactor.mobile) {
       final layoutConfig = ref.watch(layoutConfigProvider);
       final dividerColor = Theme.of(context).dividerColor;
       const dividerThickness = 1.0;

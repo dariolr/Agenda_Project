@@ -48,7 +48,7 @@ class AgendaTopControls extends ConsumerWidget {
 
     final baseInset =
         layoutConfig.hourColumnWidth - NavigationToolbar.kMiddleSpacing;
-    final railInset = formFactor == AppFormFactor.tabletOrDesktop
+    final railInset = formFactor != AppFormFactor.mobile
         ? railWidth + railDividerWidth
         : 0.0;
 
@@ -122,6 +122,69 @@ class AgendaTopControls extends ConsumerWidget {
       );
     }
 
+    Widget buildTabletControls() {
+      return Row(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          IconButton(
+            tooltip: l10n.agendaToday,
+            icon: const Icon(Icons.today_outlined),
+            iconSize: 33,
+            onPressed: DateUtils.isSameDay(agendaDate, DateTime.now())
+                ? null
+                : dateController.setToday,
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: AgendaDateSwitcher(
+              label: formattedDate,
+              selectedDate: agendaDate,
+              onPrevious: dateController.previousDay,
+              onNext: dateController.nextDay,
+              onPreviousWeek: dateController.previousWeek,
+              onNextWeek: dateController.nextWeek,
+              onSelectDate: (date) {
+                dateController.set(DateUtils.dateOnly(date));
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          if (locations.length > 1)
+            IconButton(
+              tooltip: l10n.agendaSelectLocation,
+              icon: const Icon(Icons.place_outlined),
+              iconSize: 33,
+              onPressed: () async {
+                await showModalBottomSheet(
+                  context: context,
+                  builder: (_) {
+                    return SafeArea(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          for (final loc in locations)
+                            ListTile(
+                              leading: const Icon(Icons.place_outlined),
+                              title: Text(loc.name),
+                              onTap: () {
+                                locationController.set(loc.id);
+                                Navigator.of(context).pop();
+                              },
+                              trailing: loc.id == currentLocation.id
+                                  ? const Icon(Icons.check)
+                                  : null,
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+        ],
+      );
+    }
+
     Widget buildDesktopControls() {
       return Row(
         children: [
@@ -175,14 +238,17 @@ class AgendaTopControls extends ConsumerWidget {
         width: double.infinity,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            const double minDesktopWidth = 620.0;
-            final shouldUseCompact =
-                compact ||
-                formFactor == AppFormFactor.mobile ||
-                constraints.maxWidth < minDesktopWidth;
-            return shouldUseCompact
-                ? buildCompactControls()
-                : buildDesktopControls();
+            debugPrint(
+              'AgendaTopControls - constraints.maxWidth: ${constraints.maxWidth}, formFactor: $formFactor',
+            );
+            switch (formFactor) {
+              case AppFormFactor.mobile:
+                return buildCompactControls();
+              case AppFormFactor.tablet:
+                return buildTabletControls();
+              case AppFormFactor.desktop:
+                return buildDesktopControls();
+            }
           },
         ),
       ),

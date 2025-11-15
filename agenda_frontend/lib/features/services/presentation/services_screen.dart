@@ -107,8 +107,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final categories = allCategories;
 
     final colorScheme = Theme.of(context).colorScheme;
-    final isWide =
-        ref.watch(formFactorProvider) == AppFormFactor.tabletOrDesktop;
+    final isWide = ref.watch(formFactorProvider) != AppFormFactor.mobile;
 
     if (categories.isEmpty) {
       return Center(
