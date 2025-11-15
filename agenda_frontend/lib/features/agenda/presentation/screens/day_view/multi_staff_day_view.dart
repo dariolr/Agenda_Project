@@ -187,40 +187,80 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _autoScrollTimer = Timer.periodic(_scrollInterval, (_) {
       if (!mounted) return;
 
+      // dragPos è in coordinate BODY-LOCAL (DragBodyBox)
       final dragPos = ref.read(dragPositionProvider);
       if (dragPos == null) {
         _stopAutoScroll();
         return;
       }
 
+      final bodyBox = ref.read(dragBodyBoxProvider);
+      if (bodyBox == null || !bodyBox.attached) {
+        return;
+      }
+
       if (!_autoScrollArmed && _initialDragPosition != null) {
+        final deltaX = (dragPos.dx - _initialDragPosition!.dx).abs();
         final deltaY = (dragPos.dy - _initialDragPosition!.dy).abs();
-        if (deltaY < _autoScrollActivationThreshold) return;
+        final maxDelta = deltaX > deltaY ? deltaX : deltaY;
+        if (maxDelta < _autoScrollActivationThreshold) return;
         _autoScrollArmed = true;
       }
 
       final scrollState = ref.read(agendaScrollProvider(_scrollKey));
       final verticalCtrl = scrollState.verticalScrollCtrl;
-      if (!verticalCtrl.hasClients) return;
+      final horizontalCtrl = scrollState.horizontalScrollCtrl;
+      if (!verticalCtrl.hasClients && !horizontalCtrl.hasClients) return;
 
-      final renderBox = context.findRenderObject() as RenderBox?;
-      if (renderBox == null) return;
+      // dragPos è già in coordinate locali del bodyBox
+      final localPos = dragPos;
+      final viewHeight = bodyBox.size.height;
+      final viewWidth = bodyBox.size.width;
 
-      final localPos = renderBox.globalToLocal(dragPos);
-      final viewHeight = renderBox.size.height;
-      final maxExtent = verticalCtrl.position.maxScrollExtent;
-      final current = verticalCtrl.offset;
+      // ─────────────────────────────────────────
+      // Auto scroll verticale (comportamento esistente)
+      // ─────────────────────────────────────────
+      if (verticalCtrl.hasClients) {
+        final maxExtent = verticalCtrl.position.maxScrollExtent;
+        final current = verticalCtrl.offset;
 
-      double? newOffset;
-      if (localPos.dy < _scrollEdgeMargin && current > 0) {
-        newOffset = (current - _scrollSpeed).clamp(0, maxExtent);
-      } else if (localPos.dy > viewHeight - _scrollEdgeMargin &&
-          current < maxExtent) {
-        newOffset = (current + _scrollSpeed).clamp(0, maxExtent);
+        double? newOffset;
+        if (localPos.dy < _scrollEdgeMargin && current > 0) {
+          newOffset = (current - _scrollSpeed).clamp(0, maxExtent);
+        } else if (localPos.dy > viewHeight - _scrollEdgeMargin &&
+            current < maxExtent) {
+          newOffset = (current + _scrollSpeed).clamp(0, maxExtent);
+        }
+
+        if (newOffset != null && newOffset != current) {
+          verticalCtrl.jumpTo(newOffset);
+        }
       }
 
-      if (newOffset != null && newOffset != current) {
-        verticalCtrl.jumpTo(newOffset);
+      // ─────────────────────────────────────────
+      // Auto scroll orizzontale per raggiungere colonne nascoste
+      // ─────────────────────────────────────────
+      if (horizontalCtrl.hasClients) {
+        final maxHorizontal = horizontalCtrl.position.maxScrollExtent;
+        final currentX = horizontalCtrl.offset;
+
+        // Usiamo una soglia relativa alla larghezza visibile,
+        // per renderlo affidabile anche con layout molto larghi.
+        const double edgeFraction = 0.18; // ~18% ai lati
+        final double leftEdge = viewWidth * edgeFraction;
+        final double rightEdge = viewWidth * (1 - edgeFraction);
+
+        double? newOffsetX;
+        if (localPos.dx < leftEdge && currentX > 0) {
+          newOffsetX = (currentX - _scrollSpeed).clamp(0, maxHorizontal);
+        } else if (localPos.dx > rightEdge &&
+            currentX < maxHorizontal) {
+          newOffsetX = (currentX + _scrollSpeed).clamp(0, maxHorizontal);
+        }
+
+        if (newOffsetX != null && newOffsetX != currentX) {
+          horizontalCtrl.jumpTo(newOffsetX);
+        }
       }
     });
   }

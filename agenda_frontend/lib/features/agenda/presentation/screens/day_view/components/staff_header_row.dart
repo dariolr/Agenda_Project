@@ -42,7 +42,6 @@ class StaffHeaderRow extends ConsumerWidget {
           width: columnWidth,
           height: headerHeight,
           decoration: BoxDecoration(
-            color: staff.color.withOpacity(isHighlighted ? 0.24 : 0.12),
             border: Border(
               right: BorderSide(
                 color: isLast
@@ -53,18 +52,20 @@ class StaffHeaderRow extends ConsumerWidget {
             ),
           ),
           padding: EdgeInsets.symmetric(horizontal: headerHeight * 0.18),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              StaffCircleAvatar(
-                height: headerHeight * 0.78,
-                color: staff.color,
-                isHighlighted: isHighlighted,
-                initials: initials,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                StaffCircleAvatar(
+                  height: headerHeight * 0.78,
+                  color: staff.color,
+                  isHighlighted: isHighlighted,
+                  initials: initials,
+                ),
+                const SizedBox(width: 8),
+                Text(
                   displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -74,8 +75,8 @@ class StaffHeaderRow extends ConsumerWidget {
                     color: Colors.black87,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       }).toList(),

@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,24 +8,6 @@ import 'bookings_provider.dart';
 import 'business_providers.dart';
 import 'date_range_provider.dart';
 import 'location_providers.dart';
-
-class _StaffScheduleSeed {
-  final int staffId;
-  final List<int> locationIds;
-  final int serviceId;
-  final int serviceVariantId;
-  final String serviceName;
-  final double basePrice;
-
-  const _StaffScheduleSeed({
-    required this.staffId,
-    required this.locationIds,
-    required this.serviceId,
-    required this.serviceVariantId,
-    required this.serviceName,
-    required this.basePrice,
-  });
-}
 
 class AppointmentsNotifier extends Notifier<List<Appointment>> {
   bool _initialized = false;
@@ -41,6 +21,34 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     return state;
   }
 
+  List<Appointment> _mockAppointments() {
+    final business = ref.read(currentBusinessProvider);
+    final location = ref.read(currentLocationProvider);
+
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+    final end = start.add(const Duration(hours: 2));
+
+    return [
+      Appointment(
+        id: 1,
+        bookingId: 100000,
+        businessId: business.id,
+        locationId: location.id,
+        staffId: 1,
+        serviceId: 1,
+        serviceVariantId: 1001,
+        clientId: 1,
+        clientName: 'Cliente Demo',
+        serviceName: 'Massaggio Relax',
+        startTime: start,
+        endTime: end,
+        price: 90,
+      ),
+    ];
+  }
+
+  /*
   List<Appointment> _mockAppointments() {
     final business = ref.read(currentBusinessProvider);
 
@@ -174,7 +182,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
 
     return appointments;
   }
-
+*/
   void moveAppointment({
     required int appointmentId,
     required int newStaffId,
