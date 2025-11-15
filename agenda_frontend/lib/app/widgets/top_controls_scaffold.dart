@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
-import 'package:agenda_frontend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_frontend/core/l10n/l10_extension.dart';
 import 'package:agenda_frontend/core/l10n/l10n.dart';
 import 'package:agenda_frontend/core/models/location.dart';
@@ -12,11 +11,55 @@ import 'package:agenda_frontend/features/agenda/providers/location_providers.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-typedef TopControlsBuilder =
+typedef TopControlsBuilderFn =
     Widget Function(BuildContext context, TopControlsData data);
 
-typedef AdaptiveControlsBuilder =
-    Widget Function(BuildContext context, TopControlsData data);
+class TopControlsBuilder {
+  const TopControlsBuilder.single(TopControlsBuilderFn builder)
+    : _single = builder,
+      mobile = null,
+      tablet = null,
+      desktop = null;
+
+  const TopControlsBuilder.adaptive({this.mobile, this.tablet, this.desktop})
+    : _single = null,
+      assert(
+        mobile != null || tablet != null || desktop != null,
+        'Specificare almeno un builder per form factor',
+      );
+
+  final TopControlsBuilderFn? _single;
+  final TopControlsBuilderFn? mobile;
+  final TopControlsBuilderFn? tablet;
+  final TopControlsBuilderFn? desktop;
+
+  Widget build(BuildContext context, TopControlsData data) {
+    if (_single != null) {
+      return _single(context, data);
+    }
+    final builder = _resolve(data.formFactor);
+    return builder(context, data);
+  }
+
+  TopControlsBuilderFn _resolve(AppFormFactor factor) {
+    TopControlsBuilderFn? resolved;
+    switch (factor) {
+      case AppFormFactor.mobile:
+        resolved = mobile ?? tablet ?? desktop;
+        break;
+      case AppFormFactor.tablet:
+        resolved = tablet ?? desktop ?? mobile;
+        break;
+      case AppFormFactor.desktop:
+        resolved = desktop ?? tablet ?? mobile;
+        break;
+    }
+    if (resolved == null) {
+      throw StateError('Nessun builder disponibile per $factor');
+    }
+    return resolved;
+  }
+}
 
 class TopControlsData {
   const TopControlsData({
@@ -55,13 +98,11 @@ class TopControlsScaffold extends ConsumerWidget {
     super.key,
     required this.builder,
     this.alignment = AlignmentDirectional.centerStart,
-    this.expandToWidth = false,
     this.padding = EdgeInsets.zero,
   });
 
   final TopControlsBuilder builder;
   final AlignmentGeometry alignment;
-  final bool expandToWidth;
   final EdgeInsetsGeometry padding;
 
   @override
@@ -90,11 +131,11 @@ class TopControlsScaffold extends ConsumerWidget {
     );
 
     final leftInset = _computeLeftInset(context, layoutConfig, formFactor);
-    Widget child = builder(context, data);
-
-    if (expandToWidth) {
-      child = SizedBox(width: double.infinity, child: child);
-    }
+    Widget child = LayoutBuilder(
+      builder: (context, constraints) {
+        return builder.build(context, data);
+      },
+    );
 
     return Align(
       alignment: alignment,
@@ -120,130 +161,5 @@ class TopControlsScaffold extends ConsumerWidget {
         : 0.0;
 
     return math.max(0.0, baseInset + railInset);
-  }
-}
-
-/// Builder adattivo che sceglie automaticamente il layout corretto
-/// (mobile/tablet/desktop) riusando il [TopControlsScaffold].
-class TopControlsAdaptiveBuilder extends StatelessWidget {
-  const TopControlsAdaptiveBuilder({
-    super.key,
-    this.mobileBuilder,
-    this.tabletBuilder,
-    this.desktopBuilder,
-    this.alignment = AlignmentDirectional.centerStart,
-    this.expandToWidth = false,
-    this.padding = EdgeInsets.zero,
-    this.logConstraints = false,
-    this.debugLabel,
-  }) : assert(
-         mobileBuilder != null ||
-             tabletBuilder != null ||
-             desktopBuilder != null,
-         'Almeno un builder deve essere fornito',
-       );
-
-  final AdaptiveControlsBuilder? mobileBuilder;
-  final AdaptiveControlsBuilder? tabletBuilder;
-  final AdaptiveControlsBuilder? desktopBuilder;
-  final AlignmentGeometry alignment;
-  final bool expandToWidth;
-  final EdgeInsetsGeometry padding;
-  final bool logConstraints;
-  final String? debugLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return TopControlsScaffold(
-      alignment: alignment,
-      expandToWidth: expandToWidth,
-      padding: padding,
-      builder: (context, data) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            if (logConstraints) {
-              debugPrint(
-                '${debugLabel ?? 'TopControlsAdaptiveBuilder'} - '
-                'constraints.maxWidth: ${constraints.maxWidth}, '
-                'formFactor: ${data.formFactor}',
-              );
-            }
-            final builder = _resolveBuilder(data.formFactor);
-            return builder(context, data);
-          },
-        );
-      },
-    );
-  }
-
-  AdaptiveControlsBuilder _resolveBuilder(AppFormFactor factor) {
-    AdaptiveControlsBuilder? selected;
-    switch (factor) {
-      case AppFormFactor.mobile:
-        selected = mobileBuilder ?? tabletBuilder ?? desktopBuilder;
-      case AppFormFactor.tablet:
-        selected = tabletBuilder ?? desktopBuilder ?? mobileBuilder;
-      case AppFormFactor.desktop:
-        selected = desktopBuilder ?? tabletBuilder ?? mobileBuilder;
-    }
-    return selected ??
-        (throw StateError('Nessun builder disponibile per $factor'));
-  }
-}
-
-/// Row standardizzata per i controlli desktop con pulsante "Oggi",
-/// date switcher e sezione location opzionale.
-class TopControlsRow extends StatelessWidget {
-  const TopControlsRow({
-    super.key,
-    required this.todayLabel,
-    required this.onTodayPressed,
-    required this.dateSwitcherBuilder,
-    this.isTodayDisabled = false,
-    this.locationSection,
-    this.trailing = const [],
-    this.gapAfterToday = 16,
-    this.gapAfterDate = 16,
-    this.gapAfterLocation = 16,
-  });
-
-  final String todayLabel;
-  final VoidCallback onTodayPressed;
-  final WidgetBuilder dateSwitcherBuilder;
-  final bool isTodayDisabled;
-  final Widget? locationSection;
-  final List<Widget> trailing;
-  final double gapAfterToday;
-  final double gapAfterDate;
-  final double gapAfterLocation;
-
-  @override
-  Widget build(BuildContext context) {
-    final children = <Widget>[
-      AgendaRoundedButton(
-        label: todayLabel,
-        onTap: isTodayDisabled ? null : onTodayPressed,
-      ),
-      SizedBox(width: gapAfterToday),
-      Flexible(child: Builder(builder: dateSwitcherBuilder)),
-    ];
-
-    if (locationSection != null) {
-      if (gapAfterDate > 0) {
-        children.add(SizedBox(width: gapAfterDate));
-      }
-      children.add(locationSection!);
-      if (trailing.isNotEmpty && gapAfterLocation > 0) {
-        children.add(SizedBox(width: gapAfterLocation));
-      }
-    } else if (trailing.isNotEmpty && gapAfterDate > 0) {
-      children.add(SizedBox(width: gapAfterDate));
-    }
-
-    if (trailing.isNotEmpty) {
-      children.addAll(trailing);
-    }
-
-    return Row(children: children);
   }
 }

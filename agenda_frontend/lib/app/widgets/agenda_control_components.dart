@@ -89,6 +89,7 @@ class AgendaDateSwitcher extends StatefulWidget {
     required this.label,
     required this.selectedDate,
     this.useWeekRangePicker = false,
+    this.isCompact = false,
     this.onPrevious,
     this.onPreviousWeek,
     this.onNext,
@@ -103,6 +104,9 @@ class AgendaDateSwitcher extends StatefulWidget {
   // When true, tapping the label opens a DateRangePicker pre-filled with the
   // week (Mon-Sun) containing selectedDate, and normalizes user choice to that week.
   final bool useWeekRangePicker;
+
+  /// Variante compatta: disegna solo il bottone testo+icona senza frecce laterali.
+  final bool isCompact;
   final VoidCallback? onPrevious;
   final VoidCallback? onPreviousWeek;
   final VoidCallback? onNext;
@@ -227,6 +231,16 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isCompact) {
+      return SizedBox(
+        height: kAgendaControlHeight,
+        child: TextButton.icon(
+          onPressed: () => _handleTap(context),
+          icon: const Icon(Icons.calendar_today_outlined, size: 20),
+          label: Text(widget.label),
+        ),
+      );
+    }
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final interactions = Theme.of(context).extension<AppInteractionColors>();
