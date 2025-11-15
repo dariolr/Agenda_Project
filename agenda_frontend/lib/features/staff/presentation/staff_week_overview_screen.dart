@@ -1,3 +1,4 @@
+import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
 import 'package:agenda_frontend/core/l10n/l10_extension.dart';
@@ -181,6 +182,7 @@ class _StaffWeekOverviewScreenState
     final staffList = ref.watch(staffForCurrentLocationProvider);
     // Use real availability coming from the editor provider, mapped to overview ranges
     final availability = ref.watch(weeklyStaffAvailabilityFromEditorProvider);
+    final formFactor = ref.watch(formFactorProvider);
 
     // Week days (Mon..Sun)
     final weekStart = _mondayOfWeek(selectedDate);
@@ -384,21 +386,19 @@ class _StaffWeekOverviewScreenState
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.availabilityTitle)),
+      appBar: AppBar(
+        centerTitle: true,
+        title: StaffTopControls(
+          todayLabel: context.l10n.currentWeek,
+          labelOverride: weekLabel,
+          compact: formFactor != AppFormFactor.desktop,
+        ),
+      ),
       body: ScrollConfiguration(
         behavior: const NoScrollbarBehavior(),
         child: Column(
           children: [
-            // Top controls (date/location)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: StaffTopControls(
-                todayLabel: context.l10n.currentWeek,
-                labelOverride: weekLabel,
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Header row (no vertical separators between day headers)
+            const SizedBox(height: 24),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

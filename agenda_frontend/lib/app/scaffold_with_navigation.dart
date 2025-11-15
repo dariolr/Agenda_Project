@@ -32,13 +32,13 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       final railDestinations =
           _ScaffoldWithNavigationHelpers.toRailDestinations(destinations);
       final isAgenda = navigationShell.currentIndex == 0;
-      final isServices = navigationShell.currentIndex == 2;
       final isClients = navigationShell.currentIndex == 1;
+      final isServices = navigationShell.currentIndex == 2;
 
       return Scaffold(
         appBar: AppBar(
           title: isAgenda
-              ? const AgendaTopControls(externalizeAdd: true)
+              ? const AgendaTopControls()
               : Text(
                   _ScaffoldWithNavigationHelpers.getLocalizedTitle(
                     context,
@@ -47,13 +47,11 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 ),
           centerTitle: false,
           toolbarHeight: 72,
-            actions: isAgenda
-              ? [const _AgendaAddAction(), const SizedBox(width: 16)]
+          actions: isAgenda
+              ? [const _AgendaAddAction()]
               : (isServices
-                ? [const _ServicesAddAction(), const SizedBox(width: 16)]
-                : (isClients
-                  ? [const _ClientsAddAction(), const SizedBox(width: 16)]
-                  : null)),
+                    ? [const _ServicesAddAction()]
+                    : (isClients ? [const _ClientsAddAction()] : null)),
         ),
         body: Row(
           children: [
@@ -75,12 +73,12 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
 
     final isAgenda = navigationShell.currentIndex == 0;
-    final isServices = navigationShell.currentIndex == 2;
     final isClients = navigationShell.currentIndex == 1;
+    final isServices = navigationShell.currentIndex == 2;
     return Scaffold(
       appBar: AppBar(
         title: isAgenda
-            ? const AgendaTopControls(externalizeAdd: true, compact: true)
+            ? const AgendaTopControls(compact: true)
             : Text(
                 _ScaffoldWithNavigationHelpers.getLocalizedTitle(
                   context,
@@ -89,18 +87,12 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               ),
         centerTitle: false,
         actions: isAgenda
-            ? const [_AgendaAddAction(compact: true), SizedBox(width: 16)]
+            ? const [_AgendaAddAction(compact: true)]
             : (isServices
-                ? const [
-                    _ServicesAddAction(compact: true),
-                    SizedBox(width: 16),
-                  ]
-                : (isClients
-                    ? const [
-                        _ClientsAddAction(compact: true),
-                        SizedBox(width: 16),
-                      ]
-                    : null)),
+                  ? const [_ServicesAddAction(compact: true)]
+                  : (isClients
+                        ? const [_ClientsAddAction(compact: true)]
+                        : null)),
       ),
       body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
@@ -137,25 +129,28 @@ class _AgendaAddAction extends ConsumerWidget {
     final l10n = context.l10n;
     final agendaDate = ref.watch(agendaDateProvider);
     if (compact) {
-      return PopupMenuButton<String>(
-        tooltip: l10n.agendaAdd,
-        icon: const Icon(Icons.add_outlined, size: 22),
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'appointment',
-            child: Text(l10n.agendaAddAppointment),
-          ),
-          PopupMenuItem(value: 'block', child: Text(l10n.agendaAddBlock)),
-        ],
-        onSelected: (value) async {
-          if (value == 'appointment') {
-            await showAppointmentDialog(context, ref, date: agendaDate);
-          } else if (value == 'block') {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(l10n.agendaAddBlock)));
-          }
-        },
+      return Padding(
+        padding: const EdgeInsets.only(left: 8, right: 16),
+        child: PopupMenuButton<String>(
+          tooltip: l10n.agendaAdd,
+          icon: const Icon(Icons.add_outlined, size: 22),
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'appointment',
+              child: Text(l10n.agendaAddAppointment),
+            ),
+            PopupMenuItem(value: 'block', child: Text(l10n.agendaAddBlock)),
+          ],
+          onSelected: (value) async {
+            if (value == 'appointment') {
+              await showAppointmentDialog(context, ref, date: agendaDate);
+            } else if (value == 'block') {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(l10n.agendaAddBlock)));
+            }
+          },
+        ),
       );
     }
     return Padding(
@@ -190,10 +185,7 @@ class _AgendaAddAction extends ConsumerWidget {
               ),
               clipBehavior: Clip.antiAlias,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.fromLTRB(12, 8, 28, 8),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -225,34 +217,37 @@ class _ServicesAddAction extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     if (compact) {
-      return PopupMenuButton<String>(
-        tooltip: l10n.agendaAdd,
-        icon: const Icon(Icons.add_outlined, size: 22),
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'category',
-            child: Text(l10n.createCategoryButtonLabel),
-          ),
-          PopupMenuItem(
-            value: 'service',
-            child: Text(l10n.servicesNewServiceMenu),
-          ),
-        ],
-        onSelected: (value) async {
-          if (value == 'category') {
-            await showCategoryDialog(context, ref);
-          } else if (value == 'service') {
-            await showServiceDialog(
-              context,
-              ref,
-              requireCategorySelection: true,
-            );
-          }
-        },
+      return Padding(
+        padding: const EdgeInsets.only(left: 8, right: 16),
+        child: PopupMenuButton<String>(
+          tooltip: l10n.agendaAdd,
+          icon: const Icon(Icons.add_outlined, size: 22),
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'category',
+              child: Text(l10n.createCategoryButtonLabel),
+            ),
+            PopupMenuItem(
+              value: 'service',
+              child: Text(l10n.servicesNewServiceMenu),
+            ),
+          ],
+          onSelected: (value) async {
+            if (value == 'category') {
+              await showCategoryDialog(context, ref);
+            } else if (value == 'service') {
+              await showServiceDialog(
+                context,
+                ref,
+                requireCategorySelection: true,
+              );
+            }
+          },
+        ),
       );
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.only(left: 8, right: 24),
       child: PopupMenuButton<String>(
         tooltip: l10n.agendaAdd,
         itemBuilder: (context) => [
@@ -288,10 +283,7 @@ class _ServicesAddAction extends ConsumerWidget {
               ),
               clipBehavior: Clip.antiAlias,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.fromLTRB(12, 8, 28, 8),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -323,15 +315,18 @@ class _ClientsAddAction extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     if (compact) {
-      return IconButton(
-        tooltip: l10n.clientsNew,
-        icon: const Icon(Icons.add_outlined, size: 22),
-        onPressed: () async {
-          await showDialog(
-            context: context,
-            builder: (_) => const ClientEditDialog(),
-          );
-        },
+      return Padding(
+        padding: const EdgeInsets.only(left: 8, right: 16),
+        child: IconButton(
+          tooltip: l10n.clientsNew,
+          icon: const Icon(Icons.add_outlined, size: 22),
+          onPressed: () async {
+            await showDialog(
+              context: context,
+              builder: (_) => const ClientEditDialog(),
+            );
+          },
+        ),
       );
     }
     return Padding(
@@ -355,10 +350,7 @@ class _ClientsAddAction extends ConsumerWidget {
               ),
               clipBehavior: Clip.antiAlias,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.fromLTRB(12, 8, 28, 8),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
