@@ -144,8 +144,8 @@ class LayoutConfig {
   }
 
   static double headerHeightForWidth(double width) {
-    if (width >= 1024) return 56; // Desktop
-    if (width >= 600) return 52; // Tablet
-    return 48; // Mobile
+    if (width >= 1024) return 100; // Desktop
+    if (width >= 600) return 90; // Tablet
+    return 75; // Mobile
   }
 }

@@ -59,6 +59,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: (index) => _goBranch(index),
               labelType: NavigationRailLabelType.none,
+              useIndicator: false, // disattiva highlight di sistema su tap
               destinations: railDestinations,
             ),
             _RailDivider(
@@ -102,8 +103,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         items: destinations
             .map(
               (d) => BottomNavigationBarItem(
-                icon: d.icon,
-                activeIcon: d.selectedIcon,
+                icon: Icon(d.iconData),
+                activeIcon: Icon(d.selectedIconData),
                 label: d.label,
               ),
             )
@@ -395,26 +396,23 @@ class _ScaffoldWithNavigationHelpers {
     final l10n = context.l10n;
     return [
       NavigationDestination(
-        icon: const _NavIcon(icon: Icons.calendar_month_outlined),
-        selectedIcon: const _NavIcon(
-          icon: Icons.calendar_month,
-          selected: true,
-        ),
+        iconData: Icons.calendar_month_outlined,
+        selectedIconData: Icons.calendar_month,
         label: l10n.navAgenda,
       ),
       NavigationDestination(
-        icon: const _NavIcon(icon: Icons.people_outline),
-        selectedIcon: const _NavIcon(icon: Icons.people, selected: true),
+        iconData: Icons.people_outline,
+        selectedIconData: Icons.people,
         label: l10n.navClients,
       ),
       NavigationDestination(
-        icon: const _NavIcon(icon: Icons.cut_outlined),
-        selectedIcon: const _NavIcon(icon: Icons.cut, selected: true),
+        iconData: Icons.cut_outlined,
+        selectedIconData: Icons.cut,
         label: l10n.navServices,
       ),
       NavigationDestination(
-        icon: const _NavIcon(icon: Icons.badge_outlined),
-        selectedIcon: const _NavIcon(icon: Icons.badge, selected: true),
+        iconData: Icons.badge_outlined,
+        selectedIconData: Icons.badge,
         label: l10n.navStaff,
       ),
     ];
@@ -426,8 +424,12 @@ class _ScaffoldWithNavigationHelpers {
     return destinations
         .map(
           (d) => NavigationRailDestination(
-            icon: Tooltip(message: d.label, child: d.icon),
-            selectedIcon: Tooltip(message: d.label, child: d.selectedIcon),
+            icon: _NavIcon(icon: d.iconData, label: d.label),
+            selectedIcon: _NavIcon(
+              icon: d.selectedIconData,
+              label: d.label,
+              selected: true,
+            ),
             label: Text(d.label),
           ),
         )
@@ -467,42 +469,218 @@ class _RailDivider extends StatelessWidget {
   }
 }
 
-class _NavIcon extends StatelessWidget {
-  const _NavIcon({required this.icon, this.selected = false});
+class _NavIcon extends StatefulWidget {
+  const _NavIcon({
+    required this.icon,
+    required this.label,
+    this.selected = false,
+  });
 
   final IconData icon;
+  final String label;
   final bool selected;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final accentColor = colorScheme.secondary;
-    final iconColor = colorScheme.onSecondary.withOpacity(selected ? 0.9 : 0.7);
-    final backgroundColor = selected
-        ? accentColor
-        : accentColor.withOpacity(0.35);
+  State<_NavIcon> createState() => _NavIconState();
+}
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeInOut,
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Icon(icon, color: iconColor),
+class _NavIconState extends State<_NavIcon> {
+  static const double _size = 52;
+  static const double _iconSize = 28;
+  static const double _tooltipHeight = 34;
+
+  bool _hovering = false;
+  OverlayEntry? _tooltipEntry;
+
+  @override
+  void dispose() {
+    _removeTooltip();
+    super.dispose();
+  }
+
+  void _handleHover(bool hovering) {
+    if (_hovering == hovering) return;
+    setState(() => _hovering = hovering);
+    if (hovering) {
+      _showTooltip();
+    } else {
+      _removeTooltip();
+    }
+  }
+
+  void _showTooltip() {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final overlay = Overlay.of(context);
+    final overlayBox = overlay.context.findRenderObject() as RenderBox?;
+    if (overlayBox == null) return;
+
+    final iconGlobal = renderBox.localToGlobal(Offset.zero);
+    final overlayGlobal = overlayBox.localToGlobal(Offset.zero);
+
+    // distanza orizzontale dal NavigationRail: leggermente più vicina
+    final dx = iconGlobal.dx - overlayGlobal.dx + renderBox.size.width + 18;
+    final dy =
+        iconGlobal.dy -
+        overlayGlobal.dy +
+        (renderBox.size.height - _tooltipHeight) / 2;
+
+    _removeTooltip();
+    _tooltipEntry = OverlayEntry(
+      builder: (context) {
+        return Positioned(
+          left: dx,
+          top: dy,
+          child: _NavTooltipBubble(label: widget.label),
+        );
+      },
     );
+    overlay.insert(_tooltipEntry!);
+  }
+
+  void _removeTooltip() {
+    _tooltipEntry?.remove();
+    _tooltipEntry = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final accent = scheme.secondary;
+
+    final iconColor = scheme.onSecondary.withOpacity(
+      widget.selected ? 0.95 : 0.7,
+    );
+
+    Color backgroundColor = Colors.transparent;
+
+    if (widget.selected) {
+      // effetto "selected": fill pieno
+      backgroundColor = accent;
+    } else if (_hovering) {
+      // effetto "hover": fill leggero
+      backgroundColor = scheme.onSecondary.withOpacity(0.08);
+    }
+
+    final baseTheme = Theme.of(context);
+
+    return MouseRegion(
+      onEnter: (_) => _handleHover(true),
+      onExit: (_) => _handleHover(false),
+      child: Theme(
+        // disattiva splash / highlight di sistema su tap/long-press
+        data: baseTheme.copyWith(
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          hoverColor: Colors.transparent,
+        ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          width: _size,
+          height: _size,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(widget.icon, color: iconColor, size: _iconSize),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavTooltipBubble extends StatelessWidget {
+  const _NavTooltipBubble({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    const double arrowWidth = 8.0;
+    final double arrowHeight = _NavIconState._tooltipHeight * 0.6;
+
+    return CustomPaint(
+      painter: _NavBubblePainter(
+        color: Colors.black87,
+        arrowWidth: arrowWidth,
+        arrowHeight: arrowHeight,
+        radius: 18,
+      ),
+      child: Container(
+        height: _NavIconState._tooltipHeight,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+        ).copyWith(left: 16 + arrowWidth),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            decoration: TextDecoration.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavBubblePainter extends CustomPainter {
+  const _NavBubblePainter({
+    required this.color,
+    required this.arrowWidth,
+    required this.arrowHeight,
+    required this.radius,
+  });
+
+  final Color color;
+  final double arrowWidth;
+  final double arrowHeight;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    final path = Path();
+
+    // Ovale principale
+    final bubbleRect = Rect.fromLTWH(
+      arrowWidth,
+      0,
+      size.width - arrowWidth,
+      size.height,
+    );
+    path.addRRect(RRect.fromRectAndRadius(bubbleRect, Radius.circular(radius)));
+
+    // Freccia laterale integrata
+    //final arrowTop = (size.height - arrowHeight) / 2;
+    //path.moveTo(arrowWidth + 4, arrowTop);
+    //path.lineTo(0, size.height / 2);
+    //path.lineTo(arrowWidth + 4, arrowTop + arrowHeight);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _NavBubblePainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.arrowWidth != arrowWidth ||
+        oldDelegate.arrowHeight != arrowHeight ||
+        oldDelegate.radius != radius;
   }
 }
 
 class NavigationDestination {
   const NavigationDestination({
-    required this.icon,
-    required this.selectedIcon,
+    required this.iconData,
+    required this.selectedIconData,
     required this.label,
   });
-  final Widget icon;
-  final Widget selectedIcon;
+  final IconData iconData;
+  final IconData selectedIconData;
   final String label;
 }

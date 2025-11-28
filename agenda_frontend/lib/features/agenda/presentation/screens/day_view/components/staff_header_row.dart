@@ -54,7 +54,7 @@ class StaffHeaderRow extends ConsumerWidget {
           padding: EdgeInsets.symmetric(horizontal: headerHeight * 0.18),
           child: Center(
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -65,14 +65,17 @@ class StaffHeaderRow extends ConsumerWidget {
                   initials: initials,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  displayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: Colors.black87,
+                Expanded(
+                  child: Text(
+                    displayName,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
               ],
