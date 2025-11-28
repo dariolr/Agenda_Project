@@ -24,6 +24,7 @@ export 'presentation/screens/day_view/staff_column.dart';
 // Layout e componenti core
 export 'presentation/screens/helper/responsive_layout.dart';
 export 'presentation/screens/widgets/agenda_dividers.dart';
+export 'presentation/screens/widgets/unavailable_slot_pattern.dart';
 // ──────────────────────────────────────────────
 // � Application (providers, notifiers, stato)
 // ──────────────────────────────────────────────

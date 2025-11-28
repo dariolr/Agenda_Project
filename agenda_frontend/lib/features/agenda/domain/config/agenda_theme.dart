@@ -73,7 +73,25 @@ class AgendaTheme {
   /// Regola questo valore per rendere il ghost più o meno visibile.
   static const double ghostOpacity = 0.50;
 
-  /// Durata dell’effetto fade-out del fantasma dopo il rilascio.
+  /// Durata dell'effetto fade-out del fantasma dopo il rilascio.
   /// Aumentala per una dissolvenza più lenta e visibile.
   static const Duration ghostFadeDuration = Duration(milliseconds: 500);
+
+  // ──────────────────────────────────────────────
+  // 🚫 SLOT NON DISPONIBILI
+  // ──────────────────────────────────────────────
+
+  /// Colore delle linee diagonali per slot non disponibili.
+  static Color unavailablePatternColor(ColorScheme scheme) =>
+      scheme.onSurface.withOpacity(0.25);
+
+  /// Colore di sfondo per slot non disponibili.
+  static Color unavailableBackgroundColor(ColorScheme scheme) =>
+      scheme.surfaceContainerHighest.withOpacity(0.6);
+
+  /// Spaziatura tra le linee del pattern (in pixel).
+  static const double unavailablePatternSpacing = 6.0;
+
+  /// Spessore delle linee del pattern (in pixel).
+  static const double unavailablePatternLineWidth = 1.5;
 }

@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/hover_slot.dart';
+import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/unavailable_slot_pattern.dart';
 import 'package:agenda_frontend/features/agenda/providers/dragged_card_size_provider.dart';
+import 'package:agenda_frontend/features/agenda/providers/staff_slot_availability_provider.dart';
 import 'package:agenda_frontend/features/services/providers/services_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -353,6 +355,44 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         }),
       ),
     );
+
+    // 🔹 Layer slot non disponibili (texture pattern)
+    final unavailableRanges = ref.watch(
+      unavailableSlotRangesProvider(widget.staff.id),
+    );
+    if (unavailableRanges.isNotEmpty) {
+      final colorScheme = Theme.of(context).colorScheme;
+      final totalHeight = totalSlots * slotHeight;
+      stackChildren.add(
+        IgnorePointer(
+          child: SizedBox(
+            height: totalHeight,
+            width: double.infinity,
+            child: Stack(
+              children: [
+                for (final range in unavailableRanges)
+                  Positioned(
+                    top: range.startIndex * slotHeight,
+                    left: 0,
+                    right: 0,
+                    child: UnavailableSlotRange(
+                      slotCount: range.count,
+                      slotHeight: slotHeight,
+                      patternColor: AgendaTheme.unavailablePatternColor(
+                        colorScheme,
+                      ),
+                      backgroundColor: AgendaTheme.unavailableBackgroundColor(
+                        colorScheme,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     // 🔹 Layer interattivo HoverSlot (effetto all'hover del mouse)
     stackChildren.add(
       IgnorePointer(

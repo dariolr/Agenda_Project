@@ -69,9 +69,9 @@ class StaffAvailabilityByStaffNotifier
     int slotIndexOf(int hour, int minute) =>
         (hour * 60 + minute) ~/ minutesPerSlot;
 
-    // Genera set di slot per un turno con semantica tick inclusiva sugli estremi:
-    // selezioniamo l'indice di inizio e anche quello dell'ora finale; la durata sarà
-    // (count - 1) * minutesPerSlot. Esempio: 09:00..13:00 => slot 36..52 inclusi (17 slot) => 16*15 = 240 min.
+    // Genera set di slot per un turno con semantica [start, end) - estremo finale ESCLUSIVO.
+    // Esempio: 09:00..13:00 => slot 36..51 (09:00, 09:15, ..., 12:45)
+    // Lo slot 52 (13:00) NON è incluso, quindi sarà marcato come non disponibile.
     Set<int> rangeSlots(
       int startHour,
       int startMinute,
@@ -79,12 +79,17 @@ class StaffAvailabilityByStaffNotifier
       int endMinute,
     ) {
       final start = slotIndexOf(startHour, startMinute);
-      final end = slotIndexOf(endHour, endMinute); // inclusivo
-      return {for (int i = start; i <= end; i++) i};
+      final end = slotIndexOf(endHour, endMinute); // esclusivo
+      return {for (int i = start; i < end; i++) i};
     }
 
-    final morning = rangeSlots(9, 0, 13, 0); // 9:00 -> 13:00
-    final afternoon = rangeSlots(14, 0, 19, 0); // 14:00 -> 19:00
+    final morning = rangeSlots(9, 0, 13, 0); // 9:00 -> 12:45 (13:00 escluso)
+    final afternoon = rangeSlots(
+      14,
+      0,
+      19,
+      0,
+    ); // 14:00 -> 18:45 (19:00 escluso)
     final combined = {...morning, ...afternoon};
 
     Map<int, Set<int>> weekTemplate() => {
