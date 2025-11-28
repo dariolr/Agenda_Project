@@ -212,3 +212,62 @@ Future<void> showAppInfoDialog(
     },
   );
 }
+
+/// Mostra un dialog di conferma e ritorna true se confermato, false altrimenti.
+/// Utile per operazioni che richiedono conferma esplicita prima di procedere.
+Future<bool> showConfirmDialog(
+  BuildContext context, {
+  required Widget title,
+  Widget? content,
+  required String confirmLabel,
+  String? cancelLabel,
+  bool danger = false,
+}) async {
+  final colorScheme = Theme.of(context).colorScheme;
+  final result = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) {
+      final base = Theme.of(context);
+      final dialogTheme = base.copyWith(
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        splashFactory: NoSplash.splashFactory,
+      );
+      return Theme(
+        data: dialogTheme,
+        child: CallbackShortcuts(
+          bindings: <ShortcutActivator, VoidCallback>{
+            SingleActivator(LogicalKeyboardKey.escape): () =>
+                Navigator.of(context, rootNavigator: true).pop(false),
+          },
+          child: Focus(
+            autofocus: true,
+            child: AlertDialog(
+              title: title,
+              content: content,
+              actions: [
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(context, rootNavigator: true).pop(false),
+                  child: Text(cancelLabel ?? 'Annulla'),
+                ),
+                ElevatedButton(
+                  onPressed: () =>
+                      Navigator.of(context, rootNavigator: true).pop(true),
+                  style: danger
+                      ? ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.error,
+                        )
+                      : null,
+                  child: Text(confirmLabel),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+  return result ?? false;
+}

@@ -169,5 +169,8 @@
   "serviceSeedServiceSportDescription": "Intensive decontracting treatment",
   "serviceSeedServiceFaceName": "Facial Treatment",
   "serviceSeedServiceFaceDescription": "Cleansing and illuminating treatment",
-  "serviceDuplicateCopyWord": "Copy"
+  "serviceDuplicateCopyWord": "Copy",
+  "moveAppointmentConfirmTitle": "Confirm move?",
+  "moveAppointmentConfirmMessage": "The appointment will be moved to {newTime} for {staffName}.",
+  "@moveAppointmentConfirmMessage": {"placeholders": {"newTime": {"type": "String"}, "staffName": {"type": "String"}}}
 }

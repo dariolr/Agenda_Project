@@ -169,7 +169,9 @@
   "serviceSeedServiceSportDescription": "Trattamento decontratturante intensivo",
   "serviceSeedServiceFaceName": "Trattamento Viso",
   "serviceSeedServiceFaceDescription": "Pulizia e trattamento illuminante",
-  "serviceDuplicateCopyWord": "Copia"
-
+  "serviceDuplicateCopyWord": "Copia",
+  "moveAppointmentConfirmTitle": "Confermi lo spostamento?",
+  "moveAppointmentConfirmMessage": "L'appuntamento verrà spostato a {newTime} per {staffName}.",
+  "@moveAppointmentConfirmMessage": {"placeholders": {"newTime": {"type": "String"}, "staffName": {"type": "String"}}}
 
 }

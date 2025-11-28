@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
+import 'package:agenda_frontend/core/l10n/l10_extension.dart';
+import 'package:agenda_frontend/core/widgets/app_dialogs.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/hover_slot.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/unavailable_slot_pattern.dart';
 import 'package:agenda_frontend/features/agenda/providers/dragged_card_size_provider.dart';
+import 'package:agenda_frontend/features/agenda/providers/pending_drop_provider.dart';
 import 'package:agenda_frontend/features/agenda/providers/staff_slot_availability_provider.dart';
 import 'package:agenda_frontend/features/services/providers/services_provider.dart';
 import 'package:flutter/material.dart';
@@ -439,7 +443,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         setState(() => _isHighlighted = false);
         ref.read(highlightedStaffIdProvider.notifier).clear();
       },
-      onAcceptWithDetails: (details) {
+      onAcceptWithDetails: (details) async {
         final previewTimes = ref.read(tempDragTimeProvider);
         setState(() {
           _isHighlighted = false;
@@ -471,12 +475,53 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         );
 
         ref.read(dragSessionProvider.notifier).markHandled();
-        appointmentsNotifier.moveAppointment(
+
+        // Salva i dati del drop pendente per mostrare la preview
+        final pendingData = PendingDropData(
           appointmentId: details.data.id,
+          originalStaffId: details.data.staffId,
+          originalStart: details.data.startTime,
+          originalEnd: details.data.endTime,
           newStaffId: widget.staff.id,
           newStart: dropResult.newStart,
           newEnd: dropResult.newEnd,
         );
+        ref.read(pendingDropProvider.notifier).setPending(pendingData);
+
+        // Mostra dialog di conferma prima di applicare lo spostamento
+        if (!mounted) {
+          ref.read(pendingDropProvider.notifier).clear();
+          return;
+        }
+        final l10n = context.l10n;
+        final newTimeStr = DtFmt.hm(
+          context,
+          dropResult.newStart.hour,
+          dropResult.newStart.minute,
+        );
+        final staffName = widget.staff.displayName;
+
+        final confirmed = await showConfirmDialog(
+          context,
+          title: Text(l10n.moveAppointmentConfirmTitle),
+          content: Text(
+            l10n.moveAppointmentConfirmMessage(newTimeStr, staffName),
+          ),
+          confirmLabel: l10n.actionConfirm,
+          cancelLabel: l10n.actionCancel,
+        );
+
+        // Pulisci sempre lo stato pendente dopo la decisione
+        ref.read(pendingDropProvider.notifier).clear();
+
+        if (confirmed && mounted) {
+          appointmentsNotifier.moveAppointment(
+            appointmentId: details.data.id,
+            newStaffId: widget.staff.id,
+            newStart: dropResult.newStart,
+            newEnd: dropResult.newEnd,
+          );
+        }
       },
       builder: (context, candidateData, rejectedData) {
         return GestureDetector(
@@ -513,6 +558,18 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
+    // 🔹 Watch fuori dal loop per evitare rebuild multipli
+    final pendingDrop = ref.watch(pendingDropProvider);
+    final services = layoutConfig.useServiceColorsForAppointments
+        ? ref.watch(servicesProvider)
+        : <dynamic>[];
+    // Pre-calcola la mappa dei colori dei servizi
+    final serviceColorMap = <int, Color>{};
+    for (final service in services) {
+      if (service.color != null) {
+        serviceColorMap[service.id as int] = service.color as Color;
+      }
+    }
 
     final layoutAppointments = appointments.map((appt) {
       final resizingEntry = ref.watch(resizingEntryProvider(appt.id));
@@ -590,7 +647,18 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final geometry =
             layoutGeometry[originalAppt.id] ??
             const EventGeometry(leftFraction: 0, widthFraction: 1);
+
+        // Controlla se questo appuntamento ha un drop pendente
+        final pendingDrop = ref.watch(pendingDropProvider);
+        final hasPendingDrop = pendingDrop?.appointmentId == originalAppt.id;
+        final isOriginalPosition =
+            hasPendingDrop && pendingDrop!.originalStaffId == widget.staff.id;
+
         double opacity = isDragged ? AgendaTheme.ghostOpacity : 1.0;
+        // Se è la posizione originale durante un drop pendente, mostra semi-trasparente
+        if (isOriginalPosition) {
+          opacity = AgendaTheme.ghostOpacity;
+        }
 
         // 🔹 Costruisci la card
         final padding = LayoutConfig.columnInnerPadding;
@@ -646,6 +714,87 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       // appuntamenti che iniziano prima rimangono sopra e non vengono
       // parzialmente coperti da quelli iniziati dopo.
       positionedAppointments.addAll(groupWidgets.reversed);
+    }
+
+    // 🔹 Aggiungi preview per drop pendente se questa è la colonna di destinazione
+    final pendingDrop = ref.watch(pendingDropProvider);
+    if (pendingDrop != null && pendingDrop.newStaffId == widget.staff.id) {
+      // Trova l'appuntamento originale nel provider globale
+      final allAppointments = ref.watch(appointmentsProvider);
+      final originalAppt = allAppointments.cast<Appointment?>().firstWhere(
+        (a) => a?.id == pendingDrop.appointmentId,
+        orElse: () => null,
+      );
+
+      if (originalAppt != null) {
+        final dayStart = DateTime(
+          pendingDrop.newStart.year,
+          pendingDrop.newStart.month,
+          pendingDrop.newStart.day,
+        );
+
+        final startMinutes = pendingDrop.newStart
+            .difference(dayStart)
+            .inMinutes;
+        final endMinutes = pendingDrop.newEnd.difference(dayStart).inMinutes;
+
+        final double top =
+            (startMinutes / layoutConfig.minutesPerSlot) * slotHeight;
+        final double height =
+            ((endMinutes - startMinutes) / layoutConfig.minutesPerSlot) *
+            slotHeight;
+
+        final padding = LayoutConfig.columnInnerPadding;
+        final cardWidth = math.max(widget.columnWidth - padding * 2, 0.0);
+
+        Color cardColor = widget.staff.color;
+        if (layoutConfig.useServiceColorsForAppointments) {
+          final variant = ref.watch(
+            serviceVariantByIdProvider(originalAppt.serviceVariantId),
+          );
+          if (variant != null && variant.colorHex != null) {
+            cardColor = ColorUtils.fromHex(variant.colorHex!);
+          } else {
+            final services = ref.watch(servicesProvider);
+            for (final service in services) {
+              if (service.id == originalAppt.serviceId &&
+                  service.color != null) {
+                cardColor = service.color!;
+                break;
+              }
+            }
+          }
+        }
+
+        // Preview card con bordo tratteggiato per indicare la posizione proposta
+        positionedAppointments.add(
+          Positioned(
+            key: const ValueKey('pending_drop_preview'),
+            top: top,
+            left: padding,
+            width: cardWidth,
+            height: height,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cardColor.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(
+                    LayoutConfig.borderRadius,
+                  ),
+                  border: Border.all(
+                    color: cardColor,
+                    width: 2,
+                    strokeAlign: BorderSide.strokeAlignInside,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(Icons.arrow_downward, color: cardColor, size: 24),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
     }
 
     return positionedAppointments;
