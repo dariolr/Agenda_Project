@@ -83,14 +83,21 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
     ),
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor: colorPrimary1,
-      selectedIconTheme: const IconThemeData(color: colorPrimary2),
-      unselectedIconTheme: const IconThemeData(color: colorPrimary2),
+      selectedIconTheme: const IconThemeData(
+        color: colorPrimary2,
+        size: 32,
+      ),
+      unselectedIconTheme: const IconThemeData(
+        color: colorPrimary2,
+        size: 32,
+      ),
       selectedLabelTextStyle: const TextStyle(
         color: colorPrimary2,
         fontWeight: FontWeight.w600,
       ),
       unselectedLabelTextStyle: const TextStyle(color: colorPrimary2),
-      minWidth: 68,
+      minWidth: 88,
+      indicatorColor: Colors.transparent,
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: colorPrimary1,
