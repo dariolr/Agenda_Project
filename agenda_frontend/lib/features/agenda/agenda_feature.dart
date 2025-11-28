@@ -29,3 +29,4 @@ export 'presentation/screens/widgets/unavailable_slot_pattern.dart';
 // � Application (providers, notifiers, stato)
 // ──────────────────────────────────────────────
 export 'providers/agenda_scroll_provider.dart';
+export 'providers/pending_drop_provider.dart';
