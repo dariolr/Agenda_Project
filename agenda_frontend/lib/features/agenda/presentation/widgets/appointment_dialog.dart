@@ -1,3 +1,4 @@
+import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/providers/clients_providers.dart';
 import '../../../services/providers/services_provider.dart';
@@ -25,16 +27,35 @@ Future<void> showAppointmentDialog(
   TimeOfDay? time,
   int? initialStaffId,
 }) async {
-  await showDialog(
-    context: context,
-    builder: (_) => _AppointmentDialog(
-      initial: initial,
-      initialDate: date,
-      initialTime: time,
-      initialStaffId: initialStaffId,
-    ),
+  final formFactor = ref.read(formFactorProvider);
+  final presentation = formFactor == AppFormFactor.desktop
+      ? _AppointmentPresentation.dialog
+      : _AppointmentPresentation.bottomSheet;
+
+  final content = _AppointmentDialog(
+    initial: initial,
+    initialDate: date,
+    initialTime: time,
+    initialStaffId: initialStaffId,
+    presentation: presentation,
   );
+
+  if (presentation == _AppointmentPresentation.dialog) {
+    await showDialog(
+      context: context,
+      builder: (_) => content,
+    );
+  } else {
+    await AppBottomSheet.show(
+      context: context,
+      useRootNavigator: true,
+      builder: (_) => content,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+    );
+  }
 }
+
+enum _AppointmentPresentation { dialog, bottomSheet }
 
 class _AppointmentDialog extends ConsumerStatefulWidget {
   const _AppointmentDialog({
@@ -42,12 +63,14 @@ class _AppointmentDialog extends ConsumerStatefulWidget {
     this.initialDate,
     this.initialTime,
     this.initialStaffId,
+    required this.presentation,
   });
 
   final Appointment? initial;
   final DateTime? initialDate;
   final TimeOfDay? initialTime;
   final int? initialStaffId;
+  final _AppointmentPresentation presentation;
 
   @override
   ConsumerState<_AppointmentDialog> createState() => _AppointmentDialogState();
@@ -96,6 +119,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isEdit = widget.initial != null;
+    final isDialog = widget.presentation == _AppointmentPresentation.dialog;
 
     final services = ref.watch(servicesProvider);
     final variants = ref.watch(serviceVariantsProvider);
@@ -119,226 +143,275 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         ? l10n.appointmentDialogTitleEdit
         : l10n.appointmentDialogTitleNew;
 
-    return AlertDialog(
-      title: Text(title),
-      content: Form(
-        key: _formKey,
-        child: SizedBox(
-          width: 420,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Date
-              Row(
-                children: [
-                  Expanded(
-                    child: _LabeledField(
-                      label: l10n.formDate,
-                      child: InkWell(
-                        onTap: _pickDate,
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          child: Text(
-                            '${_date.day.toString().padLeft(2, '0')}/${_date.month.toString().padLeft(2, '0')}/${_date.year}',
-                          ),
+    final content = Form(
+      key: _formKey,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Date
+            Row(
+              children: [
+                Expanded(
+                  child: _LabeledField(
+                    label: l10n.formDate,
+                    child: InkWell(
+                      onTap: _pickDate,
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        child: Text(
+                          '${_date.day.toString().padLeft(2, '0')}/${_date.month.toString().padLeft(2, '0')}/${_date.year}',
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _LabeledField(
-                      label: l10n.formTime,
-                      child: InkWell(
-                        onTap: _pickTime,
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(_time.format(context)),
-                              const Icon(Icons.schedule, size: 16),
-                            ],
-                          ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _LabeledField(
+                    label: l10n.formTime,
+                    child: InkWell(
+                      onTap: _pickTime,
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(_time.format(context)),
+                            const Icon(Icons.schedule, size: 16),
+                          ],
                         ),
                       ),
                     ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Service
+            _LabeledField(
+              label: l10n.formService,
+              child: DropdownButtonFormField<int>(
+                value: _serviceId,
+                items: [
+                  for (final s in services)
+                    DropdownMenuItem(value: s.id, child: Text(s.name)),
+                ],
+                onChanged: (v) {
+                  setState(() {
+                    _serviceId = v;
+                    _serviceVariantId = null; // recalculated in build
+                  });
+                },
+                validator: (v) => v == null ? l10n.validationRequired : null,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Client (autocomplete)
+            _LabeledField(
+              label: l10n.formClient,
+              child: Autocomplete<_ClientItem>(
+                optionsBuilder: (TextEditingValue te) {
+                  final q = te.text.trim().toLowerCase();
+                  final list = clients;
+                  final results = <_ClientItem>[
+                    for (final c in list)
+                      if (q.isEmpty || c.name.toLowerCase().contains(q))
+                        _ClientItem(c.id, c.name),
+                  ];
+                  return results;
+                },
+                displayStringForOption: (o) => o.name,
+                fieldViewBuilder:
+                    (context, controller, focusNode, onFieldSubmitted) {
+                      if (_clientName.isNotEmpty && controller.text.isEmpty) {
+                        controller.text = _clientName;
+                      }
+                      return TextFormField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        onChanged: (v) {
+                          _clientName = v;
+                          _clientId = null;
+                        },
+                      );
+                    },
+                onSelected: (item) {
+                  setState(() {
+                    _clientId = item.id;
+                    _clientName = item.name;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Staff
+            _LabeledField(
+              label: l10n.formStaff,
+              child: DropdownButtonFormField<int>(
+                value: _staffId,
+                items: [
+                  for (final s in staff)
+                    DropdownMenuItem(value: s.id, child: Text(s.name)),
+                ],
+                onChanged: (v) => setState(() => _staffId = v),
+                validator: (v) => v == null ? l10n.validationRequired : null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final actions = [
+      if (widget.initial != null)
+        AppOutlinedActionButton(
+          onPressed: () {
+            final variants = ref.read(serviceVariantsProvider);
+            final services = ref.read(servicesProvider);
+            final selectedVariant = variants.firstWhere(
+              (v) => v.serviceId == (_serviceId ?? widget.initial!.serviceId),
+              orElse: () => variants.first,
+            );
+            final service = services.firstWhere(
+              (s) => s.id == (_serviceId ?? widget.initial!.serviceId),
+            );
+
+            final start = DateTime(
+              _date.year,
+              _date.month,
+              _date.day,
+              _time.hour,
+              _time.minute,
+            );
+            final end = start.add(
+              Duration(minutes: selectedVariant.durationMinutes),
+            );
+
+            ref
+                .read(appointmentsProvider.notifier)
+                .addAppointment(
+                  bookingId: widget.initial!.bookingId,
+                  staffId: _staffId ?? widget.initial!.staffId,
+                  serviceId: service.id,
+                  serviceVariantId: selectedVariant.id,
+                  clientId: widget.initial!.clientId,
+                  clientName: widget.initial!.clientName,
+                  serviceName: service.name,
+                  start: start,
+                  end: end,
+                  price: selectedVariant.price,
+                );
+            Navigator.of(context).pop();
+          },
+          child: Text(l10n.actionAddService),
+        ),
+      if (widget.initial != null)
+        AppDangerButton(
+          onPressed: () {
+            ref
+                .read(appointmentsProvider.notifier)
+                .deleteAppointment(widget.initial!.id);
+            Navigator.of(context).pop();
+          },
+          child: Text(l10n.actionDelete),
+        ),
+      if (widget.initial != null)
+        AppDangerButton(
+          onPressed: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: Text(l10n.deleteBookingConfirmTitle),
+                content: Text(l10n.deleteBookingConfirmMessage),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(l10n.actionCancel),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(l10n.actionDeleteBooking),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              // Service
-              _LabeledField(
-                label: l10n.formService,
-                child: DropdownButtonFormField<int>(
-                  value: _serviceId,
-                  items: [
-                    for (final s in services)
-                      DropdownMenuItem(value: s.id, child: Text(s.name)),
-                  ],
-                  onChanged: (v) {
-                    setState(() {
-                      _serviceId = v;
-                      _serviceVariantId = null; // recalculated in build
-                    });
-                  },
-                  validator: (v) => v == null ? l10n.validationRequired : null,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Client (autocomplete)
-              _LabeledField(
-                label: l10n.formClient,
-                child: Autocomplete<_ClientItem>(
-                  optionsBuilder: (TextEditingValue te) {
-                    final q = te.text.trim().toLowerCase();
-                    final list = clients;
-                    final results = <_ClientItem>[
-                      for (final c in list)
-                        if (q.isEmpty || c.name.toLowerCase().contains(q))
-                          _ClientItem(c.id, c.name),
-                    ];
-                    return results;
-                  },
-                  displayStringForOption: (o) => o.name,
-                  fieldViewBuilder:
-                      (context, controller, focusNode, onFieldSubmitted) {
-                        if (_clientName.isNotEmpty && controller.text.isEmpty) {
-                          controller.text = _clientName;
-                        }
-                        return TextFormField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          onChanged: (v) {
-                            _clientName = v;
-                            _clientId = null;
-                          },
-                        );
-                      },
-                  onSelected: (item) {
-                    setState(() {
-                      _clientId = item.id;
-                      _clientName = item.name;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Staff
-              _LabeledField(
-                label: l10n.formStaff,
-                child: DropdownButtonFormField<int>(
-                  value: _staffId,
-                  items: [
-                    for (final s in staff)
-                      DropdownMenuItem(value: s.id, child: Text(s.name)),
-                  ],
-                  onChanged: (v) => setState(() => _staffId = v),
-                  validator: (v) => v == null ? l10n.validationRequired : null,
-                ),
-              ),
-            ],
+            );
+            if (confirmed == true) {
+              ref
+                  .read(bookingsProvider.notifier)
+                  .deleteBooking(widget.initial!.bookingId);
+              if (context.mounted) Navigator.of(context).pop();
+            }
+          },
+          child: Text(l10n.actionDeleteBooking),
+        ),
+      AppOutlinedActionButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: Text(l10n.actionCancel),
+      ),
+      AppFilledButton(onPressed: _onSave, child: Text(l10n.actionSave)),
+    ];
+
+    if (isDialog) {
+      return AlertDialog(
+        title: Text(title),
+        content: content,
+        actions: actions,
+      );
+    }
+
+    final bottomActions = actions
+        .map(
+          (a) => ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48, minWidth: 110),
+            child: a,
           ),
+        )
+        .toList();
+
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            content,
+            const SizedBox(height: 24),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 8,
+                children: bottomActions,
+              ),
+            ),
+            SizedBox(height: 32 + MediaQuery.of(context).viewPadding.bottom),
+          ],
         ),
       ),
-      actions: [
-        if (widget.initial != null)
-          AppOutlinedActionButton(
-            onPressed: () {
-              final variants = ref.read(serviceVariantsProvider);
-              final services = ref.read(servicesProvider);
-              final selectedVariant = variants.firstWhere(
-                (v) => v.serviceId == (_serviceId ?? widget.initial!.serviceId),
-                orElse: () => variants.first,
-              );
-              final service = services.firstWhere(
-                (s) => s.id == (_serviceId ?? widget.initial!.serviceId),
-              );
-
-              final start = DateTime(
-                _date.year,
-                _date.month,
-                _date.day,
-                _time.hour,
-                _time.minute,
-              );
-              final end = start.add(
-                Duration(minutes: selectedVariant.durationMinutes),
-              );
-
-              ref
-                  .read(appointmentsProvider.notifier)
-                  .addAppointment(
-                    bookingId: widget.initial!.bookingId,
-                    staffId: _staffId ?? widget.initial!.staffId,
-                    serviceId: service.id,
-                    serviceVariantId: selectedVariant.id,
-                    clientId: widget.initial!.clientId,
-                    clientName: widget.initial!.clientName,
-                    serviceName: service.name,
-                    start: start,
-                    end: end,
-                    price: selectedVariant.price,
-                  );
-              Navigator.of(context).pop();
-            },
-            child: Text(l10n.actionAddService),
-          ),
-        if (widget.initial != null)
-          AppDangerButton(
-            onPressed: () {
-              ref
-                  .read(appointmentsProvider.notifier)
-                  .deleteAppointment(widget.initial!.id);
-              Navigator.of(context).pop();
-            },
-            child: Text(l10n.actionDelete),
-          ),
-        if (widget.initial != null)
-          AppDangerButton(
-            onPressed: () async {
-              final confirmed = await showDialog<bool>(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: Text(l10n.deleteBookingConfirmTitle),
-                  content: Text(l10n.deleteBookingConfirmMessage),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: Text(l10n.actionCancel),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: Text(l10n.actionDeleteBooking),
-                    ),
-                  ],
-                ),
-              );
-              if (confirmed == true) {
-                ref
-                    .read(bookingsProvider.notifier)
-                    .deleteBooking(widget.initial!.bookingId);
-                if (context.mounted) Navigator.of(context).pop();
-              }
-            },
-            child: Text(l10n.actionDeleteBooking),
-          ),
-        AppOutlinedActionButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        AppFilledButton(onPressed: _onSave, child: Text(l10n.actionSave)),
-      ],
     );
   }
 
@@ -356,11 +429,16 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
   Future<void> _pickTime() async {
     final step = ref.read(layoutConfigProvider).minutesPerSlot;
-    final selected = await showModalBottomSheet<TimeOfDay>(
+    final selected = await AppBottomSheet.show<TimeOfDay>(
       context: context,
       useRootNavigator: true,
+      padding: EdgeInsets.zero,
       builder: (ctx) {
-        return _TimeGridPicker(initial: _time, stepMinutes: step);
+        final height = MediaQuery.of(ctx).size.height * 0.9;
+        return SizedBox(
+          height: height,
+          child: _TimeGridPicker(initial: _time, stepMinutes: step),
+        );
       },
     );
     if (selected != null) {
@@ -504,7 +582,7 @@ class _TimeGridPicker extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -518,8 +596,7 @@ class _TimeGridPicker extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            SizedBox(
-              height: 300,
+            Expanded(
               child: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 4,
@@ -535,9 +612,7 @@ class _TimeGridPicker extends StatelessWidget {
                   return OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       backgroundColor: isSelected
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primary.withOpacity(0.1)
+                          ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                           : null,
                       side: BorderSide(
                         color: isSelected

@@ -1,3 +1,5 @@
+import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
+import 'package:agenda_frontend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,16 +22,32 @@ Future<void> showAddBlockDialog(
   TimeOfDay? time,
   int? initialStaffId,
 }) async {
-  await showDialog(
-    context: context,
-    builder: (_) => _AddBlockDialog(
-      initial: initial,
-      initialDate: date,
-      initialTime: time,
-      initialStaffId: initialStaffId,
-    ),
+  final formFactor = ref.read(formFactorProvider);
+  final isDesktop = formFactor == AppFormFactor.desktop;
+
+  final dialog = _AddBlockDialog(
+    initial: initial,
+    initialDate: date,
+    initialTime: time,
+    initialStaffId: initialStaffId,
+    presentation: isDesktop
+        ? _BlockDialogPresentation.dialog
+        : _BlockDialogPresentation.bottomSheet,
   );
+
+  if (isDesktop) {
+    await showDialog(context: context, builder: (_) => dialog);
+  } else {
+    await AppBottomSheet.show(
+      context: context,
+      useRootNavigator: true,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      builder: (_) => dialog,
+    );
+  }
 }
+
+enum _BlockDialogPresentation { dialog, bottomSheet }
 
 class _AddBlockDialog extends ConsumerStatefulWidget {
   const _AddBlockDialog({
@@ -37,12 +55,14 @@ class _AddBlockDialog extends ConsumerStatefulWidget {
     this.initialDate,
     this.initialTime,
     this.initialStaffId,
+    required this.presentation,
   });
 
   final TimeBlock? initial;
   final DateTime? initialDate;
   final TimeOfDay? initialTime;
   final int? initialStaffId;
+  final _BlockDialogPresentation presentation;
 
   @override
   ConsumerState<_AddBlockDialog> createState() => _AddBlockDialogState();
@@ -105,225 +125,263 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
     final l10n = context.l10n;
     final isEdit = widget.initial != null;
     final staff = ref.watch(staffForCurrentLocationProvider);
+    final isDialog = widget.presentation == _BlockDialogPresentation.dialog;
 
     final title = isEdit ? l10n.blockDialogTitleEdit : l10n.blockDialogTitleNew;
-
-    return AlertDialog(
-      title: Text(title),
-      content: SizedBox(
-        width: 420,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Data
-              _LabeledField(
-                label: l10n.formDate,
-                child: InkWell(
-                  onTap: _pickDate,
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${_date.day.toString().padLeft(2, '0')}/${_date.month.toString().padLeft(2, '0')}/${_date.year}',
-                        ),
-                        const Icon(Icons.calendar_today, size: 16),
-                      ],
-                    ),
-                  ),
-                ),
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Data
+        _LabeledField(
+          label: l10n.formDate,
+          child: InkWell(
+            onTap: _pickDate,
+            child: InputDecorator(
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                isDense: true,
               ),
-              const SizedBox(height: 12),
-
-              // Giornata intera switch
-              Row(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Switch(
-                    value: _isAllDay,
-                    onChanged: (v) => setState(() => _isAllDay = v),
+                  Text(
+                    '${_date.day.toString().padLeft(2, '0')}/${_date.month.toString().padLeft(2, '0')}/${_date.year}',
                   ),
-                  const SizedBox(width: 8),
-                  Text(l10n.blockAllDay),
+                  const Icon(Icons.calendar_today, size: 16),
                 ],
               ),
-              const SizedBox(height: 12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
 
-              // Orari
-              if (!_isAllDay) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: _LabeledField(
-                        label: l10n.blockStartTime,
-                        child: InkWell(
-                          onTap: () => _pickTime(isStart: true),
-                          child: InputDecorator(
-                            decoration: InputDecoration(
-                              border: const OutlineInputBorder(),
-                              isDense: true,
-                              errorText: null,
-                              enabledBorder: _timeError != null
-                                  ? OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.error,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(_startTime.format(context)),
-                                const Icon(Icons.schedule, size: 16),
-                              ],
-                            ),
-                          ),
-                        ),
+        // Giornata intera switch
+        Row(
+          children: [
+            Switch(
+              value: _isAllDay,
+              onChanged: (v) => setState(() => _isAllDay = v),
+            ),
+            const SizedBox(width: 8),
+            Text(l10n.blockAllDay),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Orari
+        if (!_isAllDay) ...[
+          Row(
+            children: [
+              Expanded(
+                child: _LabeledField(
+                  label: l10n.blockStartTime,
+                  child: InkWell(
+                    onTap: () => _pickTime(isStart: true),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                        errorText: null,
+                        enabledBorder: _timeError != null
+                            ? OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              )
+                            : null,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _LabeledField(
-                        label: l10n.blockEndTime,
-                        child: InkWell(
-                          onTap: () => _pickTime(isStart: false),
-                          child: InputDecorator(
-                            decoration: InputDecoration(
-                              border: const OutlineInputBorder(),
-                              isDense: true,
-                              enabledBorder: _timeError != null
-                                  ? OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.error,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(_endTime.format(context)),
-                                const Icon(Icons.schedule, size: 16),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (_timeError != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6, left: 12),
-                    child: Text(
-                      _timeError!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontSize: 12,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(_startTime.format(context)),
+                          const Icon(Icons.schedule, size: 16),
+                        ],
                       ),
                     ),
                   ),
-                const SizedBox(height: 12),
-              ],
-
-              // Staff selection
-              _LabeledField(
-                label: l10n.blockSelectStaff,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: _staffError != null
-                              ? Theme.of(context).colorScheme.error
-                              : Theme.of(context).dividerColor,
-                        ),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      constraints: const BoxConstraints(maxHeight: 200),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: staff.length,
-                        itemBuilder: (context, index) {
-                          final member = staff[index];
-                          final isSelected = _selectedStaffIds.contains(
-                            member.id,
-                          );
-                          return CheckboxListTile(
-                            value: isSelected,
-                            onChanged: (v) {
-                              setState(() {
-                                _staffError = null;
-                                if (v == true) {
-                                  _selectedStaffIds.add(member.id);
-                                } else {
-                                  _selectedStaffIds.remove(member.id);
-                                }
-                              });
-                            },
-                            title: Text(member.name),
-                            secondary: CircleAvatar(
-                              backgroundColor: member.color,
-                              radius: 12,
-                            ),
-                            dense: true,
-                            controlAffinity: ListTileControlAffinity.leading,
-                          );
-                        },
-                      ),
-                    ),
-                    if (_staffError != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6, left: 12),
-                        child: Text(
-                          _staffError!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-
-              // Motivo opzionale
-              _LabeledField(
-                label: l10n.blockReason,
-                child: TextField(
-                  controller: _reasonController,
-                  decoration: InputDecoration(
-                    hintText: l10n.blockReasonHint,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _LabeledField(
+                  label: l10n.blockEndTime,
+                  child: InkWell(
+                    onTap: () => _pickTime(isStart: false),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                        enabledBorder: _timeError != null
+                            ? OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              )
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(_endTime.format(context)),
+                          const Icon(Icons.schedule, size: 16),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
+          if (_timeError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 12),
+              child: Text(
+                _timeError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          const SizedBox(height: 12),
+        ],
+
+        // Staff selection
+        _LabeledField(
+          label: l10n.blockSelectStaff,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: _staffError != null
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).dividerColor,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: staff.length,
+                  itemBuilder: (context, index) {
+                    final member = staff[index];
+                    final isSelected = _selectedStaffIds.contains(member.id);
+                    return CheckboxListTile(
+                      value: isSelected,
+                      onChanged: (v) {
+                        setState(() {
+                          _staffError = null;
+                          if (v == true) {
+                            _selectedStaffIds.add(member.id);
+                          } else {
+                            _selectedStaffIds.remove(member.id);
+                          }
+                        });
+                      },
+                      title: Text(member.name),
+                      secondary: CircleAvatar(
+                        backgroundColor: member.color,
+                        radius: 12,
+                      ),
+                      dense: true,
+                      controlAffinity: ListTileControlAffinity.leading,
+                    );
+                  },
+                ),
+              ),
+              if (_staffError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 12),
+                  child: Text(
+                    _staffError!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Motivo opzionale
+        _LabeledField(
+          label: l10n.blockReason,
+          child: TextField(
+            controller: _reasonController,
+            decoration: InputDecoration(
+              hintText: l10n.blockReasonHint,
+              border: const OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    final actions = [
+      if (isEdit)
+        AppDangerButton(onPressed: _onDelete, child: Text(l10n.actionDelete)),
+      AppOutlinedActionButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: Text(l10n.actionCancel),
+      ),
+      AppFilledButton(onPressed: _onSave, child: Text(l10n.actionSave)),
+    ];
+
+    final bottomActions = actions
+        .map(
+          (a) => ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48, minWidth: 110),
+            child: a,
+          ),
+        )
+        .toList();
+
+    if (isDialog) {
+      return AlertDialog(
+        title: Text(title),
+        content: SizedBox(
+          width: 420,
+          child: SingleChildScrollView(child: content),
+        ),
+        actions: actions,
+      );
+    }
+
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+            ),
+            content,
+            const SizedBox(height: 24),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 8,
+                children: bottomActions,
+              ),
+            ),
+            SizedBox(height: 32 + MediaQuery.of(context).viewPadding.bottom),
+          ],
         ),
       ),
-      actions: [
-        if (isEdit)
-          AppDangerButton(onPressed: _onDelete, child: Text(l10n.actionDelete)),
-        AppOutlinedActionButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        AppFilledButton(onPressed: _onSave, child: Text(l10n.actionSave)),
-      ],
     );
   }
 
@@ -341,13 +399,18 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
   Future<void> _pickTime({required bool isStart}) async {
     final step = ref.read(layoutConfigProvider).minutesPerSlot;
-    final selected = await showModalBottomSheet<TimeOfDay>(
+    final selected = await AppBottomSheet.show<TimeOfDay>(
       context: context,
       useRootNavigator: true,
+      padding: EdgeInsets.zero,
       builder: (ctx) {
-        return _TimeGridPicker(
-          initial: isStart ? _startTime : _endTime,
-          stepMinutes: step,
+        final height = MediaQuery.of(ctx).size.height * 0.9;
+        return SizedBox(
+          height: height,
+          child: _TimeGridPicker(
+            initial: isStart ? _startTime : _endTime,
+            stepMinutes: step,
+          ),
         );
       },
     );
@@ -479,83 +542,25 @@ class _LabeledField extends StatelessWidget {
   }
 }
 
-class _TimeGridPicker extends StatefulWidget {
+class _TimeGridPicker extends StatelessWidget {
   const _TimeGridPicker({required this.initial, required this.stepMinutes});
   final TimeOfDay initial;
   final int stepMinutes;
 
   @override
-  State<_TimeGridPicker> createState() => _TimeGridPickerState();
-}
-
-class _TimeGridPickerState extends State<_TimeGridPicker> {
-  late ScrollController _scrollController;
-  late List<TimeOfDay> _entries;
-  int _selectedIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-
-    // Genera le entries
-    _entries = [];
-    for (int m = 0; m < LayoutConfig.hoursInDay * 60; m += widget.stepMinutes) {
+  Widget build(BuildContext context) {
+    final entries = <TimeOfDay>[];
+    for (int m = 0; m < LayoutConfig.hoursInDay * 60; m += stepMinutes) {
       final h = m ~/ 60;
       final mm = m % 60;
-      _entries.add(TimeOfDay(hour: h, minute: mm));
+      entries.add(TimeOfDay(hour: h, minute: mm));
     }
 
-    // Trova l'indice dell'orario selezionato
-    _selectedIndex = _entries.indexWhere(
-      (t) => t.hour == widget.initial.hour && t.minute == widget.initial.minute,
-    );
-    if (_selectedIndex < 0) _selectedIndex = 0;
-
-    // Scrolla all'elemento dopo il build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToSelected();
-    });
-  }
-
-  void _scrollToSelected() {
-    if (!_scrollController.hasClients) return;
-
-    // Calcola la posizione dello scroll
-    // GridView con 4 colonne, ogni riga ha altezza circa 40px (childAspectRatio 2.7)
-    const crossAxisCount = 4;
-    const itemHeight = 40.0; // Altezza approssimativa di ogni cella
-    const spacing = 6.0;
-
-    final row = _selectedIndex ~/ crossAxisCount;
-    final targetOffset = row * (itemHeight + spacing);
-
-    // Centra la riga selezionata nella vista (300px di altezza)
-    final centeredOffset = (targetOffset - 130).clamp(
-      0.0,
-      _scrollController.position.maxScrollExtent,
-    );
-
-    _scrollController.animateTo(
-      centeredOffset,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -569,26 +574,26 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
               ],
             ),
             const SizedBox(height: 10),
-            SizedBox(
-              height: 300,
+            Expanded(
               child: GridView.builder(
-                controller: _scrollController,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 4,
                   mainAxisSpacing: 6,
                   crossAxisSpacing: 6,
                   childAspectRatio: 2.7,
                 ),
-                itemCount: _entries.length,
+                itemCount: entries.length,
                 itemBuilder: (context, index) {
-                  final t = _entries[index];
-                  final isSelected = index == _selectedIndex;
+                  final t = entries[index];
+                  final isSelected =
+                      t.hour == initial.hour && t.minute == initial.minute;
                   return OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       backgroundColor: isSelected
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primary.withOpacity(0.1)
+                          ? Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.1)
                           : null,
                       side: BorderSide(
                         color: isSelected
