@@ -1,50 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/utils/string_utils.dart';
+import '../../../../core/widgets/phone_input_field.dart';
+import '../../../agenda/providers/business_providers.dart';
 import '../../domain/clients.dart';
 
-class ClientForm extends StatefulWidget {
-  const ClientForm({super.key, this.initial});
+class ClientForm extends ConsumerStatefulWidget {
+  const ClientForm({super.key, this.initial, this.onChanged});
 
   final Client? initial;
+  final VoidCallback? onChanged;
 
   @override
-  State<ClientForm> createState() => ClientFormState();
+  ConsumerState<ClientForm> createState() => ClientFormState();
 }
 
-class ClientFormState extends State<ClientForm> {
+class ClientFormState extends ConsumerState<ClientForm> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _name;
-  late TextEditingController _email;
-  late TextEditingController _phone;
-  late TextEditingController _notes;
+  final _phoneFieldKey = GlobalKey<PhoneInputFieldState>();
 
-  @override
-  void initState() {
-    super.initState();
-    _name = TextEditingController(text: widget.initial?.name ?? '');
-    _email = TextEditingController(text: widget.initial?.email ?? '');
-    _phone = TextEditingController(text: widget.initial?.phone ?? '');
-    _notes = TextEditingController(text: widget.initial?.notes ?? '');
-  }
+  late final TextEditingController _firstName = TextEditingController(
+    text: widget.initial?.firstName ?? '',
+  );
+  late final TextEditingController _lastName = TextEditingController(
+    text: widget.initial?.lastName ?? '',
+  );
+  late final TextEditingController _email = TextEditingController(
+    text: widget.initial?.email ?? '',
+  );
+  late final TextEditingController _notes = TextEditingController(
+    text: widget.initial?.notes ?? '',
+  );
 
   @override
   void dispose() {
-    _name.dispose();
+    _firstName.dispose();
+    _lastName.dispose();
     _email.dispose();
-    _phone.dispose();
     _notes.dispose();
     super.dispose();
   }
 
+  bool validate() => _formKey.currentState?.validate() ?? false;
+
   Client buildClient() {
     final base = widget.initial;
     final now = DateTime.now();
+    final phoneState = _phoneFieldKey.currentState;
+    final fullPhone = phoneState?.fullPhone;
+
+    final firstName = _firstName.text.trim();
+    final lastName = _lastName.text.trim();
+
     return Client(
       id: base?.id ?? -1,
-      businessId: base?.businessId ?? 1,
-      name: _name.text.trim(),
+      businessId: base?.businessId ?? ref.read(currentBusinessProvider).id,
+      firstName: firstName.isEmpty ? null : StringUtils.toTitleCase(firstName),
+      lastName: lastName.isEmpty ? null : StringUtils.toTitleCase(lastName),
       email: _email.text.trim().isEmpty ? null : _email.text.trim(),
-      phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
+      phone: (fullPhone == null || fullPhone.isEmpty) ? null : fullPhone,
       notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       createdAt: base?.createdAt ?? now,
       lastVisit: base?.lastVisit,
@@ -56,68 +72,211 @@ class ClientFormState extends State<ClientForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextFormField(
-          final isWide = MediaQuery.of(context).size.width >= 720;
-          return SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
+    final business = ref.watch(currentBusinessProvider);
+    final width = MediaQuery.of(context).size.width;
+    final isWide = width >= 720;
+
+    return SingleChildScrollView(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Riga 1: Nome + Cognome
+            if (isWide)
+              Row(
                 children: [
-                  SizedBox(
-                    width: isWide ? 320 : double.infinity,
+                  Expanded(
                     child: TextFormField(
-                      controller: _name,
-                      decoration: const InputDecoration(labelText: 'Nome'), // TODO l10n
-                      validator: (v) =>
-                          v == null || v.trim().isEmpty ? 'Richiesto' : null, // TODO l10n
-                    ),
-                  ),
-                  SizedBox(
-                    width: isWide ? 320 : double.infinity,
-                    child: TextFormField(
-                      controller: _email,
-                      decoration: const InputDecoration(labelText: 'Email'), // TODO l10n
-                      keyboardType: TextInputType.emailAddress,
+                      controller: _firstName,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.formFirstName,
+                      ),
+                      textInputAction: TextInputAction.next,
+                      textCapitalization: TextCapitalization.words,
+                      onChanged: (_) {
+                        _formKey.currentState?.validate();
+                        widget.onChanged?.call();
+                      },
                       validator: (v) {
-                        final t = v?.trim() ?? '';
-                        if (t.isEmpty) return null;
-                        final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                        if (!emailRegex.hasMatch(t)) return 'Email non valida'; // TODO l10n
+                        final firstName = v?.trim() ?? '';
+                        final lastName = _lastName.text.trim();
+                        if (firstName.isEmpty && lastName.isEmpty) {
+                          return context.l10n.validationNameOrLastNameRequired;
+                        }
                         return null;
                       },
                     ),
                   ),
-                  SizedBox(
-                    width: isWide ? 220 : double.infinity,
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: TextFormField(
-                      controller: _phone,
-                      decoration: const InputDecoration(labelText: 'Telefono'), // TODO l10n
-                      keyboardType: TextInputType.phone,
+                      controller: _lastName,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.formLastName,
+                      ),
+                      textInputAction: TextInputAction.next,
+                      textCapitalization: TextCapitalization.words,
+                      onChanged: (_) {
+                        _formKey.currentState?.validate();
+                        widget.onChanged?.call();
+                      },
                       validator: (v) {
-                        final t = v?.trim() ?? '';
-                        if (t.isEmpty) return null;
-                        final phoneRegex = RegExp(r'^[0-9+()\-\s]{6,}$');
-                        if (!phoneRegex.hasMatch(t)) return 'Telefono non valido'; // TODO l10n
+                        final lastName = v?.trim() ?? '';
+                        final firstName = _firstName.text.trim();
+                        if (firstName.isEmpty && lastName.isEmpty) {
+                          return context.l10n.validationNameOrLastNameRequired;
+                        }
                         return null;
                       },
-                    ),
-                  ),
-                  SizedBox(
-                    width: isWide ? 480 : double.infinity,
-                    child: TextFormField(
-                      controller: _notes,
-                      decoration: const InputDecoration(labelText: 'Note'), // TODO l10n
-                      maxLines: 3,
                     ),
                   ),
                 ],
+              )
+            else ...[
+              TextFormField(
+                controller: _firstName,
+                decoration: InputDecoration(
+                  labelText: context.l10n.formFirstName,
+                ),
+                textInputAction: TextInputAction.next,
+                textCapitalization: TextCapitalization.words,
+                onChanged: (_) {
+                  _formKey.currentState?.validate();
+                  widget.onChanged?.call();
+                },
+                validator: (v) {
+                  final firstName = v?.trim() ?? '';
+                  final lastName = _lastName.text.trim();
+                  if (firstName.isEmpty && lastName.isEmpty) {
+                    return context.l10n.validationNameOrLastNameRequired;
+                  }
+                  return null;
+                },
               ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _lastName,
+                decoration: InputDecoration(
+                  labelText: context.l10n.formLastName,
+                ),
+                textInputAction: TextInputAction.next,
+                textCapitalization: TextCapitalization.words,
+                onChanged: (_) {
+                  _formKey.currentState?.validate();
+                  widget.onChanged?.call();
+                },
+                validator: (v) {
+                  final lastName = v?.trim() ?? '';
+                  final firstName = _firstName.text.trim();
+                  if (firstName.isEmpty && lastName.isEmpty) {
+                    return context.l10n.validationNameOrLastNameRequired;
+                  }
+                  return null;
+                },
+              ),
+            ],
+            const SizedBox(height: 20),
+            // Riga 2: Email + Telefono
+            if (isWide)
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: TextFormField(
+                      controller: _email,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.formEmail,
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      onChanged: (_) => widget.onChanged?.call(),
+                      validator: (v) {
+                        final t = v?.trim() ?? '';
+                        if (t.isEmpty) return null;
+                        final emailRegex = RegExp(
+                          r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                        );
+                        if (!emailRegex.hasMatch(t)) {
+                          return context.l10n.validationInvalidEmail;
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: PhoneInputField(
+                      key: _phoneFieldKey,
+                      labelText: context.l10n.formPhone,
+                      defaultPrefix: business.defaultPhonePrefix,
+                      initialPhone: widget.initial?.phone,
+                      onChanged: (_) => widget.onChanged?.call(),
+                      validator: (v) {
+                        final t =
+                            v?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
+                        if (t.isEmpty) return null;
+                        if (!RegExp(r'^\d{6,15}$').hasMatch(t)) {
+                          return context.l10n.validationInvalidPhone;
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              )
+            else ...[
+              TextFormField(
+                controller: _email,
+                decoration: InputDecoration(labelText: context.l10n.formEmail),
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                onChanged: (_) => widget.onChanged?.call(),
+                validator: (v) {
+                  final t = v?.trim() ?? '';
+                  if (t.isEmpty) return null;
+                  final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                  if (!emailRegex.hasMatch(t)) {
+                    return context.l10n.validationInvalidEmail;
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              PhoneInputField(
+                key: _phoneFieldKey,
+                labelText: context.l10n.formPhone,
+                defaultPrefix: business.defaultPhonePrefix,
+                initialPhone: widget.initial?.phone,
+                onChanged: (_) => widget.onChanged?.call(),
+                validator: (v) {
+                  final t = v?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
+                  if (t.isEmpty) return null;
+                  if (!RegExp(r'^\d{6,15}$').hasMatch(t)) {
+                    return context.l10n.validationInvalidPhone;
+                  }
+                  return null;
+                },
+              ),
+            ],
+            const SizedBox(height: 20),
+            // Riga 3: Note (sempre full width)
+            TextFormField(
+              controller: _notes,
+              decoration: InputDecoration(labelText: context.l10n.formNotes),
+              maxLines: 3,
+              onChanged: (_) => widget.onChanged?.call(),
             ),
-          );
+            // Spazio extra prima dei pulsanti
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _fieldContainer(double width, Widget child) {
+    return SizedBox(width: width, child: child);
+  }
+}

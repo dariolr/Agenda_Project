@@ -1,3 +1,4 @@
+import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,7 +26,6 @@ import '../../../providers/layout_config_provider.dart';
 import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
-import '../../../providers/staff_providers.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../../widgets/appointment_dialog.dart';
 import '../../widgets/booking_details_overlay.dart';

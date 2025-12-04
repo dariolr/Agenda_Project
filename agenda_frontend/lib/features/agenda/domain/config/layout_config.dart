@@ -144,8 +144,20 @@ class LayoutConfig {
   }
 
   static double headerHeightForWidth(double width) {
-    if (width >= 1024) return 100; // Desktop
-    if (width >= 600) return 90; // Tablet
-    return 75; // Mobile
+    if (width >= 1024) return 110; // Desktop
+    if (width >= 600) return 95; // Tablet
+    return 80; // Mobile
+  }
+
+  /// Dimensione avatar staff "responsive" basata sulla larghezza finestra.
+  static double avatarSizeFor(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    return avatarSizeForWidth(width);
+  }
+
+  static double avatarSizeForWidth(double width) {
+    if (width >= 1024) return 65; // Desktop
+    if (width >= 600) return 57; // Tablet
+    return 52; // Mobile
   }
 }

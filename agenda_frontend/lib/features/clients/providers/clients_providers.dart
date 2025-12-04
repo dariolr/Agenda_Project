@@ -4,6 +4,7 @@ import '../../../core/models/appointment.dart';
 import '../../agenda/providers/appointment_providers.dart';
 import '../data/clients_repository.dart';
 import '../data/mock_clients.dart';
+import '../domain/client_sort_option.dart';
 import '../domain/clients.dart';
 
 // Repository provider (mock)
@@ -54,19 +55,99 @@ final clientsByIdProvider = Provider<Map<int, Client>>((ref) {
   return {for (final c in list) c.id: c};
 });
 
-// Ricerca base (case-insensitive su name + email + phone)
+/// Notifier per il criterio di ordinamento corrente
+class ClientSortOptionNotifier extends Notifier<ClientSortOption> {
+  @override
+  ClientSortOption build() => ClientSortOption.nameAsc;
+
+  void set(ClientSortOption option) => state = option;
+}
+
+final clientSortOptionProvider =
+    NotifierProvider<ClientSortOptionNotifier, ClientSortOption>(
+      ClientSortOptionNotifier.new,
+    );
+
+/// Ordina una lista di clienti secondo il criterio specificato
+List<Client> _sortClients(List<Client> clients, ClientSortOption sort) {
+  final sorted = List<Client>.from(clients);
+
+  switch (sort) {
+    case ClientSortOption.nameAsc:
+      sorted.sort(
+        (a, b) => (a.firstName ?? '').toLowerCase().compareTo(
+          (b.firstName ?? '').toLowerCase(),
+        ),
+      );
+    case ClientSortOption.nameDesc:
+      sorted.sort(
+        (a, b) => (b.firstName ?? '').toLowerCase().compareTo(
+          (a.firstName ?? '').toLowerCase(),
+        ),
+      );
+    case ClientSortOption.lastNameAsc:
+      sorted.sort(
+        (a, b) => (a.lastName ?? '').toLowerCase().compareTo(
+          (b.lastName ?? '').toLowerCase(),
+        ),
+      );
+    case ClientSortOption.lastNameDesc:
+      sorted.sort(
+        (a, b) => (b.lastName ?? '').toLowerCase().compareTo(
+          (a.lastName ?? '').toLowerCase(),
+        ),
+      );
+    case ClientSortOption.lastVisitDesc:
+      sorted.sort((a, b) {
+        if (a.lastVisit == null && b.lastVisit == null) return 0;
+        if (a.lastVisit == null) return 1;
+        if (b.lastVisit == null) return -1;
+        return b.lastVisit!.compareTo(a.lastVisit!);
+      });
+    case ClientSortOption.lastVisitAsc:
+      sorted.sort((a, b) {
+        if (a.lastVisit == null && b.lastVisit == null) return 0;
+        if (a.lastVisit == null) return 1;
+        if (b.lastVisit == null) return -1;
+        return a.lastVisit!.compareTo(b.lastVisit!);
+      });
+    case ClientSortOption.createdAtDesc:
+      sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    case ClientSortOption.createdAtAsc:
+      sorted.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
+
+  return sorted;
+}
+
+/// Provider che restituisce la lista clienti ordinata secondo il criterio corrente
+final sortedClientsProvider = Provider<List<Client>>((ref) {
+  final clients = ref.watch(clientsProvider);
+  final sortOption = ref.watch(clientSortOptionProvider);
+  return _sortClients(clients, sortOption);
+});
+
+// Ricerca base (case-insensitive su name + email + phone) con ordinamento
 final clientsSearchProvider = Provider.family<List<Client>, String>((ref, q) {
+  final sortOption = ref.watch(clientSortOptionProvider);
   final query = q.trim().toLowerCase();
-  if (query.isEmpty) return ref.watch(clientsProvider);
-  return ref
-      .watch(clientsProvider)
-      .where(
-        (c) =>
-            c.name.toLowerCase().contains(query) ||
-            (c.email?.toLowerCase().contains(query) ?? false) ||
-            (c.phone?.toLowerCase().contains(query) ?? false),
-      )
-      .toList();
+
+  List<Client> result;
+  if (query.isEmpty) {
+    result = ref.watch(clientsProvider);
+  } else {
+    result = ref
+        .watch(clientsProvider)
+        .where(
+          (c) =>
+              c.name.toLowerCase().contains(query) ||
+              (c.email?.toLowerCase().contains(query) ?? false) ||
+              (c.phone?.toLowerCase().contains(query) ?? false),
+        )
+        .toList();
+  }
+
+  return _sortClients(result, sortOption);
 });
 
 // Segmenti

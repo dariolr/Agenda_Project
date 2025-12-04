@@ -85,7 +85,10 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !controller.hasClients) return;
-      final target = (initialOffset - 200)
+
+      // Centra la timeline al centro della viewport visibile
+      final viewportHeight = controller.position.viewportDimension;
+      final target = (initialOffset - viewportHeight / 2)
           .clamp(
             controller.position.minScrollExtent,
             controller.position.maxScrollExtent,

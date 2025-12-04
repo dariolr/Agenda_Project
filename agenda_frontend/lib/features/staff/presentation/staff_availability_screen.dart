@@ -23,13 +23,16 @@ AGGIORNAMENTI RECENTI:
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:agenda_frontend/app/theme/extensions.dart';
 import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
 import 'package:agenda_frontend/core/l10n/l10_extension.dart';
+import 'package:agenda_frontend/core/models/staff.dart';
+import 'package:agenda_frontend/core/widgets/adaptive_dropdown.dart';
 import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_frontend/features/agenda/domain/config/agenda_theme.dart';
 import 'package:agenda_frontend/features/agenda/domain/config/layout_config.dart';
 import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
-import 'package:agenda_frontend/features/agenda/providers/staff_providers.dart';
+import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -100,8 +103,8 @@ class StaffAvailabilityByStaffNotifier
 
     // Recupera elenco staff per applicare il template a tutti
     // (Se non disponibile nel build, creiamo un set minimo.)
-    // Nota: non abbiamo accesso diretto ai provider qui, quindi ipotizziamo id staff 1..14 come mock.
-    final staffIds = [for (int i = 1; i <= 14; i++) i];
+    // Nota: non abbiamo accesso diretto ai provider qui, quindi ipotizziamo id staff 1..4 come mock.
+    final staffIds = [for (int i = 1; i <= 4; i++) i];
     return {for (final id in staffIds) id: weekTemplate()};
   }
 
@@ -892,19 +895,10 @@ class _StaffAvailabilityScreenState
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(context.l10n.labelStaff),
-                DropdownButton<int>(
-                  value: _selectedStaffId,
-                  hint: Text(context.l10n.labelSelect),
-                  items: [
-                    for (final s in staffList)
-                      DropdownMenuItem(
-                        value: s.id,
-                        child: Text('${s.name} ${s.surname}'),
-                      ),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) _switchStaff(v);
-                  },
+                _StaffSelectorDropdown(
+                  staffList: staffList,
+                  selectedStaffId: _selectedStaffId,
+                  onSelected: _switchStaff,
                 ),
                 FilledButton(
                   onPressed: (_selectedStaffId == null || isSaving)
@@ -949,6 +943,96 @@ class _StaffAvailabilityScreenState
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Dropdown adattivo per selezione staff nella schermata disponibilità.
+class _StaffSelectorDropdown extends ConsumerStatefulWidget {
+  const _StaffSelectorDropdown({
+    required this.staffList,
+    required this.selectedStaffId,
+    required this.onSelected,
+  });
+
+  final List<Staff> staffList;
+  final int? selectedStaffId;
+  final ValueChanged<int> onSelected;
+
+  @override
+  ConsumerState<_StaffSelectorDropdown> createState() =>
+      _StaffSelectorDropdownState();
+}
+
+class _StaffSelectorDropdownState
+    extends ConsumerState<_StaffSelectorDropdown> {
+  bool _isHovered = false;
+
+  String _getSelectedLabel() {
+    if (widget.selectedStaffId == null) {
+      return context.l10n.labelSelect;
+    }
+    final staff = widget.staffList.firstWhere(
+      (s) => s.id == widget.selectedStaffId,
+      orElse: () => widget.staffList.first,
+    );
+    return '${staff.name} ${staff.surname}'.trim();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final interactions = theme.extension<AppInteractionColors>();
+    final hoverFill =
+        interactions?.hoverFill ?? colorScheme.primary.withOpacity(0.06);
+    final backgroundColor = _isHovered
+        ? Color.alphaBlend(hoverFill, colorScheme.surface)
+        : colorScheme.surface;
+
+    return AdaptiveDropdown<int>(
+      items: [
+        for (final s in widget.staffList)
+          AdaptiveDropdownItem<int>(
+            value: s.id,
+            child: Text('${s.name} ${s.surname}'.trim()),
+          ),
+      ],
+      selectedValue: widget.selectedStaffId,
+      onSelected: widget.onSelected,
+      modalTitle: context.l10n.selectStaffTitle,
+      useRootNavigator: true,
+      onOpened: () => setState(() => _isHovered = true),
+      onClosed: () => setState(() => _isHovered = false),
+      popupWidth: 200,
+      child: MouseRegion(
+        onEnter: (_) {
+          if (!_isHovered) setState(() => _isHovered = true);
+        },
+        onExit: (_) {
+          if (_isHovered) setState(() => _isHovered = false);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_getSelectedLabel(), style: theme.textTheme.bodyMedium),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.keyboard_arrow_down,
+                size: 20,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -11,13 +11,15 @@ final businessesProvider = Provider<List<Business>>((ref) {
       id: 1,
       name: 'Centro Massaggi La Rosa',
       createdAt: DateTime(2021, 3, 12),
-      currency: 'EUR', // 🔹 valuta predefinita del business
+      currency: 'EUR',
+      defaultPhonePrefix: '+39',
     ),
     Business(
       id: 2,
       name: 'Wellness Global Spa',
       createdAt: DateTime(2022, 1, 20),
-      currency: 'USD', // 🔹 esempio di business con valuta diversa
+      currency: 'USD',
+      defaultPhonePrefix: '+1',
     ),
   ];
 });

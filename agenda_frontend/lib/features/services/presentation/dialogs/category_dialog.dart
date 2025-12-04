@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service_category.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../providers/service_categories_provider.dart';
@@ -70,9 +71,7 @@ Future<void> showCategoryDialog(
                 return;
               }
 
-              final formattedName = ServiceTextUtils.normalizeTitleCased(
-                rawName,
-              );
+              final formattedName = StringUtils.toTitleCase(rawName);
 
               if (ServiceValidators.isDuplicateCategoryName(
                 allCategories,

@@ -9,16 +9,24 @@ class AppBottomSheet {
     required WidgetBuilder builder,
     bool isScrollControlled = true,
     bool useSafeArea = true,
+    bool useRootNavigator = true,
+    EdgeInsetsGeometry? padding,
   }) {
+    final effectivePadding =
+        padding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: isScrollControlled,
       backgroundColor: Colors.white,
       useSafeArea: useSafeArea,
+      useRootNavigator: useRootNavigator,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => AppBottomSheetContainer(child: builder(ctx)),
+      builder: (ctx) => AppBottomSheetContainer(
+        padding: effectivePadding,
+        child: builder(ctx),
+      ),
     );
   }
 }

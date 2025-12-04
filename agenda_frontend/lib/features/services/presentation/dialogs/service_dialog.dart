@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/utils/price_utils.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../providers/services_provider.dart';
@@ -331,9 +332,7 @@ Future<void> showServiceDialog(
                   setState(() => nameError = true);
                   return;
                 }
-                final normalizedName = ServiceTextUtils.normalizeTitleCased(
-                  name,
-                );
+                final normalizedName = StringUtils.toTitleCase(name);
                 final isDuplicate = ServiceValidators.isDuplicateServiceName(
                   allServices,
                   normalizedName,

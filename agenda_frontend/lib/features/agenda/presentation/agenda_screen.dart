@@ -9,7 +9,7 @@ import 'package:agenda_frontend/features/agenda/providers/layout_config_provider
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers/staff_providers.dart';
+import '../providers/staff_filter_providers.dart';
 
 class AgendaScreen extends ConsumerStatefulWidget {
   const AgendaScreen({super.key, this.initialClientId});
@@ -119,7 +119,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
-    final staffList = ref.watch(staffForCurrentLocationProvider);
+    final staffList = ref.watch(filteredStaffProvider);
     final isResizing = ref.watch(isResizingProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
 
@@ -139,70 +139,68 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       });
     }
 
-    return SafeArea(
-      child: Stack(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                children: [
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.12),
-                          offset: const Offset(3, 0),
-                          blurRadius: 12,
-                          spreadRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: SizedBox(
-                      width: hourColumnWidth,
-                      height: layoutConfig.headerHeight,
-                    ),
+    return Stack(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.12),
+                        offset: const Offset(3, 0),
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    child: ScrollConfiguration(
-                      behavior: const NoScrollbarBehavior(),
-                      child: NotificationListener<ScrollNotification>(
-                        onNotification: _handleHourColumnScroll,
-                        child: SingleChildScrollView(
-                          controller: _hourColumnController,
-                          scrollDirection: Axis.vertical,
-                          physics: isResizing
-                              ? const NeverScrollableScrollPhysics()
-                              : null,
-                          child: SizedBox(
-                            width: hourColumnWidth,
-                            child: const HourColumn(),
-                          ),
+                  child: SizedBox(
+                    width: hourColumnWidth,
+                    height: layoutConfig.headerHeight,
+                  ),
+                ),
+                Expanded(
+                  child: ScrollConfiguration(
+                    behavior: const NoScrollbarBehavior(),
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: _handleHourColumnScroll,
+                      child: SingleChildScrollView(
+                        controller: _hourColumnController,
+                        scrollDirection: Axis.vertical,
+                        physics: isResizing
+                            ? const NeverScrollableScrollPhysics()
+                            : null,
+                        child: SizedBox(
+                          width: hourColumnWidth,
+                          child: const HourColumn(),
                         ),
                       ),
                     ),
                   ),
-                ],
-              ),
-              AgendaVerticalDivider(height: totalHeight, thickness: 1),
-              Expanded(
-                child: AgendaDay(
-                  staffList: staffList,
-                  onVerticalOffsetChanged: _handleMasterScroll,
-                  controller: _timelineController,
                 ),
+              ],
+            ),
+            AgendaVerticalDivider(height: totalHeight, thickness: 1),
+            Expanded(
+              child: AgendaDay(
+                staffList: staffList,
+                onVerticalOffsetChanged: _handleMasterScroll,
+                controller: _timelineController,
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
 
-          // 🔴 Current time line sincronizzata con lo scroll (via _verticalOffset)
-          CurrentTimeLine(
-            hourColumnWidth: hourColumnWidth,
-            verticalOffset: _verticalOffset,
-          ),
-        ],
-      ),
+        // 🔴 Current time line sincronizzata con lo scroll (via _verticalOffset)
+        CurrentTimeLine(
+          hourColumnWidth: hourColumnWidth,
+          verticalOffset: _verticalOffset,
+        ),
+      ],
     );
   }
 }

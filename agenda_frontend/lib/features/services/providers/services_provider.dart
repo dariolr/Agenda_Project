@@ -402,7 +402,7 @@ final serviceStaffEligibilityProvider = Provider<List<ServiceStaffEligibility>>(
       ServiceStaffEligibility(serviceId: 1, staffId: 3, locationId: 102),
       ServiceStaffEligibility(serviceId: 2, staffId: 3),
       ServiceStaffEligibility(serviceId: 2, staffId: 4, locationId: 101),
-      ServiceStaffEligibility(serviceId: 2, staffId: 5, locationId: 102),
+      ServiceStaffEligibility(serviceId: 2, staffId: 2, locationId: 102),
       ServiceStaffEligibility(serviceId: 3, staffId: 1, locationId: 101),
       ServiceStaffEligibility(serviceId: 3, staffId: 2, locationId: 102),
       ServiceStaffEligibility(serviceId: 3, staffId: 3, locationId: 102),

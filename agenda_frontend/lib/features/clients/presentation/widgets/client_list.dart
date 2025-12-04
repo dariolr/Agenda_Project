@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../providers/clients_providers.dart';
@@ -40,17 +39,7 @@ class ClientList extends ConsumerWidget {
               final c = clients[i];
               return ClientCard(
                 client: c,
-                onEdit: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => ClientEditDialog(initial: c),
-                  );
-                },
-                onNewBooking: () {
-                  // Naviga all'agenda impostando query param clientId (pattern semplificato)
-                  // Assunzione: route name 'agenda' esiste (vedi router.dart)
-                  context.go('/agenda?clientId=${c.id}');
-                },
+                onTap: () => showClientEditDialog(context, ref, client: c),
               );
             },
           );
@@ -65,15 +54,7 @@ class ClientList extends ConsumerWidget {
         final c = clients[i];
         return ClientCard(
           client: c,
-          onEdit: () {
-            showDialog(
-              context: context,
-              builder: (_) => ClientEditDialog(initial: c),
-            );
-          },
-          onNewBooking: () {
-            context.go('/agenda?clientId=${c.id}');
-          },
+          onTap: () => showClientEditDialog(context, ref, client: c),
         );
       },
       separatorBuilder: (_, __) => const SizedBox(height: 8),

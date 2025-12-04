@@ -5,7 +5,8 @@ final List<Client> kMockClients = [
   Client(
     id: 1,
     businessId: 1,
-    name: 'Mario Rossi',
+    firstName: 'Mario',
+    lastName: 'Rossi',
     email: 'mario.rossi@example.com',
     phone: '+39 333 1111111',
     city: 'Milano',
@@ -18,7 +19,8 @@ final List<Client> kMockClients = [
   Client(
     id: 2,
     businessId: 1,
-    name: 'Giulia Bianchi',
+    firstName: 'Giulia',
+    lastName: 'Bianchi',
     email: 'giulia.bianchi@example.com',
     phone: '+39 333 2222222',
     city: 'Torino',
@@ -30,7 +32,8 @@ final List<Client> kMockClients = [
   Client(
     id: 3,
     businessId: 1,
-    name: 'Luca Verdi',
+    firstName: 'Luca',
+    lastName: 'Verdi',
     phone: '+39 333 3333333',
     createdAt: DateTime.now().subtract(const Duration(days: 400)),
     lastVisit: DateTime.now().subtract(const Duration(days: 190)),
