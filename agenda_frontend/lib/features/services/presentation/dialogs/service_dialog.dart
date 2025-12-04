@@ -1,3 +1,4 @@
+import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_frontend/features/agenda/providers/location_providers.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/utils/price_utils.dart';
 import '../../../../core/utils/string_utils.dart';
+import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../providers/services_provider.dart';
@@ -67,11 +69,9 @@ class _SwitchTile extends StatelessWidget {
               Switch.adaptive(
                 value: value,
                 onChanged: enabled ? onChanged : null,
-                // Forza colore ON al primary anche su Cupertino (verde di default)
                 activeColor: Theme.of(context).colorScheme.primary,
-                activeTrackColor: Theme.of(
-                  context,
-                ).colorScheme.primary.withOpacity(0.35),
+                activeTrackColor:
+                    Theme.of(context).colorScheme.primary.withOpacity(0.35),
               ),
             ],
           ),
@@ -92,9 +92,8 @@ Future<void> showServiceDialog(
   final allServices = ref.read(servicesProvider);
   final categories = ref.read(serviceCategoriesProvider);
   final currencyCode = ref.read(effectiveCurrencyProvider);
-  final currencySymbol = NumberFormat.currency(
-    name: currencyCode,
-  ).currencySymbol;
+  final currencySymbol = NumberFormat.currency(name: currencyCode).currencySymbol;
+  final isDesktop = ref.read(formFactorProvider) == AppFormFactor.desktop;
 
   final nameController = TextEditingController(text: service?.name ?? '');
   final priceController = TextEditingController(
@@ -106,9 +105,7 @@ Future<void> showServiceDialog(
           )
         : '',
   );
-  final descController = TextEditingController(
-    text: service?.description ?? '',
-  );
+  final descController = TextEditingController(text: service?.description ?? '');
 
   int? selectedCategory = requireCategorySelection
       ? (service?.categoryId ?? preselectedCategoryId)
@@ -117,12 +114,10 @@ Future<void> showServiceDialog(
   int selectedProcessingTime = service?.processingTime ?? 0;
   int selectedBlockedTime = service?.blockedTime ?? 0;
 
-  // Enforce mutual exclusivity at init: prefer processingTime if both set
   if (selectedProcessingTime > 0 && selectedBlockedTime > 0) {
     selectedBlockedTime = 0;
   }
 
-  // Inizializzazione selezione tempo aggiuntivo: nessuno/elaborazione/bloccato
   _AdditionalTimeSelection additionalSelection = selectedProcessingTime > 0
       ? _AdditionalTimeSelection.processing
       : (selectedBlockedTime > 0
@@ -137,288 +132,335 @@ Future<void> showServiceDialog(
   bool isPriceStartingFrom = service?.isPriceStartingFrom ?? false;
 
   bool nameError = false;
-  // duplicateError rimosso: ora gestito con conferma non bloccante
   bool durationError = false;
   bool categoryError = false;
 
-  await showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (_) => StatefulBuilder(
-      builder: (context, setState) {
-        return AppFormDialog(
-          title: Text(
-            service == null
-                ? context.l10n.newServiceTitle
-                : context.l10n.editServiceTitle,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<int>(
-                value: selectedCategory,
-                decoration: InputDecoration(
-                  labelText: context.l10n.fieldCategoryRequiredLabel,
-                  errorText: categoryError
-                      ? context.l10n.validationRequired
-                      : null,
-                ),
-                items: [
-                  for (final c in categories)
-                    DropdownMenuItem(value: c.id, child: Text(c.name)),
-                ],
-                onChanged: (v) => setState(() {
-                  selectedCategory = v;
-                  categoryError = false;
-                }),
-              ),
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: context.l10n.fieldNameRequiredLabel,
-                  errorText: nameError
-                      ? context.l10n.fieldNameRequiredError
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 10),
-              const SizedBox(height: 10),
-              TextField(
-                controller: descController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: context.l10n.fieldDescriptionLabel,
-                  alignLabelWithHint: true,
-                  floatingLabelBehavior: FloatingLabelBehavior.always,
-                ),
-              ),
-              const SizedBox(height: 10),
-              DropdownButtonFormField<int>(
-                value: selectedDuration,
-                decoration: InputDecoration(
-                  labelText: context.l10n.fieldDurationRequiredLabel,
-                  errorText: durationError
-                      ? context.l10n.fieldDurationRequiredError
-                      : null,
-                ),
-                items: [
-                  for (final (minutes, label) in _durationOptions(context))
-                    DropdownMenuItem(value: minutes, child: Text(label)),
-                ],
-                onChanged: (v) => setState(() {
-                  selectedDuration = v;
-                  durationError = false;
-                  if ((selectedDuration ?? 0) <= 0) {
-                    additionalSelection = _AdditionalTimeSelection.none;
-                    additionalMinutes = 0;
-                  }
-                }),
-              ),
-              const SizedBox(height: 10),
-              // Tempo aggiuntivo (visibile solo se Durata > 0)
-              if ((selectedDuration ?? 0) > 0) ...[
-                const SizedBox(height: 10),
-                DropdownButtonFormField<_AdditionalTimeSelection>(
-                  value: additionalSelection,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.additionalTimeSwitch,
-                  ),
-                  items: [
-                    DropdownMenuItem(
-                      value: _AdditionalTimeSelection.none,
-                      child: Text(context.l10n.additionalTimeOptionNone),
-                    ),
-                    DropdownMenuItem(
-                      value: _AdditionalTimeSelection.processing,
-                      child: Text(context.l10n.additionalTimeOptionProcessing),
-                    ),
-                    DropdownMenuItem(
-                      value: _AdditionalTimeSelection.blocked,
-                      child: Text(context.l10n.additionalTimeOptionBlocked),
-                    ),
-                  ],
-                  onChanged: (sel) => setState(() {
-                    additionalSelection = sel ?? _AdditionalTimeSelection.none;
-                    if (additionalSelection == _AdditionalTimeSelection.none) {
-                      additionalMinutes = 0;
-                    }
-                  }),
-                ),
-                if (additionalSelection != _AdditionalTimeSelection.none) ...[
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<int>(
-                    value: additionalMinutes,
-                    decoration: InputDecoration(
-                      labelText:
-                          (additionalSelection ==
-                              _AdditionalTimeSelection.processing)
-                          ? context.l10n.fieldProcessingTimeLabel
-                          : context.l10n.fieldBlockedTimeLabel,
-                    ),
-                    items: [
-                      for (final (minutes, label) in _bufferOptions(context))
-                        DropdownMenuItem(value: minutes, child: Text(label)),
-                    ],
-                    onChanged: (v) => setState(() {
-                      additionalMinutes = v ?? 0;
-                    }),
-                  ),
-                ],
-              ],
-              const SizedBox(height: 10),
-              TextField(
-                controller: priceController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,\-]')),
-                ],
-                decoration: InputDecoration(
-                  labelText: context.l10n.fieldPriceLabel,
-                  prefixText: '$currencySymbol ',
-                ),
-                enabled: !isFree,
-                onChanged: (_) {
-                  if (priceController.text.trim().isEmpty &&
-                      isPriceStartingFrom) {
-                    setState(() => isPriceStartingFrom = false);
-                  }
-                },
-              ),
-              const SizedBox(height: 10),
+  Future<void> handleSave() async {
+    final name = nameController.text.trim();
+    if (name.isEmpty) {
+      nameError = true;
+      return;
+    }
+    final normalizedName = StringUtils.toTitleCase(name);
+    final isDuplicate = ServiceValidators.isDuplicateServiceName(
+      allServices,
+      normalizedName,
+      excludeId: service?.id,
+    );
+    if (selectedDuration == null) {
+      durationError = true;
+      return;
+    }
+    if (selectedCategory == null) {
+      categoryError = true;
+      return;
+    }
 
-              _SwitchTile(
-                title: context.l10n.freeServiceSwitch,
-                value: isFree,
-                onChanged: (v) {
-                  setState(() {
-                    isFree = v;
-                    if (isFree) {
-                      priceController.clear();
-                      isPriceStartingFrom = false;
-                    }
-                  });
-                },
+    final parsedPrice = PriceFormatter.parse(priceController.text);
+    final effectiveIsFree = isFree;
+    final double? finalPrice = effectiveIsFree ? null : parsedPrice;
+    final bool finalIsPriceStartingFrom =
+        (effectiveIsFree || finalPrice == null) ? false : isPriceStartingFrom;
+
+    Future<void> doSave() async {
+      int processingToSave = 0;
+      int blockedToSave = 0;
+      if (additionalSelection == _AdditionalTimeSelection.processing &&
+          additionalMinutes > 0) {
+        processingToSave = additionalMinutes;
+      } else if (additionalSelection == _AdditionalTimeSelection.blocked &&
+          additionalMinutes > 0) {
+        blockedToSave = additionalMinutes;
+      }
+      final newService = Service(
+        id: service?.id ?? DateTime.now().millisecondsSinceEpoch,
+        businessId: ref.read(currentBusinessProvider).id,
+        categoryId: selectedCategory!,
+        name: normalizedName,
+        description:
+            descController.text.trim().isEmpty ? null : descController.text.trim(),
+        duration: selectedDuration,
+        processingTime: processingToSave,
+        blockedTime: blockedToSave,
+        price: finalPrice,
+        color: service?.color,
+        isBookableOnline: isBookableOnline,
+        isFree: effectiveIsFree,
+        isPriceStartingFrom: finalIsPriceStartingFrom,
+        currency: service?.currency ?? currencyCode,
+        sortOrder: service?.sortOrder ?? 0,
+      );
+
+      if (service == null) {
+        notifier.add(newService);
+      } else {
+        notifier.update(newService);
+      }
+
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+
+    if (isDuplicate) {
+      await showAppConfirmDialog(
+        context,
+        title: Text(context.l10n.serviceDuplicateError),
+        confirmLabel: context.l10n.actionConfirm,
+        cancelLabel: context.l10n.actionCancel,
+        danger: false,
+        onConfirm: doSave,
+      );
+    } else {
+      await doSave();
+    }
+  }
+
+  Widget buildBody(BuildContext context, void Function(VoidCallback) setState) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        DropdownButtonFormField<int>(
+          value: selectedCategory,
+          decoration: InputDecoration(
+            labelText: context.l10n.fieldCategoryRequiredLabel,
+            errorText: categoryError ? context.l10n.validationRequired : null,
+          ),
+          items: [
+            for (final c in categories)
+              DropdownMenuItem(value: c.id, child: Text(c.name)),
+          ],
+          onChanged: (v) => setState(() {
+            selectedCategory = v;
+            categoryError = false;
+          }),
+        ),
+        TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            labelText: context.l10n.fieldNameRequiredLabel,
+            errorText: nameError ? context.l10n.fieldNameRequiredError : null,
+          ),
+        ),
+        const SizedBox(height: 10),
+        const SizedBox(height: 10),
+        TextField(
+          controller: descController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            labelText: context.l10n.fieldDescriptionLabel,
+            alignLabelWithHint: true,
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+          ),
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<int>(
+          value: selectedDuration,
+          decoration: InputDecoration(
+            labelText: context.l10n.fieldDurationRequiredLabel,
+            errorText:
+                durationError ? context.l10n.fieldDurationRequiredError : null,
+          ),
+          items: [
+            for (final (minutes, label) in _durationOptions(context))
+              DropdownMenuItem(value: minutes, child: Text(label)),
+          ],
+          onChanged: (v) => setState(() {
+            selectedDuration = v;
+            durationError = false;
+            if ((selectedDuration ?? 0) <= 0) {
+              additionalSelection = _AdditionalTimeSelection.none;
+              additionalMinutes = 0;
+            }
+          }),
+        ),
+        const SizedBox(height: 10),
+        if ((selectedDuration ?? 0) > 0) ...[
+          const SizedBox(height: 10),
+          DropdownButtonFormField<_AdditionalTimeSelection>(
+            value: additionalSelection,
+            decoration: InputDecoration(
+              labelText: context.l10n.additionalTimeSwitch,
+            ),
+            items: [
+              DropdownMenuItem(
+                value: _AdditionalTimeSelection.none,
+                child: Text(context.l10n.additionalTimeOptionNone),
               ),
-              _SwitchTile(
-                title: context.l10n.priceStartingFromSwitch,
-                subtitle: (isFree || priceController.text.trim().isEmpty)
-                    ? context.l10n.setPriceToEnable
-                    : null,
-                value: isPriceStartingFrom,
-                onChanged: (!isFree && priceController.text.trim().isNotEmpty)
-                    ? (v) => setState(() => isPriceStartingFrom = v)
-                    : null,
-                enabled: (!isFree && priceController.text.trim().isNotEmpty),
+              DropdownMenuItem(
+                value: _AdditionalTimeSelection.processing,
+                child: Text(context.l10n.additionalTimeOptionProcessing),
               ),
-              const SizedBox(height: 40),
-              _SwitchTile(
-                title: context.l10n.bookableOnlineSwitch,
-                value: isBookableOnline,
-                onChanged: (v) => setState(() => isBookableOnline = v),
+              DropdownMenuItem(
+                value: _AdditionalTimeSelection.blocked,
+                child: Text(context.l10n.additionalTimeOptionBlocked),
               ),
             ],
+            onChanged: (sel) => setState(() {
+              additionalSelection = sel ?? _AdditionalTimeSelection.none;
+              if (additionalSelection == _AdditionalTimeSelection.none) {
+                additionalMinutes = 0;
+              }
+            }),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-              child: Text(context.l10n.actionCancel),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final name = nameController.text.trim();
-                if (name.isEmpty) {
-                  setState(() => nameError = true);
-                  return;
-                }
-                final normalizedName = StringUtils.toTitleCase(name);
-                final isDuplicate = ServiceValidators.isDuplicateServiceName(
-                  allServices,
-                  normalizedName,
-                  excludeId: service?.id,
-                );
-                if (selectedDuration == null) {
-                  setState(() => durationError = true);
-                  return;
-                }
-
-                if (selectedCategory == null) {
-                  setState(() => categoryError = true);
-                  return;
-                }
-
-                final parsedPrice = PriceFormatter.parse(priceController.text);
-                final effectiveIsFree = isFree;
-                final double? finalPrice = effectiveIsFree ? null : parsedPrice;
-                final bool finalIsPriceStartingFrom =
-                    (effectiveIsFree || finalPrice == null)
-                    ? false
-                    : isPriceStartingFrom;
-
-                Future<void> doSave() async {
-                  // Mappa i campi aggiuntivi dalla selezione
-                  int processingToSave = 0;
-                  int blockedToSave = 0;
-                  if (additionalSelection ==
-                          _AdditionalTimeSelection.processing &&
-                      additionalMinutes > 0) {
-                    processingToSave = additionalMinutes;
-                  } else if (additionalSelection ==
-                          _AdditionalTimeSelection.blocked &&
-                      additionalMinutes > 0) {
-                    blockedToSave = additionalMinutes;
-                  }
-                  final newService = Service(
-                    id: service?.id ?? DateTime.now().millisecondsSinceEpoch,
-                    businessId: ref.read(currentBusinessProvider).id,
-                    categoryId: selectedCategory!,
-                    name: normalizedName,
-                    description: descController.text.trim().isEmpty
-                        ? null
-                        : descController.text.trim(),
-                    duration: selectedDuration,
-                    processingTime: processingToSave,
-                    blockedTime: blockedToSave,
-                    price: finalPrice,
-                    color: service?.color,
-                    isBookableOnline: isBookableOnline,
-                    isFree: effectiveIsFree,
-                    isPriceStartingFrom: finalIsPriceStartingFrom,
-                    currency: service?.currency ?? currencyCode,
-                    // Mantiene l'ordinamento per i servizi esistenti
-                    sortOrder: service?.sortOrder ?? 0,
-                  );
-
-                  if (service == null) {
-                    notifier.add(newService);
-                  } else {
-                    notifier.update(newService);
-                  }
-
-                  Navigator.of(context, rootNavigator: true).pop();
-                }
-
-                if (isDuplicate) {
-                  await showAppConfirmDialog(
-                    context,
-                    title: Text(context.l10n.serviceDuplicateError),
-                    confirmLabel: context.l10n.actionConfirm,
-                    cancelLabel: context.l10n.actionCancel,
-                    danger: false,
-                    onConfirm: doSave,
-                  );
-                } else {
-                  await doSave();
-                }
-              },
-              child: Text(context.l10n.actionSave),
+          if (additionalSelection != _AdditionalTimeSelection.none) ...[
+            const SizedBox(height: 10),
+            DropdownButtonFormField<int>(
+              value: additionalMinutes,
+              decoration: InputDecoration(
+                labelText:
+                    (additionalSelection == _AdditionalTimeSelection.processing)
+                        ? context.l10n.fieldProcessingTimeLabel
+                        : context.l10n.fieldBlockedTimeLabel,
+              ),
+              items: [
+                for (final (minutes, label) in _bufferOptions(context))
+                  DropdownMenuItem(value: minutes, child: Text(label)),
+              ],
+              onChanged: (v) => setState(() {
+                additionalMinutes = v ?? 0;
+              }),
             ),
           ],
+        ],
+        const SizedBox(height: 10),
+        TextField(
+          controller: priceController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.,\-]')),
+          ],
+          decoration: InputDecoration(
+            labelText: context.l10n.fieldPriceLabel,
+            prefixText: '$currencySymbol ',
+          ),
+          enabled: !isFree,
+          onChanged: (_) {
+            if (priceController.text.trim().isEmpty && isPriceStartingFrom) {
+              setState(() => isPriceStartingFrom = false);
+            }
+          },
+        ),
+        const SizedBox(height: 10),
+        _SwitchTile(
+          title: context.l10n.freeServiceSwitch,
+          value: isFree,
+          onChanged: (v) {
+            setState(() {
+              isFree = v;
+              if (isFree) {
+                priceController.clear();
+                isPriceStartingFrom = false;
+              }
+            });
+          },
+        ),
+        _SwitchTile(
+          title: context.l10n.priceStartingFromSwitch,
+          subtitle: (isFree || priceController.text.trim().isEmpty)
+              ? context.l10n.setPriceToEnable
+              : null,
+          value: isPriceStartingFrom,
+          onChanged: (!isFree && priceController.text.trim().isNotEmpty)
+              ? (v) => setState(() => isPriceStartingFrom = v)
+              : null,
+          enabled: (!isFree && priceController.text.trim().isNotEmpty),
+        ),
+        const SizedBox(height: 40),
+        _SwitchTile(
+          title: context.l10n.bookableOnlineSwitch,
+          value: isBookableOnline,
+          onChanged: (v) => setState(() => isBookableOnline = v),
+        ),
+      ],
+    );
+  }
+
+  final dialogTitle =
+      service == null ? context.l10n.newServiceTitle : context.l10n.editServiceTitle;
+
+  final builder = StatefulBuilder(
+    builder: (context, setState) {
+      final body = buildBody(context, setState);
+      final actions = [
+        TextButton(
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+          child: Text(context.l10n.actionCancel),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            await handleSave();
+            setState(() {});
+          },
+          child: Text(context.l10n.actionSave),
+        ),
+      ];
+
+      final bottomActions = actions
+          .map(
+            (a) => ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48, minWidth: 110),
+              child: a,
+            ),
+          )
+          .toList();
+
+      if (isDesktop) {
+        return AppFormDialog(
+          title: Text(dialogTitle),
+          content: body,
+          actions: actions,
         );
-      },
-    ),
+      }
+
+      return SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  dialogTitle,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              body,
+              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: bottomActions,
+                ),
+              ),
+              SizedBox(height: 32 + MediaQuery.of(context).viewPadding.bottom),
+            ],
+          ),
+        ),
+      );
+    },
   );
+
+  if (isDesktop) {
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => builder,
+    );
+  } else {
+    await AppBottomSheet.show(
+      context: context,
+      builder: (_) => builder,
+      useRootNavigator: true,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+    );
+  }
 }
 
 List<(int, String)> _durationOptions(BuildContext context) {

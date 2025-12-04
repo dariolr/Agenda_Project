@@ -17,7 +17,13 @@ Future<void> showClientEditDialog(
 }) async {
   final formFactor = ref.read(formFactorProvider);
 
-  if (formFactor == AppFormFactor.mobile) {
+  if (formFactor == AppFormFactor.desktop) {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClientEditDialog(initial: client),
+    );
+  } else {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -30,12 +36,6 @@ Future<void> showClientEditDialog(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => ClientEditBottomSheet(initial: client),
-    );
-  } else {
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => ClientEditDialog(initial: client),
     );
   }
 }
