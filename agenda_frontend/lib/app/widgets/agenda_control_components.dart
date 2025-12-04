@@ -232,13 +232,9 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
   @override
   Widget build(BuildContext context) {
     if (widget.isCompact) {
-      return SizedBox(
-        height: kAgendaControlHeight,
-        child: TextButton.icon(
-          onPressed: () => _handleTap(context),
-          icon: const Icon(Icons.calendar_today_outlined, size: 20),
-          label: Text(widget.label),
-        ),
+      return _CompactDateSwitcher(
+        label: widget.label,
+        onTap: () => _handleTap(context),
       );
     }
     final colorScheme = Theme.of(context).colorScheme;
@@ -752,6 +748,75 @@ class _HoverableRegionState extends State<_HoverableRegion> {
               height: kAgendaControlHeight,
               color: _hovered ? widget.hoverColor : Colors.transparent,
               child: content,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Versione compact del date switcher con stile pill.
+class _CompactDateSwitcher extends StatefulWidget {
+  const _CompactDateSwitcher({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  State<_CompactDateSwitcher> createState() => _CompactDateSwitcherState();
+}
+
+class _CompactDateSwitcherState extends State<_CompactDateSwitcher> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final interactions = Theme.of(context).extension<AppInteractionColors>();
+    final hoverFill =
+        interactions?.hoverFill ?? colorScheme.primary.withOpacity(0.06);
+    final backgroundColor = _isHovered
+        ? Color.alphaBlend(hoverFill, colorScheme.surface)
+        : colorScheme.surface;
+
+    return InkWell(
+      onHover: (hovering) {
+        if (hovering != _isHovered) {
+          setState(() => _isHovered = hovering);
+        }
+      },
+      onTap: widget.onTap,
+      highlightColor: Colors.transparent,
+      borderRadius: kAgendaPillRadius,
+      child: ClipRRect(
+        borderRadius: kAgendaPillRadius,
+        child: Container(
+          height: kAgendaControlHeight,
+          decoration: BoxDecoration(
+            borderRadius: kAgendaPillRadius,
+            border: Border.all(color: Colors.grey.withOpacity(0.35)),
+            color: backgroundColor,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: kAgendaControlHorizontalPadding,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 18,
+                  color: colorScheme.onSurface,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(widget.label, overflow: TextOverflow.ellipsis),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+              ],
             ),
           ),
         ),
