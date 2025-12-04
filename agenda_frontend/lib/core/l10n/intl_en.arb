@@ -90,16 +90,20 @@
   "filterInactive": "Inactive",
   "filterNew": "New",
   "formName": "Name",
+  "formFirstName": "First name",
+  "formLastName": "Last name",
   "formEmail": "Email",
   "formPhone": "Phone",
   "formNotes": "Notes",
   "validationRequired": "Required",
   "validationInvalidEmail": "Invalid email",
-  "validationInvalidPhone": "Invalid phone"
+  "validationInvalidPhone": "Invalid phone",
+  "validationNameOrLastNameRequired": "Enter at least first name or last name"
 
   ,"agendaAdd": "Add"
-  ,"agendaAddAppointment": "Add appointment"
-  ,"agendaAddBlock": "Add block"
+  ,"agendaAddTitle": "Add a..."
+  ,"agendaAddAppointment": "New appointment"
+  ,"agendaAddBlock": "New block"
   ,"appointmentDialogTitleNew": "New appointment"
   ,"appointmentDialogTitleEdit": "Edit appointment"
   ,"formDate": "Date"
@@ -172,5 +176,46 @@
   "serviceDuplicateCopyWord": "Copy",
   "moveAppointmentConfirmTitle": "Confirm move?",
   "moveAppointmentConfirmMessage": "The appointment will be moved to {newTime} for {staffName}.",
-  "@moveAppointmentConfirmMessage": {"placeholders": {"newTime": {"type": "String"}, "staffName": {"type": "String"}}}
+  "@moveAppointmentConfirmMessage": {"placeholders": {"newTime": {"type": "String"}, "staffName": {"type": "String"}}},
+  "discardChangesTitle": "Unsaved changes",
+  "discardChangesMessage": "You have unsaved changes. Do you want to discard them?",
+  "actionDiscard": "Cancel",
+  "actionKeepEditing": "Keep editing",
+  "deleteClientConfirmTitle": "Delete client?",
+  "deleteClientConfirmMessage": "The client will be permanently deleted. This action cannot be undone.",
+
+  "sortByNameAsc": "Name (A-Z)",
+  "sortByNameDesc": "Name (Z-A)",
+  "sortByLastNameAsc": "Last name (A-Z)",
+  "sortByLastNameDesc": "Last name (Z-A)",
+  "sortByLastVisitDesc": "Last visit (recent)",
+  "sortByLastVisitAsc": "Last visit (oldest)",
+  "sortByCreatedAtDesc": "Created (newest)",
+  "sortByCreatedAtAsc": "Created (oldest)",
+
+  "clientAppointmentsTitle": "{clientName}'s appointments",
+  "@clientAppointmentsTitle": {"placeholders": {"clientName": {"type": "String"}}},
+  "clientAppointmentsUpcoming": "Upcoming",
+  "clientAppointmentsPast": "Past",
+  "clientAppointmentsEmpty": "No appointments",
+
+  "staffFilterTooltip": "Filter staff",
+  "staffFilterTitle": "Filter staff",
+  "staffFilterAllTeam": "All team",
+  "staffFilterOnDuty": "On duty team",
+  "staffFilterSelectMembers": "Select members",
+
+  "blockDialogTitleNew": "New block",
+  "blockDialogTitleEdit": "Edit block",
+  "blockAllDay": "All day",
+  "blockStartTime": "Start time",
+  "blockEndTime": "End time",
+  "blockSelectStaff": "Select staff",
+  "blockSelectStaffError": "Select at least one staff member",
+  "blockTimeError": "End time must be after start time",
+  "blockReason": "Reason (optional)",
+  "blockReasonHint": "E.g. Meeting, Break, etc.",
+
+  "sortByTitle": "Sort by",
+  "selectStaffTitle": "Select staff"
 }

@@ -1,7 +1,9 @@
 import 'package:agenda_frontend/app/theme/extensions.dart';
 import 'package:agenda_frontend/core/l10n/l10_extension.dart';
 import 'package:agenda_frontend/core/models/location.dart';
+import 'package:agenda_frontend/core/widgets/adaptive_dropdown.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 const double kAgendaControlHeight = 40;
@@ -825,7 +827,7 @@ class _CompactDateSwitcherState extends State<_CompactDateSwitcher> {
   }
 }
 
-class AgendaLocationSelector extends StatefulWidget {
+class AgendaLocationSelector extends ConsumerStatefulWidget {
   const AgendaLocationSelector({
     super.key,
     required this.locations,
@@ -838,10 +840,12 @@ class AgendaLocationSelector extends StatefulWidget {
   final void Function(int id) onSelected;
 
   @override
-  State<AgendaLocationSelector> createState() => _AgendaLocationSelectorState();
+  ConsumerState<AgendaLocationSelector> createState() =>
+      _AgendaLocationSelectorState();
 }
 
-class _AgendaLocationSelectorState extends State<AgendaLocationSelector> {
+class _AgendaLocationSelectorState
+    extends ConsumerState<AgendaLocationSelector> {
   bool _isHovered = false;
 
   @override
@@ -855,86 +859,71 @@ class _AgendaLocationSelectorState extends State<AgendaLocationSelector> {
         : colorScheme.surface;
     final l10n = context.l10n;
 
-    return InkWell(
-      onHover: (hovering) {
-        if (hovering != _isHovered) {
-          setState(() => _isHovered = hovering);
-        }
-      },
-      onTap: () {},
-      highlightColor: Colors.transparent,
-      borderRadius: kAgendaPillRadius,
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          hoverColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-        ),
-        child: TooltipVisibility(
-          visible: false,
-          child: PopupMenuButton<int>(
-            tooltip: '',
-            onOpened: () => setState(() => _isHovered = true),
-            onCanceled: () => setState(() => _isHovered = false),
-            onSelected: (value) {
-              widget.onSelected(value);
-              setState(() => _isHovered = false);
-            },
-            itemBuilder: (context) => [
-              for (final location in widget.locations)
-                PopupMenuItem<int>(
-                  value: location.id,
-                  child: Text(location.name),
-                ),
-            ],
-            child: Semantics(
-              button: true,
-              label: l10n.agendaSelectLocation,
-              child: ClipRRect(
+    return AdaptiveDropdown<int>(
+      items: [
+        for (final location in widget.locations)
+          AdaptiveDropdownItem<int>(
+            value: location.id,
+            child: Text(location.name),
+          ),
+      ],
+      selectedValue: widget.current.id,
+      onSelected: widget.onSelected,
+      modalTitle: l10n.agendaSelectLocation,
+      popupWidth: 200,
+      useRootNavigator: true,
+      onOpened: () => setState(() => _isHovered = true),
+      onClosed: () => setState(() => _isHovered = false),
+      child: MouseRegion(
+        onEnter: (_) {
+          if (!_isHovered) setState(() => _isHovered = true);
+        },
+        onExit: (_) {
+          if (_isHovered) setState(() => _isHovered = false);
+        },
+        child: Semantics(
+          button: true,
+          label: l10n.agendaSelectLocation,
+          child: ClipRRect(
+            borderRadius: kAgendaPillRadius,
+            child: Container(
+              height: kAgendaControlHeight,
+              decoration: BoxDecoration(
                 borderRadius: kAgendaPillRadius,
-                child: Container(
-                  height: kAgendaControlHeight,
-                  decoration: BoxDecoration(
-                    borderRadius: kAgendaPillRadius,
-                    border: Border.all(color: Colors.grey.withOpacity(0.35)),
-                    color: backgroundColor,
-                    boxShadow: null,
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      const compactBreakpoint = 220.0;
-                      final maxWidth = constraints.maxWidth;
-                      final isCompact =
-                          maxWidth.isFinite &&
-                          maxWidth > 0 &&
-                          maxWidth < compactBreakpoint;
-                      final horizontalPadding = isCompact
-                          ? 12.0
-                          : kAgendaControlHorizontalPadding;
+                border: Border.all(color: Colors.grey.withOpacity(0.35)),
+                color: backgroundColor,
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const compactBreakpoint = 220.0;
+                  final maxWidth = constraints.maxWidth;
+                  final isCompact =
+                      maxWidth.isFinite &&
+                      maxWidth > 0 &&
+                      maxWidth < compactBreakpoint;
+                  final horizontalPadding = isCompact
+                      ? 12.0
+                      : kAgendaControlHorizontalPadding;
 
-                      return Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: horizontalPadding,
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            widget.current.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                widget.current.name,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ),

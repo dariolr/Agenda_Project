@@ -7,8 +7,8 @@ import 'package:agenda_frontend/features/agenda/domain/config/agenda_theme.dart'
 import 'package:agenda_frontend/features/agenda/domain/config/layout_config.dart';
 import 'package:agenda_frontend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
-import 'package:agenda_frontend/features/agenda/providers/staff_providers.dart';
 import 'package:agenda_frontend/features/staff/presentation/staff_availability_screen.dart';
+import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:agenda_frontend/features/staff/widgets/staff_top_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

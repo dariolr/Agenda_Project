@@ -86,7 +86,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         basePrice: 50,
       ),
       _StaffScheduleSeed(
-        staffId: 5,
+        staffId: 2,
         locationIds: [102],
         serviceId: 4,
         serviceVariantId: 4002,

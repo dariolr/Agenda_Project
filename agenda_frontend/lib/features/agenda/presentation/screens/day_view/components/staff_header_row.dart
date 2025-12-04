@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../../app/widgets/staff_circle_avatar.dart';
 import '../../../../../../core/models/staff.dart';
+import '../../../../domain/config/layout_config.dart';
 import '../../../../providers/highlighted_staff_provider.dart';
 import '../../../../providers/layout_config_provider.dart';
 
@@ -51,31 +52,28 @@ class StaffHeaderRow extends ConsumerWidget {
               ),
             ),
           ),
-          padding: EdgeInsets.symmetric(horizontal: headerHeight * 0.18),
+          padding: EdgeInsets.symmetric(horizontal: headerHeight * 0.08),
           child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 StaffCircleAvatar(
-                  height: headerHeight * 0.78,
+                  height: LayoutConfig.avatarSizeFor(context),
                   color: staff.color,
                   isHighlighted: isHighlighted,
                   initials: initials,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    displayName,
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: Colors.black87,
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  displayName,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                    color: Colors.black87,
                   ),
                 ),
               ],

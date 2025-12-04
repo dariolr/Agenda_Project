@@ -67,11 +67,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   void _stopAutoScroll() => _autoScrollTimer?.cancel();
 
   void _showOrderSavedSnackBar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.orderSavedMessage),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.orderSavedMessage)));
   }
 
   void _toggleCategoryReorder() {
@@ -125,65 +123,63 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => _selectedService.value = null,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ---------- Toolbar ----------
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Column(
-                children: [
-                  ReorderTogglePanel(
-                    isWide: isWide,
-                    children: [
-                      ReorderToggleButton(
-                        isActive: isReorderCategories,
-                        onPressed: _toggleCategoryReorder,
-                        activeLabel: context.l10n.doneCategoriesButton,
-                        inactiveLabel: context.l10n.editCategoriesOrderButton,
-                        activeIcon: Icons.check,
-                        inactiveIcon: Icons.drag_indicator,
-                      ),
-                      ReorderToggleButton(
-                        isActive: isReorderServices,
-                        onPressed: _toggleServiceReorder,
-                        activeLabel: context.l10n.doneServicesButton,
-                        inactiveLabel: context.l10n.editServicesOrderButton,
-                        activeIcon: Icons.check,
-                        inactiveIcon: Icons.drag_indicator,
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Text(
-                      context.l10n.reorderHelpDescription,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ---------- Toolbar ----------
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Column(
+              children: [
+                ReorderTogglePanel(
+                  isWide: isWide,
+                  children: [
+                    ReorderToggleButton(
+                      isActive: isReorderCategories,
+                      onPressed: _toggleCategoryReorder,
+                      activeLabel: context.l10n.doneCategoriesButton,
+                      inactiveLabel: context.l10n.editCategoriesOrderButton,
+                      activeIcon: Icons.check,
+                      inactiveIcon: Icons.drag_indicator,
+                    ),
+                    ReorderToggleButton(
+                      isActive: isReorderServices,
+                      onPressed: _toggleServiceReorder,
+                      activeLabel: context.l10n.doneServicesButton,
+                      inactiveLabel: context.l10n.editServicesOrderButton,
+                      activeIcon: Icons.check,
+                      inactiveIcon: Icons.drag_indicator,
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Text(
+                    context.l10n.reorderHelpDescription,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
 
-            // ---------- Corpo ----------
-            Expanded(
-              child: isReorderCategories
-                  ? _buildReorderCategories(context, ref, categories)
-                  : isReorderServices
-                  ? _buildReorderServices(context, ref, categories)
-                  : _buildNormalList(
-                      context,
-                      ref,
-                      categories,
-                      isWide,
-                      colorScheme,
-                    ),
-            ),
-          ],
-        ),
+          // ---------- Corpo ----------
+          Expanded(
+            child: isReorderCategories
+                ? _buildReorderCategories(context, ref, categories)
+                : isReorderServices
+                ? _buildReorderServices(context, ref, categories)
+                : _buildNormalList(
+                    context,
+                    ref,
+                    categories,
+                    isWide,
+                    colorScheme,
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -502,34 +498,20 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       hoveredService: _hoveredService,
       selectedService: _selectedService,
       scrollController: _scrollController,
-      onAddService: (category) => _openServiceDialog(
-        context,
-        ref,
-        preselectedCategoryId: category.id,
-      ),
-      onEditCategory: (category) => showCategoryDialog(
-        context,
-        ref,
-        category: category,
-      ),
+      onAddService: (category) =>
+          _openServiceDialog(context, ref, preselectedCategoryId: category.id),
+      onEditCategory: (category) =>
+          showCategoryDialog(context, ref, category: category),
       onDeleteCategory: (categoryId) =>
           _confirmDeleteCategory(context, ref, categoryId),
       onDeleteCategoryBlocked: () => _showCannotDeleteCategoryDialog(context),
-      onServiceOpen: (service) => _openServiceDialog(
-        context,
-        ref,
-        service: service,
-      ),
-      onServiceEdit: (service) => _openServiceDialog(
-        context,
-        ref,
-        service: service,
-      ),
+      onServiceOpen: (service) =>
+          _openServiceDialog(context, ref, service: service),
+      onServiceEdit: (service) =>
+          _openServiceDialog(context, ref, service: service),
       onServiceDuplicate: (service) => servicesNotifier.duplicate(service),
-      onServiceDelete: (id) => _confirmDelete(
-        context,
-        onConfirm: () => servicesNotifier.delete(id),
-      ),
+      onServiceDelete: (id) =>
+          _confirmDelete(context, onConfirm: () => servicesNotifier.delete(id)),
     );
   }
 

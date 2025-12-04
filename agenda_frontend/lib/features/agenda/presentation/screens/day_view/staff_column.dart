@@ -35,11 +35,13 @@ import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
+import '../../../providers/time_blocks_provider.dart';
 import '../../widgets/appointment_dialog.dart';
 import '../helper/drag_drop_helper.dart';
 import '../helper/layout_geometry_helper.dart';
 import '../widgets/agenda_dividers.dart';
 import '../widgets/appointment_card_base.dart';
+import '../widgets/time_block_widget.dart';
 
 class StaffColumn extends ConsumerStatefulWidget {
   final Staff staff;
@@ -433,6 +435,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     // 🔹 Appuntamenti
     stackChildren.addAll(_buildAppointments(slotHeight, staffAppointments));
 
+    // 🔹 Blocchi di non disponibilità
+    stackChildren.addAll(_buildTimeBlocks(slotHeight));
+
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
         setState(() => _isHighlighted = true);
@@ -648,8 +653,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             layoutGeometry[originalAppt.id] ??
             const EventGeometry(leftFraction: 0, widthFraction: 1);
 
-        // Controlla se questo appuntamento ha un drop pendente
-        final pendingDrop = ref.watch(pendingDropProvider);
+        // Controlla se questo appuntamento ha un drop pendente (usa variabile pre-calcolata)
         final hasPendingDrop = pendingDrop?.appointmentId == originalAppt.id;
         final isOriginalPosition =
             hasPendingDrop && pendingDrop!.originalStaffId == widget.staff.id;
@@ -677,13 +681,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           if (variant != null && variant.colorHex != null) {
             cardColor = ColorUtils.fromHex(variant.colorHex!);
           } else {
-            final services = ref.watch(servicesProvider);
-            for (final service in services) {
-              if (service.id == originalAppt.serviceId &&
-                  service.color != null) {
-                cardColor = service.color!;
-                break;
-              }
+            // Usa la mappa pre-calcolata invece di watch dentro il loop
+            final serviceColor = serviceColorMap[originalAppt.serviceId];
+            if (serviceColor != null) {
+              cardColor = serviceColor;
             }
           }
         }
@@ -717,7 +718,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }
 
     // 🔹 Aggiungi preview per drop pendente se questa è la colonna di destinazione
-    final pendingDrop = ref.watch(pendingDropProvider);
+    // (usa la variabile pendingDrop già calcolata all'inizio del metodo)
     if (pendingDrop != null && pendingDrop.newStaffId == widget.staff.id) {
       // Trova l'appuntamento originale nel provider globale
       final allAppointments = ref.watch(appointmentsProvider);
@@ -755,13 +756,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           if (variant != null && variant.colorHex != null) {
             cardColor = ColorUtils.fromHex(variant.colorHex!);
           } else {
-            final services = ref.watch(servicesProvider);
-            for (final service in services) {
-              if (service.id == originalAppt.serviceId &&
-                  service.color != null) {
-                cardColor = service.color!;
-                break;
-              }
+            // Usa la mappa pre-calcolata
+            final serviceColor = serviceColorMap[originalAppt.serviceId];
+            if (serviceColor != null) {
+              cardColor = serviceColor;
             }
           }
         }
@@ -798,5 +796,65 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }
 
     return positionedAppointments;
+  }
+
+  /// Costruisce i widget per i blocchi di non disponibilità dello staff.
+  List<Widget> _buildTimeBlocks(double slotHeight) {
+    final blocks = ref.watch(timeBlocksForStaffProvider(widget.staff.id));
+    if (blocks.isEmpty) return [];
+
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final agendaDate = ref.watch(agendaDateProvider);
+    final dayStart = DateTime(
+      agendaDate.year,
+      agendaDate.month,
+      agendaDate.day,
+    );
+
+    final positionedBlocks = <Widget>[];
+    final padding = LayoutConfig.columnInnerPadding;
+    final cardWidth = math.max(widget.columnWidth - padding * 2, 0.0);
+
+    for (final block in blocks) {
+      // Calcola posizione verticale
+      final startMinutes = block.startTime.difference(dayStart).inMinutes;
+      final endMinutes = block.endTime.difference(dayStart).inMinutes;
+
+      // Clamp ai limiti della giornata visualizzata
+      final clampedStartMinutes = startMinutes.clamp(
+        0,
+        LayoutConfig.hoursInDay * 60,
+      );
+      final clampedEndMinutes = endMinutes.clamp(
+        0,
+        LayoutConfig.hoursInDay * 60,
+      );
+
+      if (clampedEndMinutes <= clampedStartMinutes) continue;
+
+      final double top =
+          (clampedStartMinutes / layoutConfig.minutesPerSlot) * slotHeight;
+      final double height =
+          ((clampedEndMinutes - clampedStartMinutes) /
+              layoutConfig.minutesPerSlot) *
+          slotHeight;
+
+      positionedBlocks.add(
+        Positioned(
+          key: ValueKey('block_${block.id}'),
+          top: top,
+          left: padding,
+          width: cardWidth,
+          height: height,
+          child: TimeBlockWidget(
+            block: block,
+            height: height,
+            width: cardWidth,
+          ),
+        ),
+      );
+    }
+
+    return positionedBlocks;
   }
 }

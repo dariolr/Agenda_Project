@@ -1,19 +1,20 @@
 import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
+import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../clients/domain/clients.dart';
 import '../../../clients/providers/clients_providers.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../domain/config/layout_config.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
+import '../../providers/business_providers.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
-// location_providers not needed directly here
-import '../../providers/staff_providers.dart';
 
 /// Show the Appointment dialog for creating or editing an appointment.
 Future<void> showAppointmentDialog(
@@ -357,6 +358,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final step = ref.read(layoutConfigProvider).minutesPerSlot;
     final selected = await showModalBottomSheet<TimeOfDay>(
       context: context,
+      useRootNavigator: true,
       builder: (ctx) {
         return _TimeGridPicker(initial: _time, stepMinutes: step);
       },
@@ -401,6 +403,30 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     );
     final end = start.add(Duration(minutes: selectedVariant.durationMinutes));
 
+    // Se il cliente non esiste (clientId null) ma abbiamo un nome, creiamo il cliente
+    int? clientId = _clientId;
+    String clientName = _clientName.trim();
+    if (clientId == null && clientName.isNotEmpty) {
+      final business = ref.read(currentBusinessProvider);
+      // Separa automaticamente nome e cognome
+      final nameParts = Client.splitFullName(clientName);
+      final newClient = Client(
+        id: 0, // Sarà sovrascritto da addClient
+        businessId: business.id,
+        firstName: nameParts.firstName,
+        lastName: nameParts.lastName,
+        createdAt: DateTime.now(),
+      );
+      ref.read(clientsProvider.notifier).addClient(newClient);
+      // Recupera l'id del cliente appena creato
+      final clients = ref.read(clientsProvider);
+      final createdClient = clients.lastWhere(
+        (c) => c.name == clientName,
+        orElse: () => clients.last,
+      );
+      clientId = createdClient.id;
+    }
+
     if (widget.initial == null) {
       // Nuovo appuntamento: crea SEMPRE una nuova prenotazione
       ref
@@ -410,8 +436,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             staffId: _staffId!,
             serviceId: service.id,
             serviceVariantId: selectedVariant.id,
-            clientId: _clientId,
-            clientName: _clientName,
+            clientId: clientId,
+            clientName: clientName,
             serviceName: service.name,
             start: start,
             end: end,
@@ -422,8 +448,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         staffId: _staffId!,
         serviceId: service.id,
         serviceVariantId: selectedVariant.id,
-        clientId: _clientId,
-        clientName: _clientName,
+        clientId: clientId,
+        clientName: clientName,
         serviceName: service.name,
         startTime: start,
         endTime: end,

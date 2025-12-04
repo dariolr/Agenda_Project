@@ -99,11 +99,16 @@ class TopControlsScaffold extends ConsumerWidget {
     required this.builder,
     this.alignment = AlignmentDirectional.centerStart,
     this.padding = EdgeInsets.zero,
+    this.applyLayoutInset = true,
   });
 
   final TopControlsBuilder builder;
   final AlignmentGeometry alignment;
   final EdgeInsetsGeometry padding;
+  // Permette di applicare l'offset calcolato per allineare ai contenuti
+  // principali (hour column + navigation rail). Disattivato di default per
+  // far partire i controlli esattamente a sinistra nell'app bar.
+  final bool applyLayoutInset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -130,7 +135,9 @@ class TopControlsScaffold extends ConsumerWidget {
       locationController: ref.read(currentLocationIdProvider.notifier),
     );
 
-    final leftInset = _computeLeftInset(context, layoutConfig, formFactor);
+    final leftInset = applyLayoutInset
+        ? _computeLeftInset(context, layoutConfig, formFactor)
+        : 0.0;
     Widget child = LayoutBuilder(
       builder: (context, constraints) {
         return builder.build(context, data);

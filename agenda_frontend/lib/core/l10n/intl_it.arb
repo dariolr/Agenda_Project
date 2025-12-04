@@ -90,16 +90,20 @@
   "filterInactive": "Inattivi",
   "filterNew": "Nuovi",
   "formName": "Nome",
+  "formFirstName": "Nome",
+  "formLastName": "Cognome",
   "formEmail": "Email",
   "formPhone": "Telefono",
   "formNotes": "Note",
   "validationRequired": "Richiesto",
   "validationInvalidEmail": "Email non valida",
-  "validationInvalidPhone": "Telefono non valido"
+  "validationInvalidPhone": "Telefono non valido",
+  "validationNameOrLastNameRequired": "Inserire almeno nome o cognome"
 
   ,"agendaAdd": "Aggiungi"
-  ,"agendaAddAppointment": "Aggiungi appuntamento"
-  ,"agendaAddBlock": "Aggiungi blocco"
+  ,"agendaAddTitle": "Aggiungi un..."
+  ,"agendaAddAppointment": "Nuovo appuntamento"
+  ,"agendaAddBlock": "Nuovo blocco"
   ,"appointmentDialogTitleNew": "Nuovo appuntamento"
   ,"appointmentDialogTitleEdit": "Modifica appuntamento"
   ,"formDate": "Data"
@@ -171,7 +175,47 @@
   "serviceSeedServiceFaceDescription": "Pulizia e trattamento illuminante",
   "serviceDuplicateCopyWord": "Copia",
   "moveAppointmentConfirmTitle": "Confermi lo spostamento?",
-  "moveAppointmentConfirmMessage": "L'appuntamento verrà spostato a {newTime} per {staffName}.",
-  "@moveAppointmentConfirmMessage": {"placeholders": {"newTime": {"type": "String"}, "staffName": {"type": "String"}}}
+  "moveAppointmentConfirmMessage": "L'appuntamento verrà spostato alle {newTime} per {staffName}.",
+  "@moveAppointmentConfirmMessage": {"placeholders": {"newTime": {"type": "String"}, "staffName": {"type": "String"}}},
+  "discardChangesTitle": "Modifiche non salvate",
+  "discardChangesMessage": "Hai delle modifiche non salvate. Vuoi scartarle?",
+  "actionDiscard": "Annulla",
+  "actionKeepEditing": "Continua a modificare",
+  "deleteClientConfirmTitle": "Eliminare il cliente?",
+  "deleteClientConfirmMessage": "Il cliente verrà eliminato definitivamente. Questa azione non può essere annullata.",
 
+  "sortByNameAsc": "Nome (A-Z)",
+  "sortByNameDesc": "Nome (Z-A)",
+  "sortByLastNameAsc": "Cognome (A-Z)",
+  "sortByLastNameDesc": "Cognome (Z-A)",
+  "sortByLastVisitDesc": "Ultima visita (recenti)",
+  "sortByLastVisitAsc": "Ultima visita (meno recenti)",
+  "sortByCreatedAtDesc": "Data creazione (nuovi)",
+  "sortByCreatedAtAsc": "Data creazione (vecchi)",
+
+  "clientAppointmentsTitle": "Appuntamenti di {clientName}",
+  "@clientAppointmentsTitle": {"placeholders": {"clientName": {"type": "String"}}},
+  "clientAppointmentsUpcoming": "Prossimi",
+  "clientAppointmentsPast": "Passati",
+  "clientAppointmentsEmpty": "Nessun appuntamento",
+
+  "staffFilterTooltip": "Filtra staff",
+  "staffFilterTitle": "Filtra staff",
+  "staffFilterAllTeam": "Tutto il team",
+  "staffFilterOnDuty": "Team di turno",
+  "staffFilterSelectMembers": "Seleziona membri",
+
+  "blockDialogTitleNew": "Nuovo blocco",
+  "blockDialogTitleEdit": "Modifica blocco",
+  "blockAllDay": "Giornata intera",
+  "blockStartTime": "Ora inizio",
+  "blockEndTime": "Ora fine",
+  "blockSelectStaff": "Seleziona staff",
+  "blockSelectStaffError": "Seleziona almeno uno staff",
+  "blockTimeError": "L'ora di fine deve essere successiva all'ora di inizio",
+  "blockReason": "Motivo (opzionale)",
+  "blockReasonHint": "Es. Riunione, Pausa, ecc.",
+
+  "sortByTitle": "Ordina per",
+  "selectStaffTitle": "Seleziona staff"
 }

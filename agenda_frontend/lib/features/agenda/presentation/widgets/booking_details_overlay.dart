@@ -12,6 +12,7 @@ Future<void> showBookingDetailsOverlay(
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useRootNavigator: true,
     builder: (_) => _BookingDetailsSheet(bookingId: bookingId),
   );
 }

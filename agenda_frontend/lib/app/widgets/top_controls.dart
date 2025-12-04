@@ -1,7 +1,10 @@
+import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_frontend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_frontend/app/widgets/top_controls_scaffold.dart';
-import 'package:agenda_frontend/features/agenda/providers/staff_providers.dart';
+import 'package:agenda_frontend/core/models/location.dart';
+import 'package:agenda_frontend/core/widgets/app_bottom_sheet.dart';
+import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -29,7 +32,10 @@ class TopControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final formFactor = ref.watch(formFactorProvider);
+
     return TopControlsScaffold(
+      applyLayoutInset: formFactor != AppFormFactor.mobile,
       builder: TopControlsBuilder.adaptive(
         mobile: (context, data) => _buildMobile(context, data, ref),
         tablet: (context, data) => _buildTablet(context, data, ref),
@@ -258,36 +264,21 @@ class TopControls extends ConsumerWidget {
     TopControlsData data, {
     bool tablet = false,
   }) async {
-    await showModalBottomSheet(
+    final result = await AppBottomSheet.show<int>(
       context: context,
-      builder: (_) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              for (final loc in data.locations)
-                ListTile(
-                  leading: tablet
-                      ? const Icon(Icons.place_outlined)
-                      : Icon(
-                          loc.id == data.currentLocation.id
-                              ? Icons.check_circle_outline
-                              : Icons.place_outlined,
-                        ),
-                  title: Text(loc.name),
-                  onTap: () {
-                    data.locationController.set(loc.id);
-                    Navigator.of(context).pop();
-                  },
-                  trailing: tablet && loc.id == data.currentLocation.id
-                      ? const Icon(Icons.check)
-                      : null,
-                ),
-            ],
-          ),
-        );
-      },
+      builder: (ctx) => _LocationSheetContent(
+        locations: data.locations,
+        currentLocationId: data.currentLocation.id,
+        title: data.l10n.agendaSelectLocation,
+        onSelected: (id) => Navigator.of(ctx).pop(id),
+      ),
+      useRootNavigator: true,
+      padding: EdgeInsets.zero,
     );
+
+    if (result != null) {
+      data.locationController.set(result);
+    }
   }
 
   _StaffWeekMeta _resolveWeekMeta(TopControlsData data) {
@@ -340,4 +331,77 @@ class _StaffWeekMeta {
 
   final String label;
   final DateTime effectivePickerDate;
+}
+
+/// Content widget for the location bottom sheet, consistent with other dropdowns.
+class _LocationSheetContent extends StatelessWidget {
+  const _LocationSheetContent({
+    required this.locations,
+    required this.currentLocationId,
+    required this.title,
+    required this.onSelected,
+  });
+
+  final List<Location> locations;
+  final int currentLocationId;
+  final String title;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Divider(height: 1, color: Colors.grey.withOpacity(0.35)),
+        ...locations.map((loc) {
+          final isSelected = loc.id == currentLocationId;
+          return InkWell(
+            onTap: () => onSelected(loc.id),
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                vertical: 14,
+                horizontal: 16,
+              ),
+              color: isSelected
+                  ? colorScheme.primary.withOpacity(0.08)
+                  : Colors.transparent,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      loc.name,
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  if (isSelected)
+                    Icon(Icons.check, size: 20, color: colorScheme.primary),
+                ],
+              ),
+            ),
+          );
+        }),
+        SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
+      ],
+    );
+  }
 }

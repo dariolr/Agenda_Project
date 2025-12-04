@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/l10n/l10_extension.dart';
+import '../core/widgets/adaptive_dropdown.dart';
+import '../features/agenda/presentation/dialogs/add_block_dialog.dart';
 import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
 import '../features/agenda/presentation/widgets/appointment_dialog.dart';
 import '../features/agenda/providers/date_range_provider.dart';
@@ -55,12 +57,19 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         ),
         body: Row(
           children: [
-            NavigationRail(
-              selectedIndex: navigationShell.currentIndex,
-              onDestinationSelected: (index) => _goBranch(index),
-              labelType: NavigationRailLabelType.none,
-              useIndicator: false, // disattiva highlight di sistema su tap
-              destinations: railDestinations,
+            Theme(
+              data: Theme.of(context).copyWith(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+              ),
+              child: NavigationRail(
+                selectedIndex: navigationShell.currentIndex,
+                onDestinationSelected: (index) => _goBranch(index),
+                labelType: NavigationRailLabelType.none,
+                useIndicator: false, // disattiva highlight di sistema su tap
+                destinations: railDestinations,
+              ),
             ),
             _RailDivider(
               topInset: layoutConfig.headerHeight,
@@ -76,6 +85,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isAgenda = navigationShell.currentIndex == 0;
     final isClients = navigationShell.currentIndex == 1;
     final isServices = navigationShell.currentIndex == 2;
+    final bottomNavColor =
+        Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
+        Theme.of(context).colorScheme.surface;
     return Scaffold(
       appBar: AppBar(
         title: isAgenda
@@ -96,19 +108,28 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                         : null)),
       ),
       body: navigationShell,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: navigationShell.currentIndex,
-        onTap: (index) => _goBranch(index),
-        type: BottomNavigationBarType.fixed,
-        items: destinations
-            .map(
-              (d) => BottomNavigationBarItem(
-                icon: Icon(d.iconData),
-                activeIcon: Icon(d.selectedIconData),
-                label: d.label,
-              ),
-            )
-            .toList(),
+      bottomNavigationBar: ColoredBox(
+        color: bottomNavColor,
+        child: SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          minimum: const EdgeInsets.only(bottom: 10),
+          child: BottomNavigationBar(
+            currentIndex: navigationShell.currentIndex,
+            onTap: (index) => _goBranch(index),
+            type: BottomNavigationBarType.fixed,
+            items: destinations
+                .map(
+                  (d) => BottomNavigationBarItem(
+                    icon: Icon(d.iconData),
+                    activeIcon: Icon(d.selectedIconData),
+                    label: d.label,
+                  ),
+                )
+                .toList(),
+          ),
+        ),
       ),
     );
   }
@@ -129,81 +150,57 @@ class _AgendaAddAction extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final agendaDate = ref.watch(agendaDateProvider);
-    if (compact) {
-      return Padding(
-        padding: const EdgeInsets.only(left: 8, right: 16),
-        child: PopupMenuButton<String>(
-          tooltip: l10n.agendaAdd,
-          icon: const Icon(Icons.add_outlined, size: 22),
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'appointment',
-              child: Text(l10n.agendaAddAppointment),
-            ),
-            PopupMenuItem(value: 'block', child: Text(l10n.agendaAddBlock)),
-          ],
-          onSelected: (value) async {
-            if (value == 'appointment') {
-              await showAppointmentDialog(context, ref, date: agendaDate);
-            } else if (value == 'block') {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(l10n.agendaAddBlock)));
-            }
-          },
-        ),
-      );
-    }
+    final scheme = Theme.of(context).colorScheme;
+    final onContainer = scheme.onSecondaryContainer;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: PopupMenuButton<String>(
-        tooltip: l10n.agendaAdd,
-        itemBuilder: (context) => [
-          PopupMenuItem(
+      child: AdaptiveDropdown<String>(
+        modalTitle: l10n.agendaAddTitle,
+        alignment: AdaptiveDropdownAlignment.right,
+        verticalPosition: AdaptiveDropdownVerticalPosition.above,
+        forcePopup: true,
+        hideTriggerWhenOpen: true,
+        popupWidth: 200,
+        items: [
+          AdaptiveDropdownItem(
             value: 'appointment',
             child: Text(l10n.agendaAddAppointment),
           ),
-          PopupMenuItem(value: 'block', child: Text(l10n.agendaAddBlock)),
+          AdaptiveDropdownItem(
+            value: 'block',
+            child: Text(l10n.agendaAddBlock),
+          ),
         ],
         onSelected: (value) {
           if (value == 'appointment') {
             showAppointmentDialog(context, ref, date: agendaDate);
           } else if (value == 'block') {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(l10n.agendaAddBlock)));
+            showAddBlockDialog(context, ref, date: agendaDate);
           }
         },
-        child: Builder(
-          builder: (buttonContext) {
-            final scheme = Theme.of(buttonContext).colorScheme;
-            final onContainer = scheme.onSecondaryContainer;
-            return Material(
-              elevation: 0,
-              color: scheme.secondaryContainer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 28, 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_outlined, size: 22, color: onContainer),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.agendaAdd,
-                      style: TextStyle(
-                        color: onContainer,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+        child: Material(
+          elevation: 0,
+          color: scheme.secondaryContainer,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_outlined, size: 22, color: onContainer),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.agendaAdd,
+                  style: TextStyle(
+                    color: onContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -217,91 +214,57 @@ class _ServicesAddAction extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    if (compact) {
-      return Padding(
-        padding: const EdgeInsets.only(left: 8, right: 16),
-        child: PopupMenuButton<String>(
-          tooltip: l10n.agendaAdd,
-          icon: const Icon(Icons.add_outlined, size: 22),
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'category',
-              child: Text(l10n.createCategoryButtonLabel),
-            ),
-            PopupMenuItem(
-              value: 'service',
-              child: Text(l10n.servicesNewServiceMenu),
-            ),
-          ],
-          onSelected: (value) async {
-            if (value == 'category') {
-              await showCategoryDialog(context, ref);
-            } else if (value == 'service') {
-              await showServiceDialog(
-                context,
-                ref,
-                requireCategorySelection: true,
-              );
-            }
-          },
-        ),
-      );
-    }
+    final scheme = Theme.of(context).colorScheme;
+    final onContainer = scheme.onSecondaryContainer;
+
     return Padding(
-      padding: const EdgeInsets.only(left: 8, right: 24),
-      child: PopupMenuButton<String>(
-        tooltip: l10n.agendaAdd,
-        itemBuilder: (context) => [
-          PopupMenuItem(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: AdaptiveDropdown<String>(
+        modalTitle: l10n.agendaAdd,
+        alignment: AdaptiveDropdownAlignment.right,
+        verticalPosition: AdaptiveDropdownVerticalPosition.above,
+        forcePopup: true,
+        hideTriggerWhenOpen: true,
+        popupWidth: 200,
+        items: [
+          AdaptiveDropdownItem(
             value: 'category',
             child: Text(l10n.createCategoryButtonLabel),
           ),
-          PopupMenuItem(
+          AdaptiveDropdownItem(
             value: 'service',
             child: Text(l10n.servicesNewServiceMenu),
           ),
         ],
-        onSelected: (value) async {
+        onSelected: (value) {
           if (value == 'category') {
-            await showCategoryDialog(context, ref);
+            showCategoryDialog(context, ref);
           } else if (value == 'service') {
-            await showServiceDialog(
-              context,
-              ref,
-              requireCategorySelection: true,
-            );
+            showServiceDialog(context, ref, requireCategorySelection: true);
           }
         },
-        child: Builder(
-          builder: (buttonContext) {
-            final scheme = Theme.of(buttonContext).colorScheme;
-            final onContainer = scheme.onSecondaryContainer;
-            return Material(
-              elevation: 0,
-              color: scheme.secondaryContainer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 28, 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_outlined, size: 22, color: onContainer),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.agendaAdd,
-                      style: TextStyle(
-                        color: onContainer,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+        child: Material(
+          elevation: 0,
+          color: scheme.secondaryContainer,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_outlined, size: 22, color: onContainer),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.agendaAdd,
+                  style: TextStyle(
+                    color: onContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -317,16 +280,42 @@ class _ClientsAddAction extends ConsumerWidget {
     final l10n = context.l10n;
     if (compact) {
       return Padding(
-        padding: const EdgeInsets.only(left: 8, right: 16),
-        child: IconButton(
-          tooltip: l10n.clientsNew,
-          icon: const Icon(Icons.add_outlined, size: 22),
-          onPressed: () async {
-            await showDialog(
-              context: context,
-              builder: (_) => const ClientEditDialog(),
-            );
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: GestureDetector(
+          onTap: () async {
+            await showClientEditDialog(context, ref);
           },
+          child: Builder(
+            builder: (buttonContext) {
+              final scheme = Theme.of(buttonContext).colorScheme;
+              final onContainer = scheme.onSecondaryContainer;
+              return Material(
+                elevation: 0,
+                color: scheme.secondaryContainer,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_outlined, size: 22, color: onContainer),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.agendaAdd,
+                        style: TextStyle(
+                          color: onContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       );
     }
@@ -334,10 +323,7 @@ class _ClientsAddAction extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: GestureDetector(
         onTap: () async {
-          await showDialog(
-            context: context,
-            builder: (_) => const ClientEditDialog(),
-          );
+          await showClientEditDialog(context, ref);
         },
         child: Builder(
           builder: (buttonContext) {
@@ -547,7 +533,6 @@ class _NavIconState extends State<_NavIcon> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final accent = scheme.secondary;
 
     final iconColor = scheme.onSecondary.withOpacity(
       widget.selected ? 0.95 : 0.7,
@@ -555,12 +540,11 @@ class _NavIconState extends State<_NavIcon> {
 
     Color backgroundColor = Colors.transparent;
 
-    if (widget.selected) {
-      // effetto "selected": fill pieno
-      backgroundColor = accent;
-    } else if (_hovering) {
-      // effetto "hover": fill leggero
-      backgroundColor = scheme.onSecondary.withOpacity(0.08);
+    if (widget.selected || _hovering) {
+      // effetto "selected" o "hover": fill leggero
+      backgroundColor = scheme.onSecondary.withOpacity(
+        widget.selected ? 0.11 : 0.08,
+      );
     }
 
     final baseTheme = Theme.of(context);
