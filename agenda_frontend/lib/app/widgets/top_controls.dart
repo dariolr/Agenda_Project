@@ -1,5 +1,7 @@
 import 'package:agenda_frontend/app/widgets/agenda_control_components.dart';
+import 'package:agenda_frontend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_frontend/app/widgets/top_controls_scaffold.dart';
+import 'package:agenda_frontend/features/agenda/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -53,7 +55,7 @@ class TopControls extends ConsumerWidget {
       selectedDate = weekMeta.effectivePickerDate;
     }
     return Row(
-      mainAxisSize: MainAxisSize.max,
+      mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
           tooltip: todayLabel ?? data.l10n.agendaToday,
@@ -61,7 +63,7 @@ class TopControls extends ConsumerWidget {
           iconSize: 22,
           onPressed: data.isToday ? null : data.dateController.setToday,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         AgendaDateSwitcher(
           label: label,
           selectedDate: selectedDate,
@@ -89,8 +91,7 @@ class TopControls extends ConsumerWidget {
           useWeekRangePicker: mode == TopControlsMode.staff,
           isCompact: compact,
         ),
-
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         if (data.locations.length > 1)
           IconButton(
             tooltip: data.l10n.agendaSelectLocation,
@@ -100,6 +101,9 @@ class TopControls extends ConsumerWidget {
               await _showLocationSheet(context, data);
             },
           ),
+        if (mode == TopControlsMode.agenda &&
+            ref.watch(staffForCurrentLocationProvider).length > 1)
+          const AgendaStaffFilterSelector(),
       ],
     );
   }
@@ -168,6 +172,9 @@ class TopControls extends ConsumerWidget {
               await _showLocationSheet(context, data, tablet: true);
             },
           ),
+        if (mode == TopControlsMode.agenda &&
+            ref.watch(staffForCurrentLocationProvider).length > 1)
+          const AgendaStaffFilterSelector(),
       ],
     );
   }
@@ -220,16 +227,22 @@ class TopControls extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 16),
-        if (data.locations.length > 1)
-          Flexible(
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: AgendaLocationSelector(
-                locations: data.locations,
-                current: data.currentLocation,
-                onSelected: data.locationController.set,
-              ),
+        if (data.locations.length > 1) ...[
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AgendaLocationSelector(
+              locations: data.locations,
+              current: data.currentLocation,
+              onSelected: data.locationController.set,
             ),
+          ),
+          const SizedBox(width: 12),
+        ],
+        if (mode == TopControlsMode.agenda &&
+            ref.watch(staffForCurrentLocationProvider).length > 1)
+          const Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AgendaStaffFilterSelector(isCompact: false),
           ),
       ],
     );
