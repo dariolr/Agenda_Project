@@ -94,7 +94,7 @@
   "formLastName": "Cognome",
   "formEmail": "Email",
   "formPhone": "Telefono",
-  "formNotes": "Note",
+  "formNotes": "Note (non visibile al cliente)",
   "validationRequired": "Richiesto",
   "validationInvalidEmail": "Email non valida",
   "validationInvalidPhone": "Telefono non valido",
@@ -208,8 +208,8 @@
   "blockDialogTitleNew": "Nuovo blocco",
   "blockDialogTitleEdit": "Modifica blocco",
   "blockAllDay": "Giornata intera",
-  "blockStartTime": "Ora inizio",
-  "blockEndTime": "Ora fine",
+  "blockStartTime": "Orario inizio",
+  "blockEndTime": "Orario fine",
   "blockSelectStaff": "Seleziona staff",
   "blockSelectStaffError": "Seleziona almeno uno staff",
   "blockTimeError": "L'ora di fine deve essere successiva all'ora di inizio",
@@ -217,5 +217,31 @@
   "blockReasonHint": "Es. Riunione, Pausa, ecc.",
 
   "sortByTitle": "Ordina per",
-  "selectStaffTitle": "Seleziona staff"
+  "selectStaffTitle": "Seleziona staff",
+
+  "addClientToAppointment": "Aggiungi un cliente all'appuntamento",
+  "clientOptionalHint": "Lascia il campo vuoto se non vuoi associare un cliente all'appuntamento",
+  "selectClientTitle": "Seleziona cliente",
+  "noClientSelected": "Nessun cliente selezionato",
+  "removeClient": "Rimuovi cliente",
+  "searchClientPlaceholder": "Cerca cliente...",
+  "createNewClient": "Crea nuovo cliente",
+  "noClientForAppointment": "Nessun cliente per l'appuntamento",
+  "noService": "Nessun servizio",
+
+  "formServices": "Servizi",
+  "servicesSelectedCount": "{count, plural, =1{1 servizio selezionato} other{{count} servizi selezionati}}",
+  "@servicesSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addService": "Aggiungi servizio",
+  "selectService": "Seleziona un servizio",
+  "noServicesAdded": "Nessun servizio aggiunto",
+  "atLeastOneServiceRequired": "Aggiungi almeno un servizio completo",
+  "notesPlaceholder": "Note sull'appuntamento...",
+  "noStaffAvailable": "Nessuno staff disponibile"
 }

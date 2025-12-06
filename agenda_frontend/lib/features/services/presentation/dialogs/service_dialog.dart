@@ -1,4 +1,5 @@
 import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
+import 'package:agenda_frontend/app/theme/app_spacing.dart';
 import 'package:agenda_frontend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_frontend/features/agenda/providers/location_providers.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,9 @@ import '../../../../core/models/service.dart';
 import '../../../../core/utils/price_utils.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
+import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../../core/widgets/labeled_form_field.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../providers/services_provider.dart';
 import '../../utils/service_validators.dart';
@@ -70,8 +73,9 @@ class _SwitchTile extends StatelessWidget {
                 value: value,
                 onChanged: enabled ? onChanged : null,
                 activeColor: Theme.of(context).colorScheme.primary,
-                activeTrackColor:
-                    Theme.of(context).colorScheme.primary.withOpacity(0.35),
+                activeTrackColor: Theme.of(
+                  context,
+                ).colorScheme.primary.withOpacity(0.35),
               ),
             ],
           ),
@@ -92,7 +96,9 @@ Future<void> showServiceDialog(
   final allServices = ref.read(servicesProvider);
   final categories = ref.read(serviceCategoriesProvider);
   final currencyCode = ref.read(effectiveCurrencyProvider);
-  final currencySymbol = NumberFormat.currency(name: currencyCode).currencySymbol;
+  final currencySymbol = NumberFormat.currency(
+    name: currencyCode,
+  ).currencySymbol;
   final isDesktop = ref.read(formFactorProvider) == AppFormFactor.desktop;
 
   final nameController = TextEditingController(text: service?.name ?? '');
@@ -105,7 +111,9 @@ Future<void> showServiceDialog(
           )
         : '',
   );
-  final descController = TextEditingController(text: service?.description ?? '');
+  final descController = TextEditingController(
+    text: service?.description ?? '',
+  );
 
   int? selectedCategory = requireCategorySelection
       ? (service?.categoryId ?? preselectedCategoryId)
@@ -177,8 +185,9 @@ Future<void> showServiceDialog(
         businessId: ref.read(currentBusinessProvider).id,
         categoryId: selectedCategory!,
         name: normalizedName,
-        description:
-            descController.text.trim().isEmpty ? null : descController.text.trim(),
+        description: descController.text.trim().isEmpty
+            ? null
+            : descController.text.trim(),
         duration: selectedDuration,
         processingTime: processingToSave,
         blockedTime: blockedToSave,
@@ -217,129 +226,156 @@ Future<void> showServiceDialog(
   Widget buildBody(BuildContext context, void Function(VoidCallback) setState) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DropdownButtonFormField<int>(
-          value: selectedCategory,
-          decoration: InputDecoration(
-            labelText: context.l10n.fieldCategoryRequiredLabel,
-            errorText: categoryError ? context.l10n.validationRequired : null,
-          ),
-          items: [
-            for (final c in categories)
-              DropdownMenuItem(value: c.id, child: Text(c.name)),
-          ],
-          onChanged: (v) => setState(() {
-            selectedCategory = v;
-            categoryError = false;
-          }),
-        ),
-        TextField(
-          controller: nameController,
-          decoration: InputDecoration(
-            labelText: context.l10n.fieldNameRequiredLabel,
-            errorText: nameError ? context.l10n.fieldNameRequiredError : null,
-          ),
-        ),
-        const SizedBox(height: 10),
-        const SizedBox(height: 10),
-        TextField(
-          controller: descController,
-          maxLines: 3,
-          decoration: InputDecoration(
-            labelText: context.l10n.fieldDescriptionLabel,
-            alignLabelWithHint: true,
-            floatingLabelBehavior: FloatingLabelBehavior.always,
-          ),
-        ),
-        const SizedBox(height: 10),
-        DropdownButtonFormField<int>(
-          value: selectedDuration,
-          decoration: InputDecoration(
-            labelText: context.l10n.fieldDurationRequiredLabel,
-            errorText:
-                durationError ? context.l10n.fieldDurationRequiredError : null,
-          ),
-          items: [
-            for (final (minutes, label) in _durationOptions(context))
-              DropdownMenuItem(value: minutes, child: Text(label)),
-          ],
-          onChanged: (v) => setState(() {
-            selectedDuration = v;
-            durationError = false;
-            if ((selectedDuration ?? 0) <= 0) {
-              additionalSelection = _AdditionalTimeSelection.none;
-              additionalMinutes = 0;
-            }
-          }),
-        ),
-        const SizedBox(height: 10),
-        if ((selectedDuration ?? 0) > 0) ...[
-          const SizedBox(height: 10),
-          DropdownButtonFormField<_AdditionalTimeSelection>(
-            value: additionalSelection,
+        LabeledFormField(
+          label: context.l10n.fieldCategoryRequiredLabel,
+          child: DropdownButtonFormField<int>(
+            value: selectedCategory,
             decoration: InputDecoration(
-              labelText: context.l10n.additionalTimeSwitch,
+              border: const OutlineInputBorder(),
+              isDense: true,
+              errorText: categoryError ? context.l10n.validationRequired : null,
             ),
             items: [
-              DropdownMenuItem(
-                value: _AdditionalTimeSelection.none,
-                child: Text(context.l10n.additionalTimeOptionNone),
-              ),
-              DropdownMenuItem(
-                value: _AdditionalTimeSelection.processing,
-                child: Text(context.l10n.additionalTimeOptionProcessing),
-              ),
-              DropdownMenuItem(
-                value: _AdditionalTimeSelection.blocked,
-                child: Text(context.l10n.additionalTimeOptionBlocked),
-              ),
+              for (final c in categories)
+                DropdownMenuItem(value: c.id, child: Text(c.name)),
             ],
-            onChanged: (sel) => setState(() {
-              additionalSelection = sel ?? _AdditionalTimeSelection.none;
-              if (additionalSelection == _AdditionalTimeSelection.none) {
+            onChanged: (v) => setState(() {
+              selectedCategory = v;
+              categoryError = false;
+            }),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.formRowSpacing),
+        LabeledFormField(
+          label: context.l10n.fieldNameRequiredLabel,
+          child: TextField(
+            controller: nameController,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              isDense: true,
+              errorText: nameError ? context.l10n.fieldNameRequiredError : null,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.formRowSpacing),
+        LabeledFormField(
+          label: context.l10n.fieldDescriptionLabel,
+          child: TextField(
+            controller: descController,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.formRowSpacing),
+        LabeledFormField(
+          label: context.l10n.fieldDurationRequiredLabel,
+          child: DropdownButtonFormField<int>(
+            value: selectedDuration,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              isDense: true,
+              errorText: durationError
+                  ? context.l10n.fieldDurationRequiredError
+                  : null,
+            ),
+            items: [
+              for (final (minutes, label) in _durationOptions(context))
+                DropdownMenuItem(value: minutes, child: Text(label)),
+            ],
+            onChanged: (v) => setState(() {
+              selectedDuration = v;
+              durationError = false;
+              if ((selectedDuration ?? 0) <= 0) {
+                additionalSelection = _AdditionalTimeSelection.none;
                 additionalMinutes = 0;
               }
             }),
           ),
-          if (additionalSelection != _AdditionalTimeSelection.none) ...[
-            const SizedBox(height: 10),
-            DropdownButtonFormField<int>(
-              value: additionalMinutes,
-              decoration: InputDecoration(
-                labelText:
-                    (additionalSelection == _AdditionalTimeSelection.processing)
-                        ? context.l10n.fieldProcessingTimeLabel
-                        : context.l10n.fieldBlockedTimeLabel,
+        ),
+        if ((selectedDuration ?? 0) > 0) ...[
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          LabeledFormField(
+            label: context.l10n.additionalTimeSwitch,
+            child: DropdownButtonFormField<_AdditionalTimeSelection>(
+              value: additionalSelection,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                isDense: true,
               ),
               items: [
-                for (final (minutes, label) in _bufferOptions(context))
-                  DropdownMenuItem(value: minutes, child: Text(label)),
+                DropdownMenuItem(
+                  value: _AdditionalTimeSelection.none,
+                  child: Text(context.l10n.additionalTimeOptionNone),
+                ),
+                DropdownMenuItem(
+                  value: _AdditionalTimeSelection.processing,
+                  child: Text(context.l10n.additionalTimeOptionProcessing),
+                ),
+                DropdownMenuItem(
+                  value: _AdditionalTimeSelection.blocked,
+                  child: Text(context.l10n.additionalTimeOptionBlocked),
+                ),
               ],
-              onChanged: (v) => setState(() {
-                additionalMinutes = v ?? 0;
+              onChanged: (sel) => setState(() {
+                additionalSelection = sel ?? _AdditionalTimeSelection.none;
+                if (additionalSelection == _AdditionalTimeSelection.none) {
+                  additionalMinutes = 0;
+                }
               }),
+            ),
+          ),
+          if (additionalSelection != _AdditionalTimeSelection.none) ...[
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            LabeledFormField(
+              label:
+                  (additionalSelection == _AdditionalTimeSelection.processing)
+                  ? context.l10n.fieldProcessingTimeLabel
+                  : context.l10n.fieldBlockedTimeLabel,
+              child: DropdownButtonFormField<int>(
+                value: additionalMinutes,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                items: [
+                  for (final (minutes, label) in _bufferOptions(context))
+                    DropdownMenuItem(value: minutes, child: Text(label)),
+                ],
+                onChanged: (v) => setState(() {
+                  additionalMinutes = v ?? 0;
+                }),
+              ),
             ),
           ],
         ],
-        const SizedBox(height: 10),
-        TextField(
-          controller: priceController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.,\-]')),
-          ],
-          decoration: InputDecoration(
-            labelText: context.l10n.fieldPriceLabel,
-            prefixText: '$currencySymbol ',
+        const SizedBox(height: AppSpacing.formRowSpacing),
+        LabeledFormField(
+          label: context.l10n.fieldPriceLabel,
+          child: TextField(
+            controller: priceController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9.,\-]')),
+            ],
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              isDense: true,
+              prefixText: '$currencySymbol ',
+            ),
+            enabled: !isFree,
+            onChanged: (_) {
+              if (priceController.text.trim().isEmpty && isPriceStartingFrom) {
+                setState(() => isPriceStartingFrom = false);
+              }
+            },
           ),
-          enabled: !isFree,
-          onChanged: (_) {
-            if (priceController.text.trim().isEmpty && isPriceStartingFrom) {
-              setState(() => isPriceStartingFrom = false);
-            }
-          },
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.formRowSpacing),
         _SwitchTile(
           title: context.l10n.freeServiceSwitch,
           value: isFree,
@@ -374,40 +410,68 @@ Future<void> showServiceDialog(
     );
   }
 
-  final dialogTitle =
-      service == null ? context.l10n.newServiceTitle : context.l10n.editServiceTitle;
+  final dialogTitle = service == null
+      ? context.l10n.newServiceTitle
+      : context.l10n.editServiceTitle;
 
   final builder = StatefulBuilder(
     builder: (context, setState) {
       final body = buildBody(context, setState);
-      final actions = [
-        TextButton(
+
+      final cancelButton = SizedBox(
+        width: AppButtonStyles.dialogButtonWidth,
+        child: AppOutlinedActionButton(
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+          padding: AppButtonStyles.dialogButtonPadding,
           child: Text(context.l10n.actionCancel),
         ),
-        ElevatedButton(
+      );
+
+      final saveButton = SizedBox(
+        width: AppButtonStyles.dialogButtonWidth,
+        child: AppFilledButton(
           onPressed: () async {
             await handleSave();
             setState(() {});
           },
+          padding: AppButtonStyles.dialogButtonPadding,
           child: Text(context.l10n.actionSave),
         ),
-      ];
-
-      final bottomActions = actions
-          .map(
-            (a) => ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48, minWidth: 110),
-              child: a,
-            ),
-          )
-          .toList();
+      );
 
       if (isDesktop) {
-        return AppFormDialog(
-          title: Text(dialogTitle),
-          content: body,
-          actions: actions,
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    dialogTitle,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 16),
+                  Flexible(child: SingleChildScrollView(child: body)),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      cancelButton,
+                      const SizedBox(width: 8),
+                      saveButton,
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       }
 
@@ -436,7 +500,7 @@ Future<void> showServiceDialog(
                   alignment: WrapAlignment.end,
                   spacing: 8,
                   runSpacing: 8,
-                  children: bottomActions,
+                  children: [cancelButton, saveButton],
                 ),
               ),
               SizedBox(height: 32 + MediaQuery.of(context).viewPadding.bottom),

@@ -7,7 +7,7 @@ import '../core/l10n/l10_extension.dart';
 import '../core/widgets/adaptive_dropdown.dart';
 import '../features/agenda/presentation/dialogs/add_block_dialog.dart';
 import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
-import '../features/agenda/presentation/widgets/appointment_dialog.dart';
+import '../features/agenda/presentation/widgets/booking_dialog.dart';
 import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
@@ -174,7 +174,7 @@ class _AgendaAddAction extends ConsumerWidget {
         ],
         onSelected: (value) {
           if (value == 'appointment') {
-            showAppointmentDialog(context, ref, date: agendaDate);
+            showBookingDialog(context, ref, date: agendaDate);
           } else if (value == 'block') {
             showAddBlockDialog(context, ref, date: agendaDate);
           }

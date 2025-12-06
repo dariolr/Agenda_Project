@@ -92,20 +92,29 @@ String formatPhoneWithPrefix(String prefix, String number) {
 class PhoneInputField extends StatefulWidget {
   const PhoneInputField({
     super.key,
-    required this.labelText,
+    this.labelText,
     required this.defaultPrefix,
     this.initialPhone,
     this.onChanged,
     this.validator,
     this.textInputAction = TextInputAction.next,
+    this.isDense = false,
+    this.useOutlineBorder = false,
   });
 
-  final String labelText;
+  /// Label opzionale. Se null, il campo non mostra label interna.
+  final String? labelText;
   final String defaultPrefix;
   final String? initialPhone;
   final ValueChanged<String>? onChanged;
   final FormFieldValidator<String>? validator;
   final TextInputAction textInputAction;
+
+  /// Se true, usa InputDecoration.isDense = true.
+  final bool isDense;
+
+  /// Se true, usa OutlineInputBorder invece del default UnderlineInputBorder.
+  final bool useOutlineBorder;
 
   @override
   State<PhoneInputField> createState() => PhoneInputFieldState();
@@ -169,6 +178,8 @@ class PhoneInputFieldState extends State<PhoneInputField> {
       controller: _controller,
       decoration: InputDecoration(
         labelText: widget.labelText,
+        isDense: widget.isDense,
+        border: widget.useOutlineBorder ? const OutlineInputBorder() : null,
         prefixIcon: _PrefixDropdown(
           selectedPrefix: _selectedPrefix,
           onChanged: (newPrefix) {

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,6 +27,9 @@ class StaffHeaderRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final headerHeight = ref.watch(layoutConfigProvider).headerHeight;
+    final avatarDefault = LayoutConfig.avatarSizeFor(context);
+    // Ensure avatar is not larger than available header space to avoid overflow
+    final avatarSize = math.min(avatarDefault, headerHeight * 0.55);
     final highlightedId = ref.watch(highlightedStaffIdProvider);
 
     // ⚠️ Nessuna SizedBox iniziale qui! Lo spazio per l'ora è già messo nel parent.
@@ -59,7 +64,7 @@ class StaffHeaderRow extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 StaffCircleAvatar(
-                  height: LayoutConfig.avatarSizeFor(context),
+                  height: avatarSize,
                   color: staff.color,
                   isHighlighted: isHighlighted,
                   initials: initials,
