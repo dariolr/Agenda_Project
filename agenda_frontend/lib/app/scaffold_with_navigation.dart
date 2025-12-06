@@ -114,7 +114,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           top: false,
           left: false,
           right: false,
-          minimum: const EdgeInsets.only(bottom: 10),
+          minimum: const EdgeInsets.only(bottom: 15),
           child: BottomNavigationBar(
             currentIndex: navigationShell.currentIndex,
             onTap: (index) => _goBranch(index),
@@ -185,21 +185,29 @@ class _AgendaAddAction extends ConsumerWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           clipBehavior: Clip.antiAlias,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add_outlined, size: 22, color: onContainer),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.agendaAdd,
-                  style: TextStyle(
-                    color: onContainer,
-                    fontWeight: FontWeight.w600,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: compact
+                ? Text(
+                    l10n.agendaAdd,
+                    style: TextStyle(
+                      color: onContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_outlined, size: 22, color: onContainer),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.agendaAdd,
+                        style: TextStyle(
+                          color: onContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
@@ -249,21 +257,29 @@ class _ServicesAddAction extends ConsumerWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           clipBehavior: Clip.antiAlias,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add_outlined, size: 22, color: onContainer),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.agendaAdd,
-                  style: TextStyle(
-                    color: onContainer,
-                    fontWeight: FontWeight.w600,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: compact
+                ? Text(
+                    l10n.agendaAdd,
+                    style: TextStyle(
+                      color: onContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_outlined, size: 22, color: onContainer),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.agendaAdd,
+                        style: TextStyle(
+                          color: onContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
@@ -297,20 +313,16 @@ class _ClientsAddAction extends ConsumerWidget {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_outlined, size: 22, color: onContainer),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.agendaAdd,
-                        style: TextStyle(
-                          color: onContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    l10n.agendaAdd,
+                    style: TextStyle(
+                      color: onContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               );
