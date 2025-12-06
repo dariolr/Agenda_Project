@@ -22,11 +22,11 @@ class ClientsNotifier extends Notifier<List<Client>> {
     return kMockClients;
   }
 
-  void addClient(Client client) {
-    state = [
-      ...state,
-      client.copyWith(id: _nextId++, createdAt: DateTime.now()),
-    ];
+  /// Aggiunge un nuovo cliente e restituisce il client con l'ID assegnato.
+  Client addClient(Client client) {
+    final newClient = client.copyWith(id: _nextId++, createdAt: DateTime.now());
+    state = [...state, newClient];
+    return newClient;
   }
 
   void updateClient(Client client) {
@@ -121,28 +121,34 @@ List<Client> _sortClients(List<Client> clients, ClientSortOption sort) {
 }
 
 /// Provider che restituisce la lista clienti ordinata secondo il criterio corrente
+/// Esclude i clienti archiviati (isArchived = true)
 final sortedClientsProvider = Provider<List<Client>>((ref) {
-  final clients = ref.watch(clientsProvider);
+  final clients = ref
+      .watch(clientsProvider)
+      .where((c) => !c.isArchived)
+      .toList();
   final sortOption = ref.watch(clientSortOptionProvider);
   return _sortClients(clients, sortOption);
 });
 
 // Ricerca base (case-insensitive su name + email + phone) con ordinamento
+// Esclude i clienti archiviati (isArchived = true)
 final clientsSearchProvider = Provider.family<List<Client>, String>((ref, q) {
   final sortOption = ref.watch(clientSortOptionProvider);
   final query = q.trim().toLowerCase();
 
   List<Client> result;
   if (query.isEmpty) {
-    result = ref.watch(clientsProvider);
+    result = ref.watch(clientsProvider).where((c) => !c.isArchived).toList();
   } else {
     result = ref
         .watch(clientsProvider)
         .where(
           (c) =>
-              c.name.toLowerCase().contains(query) ||
-              (c.email?.toLowerCase().contains(query) ?? false) ||
-              (c.phone?.toLowerCase().contains(query) ?? false),
+              !c.isArchived &&
+              (c.name.toLowerCase().contains(query) ||
+                  (c.email?.toLowerCase().contains(query) ?? false) ||
+                  (c.phone?.toLowerCase().contains(query) ?? false)),
         )
         .toList();
   }
@@ -161,7 +167,11 @@ final inactiveClientsProvider = Provider<List<Client>>((ref) {
   final limit = _now().subtract(const Duration(days: _kInactiveDays));
   return ref
       .watch(clientsProvider)
-      .where((c) => (c.lastVisit == null || c.lastVisit!.isBefore(limit)))
+      .where(
+        (c) =>
+            !c.isArchived &&
+            (c.lastVisit == null || c.lastVisit!.isBefore(limit)),
+      )
       .toList();
 });
 
@@ -169,14 +179,14 @@ final newClientsProvider = Provider<List<Client>>((ref) {
   final limit = _now().subtract(const Duration(days: _kNewDays));
   return ref
       .watch(clientsProvider)
-      .where((c) => c.createdAt.isAfter(limit))
+      .where((c) => !c.isArchived && c.createdAt.isAfter(limit))
       .toList();
 });
 
 final vipClientsProvider = Provider<List<Client>>((ref) {
   return ref
       .watch(clientsProvider)
-      .where((c) => c.tags?.contains('VIP') ?? false)
+      .where((c) => !c.isArchived && (c.tags?.contains('VIP') ?? false))
       .toList();
 });
 
@@ -184,7 +194,9 @@ final frequentClientsProvider = Provider<List<Client>>((ref) {
   // Placeholder: usa loyaltyPoints come proxy delle visite
   return ref
       .watch(clientsProvider)
-      .where((c) => (c.loyaltyPoints ?? 0) >= _kFrequentThreshold)
+      .where(
+        (c) => !c.isArchived && (c.loyaltyPoints ?? 0) >= _kFrequentThreshold,
+      )
       .toList();
 });
 

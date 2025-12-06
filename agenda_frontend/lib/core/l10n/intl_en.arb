@@ -94,7 +94,7 @@
   "formLastName": "Last name",
   "formEmail": "Email",
   "formPhone": "Phone",
-  "formNotes": "Notes",
+  "formNotes": "Notes (not visible to client)",
   "validationRequired": "Required",
   "validationInvalidEmail": "Invalid email",
   "validationInvalidPhone": "Invalid phone",
@@ -217,5 +217,31 @@
   "blockReasonHint": "E.g. Meeting, Break, etc.",
 
   "sortByTitle": "Sort by",
-  "selectStaffTitle": "Select staff"
+  "selectStaffTitle": "Select staff",
+
+  "addClientToAppointment": "Add a client to the appointment",
+  "clientOptionalHint": "Leave empty if you don't want to associate a client with the appointment",
+  "selectClientTitle": "Select client",
+  "noClientSelected": "No client selected",
+  "removeClient": "Remove client",
+  "searchClientPlaceholder": "Search client...",
+  "createNewClient": "Create new client",
+  "noClientForAppointment": "No client for the appointment",
+  "noService": "No service",
+
+  "formServices": "Services",
+  "servicesSelectedCount": "{count, plural, =1{1 service selected} other{{count} services selected}}",
+  "@servicesSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addService": "Add service",
+  "selectService": "Select service",
+  "noServicesAdded": "No services added",
+  "atLeastOneServiceRequired": "Add at least one complete service",
+  "notesPlaceholder": "Notes about the appointment...",
+  "noStaffAvailable": "No staff available"
 }

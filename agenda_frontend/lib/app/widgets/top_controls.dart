@@ -352,56 +352,70 @@ class _LocationSheetContent extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-          child: Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+    final maxHeight = MediaQuery.of(context).size.height * 0.8;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
-        Divider(height: 1, color: Colors.grey.withOpacity(0.35)),
-        ...locations.map((loc) {
-          final isSelected = loc.id == currentLocationId;
-          return InkWell(
-            onTap: () => onSelected(loc.id),
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                vertical: 14,
-                horizontal: 16,
-              ),
-              color: isSelected
-                  ? colorScheme.primary.withOpacity(0.08)
-                  : Colors.transparent,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      loc.name,
-                      style: TextStyle(
-                        color: colorScheme.onSurface,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                      ),
+          Divider(height: 1, color: Colors.grey.withOpacity(0.35)),
+          Expanded(
+            child: ListView.builder(
+              itemCount: locations.length,
+              itemBuilder: (ctx, index) {
+                final loc = locations[index];
+                final isSelected = loc.id == currentLocationId;
+                return InkWell(
+                  onTap: () => onSelected(loc.id),
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
+                    color: isSelected
+                        ? colorScheme.primary.withOpacity(0.08)
+                        : Colors.transparent,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            loc.name,
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                        if (isSelected)
+                          Icon(
+                            Icons.check,
+                            size: 20,
+                            color: colorScheme.primary,
+                          ),
+                      ],
                     ),
                   ),
-                  if (isSelected)
-                    Icon(Icons.check, size: 20, color: colorScheme.primary),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        }),
-        SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
-      ],
+          ),
+          SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
+        ],
+      ),
     );
   }
 }

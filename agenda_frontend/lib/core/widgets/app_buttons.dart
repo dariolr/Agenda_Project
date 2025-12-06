@@ -11,6 +11,15 @@ class AppButtonStyles {
     horizontal: 16,
   );
 
+  /// Larghezza standard per i pulsanti nei dialog (es. Annulla, Salva).
+  static const double dialogButtonWidth = 120.0;
+
+  /// Padding standard per i pulsanti nei dialog.
+  static const EdgeInsetsGeometry dialogButtonPadding = EdgeInsets.symmetric(
+    vertical: 12,
+    horizontal: 16,
+  );
+
   static ButtonStyle filled(
     BuildContext context, {
     Color? backgroundColor,

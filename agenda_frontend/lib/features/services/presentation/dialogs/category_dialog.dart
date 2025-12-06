@@ -1,4 +1,5 @@
 import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
+import 'package:agenda_frontend/app/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,7 +7,8 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
-import '../../../../core/widgets/app_dialogs.dart';
+import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../utils/service_validators.dart';
@@ -21,7 +23,9 @@ Future<void> showCategoryDialog(
   final isDesktop = ref.read(formFactorProvider) == AppFormFactor.desktop;
 
   final nameController = TextEditingController(text: category?.name ?? '');
-  final descController = TextEditingController(text: category?.description ?? '');
+  final descController = TextEditingController(
+    text: category?.description ?? '',
+  );
 
   bool nameError = false;
   bool duplicateError = false;
@@ -29,22 +33,33 @@ Future<void> showCategoryDialog(
   Widget buildContent(void Function(VoidCallback) setState) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          controller: nameController,
-          decoration: InputDecoration(
-            labelText: context.l10n.fieldNameRequiredLabel,
-            errorText: nameError
-                ? context.l10n.fieldNameRequiredError
-                : (duplicateError ? context.l10n.categoryDuplicateError : null),
+        LabeledFormField(
+          label: context.l10n.fieldNameRequiredLabel,
+          child: TextField(
+            controller: nameController,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              isDense: true,
+              errorText: nameError
+                  ? context.l10n.fieldNameRequiredError
+                  : (duplicateError
+                        ? context.l10n.categoryDuplicateError
+                        : null),
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: descController,
-          maxLines: 3,
-          decoration: InputDecoration(
-            labelText: context.l10n.fieldDescriptionLabel,
+        const SizedBox(height: AppSpacing.formRowSpacing),
+        LabeledFormField(
+          label: context.l10n.fieldDescriptionLabel,
+          child: TextField(
+            controller: descController,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
           ),
         ),
       ],
@@ -73,8 +88,9 @@ Future<void> showCategoryDialog(
       id: category?.id ?? DateTime.now().millisecondsSinceEpoch,
       businessId: ref.read(currentBusinessProvider).id,
       name: formattedName,
-      description:
-          descController.text.trim().isEmpty ? null : descController.text.trim(),
+      description: descController.text.trim().isEmpty
+          ? null
+          : descController.text.trim(),
       sortOrder: category?.sortOrder ?? allCategories.length,
     );
 
@@ -87,40 +103,65 @@ Future<void> showCategoryDialog(
     Navigator.pop(context);
   }
 
-  final title =
-      category == null ? context.l10n.newCategoryTitle : context.l10n.editCategoryTitle;
+  final title = category == null
+      ? context.l10n.newCategoryTitle
+      : context.l10n.editCategoryTitle;
 
   final builder = StatefulBuilder(
     builder: (ctx, setState) {
       final content = buildContent(setState);
-      final actions = [
-        TextButton(
+
+      final cancelButton = SizedBox(
+        width: AppButtonStyles.dialogButtonWidth,
+        child: AppOutlinedActionButton(
           onPressed: () => Navigator.pop(ctx),
+          padding: AppButtonStyles.dialogButtonPadding,
           child: Text(context.l10n.actionCancel),
         ),
-        ElevatedButton(
+      );
+
+      final saveButton = SizedBox(
+        width: AppButtonStyles.dialogButtonWidth,
+        child: AppFilledButton(
           onPressed: () async {
             await handleSave();
             setState(() {});
           },
+          padding: AppButtonStyles.dialogButtonPadding,
           child: Text(context.l10n.actionSave),
         ),
-      ];
-
-      final bottomActions = actions
-          .map(
-            (a) => ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48, minWidth: 110),
-              child: a,
-            ),
-          )
-          .toList();
+      );
 
       if (isDesktop) {
-        return AppFormDialog(
-          title: Text(title),
-          content: content,
-          actions: actions,
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(title, style: Theme.of(ctx).textTheme.headlineSmall),
+                  const SizedBox(height: 16),
+                  content,
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      cancelButton,
+                      const SizedBox(width: 8),
+                      saveButton,
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       }
 
@@ -136,10 +177,7 @@ Future<void> showCategoryDialog(
             children: [
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  title,
-                  style: Theme.of(ctx).textTheme.titleLarge,
-                ),
+                child: Text(title, style: Theme.of(ctx).textTheme.titleLarge),
               ),
               content,
               const SizedBox(height: 24),
@@ -149,7 +187,7 @@ Future<void> showCategoryDialog(
                   alignment: WrapAlignment.end,
                   spacing: 8,
                   runSpacing: 8,
-                  children: bottomActions,
+                  children: [cancelButton, saveButton],
                 ),
               ),
               SizedBox(height: 32 + MediaQuery.of(ctx).viewPadding.bottom),

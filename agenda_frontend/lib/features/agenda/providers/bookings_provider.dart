@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/booking.dart';
 import 'appointment_providers.dart';
+import 'business_providers.dart';
+import 'location_providers.dart';
 
 class BookingSummary {
   final int bookingId;
@@ -22,8 +24,30 @@ class BookingSummary {
 /// Gestisce i metadati delle prenotazioni (note, customerName, ecc.) e
 /// coordina le operazioni di alto livello (cancellazione prenotazione intera).
 class BookingsNotifier extends Notifier<Map<int, Booking>> {
+  int _nextId = 1;
+
   @override
   Map<int, Booking> build() => <int, Booking>{};
+
+  /// Crea una nuova prenotazione e restituisce il suo ID.
+  int createBooking({int? clientId, String? customerName, String? notes}) {
+    final business = ref.read(currentBusinessProvider);
+    final location = ref.read(currentLocationProvider);
+
+    final bookingId = _nextId++;
+    state = {
+      ...state,
+      bookingId: Booking(
+        id: bookingId,
+        businessId: business.id,
+        locationId: location.id,
+        clientId: clientId,
+        customerName: customerName,
+        notes: notes,
+      ),
+    };
+    return bookingId;
+  }
 
   /// Crea la prenotazione se non esiste già (idempotente).
   void ensureBooking({

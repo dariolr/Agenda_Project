@@ -1,4 +1,5 @@
 import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
+import 'package:agenda_frontend/app/theme/app_spacing.dart';
 import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
@@ -6,17 +7,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
-import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
+import '../../../../core/widgets/app_buttons.dart';
 import '../../../clients/domain/clients.dart';
+import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
+import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../domain/config/layout_config.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
-import '../../providers/business_providers.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
+import 'service_picker_field.dart';
 
 /// Show the Appointment dialog for creating or editing an appointment.
 Future<void> showAppointmentDialog(
@@ -41,16 +44,14 @@ Future<void> showAppointmentDialog(
   );
 
   if (presentation == _AppointmentPresentation.dialog) {
-    await showDialog(
-      context: context,
-      builder: (_) => content,
-    );
+    await showDialog(context: context, builder: (_) => content);
   } else {
     await AppBottomSheet.show(
       context: context,
       useRootNavigator: true,
       builder: (_) => content,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      heightFactor: AppBottomSheet.defaultHeightFactor,
     );
   }
 }
@@ -121,7 +122,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final isEdit = widget.initial != null;
     final isDialog = widget.presentation == _AppointmentPresentation.dialog;
 
+    final formFactor = ref.watch(formFactorProvider);
     final services = ref.watch(servicesProvider);
+    final serviceCategories = ref.watch(serviceCategoriesProvider);
     final variants = ref.watch(serviceVariantsProvider);
     final clients = ref.watch(clientsProvider);
     final staff = ref.watch(staffForCurrentLocationProvider);
@@ -146,130 +149,110 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final content = Form(
       key: _formKey,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Date
-            Row(
-              children: [
-                Expanded(
-                  child: _LabeledField(
-                    label: l10n.formDate,
-                    child: InkWell(
-                      onTap: _pickDate,
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                        child: Text(
-                          '${_date.day.toString().padLeft(2, '0')}/${_date.month.toString().padLeft(2, '0')}/${_date.year}',
+        constraints: isDialog
+            ? const BoxConstraints(maxWidth: 520)
+            : const BoxConstraints(maxWidth: double.infinity),
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: AppSpacing.formFirstRowSpacing),
+              // Client selection (first)
+              _ClientSelectionField(
+                clientId: _clientId,
+                clientName: _clientName,
+                clients: clients,
+                onClientSelected: (id, name) {
+                  setState(() {
+                    _clientId = id;
+                    _clientName = name;
+                  });
+                },
+                onClientRemoved: () {
+                  setState(() {
+                    _clientId = null;
+                    _clientName = '';
+                  });
+                },
+              ),
+              const SizedBox(height: AppSpacing.formRowSpacing),
+              // Date
+              Row(
+                children: [
+                  Expanded(
+                    child: _LabeledField(
+                      label: l10n.formDate,
+                      child: InkWell(
+                        onTap: _pickDate,
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          child: Text(DtFmt.shortDate(context, _date)),
                         ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _LabeledField(
-                    label: l10n.formTime,
-                    child: InkWell(
-                      onTap: _pickTime,
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(_time.format(context)),
-                            const Icon(Icons.schedule, size: 16),
-                          ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _LabeledField(
+                      label: l10n.formTime,
+                      child: InkWell(
+                        onTap: _pickTime,
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(_time.format(context)),
+                              const Icon(Icons.schedule, size: 16),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.formRowSpacing),
+              // Service
+              _LabeledField(
+                label: l10n.formService,
+                child: ServicePickerField(
+                  services: services,
+                  categories: serviceCategories,
+                  formFactor: formFactor,
+                  value: _serviceId,
+                  onChanged: (v) {
+                    setState(() {
+                      _serviceId = v;
+                      _serviceVariantId = null; // recalculated in build
+                    });
+                  },
+                  validator: (v) => v == null ? l10n.validationRequired : null,
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Service
-            _LabeledField(
-              label: l10n.formService,
-              child: DropdownButtonFormField<int>(
-                value: _serviceId,
-                items: [
-                  for (final s in services)
-                    DropdownMenuItem(value: s.id, child: Text(s.name)),
-                ],
-                onChanged: (v) {
-                  setState(() {
-                    _serviceId = v;
-                    _serviceVariantId = null; // recalculated in build
-                  });
-                },
-                validator: (v) => v == null ? l10n.validationRequired : null,
               ),
-            ),
-            const SizedBox(height: 12),
-            // Client (autocomplete)
-            _LabeledField(
-              label: l10n.formClient,
-              child: Autocomplete<_ClientItem>(
-                optionsBuilder: (TextEditingValue te) {
-                  final q = te.text.trim().toLowerCase();
-                  final list = clients;
-                  final results = <_ClientItem>[
-                    for (final c in list)
-                      if (q.isEmpty || c.name.toLowerCase().contains(q))
-                        _ClientItem(c.id, c.name),
-                  ];
-                  return results;
-                },
-                displayStringForOption: (o) => o.name,
-                fieldViewBuilder:
-                    (context, controller, focusNode, onFieldSubmitted) {
-                      if (_clientName.isNotEmpty && controller.text.isEmpty) {
-                        controller.text = _clientName;
-                      }
-                      return TextFormField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                        onChanged: (v) {
-                          _clientName = v;
-                          _clientId = null;
-                        },
-                      );
-                    },
-                onSelected: (item) {
-                  setState(() {
-                    _clientId = item.id;
-                    _clientName = item.name;
-                  });
-                },
+              const SizedBox(height: AppSpacing.formRowSpacing),
+              // Staff
+              _LabeledField(
+                label: l10n.formStaff,
+                child: DropdownButtonFormField<int>(
+                  value: _staffId,
+                  items: [
+                    for (final s in staff)
+                      DropdownMenuItem(value: s.id, child: Text(s.name)),
+                  ],
+                  onChanged: (v) => setState(() => _staffId = v),
+                  validator: (v) => v == null ? l10n.validationRequired : null,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            // Staff
-            _LabeledField(
-              label: l10n.formStaff,
-              child: DropdownButtonFormField<int>(
-                value: _staffId,
-                items: [
-                  for (final s in staff)
-                    DropdownMenuItem(value: s.id, child: Text(s.name)),
-                ],
-                onChanged: (v) => setState(() => _staffId = v),
-                validator: (v) => v == null ? l10n.validationRequired : null,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -358,9 +341,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         ),
       AppOutlinedActionButton(
         onPressed: () => Navigator.of(context).pop(),
+        padding: AppButtonStyles.dialogButtonPadding,
         child: Text(l10n.actionCancel),
       ),
-      AppFilledButton(onPressed: _onSave, child: Text(l10n.actionSave)),
+      AppFilledButton(
+        onPressed: _onSave,
+        padding: AppButtonStyles.dialogButtonPadding,
+        child: Text(l10n.actionSave),
+      ),
     ];
 
     if (isDialog) {
@@ -373,10 +361,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
     final bottomActions = actions
         .map(
-          (a) => ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48, minWidth: 110),
-            child: a,
-          ),
+          (a) => SizedBox(width: AppButtonStyles.dialogButtonWidth, child: a),
         )
         .toList();
 
@@ -392,10 +377,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           children: [
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              child: Text(title, style: Theme.of(context).textTheme.titleLarge),
             ),
             content,
             const SizedBox(height: 24),
@@ -433,13 +415,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       context: context,
       useRootNavigator: true,
       padding: EdgeInsets.zero,
-      builder: (ctx) {
-        final height = MediaQuery.of(ctx).size.height * 0.9;
-        return SizedBox(
-          height: height,
-          child: _TimeGridPicker(initial: _time, stepMinutes: step),
-        );
-      },
+      heightFactor: AppBottomSheet.defaultHeightFactor,
+      builder: (ctx) => _TimeGridPicker(initial: _time, stepMinutes: step),
     );
     if (selected != null) {
       setState(() => _time = selected);
@@ -481,29 +458,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     );
     final end = start.add(Duration(minutes: selectedVariant.durationMinutes));
 
-    // Se il cliente non esiste (clientId null) ma abbiamo un nome, creiamo il cliente
-    int? clientId = _clientId;
-    String clientName = _clientName.trim();
-    if (clientId == null && clientName.isNotEmpty) {
-      final business = ref.read(currentBusinessProvider);
-      // Separa automaticamente nome e cognome
-      final nameParts = Client.splitFullName(clientName);
-      final newClient = Client(
-        id: 0, // Sarà sovrascritto da addClient
-        businessId: business.id,
-        firstName: nameParts.firstName,
-        lastName: nameParts.lastName,
-        createdAt: DateTime.now(),
-      );
-      ref.read(clientsProvider.notifier).addClient(newClient);
-      // Recupera l'id del cliente appena creato
-      final clients = ref.read(clientsProvider);
-      final createdClient = clients.lastWhere(
-        (c) => c.name == clientName,
-        orElse: () => clients.last,
-      );
-      clientId = createdClient.id;
-    }
+    // Client info (può essere null se nessun cliente è associato)
+    final int? clientId = _clientId;
+    final String clientName = _clientName.trim();
 
     if (widget.initial == null) {
       // Nuovo appuntamento: crea SEMPRE una nuova prenotazione
@@ -561,7 +518,7 @@ class _LabeledField extends StatelessWidget {
 class _ClientItem {
   final int id;
   final String name;
-  _ClientItem(this.id, this.name);
+  const _ClientItem(this.id, this.name);
 }
 
 class _TimeGridPicker extends StatelessWidget {
@@ -612,7 +569,9 @@ class _TimeGridPicker extends StatelessWidget {
                   return OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       backgroundColor: isSelected
-                          ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.1)
                           : null,
                       side: BorderSide(
                         color: isSelected
@@ -635,5 +594,364 @@ class _TimeGridPicker extends StatelessWidget {
 
   String _format(BuildContext ctx, TimeOfDay t) {
     return DtFmt.hm(ctx, t.hour, t.minute);
+  }
+}
+
+/// Widget per la selezione del cliente con link cliccabile e hint
+class _ClientSelectionField extends ConsumerWidget {
+  const _ClientSelectionField({
+    required this.clientId,
+    required this.clientName,
+    required this.clients,
+    required this.onClientSelected,
+    required this.onClientRemoved,
+  });
+
+  final int? clientId;
+  final String clientName;
+  final List<Client> clients;
+  final void Function(int? id, String name) onClientSelected;
+  final VoidCallback onClientRemoved;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final hasClient = clientId != null || clientName.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.formClient,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 6),
+        if (hasClient)
+          _SelectedClientTile(
+            clientName: clientName,
+            onTap: () => _showClientPicker(context, ref),
+            onRemove: onClientRemoved,
+          )
+        else
+          InkWell(
+            onTap: () => _showClientPicker(context, ref),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.colorScheme.outline),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.person_add_outlined,
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.addClientToAppointment,
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 6),
+        Text(
+          l10n.clientOptionalHint,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showClientPicker(BuildContext context, WidgetRef ref) async {
+    while (true) {
+      final result = await AppBottomSheet.show<_ClientItem?>(
+        context: context,
+        useRootNavigator: true,
+        padding: EdgeInsets.zero,
+        heightFactor: AppBottomSheet.defaultHeightFactor,
+        builder: (ctx) =>
+            _ClientPickerSheet(clients: clients, selectedClientId: clientId),
+      );
+      if (result == null) {
+        // Sheet dismissed without selection, do nothing
+        return;
+      }
+      if (result.id == -2) {
+        // "Create new client" was selected
+        // result.name contains the search query to pre-populate the form
+        if (context.mounted) {
+          Client? initialClient;
+          if (result.name.isNotEmpty) {
+            // Split the search query into first name and last name
+            final nameParts = Client.splitFullName(result.name);
+            initialClient = Client(
+              id: 0,
+              businessId: 0,
+              firstName: nameParts.firstName,
+              lastName: nameParts.lastName,
+              createdAt: DateTime.now(),
+            );
+          }
+          final newClient = await showClientEditDialog(
+            context,
+            ref,
+            client: initialClient,
+          );
+          if (newClient != null) {
+            // Client saved, select it and return to appointment form
+            onClientSelected(newClient.id, newClient.name);
+            return;
+          }
+          // Client creation cancelled, loop back to show picker again
+          continue;
+        }
+        return;
+      } else if (result.id == -1) {
+        // "No client for appointment" was selected
+        onClientRemoved();
+        return;
+      } else {
+        onClientSelected(result.id, result.name);
+        return;
+      }
+    }
+  }
+}
+
+/// Tile che mostra il cliente selezionato con opzione per rimuoverlo
+class _SelectedClientTile extends StatelessWidget {
+  const _SelectedClientTile({
+    required this.clientName,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  final String clientName;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.colorScheme.outline),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Text(
+                clientName.isNotEmpty ? clientName[0].toUpperCase() : '?',
+                style: TextStyle(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                clientName,
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.close, size: 20, color: theme.colorScheme.error),
+              onPressed: onRemove,
+              tooltip: context.l10n.removeClient,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet per la selezione del cliente
+class _ClientPickerSheet extends ConsumerStatefulWidget {
+  const _ClientPickerSheet({required this.clients, this.selectedClientId});
+
+  final List<Client> clients;
+  final int? selectedClientId;
+
+  @override
+  ConsumerState<_ClientPickerSheet> createState() => _ClientPickerSheetState();
+}
+
+class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Client> get _filteredClients {
+    // Use live clients from provider to get updates after creation
+    final clients = ref.watch(clientsProvider);
+    if (_searchQuery.isEmpty) return clients;
+    final q = _searchQuery.toLowerCase();
+    return clients.where((c) => c.name.toLowerCase().contains(q)).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.selectClientTitle,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.formFirstRowSpacing),
+                // Search field
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: l10n.searchClientPlaceholder,
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value.trim());
+                  },
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // Quick actions: Create new client / No client
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Icon(
+                Icons.person_add_outlined,
+                color: theme.colorScheme.onPrimaryContainer,
+                size: 20,
+              ),
+            ),
+            title: Text(l10n.createNewClient),
+            onTap: () {
+              // Use special marker with id = -2 to indicate "create new client"
+              // Pass search query in name field to pre-populate the form
+              Navigator.of(context).pop(_ClientItem(-2, _searchQuery));
+            },
+          ),
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(
+                Icons.person_off_outlined,
+                color: theme.colorScheme.onSurfaceVariant,
+                size: 20,
+              ),
+            ),
+            title: Text(l10n.noClientForAppointment),
+            onTap: () {
+              // Use special marker with id = -1 to indicate "no client"
+              Navigator.of(context).pop(const _ClientItem(-1, ''));
+            },
+          ),
+          const Divider(height: 1),
+          // Client list
+          Expanded(
+            child: _filteredClients.isEmpty
+                ? Center(
+                    child: Text(
+                      l10n.clientsEmpty,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    itemCount: _filteredClients.length,
+                    itemBuilder: (context, index) {
+                      final client = _filteredClients[index];
+                      final isSelected = client.id == widget.selectedClientId;
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: isSelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.primaryContainer,
+                          child: Text(
+                            client.name.isNotEmpty
+                                ? client.name[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              color: isSelected
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        title: Text(client.name),
+                        subtitle: client.phone != null
+                            ? Text(
+                                client.phone!,
+                                style: theme.textTheme.bodySmall,
+                              )
+                            : null,
+                        trailing: isSelected
+                            ? Icon(
+                                Icons.check_circle,
+                                color: theme.colorScheme.primary,
+                              )
+                            : null,
+                        onTap: () {
+                          Navigator.of(
+                            context,
+                          ).pop(_ClientItem(client.id, client.name));
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }

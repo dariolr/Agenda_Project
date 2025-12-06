@@ -1,5 +1,6 @@
 import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/core/widgets/app_bottom_sheet.dart';
+import 'package:agenda_frontend/core/widgets/labeled_form_field.dart';
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -133,7 +134,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Data
-        _LabeledField(
+        LabeledFormField(
           label: l10n.formDate,
           child: InkWell(
             onTap: _pickDate,
@@ -174,7 +175,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
           Row(
             children: [
               Expanded(
-                child: _LabeledField(
+                child: LabeledFormField(
                   label: l10n.blockStartTime,
                   child: InkWell(
                     onTap: () => _pickTime(isStart: true),
@@ -204,7 +205,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _LabeledField(
+                child: LabeledFormField(
                   label: l10n.blockEndTime,
                   child: InkWell(
                     onTap: () => _pickTime(isStart: false),
@@ -248,7 +249,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
         ],
 
         // Staff selection
-        _LabeledField(
+        LabeledFormField(
           label: l10n.blockSelectStaff,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,7 +310,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
         const SizedBox(height: 12),
 
         // Motivo opzionale
-        _LabeledField(
+        LabeledFormField(
           label: l10n.blockReason,
           child: TextField(
             controller: _reasonController,
@@ -325,31 +326,61 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
     final actions = [
       if (isEdit)
-        AppDangerButton(onPressed: _onDelete, child: Text(l10n.actionDelete)),
+        AppDangerButton(
+          onPressed: _onDelete,
+          padding: AppButtonStyles.dialogButtonPadding,
+          child: Text(l10n.actionDelete),
+        ),
       AppOutlinedActionButton(
         onPressed: () => Navigator.of(context).pop(),
+        padding: AppButtonStyles.dialogButtonPadding,
         child: Text(l10n.actionCancel),
       ),
-      AppFilledButton(onPressed: _onSave, child: Text(l10n.actionSave)),
+      AppFilledButton(
+        onPressed: _onSave,
+        padding: AppButtonStyles.dialogButtonPadding,
+        child: Text(l10n.actionSave),
+      ),
     ];
 
     final bottomActions = actions
         .map(
-          (a) => ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48, minWidth: 110),
-            child: a,
-          ),
+          (a) => SizedBox(width: AppButtonStyles.dialogButtonWidth, child: a),
         )
         .toList();
 
     if (isDialog) {
-      return AlertDialog(
-        title: Text(title),
-        content: SizedBox(
-          width: 420,
-          child: SingleChildScrollView(child: content),
+      return Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 16),
+                Flexible(child: SingleChildScrollView(child: content)),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (isEdit) ...[
+                      bottomActions.first, // Delete button
+                      const Spacer(),
+                      bottomActions[1], // Cancel button
+                    ] else
+                      bottomActions[0], // Cancel button
+                    const SizedBox(width: 8),
+                    bottomActions.last, // Save button
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
-        actions: actions,
       );
     }
 
@@ -524,24 +555,6 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
   }
 }
 
-class _LabeledField extends StatelessWidget {
-  const _LabeledField({required this.label, required this.child});
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 6),
-        child,
-      ],
-    );
-  }
-}
-
 class _TimeGridPicker extends StatelessWidget {
   const _TimeGridPicker({required this.initial, required this.stepMinutes});
   final TimeOfDay initial;
@@ -590,10 +603,9 @@ class _TimeGridPicker extends StatelessWidget {
                   return OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       backgroundColor: isSelected
-                          ? Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.1)
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.1)
                           : null,
                       side: BorderSide(
                         color: isSelected

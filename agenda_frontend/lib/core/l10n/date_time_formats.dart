@@ -27,4 +27,11 @@ class DtFmt {
     final base = now.subtract(Duration(days: now.weekday - weekdayIso));
     return DateFormat.E(locale).format(base);
   }
+
+  /// Data compatta per form: "sab 6 dic 25" / "Sat 6 Dec 25"
+  static String shortDate(BuildContext context, DateTime date) {
+    final locale = Intl.getCurrentLocale();
+    // E = giorno settimana abbreviato, d = giorno, MMM = mese abbreviato, yy = anno a 2 cifre
+    return DateFormat('E d MMM yy', locale).format(date);
+  }
 }
