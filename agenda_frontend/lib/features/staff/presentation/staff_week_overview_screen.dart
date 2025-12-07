@@ -55,7 +55,7 @@ final weeklyStaffAvailabilityMockProvider =
 /// in the current location. This is a stopgap until per-staff persistence is available.
 final weeklyStaffAvailabilityFromEditorProvider =
     Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
-      final staffList = ref.watch(staffForCurrentLocationProvider);
+      final staffList = ref.watch(staffForStaffSectionProvider);
       final asyncByStaff = ref.watch(staffAvailabilityByStaffProvider);
       final layout = ref.watch(layoutConfigProvider);
       final minutesPerSlot = layout.minutesPerSlot;
@@ -179,7 +179,7 @@ class _StaffWeekOverviewScreenState
     final selectedDate = ref.watch(agendaDateProvider);
     // Current location could influence future filtering (kept for clarity)
     // final location = ref.watch(currentLocationProvider); // not used yet
-    final staffList = ref.watch(staffForCurrentLocationProvider);
+    final staffList = ref.watch(staffForStaffSectionProvider);
     // Use real availability coming from the editor provider, mapped to overview ranges
     final availability = ref.watch(weeklyStaffAvailabilityFromEditorProvider);
     final formFactor = ref.watch(formFactorProvider);

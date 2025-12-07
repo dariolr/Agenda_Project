@@ -35,6 +35,7 @@
   "agendaNextMonth": "Mese successivo",
   "agendaNoLocations": "Nessuna sede disponibile",
   "agendaSelectLocation": "Seleziona sede",
+  "allLocations": "Tutte le sedi",
   "servicesCategoryEmpty": "Nessun servizio disponibile per questa categoria.",
   "availabilityTitle": "Disponibilità settimanale",
   "availabilityTitleFor": "Disponibilità – {name}",
@@ -64,10 +65,6 @@
   ,"staffHubStatsTitle": "Statistiche"
   ,"staffHubStatsSubtitle": "Performance e carichi di lavoro"
   ,"staffHubNotYetAvailable": "Non ancora disponibile"
-  ,"availabilitySlotSelectedLabel": "slot {time} selezionato"
-  ,"availabilitySlotUnselectedLabel": "slot {time} non selezionato"
-  ,"@availabilitySlotSelectedLabel": {"placeholders": {"time": {"type": "String"}}}
-  ,"@availabilitySlotUnselectedLabel": {"placeholders": {"time": {"type": "String"}}}
     ,"staffEditHours": "Modifica orari"
     ,"actionEdit": "Modifica"
   ,"durationMinute": "{minutes} min",
@@ -203,7 +200,7 @@
   "staffFilterTitle": "Filtra staff",
   "staffFilterAllTeam": "Tutto il team",
   "staffFilterOnDuty": "Team di turno",
-  "staffFilterSelectMembers": "Seleziona membri",
+  "staffFilterSelectMembers": "Seleziona membri dello staff",
 
   "blockDialogTitleNew": "Nuovo blocco",
   "blockDialogTitleEdit": "Modifica blocco",
@@ -238,10 +235,25 @@
       }
     }
   },
-  "addService": "Aggiungi servizio",
+  "addService": "Aggiungi un servizio",
   "selectService": "Seleziona un servizio",
   "noServicesAdded": "Nessun servizio aggiunto",
-  "atLeastOneServiceRequired": "Aggiungi almeno un servizio completo",
+  "atLeastOneServiceRequired": "Aggiungi almeno un servizio",
   "notesPlaceholder": "Note sull'appuntamento...",
-  "noStaffAvailable": "Nessuno staff disponibile"
+  "noStaffAvailable": "Nessuno staff disponibile",
+
+  "weeklyScheduleTitle": "Orario settimanale",
+  "weeklyScheduleTotalHours": "{hours} ore totale",
+  "@weeklyScheduleTotalHours": {"placeholders": {"hours": {"type": "int"}}},
+  "weeklyScheduleNotWorking": "Non lavora",
+  "weeklyScheduleFor": "-",
+  "weeklyScheduleAddShift": "Aggiungi turno",
+  "weeklyScheduleRemoveShift": "Rimuovi turno",
+  "dayMondayFull": "lunedì",
+  "dayTuesdayFull": "martedì",
+  "dayWednesdayFull": "mercoledì",
+  "dayThursdayFull": "giovedì",
+  "dayFridayFull": "venerdì",
+  "daySaturdayFull": "sabato",
+  "daySundayFull": "domenica"
 }

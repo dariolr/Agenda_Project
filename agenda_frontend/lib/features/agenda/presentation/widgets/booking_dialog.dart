@@ -104,12 +104,40 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final agendaDate = ref.read(agendaDateProvider);
 
     if (widget.existing != null) {
-      // Editing existing booking - will be implemented later
+      // Editing existing booking
       _date = DateUtils.dateOnly(widget.initialDate ?? agendaDate);
       _notesController.text = widget.existing!.notes ?? '';
       _clientId = widget.existing!.clientId;
       _customClientName = widget.existing!.customerName ?? '';
-      // TODO: Load existing appointments into _serviceItems
+
+      // Load existing appointments into _serviceItems
+      final bookingAppointments = ref
+          .read(appointmentsProvider.notifier)
+          .getByBookingId(widget.existing!.id);
+
+      for (final appointment in bookingAppointments) {
+        _serviceItems.add(
+          ServiceItemData(
+            key: _nextItemKey(),
+            startTime: TimeOfDay.fromDateTime(appointment.startTime),
+            staffId: appointment.staffId,
+            serviceId: appointment.serviceId,
+            serviceVariantId: appointment.serviceVariantId,
+            durationMinutes: appointment.endTime
+                .difference(appointment.startTime)
+                .inMinutes,
+          ),
+        );
+      }
+
+      // Se non ci sono appointments, aggiungi un item vuoto
+      if (_serviceItems.isEmpty) {
+        final initialTime =
+            widget.initialTime ?? const TimeOfDay(hour: 10, minute: 0);
+        _serviceItems.add(
+          ServiceItemData(key: _nextItemKey(), startTime: initialTime),
+        );
+      }
     } else {
       _date = DateUtils.dateOnly(widget.initialDate ?? agendaDate);
 
@@ -837,6 +865,7 @@ class _ClientSelectionField extends ConsumerWidget {
     final isDesktop = formFactor == AppFormFactor.desktop;
 
     while (true) {
+      if (!context.mounted) return;
       _ClientItem? result;
       if (isDesktop) {
         result = await showDialog<_ClientItem?>(
