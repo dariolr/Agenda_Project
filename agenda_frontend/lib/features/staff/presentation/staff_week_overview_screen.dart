@@ -217,12 +217,13 @@ class _StaffWeekOverviewScreenState
     final weekLabel = buildWeekRangeLabel();
 
     // Layout constants
-    const staffColWidth = 220.0;
+    const staffColWidth = 200.0;
     final headerHeight = LayoutConfig.headerHeightFor(context);
     const chipColor = Color(0xFFECEBFF);
-    const double chipHeight = 26.0;
-    const double chipVGap = 4.0;
-    const double baseRowHeight = 72.0;
+    const double chipHeight = 22.0;
+    const double chipVGap = 3.0;
+    const double baseRowHeight = 52.0;
+    const double dayColumnWidth = 130.0;
     final dividerColor = Theme.of(context).dividerColor; // vertical separators
     final rowDividerColor = Theme.of(
       context,
@@ -340,48 +341,36 @@ class _StaffWeekOverviewScreenState
     }
 
     Widget buildDayCell(List<HourRange> ranges) {
-      // Single tiny outer padding; chips fill all the remaining height with no internal gaps.
-      const double outerPad = 0;
       if (ranges.isEmpty) return const SizedBox.shrink();
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: outerPad),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (int i = 0; i < ranges.length; i++) ...[
-              SizedBox(
-                height: chipHeight,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: chipColor,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: AgendaTheme.appointmentBorder,
-                      width: 0.6,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    ranges[i].label(context),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (int i = 0; i < ranges.length; i++) ...[
+            Container(
+              height: chipHeight,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: chipColor,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: AgendaTheme.appointmentBorder,
+                  width: 0.6,
                 ),
               ),
-              if (i < ranges.length - 1) SizedBox(height: chipVGap),
-            ],
+              child: Text(
+                ranges[i].label(context),
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            if (i < ranges.length - 1) SizedBox(height: chipVGap),
           ],
-        ),
+        ],
       );
     }
 
@@ -413,7 +402,7 @@ class _StaffWeekOverviewScreenState
                       children: [
                         for (final d in days) ...[
                           SizedBox(
-                            width: LayoutConfig.minColumnWidthDesktop,
+                            width: dayColumnWidth,
                             child: buildDayHeaderCell(d),
                           ),
                           if (d != days.last) const SizedBox(width: 8),
@@ -477,7 +466,7 @@ class _StaffWeekOverviewScreenState
                                 children: [
                                   for (final d in days) ...[
                                     SizedBox(
-                                      width: LayoutConfig.minColumnWidthDesktop,
+                                      width: dayColumnWidth,
                                       height: rowHeightForStaff(s.id),
                                       child: buildDayCell(
                                         (availability[s.id]?[d.weekday]) ??
@@ -502,8 +491,7 @@ class _StaffWeekOverviewScreenState
                               Builder(
                                 builder: (context) {
                                   final daysRowWidth =
-                                      days.length *
-                                          LayoutConfig.minColumnWidthDesktop +
+                                      days.length * dayColumnWidth +
                                       (days.length - 1) * 8;
                                   return SizedBox(
                                     width: daysRowWidth,
