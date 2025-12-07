@@ -2,9 +2,10 @@ import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
 import 'package:agenda_frontend/core/l10n/l10_extension.dart';
+import 'package:agenda_frontend/core/widgets/app_bottom_sheet.dart';
+import 'package:agenda_frontend/core/widgets/app_dialogs.dart';
 import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_frontend/features/agenda/domain/config/agenda_theme.dart';
-import 'package:agenda_frontend/features/agenda/domain/config/layout_config.dart';
 import 'package:agenda_frontend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_frontend/features/staff/presentation/staff_availability_screen.dart';
@@ -77,10 +78,9 @@ final weeklyStaffAvailabilityFromEditorProvider =
 
         final List<HourRange> ranges = [];
         for (final c in clusters) {
-          if (c.length <= 1) continue; // singolo slot = 0 durata
           final startMin = c.first * minutesPerSlot;
-          final endMin =
-              c.last * minutesPerSlot; // fine = inizio dell'ultimo slot
+          // La fine è l'inizio dell'ultimo slot + la durata di uno slot
+          final endMin = (c.last + 1) * minutesPerSlot;
           final sh = startMin ~/ 60;
           final sm = startMin % 60;
           final eh = endMin ~/ 60;
@@ -218,17 +218,15 @@ class _StaffWeekOverviewScreenState
 
     // Layout constants
     const staffColWidth = 200.0;
-    final headerHeight = LayoutConfig.headerHeightFor(context);
+    final headerHeight = 60.0;
     const chipColor = Color(0xFFECEBFF);
-    const double chipHeight = 22.0;
+    const double chipHeight = 40.0;
     const double chipVGap = 3.0;
-    const double baseRowHeight = 52.0;
-    const double dayColumnWidth = 130.0;
-    final dividerColor = Theme.of(context).dividerColor; // vertical separators
-    final rowDividerColor = Theme.of(
-      context,
-    ).colorScheme.outlineVariant.withOpacity(0.9); // horizontal lines
-    final divider = Container(height: 0.5, color: rowDividerColor);
+    const double baseRowHeight = chipHeight * 2 + (chipVGap * 3) + 5.0;
+    const double dayColumnWidth = 100.0;
+    const double rightPadding = 5.0;
+    final dividerColor = Colors.transparent; // vertical separators
+    final divider = Container(height: 0.5, color: dividerColor);
     // Controller già inizializzati in state
 
     Widget buildDayHeaderCell(DateTime day) {
@@ -239,35 +237,42 @@ class _StaffWeekOverviewScreenState
         }),
       );
       final hasAny = totalMin > 0;
-      return Container(
-        height: headerHeight,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AgendaTheme.staffHeaderBackground(
-            hasAny ? Colors.teal : Colors.blueGrey,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              _dayHeaderLabel(context, day),
-              style: AgendaTheme.staffHeaderTextStyle,
-              textAlign: TextAlign.center,
-            ),
-            if (hasAny)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  _formatTotalHM(context, totalMin),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+      // Center widget per centrare l'header nella colonna
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: dayColumnWidth),
+          child: Container(
+            height: headerHeight,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: AgendaTheme.staffHeaderBackground(
+                hasAny ? Colors.teal : Colors.blueGrey,
               ),
-          ],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _dayHeaderLabel(context, day),
+                  style: AgendaTheme.staffHeaderTextStyle,
+                  textAlign: TextAlign.center,
+                ),
+                if (hasAny)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      _formatTotalHM(context, totalMin),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       );
     }
@@ -340,31 +345,197 @@ class _StaffWeekOverviewScreenState
       );
     }
 
-    Widget buildDayCell(List<HourRange> ranges) {
+    // Helper: converte slots in HourRange list
+    List<HourRange> slotsToRanges(Set<int> slots, int minutesPerSlot) {
+      if (slots.isEmpty) return const [];
+      final sorted = slots.toList()..sort();
+      final List<List<int>> clusters = [];
+      var current = <int>[sorted.first];
+      for (int i = 1; i < sorted.length; i++) {
+        if (sorted[i] == sorted[i - 1] + 1) {
+          current.add(sorted[i]);
+        } else {
+          clusters.add(current);
+          current = <int>[sorted[i]];
+        }
+      }
+      clusters.add(current);
+
+      final List<HourRange> ranges = [];
+      for (final c in clusters) {
+        final startMin = c.first * minutesPerSlot;
+        final endMin = (c.last + 1) * minutesPerSlot;
+        final sh = startMin ~/ 60;
+        final sm = startMin % 60;
+        final eh = endMin ~/ 60;
+        final em = endMin % 60;
+        ranges.add(HourRange(sh, sm, eh, em));
+      }
+      return ranges;
+    }
+
+    // Helper: elimina una fascia oraria
+    Future<void> deleteShift(int staffId, int weekday, int shiftIndex) async {
+      final layout = ref.read(layoutConfigProvider);
+      final asyncByStaff = ref.read(staffAvailabilityByStaffProvider);
+      final allData = asyncByStaff.value;
+      if (allData == null) return;
+
+      final staffData = allData[staffId];
+      if (staffData == null) return;
+
+      final daySlots = staffData[weekday];
+      if (daySlots == null || daySlots.isEmpty) return;
+
+      // Converti slots in ranges per identificare quale eliminare
+      final ranges = slotsToRanges(daySlots, layout.minutesPerSlot);
+      if (shiftIndex >= ranges.length) return;
+
+      final rangeToDelete = ranges[shiftIndex];
+
+      // Rimuovi gli slot corrispondenti a questa fascia
+      final newSlots = Set<int>.from(daySlots);
+      final startSlot =
+          (rangeToDelete.startHour * 60 + rangeToDelete.startMinute) ~/
+          layout.minutesPerSlot;
+      final endSlot =
+          (rangeToDelete.endHour * 60 + rangeToDelete.endMinute) ~/
+          layout.minutesPerSlot;
+      for (int slot = startSlot; slot < endSlot; slot++) {
+        newSlots.remove(slot);
+      }
+
+      // Aggiorna il provider
+      final newStaffData = Map<int, Set<int>>.from(staffData);
+      newStaffData[weekday] = newSlots;
+
+      await ref
+          .read(staffAvailabilityByStaffProvider.notifier)
+          .saveForStaff(staffId, newStaffData);
+    }
+
+    // Helper: mostra menu opzioni per una fascia oraria
+    void showShiftOptionsMenu(
+      int staffId,
+      int weekday,
+      int shiftIndex,
+      HourRange range,
+    ) {
+      final l10n = context.l10n;
+      final isMobile = formFactor == AppFormFactor.mobile;
+
+      // Lista opzioni (senza titolo, usato da entrambe le modalità)
+      Widget buildOptionsList(BuildContext ctx) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: Text(l10n.actionEdit),
+              onTap: () {
+                Navigator.pop(ctx);
+                final vn = ref.read(initialStaffToEditProvider);
+                vn.value = staffId;
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const StaffAvailabilityScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.delete_outline,
+                color: Theme.of(ctx).colorScheme.error,
+              ),
+              title: Text(
+                l10n.actionDelete,
+                style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+              ),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await deleteShift(staffId, weekday, shiftIndex);
+              },
+            ),
+          ],
+        );
+      }
+
+      if (isMobile) {
+        // Mobile: AppBottomSheet con titolo interno
+        AppBottomSheet.show(
+          context: context,
+          heightFactor: null, // Auto-size
+          builder: (ctx) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                range.label(ctx),
+                style: Theme.of(
+                  ctx,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              buildOptionsList(ctx),
+            ],
+          ),
+        );
+      } else {
+        // Desktop/Tablet: AppFormDialog (titolo già nel dialog)
+        showDialog(
+          context: context,
+          builder: (ctx) => AppFormDialog(
+            title: Text(range.label(ctx)),
+            content: buildOptionsList(ctx),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l10n.actionCancel),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+
+    Widget buildDayCell(List<HourRange> ranges, int staffId, int weekday) {
       if (ranges.isEmpty) return const SizedBox.shrink();
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           for (int i = 0; i < ranges.length; i++) ...[
-            Container(
-              height: chipHeight,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: chipColor,
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: AgendaTheme.appointmentBorder,
-                  width: 0.6,
-                ),
-              ),
-              child: Text(
-                ranges[i].label(context),
-                maxLines: 1,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                onTap: () {
+                  showShiftOptionsMenu(staffId, weekday, i, ranges[i]);
+                },
+                child: Container(
+                  height: chipHeight,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: chipColor,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: AgendaTheme.appointmentBorder,
+                      width: 0.6,
+                    ),
+                  ),
+                  child: Text(
+                    ranges[i].label(context),
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -407,13 +578,13 @@ class _StaffWeekOverviewScreenState
                           ),
                           if (d != days.last) const SizedBox(width: 8),
                         ],
+                        const SizedBox(width: rightPadding),
                       ],
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
             // Body
             Expanded(
               child: SingleChildScrollView(
@@ -471,20 +642,20 @@ class _StaffWeekOverviewScreenState
                                       child: buildDayCell(
                                         (availability[s.id]?[d.weekday]) ??
                                             const <HourRange>[],
+                                        s.id,
+                                        d.weekday,
                                       ),
                                     ),
                                     if (d != days.last)
-                                      Container(
+                                      SizedBox(
                                         width: 8,
                                         height: rowHeightForStaff(s.id),
-                                        alignment: Alignment.center,
-                                        child: Container(
-                                          width: 1,
-                                          height: rowHeightForStaff(s.id),
-                                          color: dividerColor,
-                                        ),
                                       ),
                                   ],
+                                  SizedBox(
+                                    width: rightPadding,
+                                    height: rowHeightForStaff(s.id),
+                                  ),
                                 ],
                               ),
                               // Single full-width horizontal divider spanning day cells + gaps
@@ -492,7 +663,8 @@ class _StaffWeekOverviewScreenState
                                 builder: (context) {
                                   final daysRowWidth =
                                       days.length * dayColumnWidth +
-                                      (days.length - 1) * 8;
+                                      (days.length - 1) * 8 +
+                                      rightPadding;
                                   return SizedBox(
                                     width: daysRowWidth,
                                     child: divider,

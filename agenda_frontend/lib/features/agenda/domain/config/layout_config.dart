@@ -9,6 +9,7 @@ class LayoutConfig {
 
   static const int hoursInDay = 24;
   static const List<int> slotDurationOptions = [15, 30, 60, 120];
+  static const int minutesPerSlotConst = 15;
 
   static const double horizontalPadding = 8;
   static const double verticalPadding = 4;
@@ -27,7 +28,7 @@ class LayoutConfig {
     slotHeight: defaultSlotHeight,
     headerHeight: defaultHeaderHeight,
     hourColumnWidth: defaultHourColumnWidth,
-    minutesPerSlot: 15,
+    minutesPerSlot: minutesPerSlotConst,
     useClusterMaxConcurrency: true,
     useServiceColorsForAppointments: true,
   );

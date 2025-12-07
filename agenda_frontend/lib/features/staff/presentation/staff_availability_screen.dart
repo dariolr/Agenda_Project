@@ -143,10 +143,30 @@ class _StaffAvailabilityScreenState
   Map<int, Set<int>> _weeklySelections = {
     for (int d = 1; d <= 7; d++) d: <int>{},
   };
+  // Stato salvato originale per confronto (traccia modifiche non salvate)
+  Map<int, Set<int>> _savedWeeklySelections = {
+    for (int d = 1; d <= 7; d++) d: <int>{},
+  };
   // Mappa staffId -> disponibilità settimanale (slots)
   final Map<int, Map<int, Set<int>>> _staffSelections = {};
   int? _selectedStaffId; // definito dopo aver caricato staff list
   bool _initializedFromProvider = false;
+
+  /// Verifica se ci sono modifiche non salvate.
+  bool get _hasUnsavedChanges {
+    if (_weeklySelections.length != _savedWeeklySelections.length) return true;
+    for (final entry in _weeklySelections.entries) {
+      final saved = _savedWeeklySelections[entry.key];
+      if (saved == null) return true;
+      if (!_setEquals(entry.value, saved)) return true;
+    }
+    return false;
+  }
+
+  bool _setEquals(Set<int> a, Set<int> b) {
+    if (a.length != b.length) return false;
+    return a.containsAll(b);
+  }
 
   void _ensureCurrentStaffInit(int staffId) {
     _staffSelections.putIfAbsent(staffId, () {
@@ -178,40 +198,36 @@ class _StaffAvailabilityScreenState
   }
 
   Future<void> _save(WidgetRef ref, int minutesPerSlot) async {
+    // Prima di salvare, unifica le fasce orarie contigue
+    final currentSchedule = WeeklySchedule.fromSlots(
+      _weeklySelections,
+      minutesPerSlot: minutesPerSlot,
+    );
+    final mergedSchedule = currentSchedule.mergeContiguousShifts();
+    final mergedSlots = mergedSchedule.toSlots(minutesPerSlot: minutesPerSlot);
+
+    // Aggiorna lo stato locale con le fasce unificate
+    setState(() {
+      _weeklySelections = mergedSlots;
+    });
+
     // Persisti nello storage locale per staff corrente
     if (_selectedStaffId != null) {
       _staffSelections[_selectedStaffId!] = {
-        for (final entry in _weeklySelections.entries)
+        for (final entry in mergedSlots.entries)
           entry.key: Set<int>.from(entry.value),
       };
     }
     if (_selectedStaffId != null) {
       await ref
           .read(staffAvailabilityByStaffProvider.notifier)
-          .saveForStaff(_selectedStaffId!, _weeklySelections);
+          .saveForStaff(_selectedStaffId!, mergedSlots);
     }
-    if (mounted) {
-      final l10n = context.l10n;
-      String message;
-      if (_selectedStaffId == null) {
-        message = l10n.availabilitySaved;
-      } else {
-        // Trova il nome staff per messaggio più chiaro
-        final staffList = ref.read(staffForStaffSectionProvider);
-        String name = _selectedStaffId!.toString();
-        if (staffList.isNotEmpty) {
-          final staff = staffList.firstWhere(
-            (s) => s.id == _selectedStaffId,
-            orElse: () => staffList.first,
-          );
-          name = '${staff.name} ${staff.surname}'.trim();
-        }
-        message = l10n.availabilitySavedFor(name);
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-    }
+    // Aggiorna lo stato salvato dopo il salvataggio
+    _savedWeeklySelections = {
+      for (final entry in mergedSlots.entries)
+        entry.key: Set<int>.from(entry.value),
+    };
   }
 
   @override
@@ -245,6 +261,11 @@ class _StaffAvailabilityScreenState
             for (final e in currentWeekly.entries)
               e.key: Set<int>.from(e.value),
           };
+          // Salva lo stato originale per tracciare modifiche
+          _savedWeeklySelections = {
+            for (final e in currentWeekly.entries)
+              e.key: Set<int>.from(e.value),
+          };
           _initializedFromProvider = true;
         });
       },
@@ -261,72 +282,170 @@ class _StaffAvailabilityScreenState
       staffName = '${staff.name} ${staff.surname}'.trim();
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          staffName == null
-              ? context.l10n.availabilityTitle
-              : context.l10n.availabilityTitleFor(staffName),
-        ),
-      ),
-      body: Column(
-        children: [
-          // ── Toolbar azioni ───────────────────────────────
-          // Toolbar semplificata: solo selezione staff e salvataggio
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(context.l10n.labelStaff),
-                _StaffSelectorDropdown(
-                  staffList: staffList,
-                  selectedStaffId: _selectedStaffId,
-                  onSelected: _switchStaff,
-                ),
-                FilledButton(
-                  onPressed: (_selectedStaffId == null || isSaving)
-                      ? null
-                      : () => _save(ref, layout.minutesPerSlot),
-                  child: isSaving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(context.l10n.availabilitySave),
-                ),
-              ],
-            ),
+    return PopScope(
+      canPop: !_hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final navigator = Navigator.of(context);
+        final shouldPop = await _showDiscardChangesDialog();
+        if (shouldPop && mounted) {
+          navigator.pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            staffName == null
+                ? context.l10n.availabilityTitle
+                : context.l10n.availabilityTitleFor(staffName),
           ),
+        ),
+        body: Column(
+          children: [
+            // ── Toolbar azioni ───────────────────────────────
+            // Toolbar semplificata: solo selezione staff e salvataggio
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(context.l10n.labelStaff),
+                  _StaffSelectorDropdown(
+                    staffList: staffList,
+                    selectedStaffId: _selectedStaffId,
+                    onSelected: _switchStaff,
+                  ),
+                  FilledButton(
+                    onPressed: (_selectedStaffId == null || isSaving)
+                        ? null
+                        : () => _save(ref, layout.minutesPerSlot),
+                    child: isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(context.l10n.availabilitySave),
+                  ),
+                ],
+              ),
+            ),
 
-          const Divider(height: 1),
+            const Divider(height: 1),
 
-          // ── Editor turni settimanali ─────────────────────────
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: WeeklyScheduleEditor(
-                initialSchedule: WeeklySchedule.fromSlots(
-                  _weeklySelections,
-                  minutesPerSlot: layout.minutesPerSlot,
-                ),
-                onChanged: (schedule) {
-                  final newSlots = schedule.toSlots(
+            // ── Header + Editor con ombra sovrapposta ────────────
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final schedule = WeeklySchedule.fromSlots(
+                    _weeklySelections,
                     minutesPerSlot: layout.minutesPerSlot,
                   );
-                  setState(() {
-                    _weeklySelections = newSlots;
-                  });
+
+                  return Stack(
+                    children: [
+                      // Editor turni settimanali (scrollabile) - sotto
+                      Positioned.fill(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.only(
+                            top: 80, // Spazio per l'header
+                          ),
+                          child: WeeklyScheduleEditor(
+                            initialSchedule: WeeklySchedule.fromSlots(
+                              _weeklySelections,
+                              minutesPerSlot: layout.minutesPerSlot,
+                            ),
+                            showHeader: false,
+                            onChanged: (newSchedule) {
+                              final newSlots = newSchedule.toSlots(
+                                minutesPerSlot: layout.minutesPerSlot,
+                              );
+                              setState(() {
+                                _weeklySelections = newSlots;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+
+                      // Header fisso con ombra - sopra
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                offset: const Offset(0, 4),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  context.l10n.weeklyScheduleTitle,
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  context.l10n.weeklyScheduleTotalHours(
+                                    schedule.totalHours,
+                                  ),
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
                 },
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Mostra dialog di conferma per scartare le modifiche non salvate.
+  Future<bool> _showDiscardChangesDialog() async {
+    final l10n = context.l10n;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.discardChangesTitle),
+        content: Text(l10n.discardChangesMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionDiscard),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.actionConfirm),
           ),
         ],
       ),
     );
+    return result ?? false;
   }
 }
 

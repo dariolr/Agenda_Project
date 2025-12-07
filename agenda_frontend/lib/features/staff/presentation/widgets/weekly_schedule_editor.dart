@@ -1,5 +1,7 @@
 import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
+import 'package:agenda_frontend/app/theme/extensions.dart';
 import 'package:agenda_frontend/core/l10n/l10_extension.dart';
+import 'package:agenda_frontend/features/agenda/domain/config/layout_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -92,6 +94,71 @@ class WeeklySchedule {
   /// Totale ore settimanali.
   int get totalHours {
     return days.values.fold<int>(0, (sum, day) => sum + day.totalHours);
+  }
+
+  /// Unifica le fasce orarie contigue (dove la fine di una coincide con l'inizio della successiva).
+  /// Ritorna una nuova WeeklySchedule con le fasce unificate.
+  WeeklySchedule mergeContiguousShifts() {
+    final Map<int, DaySchedule> mergedDays = {};
+
+    for (final entry in days.entries) {
+      final day = entry.key;
+      final schedule = entry.value;
+
+      if (!schedule.isEnabled || schedule.shifts.length <= 1) {
+        // Nessuna unificazione necessaria
+        mergedDays[day] = schedule;
+        continue;
+      }
+
+      // Ordina le fasce per orario di inizio
+      final sortedShifts = List<WorkShift>.from(schedule.shifts)
+        ..sort((a, b) {
+          final aMinutes = a.startTime.hour * 60 + a.startTime.minute;
+          final bMinutes = b.startTime.hour * 60 + b.startTime.minute;
+          return aMinutes.compareTo(bMinutes);
+        });
+
+      // Unifica fasce contigue
+      final List<WorkShift> mergedShifts = [];
+      WorkShift? current;
+
+      for (final shift in sortedShifts) {
+        if (current == null) {
+          current = shift;
+        } else {
+          // Controlla se la fine di current coincide con l'inizio di shift
+          final currentEndMinutes =
+              current.endTime.hour * 60 + current.endTime.minute;
+          final shiftStartMinutes =
+              shift.startTime.hour * 60 + shift.startTime.minute;
+
+          if (currentEndMinutes == shiftStartMinutes) {
+            // Fasce contigue: unisci
+            current = WorkShift(
+              startTime: current.startTime,
+              endTime: shift.endTime,
+            );
+          } else {
+            // Non contigue: salva current e inizia nuovo
+            mergedShifts.add(current);
+            current = shift;
+          }
+        }
+      }
+
+      // Aggiungi l'ultima fascia
+      if (current != null) {
+        mergedShifts.add(current);
+      }
+
+      mergedDays[day] = DaySchedule(
+        isEnabled: schedule.isEnabled,
+        shifts: mergedShifts,
+      );
+    }
+
+    return WeeklySchedule(days: mergedDays);
   }
 
   /// Converte da formato slot a WeeklySchedule.
@@ -190,11 +257,13 @@ class WeeklySchedule {
 class WeeklyScheduleEditor extends StatefulWidget {
   final WeeklySchedule initialSchedule;
   final ValueChanged<WeeklySchedule>? onChanged;
+  final bool showHeader;
 
   const WeeklyScheduleEditor({
     super.key,
     required this.initialSchedule,
     this.onChanged,
+    this.showHeader = true,
   });
 
   @override
@@ -310,47 +379,54 @@ class _WeeklyScheduleEditorState extends State<WeeklyScheduleEditor> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Header con titolo e ore totali
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.weeklyScheduleTitle,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+        // Header con titolo e ore totali (opzionale)
+        if (widget.showHeader)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.weeklyScheduleTitle,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.weeklyScheduleTotalHours(_schedule.totalHours),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                const SizedBox(height: 4),
+                Text(
+                  l10n.weeklyScheduleTotalHours(_schedule.totalHours),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+
+        // Lista dei giorni - sfondo a tutta larghezza, contenuto centrato
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: List.generate(7, (index) {
+            final day = index + 1;
+            final daySchedule = _schedule.days[day]!;
+            final dayName = dayNames[index];
+
+            return _DayRow(
+              day: day,
+              dayName: dayName,
+              allDayNames: dayNames,
+              schedule: daySchedule,
+              onToggle: () => _toggleDay(day),
+              onShiftChanged: (shiftIndex, shift) =>
+                  _updateShift(day, shiftIndex, shift),
+              onAddShift: () => _addShift(day),
+              onRemoveShift: (shiftIndex) => _removeShift(day, shiftIndex),
+              isFirst: index == 0,
+            );
+          }),
         ),
-
-        // Lista dei giorni
-        ...List.generate(7, (index) {
-          final day = index + 1;
-          final daySchedule = _schedule.days[day]!;
-          final dayName = dayNames[index];
-
-          return _DayRow(
-            day: day,
-            dayName: dayName,
-            schedule: daySchedule,
-            onToggle: () => _toggleDay(day),
-            onShiftChanged: (shiftIndex, shift) =>
-                _updateShift(day, shiftIndex, shift),
-            onAddShift: () => _addShift(day),
-            onRemoveShift: (shiftIndex) => _removeShift(day, shiftIndex),
-          );
-        }),
       ],
     );
   }
@@ -360,21 +436,39 @@ class _WeeklyScheduleEditorState extends State<WeeklyScheduleEditor> {
 class _DayRow extends ConsumerWidget {
   final int day;
   final String dayName;
+  final List<String> allDayNames;
   final DaySchedule schedule;
   final VoidCallback onToggle;
   final void Function(int shiftIndex, WorkShift shift) onShiftChanged;
   final VoidCallback onAddShift;
   final void Function(int shiftIndex) onRemoveShift;
+  final bool isFirst;
 
   const _DayRow({
     required this.day,
     required this.dayName,
+    required this.allDayNames,
     required this.schedule,
     required this.onToggle,
     required this.onShiftChanged,
     required this.onAddShift,
     required this.onRemoveShift,
+    this.isFirst = false,
   });
+
+  /// Calcola la larghezza massima tra tutti i nomi dei giorni
+  double _getMaxDayNameWidth(BuildContext context, TextStyle? style) {
+    double maxWidth = 0;
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    for (final name in allDayNames) {
+      textPainter.text = TextSpan(text: name, style: style);
+      textPainter.layout();
+      if (textPainter.width > maxWidth) {
+        maxWidth = textPainter.width;
+      }
+    }
+    return maxWidth;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -395,45 +489,48 @@ class _DayRow extends ConsumerWidget {
     dynamic l10n,
     ThemeData theme,
   ) {
-    // Sfondo alternato per righe pari/dispari
-    final backgroundColor = day.isOdd
-        ? theme.colorScheme.surfaceContainerLowest
-        : theme.colorScheme.surfaceContainerLow;
+    // Sfondo alternato: trasparente per dispari, colorato per pari
+    final interactionColors = theme.extension<AppInteractionColors>();
+    final backgroundColor = day.isEven
+        ? interactionColors?.alternatingRowFill
+        : null;
+
+    final dayNameStyle = theme.textTheme.bodyLarge?.copyWith(
+      fontWeight: FontWeight.w500,
+    );
+    final maxDayNameWidth = _getMaxDayNameWidth(context, dayNameStyle);
 
     return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: checkbox + nome giorno + ore + icone
-          Row(
-            children: [
-              // Checkbox inline con il nome
-              Transform.scale(
-                scale: 1.1,
-                child: Checkbox(
-                  value: schedule.isEnabled,
-                  onChanged: (_) => onToggle(),
-                  activeColor: theme.colorScheme.primary,
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-
-              // Nome giorno e ore
-              Expanded(
-                child: Row(
+      color: backgroundColor,
+      padding: EdgeInsets.only(top: isFirst ? 16 : 8, bottom: 8),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: IntrinsicWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header: checkbox + nome giorno + ore + icone
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      dayName,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
+                    // Checkbox inline con il nome
+                    Transform.scale(
+                      scale: 1.1,
+                      child: Checkbox(
+                        value: schedule.isEnabled,
+                        onChanged: (_) => onToggle(),
+                        activeColor: theme.colorScheme.primary,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
+                    ),
+
+                    // Nome giorno con larghezza fissa (calcolata dinamicamente)
+                    SizedBox(
+                      width: maxDayNameWidth,
+                      child: Text(dayName, style: dayNameStyle),
                     ),
                     if (schedule.isEnabled && schedule.totalHours > 0) ...[
                       const SizedBox(width: 8),
@@ -444,60 +541,65 @@ class _DayRow extends ConsumerWidget {
                         ),
                       ),
                     ],
+
+                    // Icone azioni (solo se abilitato)
+                    if (schedule.isEnabled) ...[
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: onAddShift,
+                        icon: Icon(
+                          Icons.add_circle_outline,
+                          color: theme.colorScheme.primary,
+                        ),
+                        tooltip: l10n.weeklyScheduleAddShift,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
+                        padding: EdgeInsets.zero,
+                        iconSize: 22,
+                      ),
+                    ],
                   ],
                 ),
-              ),
 
-              // Icone azioni (solo se abilitato)
-              if (schedule.isEnabled)
-                IconButton(
-                  onPressed: onAddShift,
-                  icon: Icon(
-                    Icons.add_circle_outline,
-                    color: theme.colorScheme.primary,
-                  ),
-                  tooltip: l10n.weeklyScheduleAddShift,
-                  constraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
-                  ),
-                  padding: EdgeInsets.zero,
-                  iconSize: 22,
-                ),
-            ],
-          ),
-
-          // Contenuto turni o "Non lavora" - allineato sotto la checkbox
-          if (schedule.isEnabled)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Column(
-                children: [
-                  for (int i = 0; i < schedule.shifts.length; i++)
-                    Padding(
-                      padding: EdgeInsets.only(
-                        bottom: i < schedule.shifts.length - 1 ? 8 : 0,
-                      ),
-                      child: _ShiftRowMobile(
-                        shift: schedule.shifts[i],
-                        onChanged: (shift) => onShiftChanged(i, shift),
-                        onRemove: () => onRemoveShift(i),
+                // Contenuto turni o "Non lavora"
+                if (schedule.isEnabled)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      children: [
+                        for (int i = 0; i < schedule.shifts.length; i++)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              bottom: i < schedule.shifts.length - 1 ? 8 : 0,
+                            ),
+                            child: _ShiftRowMobile(
+                              shift: schedule.shifts[i],
+                              onChanged: (shift) => onShiftChanged(i, shift),
+                              onRemove: () => onRemoveShift(i),
+                              previousShiftEndTime: i > 0
+                                  ? schedule.shifts[i - 1].endTime
+                                  : null,
+                            ),
+                          ),
+                      ],
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      l10n.weeklyScheduleNotWorking,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                ],
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(left: 40, top: 4),
-              child: Text(
-                l10n.weeklyScheduleNotWorking,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+                  ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -508,89 +610,101 @@ class _DayRow extends ConsumerWidget {
     dynamic l10n,
     ThemeData theme,
   ) {
-    // Sfondo alternato per righe pari/dispari
-    final backgroundColor = day.isOdd
-        ? theme.colorScheme.surfaceContainerLowest
-        : theme.colorScheme.surfaceContainerLow;
+    // Sfondo alternato: trasparente per dispari, colorato per pari
+    final interactionColors = theme.extension<AppInteractionColors>();
+    final backgroundColor = day.isEven
+        ? interactionColors?.alternatingRowFill
+        : null;
+
+    final dayNameStyle = theme.textTheme.bodyLarge?.copyWith(
+      fontWeight: FontWeight.w500,
+    );
+    final maxDayNameWidth = _getMaxDayNameWidth(context, dayNameStyle);
 
     return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Checkbox
-          SizedBox(
-            width: 24,
-            height: 48,
-            child: Checkbox(
-              value: schedule.isEnabled,
-              onChanged: (_) => onToggle(),
-              activeColor: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Nome giorno e ore
-          SizedBox(
-            width: 100,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+      color: backgroundColor,
+      padding: EdgeInsets.only(top: isFirst ? 16 : 8, bottom: 8),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: IntrinsicWidth(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  dayName,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                // Checkbox
+                Checkbox(
+                  value: schedule.isEnabled,
+                  onChanged: (_) => onToggle(),
+                  activeColor: theme.colorScheme.primary,
                 ),
-                if (schedule.isEnabled && schedule.totalHours > 0)
-                  Text(
-                    '${schedule.totalHours}h',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
+                const SizedBox(width: 12),
 
-          // Contenuto turni o "Non lavora"
-          Expanded(
-            child: schedule.isEnabled
-                ? Column(
+                // Nome giorno e ore con larghezza fissa (calcolata dinamicamente)
+                SizedBox(
+                  width: maxDayNameWidth,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      for (int i = 0; i < schedule.shifts.length; i++)
-                        Padding(
-                          padding: EdgeInsets.only(
-                            bottom: i < schedule.shifts.length - 1 ? 8 : 0,
-                          ),
-                          child: _ShiftRow(
-                            shift: schedule.shifts[i],
-                            onChanged: (shift) => onShiftChanged(i, shift),
-                            onAdd: onAddShift,
-                            onRemove: () => onRemoveShift(i),
-                            showAddButton: i == schedule.shifts.length - 1,
+                      Text(dayName, style: dayNameStyle),
+                      if (schedule.isEnabled && schedule.totalHours > 0)
+                        Text(
+                          '${schedule.totalHours}h',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                     ],
-                  )
-                : Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      l10n.weeklyScheduleNotWorking,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
                   ),
+                ),
+                const SizedBox(width: 16),
+
+                // Contenuto turni o "Non lavora" - larghezza minima fissa per allineamento
+                // Larghezza: 2 dropdown (100*2) + 3 spacing (12*3) + testo "per" (~30) + 2 pulsanti (40*2)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth:
+                        _TimeDropdown.dropdownWidth * 2 + 12 * 3 + 30 + 40 * 2,
+                  ),
+                  child: schedule.isEnabled
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (int i = 0; i < schedule.shifts.length; i++)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: i < schedule.shifts.length - 1
+                                      ? 8
+                                      : 0,
+                                ),
+                                child: _ShiftRow(
+                                  shift: schedule.shifts[i],
+                                  onChanged: (shift) =>
+                                      onShiftChanged(i, shift),
+                                  onAdd: onAddShift,
+                                  onRemove: () => onRemoveShift(i),
+                                  showAddButton:
+                                      i == schedule.shifts.length - 1,
+                                  previousShiftEndTime: i > 0
+                                      ? schedule.shifts[i - 1].endTime
+                                      : null,
+                                ),
+                              ),
+                          ],
+                        )
+                      : Text(
+                          l10n.weeklyScheduleNotWorking,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -602,10 +716,15 @@ class _ShiftRowMobile extends StatelessWidget {
   final ValueChanged<WorkShift> onChanged;
   final VoidCallback onRemove;
 
+  /// Orario di fine della fascia precedente (se esiste).
+  /// Usato per impostare il minimo dell'orario di inizio.
+  final TimeOfDay? previousShiftEndTime;
+
   const _ShiftRowMobile({
     required this.shift,
     required this.onChanged,
     required this.onRemove,
+    this.previousShiftEndTime,
   });
 
   @override
@@ -614,13 +733,14 @@ class _ShiftRowMobile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Orario inizio
-        Expanded(
-          child: _TimeDropdown(
-            value: shift.startTime,
-            onChanged: (time) => onChanged(shift.copyWith(startTime: time)),
-          ),
+        // Orario inizio - minimo = fine fascia precedente (se esiste)
+        _TimeDropdown(
+          value: shift.startTime,
+          minTime: previousShiftEndTime,
+          onChanged: (time) => onChanged(shift.copyWith(startTime: time)),
         ),
         const SizedBox(width: 8),
 
@@ -633,14 +753,13 @@ class _ShiftRowMobile extends StatelessWidget {
         ),
         const SizedBox(width: 8),
 
-        // Orario fine
-        Expanded(
-          child: _TimeDropdown(
-            value: shift.endTime,
-            onChanged: (time) => onChanged(shift.copyWith(endTime: time)),
-          ),
+        // Orario fine - minimo = orario inizio corrente
+        _TimeDropdown(
+          value: shift.endTime,
+          minTime: shift.startTime,
+          onChanged: (time) => onChanged(shift.copyWith(endTime: time)),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 8),
 
         // Pulsante rimuovi
         IconButton(
@@ -667,12 +786,17 @@ class _ShiftRow extends StatelessWidget {
   final VoidCallback onRemove;
   final bool showAddButton;
 
+  /// Orario di fine della fascia precedente (se esiste).
+  /// Usato per impostare il minimo dell'orario di inizio.
+  final TimeOfDay? previousShiftEndTime;
+
   const _ShiftRow({
     required this.shift,
     required this.onChanged,
     required this.onAdd,
     required this.onRemove,
     this.showAddButton = false,
+    this.previousShiftEndTime,
   });
 
   @override
@@ -681,14 +805,14 @@ class _ShiftRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Orario inizio
-        Expanded(
-          flex: 3,
-          child: _TimeDropdown(
-            value: shift.startTime,
-            onChanged: (time) => onChanged(shift.copyWith(startTime: time)),
-          ),
+        // Orario inizio - minimo = fine fascia precedente (se esiste)
+        _TimeDropdown(
+          value: shift.startTime,
+          minTime: previousShiftEndTime,
+          onChanged: (time) => onChanged(shift.copyWith(startTime: time)),
         ),
         const SizedBox(width: 12),
 
@@ -701,15 +825,13 @@ class _ShiftRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
 
-        // Orario fine
-        Expanded(
-          flex: 3,
-          child: _TimeDropdown(
-            value: shift.endTime,
-            onChanged: (time) => onChanged(shift.copyWith(endTime: time)),
-          ),
+        // Orario fine - minimo = orario inizio corrente
+        _TimeDropdown(
+          value: shift.endTime,
+          minTime: shift.startTime,
+          onChanged: (time) => onChanged(shift.copyWith(endTime: time)),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
 
         // Pulsante aggiungi (solo sull'ultimo turno)
         if (showAddButton)
@@ -744,40 +866,72 @@ class _TimeDropdown extends StatelessWidget {
   final TimeOfDay value;
   final ValueChanged<TimeOfDay> onChanged;
 
-  const _TimeDropdown({required this.value, required this.onChanged});
+  /// Orario minimo selezionabile (incluso). Se null, parte da 00:00.
+  final TimeOfDay? minTime;
+
+  /// Larghezza del dropdown (formato HH:MM + padding + icona)
+  static const double dropdownWidth = 100.0;
+
+  const _TimeDropdown({
+    required this.value,
+    required this.onChanged,
+    this.minTime,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Genera opzioni ogni 30 minuti
-    final options = <TimeOfDay>[];
+    // Genera opzioni con incremento pari a minutesPerSlotConst
+    final allOptions = <TimeOfDay>[];
     for (int hour = 0; hour < 24; hour++) {
-      for (int minute = 0; minute < 60; minute += 30) {
-        options.add(TimeOfDay(hour: hour, minute: minute));
+      for (
+        int minute = 0;
+        minute < 60;
+        minute += LayoutConfig.minutesPerSlotConst
+      ) {
+        allOptions.add(TimeOfDay(hour: hour, minute: minute));
       }
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.5)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<TimeOfDay>(
-          value: _findClosestOption(value, options),
-          isExpanded: true,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+    // Filtra le opzioni in base a minTime
+    final options = allOptions.where((time) {
+      final timeMinutes = time.hour * 60 + time.minute;
+      if (minTime != null) {
+        final minMinutes = minTime!.hour * 60 + minTime!.minute;
+        if (timeMinutes < minMinutes) return false;
+      }
+      return true;
+    }).toList();
+
+    // Se non ci sono opzioni valide, usa tutte le opzioni
+    final effectiveOptions = options.isEmpty ? allOptions : options;
+
+    return SizedBox(
+      width: dropdownWidth,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.5)),
           borderRadius: BorderRadius.circular(8),
-          items: options.map((time) {
-            return DropdownMenuItem(
-              value: time,
-              child: Text(_formatTime(time)),
-            );
-          }).toList(),
-          onChanged: (time) {
-            if (time != null) onChanged(time);
-          },
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<TimeOfDay>(
+            value: _findClosestOption(value, effectiveOptions),
+            isExpanded: true,
+            alignment: Alignment.center,
+            borderRadius: BorderRadius.circular(8),
+            icon: const SizedBox.shrink(),
+            items: effectiveOptions.map((time) {
+              return DropdownMenuItem(
+                value: time,
+                alignment: Alignment.center,
+                child: Text(_formatTime(time)),
+              );
+            }).toList(),
+            onChanged: (time) {
+              if (time != null) onChanged(time);
+            },
+          ),
         ),
       ),
     );
