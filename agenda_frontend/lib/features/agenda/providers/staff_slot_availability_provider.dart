@@ -1,11 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/models/availability_exception.dart';
 import '../../staff/presentation/staff_availability_screen.dart';
+import '../../staff/providers/availability_exceptions_provider.dart';
 import 'date_range_provider.dart';
 import 'layout_config_provider.dart';
 
 /// Provider che fornisce la disponibilità degli slot per uno staff specifico
 /// in base alla data corrente dell'agenda.
+///
+/// La disponibilità finale è calcolata come:
+/// 1. Base: template settimanale (es. Lun-Ven 09:00-18:00)
+/// 2. + Eccezioni "available": aggiungono slot disponibili
+/// 3. - Eccezioni "unavailable": rimuovono slot disponibili
 ///
 /// Ritorna un `Set<int>` contenente gli indici degli slot DISPONIBILI.
 /// - Set vuoto = nessuna disponibilità (staff non lavora quel giorno)
@@ -16,37 +23,58 @@ final staffSlotAvailabilityProvider = Provider.family<Set<int>, int>((
 ) {
   final agendaDate = ref.watch(agendaDateProvider);
   final asyncByStaff = ref.watch(staffAvailabilityByStaffProvider);
+  final layoutConfig = ref.watch(layoutConfigProvider);
 
   // Determina il giorno della settimana (1 = Lunedì, 7 = Domenica)
-  // DateTime.weekday: 1 = Monday, ..., 7 = Sunday
   final dayOfWeek = agendaDate.weekday;
 
-  // Ottieni i dati di disponibilità per lo staff
+  // ═══════════════════════════════════════════════════════════════
+  // 1️⃣ BASE: Template settimanale
+  // ═══════════════════════════════════════════════════════════════
+  Set<int> baseSlots;
+
   final allData = asyncByStaff.value;
-
-  // Se il provider è ancora in caricamento o non ha dati,
-  // comportamento RESTRITTIVO: staff non disponibile
   if (allData == null) {
-    return const <int>{};
+    baseSlots = <int>{};
+  } else {
+    final staffData = allData[staffId];
+    if (staffData == null || !staffData.containsKey(dayOfWeek)) {
+      baseSlots = <int>{};
+    } else {
+      baseSlots = Set<int>.from(staffData[dayOfWeek]!);
+    }
   }
 
-  final staffData = allData[staffId];
+  // ═══════════════════════════════════════════════════════════════
+  // 2️⃣ ECCEZIONI: Applica modifiche per la data specifica
+  // ═══════════════════════════════════════════════════════════════
+  final exceptions = ref.watch(
+    exceptionsForStaffOnDateProvider((staffId: staffId, date: agendaDate)),
+  );
 
-  if (staffData == null) {
-    // Staff non ha configurazione di disponibilità
-    // → comportamento RESTRITTIVO: non disponibile
-    return const <int>{};
+  if (exceptions.isEmpty) {
+    return baseSlots;
   }
 
-  // Controlla se esiste una configurazione per questo giorno
-  if (!staffData.containsKey(dayOfWeek)) {
-    // Giorno non configurato → comportamento RESTRITTIVO: non disponibile
-    return const <int>{};
+  // Applica le eccezioni in ordine
+  Set<int> finalSlots = Set<int>.from(baseSlots);
+
+  for (final exception in exceptions) {
+    final exceptionSlots = exception.toSlotIndices(
+      minutesPerSlot: layoutConfig.minutesPerSlot,
+      totalSlotsPerDay: layoutConfig.totalSlots,
+    );
+
+    if (exception.type == AvailabilityExceptionType.available) {
+      // AGGIUNGE disponibilità (es. turno extra)
+      finalSlots = finalSlots.union(exceptionSlots);
+    } else {
+      // RIMUOVE disponibilità (es. ferie, malattia)
+      finalSlots = finalSlots.difference(exceptionSlots);
+    }
   }
 
-  // Ritorna gli slot disponibili per il giorno corrente
-  // Se il set è vuoto, significa "nessun slot disponibile" (es. domenica)
-  return staffData[dayOfWeek]!;
+  return finalSlots;
 });
 
 /// Provider che verifica se uno slot specifico è disponibile.

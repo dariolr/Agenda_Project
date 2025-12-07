@@ -27,6 +27,7 @@ import 'package:agenda_frontend/core/l10n/l10_extension.dart';
 import 'package:agenda_frontend/core/models/staff.dart';
 import 'package:agenda_frontend/core/widgets/staff_picker_sheet.dart';
 import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
+import 'package:agenda_frontend/features/staff/presentation/widgets/exception_calendar_view.dart';
 import 'package:agenda_frontend/features/staff/presentation/widgets/weekly_schedule_editor.dart';
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
@@ -138,7 +139,8 @@ class StaffAvailabilityScreen extends ConsumerStatefulWidget {
 }
 
 class _StaffAvailabilityScreenState
-    extends ConsumerState<StaffAvailabilityScreen> {
+    extends ConsumerState<StaffAvailabilityScreen>
+    with SingleTickerProviderStateMixin {
   // Stato locale per staff corrente: selezioni per giorno (slot assoluti)
   Map<int, Set<int>> _weeklySelections = {
     for (int d = 1; d <= 7; d++) d: <int>{},
@@ -151,6 +153,21 @@ class _StaffAvailabilityScreenState
   final Map<int, Map<int, Set<int>>> _staffSelections = {};
   int? _selectedStaffId; // definito dopo aver caricato staff list
   bool _initializedFromProvider = false;
+
+  // Tab controller per navigare tra orario settimanale ed eccezioni
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   /// Verifica se ci sono modifiche non salvate.
   bool get _hasUnsavedChanges {
@@ -299,6 +316,13 @@ class _StaffAvailabilityScreenState
                 ? context.l10n.availabilityTitle
                 : context.l10n.availabilityTitleFor(staffName),
           ),
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: [
+              Tab(text: context.l10n.weeklyScheduleTitle),
+              Tab(text: context.l10n.exceptionsTitle),
+            ],
+          ),
         ),
         body: Column(
           children: [
@@ -317,17 +341,28 @@ class _StaffAvailabilityScreenState
                     selectedStaffId: _selectedStaffId,
                     onSelected: _switchStaff,
                   ),
-                  FilledButton(
-                    onPressed: (_selectedStaffId == null || isSaving)
-                        ? null
-                        : () => _save(ref, layout.minutesPerSlot),
-                    child: isSaving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(context.l10n.availabilitySave),
+                  // Mostra pulsante salva solo nella tab orario settimanale
+                  AnimatedBuilder(
+                    animation: _tabController,
+                    builder: (context, _) {
+                      if (_tabController.index != 0) {
+                        return const SizedBox.shrink();
+                      }
+                      return FilledButton(
+                        onPressed: (_selectedStaffId == null || isSaving)
+                            ? null
+                            : () => _save(ref, layout.minutesPerSlot),
+                        child: isSaving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(context.l10n.availabilitySave),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -335,93 +370,109 @@ class _StaffAvailabilityScreenState
 
             const Divider(height: 1),
 
-            // ── Header + Editor con ombra sovrapposta ────────────
+            // ── TabBarView con editor settimanale ed eccezioni ────────────
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final schedule = WeeklySchedule.fromSlots(
-                    _weeklySelections,
-                    minutesPerSlot: layout.minutesPerSlot,
-                  );
-
-                  return Stack(
-                    children: [
-                      // Editor turni settimanali (scrollabile) - sotto
-                      Positioned.fill(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.only(
-                            top: 80, // Spazio per l'header
-                          ),
-                          child: WeeklyScheduleEditor(
-                            initialSchedule: WeeklySchedule.fromSlots(
-                              _weeklySelections,
-                              minutesPerSlot: layout.minutesPerSlot,
-                            ),
-                            showHeader: false,
-                            onChanged: (newSchedule) {
-                              final newSlots = newSchedule.toSlots(
-                                minutesPerSlot: layout.minutesPerSlot,
-                              );
-                              setState(() {
-                                _weeklySelections = newSlots;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-
-                      // Header fisso con ombra - sopra
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                offset: const Offset(0, 4),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  context.l10n.weeklyScheduleTitle,
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  context.l10n.weeklyScheduleTotalHours(
-                                    schedule.totalHours,
-                                  ),
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Tab 1: Editor orario settimanale
+                  _buildWeeklyScheduleTab(layout),
+                  // Tab 2: Calendario eccezioni
+                  if (_selectedStaffId != null)
+                    SingleChildScrollView(
+                      child: ExceptionCalendarView(staffId: _selectedStaffId!),
+                    )
+                  else
+                    const Center(child: CircularProgressIndicator()),
+                ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Costruisce il tab dell'editor settimanale.
+  Widget _buildWeeklyScheduleTab(dynamic layout) {
+    final schedule = WeeklySchedule.fromSlots(
+      _weeklySelections,
+      minutesPerSlot: layout.minutesPerSlot,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          children: [
+            // Editor turni settimanali (scrollabile) - sotto
+            Positioned.fill(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(
+                  top: 80, // Spazio per l'header
+                ),
+                child: WeeklyScheduleEditor(
+                  initialSchedule: WeeklySchedule.fromSlots(
+                    _weeklySelections,
+                    minutesPerSlot: layout.minutesPerSlot,
+                  ),
+                  showHeader: false,
+                  onChanged: (newSchedule) {
+                    final newSlots = newSchedule.toSlots(
+                      minutesPerSlot: layout.minutesPerSlot,
+                    );
+                    setState(() {
+                      _weeklySelections = newSlots;
+                    });
+                  },
+                ),
+              ),
+            ),
+
+            // Header fisso con ombra - sopra
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      offset: const Offset(0, 4),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        context.l10n.weeklyScheduleTitle,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        context.l10n.weeklyScheduleTotalHours(
+                          schedule.totalHours,
+                        ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
