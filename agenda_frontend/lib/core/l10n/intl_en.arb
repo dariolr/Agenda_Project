@@ -284,5 +284,27 @@
   "exceptionDurationDays": "{count} {count, plural, =1{day} other{days}}",
   "@exceptionDurationDays": {"placeholders": {"count": {"type": "int"}}},
   "exceptionCreatedCount": "{count} {count, plural, =1{exception created} other{exceptions created}}",
-  "@exceptionCreatedCount": {"placeholders": {"count": {"type": "int"}}}
+  "@exceptionCreatedCount": {"placeholders": {"count": {"type": "int"}}},
+
+  "shiftOptions": "Shift options",
+  "shiftDeleteThisOnly": "Delete only this shift",
+  "shiftDeleteThisOnlyDesc": "Delete only the time slot of {date}",
+  "@shiftDeleteThisOnlyDesc": {"placeholders": {"date": {"type": "String"}}},
+  "shiftDeleteAll": "Delete all these shifts",
+  "shiftDeleteAllDesc": "Delete the weekly time slot for every {dayName}",
+  "@shiftDeleteAllDesc": {"placeholders": {"dayName": {"type": "String"}}},
+  "shiftEditThisOnly": "Edit only this shift",
+  "shiftEditThisOnlyDesc": "Edit only the time slot of {date}",
+  "@shiftEditThisOnlyDesc": {"placeholders": {"date": {"type": "String"}}},
+  "shiftEditAll": "Edit all these shifts",
+  "shiftEditAllDesc": "Edit the weekly time slot for every {dayName}",
+  "@shiftEditAllDesc": {"placeholders": {"dayName": {"type": "String"}}},
+  "shiftEditTitle": "Edit shift",
+  "shiftStartTime": "Start time",
+  "shiftEndTime": "End time",
+
+  "exceptionEditShift": "Edit exception",
+  "exceptionEditShiftDesc": "Edit the times of this exception",
+  "exceptionDeleteShift": "Delete exception",
+  "exceptionDeleteShiftDesc": "Restore base availability"
 }

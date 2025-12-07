@@ -284,5 +284,27 @@
   "exceptionDurationDays": "{count} {count, plural, =1{giorno} other{giorni}}",
   "@exceptionDurationDays": {"placeholders": {"count": {"type": "int"}}},
   "exceptionCreatedCount": "{count} {count, plural, =1{eccezione creata} other{eccezioni create}}",
-  "@exceptionCreatedCount": {"placeholders": {"count": {"type": "int"}}}
+  "@exceptionCreatedCount": {"placeholders": {"count": {"type": "int"}}},
+
+  "shiftOptions": "Opzioni turno",
+  "shiftDeleteThisOnly": "Elimina solo questo turno",
+  "shiftDeleteThisOnlyDesc": "Elimina solo la fascia oraria di {date}",
+  "@shiftDeleteThisOnlyDesc": {"placeholders": {"date": {"type": "String"}}},
+  "shiftDeleteAll": "Elimina tutti questi turni",
+  "shiftDeleteAllDesc": "Elimina la fascia oraria settimanale di ogni {dayName}",
+  "@shiftDeleteAllDesc": {"placeholders": {"dayName": {"type": "String"}}},
+  "shiftEditThisOnly": "Modifica solo questo turno",
+  "shiftEditThisOnlyDesc": "Modifica solo la fascia oraria di {date}",
+  "@shiftEditThisOnlyDesc": {"placeholders": {"date": {"type": "String"}}},
+  "shiftEditAll": "Modifica tutti questi turni",
+  "shiftEditAllDesc": "Modifica la fascia oraria settimanale di ogni {dayName}",
+  "@shiftEditAllDesc": {"placeholders": {"dayName": {"type": "String"}}},
+  "shiftEditTitle": "Modifica turno",
+  "shiftStartTime": "Ora inizio",
+  "shiftEndTime": "Ora fine",
+
+  "exceptionEditShift": "Modifica eccezione",
+  "exceptionEditShiftDesc": "Modifica gli orari di questa eccezione",
+  "exceptionDeleteShift": "Elimina eccezione",
+  "exceptionDeleteShiftDesc": "Ripristina la disponibilità base"
 }
