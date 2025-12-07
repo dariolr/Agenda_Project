@@ -21,17 +21,13 @@ AGGIORNAMENTI RECENTI:
 */
 
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:agenda_frontend/app/theme/extensions.dart';
-import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
 import 'package:agenda_frontend/core/l10n/l10_extension.dart';
 import 'package:agenda_frontend/core/models/staff.dart';
-import 'package:agenda_frontend/core/widgets/adaptive_dropdown.dart';
-import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
-import 'package:agenda_frontend/features/agenda/domain/config/agenda_theme.dart';
-import 'package:agenda_frontend/features/agenda/domain/config/layout_config.dart';
+import 'package:agenda_frontend/core/widgets/staff_picker_sheet.dart';
 import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
+import 'package:agenda_frontend/features/staff/presentation/widgets/weekly_schedule_editor.dart';
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -130,598 +126,6 @@ final staffAvailabilityByStaffProvider =
     >(StaffAvailabilityByStaffNotifier.new);
 
 // ──────────────────────────────────────────────
-// 🎨 Colori specifici per disponibilità (coerenti con AgendaTheme)
-// ──────────────────────────────────────────────
-
-class AvailabilityTheme {
-  // #41B2B2 con alpha ~20%
-  static const Color availabilitySelectedColor = Color(0x3341B2B2);
-  // Sfondo neutro
-  static const Color availabilityDefaultColor = Color(0xFFF5F5F5);
-
-  static const double borderRadius = LayoutConfig.borderRadius;
-}
-
-// ──────────────────────────────────────────────
-// 🔢 Helper: conversione slot <-> TimeRange
-// Lo slot è un indice da 0..(24h*60/minutesPerSlot - 1)
-// ──────────────────────────────────────────────
-
-int _timeToSlotIndex({
-  required int hour,
-  required int minute,
-  required int minutesPerSlot,
-}) {
-  final totalMinutes = hour * 60 + minute;
-  return totalMinutes ~/ minutesPerSlot;
-}
-
-int _slotIndexToStartMinute(int slotIndex, int minutesPerSlot) =>
-    slotIndex * minutesPerSlot;
-
-Set<int> rangesToSlots(List<TimeRange> ranges, int minutesPerSlot) {
-  final Set<int> slots = {};
-  for (final r in ranges) {
-    final startSlot = _timeToSlotIndex(
-      hour: r.startHour,
-      minute: 0,
-      minutesPerSlot: minutesPerSlot,
-    );
-    final endSlot = _timeToSlotIndex(
-      hour: r.endHour,
-      minute: 0,
-      minutesPerSlot: minutesPerSlot,
-    );
-    for (int s = startSlot; s < endSlot; s++) {
-      slots.add(s);
-    }
-  }
-  return slots;
-}
-
-List<TimeRange> slotsToRanges(Set<int> slots, int minutesPerSlot) {
-  if (slots.isEmpty) return const [];
-  final sorted = slots.toList()..sort();
-  final List<List<int>> clusters = [];
-  List<int> current = [sorted.first];
-  for (int i = 1; i < sorted.length; i++) {
-    if (sorted[i] == sorted[i - 1] + 1) {
-      current.add(sorted[i]);
-    } else {
-      clusters.add(current);
-      current = [sorted[i]];
-    }
-  }
-  clusters.add(current);
-
-  // Converti cluster in ore intere arrotondando ai bordi delle ore
-  final List<TimeRange> ranges = [];
-  for (final c in clusters) {
-    final startMin = _slotIndexToStartMinute(c.first, minutesPerSlot);
-    final endMin = _slotIndexToStartMinute(c.last + 1, minutesPerSlot);
-    final startHour = startMin ~/ 60; // floor
-    final endHour = (endMin + 59) ~/ 60; // ceil
-    if (endHour > startHour) {
-      ranges.add(TimeRange(startHour, endHour.clamp(0, 24)));
-    }
-  }
-  return ranges;
-}
-
-// ──────────────────────────────────────────────
-// 🎛️ Controller per drag painting nella griglia
-// ──────────────────────────────────────────────
-
-class _SelectionController extends ChangeNotifier {
-  bool _isDragging = false;
-  bool _dragValue = false;
-
-  bool get isDragging => _isDragging;
-  bool get dragValue => _dragValue;
-
-  void start(bool value) {
-    _isDragging = true;
-    _dragValue = value;
-    notifyListeners();
-  }
-
-  void stop() {
-    if (!_isDragging) return;
-    _isDragging = false;
-    notifyListeners();
-  }
-}
-
-// ──────────────────────────────────────────────
-// 🔳 AvailabilityCell: singolo slot interattivo
-// ──────────────────────────────────────────────
-
-class AvailabilityCell extends StatefulWidget {
-  final bool selected;
-  final double height;
-  final VoidCallback? onTap;
-  final _SelectionController? controller;
-  final String timeLabel; // HH:MM
-
-  const AvailabilityCell({
-    super.key,
-    required this.selected,
-    required this.height,
-    required this.timeLabel,
-    this.onTap,
-    this.controller,
-  });
-
-  @override
-  State<AvailabilityCell> createState() => _AvailabilityCellState();
-}
-
-class _AvailabilityCellState extends State<AvailabilityCell> {
-  bool _hovered = false;
-
-  void _maybePaintOnHover() {
-    final ctrl = widget.controller;
-    if (ctrl != null && ctrl.isDragging && widget.onTap != null) {
-      // Durante il drag, "entra" nella cella e applica il valore di drag
-      if (widget.selected != ctrl.dragValue) {
-        widget.onTap!.call();
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bgColor = widget.selected
-        ? AvailabilityTheme.availabilitySelectedColor
-        : AvailabilityTheme.availabilityDefaultColor;
-    final l10n = context.l10n;
-    final semanticLabel = widget.selected
-        ? l10n.availabilitySlotSelectedLabel(widget.timeLabel)
-        : l10n.availabilitySlotUnselectedLabel(widget.timeLabel);
-
-    return MouseRegion(
-      onEnter: (_) {
-        setState(() => _hovered = true);
-        _maybePaintOnHover();
-      },
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        onPanStart: (_) {
-          widget.controller?.start(!widget.selected);
-          // applica anche alla cella corrente
-          widget.onTap?.call();
-        },
-        onPanUpdate: (_) => _maybePaintOnHover(),
-        onPanEnd: (_) => widget.controller?.stop(),
-        onPanCancel: () => widget.controller?.stop(),
-        child: Semantics(
-          selected: widget.selected,
-          button: true,
-          label: semanticLabel,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOut,
-            height: widget.height,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(
-                AvailabilityTheme.borderRadius,
-              ),
-              border: Border.all(
-                color: AgendaTheme.appointmentBorder,
-                width: 0.6,
-              ),
-              boxShadow: _hovered
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ]
-                  : null,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              widget.timeLabel,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Colors.black87,
-                fontSize: 10,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────
-// 🗓️ AvailabilityGrid: 7 colonne × N righe (slot)
-// ──────────────────────────────────────────────
-
-class AvailabilityGrid extends StatefulWidget {
-  final int startHour;
-  final int endHour;
-  final LayoutConfig layout;
-  final Map<int, Set<int>> selections; // day(1..7) -> slots
-  final void Function(int day, int slotIndex) onToggle;
-  final int selectedDay; // evidenziazione header e per pulsanti esterni
-  final void Function(int day)? onClearDay;
-  final void Function(int day)? onCopyDayToAll;
-
-  const AvailabilityGrid({
-    super.key,
-    required this.startHour,
-    required this.endHour,
-    required this.layout,
-    required this.selections,
-    required this.onToggle,
-    required this.selectedDay,
-    this.onClearDay,
-    this.onCopyDayToAll,
-  });
-  @override
-  State<AvailabilityGrid> createState() => _AvailabilityGridState();
-}
-
-class _AvailabilityGridState extends State<AvailabilityGrid> {
-  late final ScrollController verticalController;
-  late final ScrollController headerHController;
-  bool _didInitialScroll = false;
-
-  int get slotsPerHour => (60 ~/ widget.layout.minutesPerSlot);
-  int get visibleSlots => (widget.endHour - widget.startHour) * slotsPerHour;
-
-  @override
-  void initState() {
-    super.initState();
-    verticalController = ScrollController();
-    headerHController = ScrollController();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToInitialHour());
-  }
-
-  void _scrollToInitialHour() {
-    if (_didInitialScroll || !verticalController.hasClients) return;
-    // Trova lo slot assoluto minimo attivo tra tutti i giorni
-    int? earliestSlot;
-    for (final daySet in widget.selections.values) {
-      if (daySet.isNotEmpty) {
-        final minInDay = daySet.reduce((a, b) => a < b ? a : b);
-        if (earliestSlot == null || minInDay < earliestSlot) {
-          earliestSlot = minInDay;
-        }
-      }
-    }
-    int targetHour;
-    if (earliestSlot != null) {
-      final earliestMinute = earliestSlot * widget.layout.minutesPerSlot;
-      targetHour = earliestMinute ~/ 60;
-    } else {
-      targetHour = 9; // default 09:00
-    }
-    targetHour = targetHour.clamp(widget.startHour, widget.endHour - 1);
-    const double slotVPad = 2.0;
-    final double slotStride = widget.layout.slotHeight + (slotVPad * 2);
-    final double offset =
-        (targetHour - widget.startHour) * slotsPerHour * slotStride;
-    final double maxOffset = verticalController.position.maxScrollExtent;
-    verticalController.jumpTo(offset.clamp(0, maxOffset));
-    _didInitialScroll = true;
-  }
-
-  @override
-  void dispose() {
-    verticalController.dispose();
-    headerHController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final selectionController = _SelectionController();
-
-    final l10n = context.l10n;
-    final dayNames = [
-      l10n.dayMonShort,
-      l10n.dayTueShort,
-      l10n.dayWedShort,
-      l10n.dayThuShort,
-      l10n.dayFriShort,
-      l10n.daySatShort,
-      l10n.daySunShort,
-    ];
-    final hourLabels = List.generate(
-      widget.endHour - widget.startHour,
-      (i) => widget.startHour + i,
-    );
-    final hourColWidth = math.max(widget.layout.hourColumnWidth, 52.0);
-    // Deve combaciare con il Padding verticale degli slot nelle colonne dei giorni
-    const double slotVPad = 2.0;
-    final double slotStride = widget.layout.slotHeight + (slotVPad * 2);
-
-    Widget buildDayHeader(int day) {
-      final hasActive = (widget.selections[day]?.isNotEmpty ?? false);
-      // Calcola i minuti esatti raggruppando gli slot consecutivi
-      int totalMinutes = 0;
-      final daySlots = widget.selections[day] ?? const <int>{};
-      if (daySlots.isNotEmpty) {
-        final sorted = daySlots.toList()..sort();
-        List<int> current = [sorted.first];
-        for (int i = 1; i < sorted.length; i++) {
-          if (sorted[i] == sorted[i - 1] + 1) {
-            current.add(sorted[i]);
-          } else {
-            // Regola: il primo slot di una serie indica solo l'inizio,
-            // quindi la durata è (n-1) * minutesPerSlot
-            totalMinutes +=
-                math.max(0, (current.length - 1)) *
-                widget.layout.minutesPerSlot;
-            current = [sorted[i]];
-          }
-        }
-        totalMinutes +=
-            math.max(0, (current.length - 1)) * widget.layout.minutesPerSlot;
-      }
-      final totalHours = totalMinutes ~/ 60;
-      final remMinutes = totalMinutes % 60;
-      String totalStr = '';
-      if (totalMinutes > 0) {
-        if (remMinutes == 0) {
-          totalStr = l10n.hoursHoursOnly(totalHours);
-        } else {
-          totalStr = l10n.hoursMinutesCompact(totalHours, remMinutes);
-        }
-      }
-      return SizedBox(
-        height: LayoutConfig.headerHeightFor(context),
-        child: Stack(
-          children: [
-            // Background + label centrata
-            Positioned.fill(
-              child: Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AgendaTheme.staffHeaderBackground(
-                    hasActive ? Colors.teal : Colors.blueGrey,
-                  ),
-                  borderRadius: BorderRadius.circular(
-                    AvailabilityTheme.borderRadius,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      dayNames[day - 1],
-                      style: AgendaTheme.staffHeaderTextStyle,
-                    ),
-                    if (hasActive && totalStr.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          totalStr,
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    const double actionsHeight = 28.0;
-
-    Widget buildDayActions(int day) {
-      return SizedBox(
-        height: actionsHeight,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            IconButton(
-              tooltip: l10n.availabilityCopyToAll,
-              padding: const EdgeInsets.all(0),
-              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-              iconSize: 18,
-              color: Colors.black87,
-              onPressed: widget.onCopyDayToAll == null
-                  ? null
-                  : () => widget.onCopyDayToAll!(day),
-              icon: const Icon(Icons.content_copy),
-            ),
-            IconButton(
-              tooltip: l10n.availabilityClear,
-              padding: const EdgeInsets.all(0),
-              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-              iconSize: 18,
-              color: Colors.black87,
-              onPressed: widget.onClearDay == null
-                  ? null
-                  : () => widget.onClearDay!(day),
-              icon: const Icon(Icons.cancel_outlined),
-            ),
-          ],
-        ),
-      );
-    }
-
-    Widget buildHourColumnBody() {
-      return SizedBox(
-        width: hourColWidth,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            for (final h in hourLabels)
-              SizedBox(
-                // Altezza di un blocco ora = numero di slot per ora * (altezza cella + padding verticale per slot)
-                height: slotStride * slotsPerHour,
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 4.0, top: 2),
-                    child: Text(
-                      DtFmt.hOnly(context, h),
-                      style: AgendaTheme.hourTextStyle,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      );
-    }
-
-    Widget buildDayBody(int day) {
-      final daySlots = widget.selections[day] ?? <int>{};
-      final firstSlotIndex = _timeToSlotIndex(
-        hour: widget.startHour,
-        minute: 0,
-        minutesPerSlot: widget.layout.minutesPerSlot,
-      );
-      return SizedBox(
-        width: LayoutConfig.minColumnWidthDesktop,
-        child: Column(
-          children: [
-            for (int index = 0; index < visibleSlots; index++) ...[
-              Builder(
-                builder: (_) {
-                  final absoluteIndex = firstSlotIndex + index;
-                  final selected = daySlots.contains(absoluteIndex);
-                  final totalMinutes =
-                      absoluteIndex * widget.layout.minutesPerSlot;
-                  final hour = totalMinutes ~/ 60;
-                  final minute = totalMinutes % 60;
-                  final label = DtFmt.hm(context, hour, minute);
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 2,
-                      horizontal: 2,
-                    ),
-                    child: AvailabilityCell(
-                      key: Key(
-                        'availability_cell_day_${day}_slot_$absoluteIndex',
-                      ),
-                      selected: selected,
-                      height: widget.layout.slotHeight,
-                      controller: selectionController,
-                      timeLabel: label,
-                      onTap: () => widget.onToggle(day, absoluteIndex),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Azioni sopra gli header (scroll orizzontale separato)
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(width: hourColWidth, height: actionsHeight),
-            const SizedBox(width: 8),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: headerHController,
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (int day = 1; day <= 7; day++) ...[
-                      SizedBox(
-                        width: LayoutConfig.minColumnWidthDesktop,
-                        child: buildDayActions(day),
-                      ),
-                      if (day < 7) const SizedBox(width: 8),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        // Header (scroll orizzontale separato)
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: hourColWidth,
-              height: LayoutConfig.headerHeightFor(context),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: headerHController,
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (int day = 1; day <= 7; day++) ...[
-                      SizedBox(
-                        width: LayoutConfig.minColumnWidthDesktop,
-                        child: buildDayHeader(day),
-                      ),
-                      if (day < 7) const SizedBox(width: 8),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        // Corpo con scroll sincronizzato (vert)
-        Expanded(
-          child: ScrollConfiguration(
-            behavior: const NoScrollbarBehavior(),
-            child: SingleChildScrollView(
-              controller: verticalController,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  buildHourColumnBody(),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ScrollConfiguration(
-                      behavior: const NoScrollbarBehavior(),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            for (int day = 1; day <= 7; day++) ...[
-                              buildDayBody(day),
-                              if (day < 7) const SizedBox(width: 8),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ──────────────────────────────────────────────
 // 🖥️ Schermata principale: StaffAvailabilityScreen
 // ──────────────────────────────────────────────
 
@@ -742,15 +146,7 @@ class _StaffAvailabilityScreenState
   // Mappa staffId -> disponibilità settimanale (slots)
   final Map<int, Map<int, Set<int>>> _staffSelections = {};
   int? _selectedStaffId; // definito dopo aver caricato staff list
-  final int _selectedDay = 1;
   bool _initializedFromProvider = false;
-
-  // Configurazione visiva: fascia 08:00–20:00
-  static const int _startHour = 0; // start at midnight
-  static const int _endHour = 24; // cover full 24h
-
-  // Metodo legacy rimosso: la conversione da ranges a slots ora non serve
-  // perché salviamo direttamente gli slot. Manteniamo il commento per riferimento storico.
 
   void _ensureCurrentStaffInit(int staffId) {
     _staffSelections.putIfAbsent(staffId, () {
@@ -781,17 +177,6 @@ class _StaffAvailabilityScreenState
     });
   }
 
-  void _toggleSlot(int day, int slotIndex) {
-    setState(() {
-      final set = _weeklySelections.putIfAbsent(day, () => <int>{});
-      if (!set.add(slotIndex)) {
-        set.remove(slotIndex);
-      }
-    });
-  }
-
-  // Metodi legacy rimossi: applica a tutti i giorni / azzera giorno.
-
   Future<void> _save(WidgetRef ref, int minutesPerSlot) async {
     // Persisti nello storage locale per staff corrente
     if (_selectedStaffId != null) {
@@ -812,7 +197,7 @@ class _StaffAvailabilityScreenState
         message = l10n.availabilitySaved;
       } else {
         // Trova il nome staff per messaggio più chiaro
-        final staffList = ref.read(allStaffProvider);
+        final staffList = ref.read(staffForStaffSectionProvider);
         String name = _selectedStaffId!.toString();
         if (staffList.isNotEmpty) {
           final staff = staffList.firstWhere(
@@ -833,7 +218,8 @@ class _StaffAvailabilityScreenState
   Widget build(BuildContext context) {
     final layout = ref.watch(layoutConfigProvider);
     final availabilityByStaff = ref.watch(staffAvailabilityByStaffProvider);
-    final staffList = ref.watch(allStaffProvider);
+    // Usa lo staff filtrato per la location selezionata nella sezione staff
+    final staffList = ref.watch(staffForStaffSectionProvider);
 
     // If a staffId was requested from another screen, pre-select it once
     final requested = ref.read(initialStaffToEditProvider).value;
@@ -918,28 +304,24 @@ class _StaffAvailabilityScreenState
 
           const Divider(height: 1),
 
-          // ── Griglia disponibilità ─────────────────────────
+          // ── Editor turni settimanali ─────────────────────────
           Expanded(
-            child: AvailabilityGrid(
-              startHour: _startHour,
-              endHour: _endHour,
-              layout: layout,
-              selections: _weeklySelections,
-              onToggle: _toggleSlot,
-              selectedDay: _selectedDay,
-              onClearDay: (day) {
-                setState(() {
-                  _weeklySelections[day] = <int>{};
-                });
-              },
-              onCopyDayToAll: (day) {
-                final pattern = _weeklySelections[day] ?? <int>{};
-                setState(() {
-                  for (int d = 1; d <= 7; d++) {
-                    _weeklySelections[d] = {...pattern};
-                  }
-                });
-              },
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: WeeklyScheduleEditor(
+                initialSchedule: WeeklySchedule.fromSlots(
+                  _weeklySelections,
+                  minutesPerSlot: layout.minutesPerSlot,
+                ),
+                onChanged: (schedule) {
+                  final newSlots = schedule.toSlots(
+                    minutesPerSlot: layout.minutesPerSlot,
+                  );
+                  setState(() {
+                    _weeklySelections = newSlots;
+                  });
+                },
+              ),
             ),
           ),
         ],
@@ -948,7 +330,7 @@ class _StaffAvailabilityScreenState
   }
 }
 
-/// Dropdown adattivo per selezione staff nella schermata disponibilità.
+/// Widget per selezione staff con bottom sheet/dialog (come nel form appuntamento)
 class _StaffSelectorDropdown extends ConsumerStatefulWidget {
   const _StaffSelectorDropdown({
     required this.staffList,
@@ -980,6 +362,26 @@ class _StaffSelectorDropdownState
     return '${staff.name} ${staff.surname}'.trim();
   }
 
+  Staff? _getSelectedStaff() {
+    if (widget.selectedStaffId == null) return null;
+    return widget.staffList.firstWhere(
+      (s) => s.id == widget.selectedStaffId,
+      orElse: () => widget.staffList.first,
+    );
+  }
+
+  Future<void> _showPicker() async {
+    final result = await showStaffPickerSheet(
+      context: context,
+      ref: ref,
+      staff: widget.staffList,
+      selectedId: widget.selectedStaffId,
+    );
+    if (result != null) {
+      widget.onSelected(result);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -991,28 +393,17 @@ class _StaffSelectorDropdownState
         ? Color.alphaBlend(hoverFill, colorScheme.surface)
         : colorScheme.surface;
 
-    return AdaptiveDropdown<int>(
-      items: [
-        for (final s in widget.staffList)
-          AdaptiveDropdownItem<int>(
-            value: s.id,
-            child: Text('${s.name} ${s.surname}'.trim()),
-          ),
-      ],
-      selectedValue: widget.selectedStaffId,
-      onSelected: widget.onSelected,
-      modalTitle: context.l10n.selectStaffTitle,
-      useRootNavigator: true,
-      onOpened: () => setState(() => _isHovered = true),
-      onClosed: () => setState(() => _isHovered = false),
-      popupWidth: 200,
-      child: MouseRegion(
-        onEnter: (_) {
-          if (!_isHovered) setState(() => _isHovered = true);
-        },
-        onExit: (_) {
-          if (_isHovered) setState(() => _isHovered = false);
-        },
+    final selectedStaff = _getSelectedStaff();
+
+    return MouseRegion(
+      onEnter: (_) {
+        if (!_isHovered) setState(() => _isHovered = true);
+      },
+      onExit: (_) {
+        if (_isHovered) setState(() => _isHovered = false);
+      },
+      child: GestureDetector(
+        onTap: _showPicker,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
@@ -1023,6 +414,21 @@ class _StaffSelectorDropdownState
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (selectedStaff != null) ...[
+                CircleAvatar(
+                  backgroundColor: selectedStaff.color,
+                  radius: 14,
+                  child: Text(
+                    selectedStaff.name[0],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
               Text(_getSelectedLabel(), style: theme.textTheme.bodyMedium),
               const SizedBox(width: 8),
               Icon(

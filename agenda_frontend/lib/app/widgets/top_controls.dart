@@ -104,7 +104,7 @@ class TopControls extends ConsumerWidget {
             icon: const Icon(Icons.place_outlined),
             iconSize: 22,
             onPressed: () async {
-              await _showLocationSheet(context, data);
+              await _showLocationSheet(context, data, ref);
             },
           ),
         if (mode == TopControlsMode.agenda &&
@@ -175,7 +175,7 @@ class TopControls extends ConsumerWidget {
             icon: const Icon(Icons.place_outlined),
             iconSize: 33,
             onPressed: () async {
-              await _showLocationSheet(context, data, tablet: true);
+              await _showLocationSheet(context, data, ref, tablet: true);
             },
           ),
         if (mode == TopControlsMode.agenda &&
@@ -234,14 +234,25 @@ class TopControls extends ConsumerWidget {
         ),
         const SizedBox(width: 16),
         if (data.locations.length > 1) ...[
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: AgendaLocationSelector(
-              locations: data.locations,
-              current: data.currentLocation,
-              onSelected: data.locationController.set,
+          if (mode == TopControlsMode.staff)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: StaffLocationSelector(
+                locations: data.locations,
+                currentLocationId: ref.watch(staffSectionLocationIdProvider),
+                onSelected:
+                    ref.read(staffSectionLocationIdProvider.notifier).set,
+              ),
+            )
+          else
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: AgendaLocationSelector(
+                locations: data.locations,
+                current: data.currentLocation,
+                onSelected: data.locationController.set,
+              ),
             ),
-          ),
           const SizedBox(width: 12),
         ],
         if (mode == TopControlsMode.agenda &&
@@ -261,23 +272,35 @@ class TopControls extends ConsumerWidget {
 
   Future<void> _showLocationSheet(
     BuildContext context,
-    TopControlsData data, {
+    TopControlsData data,
+    WidgetRef ref, {
     bool tablet = false,
   }) async {
-    final result = await AppBottomSheet.show<int>(
+    final isStaffMode = mode == TopControlsMode.staff;
+    final currentStaffLocationId =
+        isStaffMode ? ref.read(staffSectionLocationIdProvider) : null;
+
+    final result = await AppBottomSheet.show<int?>(
       context: context,
       builder: (ctx) => _LocationSheetContent(
         locations: data.locations,
-        currentLocationId: data.currentLocation.id,
+        currentLocationId:
+            isStaffMode ? currentStaffLocationId : data.currentLocation.id,
         title: data.l10n.agendaSelectLocation,
         onSelected: (id) => Navigator.of(ctx).pop(id),
+        showAllLocationsOption: isStaffMode,
+        allLocationsLabel: data.l10n.allLocations,
       ),
       useRootNavigator: true,
       padding: EdgeInsets.zero,
     );
 
-    if (result != null) {
-      data.locationController.set(result);
+    if (result != null || (isStaffMode && result == null)) {
+      if (isStaffMode) {
+        ref.read(staffSectionLocationIdProvider.notifier).set(result);
+      } else if (result != null) {
+        data.locationController.set(result);
+      }
     }
   }
 
@@ -340,12 +363,16 @@ class _LocationSheetContent extends StatelessWidget {
     required this.currentLocationId,
     required this.title,
     required this.onSelected,
+    this.showAllLocationsOption = false,
+    this.allLocationsLabel,
   });
 
   final List<Location> locations;
-  final int currentLocationId;
+  final int? currentLocationId; // null = "Tutte le sedi" se showAllLocationsOption
   final String title;
-  final ValueChanged<int> onSelected;
+  final ValueChanged<int?> onSelected;
+  final bool showAllLocationsOption;
+  final String? allLocationsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -353,6 +380,8 @@ class _LocationSheetContent extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     final maxHeight = MediaQuery.of(context).size.height * 0.8;
+    final itemCount =
+        locations.length + (showAllLocationsOption ? 1 : 0);
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
@@ -371,9 +400,51 @@ class _LocationSheetContent extends StatelessWidget {
           Divider(height: 1, color: Colors.grey.withOpacity(0.35)),
           Expanded(
             child: ListView.builder(
-              itemCount: locations.length,
+              itemCount: itemCount,
               itemBuilder: (ctx, index) {
-                final loc = locations[index];
+                // Prima voce: "Tutte le sedi" se abilitato
+                if (showAllLocationsOption && index == 0) {
+                  final isSelected = currentLocationId == null;
+                  return InkWell(
+                    onTap: () => onSelected(null),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                        horizontal: 16,
+                      ),
+                      color: isSelected
+                          ? colorScheme.primary.withOpacity(0.08)
+                          : Colors.transparent,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              allLocationsLabel ?? 'All locations',
+                              style: TextStyle(
+                                color: colorScheme.onSurface,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (isSelected)
+                            Icon(
+                              Icons.check,
+                              size: 20,
+                              color: colorScheme.primary,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final locationIndex =
+                    showAllLocationsOption ? index - 1 : index;
+                final loc = locations[locationIndex];
                 final isSelected = loc.id == currentLocationId;
                 return InkWell(
                   onTap: () => onSelected(loc.id),

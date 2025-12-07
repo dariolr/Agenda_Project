@@ -183,6 +183,14 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     return appointments;
   }
 */
+
+  /// Restituisce gli appointments associati a un booking specifico,
+  /// ordinati per orario di inizio.
+  List<Appointment> getByBookingId(int bookingId) {
+    return state.where((a) => a.bookingId == bookingId).toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+  }
+
   void moveAppointment({
     required int appointmentId,
     required int newStaffId,

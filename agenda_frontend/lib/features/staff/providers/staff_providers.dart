@@ -52,6 +52,42 @@ final staffForCurrentLocationProvider = Provider<List<Staff>>((ref) {
   ];
 });
 
+// ──────────────────────────────────────────────
+// 🏢 Location provider separato per la sezione Staff
+// null = "Tutte le sedi" (default)
+// ──────────────────────────────────────────────
+
+class StaffSectionLocationNotifier extends Notifier<int?> {
+  @override
+  int? build() => null; // Default: tutte le sedi
+
+  void set(int? locationId) => state = locationId;
+
+  void setAll() => state = null;
+}
+
+final staffSectionLocationIdProvider =
+    NotifierProvider<StaffSectionLocationNotifier, int?>(
+      StaffSectionLocationNotifier.new,
+    );
+
+/// Staff filtrato per la location selezionata nella sezione Staff.
+/// Se locationId è null (tutte le sedi), restituisce tutti gli staff.
+final staffForStaffSectionProvider = Provider<List<Staff>>((ref) {
+  final locationId = ref.watch(staffSectionLocationIdProvider);
+  final staff = ref.watch(allStaffProvider);
+
+  if (locationId == null) {
+    // Tutte le sedi: restituisci tutti gli staff
+    return staff;
+  }
+
+  return [
+    for (final member in staff)
+      if (member.worksAtLocation(locationId)) member,
+  ];
+});
+
 /// Holds the staffId that should be pre-selected when navigating to
 /// the single-staff availability edit screen. Cleared after consumption.
 final initialStaffToEditProvider = Provider<ValueNotifier<int?>>((ref) {

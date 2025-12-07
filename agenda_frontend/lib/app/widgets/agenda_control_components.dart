@@ -932,3 +932,124 @@ class _AgendaLocationSelectorState
     );
   }
 }
+
+/// Selettore di location per la sezione Staff.
+/// Include l'opzione "Tutte le sedi" come valore di default (null).
+class StaffLocationSelector extends ConsumerStatefulWidget {
+  const StaffLocationSelector({
+    super.key,
+    required this.locations,
+    required this.currentLocationId,
+    required this.onSelected,
+  });
+
+  final List<Location> locations;
+  final int? currentLocationId; // null = "Tutte le sedi"
+  final void Function(int? id) onSelected;
+
+  @override
+  ConsumerState<StaffLocationSelector> createState() =>
+      _StaffLocationSelectorState();
+}
+
+class _StaffLocationSelectorState extends ConsumerState<StaffLocationSelector> {
+  bool _isHovered = false;
+
+  String _getDisplayName(BuildContext context) {
+    if (widget.currentLocationId == null) {
+      return context.l10n.allLocations;
+    }
+    final location = widget.locations.firstWhere(
+      (l) => l.id == widget.currentLocationId,
+      orElse: () => widget.locations.first,
+    );
+    return location.name;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final interactions = Theme.of(context).extension<AppInteractionColors>();
+    final hoverFill =
+        interactions?.hoverFill ?? colorScheme.primary.withOpacity(0.06);
+    final backgroundColor = _isHovered
+        ? Color.alphaBlend(hoverFill, colorScheme.surface)
+        : colorScheme.surface;
+    final l10n = context.l10n;
+
+    return AdaptiveDropdown<int?>(
+      items: [
+        // Opzione "Tutte le sedi" come prima voce
+        AdaptiveDropdownItem<int?>(value: null, child: Text(l10n.allLocations)),
+        // Separator
+        for (final location in widget.locations)
+          AdaptiveDropdownItem<int?>(
+            value: location.id,
+            child: Text(location.name),
+          ),
+      ],
+      selectedValue: widget.currentLocationId,
+      onSelected: widget.onSelected,
+      modalTitle: l10n.agendaSelectLocation,
+      popupWidth: 200,
+      useRootNavigator: true,
+      onOpened: () => setState(() => _isHovered = true),
+      onClosed: () => setState(() => _isHovered = false),
+      child: MouseRegion(
+        onEnter: (_) {
+          if (!_isHovered) setState(() => _isHovered = true);
+        },
+        onExit: (_) {
+          if (_isHovered) setState(() => _isHovered = false);
+        },
+        child: Semantics(
+          button: true,
+          label: l10n.agendaSelectLocation,
+          child: ClipRRect(
+            borderRadius: kAgendaPillRadius,
+            child: Container(
+              height: kAgendaControlHeight,
+              decoration: BoxDecoration(
+                borderRadius: kAgendaPillRadius,
+                border: Border.all(color: Colors.grey.withOpacity(0.35)),
+                color: backgroundColor,
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const compactBreakpoint = 220.0;
+                  final maxWidth = constraints.maxWidth;
+                  final isCompact =
+                      maxWidth.isFinite &&
+                      maxWidth > 0 &&
+                      maxWidth < compactBreakpoint;
+                  final horizontalPadding = isCompact
+                      ? 12.0
+                      : kAgendaControlHorizontalPadding;
+
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _getDisplayName(context),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
