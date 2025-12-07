@@ -50,6 +50,9 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
   final pressedFill = isDark
       ? colorPrimary2.withOpacity(0.18)
       : colorPrimary1.withOpacity(0.1);
+  final alternatingRowFill = isDark
+      ? colorPrimary2.withOpacity(0.05)
+      : colorPrimary1.withOpacity(0.03);
 
   final themeWithPalette = base.copyWith(
     appBarTheme: AppBarTheme(
@@ -136,7 +139,11 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
 
   return themeWithPalette.copyWith(
     extensions: <ThemeExtension<dynamic>>[
-      AppInteractionColors(hoverFill: hoverFill, pressedFill: pressedFill),
+      AppInteractionColors(
+        hoverFill: hoverFill,
+        pressedFill: pressedFill,
+        alternatingRowFill: alternatingRowFill,
+      ),
     ],
   );
 }

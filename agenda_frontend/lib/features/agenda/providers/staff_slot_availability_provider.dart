@@ -8,7 +8,8 @@ import 'layout_config_provider.dart';
 /// in base alla data corrente dell'agenda.
 ///
 /// Ritorna un `Set<int>` contenente gli indici degli slot DISPONIBILI.
-/// Uno slot NON è disponibile se il suo indice NON è presente nel set.
+/// - Set vuoto = nessuna disponibilità (staff non lavora quel giorno)
+/// - Se non ci sono dati configurati, lo staff è considerato NON disponibile (comportamento restrittivo)
 final staffSlotAvailabilityProvider = Provider.family<Set<int>, int>((
   ref,
   staffId,
@@ -21,18 +22,31 @@ final staffSlotAvailabilityProvider = Provider.family<Set<int>, int>((
   final dayOfWeek = agendaDate.weekday;
 
   // Ottieni i dati di disponibilità per lo staff
-  final allData = asyncByStaff.value ?? const <int, Map<int, Set<int>>>{};
+  final allData = asyncByStaff.value;
+
+  // Se il provider è ancora in caricamento o non ha dati,
+  // comportamento RESTRITTIVO: staff non disponibile
+  if (allData == null) {
+    return const <int>{};
+  }
+
   final staffData = allData[staffId];
 
   if (staffData == null) {
-    // Nessun dato: considera tutti gli slot come disponibili
-    // Questo evita di mostrare tutto come non disponibile
-    // quando i dati non sono ancora caricati
+    // Staff non ha configurazione di disponibilità
+    // → comportamento RESTRITTIVO: non disponibile
+    return const <int>{};
+  }
+
+  // Controlla se esiste una configurazione per questo giorno
+  if (!staffData.containsKey(dayOfWeek)) {
+    // Giorno non configurato → comportamento RESTRITTIVO: non disponibile
     return const <int>{};
   }
 
   // Ritorna gli slot disponibili per il giorno corrente
-  return staffData[dayOfWeek] ?? const <int>{};
+  // Se il set è vuoto, significa "nessun slot disponibile" (es. domenica)
+  return staffData[dayOfWeek]!;
 });
 
 /// Provider che verifica se uno slot specifico è disponibile.
@@ -43,10 +57,9 @@ final isSlotAvailableProvider =
         staffSlotAvailabilityProvider(params.staffId),
       );
 
-      // Se il set è vuoto, consideriamo lo staff come "sempre disponibile"
-      // (dati non ancora caricati o nessuna configurazione)
+      // Se il set è vuoto, lo staff non è disponibile
       if (availableSlots.isEmpty) {
-        return true;
+        return false;
       }
 
       return availableSlots.contains(params.slotIndex);
@@ -62,9 +75,9 @@ final unavailableSlotRangesProvider =
       final layoutConfig = ref.watch(layoutConfigProvider);
       final totalSlots = layoutConfig.totalSlots;
 
-      // Se non ci sono dati, nessun range non disponibile
+      // Se il set è vuoto, l'intera giornata è non disponibile
       if (availableSlots.isEmpty) {
-        return const [];
+        return [(startIndex: 0, count: totalSlots)];
       }
 
       final List<({int startIndex, int count})> ranges = [];
