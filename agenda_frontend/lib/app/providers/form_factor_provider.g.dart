@@ -42,7 +42,7 @@ final class FormFactorNotifierProvider
 }
 
 String _$formFactorNotifierHash() =>
-    r'b424a354337075ba3ba718aa01c971cbf4353de7';
+    r'c2d345138b8b938ff84a110cd4b6bf3dda7a605e';
 
 abstract class _$FormFactorNotifier extends $Notifier<AppFormFactor> {
   AppFormFactor build();

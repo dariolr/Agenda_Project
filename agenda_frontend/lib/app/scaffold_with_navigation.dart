@@ -27,7 +27,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     );
     final formFactor = ref.watch(formFactorProvider);
 
-    if (formFactor != AppFormFactor.mobile) {
+    if (formFactor == AppFormFactor.desktop) {
       final layoutConfig = ref.watch(layoutConfigProvider);
       final dividerColor = Theme.of(context).dividerColor;
       const dividerThickness = 1.0;
@@ -37,8 +37,13 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       final isClients = navigationShell.currentIndex == 1;
       final isServices = navigationShell.currentIndex == 2;
 
+      final isTablet = formFactor == AppFormFactor.tablet;
+
       return Scaffold(
         appBar: AppBar(
+          titleSpacing: isTablet && isAgenda
+              ? 4
+              : NavigationToolbar.kMiddleSpacing,
           title: isAgenda
               ? const AgendaTopControls()
               : Text(
@@ -48,7 +53,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                   ),
                 ),
           centerTitle: false,
-          toolbarHeight: 72,
+          toolbarHeight: 76,
           actions: isAgenda
               ? [const _AgendaAddAction()]
               : (isServices
@@ -85,11 +90,14 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isAgenda = navigationShell.currentIndex == 0;
     final isClients = navigationShell.currentIndex == 1;
     final isServices = navigationShell.currentIndex == 2;
+    final isTablet = formFactor == AppFormFactor.tablet;
     final bottomNavColor =
         Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
         Theme.of(context).colorScheme.surface;
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: isTablet ? 76 : 64,
+        titleSpacing: isAgenda ? 4 : NavigationToolbar.kMiddleSpacing,
         title: isAgenda
             ? const AgendaTopControls(compact: true)
             : Text(
@@ -484,62 +492,13 @@ class _NavIcon extends StatefulWidget {
 
 class _NavIconState extends State<_NavIcon> {
   static const double _size = 52;
-  static const double _iconSize = 28;
-  static const double _tooltipHeight = 34;
+  static const double _iconSize = 24;
 
   bool _hovering = false;
-  OverlayEntry? _tooltipEntry;
-
-  @override
-  void dispose() {
-    _removeTooltip();
-    super.dispose();
-  }
 
   void _handleHover(bool hovering) {
     if (_hovering == hovering) return;
     setState(() => _hovering = hovering);
-    if (hovering) {
-      _showTooltip();
-    } else {
-      _removeTooltip();
-    }
-  }
-
-  void _showTooltip() {
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    final overlay = Overlay.of(context);
-    final overlayBox = overlay.context.findRenderObject() as RenderBox?;
-    if (overlayBox == null) return;
-
-    final iconGlobal = renderBox.localToGlobal(Offset.zero);
-    final overlayGlobal = overlayBox.localToGlobal(Offset.zero);
-
-    // distanza orizzontale dal NavigationRail: leggermente più vicina
-    final dx = iconGlobal.dx - overlayGlobal.dx + renderBox.size.width + 18;
-    final dy =
-        iconGlobal.dy -
-        overlayGlobal.dy +
-        (renderBox.size.height - _tooltipHeight) / 2;
-
-    _removeTooltip();
-    _tooltipEntry = OverlayEntry(
-      builder: (context) {
-        return Positioned(
-          left: dx,
-          top: dy,
-          child: _NavTooltipBubble(label: widget.label),
-        );
-      },
-    );
-    overlay.insert(_tooltipEntry!);
-  }
-
-  void _removeTooltip() {
-    _tooltipEntry?.remove();
-    _tooltipEntry = null;
   }
 
   @override
@@ -548,6 +507,10 @@ class _NavIconState extends State<_NavIcon> {
 
     final iconColor = scheme.onSecondary.withOpacity(
       widget.selected ? 0.95 : 0.7,
+    );
+
+    final labelColor = scheme.onSecondary.withOpacity(
+      widget.selected ? 0.95 : 0.65,
     );
 
     Color backgroundColor = Colors.transparent;
@@ -575,98 +538,34 @@ class _NavIconState extends State<_NavIcon> {
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
           width: _size,
-          height: _size,
+          height: _size + 16, // Altezza extra per la label
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Icon(widget.icon, color: iconColor, size: _iconSize),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavTooltipBubble extends StatelessWidget {
-  const _NavTooltipBubble({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    const double arrowWidth = 8.0;
-    final double arrowHeight = _NavIconState._tooltipHeight * 0.6;
-
-    return CustomPaint(
-      painter: _NavBubblePainter(
-        color: Colors.black87,
-        arrowWidth: arrowWidth,
-        arrowHeight: arrowHeight,
-        radius: 18,
-      ),
-      child: Container(
-        height: _NavIconState._tooltipHeight,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-        ).copyWith(left: 16 + arrowWidth),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-            decoration: TextDecoration.none,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, color: iconColor, size: _iconSize),
+              const SizedBox(height: 2),
+              Text(
+                widget.label,
+                style: TextStyle(
+                  color: labelColor,
+                  fontSize: 10,
+                  fontWeight: widget.selected
+                      ? FontWeight.w600
+                      : FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
       ),
     );
-  }
-}
-
-class _NavBubblePainter extends CustomPainter {
-  const _NavBubblePainter({
-    required this.color,
-    required this.arrowWidth,
-    required this.arrowHeight,
-    required this.radius,
-  });
-
-  final Color color;
-  final double arrowWidth;
-  final double arrowHeight;
-  final double radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    final path = Path();
-
-    // Ovale principale
-    final bubbleRect = Rect.fromLTWH(
-      arrowWidth,
-      0,
-      size.width - arrowWidth,
-      size.height,
-    );
-    path.addRRect(RRect.fromRectAndRadius(bubbleRect, Radius.circular(radius)));
-
-    // Freccia laterale integrata
-    //final arrowTop = (size.height - arrowHeight) / 2;
-    //path.moveTo(arrowWidth + 4, arrowTop);
-    //path.lineTo(0, size.height / 2);
-    //path.lineTo(arrowWidth + 4, arrowTop + arrowHeight);
-    path.close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _NavBubblePainter oldDelegate) {
-    return oldDelegate.color != color ||
-        oldDelegate.arrowWidth != arrowWidth ||
-        oldDelegate.arrowHeight != arrowHeight ||
-        oldDelegate.radius != radius;
   }
 }
 

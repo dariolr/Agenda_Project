@@ -35,7 +35,7 @@ class TopControls extends ConsumerWidget {
     final formFactor = ref.watch(formFactorProvider);
 
     return TopControlsScaffold(
-      applyLayoutInset: formFactor != AppFormFactor.mobile,
+      applyLayoutInset: formFactor == AppFormFactor.desktop,
       builder: TopControlsBuilder.adaptive(
         mobile: (context, data) => _buildMobile(context, data, ref),
         tablet: (context, data) => _buildTablet(context, data, ref),
@@ -240,8 +240,9 @@ class TopControls extends ConsumerWidget {
               child: StaffLocationSelector(
                 locations: data.locations,
                 currentLocationId: ref.watch(staffSectionLocationIdProvider),
-                onSelected:
-                    ref.read(staffSectionLocationIdProvider.notifier).set,
+                onSelected: ref
+                    .read(staffSectionLocationIdProvider.notifier)
+                    .set,
               ),
             )
           else
@@ -277,15 +278,17 @@ class TopControls extends ConsumerWidget {
     bool tablet = false,
   }) async {
     final isStaffMode = mode == TopControlsMode.staff;
-    final currentStaffLocationId =
-        isStaffMode ? ref.read(staffSectionLocationIdProvider) : null;
+    final currentStaffLocationId = isStaffMode
+        ? ref.read(staffSectionLocationIdProvider)
+        : null;
 
     final result = await AppBottomSheet.show<int?>(
       context: context,
       builder: (ctx) => _LocationSheetContent(
         locations: data.locations,
-        currentLocationId:
-            isStaffMode ? currentStaffLocationId : data.currentLocation.id,
+        currentLocationId: isStaffMode
+            ? currentStaffLocationId
+            : data.currentLocation.id,
         title: data.l10n.agendaSelectLocation,
         onSelected: (id) => Navigator.of(ctx).pop(id),
         showAllLocationsOption: isStaffMode,
@@ -368,7 +371,8 @@ class _LocationSheetContent extends StatelessWidget {
   });
 
   final List<Location> locations;
-  final int? currentLocationId; // null = "Tutte le sedi" se showAllLocationsOption
+  final int?
+  currentLocationId; // null = "Tutte le sedi" se showAllLocationsOption
   final String title;
   final ValueChanged<int?> onSelected;
   final bool showAllLocationsOption;
@@ -380,8 +384,7 @@ class _LocationSheetContent extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     final maxHeight = MediaQuery.of(context).size.height * 0.8;
-    final itemCount =
-        locations.length + (showAllLocationsOption ? 1 : 0);
+    final itemCount = locations.length + (showAllLocationsOption ? 1 : 0);
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
@@ -442,8 +445,9 @@ class _LocationSheetContent extends StatelessWidget {
                   );
                 }
 
-                final locationIndex =
-                    showAllLocationsOption ? index - 1 : index;
+                final locationIndex = showAllLocationsOption
+                    ? index - 1
+                    : index;
                 final loc = locations[locationIndex];
                 final isSelected = loc.id == currentLocationId;
                 return InkWell(

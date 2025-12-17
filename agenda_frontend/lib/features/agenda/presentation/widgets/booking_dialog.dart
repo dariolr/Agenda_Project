@@ -10,6 +10,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/booking.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/app_dialogs.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
@@ -305,6 +306,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                   textCapitalization: TextCapitalization.sentences,
                 ),
               ),
+              const SizedBox(height: AppSpacing.formRowSpacing),
             ],
           ),
         ),
@@ -331,30 +333,35 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     ];
 
     if (isDialog) {
-      return Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 8),
-                Flexible(child: content),
-                const SizedBox(height: AppSpacing.formToActionsSpacing),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    for (int i = 0; i < actions.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 8),
-                      actions[i],
+      return DismissibleDialog(
+        child: Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.headlineSmall),
+                  const SizedBox(height: 8),
+                  Flexible(child: content),
+                  const SizedBox(height: AppSpacing.formToActionsSpacing),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      for (int i = 0; i < actions.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 8),
+                        actions[i],
+                      ],
                     ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1236,19 +1243,16 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
   void _scrollToSelected() {
     if (!_scrollController.hasClients) return;
 
-    // Calcola l'altezza di ogni riga (4 colonne)
-    // childAspectRatio = 2.7, crossAxisSpacing = 6, mainAxisSpacing = 6
-    // Assumendo una larghezza disponibile di circa 350px (bottom sheet tipico)
-    // itemWidth = (350 - 3*6) / 4 ≈ 83, itemHeight = 83/2.7 ≈ 31
-    // rowHeight = itemHeight + mainAxisSpacing ≈ 37
     const crossAxisCount = 4;
     const mainAxisSpacing = 6.0;
     const childAspectRatio = 2.7;
+    const padding = 12.0;
 
-    // Usiamo una stima ragionevole basata sul layout tipico del bottom sheet
-    const estimatedWidth = 350.0;
+    // Usa la larghezza effettiva del context
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - padding * 2;
     final itemWidth =
-        (estimatedWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
+        (availableWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
     final itemHeight = itemWidth / childAspectRatio;
     final rowHeight = itemHeight + mainAxisSpacing;
 
@@ -1257,8 +1261,13 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
 
     // Calcola l'offset per centrare la riga selezionata
     final viewportHeight = _scrollController.position.viewportDimension;
+    // Offset aggiuntivo per centrare meglio (compensa header visivo)
+    const headerOffset = 40.0;
     final targetOffset =
-        (selectedRow * rowHeight) - (viewportHeight / 2) + (rowHeight / 2);
+        (selectedRow * rowHeight) -
+        (viewportHeight / 2) +
+        (rowHeight / 2) +
+        headerOffset;
 
     // Limita l'offset ai bounds dello scroll
     final maxScroll = _scrollController.position.maxScrollExtent;

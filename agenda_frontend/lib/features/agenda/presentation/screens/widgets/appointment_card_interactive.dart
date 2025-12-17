@@ -1,14 +1,8 @@
-import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '/core/l10n/l10_extension.dart';
 import '/core/models/appointment.dart';
-import '/core/models/staff.dart';
-import '/core/widgets/app_bottom_sheet.dart';
-import '/core/widgets/app_buttons.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
-import '../../../../services/providers/services_provider.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_interaction_lock_provider.dart';
@@ -28,7 +22,6 @@ import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../../widgets/appointment_dialog.dart';
-import '../../widgets/booking_details_overlay.dart';
 
 /// 🔹 Versione unificata per DESKTOP e MOBILE.
 /// Mantiene drag, resize, ghost, select, ma cambia il comportamento del tap:
@@ -56,8 +49,6 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
   ConsumerState<AppointmentCardInteractive> createState() =>
       _AppointmentCardInteractiveState();
 }
-
-enum _AppointmentQuickAction { resize, move }
 
 class _AppointmentCardInteractiveState
     extends ConsumerState<AppointmentCardInteractive> {
@@ -433,8 +424,8 @@ class _AppointmentCardInteractiveState
     setState(() => _blockDragDuringResize = value);
   }
 
-  // 🔹 Logica per il tap su DESKTOP
-  void _handleDesktopTap() {
+  // 🔹 Logica per il tap su DESKTOP/TABLET
+  void _handleDesktopTap() async {
     final resizingNow = ref.read(isResizingProvider);
     if (resizingNow) return;
 
@@ -444,6 +435,18 @@ class _AppointmentCardInteractiveState
     ref.read(dragOffsetXProvider.notifier).clear();
     ref.read(dragPositionProvider.notifier).clear();
     ref.read(highlightedStaffIdProvider.notifier).clear();
+
+    // Legge l'appuntamento aggiornato dal provider (potrebbe essere stato
+    // modificato tramite resize o drag)
+    final currentAppointment = ref
+        .read(appointmentsProvider)
+        .firstWhere((a) => a.id == widget.appointment.id);
+
+    // Apre direttamente la vista di modifica dell'appuntamento
+    await showAppointmentDialog(context, ref, initial: currentAppointment);
+
+    if (!mounted) return;
+    ref.read(selectedAppointmentProvider.notifier).clear();
   }
 
   // 🔹 Logica per il tap su MOBILE
@@ -453,169 +456,17 @@ class _AppointmentCardInteractiveState
 
     _selectAppointment(ref);
 
-    final action = await _openSmartBottomSheet();
+    // Legge l'appuntamento aggiornato dal provider (potrebbe essere stato
+    // modificato tramite resize o drag)
+    final currentAppointment = ref
+        .read(appointmentsProvider)
+        .firstWhere((a) => a.id == widget.appointment.id);
+
+    // Apre direttamente la vista di modifica dell'appuntamento
+    await showAppointmentDialog(context, ref, initial: currentAppointment);
 
     if (!mounted) return;
-
-    if (action == null) {
-      ref.read(selectedAppointmentProvider.notifier).clear();
-      return;
-    }
-
-    bool executed = false;
-    switch (action) {
-      case _AppointmentQuickAction.resize:
-        executed = await _handleQuickResize();
-        break;
-      case _AppointmentQuickAction.move:
-        executed = await _handleQuickMove();
-        break;
-    }
-
-    if (!mounted) return;
-
-    if (!executed) {
-      ref.read(selectedAppointmentProvider.notifier).clear();
-    } else {
-      _selectAppointment(ref);
-    }
-  }
-
-  Future<_AppointmentQuickAction?> _openSmartBottomSheet() {
-    return AppBottomSheet.show<_AppointmentQuickAction>(
-      context: context,
-      builder: (_) => _AppointmentActionSheet(appointment: widget.appointment),
-    );
-  }
-
-  Future<bool> _handleQuickResize() async {
-    final appointment = widget.appointment;
-    final start = appointment.startTime;
-    final dayStart = DateTime(start.year, start.month, start.day);
-    final dayBoundary = dayStart.add(const Duration(days: 1));
-
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(appointment.endTime),
-      helpText: context.l10n.actionResize,
-    );
-
-    if (picked == null || !mounted) return false;
-
-    int minutes = picked.hour * 60 + picked.minute;
-    minutes = _snapMinutes(minutes);
-    minutes = minutes.clamp(0, LayoutConfig.hoursInDay * 60);
-
-    var newEnd = dayStart.add(Duration(minutes: minutes));
-    final minEnd = start.add(const Duration(minutes: 5));
-    if (newEnd.isBefore(minEnd)) newEnd = minEnd;
-    if (newEnd.isAfter(dayBoundary)) newEnd = dayBoundary;
-
-    if (newEnd == appointment.endTime) return false;
-
-    ref
-        .read(appointmentsProvider.notifier)
-        .moveAppointment(
-          appointmentId: appointment.id,
-          newStaffId: appointment.staffId,
-          newStart: start,
-          newEnd: newEnd,
-        );
-
-    if (!mounted) return true;
-
-    _selectAppointment(ref);
-    final message = '${_formatTime(start)} – ${_formatTime(newEnd)}';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${context.l10n.actionResize}: $message')),
-    );
-
-    return true;
-  }
-
-  Future<bool> _handleQuickMove() async {
-    final appointment = widget.appointment;
-    final duration = appointment.endTime.difference(appointment.startTime);
-    final dayStart = DateTime(
-      appointment.startTime.year,
-      appointment.startTime.month,
-      appointment.startTime.day,
-    );
-    final dayBoundary = dayStart.add(const Duration(days: 1));
-
-    final eligibleStaffIds = ref.read(
-      eligibleStaffForServiceProvider(widget.appointment.serviceId),
-    );
-    final staffList = ref
-        .read(staffForCurrentLocationProvider)
-        .where((s) => eligibleStaffIds.contains(s.id))
-        .toList();
-    if (staffList.isEmpty) return false;
-    int targetStaffId = appointment.staffId;
-    if (staffList.length > 1) {
-      final chosen = await AppBottomSheet.show<int>(
-        context: context,
-        builder: (_) =>
-            _StaffPickerSheet(staff: staffList, selectedStaffId: targetStaffId),
-      );
-      if (!mounted) return false;
-      if (chosen == null) return false;
-      targetStaffId = chosen;
-    }
-
-    final pickedStart = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(appointment.startTime),
-      helpText: context.l10n.actionMove,
-    );
-
-    if (pickedStart == null || !mounted) return false;
-
-    int minutes = pickedStart.hour * 60 + pickedStart.minute;
-    minutes = _snapMinutes(minutes);
-    minutes = minutes.clamp(0, LayoutConfig.hoursInDay * 60);
-
-    var newStart = dayStart.add(Duration(minutes: minutes));
-    var newEnd = newStart.add(duration);
-
-    if (newEnd.isAfter(dayBoundary)) {
-      newEnd = dayBoundary;
-      newStart = newEnd.subtract(duration);
-      if (newStart.isBefore(dayStart)) {
-        newStart = dayStart;
-        newEnd = newStart.add(duration);
-      }
-    }
-
-    if (newStart == appointment.startTime &&
-        targetStaffId == appointment.staffId) {
-      return false;
-    }
-
-    ref
-        .read(appointmentsProvider.notifier)
-        .moveAppointment(
-          appointmentId: appointment.id,
-          newStaffId: targetStaffId,
-          newStart: newStart,
-          newEnd: newEnd,
-        );
-
-    if (!mounted) return true;
-
-    _selectAppointment(ref);
-    final message = '${_formatTime(newStart)} – ${_formatTime(newEnd)}';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${context.l10n.actionMove}: $message')),
-    );
-
-    return true;
-  }
-
-  int _snapMinutes(int minutes, {int step = 5}) {
-    if (step <= 1) return minutes;
-    final snapped = (minutes / step).round() * step;
-    return snapped.clamp(0, LayoutConfig.hoursInDay * 60);
+    ref.read(selectedAppointmentProvider.notifier).clear();
   }
 
   Widget _buildCard({
@@ -1005,260 +856,3 @@ class _AppointmentCardInteractiveState
     );
   }
 } // Closing brace for _AppointmentCardInteractiveState
-
-class _AppointmentActionSheet extends ConsumerStatefulWidget {
-  final Appointment appointment;
-
-  const _AppointmentActionSheet({required this.appointment});
-
-  @override
-  ConsumerState<_AppointmentActionSheet> createState() =>
-      _AppointmentActionSheetState();
-}
-
-class _AppointmentActionSheetState
-    extends ConsumerState<_AppointmentActionSheet> {
-  bool _showDeleteConfirm = false;
-
-  String _formatTime(DateTime time) {
-    final appointment = widget.appointment;
-    final dayStart = DateTime(
-      appointment.startTime.year,
-      appointment.startTime.month,
-      appointment.startTime.day,
-    );
-    final dayBoundary = dayStart.add(const Duration(days: 1));
-    if (time.isAtSameMomentAs(dayBoundary)) return '24:00';
-
-    final hours = time.hour.toString().padLeft(2, '0');
-    final minutes = time.minute.toString().padLeft(2, '0');
-    return '$hours:$minutes';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final appointment = widget.appointment;
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      transitionBuilder: (child, animation) =>
-          FadeTransition(opacity: animation, child: child),
-      child: _showDeleteConfirm
-          ? _buildConfirmContent(context, appointment)
-          : _buildMainContent(context, appointment),
-    );
-  }
-
-  Widget _buildMainContent(BuildContext context, Appointment appointment) {
-    return Column(
-      key: const ValueKey('main_content'),
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 12),
-        _buildAppointmentDetails(appointment),
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Expanded(
-              child: AppOutlinedActionButton(
-                onPressed: () async {
-                  await showAppointmentDialog(
-                    context,
-                    ref,
-                    initial: widget.appointment,
-                  );
-                  if (!context.mounted) return;
-                  Navigator.of(context).maybePop();
-                },
-                child: Text(context.l10n.actionEdit),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: AppOutlinedActionButton(
-                onPressed: () {
-                  ref
-                      .read(appointmentsProvider.notifier)
-                      .duplicateAppointment(widget.appointment);
-                  Navigator.of(context).pop();
-                },
-                child: Text(context.l10n.actionDuplicate),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: AppOutlinedActionButton(
-                onPressed: () async {
-                  await showBookingDetailsOverlay(
-                    context,
-                    ref,
-                    bookingId: appointment.bookingId,
-                  );
-                },
-                child: Text(context.l10n.bookingDetails),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Expanded(
-              child: AppFilledButton(
-                onPressed: () {
-                  Navigator.pop(context, _AppointmentQuickAction.resize);
-                },
-                child: Text(context.l10n.actionResize),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: AppFilledButton(
-                onPressed: () {
-                  Navigator.pop(context, _AppointmentQuickAction.move);
-                },
-                child: Text(context.l10n.actionMove),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Expanded(
-              child: AppDangerButton(
-                onPressed: () {
-                  setState(() => _showDeleteConfirm = true);
-                },
-                child: Text(context.l10n.actionDelete),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-
-  Widget _buildConfirmContent(BuildContext context, Appointment appointment) {
-    return Column(
-      key: const ValueKey('confirm_content'),
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 12),
-        _buildAppointmentDetails(appointment),
-        const SizedBox(height: 20),
-        Text(
-          context.l10n.deleteConfirmationTitle,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: AppOutlinedActionButton(
-                onPressed: () {
-                  setState(() => _showDeleteConfirm = false);
-                },
-                child: Text(context.l10n.actionCancel),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: AppDangerButton(
-                onPressed: () {
-                  Navigator.of(context, rootNavigator: true).pop();
-                  ref
-                      .read(appointmentsProvider.notifier)
-                      .deleteAppointment(appointment.id);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(context.l10n.appointmentDeletedMessage),
-                    ),
-                  );
-                },
-                child: Text(context.l10n.actionConfirm),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-
-  Widget _buildAppointmentDetails(Appointment appointment) {
-    final hasPrice = appointment.price != null && appointment.price! > 0;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          appointment.clientName,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${_formatTime(appointment.startTime)} – ${_formatTime(appointment.endTime)}',
-          style: const TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-        if (appointment.serviceName.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            appointment.serviceName,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-        ],
-        if (hasPrice) ...[
-          const SizedBox(height: 4),
-          Text(
-            appointment.formattedPrice,
-            style: const TextStyle(fontSize: 15, color: Colors.black54),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _StaffPickerSheet extends StatelessWidget {
-  const _StaffPickerSheet({required this.staff, required this.selectedStaffId});
-
-  final List<Staff> staff;
-  final int selectedStaffId;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.l10n.staffTitle,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 12),
-        ...staff.map(
-          (s) => ListTile(
-            leading: CircleAvatar(radius: 12, backgroundColor: s.color),
-            title: Text(s.name),
-            trailing: s.id == selectedStaffId ? const Icon(Icons.check) : null,
-            onTap: () => Navigator.pop(context, s.id),
-          ),
-        ),
-        const SizedBox(height: 12),
-      ],
-    );
-  }
-}

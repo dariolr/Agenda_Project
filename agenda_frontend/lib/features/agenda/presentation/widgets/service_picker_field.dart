@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
+import '../../../../app/theme/extensions.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
@@ -262,6 +263,11 @@ class _CategorySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Colore di sfondo leggero per i servizi con indice pari (even)
+    final interactionColors = theme.extension<AppInteractionColors>();
+    final evenBackgroundColor =
+        interactionColors?.alternatingRowFill ??
+        theme.colorScheme.onSurface.withOpacity(0.04);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -275,7 +281,7 @@ class _CategorySection extends StatelessWidget {
           child: Center(
             child: Text(
               category.name.toUpperCase(),
-              style: theme.textTheme.labelSmall?.copyWith(
+              style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
@@ -283,28 +289,42 @@ class _CategorySection extends StatelessWidget {
             ),
           ),
         ),
-        // Services
-        ...services.map((service) {
-          final isSelected = service.id == selectedId;
-          return InkWell(
-            onTap: () => onSelected(service.id),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(child: Text(service.name)),
-                  if (isSelected)
-                    Icon(
-                      Icons.check,
-                      color: theme.colorScheme.primary,
-                      size: 20,
-                    ),
-                ],
-              ),
-            ),
-          );
-        }),
+        // Services con sfondo alternato (even)
+        for (int i = 0; i < services.length; i++)
+          _buildServiceTile(
+            context,
+            services[i],
+            isEven: i.isEven,
+            evenBackgroundColor: evenBackgroundColor,
+            theme: theme,
+          ),
       ],
+    );
+  }
+
+  Widget _buildServiceTile(
+    BuildContext context,
+    Service service, {
+    required bool isEven,
+    required Color evenBackgroundColor,
+    required ThemeData theme,
+  }) {
+    final isSelected = service.id == selectedId;
+    return Material(
+      color: isEven ? evenBackgroundColor : Colors.transparent,
+      child: InkWell(
+        onTap: () => onSelected(service.id),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(child: Text(service.name)),
+              if (isSelected)
+                Icon(Icons.check, color: theme.colorScheme.primary, size: 20),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

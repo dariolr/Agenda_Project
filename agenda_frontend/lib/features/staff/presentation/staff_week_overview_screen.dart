@@ -205,7 +205,7 @@ final weeklyStaffBaseAvailabilityProvider =
     });
 
 /// Provider che traccia quali giorni della settimana hanno eccezioni per ogni staff.
-/// Ritorna: Map<staffId, Set<weekday>> dove weekday = 1..7
+/// Ritorna: `Map<staffId, Set<weekday>>` dove weekday = 1..7
 final weeklyExceptionDaysProvider = Provider<Map<int, Set<int>>>((ref) {
   final staffList = ref.watch(staffForStaffSectionProvider);
   final agendaDate = ref.watch(agendaDateProvider);

@@ -271,3 +271,22 @@ Future<bool> showConfirmDialog(
   );
   return result ?? false;
 }
+
+/// Wrapper per dialog che gestisce automaticamente la chiusura con ESC.
+/// Wrappa qualsiasi widget dialog per aggiungere supporto ESC.
+class DismissibleDialog extends StatelessWidget {
+  const DismissibleDialog({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        SingleActivator(LogicalKeyboardKey.escape): () =>
+            Navigator.of(context, rootNavigator: true).pop(),
+      },
+      child: Focus(autofocus: true, child: child),
+    );
+  }
+}

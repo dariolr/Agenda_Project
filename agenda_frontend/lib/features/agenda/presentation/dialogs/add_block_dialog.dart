@@ -9,6 +9,7 @@ import '../../../../core/l10n/date_time_formats.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/time_block.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/app_dialogs.dart';
 import '../../domain/config/layout_config.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
@@ -350,34 +351,39 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
         .toList();
 
     if (isDialog) {
-      return Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 16),
-                Flexible(child: SingleChildScrollView(child: content)),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (isEdit) ...[
-                      bottomActions.first, // Delete button
-                      const Spacer(),
-                      bottomActions[1], // Cancel button
-                    ] else
-                      bottomActions[0], // Cancel button
-                    const SizedBox(width: 8),
-                    bottomActions.last, // Save button
-                  ],
-                ),
-              ],
+      return DismissibleDialog(
+        child: Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.headlineSmall),
+                  const SizedBox(height: 16),
+                  Flexible(child: SingleChildScrollView(child: content)),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (isEdit) ...[
+                        bottomActions.first, // Delete button
+                        const Spacer(),
+                        bottomActions[1], // Cancel button
+                      ] else
+                        bottomActions[0], // Cancel button
+                      const SizedBox(width: 8),
+                      bottomActions.last, // Save button
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -555,20 +561,113 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
   }
 }
 
-class _TimeGridPicker extends StatelessWidget {
+class _TimeGridPicker extends StatefulWidget {
   const _TimeGridPicker({required this.initial, required this.stepMinutes});
   final TimeOfDay initial;
   final int stepMinutes;
 
   @override
-  Widget build(BuildContext context) {
-    final entries = <TimeOfDay>[];
-    for (int m = 0; m < LayoutConfig.hoursInDay * 60; m += stepMinutes) {
+  State<_TimeGridPicker> createState() => _TimeGridPickerState();
+}
+
+class _TimeGridPickerState extends State<_TimeGridPicker> {
+  late final ScrollController _scrollController;
+  late final List<TimeOfDay> _entries;
+  late final int _scrollToIndex;
+  late final bool _hasExactMatch;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+
+    // Genera la lista degli orari
+    _entries = <TimeOfDay>[];
+    for (int m = 0; m < LayoutConfig.hoursInDay * 60; m += widget.stepMinutes) {
       final h = m ~/ 60;
       final mm = m % 60;
-      entries.add(TimeOfDay(hour: h, minute: mm));
+      _entries.add(TimeOfDay(hour: h, minute: mm));
     }
 
+    // Trova l'indice dell'orario selezionato o il più vicino
+    final initialMinutes = widget.initial.hour * 60 + widget.initial.minute;
+    int exactIndex = _entries.indexWhere(
+      (t) => t.hour == widget.initial.hour && t.minute == widget.initial.minute,
+    );
+
+    if (exactIndex >= 0) {
+      _scrollToIndex = exactIndex;
+      _hasExactMatch = true;
+    } else {
+      // Trova l'orario più vicino (solo per lo scroll, non per la selezione)
+      int closestIndex = 0;
+      int minDiff = 999999;
+      for (int i = 0; i < _entries.length; i++) {
+        final entryMinutes = _entries[i].hour * 60 + _entries[i].minute;
+        final diff = (entryMinutes - initialMinutes).abs();
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIndex = i;
+        }
+      }
+      _scrollToIndex = closestIndex;
+      _hasExactMatch = false;
+    }
+
+    // Scroll all'orario dopo il primo frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelected();
+    });
+  }
+
+  void _scrollToSelected() {
+    if (!_scrollController.hasClients) return;
+
+    const crossAxisCount = 4;
+    const mainAxisSpacing = 6.0;
+    const childAspectRatio = 2.7;
+    const padding = 12.0;
+
+    // Usa la larghezza effettiva del context
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - padding * 2;
+    final itemWidth =
+        (availableWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
+    final itemHeight = itemWidth / childAspectRatio;
+    final rowHeight = itemHeight + mainAxisSpacing;
+
+    // Calcola la riga dell'elemento target
+    final targetRow = _scrollToIndex ~/ crossAxisCount;
+
+    // Calcola l'offset per centrare la riga target
+    final viewportHeight = _scrollController.position.viewportDimension;
+    // Offset aggiuntivo per centrare meglio (compensa header visivo)
+    const headerOffset = 40.0;
+    final targetOffset =
+        (targetRow * rowHeight) -
+        (viewportHeight / 2) +
+        (rowHeight / 2) +
+        headerOffset;
+
+    // Limita l'offset ai bounds dello scroll
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final clampedOffset = targetOffset.clamp(0.0, maxScroll);
+
+    _scrollController.animateTo(
+      clampedOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -589,17 +688,18 @@ class _TimeGridPicker extends StatelessWidget {
             const SizedBox(height: 10),
             Expanded(
               child: GridView.builder(
+                controller: _scrollController,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 4,
                   mainAxisSpacing: 6,
                   crossAxisSpacing: 6,
                   childAspectRatio: 2.7,
                 ),
-                itemCount: entries.length,
+                itemCount: _entries.length,
                 itemBuilder: (context, index) {
-                  final t = entries[index];
-                  final isSelected =
-                      t.hour == initial.hour && t.minute == initial.minute;
+                  final t = _entries[index];
+                  // Evidenzia solo se c'è una corrispondenza esatta
+                  final isSelected = _hasExactMatch && index == _scrollToIndex;
                   return OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       backgroundColor: isSelected

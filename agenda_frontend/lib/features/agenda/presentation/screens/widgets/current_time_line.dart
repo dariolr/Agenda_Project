@@ -110,54 +110,56 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
       top: lineTopY,
       left: 0,
       right: 0,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // --- 1. Colonna Oraria (Box + 4px di linea) ---
-          SizedBox(
-            width: widget.hourColumnWidth,
-            // 💡 Usiamo una Row interna per separare Box e 4px di linea
-            child: Row(
-              children: [
-                // 1a. Spazio flessibile con il Box
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    // Il Box rosso
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      child: Text(
-                        _label,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+          // --- Linea rossa orizzontale (l'elemento di riferimento) ---
+          Row(
+            children: [
+              // Spazio per la colonna oraria
+              SizedBox(width: widget.hourColumnWidth - _lineMargin),
+              // Linea dalla fine del box fino al bordo destro
+              Container(
+                width: _lineMargin,
+                height: _lineHeight,
+                color: Colors.redAccent,
+              ),
+              Expanded(
+                child: Container(height: _lineHeight, color: Colors.redAccent),
+              ),
+            ],
+          ),
+          // --- Box dell'orario (centrato verticalmente sulla linea) ---
+          Positioned(
+            left: 0,
+            width: widget.hourColumnWidth - _lineMargin,
+            top: 0,
+            child: FractionalTranslation(
+              // Sposta il box del 50% della sua altezza verso l'alto
+              // così il suo centro si allinea con la linea
+              translation: const Offset(0, -0.5),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  child: Text(
+                    _label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-
-                // 1b. Il "margine" di 4px, che è la linea rossa
-                Container(
-                  width: _lineMargin,
-                  height: _lineHeight,
-                  color: Colors.redAccent,
-                ),
-              ],
+              ),
             ),
-          ),
-
-          // --- 2. La linea rossa nel corpo principale ---
-          Expanded(
-            child: Container(height: _lineHeight, color: Colors.redAccent),
           ),
         ],
       ),

@@ -20,6 +20,9 @@ class LayoutConfig {
   static const double borderWidth = 1;
   static const int maxVisibleStaff = 6;
 
+  /// Larghezza della fascia laterale per il pulsante "+" sugli slot occupati
+  static const double addButtonStripWidth = 28;
+
   static const double defaultHourColumnWidth = 60;
   static const double defaultHeaderHeight = 50;
   static const double defaultSlotHeight = 30;
@@ -31,6 +34,7 @@ class LayoutConfig {
     minutesPerSlot: minutesPerSlotConst,
     useClusterMaxConcurrency: true,
     useServiceColorsForAppointments: true,
+    enableOccupiedSlotStrip: false,
   );
 
   // ──────────────────────────────────────────────
@@ -44,6 +48,10 @@ class LayoutConfig {
   final bool useClusterMaxConcurrency;
   final bool useServiceColorsForAppointments;
 
+  /// Se true, riserva una fascia laterale quando ci sono slot completamente occupati.
+  /// Permette di cliccare sullo spazio libero per creare nuovi appuntamenti.
+  final bool enableOccupiedSlotStrip;
+
   const LayoutConfig({
     required this.slotHeight,
     required this.headerHeight,
@@ -51,6 +59,7 @@ class LayoutConfig {
     required this.minutesPerSlot,
     required this.useClusterMaxConcurrency,
     required this.useServiceColorsForAppointments,
+    required this.enableOccupiedSlotStrip,
   });
 
   @override
@@ -63,7 +72,8 @@ class LayoutConfig {
         minutesPerSlot == other.minutesPerSlot &&
         useClusterMaxConcurrency == other.useClusterMaxConcurrency &&
         useServiceColorsForAppointments ==
-            other.useServiceColorsForAppointments;
+            other.useServiceColorsForAppointments &&
+        enableOccupiedSlotStrip == other.enableOccupiedSlotStrip;
   }
 
   @override
@@ -74,6 +84,7 @@ class LayoutConfig {
     minutesPerSlot,
     useClusterMaxConcurrency,
     useServiceColorsForAppointments,
+    enableOccupiedSlotStrip,
   );
 
   LayoutConfig copyWith({
@@ -83,6 +94,7 @@ class LayoutConfig {
     int? minutesPerSlot,
     bool? useClusterMaxConcurrency,
     bool? useServiceColorsForAppointments,
+    bool? enableOccupiedSlotStrip,
   }) {
     return LayoutConfig(
       slotHeight: slotHeight ?? this.slotHeight,
@@ -94,6 +106,8 @@ class LayoutConfig {
       useServiceColorsForAppointments:
           useServiceColorsForAppointments ??
           this.useServiceColorsForAppointments,
+      enableOccupiedSlotStrip:
+          enableOccupiedSlotStrip ?? this.enableOccupiedSlotStrip,
     );
   }
 

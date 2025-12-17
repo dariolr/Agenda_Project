@@ -184,7 +184,11 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
                 ),
               ],
             ),
-            AgendaVerticalDivider(height: totalHeight, thickness: 1),
+            AgendaVerticalDivider(
+              height: totalHeight,
+              thickness: 1,
+              fadeTopHeight: layoutConfig.headerHeight,
+            ),
             Expanded(
               child: AgendaDay(
                 staffList: staffList,

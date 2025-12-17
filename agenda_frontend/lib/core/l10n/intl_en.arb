@@ -109,15 +109,18 @@
   ,"formClient": "Client"
   ,"formStaff": "Staff"
   ,"actionDuplicate": "Duplicate"
-  ,"actionAddService": "Add service"
+  ,"actionAddToBooking": "Add to booking"
   ,"bookingDetails": "Booking details"
   ,"bookingNotes": "Booking notes"
   ,"bookingItems": "Services"
   ,"bookingTotal": "Total"
   ,"actionDeleteBooking": "Delete booking"
+  ,"deleteAppointmentConfirmTitle": "Delete appointment?"
+  ,"deleteAppointmentConfirmMessage": "The appointment will be removed. This action cannot be undone."
   ,"deleteBookingConfirmTitle": "Delete entire booking?"
-  ,"deleteBookingConfirmMessage": "All linked services will be removed. This action cannot be undone.",
-  "createCategoryButtonLabel": "New category",
+  ,"deleteBookingConfirmMessage": "All linked services will be removed. This action cannot be undone."
+  ,"otherServicesInBooking": "Other services in this booking:"
+  ,"createCategoryButtonLabel": "New category",
   "servicesNewServiceMenu": "New service",
   "orderSavedMessage": "Order saved successfully",
   "doneCategoriesButton": "Done (Categories)",
@@ -306,5 +309,10 @@
   "exceptionEditShift": "Edit exception",
   "exceptionEditShiftDesc": "Edit the times of this exception",
   "exceptionDeleteShift": "Delete exception",
-  "exceptionDeleteShiftDesc": "Restore base availability"
+  "exceptionDeleteShiftDesc": "Restore base availability",
+
+  "clientLockedHint": "Client cannot be changed for this appointment",
+  "applyClientToAllAppointmentsTitle": "Apply client to entire booking?",
+  "applyClientToAllAppointmentsMessage": "The client will also be associated with the other {count} appointments in this booking.",
+  "@applyClientToAllAppointmentsMessage": {"placeholders": {"count": {"type": "int"}}}
 }
