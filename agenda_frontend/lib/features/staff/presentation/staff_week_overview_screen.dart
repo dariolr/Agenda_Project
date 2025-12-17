@@ -1661,13 +1661,52 @@ class _TimeGridPicker extends StatefulWidget {
 }
 
 class _TimeGridPickerState extends State<_TimeGridPicker> {
-  late TimeOfDay _selected;
   final ScrollController _scrollController = ScrollController();
+  late final List<TimeOfDay?> _times;
+  late final int _scrollToIndex;
 
   @override
   void initState() {
     super.initState();
-    _selected = widget.initial;
+
+    // Genera lista di orari con step specificato (da 00:00 a 24:00)
+    _times = <TimeOfDay?>[];
+    for (int m = 0; m <= 24 * 60; m += widget.stepMinutes) {
+      final h = m ~/ 60;
+      final min = m % 60;
+      _times.add(TimeOfDay(hour: h, minute: min));
+    }
+
+    // Verifica se l'orario iniziale è già nella lista
+    int exactIndex = _times.indexWhere(
+      (t) =>
+          t != null &&
+          t.hour == widget.initial.hour &&
+          t.minute == widget.initial.minute,
+    );
+
+    if (exactIndex >= 0) {
+      // L'orario è già presente
+      _scrollToIndex = exactIndex;
+    } else {
+      // L'orario non è presente: inserisci una NUOVA RIGA con l'orario
+      // nella colonna corretta e le altre colonne vuote
+      final columnsPerRow = 60 ~/ widget.stepMinutes;
+      final targetColumn = widget.initial.minute ~/ widget.stepMinutes;
+      final baseIndex = (widget.initial.hour + 1) * columnsPerRow;
+
+      // Crea la nuova riga con 4 elementi (solo uno valorizzato)
+      final newRow = List<TimeOfDay?>.filled(columnsPerRow, null);
+      newRow[targetColumn] = widget.initial;
+
+      // Inserisci la nuova riga
+      final insertIndex = baseIndex.clamp(0, _times.length);
+      _times.insertAll(insertIndex, newRow);
+
+      // L'indice dell'orario selezionato è la posizione nella nuova riga
+      _scrollToIndex = insertIndex + targetColumn;
+    }
+
     // Scrolla all'orario preimpostato dopo il primo frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToSelected();
@@ -1681,23 +1720,15 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
   }
 
   void _scrollToSelected() {
-    // Calcola l'indice dell'orario selezionato
-    final selectedMinutes = _selected.hour * 60 + _selected.minute;
-    final index = selectedMinutes ~/ widget.stepMinutes;
-
-    // Calcola l'altezza di ogni riga (4 elementi per riga)
-    // childAspectRatio = 2.5, mainAxisSpacing = 8
-    // L'altezza dipende dalla larghezza disponibile, ma possiamo stimarla
     const crossAxisCount = 4;
     const mainAxisSpacing = 8.0;
     const crossAxisSpacing = 8.0;
     const padding = 8.0;
 
     // Calcola la riga in cui si trova l'elemento selezionato
-    final row = index ~/ crossAxisCount;
+    final row = _scrollToIndex ~/ crossAxisCount;
 
     // Stima l'altezza di ogni cella basandosi su una larghezza ragionevole
-    // Per un calcolo più preciso, usiamo un valore tipico
     if (_scrollController.hasClients) {
       final viewportWidth = _scrollController.position.viewportDimension > 0
           ? MediaQuery.of(context).size.width - padding * 2
@@ -1726,14 +1757,6 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Genera lista di orari con step specificato (da 00:00 a 24:00)
-    final times = <TimeOfDay>[];
-    for (int m = 0; m <= 24 * 60; m += widget.stepMinutes) {
-      final h = m ~/ 60;
-      final min = m % 60;
-      times.add(TimeOfDay(hour: h, minute: min));
-    }
-
     return Column(
       children: [
         Padding(
@@ -1753,12 +1776,14 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
             ),
-            itemCount: times.length,
+            itemCount: _times.length,
             itemBuilder: (context, index) {
-              final time = times[index];
-              final isSelected =
-                  time.hour == _selected.hour &&
-                  time.minute == _selected.minute;
+              final time = _times[index];
+              // Se la cella è vuota, mostra uno spazio vuoto
+              if (time == null) {
+                return const SizedBox.shrink();
+              }
+              final isSelected = index == _scrollToIndex;
               final label = time.hour == 24
                   ? '24:00'
                   : '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';

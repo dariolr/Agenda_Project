@@ -714,46 +714,58 @@ class _TimeGridPicker extends StatefulWidget {
 
 class _TimeGridPickerState extends State<_TimeGridPicker> {
   late final ScrollController _scrollController;
-  late final List<TimeOfDay> _entries;
+  late final List<TimeOfDay?> _entries;
   late final int _scrollToIndex;
-  late final bool _hasExactMatch;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
 
-    // Genera la lista degli orari
-    _entries = <TimeOfDay>[];
+    // Genera la lista degli orari con 4 colonne per riga
+    // Colonna 0: minuti 00, Colonna 1: minuti 15, Colonna 2: minuti 30, Colonna 3: minuti 45
+    _entries = <TimeOfDay?>[];
     for (int m = 0; m < LayoutConfig.hoursInDay * 60; m += widget.stepMinutes) {
       final h = m ~/ 60;
       final mm = m % 60;
       _entries.add(TimeOfDay(hour: h, minute: mm));
     }
 
-    // Trova l'indice dell'orario selezionato o il più vicino
-    final initialMinutes = widget.initial.hour * 60 + widget.initial.minute;
+    // Verifica se l'orario iniziale è già nella lista
     int exactIndex = _entries.indexWhere(
-      (t) => t.hour == widget.initial.hour && t.minute == widget.initial.minute,
+      (t) =>
+          t != null &&
+          t.hour == widget.initial.hour &&
+          t.minute == widget.initial.minute,
     );
 
     if (exactIndex >= 0) {
+      // L'orario è già presente
       _scrollToIndex = exactIndex;
-      _hasExactMatch = true;
     } else {
-      // Trova l'orario più vicino (solo per lo scroll, non per la selezione)
-      int closestIndex = 0;
-      int minDiff = 999999;
-      for (int i = 0; i < _entries.length; i++) {
-        final entryMinutes = _entries[i].hour * 60 + _entries[i].minute;
-        final diff = (entryMinutes - initialMinutes).abs();
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestIndex = i;
-        }
-      }
-      _scrollToIndex = closestIndex;
-      _hasExactMatch = false;
+      // L'orario non è presente: inserisci una NUOVA RIGA con l'orario
+      // nella colonna corretta e le altre colonne vuote
+
+      final columnsPerRow = 60 ~/ widget.stepMinutes; // 4 con step di 15
+
+      // Determina in quale colonna deve andare l'orario custom
+      // basandosi sui minuti (0-14 → col 0, 15-29 → col 1, 30-44 → col 2, 45-59 → col 3)
+      final targetColumn = widget.initial.minute ~/ widget.stepMinutes;
+
+      // Trova la riga dopo la quale inserire la nuova riga
+      // La nuova riga va dopo la riga dell'ora corrente (es. dopo 10:00-10:45 se l'orario è 10:07)
+      final baseIndex = (widget.initial.hour + 1) * columnsPerRow;
+
+      // Crea la nuova riga con 4 elementi (solo uno valorizzato)
+      final newRow = List<TimeOfDay?>.filled(columnsPerRow, null);
+      newRow[targetColumn] = widget.initial;
+
+      // Inserisci la nuova riga
+      final insertIndex = baseIndex.clamp(0, _entries.length);
+      _entries.insertAll(insertIndex, newRow);
+
+      // L'indice dell'orario selezionato è la posizione nella nuova riga
+      _scrollToIndex = insertIndex + targetColumn;
     }
 
     // Scroll all'orario dopo il primo frame
@@ -840,8 +852,12 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
               itemCount: _entries.length,
               itemBuilder: (context, index) {
                 final t = _entries[index];
-                // Evidenzia solo se c'è una corrispondenza esatta
-                final isSelected = _hasExactMatch && index == _scrollToIndex;
+                // Se la cella è vuota, mostra uno spazio vuoto
+                if (t == null) {
+                  return const SizedBox.shrink();
+                }
+                // Evidenzia l'orario selezionato
+                final isSelected = index == _scrollToIndex;
                 return OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     backgroundColor: isSelected

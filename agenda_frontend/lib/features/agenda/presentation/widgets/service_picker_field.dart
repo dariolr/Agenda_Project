@@ -146,6 +146,7 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
         onSelected: (id) {
           Navigator.of(ctx).pop();
           field.didChange(id);
+          field.validate(); // Ri-valida per rimuovere l'errore
           widget.onChanged?.call(id);
         },
       ),
@@ -170,6 +171,7 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
             onSelected: (id) {
               Navigator.of(ctx).pop();
               field.didChange(id);
+              field.validate(); // Ri-valida per rimuovere l'errore
               widget.onChanged?.call(id);
             },
           ),
