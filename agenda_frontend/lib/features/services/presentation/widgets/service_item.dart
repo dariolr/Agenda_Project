@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/theme/extensions.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/utils/price_utils.dart';
@@ -8,7 +9,7 @@ import '../../../../core/utils/price_utils.dart';
 class ServiceItem extends ConsumerWidget {
   final Service service;
   final bool isLast;
-  final bool isOddRow;
+  final bool isEvenRow;
   final bool isHovered;
   final bool isSelected;
   final bool isWide;
@@ -24,7 +25,7 @@ class ServiceItem extends ConsumerWidget {
     super.key,
     required this.service,
     required this.isLast,
-    required this.isOddRow,
+    required this.isEvenRow,
     required this.isHovered,
     required this.isSelected,
     required this.isWide,
@@ -39,8 +40,12 @@ class ServiceItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final baseColor = (isOddRow)
-        ? colorScheme.onSurface.withOpacity(0.04)
+    final interactionColors = Theme.of(
+      context,
+    ).extension<AppInteractionColors>();
+    final baseColor = isEvenRow
+        ? (interactionColors?.alternatingRowFill ??
+              colorScheme.onSurface.withOpacity(0.04))
         : Colors.transparent;
 
     final bgColor = (isHovered || isSelected)

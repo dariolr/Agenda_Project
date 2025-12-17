@@ -42,7 +42,7 @@ class ServicesList extends ConsumerWidget {
                   ServiceItem(
                     service: services[i],
                     isLast: i == services.length - 1,
-                    isOddRow: i.isOdd,
+                    isEvenRow: i.isEven,
                     isHovered: hoveredId == services[i].id,
                     isSelected: selectedId == services[i].id,
                     isWide: isWide,

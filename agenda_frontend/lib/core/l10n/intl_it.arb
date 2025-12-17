@@ -109,16 +109,17 @@
   ,"formClient": "Cliente"
   ,"formStaff": "Staff"
   ,"actionDuplicate": "Duplica"
-  ,"actionAddService": "Aggiungi servizio"
+  ,"actionAddToBooking": "Aggiungi alla prenotazione"
   ,"bookingDetails": "Dettagli prenotazione"
   ,"bookingNotes": "Note prenotazione"
   ,"bookingItems": "Servizi"
   ,"bookingTotal": "Totale"
-  ,"actionDeleteBooking": "Elimina prenotazione"
-  ,"deleteBookingConfirmTitle": "Eliminare l’intera prenotazione?"
-  ,"deleteBookingConfirmMessage": "Verranno rimossi tutti i servizi collegati. L’operazione non può essere annullata.",
-  "createCategoryButtonLabel": "Nuova categoria",
-  "servicesNewServiceMenu": "Nuovo servizio",
+  ,"actionDeleteBooking": "Elimina prenotazione"  ,"deleteAppointmentConfirmTitle": "Eliminare l'appuntamento?"
+  ,"deleteAppointmentConfirmMessage": "L'appuntamento verrà rimosso. L'operazione non può essere annullata."  ,"deleteBookingConfirmTitle": "Eliminare l’intera prenotazione?"
+,"deleteBookingConfirmMessage": "Verranno rimossi tutti i servizi collegati. L'operazione non può essere annullata."
+  ,"otherServicesInBooking": "Altri servizi nella prenotazione:"
+  ,"createCategoryButtonLabel": "Nuova categoria"
+  ,"servicesNewServiceMenu": "Nuovo servizio",
   "orderSavedMessage": "Ordine salvato correttamente",
   "doneCategoriesButton": "Fine categorie",
   "editCategoriesOrderButton": "Modifica ordine categorie",
@@ -306,5 +307,10 @@
   "exceptionEditShift": "Modifica eccezione",
   "exceptionEditShiftDesc": "Modifica gli orari di questa eccezione",
   "exceptionDeleteShift": "Elimina eccezione",
-  "exceptionDeleteShiftDesc": "Ripristina la disponibilità base"
+  "exceptionDeleteShiftDesc": "Ripristina la disponibilità base",
+
+  "clientLockedHint": "Il cliente non può essere modificato per questo appuntamento",
+  "applyClientToAllAppointmentsTitle": "Applicare il cliente a tutta la prenotazione?",
+  "applyClientToAllAppointmentsMessage": "Il cliente verrà associato anche agli altri {count} appuntamenti di questa prenotazione.",
+  "@applyClientToAllAppointmentsMessage": {"placeholders": {"count": {"type": "int"}}}
 }

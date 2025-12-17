@@ -9,6 +9,20 @@ import 'business_providers.dart';
 import 'date_range_provider.dart';
 import 'location_providers.dart';
 
+/// Arrotonda un DateTime ai 5 minuti più vicini.
+/// Es: 10:12 → 10:10, 10:13 → 10:15
+DateTime _roundToNearestFiveMinutes(DateTime dt) {
+  final minutes = dt.minute;
+  final roundedMinutes = ((minutes + 2) ~/ 5) * 5;
+  return DateTime(
+    dt.year,
+    dt.month,
+    dt.day,
+    dt.hour,
+    0,
+  ).add(Duration(minutes: roundedMinutes));
+}
+
 class AppointmentsNotifier extends Notifier<List<Appointment>> {
   bool _initialized = false;
 
@@ -26,7 +40,15 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     final location = ref.read(currentLocationProvider);
 
     final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+    // Arrotonda l'orario corrente ai 5 minuti più vicini
+    final roundedMinute = ((now.minute + 2) ~/ 5) * 5;
+    final start = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      0,
+    ).add(Duration(minutes: roundedMinute));
     final end = start.add(const Duration(hours: 2));
 
     return [
@@ -197,13 +219,18 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     required DateTime newStart,
     required DateTime newEnd,
   }) async {
+    // Arrotonda gli orari a multipli di 5 minuti
+    final roundedStart = _roundToNearestFiveMinutes(newStart);
+    final duration = newEnd.difference(newStart);
+    final roundedEnd = roundedStart.add(duration);
+
     state = [
       for (final appt in state)
         if (appt.id == appointmentId)
           appt.copyWith(
             staffId: newStaffId,
-            startTime: newStart,
-            endTime: newEnd,
+            startTime: roundedStart,
+            endTime: roundedEnd,
           )
         else
           appt,
@@ -246,6 +273,11 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     final business = ref.read(currentBusinessProvider);
     final location = ref.read(currentLocationProvider);
 
+    // Arrotonda gli orari a multipli di 5 minuti
+    final roundedStart = _roundToNearestFiveMinutes(start);
+    final duration = end.difference(start);
+    final roundedEnd = roundedStart.add(duration);
+
     final nextId = state.isEmpty
         ? 1
         : state.map((e) => e.id).reduce((a, b) => a > b ? a : b) + 1;
@@ -267,8 +299,8 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       clientId: clientId,
       clientName: clientName,
       serviceName: serviceName,
-      startTime: start,
-      endTime: end,
+      startTime: roundedStart,
+      endTime: roundedEnd,
       price: price,
     );
 
@@ -288,9 +320,33 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
 
   /// Aggiorna un appuntamento esistente (match per id)
   void updateAppointment(Appointment updated) {
+    // Arrotonda gli orari a multipli di 5 minuti
+    final roundedStart = _roundToNearestFiveMinutes(updated.startTime);
+    final duration = updated.endTime.difference(updated.startTime);
+    final roundedEnd = roundedStart.add(duration);
+    final roundedAppointment = updated.copyWith(
+      startTime: roundedStart,
+      endTime: roundedEnd,
+    );
+
     state = [
       for (final appt in state)
-        if (appt.id == updated.id) updated else appt,
+        if (appt.id == updated.id) roundedAppointment else appt,
+    ];
+  }
+
+  /// Aggiorna il cliente di tutti gli appuntamenti di una prenotazione.
+  void updateClientForBooking({
+    required int bookingId,
+    required int? clientId,
+    required String clientName,
+  }) {
+    state = [
+      for (final appt in state)
+        if (appt.bookingId == bookingId)
+          appt.copyWith(clientId: clientId, clientName: clientName)
+        else
+          appt,
     ];
   }
 

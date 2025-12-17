@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/availability_exception.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/app_dialogs.dart';
 import '../../../agenda/providers/layout_config_provider.dart';
 import '../../providers/availability_exceptions_provider.dart';
 
@@ -458,34 +459,39 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
         .toList();
 
     if (isDialog) {
-      return Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 500, maxWidth: 600),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 16),
-                Flexible(child: SingleChildScrollView(child: content)),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (isEdit) ...[
-                      bottomActions.first,
-                      const Spacer(),
-                      bottomActions[1],
-                    ] else
-                      bottomActions[0],
-                    const SizedBox(width: 8),
-                    bottomActions.last,
-                  ],
-                ),
-              ],
+      return DismissibleDialog(
+        child: Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 500, maxWidth: 600),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.headlineSmall),
+                  const SizedBox(height: 16),
+                  Flexible(child: SingleChildScrollView(child: content)),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (isEdit) ...[
+                        bottomActions.first,
+                        const Spacer(),
+                        bottomActions[1],
+                      ] else
+                        bottomActions[0],
+                      const SizedBox(width: 8),
+                      bottomActions.last,
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -751,27 +757,102 @@ class _TimeGridPicker extends StatefulWidget {
 
 class _TimeGridPickerState extends State<_TimeGridPicker> {
   late TimeOfDay _selected;
+  late final ScrollController _scrollController;
+  late final List<TimeOfDay> _times;
+  late final int _scrollToIndex;
 
   @override
   void initState() {
     super.initState();
     _selected = widget.initial;
+    _scrollController = ScrollController();
+
+    // Genera tutte le opzioni di orario
+    _times = <TimeOfDay>[];
+    for (int h = 0; h < 24; h++) {
+      for (int m = 0; m < 60; m += widget.stepMinutes) {
+        _times.add(TimeOfDay(hour: h, minute: m));
+      }
+    }
+    // Aggiungi 24:00 come opzione finale
+    _times.add(const TimeOfDay(hour: 24, minute: 0));
+
+    // Trova l'indice dell'orario selezionato o il più vicino
+    final initialMinutes = widget.initial.hour * 60 + widget.initial.minute;
+    int exactIndex = _times.indexWhere(
+      (t) => t.hour == widget.initial.hour && t.minute == widget.initial.minute,
+    );
+
+    if (exactIndex >= 0) {
+      _scrollToIndex = exactIndex;
+    } else {
+      // Trova l'orario più vicino
+      int closestIndex = 0;
+      int minDiff = 999999;
+      for (int i = 0; i < _times.length; i++) {
+        final entryMinutes = _times[i].hour * 60 + _times[i].minute;
+        final diff = (entryMinutes - initialMinutes).abs();
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIndex = i;
+        }
+      }
+      _scrollToIndex = closestIndex;
+    }
+
+    // Scroll all'orario dopo il primo frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelected();
+    });
+  }
+
+  void _scrollToSelected() {
+    if (!_scrollController.hasClients) return;
+
+    const crossAxisCount = 4;
+    const mainAxisSpacing = 8.0;
+    const childAspectRatio = 2.5;
+    const padding = 8.0;
+
+    // Usa la larghezza effettiva del context
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - padding * 2;
+    final itemWidth =
+        (availableWidth - (crossAxisCount - 1) * 8) / crossAxisCount;
+    final itemHeight = itemWidth / childAspectRatio;
+    final rowHeight = itemHeight + mainAxisSpacing;
+
+    final targetRow = _scrollToIndex ~/ crossAxisCount;
+
+    final viewportHeight = _scrollController.position.viewportDimension;
+    // Offset aggiuntivo per centrare meglio (compensa header visivo)
+    const headerOffset = 40.0;
+    final targetOffset =
+        (targetRow * rowHeight) -
+        (viewportHeight / 2) +
+        (rowHeight / 2) +
+        headerOffset;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final clampedOffset = targetOffset.clamp(0.0, maxScroll);
+
+    _scrollController.animateTo(
+      clampedOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
-    // Genera tutte le opzioni di orario
-    final times = <TimeOfDay>[];
-    for (int h = 0; h < 24; h++) {
-      for (int m = 0; m < 60; m += widget.stepMinutes) {
-        times.add(TimeOfDay(hour: h, minute: m));
-      }
-    }
-    // Aggiungi 24:00 come opzione finale
-    times.add(const TimeOfDay(hour: 24, minute: 0));
 
     return Column(
       children: [
@@ -794,6 +875,7 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
         const Divider(height: 1),
         Expanded(
           child: GridView.builder(
+            controller: _scrollController,
             padding: const EdgeInsets.all(8),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 4,
@@ -801,9 +883,9 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
             ),
-            itemCount: times.length,
+            itemCount: _times.length,
             itemBuilder: (context, index) {
-              final time = times[index];
+              final time = _times[index];
               final isSelected =
                   time.hour == _selected.hour &&
                   time.minute == _selected.minute;

@@ -62,67 +62,69 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
 
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                isEditing ? l10n.clientsEdit : l10n.clientsNew,
-                style: theme.textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 16),
-              Flexible(
-                child: SingleChildScrollView(
-                  child: ClientForm(
-                    key: _form,
-                    initial: widget.initial,
-                    onChanged: () {
-                      if (!_hasChanges) setState(() => _hasChanges = true);
-                    },
+    return DismissibleDialog(
+      child: Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  isEditing ? l10n.clientsEdit : l10n.clientsNew,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: ClientForm(
+                      key: _form,
+                      initial: widget.initial,
+                      onChanged: () {
+                        if (!_hasChanges) setState(() => _hasChanges = true);
+                      },
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (isEditing) ...[
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (isEditing) ...[
+                      SizedBox(
+                        width: AppButtonStyles.dialogButtonWidth,
+                        child: AppDangerButton(
+                          onPressed: _onDelete,
+                          padding: AppButtonStyles.dialogButtonPadding,
+                          child: Text(l10n.actionDelete),
+                        ),
+                      ),
+                      const Spacer(),
+                    ],
                     SizedBox(
                       width: AppButtonStyles.dialogButtonWidth,
-                      child: AppDangerButton(
-                        onPressed: _onDelete,
+                      child: AppOutlinedActionButton(
+                        onPressed: () => _onCancel(context),
                         padding: AppButtonStyles.dialogButtonPadding,
-                        child: Text(l10n.actionDelete),
+                        child: Text(l10n.actionCancel),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: AppButtonStyles.dialogButtonWidth,
+                      child: AppFilledButton(
+                        onPressed: _onSave,
+                        padding: AppButtonStyles.dialogButtonPadding,
+                        child: Text(l10n.actionSave),
+                      ),
+                    ),
                   ],
-                  SizedBox(
-                    width: AppButtonStyles.dialogButtonWidth,
-                    child: AppOutlinedActionButton(
-                      onPressed: () => _onCancel(context),
-                      padding: AppButtonStyles.dialogButtonPadding,
-                      child: Text(l10n.actionCancel),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: AppButtonStyles.dialogButtonWidth,
-                    child: AppFilledButton(
-                      onPressed: _onSave,
-                      padding: AppButtonStyles.dialogButtonPadding,
-                      child: Text(l10n.actionSave),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -228,10 +230,7 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
     // mantenere coerenza visiva tra i form.
     final bottomActions = actions
         .map(
-          (a) => SizedBox(
-            width: AppButtonStyles.dialogButtonWidth,
-            child: a,
-          ),
+          (a) => SizedBox(width: AppButtonStyles.dialogButtonWidth, child: a),
         )
         .toList();
 

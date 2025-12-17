@@ -44,46 +44,61 @@ class StaffHeaderRow extends ConsumerWidget {
         final initials = staff.initials;
         final displayName = staff.displayName;
 
-        return Container(
-          width: columnWidth,
-          height: headerHeight,
-          decoration: BoxDecoration(
-            border: Border(
-              right: BorderSide(
-                color: isLast
-                    ? Colors.transparent
-                    : Colors.grey.withOpacity(0.25),
-                width: 1,
+        return Stack(
+          children: [
+            Container(
+              width: columnWidth,
+              height: headerHeight,
+              padding: EdgeInsets.symmetric(horizontal: headerHeight * 0.08),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    StaffCircleAvatar(
+                      height: avatarSize,
+                      color: staff.color,
+                      isHighlighted: isHighlighted,
+                      initials: initials,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      displayName,
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: headerHeight * 0.08),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                StaffCircleAvatar(
-                  height: avatarSize,
-                  color: staff.color,
-                  isHighlighted: isHighlighted,
-                  initials: initials,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  displayName,
-                  maxLines: 1,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
-                    color: Colors.black87,
+            // Divider sfumato sul bordo destro
+            if (!isLast)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.grey.withOpacity(0.0),
+                        Colors.grey.withOpacity(0.25),
+                      ],
+                      stops: const [0.0, 0.7],
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+          ],
         );
       }).toList(),
     );

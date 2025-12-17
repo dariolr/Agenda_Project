@@ -237,16 +237,18 @@ class ServiceItemCard extends ConsumerWidget {
     final selectedService = item.serviceId != null
         ? services.where((s) => s.id == item.serviceId).firstOrNull
         : null;
-    // Usa la durata dalla variante se disponibile
+    // Usa la durata dalla variante solo se item.durationMinutes non è impostato
     final variant = item.serviceVariantId != null
         ? variants.where((v) => v.id == item.serviceVariantId).firstOrNull
         : (item.serviceId != null
               ? variants.where((v) => v.serviceId == item.serviceId).firstOrNull
               : null);
-    final endTime = item.getEndTime(variant?.durationMinutes);
+    // Priorità: item.durationMinutes > variant.durationMinutes > 30
     final duration = item.durationMinutes > 0
         ? item.durationMinutes
         : (variant?.durationMinutes ?? 30);
+    // Usa la stessa durata per calcolare endTime
+    final endTime = item.getEndTime(duration);
 
     // Costruiamo sempre tre colonne (Start, End, Duration) in modo che
     // l'elemento "Start" assuma sempre le dimensioni che avrebbe quando
@@ -271,13 +273,14 @@ class ServiceItemCard extends ConsumerWidget {
         ),
         const SizedBox(width: 8),
 
-        // End - visibile/interattivo solo se servizio selezionato
+        // End - visibile solo se servizio selezionato (non modificabile, si calcola dalla durata)
         Expanded(
           child: buildInvisibleIfNoService(
             _TimeField(
               label: l10n.blockEndTime,
               time: endTime,
-              onTap: () => _showEndTimePicker(context, endTime),
+              onTap:
+                  null, // Disabilitato: l'orario di fine si calcola da inizio + durata
               theme: theme,
             ),
           ),
@@ -342,53 +345,6 @@ class ServiceItemCard extends ConsumerWidget {
 
       if (picked != null) {
         onStartTimeChanged(picked);
-      }
-    }
-  }
-
-  void _showEndTimePicker(BuildContext context, TimeOfDay currentEnd) async {
-    final l10n = context.l10n;
-
-    if (formFactor != AppFormFactor.desktop) {
-      final picked = await AppBottomSheet.show<TimeOfDay>(
-        context: context,
-        padding: EdgeInsets.zero,
-        heightFactor: AppBottomSheet.defaultHeightFactor,
-        builder: (ctx) => _TimeGridPicker(
-          initial: currentEnd,
-          stepMinutes: 15,
-          title: l10n.blockEndTime,
-        ),
-      );
-
-      if (picked != null) {
-        onEndTimeChanged(picked);
-      }
-    } else {
-      final picked = await showDialog<TimeOfDay>(
-        context: context,
-        builder: (ctx) => Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 32,
-            vertical: 24,
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: _TimeGridPicker(
-                initial: currentEnd,
-                stepMinutes: 15,
-                title: l10n.blockEndTime,
-                useSafeArea: false,
-              ),
-            ),
-          ),
-        ),
-      );
-
-      if (picked != null) {
-        onEndTimeChanged(picked);
       }
     }
   }
@@ -597,13 +553,14 @@ class _TimeField extends StatelessWidget {
 
   final String label;
   final TimeOfDay time;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
+    final isDisabled = onTap == null;
 
     return InkWell(
       onTap: onTap,
@@ -617,8 +574,16 @@ class _TimeField extends StatelessWidget {
           ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
           isDense: true,
+          enabled: !isDisabled,
         ),
-        child: Text('$hour:$minute', style: theme.textTheme.bodyMedium),
+        child: Text(
+          '$hour:$minute',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: isDisabled
+                ? theme.colorScheme.onSurface.withOpacity(0.5)
+                : null,
+          ),
+        ),
       ),
     );
   }
@@ -750,7 +715,8 @@ class _TimeGridPicker extends StatefulWidget {
 class _TimeGridPickerState extends State<_TimeGridPicker> {
   late final ScrollController _scrollController;
   late final List<TimeOfDay> _entries;
-  late final int _selectedIndex;
+  late final int _scrollToIndex;
+  late final bool _hasExactMatch;
 
   @override
   void initState() {
@@ -765,45 +731,65 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
       _entries.add(TimeOfDay(hour: h, minute: mm));
     }
 
-    // Trova l'indice dell'orario selezionato
-    _selectedIndex = _entries.indexWhere(
+    // Trova l'indice dell'orario selezionato o il più vicino
+    final initialMinutes = widget.initial.hour * 60 + widget.initial.minute;
+    int exactIndex = _entries.indexWhere(
       (t) => t.hour == widget.initial.hour && t.minute == widget.initial.minute,
     );
 
-    // Scroll all'orario selezionato dopo il primo frame
-    if (_selectedIndex >= 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToSelected();
-      });
+    if (exactIndex >= 0) {
+      _scrollToIndex = exactIndex;
+      _hasExactMatch = true;
+    } else {
+      // Trova l'orario più vicino (solo per lo scroll, non per la selezione)
+      int closestIndex = 0;
+      int minDiff = 999999;
+      for (int i = 0; i < _entries.length; i++) {
+        final entryMinutes = _entries[i].hour * 60 + _entries[i].minute;
+        final diff = (entryMinutes - initialMinutes).abs();
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIndex = i;
+        }
+      }
+      _scrollToIndex = closestIndex;
+      _hasExactMatch = false;
     }
+
+    // Scroll all'orario dopo il primo frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelected();
+    });
   }
 
   void _scrollToSelected() {
     if (!_scrollController.hasClients) return;
 
-    // Calcola l'altezza di ogni riga (4 colonne)
-    // childAspectRatio = 2.7, crossAxisSpacing = 6, mainAxisSpacing = 6
-    // Assumendo una larghezza disponibile di circa 350px (bottom sheet tipico)
-    // itemWidth = (350 - 3*6) / 4 ≈ 83, itemHeight = 83/2.7 ≈ 31
-    // rowHeight = itemHeight + mainAxisSpacing ≈ 37
     const crossAxisCount = 4;
     const mainAxisSpacing = 6.0;
     const childAspectRatio = 2.7;
+    const padding = 12.0;
 
-    // Usiamo una stima ragionevole basata sul layout tipico del bottom sheet
-    const estimatedWidth = 350.0;
+    // Usa la larghezza effettiva del context
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - padding * 2;
     final itemWidth =
-        (estimatedWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
+        (availableWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
     final itemHeight = itemWidth / childAspectRatio;
     final rowHeight = itemHeight + mainAxisSpacing;
 
-    // Calcola la riga dell'elemento selezionato
-    final selectedRow = _selectedIndex ~/ crossAxisCount;
+    // Calcola la riga dell'elemento target
+    final targetRow = _scrollToIndex ~/ crossAxisCount;
 
-    // Calcola l'offset per centrare la riga selezionata
+    // Calcola l'offset per centrare la riga target
     final viewportHeight = _scrollController.position.viewportDimension;
+    // Offset aggiuntivo per centrare meglio (compensa header visivo)
+    const headerOffset = 40.0;
     final targetOffset =
-        (selectedRow * rowHeight) - (viewportHeight / 2) + (rowHeight / 2);
+        (targetRow * rowHeight) -
+        (viewportHeight / 2) +
+        (rowHeight / 2) +
+        headerOffset;
 
     // Limita l'offset ai bounds dello scroll
     final maxScroll = _scrollController.position.maxScrollExtent;
@@ -854,7 +840,8 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
               itemCount: _entries.length,
               itemBuilder: (context, index) {
                 final t = _entries[index];
-                final isSelected = index == _selectedIndex;
+                // Evidenzia solo se c'è una corrispondenza esatta
+                final isSelected = _hasExactMatch && index == _scrollToIndex;
                 return OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     backgroundColor: isSelected

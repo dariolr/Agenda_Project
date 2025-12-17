@@ -2,6 +2,7 @@
 
 Piattaforma **Agenda elettronica multi-staff** in Flutter (web primary, mobile/desktop).
 L'agente deve produrre **file completi** e **non rompere le funzionalità esistenti**.
+L'agente deve centralizzare il codice a favore del riutilizzo. Deve sempre verificare se esiste gia un implementazione utile prima di creare nuovo codice. Eventualmente deve estendere il codice esistente.
 
 ---
 
@@ -106,7 +107,7 @@ final formFactor = ref.watch(formFactorProvider);
 // AppFormFactor.mobile / .tablet / .desktop
 ```
 - **Desktop**: dialog/popup
-- **Mobile**: bottom sheet (`AppBottomSheet`)
+- **Mobile e Tablet**: bottom sheet (`AppBottomSheet`)
 
 ### Localizzazione
 ```dart

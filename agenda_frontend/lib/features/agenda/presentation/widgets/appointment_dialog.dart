@@ -9,17 +9,17 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/app_dialogs.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/services_provider.dart';
-import '../../domain/config/layout_config.dart';
+import '../../domain/service_item_data.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/date_range_provider.dart';
-import '../../providers/layout_config_provider.dart';
-import 'service_picker_field.dart';
+import 'service_item_card.dart';
 
 /// Show the Appointment dialog for creating or editing an appointment.
 Future<void> showAppointmentDialog(
@@ -79,14 +79,14 @@ class _AppointmentDialog extends ConsumerStatefulWidget {
 
 class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   final _formKey = GlobalKey<FormState>();
+  final _notesController = TextEditingController();
 
   late DateTime _date;
-  late TimeOfDay _time;
-  int? _serviceId;
-  int? _serviceVariantId;
   int? _clientId;
   String _clientName = '';
-  int? _staffId;
+
+  /// ServiceItemData per il singolo servizio dell'appuntamento
+  late ServiceItemData _serviceItem;
 
   @override
   void initState() {
@@ -100,20 +100,39 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         appt.startTime.month,
         appt.startTime.day,
       );
-      _time = TimeOfDay(
-        hour: appt.startTime.hour,
-        minute: appt.startTime.minute,
-      );
-      _serviceId = appt.serviceId;
-      _serviceVariantId = appt.serviceVariantId;
       _clientId = appt.clientId;
       _clientName = appt.clientName;
-      _staffId = appt.staffId;
+      // Leggi le note dalla Booking associata
+      final booking = ref.read(bookingsProvider)[appt.bookingId];
+      _notesController.text = booking?.notes ?? '';
+      // Inizializza ServiceItemData dall'appuntamento esistente
+      _serviceItem = ServiceItemData(
+        key: '0',
+        startTime: TimeOfDay(
+          hour: appt.startTime.hour,
+          minute: appt.startTime.minute,
+        ),
+        staffId: appt.staffId,
+        serviceId: appt.serviceId,
+        serviceVariantId: appt.serviceVariantId,
+        durationMinutes: appt.endTime.difference(appt.startTime).inMinutes,
+      );
     } else {
       _date = DateUtils.dateOnly(widget.initialDate ?? agendaDate);
-      _time = widget.initialTime ?? TimeOfDay(hour: 10, minute: 0);
-      _staffId = widget.initialStaffId;
+      final initialTime =
+          widget.initialTime ?? const TimeOfDay(hour: 10, minute: 0);
+      _serviceItem = ServiceItemData(
+        key: '0',
+        startTime: initialTime,
+        staffId: widget.initialStaffId,
+      );
     }
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
   }
 
   @override
@@ -129,201 +148,285 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final clients = ref.watch(clientsProvider);
     final staff = ref.watch(staffForCurrentLocationProvider);
 
-    // Ensure variant aligns with chosen service
-    if (_serviceId != null) {
-      final matchingVariants = variants
-          .where((v) => v.serviceId == _serviceId)
-          .toList();
-      if (matchingVariants.isEmpty) {
-        _serviceVariantId = null;
-      } else if (_serviceVariantId == null ||
-          !matchingVariants.any((v) => v.id == _serviceVariantId)) {
-        _serviceVariantId = matchingVariants.first.id;
-      }
-    }
+    // Get eligible staff for the selected service
+    final eligibleStaffIds = _serviceItem.serviceId != null
+        ? ref.watch(eligibleStaffForServiceProvider(_serviceItem.serviceId!))
+        : <int>[];
+
+    // Conta gli appuntamenti nella stessa prenotazione (per mostrare/nascondere "Elimina prenotazione")
+    final bookingAppointmentsCount = isEdit
+        ? ref
+              .watch(appointmentsProvider)
+              .where((a) => a.bookingId == widget.initial!.bookingId)
+              .length
+        : 0;
 
     final title = isEdit
         ? l10n.appointmentDialogTitleEdit
         : l10n.appointmentDialogTitleNew;
 
+    // Il campo cliente è bloccato se in modalità edit e l'appuntamento
+    // aveva già un cliente associato (clientId != null)
+    final isClientLocked = isEdit && widget.initial!.clientId != null;
+
     final content = Form(
       key: _formKey,
-      child: ConstrainedBox(
-        constraints: isDialog
-            ? const BoxConstraints(maxWidth: 520)
-            : const BoxConstraints(maxWidth: double.infinity),
-        child: SizedBox(
-          width: double.infinity,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: AppSpacing.formFirstRowSpacing),
-              // Client selection (first)
-              _ClientSelectionField(
-                clientId: _clientId,
-                clientName: _clientName,
-                clients: clients,
-                onClientSelected: (id, name) {
-                  setState(() {
-                    _clientId = id;
-                    _clientName = name;
-                  });
-                },
-                onClientRemoved: () {
-                  setState(() {
-                    _clientId = null;
-                    _clientName = '';
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.formRowSpacing),
-              // Date
-              Row(
-                children: [
-                  Expanded(
-                    child: _LabeledField(
-                      label: l10n.formDate,
-                      child: InkWell(
-                        onTap: _pickDate,
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          child: Text(DtFmt.shortDate(context, _date)),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _LabeledField(
-                      label: l10n.formTime,
-                      child: InkWell(
-                        onTap: _pickTime,
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(_time.format(context)),
-                              const Icon(Icons.schedule, size: 16),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.formRowSpacing),
-              // Service
-              _LabeledField(
-                label: l10n.formService,
-                child: ServicePickerField(
-                  services: services,
-                  categories: serviceCategories,
-                  formFactor: formFactor,
-                  value: _serviceId,
-                  onChanged: (v) {
-                    setState(() {
-                      _serviceId = v;
-                      _serviceVariantId = null; // recalculated in build
-                    });
-                  },
-                  validator: (v) => v == null ? l10n.validationRequired : null,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.formRowSpacing),
-              // Staff
-              _LabeledField(
-                label: l10n.formStaff,
-                child: DropdownButtonFormField<int>(
-                  value: _staffId,
-                  items: [
-                    for (final s in staff)
-                      DropdownMenuItem(value: s.id, child: Text(s.name)),
-                  ],
-                  onChanged: (v) => setState(() => _staffId = v),
-                  validator: (v) => v == null ? l10n.validationRequired : null,
-                ),
-              ),
-            ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: AppSpacing.formFirstRowSpacing),
+          // Client selection (first)
+          _ClientSelectionField(
+            clientId: _clientId,
+            clientName: _clientName,
+            clients: clients,
+            isLocked: isClientLocked,
+            onClientSelected: (id, name) {
+              setState(() {
+                _clientId = id;
+                _clientName = name;
+              });
+            },
+            onClientRemoved: () {
+              setState(() {
+                _clientId = null;
+                _clientName = '';
+              });
+            },
           ),
-        ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          // Date
+          InkWell(
+            onTap: _pickDate,
+            borderRadius: BorderRadius.circular(4),
+            child: InputDecorator(
+              decoration: InputDecoration(
+                labelText: l10n.formDate,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                isDense: true,
+              ),
+              child: Text(DtFmt.shortDate(context, _date)),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          // Service item card (come in booking_dialog)
+          ServiceItemCard(
+            index: 0,
+            item: _serviceItem,
+            services: services.cast(),
+            categories: serviceCategories.cast(),
+            variants: variants.cast(),
+            eligibleStaff: eligibleStaffIds,
+            allStaff: staff.cast(),
+            formFactor: formFactor,
+            canRemove: false,
+            isServiceRequired: true,
+            onChanged: (updated) {
+              setState(() => _serviceItem = updated);
+            },
+            onRemove: () {},
+            onStartTimeChanged: (time) {
+              setState(() {
+                _serviceItem = _serviceItem.copyWith(startTime: time);
+              });
+            },
+            onEndTimeChanged: (time) {
+              // Calcola nuova durata
+              final startMinutes =
+                  _serviceItem.startTime.hour * 60 +
+                  _serviceItem.startTime.minute;
+              final endMinutes = time.hour * 60 + time.minute;
+              final newDuration = endMinutes - startMinutes;
+              if (newDuration > 0) {
+                setState(() {
+                  _serviceItem = _serviceItem.copyWith(
+                    durationMinutes: newDuration,
+                  );
+                });
+              }
+            },
+            onDurationChanged: (duration) {
+              setState(() {
+                _serviceItem = _serviceItem.copyWith(durationMinutes: duration);
+              });
+            },
+          ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          // Notes field
+          TextFormField(
+            controller: _notesController,
+            decoration: InputDecoration(
+              labelText: l10n.formNotes,
+              alignLabelWithHint: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            maxLines: 3,
+            minLines: 2,
+          ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
+        ],
       ),
     );
 
     final actions = [
-      if (widget.initial != null)
-        AppOutlinedActionButton(
-          onPressed: () {
-            final variants = ref.read(serviceVariantsProvider);
-            final services = ref.read(servicesProvider);
-            final selectedVariant = variants.firstWhere(
-              (v) => v.serviceId == (_serviceId ?? widget.initial!.serviceId),
-              orElse: () => variants.first,
-            );
-            final service = services.firstWhere(
-              (s) => s.id == (_serviceId ?? widget.initial!.serviceId),
-            );
+      if (widget.initial != null) ...[
+        // "Aggiungi alla prenotazione" abilitato solo se la data è la stessa
+        () {
+          final originalDate = DateUtils.dateOnly(widget.initial!.startTime);
+          final isSameDate = _date == originalDate;
+          return AppOutlinedActionButton(
+            onPressed: isSameDate
+                ? () {
+                    final variants = ref.read(serviceVariantsProvider);
+                    final services = ref.read(servicesProvider);
+                    final serviceId =
+                        _serviceItem.serviceId ?? widget.initial!.serviceId;
+                    final selectedVariant = variants.firstWhere(
+                      (v) => v.serviceId == serviceId,
+                      orElse: () => variants.first,
+                    );
+                    final service = services.firstWhere(
+                      (s) => s.id == serviceId,
+                    );
 
-            final start = DateTime(
-              _date.year,
-              _date.month,
-              _date.day,
-              _time.hour,
-              _time.minute,
-            );
-            final end = start.add(
-              Duration(minutes: selectedVariant.durationMinutes),
-            );
+                    final start = DateTime(
+                      _date.year,
+                      _date.month,
+                      _date.day,
+                      _serviceItem.startTime.hour,
+                      _serviceItem.startTime.minute,
+                    );
+                    final duration = _serviceItem.durationMinutes > 0
+                        ? _serviceItem.durationMinutes
+                        : selectedVariant.durationMinutes;
+                    final end = start.add(Duration(minutes: duration));
 
-            ref
-                .read(appointmentsProvider.notifier)
-                .addAppointment(
-                  bookingId: widget.initial!.bookingId,
-                  staffId: _staffId ?? widget.initial!.staffId,
-                  serviceId: service.id,
-                  serviceVariantId: selectedVariant.id,
-                  clientId: widget.initial!.clientId,
-                  clientName: widget.initial!.clientName,
-                  serviceName: service.name,
-                  start: start,
-                  end: end,
-                  price: selectedVariant.price,
-                );
-            Navigator.of(context).pop();
-          },
-          child: Text(l10n.actionAddService),
-        ),
-      if (widget.initial != null)
-        AppDangerButton(
-          onPressed: () {
-            ref
-                .read(appointmentsProvider.notifier)
-                .deleteAppointment(widget.initial!.id);
-            Navigator.of(context).pop();
-          },
-          child: Text(l10n.actionDelete),
-        ),
+                    ref
+                        .read(appointmentsProvider.notifier)
+                        .addAppointment(
+                          bookingId: widget.initial!.bookingId,
+                          staffId:
+                              _serviceItem.staffId ?? widget.initial!.staffId,
+                          serviceId: service.id,
+                          serviceVariantId: selectedVariant.id,
+                          clientId: widget.initial!.clientId,
+                          clientName: widget.initial!.clientName,
+                          serviceName: service.name,
+                          start: start,
+                          end: end,
+                          price: selectedVariant.price,
+                        );
+                    Navigator.of(context).pop();
+                  }
+                : null,
+            child: Text(l10n.actionAddToBooking),
+          );
+        }(),
+      ],
       if (widget.initial != null)
         AppDangerButton(
           onPressed: () async {
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (_) => AlertDialog(
-                title: Text(l10n.deleteBookingConfirmTitle),
-                content: Text(l10n.deleteBookingConfirmMessage),
+                title: Text(l10n.deleteAppointmentConfirmTitle),
+                content: Text(l10n.deleteAppointmentConfirmMessage),
                 actions: [
-                  TextButton(
+                  AppOutlinedActionButton(
                     onPressed: () => Navigator.pop(context, false),
                     child: Text(l10n.actionCancel),
                   ),
-                  TextButton(
+                  AppDangerButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(l10n.actionDelete),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true) {
+              ref
+                  .read(appointmentsProvider.notifier)
+                  .deleteAppointment(widget.initial!.id);
+              if (context.mounted) Navigator.of(context).pop();
+            }
+          },
+          child: Text(l10n.actionDelete),
+        ),
+      // Mostra "Elimina prenotazione" solo se la booking ha più di un appuntamento
+      if (widget.initial != null && bookingAppointmentsCount > 1)
+        AppDangerButton(
+          onPressed: () async {
+            // Recupera gli altri appuntamenti della prenotazione (escluso quello corrente)
+            final bookingAppointments =
+                ref
+                    .read(appointmentsProvider)
+                    .where(
+                      (a) =>
+                          a.bookingId == widget.initial!.bookingId &&
+                          a.id != widget.initial!.id,
+                    )
+                    .toList()
+                  ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: Text(l10n.deleteBookingConfirmTitle),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.deleteBookingConfirmMessage),
+                    if (bookingAppointments.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        l10n.otherServicesInBooking,
+                        style: Theme.of(ctx).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      ...bookingAppointments.map(
+                        (appt) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            children: [
+                              Text(
+                                DtFmt.hm(
+                                  context,
+                                  appt.startTime.hour,
+                                  appt.startTime.minute,
+                                ),
+                                style: Theme.of(ctx).textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  appt.serviceName,
+                                  style: Theme.of(ctx).textTheme.bodyMedium,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                actions: [
+                  AppOutlinedActionButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(l10n.actionCancel),
+                  ),
+                  AppDangerButton(
                     onPressed: () => Navigator.pop(context, true),
                     child: Text(l10n.actionDeleteBooking),
                   ),
@@ -352,10 +455,38 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     ];
 
     if (isDialog) {
-      return AlertDialog(
-        title: Text(title),
-        content: content,
-        actions: actions,
+      return DismissibleDialog(
+        child: Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.headlineSmall),
+                  const SizedBox(height: 8),
+                  Flexible(child: content),
+                  const SizedBox(height: AppSpacing.formToActionsSpacing),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      for (int i = 0; i < actions.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 8),
+                        actions[i],
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       );
     }
 
@@ -409,31 +540,17 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     }
   }
 
-  Future<void> _pickTime() async {
-    final step = ref.read(layoutConfigProvider).minutesPerSlot;
-    final selected = await AppBottomSheet.show<TimeOfDay>(
-      context: context,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-      heightFactor: AppBottomSheet.defaultHeightFactor,
-      builder: (ctx) => _TimeGridPicker(initial: _time, stepMinutes: step),
-    );
-    if (selected != null) {
-      setState(() => _time = selected);
-    }
-  }
-
-  void _onSave() {
+  void _onSave() async {
     final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
 
-    if (_serviceId == null) {
+    if (_serviceItem.serviceId == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.validationRequired)));
       return;
     }
-    if (_staffId == null) {
+    if (_serviceItem.staffId == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.validationRequired)));
@@ -444,31 +561,39 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final services = ref.read(servicesProvider);
 
     final selectedVariant = variants.firstWhere(
-      (v) => v.serviceId == _serviceId,
+      (v) => v.serviceId == _serviceItem.serviceId,
       orElse: () => variants.first,
     );
-    final service = services.firstWhere((s) => s.id == _serviceId);
+    final service = services.firstWhere((s) => s.id == _serviceItem.serviceId);
 
     final start = DateTime(
       _date.year,
       _date.month,
       _date.day,
-      _time.hour,
-      _time.minute,
+      _serviceItem.startTime.hour,
+      _serviceItem.startTime.minute,
     );
-    final end = start.add(Duration(minutes: selectedVariant.durationMinutes));
+
+    // Usa la durata corrente del form (che preserva eventuali modifiche)
+    final duration = _serviceItem.durationMinutes > 0
+        ? _serviceItem.durationMinutes
+        : selectedVariant.durationMinutes;
+    final end = start.add(Duration(minutes: duration));
 
     // Client info (può essere null se nessun cliente è associato)
     final int? clientId = _clientId;
     final String clientName = _clientName.trim();
+    final String? notes = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
 
     if (widget.initial == null) {
       // Nuovo appuntamento: crea SEMPRE una nuova prenotazione
-      ref
+      final newAppt = ref
           .read(appointmentsProvider.notifier)
           .addAppointment(
             bookingId: null,
-            staffId: _staffId!,
+            staffId: _serviceItem.staffId!,
             serviceId: service.id,
             serviceVariantId: selectedVariant.id,
             clientId: clientId,
@@ -478,9 +603,73 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             end: end,
             price: selectedVariant.price,
           );
+      // Salva le note nella booking appena creata
+      if (notes != null && notes.isNotEmpty) {
+        ref.read(bookingsProvider.notifier).setNotes(newAppt.bookingId, notes);
+      }
     } else {
+      // Verifica se il cliente è stato aggiunto (era null e ora non lo è)
+      final initialClientId = widget.initial!.clientId;
+      final clientWasAdded = initialClientId == null && clientId != null;
+
+      // Se il cliente è stato aggiunto, verifica se ci sono altri appuntamenti
+      // nella stessa prenotazione che devono essere aggiornati
+      if (clientWasAdded) {
+        final bookingId = widget.initial!.bookingId;
+        final otherAppointments = ref
+            .read(appointmentsProvider.notifier)
+            .getByBookingId(bookingId)
+            .where((a) => a.id != widget.initial!.id)
+            .toList();
+
+        // Se ci sono altri appuntamenti, chiedi conferma
+        if (otherAppointments.isNotEmpty && mounted) {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: Text(l10n.applyClientToAllAppointmentsTitle),
+              content: Text(
+                l10n.applyClientToAllAppointmentsMessage(
+                  otherAppointments.length,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(l10n.actionCancel),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(l10n.actionConfirm),
+                ),
+              ],
+            ),
+          );
+
+          if (confirmed != true) {
+            // Utente ha annullato, non salvare
+            return;
+          }
+
+          // Aggiorna il cliente su tutti gli appuntamenti della prenotazione
+          ref
+              .read(appointmentsProvider.notifier)
+              .updateClientForBooking(
+                bookingId: bookingId,
+                clientId: clientId,
+                clientName: clientName,
+              );
+
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+          return;
+        }
+      }
+
+      // Aggiornamento normale (singolo appuntamento)
       final updated = widget.initial!.copyWith(
-        staffId: _staffId!,
+        staffId: _serviceItem.staffId!,
         serviceId: service.id,
         serviceVariantId: selectedVariant.id,
         clientId: clientId,
@@ -491,27 +680,15 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         price: selectedVariant.price,
       );
       ref.read(appointmentsProvider.notifier).updateAppointment(updated);
+      // Aggiorna le note nella booking associata
+      ref
+          .read(bookingsProvider.notifier)
+          .setNotes(widget.initial!.bookingId, notes);
     }
 
-    Navigator.of(context).pop();
-  }
-}
-
-class _LabeledField extends StatelessWidget {
-  const _LabeledField({required this.label, required this.child});
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 6),
-        child,
-      ],
-    );
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 }
 
@@ -519,82 +696,6 @@ class _ClientItem {
   final int id;
   final String name;
   const _ClientItem(this.id, this.name);
-}
-
-class _TimeGridPicker extends StatelessWidget {
-  const _TimeGridPicker({required this.initial, required this.stepMinutes});
-  final TimeOfDay initial;
-  final int stepMinutes;
-
-  @override
-  Widget build(BuildContext context) {
-    final entries = <TimeOfDay>[];
-    for (int m = 0; m < LayoutConfig.hoursInDay * 60; m += stepMinutes) {
-      final h = m ~/ 60;
-      final mm = m % 60;
-      entries.add(TimeOfDay(hour: h, minute: mm));
-    }
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.schedule, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  MaterialLocalizations.of(context).timePickerHourLabel,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  mainAxisSpacing: 6,
-                  crossAxisSpacing: 6,
-                  childAspectRatio: 2.7,
-                ),
-                itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final t = entries[index];
-                  final isSelected =
-                      t.hour == initial.hour && t.minute == initial.minute;
-                  return OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: isSelected
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primary.withOpacity(0.1)
-                          : null,
-                      side: BorderSide(
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).dividerColor,
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                    onPressed: () => Navigator.pop(context, t),
-                    child: Text(_format(context, t)),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _format(BuildContext ctx, TimeOfDay t) {
-    return DtFmt.hm(ctx, t.hour, t.minute);
-  }
 }
 
 /// Widget per la selezione del cliente con link cliccabile e hint
@@ -605,6 +706,7 @@ class _ClientSelectionField extends ConsumerWidget {
     required this.clients,
     required this.onClientSelected,
     required this.onClientRemoved,
+    this.isLocked = false,
   });
 
   final int? clientId;
@@ -612,6 +714,7 @@ class _ClientSelectionField extends ConsumerWidget {
   final List<Client> clients;
   final void Function(int? id, String name) onClientSelected;
   final VoidCallback onClientRemoved;
+  final bool isLocked;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -630,18 +733,22 @@ class _ClientSelectionField extends ConsumerWidget {
         if (hasClient)
           _SelectedClientTile(
             clientName: clientName,
-            onTap: () => _showClientPicker(context, ref),
-            onRemove: onClientRemoved,
+            onTap: isLocked ? null : () => _showClientPicker(context, ref),
+            onRemove: isLocked ? null : onClientRemoved,
           )
         else
           InkWell(
-            onTap: () => _showClientPicker(context, ref),
+            onTap: isLocked ? null : () => _showClientPicker(context, ref),
             borderRadius: BorderRadius.circular(8),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               decoration: BoxDecoration(
-                border: Border.all(color: theme.colorScheme.outline),
+                border: Border.all(
+                  color: isLocked
+                      ? theme.colorScheme.outline.withOpacity(0.5)
+                      : theme.colorScheme.outline,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -649,13 +756,17 @@ class _ClientSelectionField extends ConsumerWidget {
                   Icon(
                     Icons.person_add_outlined,
                     size: 20,
-                    color: theme.colorScheme.primary,
+                    color: isLocked
+                        ? theme.colorScheme.onSurfaceVariant
+                        : theme.colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     l10n.addClientToAppointment,
                     style: TextStyle(
-                      color: theme.colorScheme.primary,
+                      color: isLocked
+                          ? theme.colorScheme.onSurfaceVariant
+                          : theme.colorScheme.primary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -665,7 +776,7 @@ class _ClientSelectionField extends ConsumerWidget {
           ),
         const SizedBox(height: 6),
         Text(
-          l10n.clientOptionalHint,
+          isLocked ? l10n.clientLockedHint : l10n.clientOptionalHint,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -734,17 +845,18 @@ class _ClientSelectionField extends ConsumerWidget {
 class _SelectedClientTile extends StatelessWidget {
   const _SelectedClientTile({
     required this.clientName,
-    required this.onTap,
-    required this.onRemove,
+    this.onTap,
+    this.onRemove,
   });
 
   final String clientName;
-  final VoidCallback onTap;
-  final VoidCallback onRemove;
+  final VoidCallback? onTap;
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isLocked = onTap == null && onRemove == null;
 
     return InkWell(
       onTap: onTap,
@@ -752,8 +864,13 @@ class _SelectedClientTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: theme.colorScheme.outline),
+          border: Border.all(
+            color: isLocked
+                ? theme.colorScheme.outline.withOpacity(0.5)
+                : theme.colorScheme.outline,
+          ),
           borderRadius: BorderRadius.circular(8),
+          color: isLocked ? theme.colorScheme.surfaceContainerLow : null,
         ),
         child: Row(
           children: [
@@ -772,16 +889,30 @@ class _SelectedClientTile extends StatelessWidget {
             Expanded(
               child: Text(
                 clientName,
-                style: const TextStyle(fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: isLocked ? theme.colorScheme.onSurfaceVariant : null,
+                ),
               ),
             ),
-            IconButton(
-              icon: Icon(Icons.close, size: 20, color: theme.colorScheme.error),
-              onPressed: onRemove,
-              tooltip: context.l10n.removeClient,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            ),
+            if (onRemove != null)
+              IconButton(
+                icon: Icon(
+                  Icons.close,
+                  size: 20,
+                  color: theme.colorScheme.error,
+                ),
+                onPressed: onRemove,
+                tooltip: context.l10n.removeClient,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              )
+            else if (isLocked)
+              Icon(
+                Icons.lock_outline,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+              ),
           ],
         ),
       ),

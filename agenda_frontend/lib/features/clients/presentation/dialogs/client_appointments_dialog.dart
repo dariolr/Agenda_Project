@@ -1,5 +1,6 @@
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -47,52 +48,63 @@ class ClientAppointmentsDialog extends ConsumerWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final dialogWidth = screenWidth < 600 ? screenWidth * 0.95 : 500.0;
 
-    return AlertDialog(
-      title: Text(l10n.clientAppointmentsTitle(client.name)),
-      content: SizedBox(
-        width: dialogWidth,
-        height: 400,
-        child: DefaultTabController(
-          length: 2,
-          child: Column(
-            children: [
-              TabBar(
-                tabs: [
-                  Tab(
-                    text:
-                        '${l10n.clientAppointmentsUpcoming} (${upcoming.length})',
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        SingleActivator(LogicalKeyboardKey.escape): () =>
+            Navigator.of(context, rootNavigator: true).pop(),
+      },
+      child: Focus(
+        autofocus: true,
+        child: AlertDialog(
+          title: Text(l10n.clientAppointmentsTitle(client.name)),
+          content: SizedBox(
+            width: dialogWidth,
+            height: 400,
+            child: DefaultTabController(
+              length: 2,
+              child: Column(
+                children: [
+                  TabBar(
+                    tabs: [
+                      Tab(
+                        text:
+                            '${l10n.clientAppointmentsUpcoming} (${upcoming.length})',
+                      ),
+                      Tab(
+                        text: '${l10n.clientAppointmentsPast} (${past.length})',
+                      ),
+                    ],
+                    labelColor: theme.colorScheme.primary,
+                    unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+                    indicatorColor: theme.colorScheme.primary,
                   ),
-                  Tab(text: '${l10n.clientAppointmentsPast} (${past.length})'),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _AppointmentList(
+                          appointments: upcoming,
+                          emptyMessage: l10n.clientAppointmentsEmpty,
+                        ),
+                        _AppointmentList(
+                          appointments: past,
+                          emptyMessage: l10n.clientAppointmentsEmpty,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-                labelColor: theme.colorScheme.primary,
-                unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-                indicatorColor: theme.colorScheme.primary,
               ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _AppointmentList(
-                      appointments: upcoming,
-                      emptyMessage: l10n.clientAppointmentsEmpty,
-                    ),
-                    _AppointmentList(
-                      appointments: past,
-                      emptyMessage: l10n.clientAppointmentsEmpty,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.actionClose),
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.actionClose),
-        ),
-      ],
     );
   }
 }

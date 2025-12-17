@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
 import 'package:agenda_frontend/core/l10n/l10_extension.dart';
 import 'package:agenda_frontend/core/widgets/app_dialogs.dart';
@@ -27,6 +28,7 @@ import '../../../providers/drag_session_provider.dart';
 import '../../../providers/dragged_appointment_provider.dart';
 import '../../../providers/dragged_base_range_provider.dart';
 import '../../../providers/dragged_last_staff_provider.dart';
+import '../../../providers/fully_occupied_slots_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 // Nota: isResizingProvider viene gestito a un livello superiore (MultiStaffDayView),
 // non è necessario importarlo qui.
@@ -340,6 +342,23 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     // Interaction lock propagated from parent (evaluated once per visible group)
     final isInteractionLocked = widget.isInteractionLocked;
 
+    // 🔹 Calcola slot pieni PRIMA del layout (solo desktop e se abilitato)
+    final formFactor = ref.watch(formFactorProvider);
+    final bool showAddButtonStrip =
+        layoutConfig.enableOccupiedSlotStrip &&
+        formFactor == AppFormFactor.desktop &&
+        !isInteractionLocked;
+    final fullyOccupied = showAddButtonStrip
+        ? ref.watch(fullyOccupiedSlotsProvider(widget.staff.id))
+        : const <int>{};
+    final hasFullyOccupiedSlots = fullyOccupied.isNotEmpty;
+
+    // Larghezza disponibile per le card (ridotta se ci sono slot pieni)
+    final addButtonWidth = hasFullyOccupiedSlots
+        ? LayoutConfig.addButtonStripWidth
+        : 0.0;
+    final effectiveColumnWidth = widget.columnWidth - addButtonWidth;
+
     final stackChildren = <Widget>[];
 
     // 🔹 Griglia oraria
@@ -432,11 +451,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
-    // 🔹 Appuntamenti
-    stackChildren.addAll(_buildAppointments(slotHeight, staffAppointments));
+    // 🔹 Appuntamenti (con larghezza ridotta se ci sono slot pieni)
+    stackChildren.addAll(
+      _buildAppointments(slotHeight, staffAppointments, effectiveColumnWidth),
+    );
 
     // 🔹 Blocchi di non disponibilità
     stackChildren.addAll(_buildTimeBlocks(slotHeight));
+
+    // La fascia laterale è già riservata riducendo effectiveColumnWidth,
+    // quindi le card si restringono automaticamente lasciando spazio a destra.
 
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
@@ -480,6 +504,17 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         );
 
         ref.read(dragSessionProvider.notifier).markHandled();
+
+        // Verifica se l'appuntamento è stato effettivamente spostato
+        final hasStaffChanged = details.data.staffId != widget.staff.id;
+        final hasTimeChanged =
+            details.data.startTime != dropResult.newStart ||
+            details.data.endTime != dropResult.newEnd;
+
+        // Se non c'è stato alcun cambiamento, non mostrare il dialog
+        if (!hasStaffChanged && !hasTimeChanged) {
+          return;
+        }
 
         // Salva i dati del drop pendente per mostrare la preview
         final pendingData = PendingDropData(
@@ -560,6 +595,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   List<Widget> _buildAppointments(
     double slotHeight,
     List<Appointment> appointments,
+    double columnWidth,
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
@@ -664,12 +700,12 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           opacity = AgendaTheme.ghostOpacity;
         }
 
-        // 🔹 Costruisci la card
+        // 🔹 Costruisci la card (usa columnWidth passato, che è già ridotto se ci sono slot pieni)
         final padding = LayoutConfig.columnInnerPadding;
-        final fullColumnWidth = math.max(widget.columnWidth - padding * 2, 0.0);
-        final cardLeft = widget.columnWidth * geometry.leftFraction + padding;
+        final fullColumnWidth = math.max(columnWidth - padding * 2, 0.0);
+        final cardLeft = columnWidth * geometry.leftFraction + padding;
         final cardWidth = math.max(
-          widget.columnWidth * geometry.widthFraction - padding * 2,
+          columnWidth * geometry.widthFraction - padding * 2,
           0.0,
         );
 

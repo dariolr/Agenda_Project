@@ -7,7 +7,7 @@ class AppBottomSheet {
   AppBottomSheet._();
 
   /// Altezza predefinita di tutti i bottom sheet (80% dello schermo).
-  static const double defaultHeightFactor = 0.8;
+  static const double defaultHeightFactor = 0.95;
 
   static Future<T?> show<T>({
     required BuildContext context,
@@ -62,6 +62,9 @@ class AppBottomSheetContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Ottieni l'altezza della tastiera per aggiungere padding extra
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
     // Ensure bottom padding is at least 50.0 to leave space above
     // system UI / controls and provide consistent spacing across sheets.
     final resolved = padding.resolve(Directionality.of(context));
@@ -80,27 +83,35 @@ class AppBottomSheetContainer extends StatelessWidget {
       content = SizedBox(height: height, child: content);
     }
 
-    if (!showHandle) return content;
+    if (!showHandle) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: keyboardHeight),
+        child: content,
+      );
+    }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 8),
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(4),
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardHeight),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        // Flexible permette al contenuto di adattarsi senza forzare
-        // l'altezza massima della bottom sheet.
-        Flexible(child: content),
-      ],
+          const SizedBox(height: 12),
+          // Flexible permette al contenuto di adattarsi senza forzare
+          // l'altezza massima della bottom sheet.
+          Flexible(child: content),
+        ],
+      ),
     );
   }
 }

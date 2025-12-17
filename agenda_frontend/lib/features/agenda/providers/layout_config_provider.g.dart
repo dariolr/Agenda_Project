@@ -8,18 +8,15 @@ part of 'layout_config_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provider responsabile di mantenere aggiornata la configurazione del layout
-/// (in particolare l’altezza degli slot e dell’header)
+/// Mantiene aggiornata la configurazione del layout agenda (slot/header/hour column).
 
 @ProviderFor(LayoutConfigNotifier)
 const layoutConfigProvider = LayoutConfigNotifierProvider._();
 
-/// Provider responsabile di mantenere aggiornata la configurazione del layout
-/// (in particolare l’altezza degli slot e dell’header)
+/// Mantiene aggiornata la configurazione del layout agenda (slot/header/hour column).
 final class LayoutConfigNotifierProvider
     extends $NotifierProvider<LayoutConfigNotifier, LayoutConfig> {
-  /// Provider responsabile di mantenere aggiornata la configurazione del layout
-  /// (in particolare l’altezza degli slot e dell’header)
+  /// Mantiene aggiornata la configurazione del layout agenda (slot/header/hour column).
   const LayoutConfigNotifierProvider._()
     : super(
         from: null,
@@ -48,10 +45,9 @@ final class LayoutConfigNotifierProvider
 }
 
 String _$layoutConfigNotifierHash() =>
-    r'850083366aea0ce85343fe700d326c9e075842cf';
+    r'30d9d7d00aa145e8a8d9750ddce9a06dfc207ecd';
 
-/// Provider responsabile di mantenere aggiornata la configurazione del layout
-/// (in particolare l’altezza degli slot e dell’header)
+/// Mantiene aggiornata la configurazione del layout agenda (slot/header/hour column).
 
 abstract class _$LayoutConfigNotifier extends $Notifier<LayoutConfig> {
   LayoutConfig build();
