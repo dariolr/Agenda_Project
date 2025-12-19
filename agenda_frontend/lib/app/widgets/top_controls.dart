@@ -79,26 +79,15 @@ class TopControls extends ConsumerWidget {
           onNext: mode == TopControlsMode.agenda
               ? data.dateController.nextDay
               : data.dateController.nextWeek,
-          onPreviousWeek: mode == TopControlsMode.agenda
-              ? data.dateController.previousWeek
-              : null,
-          onNextWeek: mode == TopControlsMode.agenda
-              ? data.dateController.nextWeek
-              : null,
-          onPreviousMonth: mode == TopControlsMode.agenda
-              ? null
-              : data.dateController.previousMonth,
-          onNextMonth: mode == TopControlsMode.agenda
-              ? null
-              : data.dateController.nextMonth,
           onSelectDate: (date) {
             data.dateController.set(DateUtils.dateOnly(date));
           },
           useWeekRangePicker: mode == TopControlsMode.staff,
           isCompact: compact,
+          showWeekNavigation: false,
         ),
         const SizedBox(width: 8),
-        if (data.locations.length > 1)
+        if (mode == TopControlsMode.staff && data.locations.length > 1)
           IconButton(
             tooltip: data.l10n.agendaSelectLocation,
             icon: const Icon(Icons.place_outlined),
@@ -107,9 +96,6 @@ class TopControls extends ConsumerWidget {
               await _showLocationSheet(context, data, ref);
             },
           ),
-        if (mode == TopControlsMode.agenda &&
-            ref.watch(staffForCurrentLocationProvider).length > 1)
-          const AgendaStaffFilterSelector(),
       ],
     );
   }

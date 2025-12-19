@@ -1,6 +1,7 @@
 import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/app/theme/app_spacing.dart';
 import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
+import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,6 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
-import '../../../../core/widgets/app_dialogs.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
@@ -18,17 +18,14 @@ import '../../../services/providers/services_provider.dart';
 import '../../domain/service_item_data.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
-import '../../providers/date_range_provider.dart';
 import 'service_item_card.dart';
 
-/// Show the Appointment dialog for creating or editing an appointment.
+/// Show the Appointment dialog for editing an existing appointment.
+/// For creating new appointments, use [showBookingDialog] instead.
 Future<void> showAppointmentDialog(
   BuildContext context,
   WidgetRef ref, {
-  Appointment? initial,
-  DateTime? date,
-  TimeOfDay? time,
-  int? initialStaffId,
+  required Appointment initial,
 }) async {
   final formFactor = ref.read(formFactorProvider);
   final presentation = formFactor == AppFormFactor.desktop
@@ -37,9 +34,6 @@ Future<void> showAppointmentDialog(
 
   final content = _AppointmentDialog(
     initial: initial,
-    initialDate: date,
-    initialTime: time,
-    initialStaffId: initialStaffId,
     presentation: presentation,
   );
 
@@ -59,18 +53,9 @@ Future<void> showAppointmentDialog(
 enum _AppointmentPresentation { dialog, bottomSheet }
 
 class _AppointmentDialog extends ConsumerStatefulWidget {
-  const _AppointmentDialog({
-    this.initial,
-    this.initialDate,
-    this.initialTime,
-    this.initialStaffId,
-    required this.presentation,
-  });
+  const _AppointmentDialog({required this.initial, required this.presentation});
 
-  final Appointment? initial;
-  final DateTime? initialDate;
-  final TimeOfDay? initialTime;
-  final int? initialStaffId;
+  final Appointment initial;
   final _AppointmentPresentation presentation;
 
   @override
@@ -84,50 +69,91 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   late DateTime _date;
   int? _clientId;
   String _clientName = '';
+  late final bool _bookingHasSingleAppointment;
 
-  /// ServiceItemData per il singolo servizio dell'appuntamento
-  late ServiceItemData _serviceItem;
+  /// Lista di ServiceItemData per i servizi dell'appuntamento
+  final List<ServiceItemData> _serviceItems = [];
+
+  /// Contatore per generare chiavi univoche
+  int _itemKeyCounter = 0;
+
+  /// Stato iniziale per rilevare modifiche
+  late DateTime _initialDate;
+  late int? _initialClientId;
+  late String _initialClientName;
+  late String _initialNotes;
+  late List<ServiceItemData> _initialServiceItems;
 
   @override
   void initState() {
     super.initState();
-    final agendaDate = ref.read(agendaDateProvider);
 
-    if (widget.initial != null) {
-      final appt = widget.initial!;
-      _date = DateTime(
-        appt.startTime.year,
-        appt.startTime.month,
-        appt.startTime.day,
-      );
-      _clientId = appt.clientId;
-      _clientName = appt.clientName;
-      // Leggi le note dalla Booking associata
-      final booking = ref.read(bookingsProvider)[appt.bookingId];
-      _notesController.text = booking?.notes ?? '';
-      // Inizializza ServiceItemData dall'appuntamento esistente
-      _serviceItem = ServiceItemData(
-        key: '0',
-        startTime: TimeOfDay(
-          hour: appt.startTime.hour,
-          minute: appt.startTime.minute,
+    final appt = widget.initial;
+    _date = DateTime(
+      appt.startTime.year,
+      appt.startTime.month,
+      appt.startTime.day,
+    );
+    _clientId = appt.clientId;
+    _clientName = appt.clientName;
+    // Leggi le note dalla Booking associata
+    final booking = ref.read(bookingsProvider)[appt.bookingId];
+    _notesController.text = booking?.notes ?? '';
+
+    // Carica tutti gli appuntamenti della stessa prenotazione
+    final bookingAppointments = ref
+        .read(appointmentsProvider.notifier)
+        .getByBookingId(appt.bookingId);
+    _bookingHasSingleAppointment = bookingAppointments.length <= 1;
+
+    for (final appointment in bookingAppointments) {
+      _serviceItems.add(
+        ServiceItemData(
+          key: _nextItemKey(),
+          startTime: TimeOfDay.fromDateTime(appointment.startTime),
+          staffId: appointment.staffId,
+          serviceId: appointment.serviceId,
+          serviceVariantId: appointment.serviceVariantId,
+          durationMinutes: appointment.endTime
+              .difference(appointment.startTime)
+              .inMinutes,
         ),
-        staffId: appt.staffId,
-        serviceId: appt.serviceId,
-        serviceVariantId: appt.serviceVariantId,
-        durationMinutes: appt.endTime.difference(appt.startTime).inMinutes,
-      );
-    } else {
-      _date = DateUtils.dateOnly(widget.initialDate ?? agendaDate);
-      final initialTime =
-          widget.initialTime ?? const TimeOfDay(hour: 10, minute: 0);
-      _serviceItem = ServiceItemData(
-        key: '0',
-        startTime: initialTime,
-        staffId: widget.initialStaffId,
       );
     }
+
+    // Se non ci sono appointments (caso raro), aggiungi un item vuoto
+    if (_serviceItems.isEmpty) {
+      final initialTime = TimeOfDay.fromDateTime(appt.startTime);
+      _serviceItems.add(
+        ServiceItemData(
+          key: _nextItemKey(),
+          startTime: initialTime,
+          staffId: appt.staffId,
+        ),
+      );
+    }
+
+    // Salva stato iniziale per rilevare modifiche
+    _initialDate = _date;
+    _initialClientId = _clientId;
+    _initialClientName = _clientName;
+    _initialNotes = _notesController.text;
+    // Copia profonda dei servizi per confronto
+    _initialServiceItems = _serviceItems
+        .map(
+          (s) => ServiceItemData(
+            key: s.key,
+            startTime: s.startTime,
+            staffId: s.staffId,
+            serviceId: s.serviceId,
+            serviceVariantId: s.serviceVariantId,
+            durationMinutes: s.durationMinutes,
+          ),
+        )
+        .toList();
   }
+
+  String _nextItemKey() => 'item_${_itemKeyCounter++}';
 
   @override
   void dispose() {
@@ -135,10 +161,56 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     super.dispose();
   }
 
+  /// Verifica se ci sono modifiche non salvate
+  bool get _hasUnsavedChanges {
+    if (_date != _initialDate) return true;
+    if (_clientId != _initialClientId) return true;
+    if (_clientName != _initialClientName) return true;
+    if (_notesController.text != _initialNotes) return true;
+    if (_serviceItems.length != _initialServiceItems.length) return true;
+
+    // Confronto dettagliato dei servizi
+    for (int i = 0; i < _serviceItems.length; i++) {
+      final current = _serviceItems[i];
+      final initial = _initialServiceItems[i];
+      if (current.serviceId != initial.serviceId) return true;
+      if (current.staffId != initial.staffId) return true;
+      if (current.startTime != initial.startTime) return true;
+      if (current.durationMinutes != initial.durationMinutes) return true;
+    }
+
+    return false;
+  }
+
+  /// Gestisce la chiusura del dialog con controllo modifiche
+  Future<void> _handleClose() async {
+    if (_hasUnsavedChanges) {
+      final l10n = context.l10n;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(l10n.discardChangesTitle),
+          content: Text(l10n.discardChangesMessage),
+          actions: [
+            AppOutlinedActionButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.actionKeepEditing),
+            ),
+            AppDangerButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(l10n.actionDiscard),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    if (mounted) Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final isEdit = widget.initial != null;
     final isDialog = widget.presentation == _AppointmentPresentation.dialog;
 
     final formFactor = ref.watch(formFactorProvider);
@@ -148,302 +220,128 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final clients = ref.watch(clientsProvider);
     final staff = ref.watch(staffForCurrentLocationProvider);
 
-    // Get eligible staff for the selected service
-    final eligibleStaffIds = _serviceItem.serviceId != null
-        ? ref.watch(eligibleStaffForServiceProvider(_serviceItem.serviceId!))
-        : <int>[];
+    final title = l10n.appointmentDialogTitleEdit;
 
-    // Conta gli appuntamenti nella stessa prenotazione (per mostrare/nascondere "Elimina prenotazione")
-    final bookingAppointmentsCount = isEdit
-        ? ref
-              .watch(appointmentsProvider)
-              .where((a) => a.bookingId == widget.initial!.bookingId)
-              .length
-        : 0;
-
-    final title = isEdit
-        ? l10n.appointmentDialogTitleEdit
-        : l10n.appointmentDialogTitleNew;
-
-    // Il campo cliente è bloccato se in modalità edit e l'appuntamento
+    // Il campo cliente è bloccato se l'appuntamento
     // aveva già un cliente associato (clientId != null)
-    final isClientLocked = isEdit && widget.initial!.clientId != null;
+    final isClientLocked = widget.initial.clientId != null;
 
-    final content = Form(
-      key: _formKey,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: AppSpacing.formFirstRowSpacing),
-          // Client selection (first)
-          _ClientSelectionField(
-            clientId: _clientId,
-            clientName: _clientName,
-            clients: clients,
-            isLocked: isClientLocked,
-            onClientSelected: (id, name) {
-              setState(() {
-                _clientId = id;
-                _clientName = name;
-              });
-            },
-            onClientRemoved: () {
-              setState(() {
-                _clientId = null;
-                _clientName = '';
-              });
-            },
-          ),
-          const SizedBox(height: AppSpacing.formRowSpacing),
-          // Date
-          InkWell(
-            onTap: _pickDate,
-            borderRadius: BorderRadius.circular(4),
-            child: InputDecorator(
-              decoration: InputDecoration(
-                labelText: l10n.formDate,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                isDense: true,
+    final content = ScrollConfiguration(
+      behavior: const NoScrollbarBehavior(),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: AppSpacing.formFirstRowSpacing),
+              // Client selection (first)
+              _ClientSelectionField(
+                clientId: _clientId,
+                clientName: _clientName,
+                clients: clients,
+                isLocked: isClientLocked,
+                onClientSelected: (id, name) {
+                  setState(() {
+                    _clientId = id;
+                    _clientName = name;
+                  });
+                },
+                onClientRemoved: () {
+                  setState(() {
+                    _clientId = null;
+                    _clientName = '';
+                  });
+                },
               ),
-              child: Text(DtFmt.shortDate(context, _date)),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.formRowSpacing),
-          // Service item card (come in booking_dialog)
-          ServiceItemCard(
-            index: 0,
-            item: _serviceItem,
-            services: services.cast(),
-            categories: serviceCategories.cast(),
-            variants: variants.cast(),
-            eligibleStaff: eligibleStaffIds,
-            allStaff: staff.cast(),
-            formFactor: formFactor,
-            canRemove: false,
-            isServiceRequired: true,
-            onChanged: (updated) {
-              setState(() => _serviceItem = updated);
-            },
-            onRemove: () {},
-            onStartTimeChanged: (time) {
-              setState(() {
-                _serviceItem = _serviceItem.copyWith(startTime: time);
-              });
-            },
-            onEndTimeChanged: (time) {
-              // Calcola nuova durata
-              final startMinutes =
-                  _serviceItem.startTime.hour * 60 +
-                  _serviceItem.startTime.minute;
-              final endMinutes = time.hour * 60 + time.minute;
-              final newDuration = endMinutes - startMinutes;
-              if (newDuration > 0) {
-                setState(() {
-                  _serviceItem = _serviceItem.copyWith(
-                    durationMinutes: newDuration,
-                  );
-                });
-              }
-            },
-            onDurationChanged: (duration) {
-              setState(() {
-                _serviceItem = _serviceItem.copyWith(durationMinutes: duration);
-              });
-            },
-          ),
-          const SizedBox(height: AppSpacing.formRowSpacing),
-          // Notes field
-          TextFormField(
-            controller: _notesController,
-            decoration: InputDecoration(
-              labelText: l10n.formNotes,
-              alignLabelWithHint: true,
-              border: OutlineInputBorder(
+              const SizedBox(height: AppSpacing.formRowSpacing),
+              // Date
+              InkWell(
+                onTap: _pickDate,
                 borderRadius: BorderRadius.circular(4),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: l10n.formDate,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    isDense: true,
+                  ),
+                  child: Text(DtFmt.shortDate(context, _date)),
+                ),
               ),
-            ),
-            maxLines: 3,
-            minLines: 2,
+              const SizedBox(height: AppSpacing.formRowSpacing),
+              // Services list
+              ..._buildServiceItems(
+                services: services,
+                categories: serviceCategories,
+                variants: variants,
+                allStaff: staff,
+                formFactor: formFactor,
+              ),
+              const SizedBox(height: AppSpacing.formRowSpacing),
+              // Notes field
+              TextFormField(
+                controller: _notesController,
+                decoration: InputDecoration(
+                  labelText: l10n.formNotes,
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                maxLines: 3,
+                minLines: 2,
+              ),
+              const SizedBox(height: AppSpacing.formRowSpacing),
+            ],
           ),
-          const SizedBox(height: AppSpacing.formRowSpacing),
-        ],
+        ),
       ),
     );
 
     final actions = [
-      if (widget.initial != null) ...[
-        // "Aggiungi alla prenotazione" abilitato solo se la data è la stessa
-        () {
-          final originalDate = DateUtils.dateOnly(widget.initial!.startTime);
-          final isSameDate = _date == originalDate;
-          return AppOutlinedActionButton(
-            onPressed: isSameDate
-                ? () {
-                    final variants = ref.read(serviceVariantsProvider);
-                    final services = ref.read(servicesProvider);
-                    final serviceId =
-                        _serviceItem.serviceId ?? widget.initial!.serviceId;
-                    final selectedVariant = variants.firstWhere(
-                      (v) => v.serviceId == serviceId,
-                      orElse: () => variants.first,
-                    );
-                    final service = services.firstWhere(
-                      (s) => s.id == serviceId,
-                    );
-
-                    final start = DateTime(
-                      _date.year,
-                      _date.month,
-                      _date.day,
-                      _serviceItem.startTime.hour,
-                      _serviceItem.startTime.minute,
-                    );
-                    final duration = _serviceItem.durationMinutes > 0
-                        ? _serviceItem.durationMinutes
-                        : selectedVariant.durationMinutes;
-                    final end = start.add(Duration(minutes: duration));
-
-                    ref
-                        .read(appointmentsProvider.notifier)
-                        .addAppointment(
-                          bookingId: widget.initial!.bookingId,
-                          staffId:
-                              _serviceItem.staffId ?? widget.initial!.staffId,
-                          serviceId: service.id,
-                          serviceVariantId: selectedVariant.id,
-                          clientId: widget.initial!.clientId,
-                          clientName: widget.initial!.clientName,
-                          serviceName: service.name,
-                          start: start,
-                          end: end,
-                          price: selectedVariant.price,
-                        );
-                    Navigator.of(context).pop();
-                  }
-                : null,
-            child: Text(l10n.actionAddToBooking),
-          );
-        }(),
-      ],
-      if (widget.initial != null)
-        AppDangerButton(
-          onPressed: () async {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (_) => AlertDialog(
-                title: Text(l10n.deleteAppointmentConfirmTitle),
-                content: Text(l10n.deleteAppointmentConfirmMessage),
-                actions: [
-                  AppOutlinedActionButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text(l10n.actionCancel),
-                  ),
-                  AppDangerButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text(l10n.actionDelete),
-                  ),
-                ],
-              ),
-            );
-            if (confirmed == true) {
-              ref
-                  .read(appointmentsProvider.notifier)
-                  .deleteAppointment(widget.initial!.id);
-              if (context.mounted) Navigator.of(context).pop();
-            }
-          },
-          child: Text(l10n.actionDelete),
-        ),
-      // Mostra "Elimina prenotazione" solo se la booking ha più di un appuntamento
-      if (widget.initial != null && bookingAppointmentsCount > 1)
-        AppDangerButton(
-          onPressed: () async {
-            // Recupera gli altri appuntamenti della prenotazione (escluso quello corrente)
-            final bookingAppointments =
-                ref
-                    .read(appointmentsProvider)
-                    .where(
-                      (a) =>
-                          a.bookingId == widget.initial!.bookingId &&
-                          a.id != widget.initial!.id,
-                    )
-                    .toList()
-                  ..sort((a, b) => a.startTime.compareTo(b.startTime));
-
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: Text(l10n.deleteBookingConfirmTitle),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.deleteBookingConfirmMessage),
-                    if (bookingAppointments.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        l10n.otherServicesInBooking,
-                        style: Theme.of(ctx).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      ...bookingAppointments.map(
-                        (appt) => Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Row(
-                            children: [
-                              Text(
-                                DtFmt.hm(
-                                  context,
-                                  appt.startTime.hour,
-                                  appt.startTime.minute,
-                                ),
-                                style: Theme.of(ctx).textTheme.bodyMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  appt.serviceName,
-                                  style: Theme.of(ctx).textTheme.bodyMedium,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
+      AppDangerButton(
+        onPressed: () async {
+          final deleteTitle = _bookingHasSingleAppointment
+              ? l10n.deleteAppointmentConfirmTitle
+              : l10n.deleteBookingConfirmTitle;
+          final deleteMessage = _bookingHasSingleAppointment
+              ? l10n.deleteAppointmentConfirmMessage
+              : l10n.deleteBookingConfirmMessage;
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: Text(deleteTitle),
+              content: Text(deleteMessage),
+              actions: [
+                AppOutlinedActionButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(l10n.actionCancel),
                 ),
-                actions: [
-                  AppOutlinedActionButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text(l10n.actionCancel),
-                  ),
-                  AppDangerButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text(l10n.actionDeleteBooking),
-                  ),
-                ],
-              ),
-            );
-            if (confirmed == true) {
-              ref
-                  .read(bookingsProvider.notifier)
-                  .deleteBooking(widget.initial!.bookingId);
-              if (context.mounted) Navigator.of(context).pop();
-            }
-          },
-          child: Text(l10n.actionDeleteBooking),
-        ),
+                AppDangerButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(l10n.actionDelete),
+                ),
+              ],
+            ),
+          );
+          if (confirmed == true) {
+            ref
+                .read(bookingsProvider.notifier)
+                .deleteBooking(widget.initial.bookingId);
+            if (context.mounted) Navigator.of(context).pop();
+          }
+        },
+        padding: AppButtonStyles.dialogButtonPadding,
+        child: Text(l10n.actionDelete),
+      ),
       AppOutlinedActionButton(
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: _handleClose,
         padding: AppButtonStyles.dialogButtonPadding,
         child: Text(l10n.actionCancel),
       ),
@@ -455,7 +353,12 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     ];
 
     if (isDialog) {
-      return DismissibleDialog(
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          await _handleClose();
+        },
         child: Dialog(
           insetPadding: const EdgeInsets.symmetric(
             horizontal: 32,
@@ -478,7 +381,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                     children: [
                       for (int i = 0; i < actions.length; i++) ...[
                         if (i > 0) const SizedBox(width: 8),
-                        actions[i],
+                        SizedBox(
+                          width: AppButtonStyles.dialogButtonWidth,
+                          child: actions[i],
+                        ),
                       ],
                     ],
                   ),
@@ -489,19 +395,15 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         ),
       );
     }
-
-    final bottomActions = actions
-        .map(
-          (a) => SizedBox(width: AppButtonStyles.dialogButtonWidth, child: a),
-        )
-        .toList();
-
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
+    const horizontalPadding = 20.0;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _handleClose();
+      },
+      child: SafeArea(
+        top: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -510,18 +412,39 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(title, style: Theme.of(context).textTheme.titleLarge),
             ),
-            content,
-            const SizedBox(height: 24),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Wrap(
-                alignment: WrapAlignment.end,
-                spacing: 8,
-                runSpacing: 8,
-                children: bottomActions,
+            Expanded(child: content),
+
+            DecoratedBox(
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Color(0x1F000000), width: 0.5),
+                ),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    AppSpacing.formFirstRowSpacing,
+                    horizontalPadding,
+                    0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (int i = 0; i < actions.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 8),
+                        SizedBox(
+                          width: AppButtonStyles.dialogButtonWidth,
+                          child: actions[i],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
-            SizedBox(height: 32 + MediaQuery.of(context).viewPadding.bottom),
+            SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
           ],
         ),
       ),
@@ -540,17 +463,255 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     }
   }
 
+  List<Widget> _buildServiceItems({
+    required List<dynamic> services,
+    required List<dynamic> categories,
+    required List<dynamic> variants,
+    required List<dynamic> allStaff,
+    required AppFormFactor formFactor,
+  }) {
+    final widgets = <Widget>[];
+
+    // Conta servizi effettivamente selezionati
+    final selectedCount = _serviceItems
+        .where((s) => s.serviceId != null)
+        .length;
+
+    for (int i = 0; i < _serviceItems.length; i++) {
+      final item = _serviceItems[i];
+
+      // Get eligible staff for this service
+      final eligibleStaffIds = item.serviceId != null
+          ? ref.watch(eligibleStaffForServiceProvider(item.serviceId!))
+          : <int>[];
+
+      final isFirst = i == 0;
+      final isLast = i == _serviceItems.length - 1;
+      widgets.add(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (isFirst) ...[
+              Row(
+                children: [
+                  Text(
+                    selectedCount > 0
+                        ? context.l10n.servicesSelectedCount(selectedCount)
+                        : context.l10n.formServices,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ServiceItemCard(
+                index: i,
+                item: item,
+                services: services.cast(),
+                categories: categories.cast(),
+                variants: variants.cast(),
+                eligibleStaff: eligibleStaffIds,
+                allStaff: allStaff.cast(),
+                formFactor: formFactor,
+                canRemove: _serviceItems.length > 1,
+                // Obbligatorio solo se non ci sono altri servizi selezionati
+                isServiceRequired: selectedCount == 0,
+                onChanged: (updated) => _updateServiceItem(i, updated),
+                onRemove: () => _removeServiceItem(i),
+                onStartTimeChanged: (time) => _updateServiceStartTime(i, time),
+                onEndTimeChanged: (time) => _updateServiceEndTime(i, time),
+                onDurationChanged: (duration) =>
+                    _updateServiceDuration(i, duration),
+              ),
+            ),
+            if (isLast && item.serviceId != null) ...[
+              Align(
+                alignment: Alignment.centerRight,
+                child: AppOutlinedActionButton(
+                  onPressed: _addService,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.add, size: 18),
+                      const SizedBox(width: 8),
+                      Text(context.l10n.addService),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ],
+        ),
+      );
+    }
+
+    if (_serviceItems.isEmpty) {
+      widgets.add(
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              context.l10n.noServicesAdded,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
+  void _addService() {
+    // Calcola l'orario di inizio per il nuovo servizio
+    TimeOfDay nextStart;
+    if (_serviceItems.isEmpty) {
+      // Caso raro: usa l'orario dell'appuntamento originale
+      nextStart = TimeOfDay.fromDateTime(widget.initial.startTime);
+    } else {
+      // Prendi l'ultimo servizio e calcola il suo orario di fine
+      final lastItem = _serviceItems.last;
+      nextStart = lastItem.endTime;
+    }
+
+    // Smart staff selection: usa lo staff dell'ultimo servizio aggiunto
+    int? smartStaffId = _serviceItems.isNotEmpty
+        ? _serviceItems.last.staffId
+        : widget.initial.staffId;
+
+    setState(() {
+      _serviceItems.add(
+        ServiceItemData(
+          key: _nextItemKey(),
+          startTime: nextStart,
+          staffId: smartStaffId,
+        ),
+      );
+    });
+  }
+
+  void _removeServiceItem(int index) {
+    if (_serviceItems.length <= 1) return;
+
+    final variants = ref.read(serviceVariantsProvider);
+
+    setState(() {
+      _serviceItems.removeAt(index);
+
+      // Ricalcola gli orari per i servizi successivi
+      _recalculateTimesFrom(index, variants.cast());
+    });
+  }
+
+  void _updateServiceItem(int index, ServiceItemData updated) {
+    final variants = ref.read(serviceVariantsProvider);
+
+    setState(() {
+      _serviceItems[index] = updated;
+
+      // Se cambia il servizio, potremmo dover aggiornare lo staff
+      // e ricalcolare gli orari successivi
+      _recalculateTimesFrom(index + 1, variants.cast());
+
+      // Smart staff selection se lo staff corrente non è più eligible
+      if (updated.serviceId != null && updated.staffId != null) {
+        final eligibleIds = ref.read(
+          eligibleStaffForServiceProvider(updated.serviceId!),
+        );
+        if (!eligibleIds.contains(updated.staffId)) {
+          // Staff non eligible, proviamo a trovarne uno valido
+          final newStaffId = _findBestStaff(updated.serviceId!);
+          _serviceItems[index] = updated.copyWith(staffId: newStaffId);
+        }
+      }
+    });
+  }
+
+  void _updateServiceStartTime(int index, TimeOfDay newTime) {
+    final variants = ref.read(serviceVariantsProvider);
+
+    setState(() {
+      _serviceItems[index] = _serviceItems[index].copyWith(startTime: newTime);
+
+      // Ricalcola gli orari per i servizi successivi
+      _recalculateTimesFrom(index + 1, variants.cast());
+    });
+  }
+
+  void _updateServiceEndTime(int index, TimeOfDay newEndTime) {
+    setState(() {
+      final item = _serviceItems[index];
+
+      // Calcola la nuova durata basata sulla differenza tra end e start
+      final startMinutes = item.startTime.hour * 60 + item.startTime.minute;
+      final endMinutes = newEndTime.hour * 60 + newEndTime.minute;
+      var newDuration = endMinutes - startMinutes;
+
+      // Se la durata è negativa o zero, imposta un minimo di 15 minuti
+      if (newDuration <= 0) {
+        newDuration = 15;
+      }
+
+      _serviceItems[index] = item.copyWith(durationMinutes: newDuration);
+
+      // Ricalcola gli orari per i servizi successivi
+      final variants = ref.read(serviceVariantsProvider);
+      _recalculateTimesFrom(index + 1, variants.cast());
+    });
+  }
+
+  void _updateServiceDuration(int index, int newDuration) {
+    setState(() {
+      _serviceItems[index] = _serviceItems[index].copyWith(
+        durationMinutes: newDuration,
+      );
+
+      // Ricalcola gli orari per i servizi successivi
+      final variants = ref.read(serviceVariantsProvider);
+      _recalculateTimesFrom(index + 1, variants.cast());
+    });
+  }
+
+  void _recalculateTimesFrom(int fromIndex, List<dynamic> variants) {
+    if (fromIndex <= 0 || fromIndex >= _serviceItems.length) return;
+
+    for (int i = fromIndex; i < _serviceItems.length; i++) {
+      final prevItem = _serviceItems[i - 1];
+      final prevEnd = prevItem.endTime;
+      _serviceItems[i] = _serviceItems[i].copyWith(startTime: prevEnd);
+    }
+  }
+
+  /// Trova lo staff migliore per un servizio:
+  /// 1. Primo staff eligible disponibile
+  /// 2. null per selezione manuale
+  int? _findBestStaff(int serviceId) {
+    final eligibleIds = ref.read(eligibleStaffForServiceProvider(serviceId));
+    if (eligibleIds.isEmpty) return null;
+
+    // Prendi il primo eligible
+    return eligibleIds.first;
+  }
+
   void _onSave() async {
     final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
 
-    if (_serviceItem.serviceId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.validationRequired)));
-      return;
-    }
-    if (_serviceItem.staffId == null) {
+    // Verifica che ci sia almeno un servizio selezionato
+    final validItems = _serviceItems
+        .where((item) => item.serviceId != null && item.staffId != null)
+        .toList();
+
+    if (validItems.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.validationRequired)));
@@ -560,26 +721,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final variants = ref.read(serviceVariantsProvider);
     final services = ref.read(servicesProvider);
 
-    final selectedVariant = variants.firstWhere(
-      (v) => v.serviceId == _serviceItem.serviceId,
-      orElse: () => variants.first,
-    );
-    final service = services.firstWhere((s) => s.id == _serviceItem.serviceId);
-
-    final start = DateTime(
-      _date.year,
-      _date.month,
-      _date.day,
-      _serviceItem.startTime.hour,
-      _serviceItem.startTime.minute,
-    );
-
-    // Usa la durata corrente del form (che preserva eventuali modifiche)
-    final duration = _serviceItem.durationMinutes > 0
-        ? _serviceItem.durationMinutes
-        : selectedVariant.durationMinutes;
-    final end = start.add(Duration(minutes: duration));
-
     // Client info (può essere null se nessun cliente è associato)
     final int? clientId = _clientId;
     final String clientName = _clientName.trim();
@@ -587,104 +728,128 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         ? null
         : _notesController.text.trim();
 
-    if (widget.initial == null) {
-      // Nuovo appuntamento: crea SEMPRE una nuova prenotazione
-      final newAppt = ref
-          .read(appointmentsProvider.notifier)
-          .addAppointment(
-            bookingId: null,
-            staffId: _serviceItem.staffId!,
-            serviceId: service.id,
-            serviceVariantId: selectedVariant.id,
-            clientId: clientId,
-            clientName: clientName,
-            serviceName: service.name,
-            start: start,
-            end: end,
-            price: selectedVariant.price,
-          );
-      // Salva le note nella booking appena creata
-      if (notes != null && notes.isNotEmpty) {
-        ref.read(bookingsProvider.notifier).setNotes(newAppt.bookingId, notes);
-      }
-    } else {
-      // Verifica se il cliente è stato aggiunto (era null e ora non lo è)
-      final initialClientId = widget.initial!.clientId;
-      final clientWasAdded = initialClientId == null && clientId != null;
+    // Modifica appuntamento esistente
+    final bookingId = widget.initial.bookingId;
 
-      // Se il cliente è stato aggiunto, verifica se ci sono altri appuntamenti
-      // nella stessa prenotazione che devono essere aggiornati
-      if (clientWasAdded) {
-        final bookingId = widget.initial!.bookingId;
-        final otherAppointments = ref
-            .read(appointmentsProvider.notifier)
-            .getByBookingId(bookingId)
-            .where((a) => a.id != widget.initial!.id)
-            .toList();
+    // Ottieni gli appuntamenti esistenti per questa prenotazione
+    final existingAppointments = ref
+        .read(appointmentsProvider.notifier)
+        .getByBookingId(bookingId);
 
-        // Se ci sono altri appuntamenti, chiedi conferma
-        if (otherAppointments.isNotEmpty && mounted) {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: Text(l10n.applyClientToAllAppointmentsTitle),
-              content: Text(
-                l10n.applyClientToAllAppointmentsMessage(
-                  otherAppointments.length,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(l10n.actionCancel),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: Text(l10n.actionConfirm),
-                ),
-              ],
+    // Verifica se il cliente è stato aggiunto (era null e ora non lo è)
+    final initialClientId = widget.initial.clientId;
+    final clientWasAdded = initialClientId == null && clientId != null;
+
+    // Se il cliente è stato aggiunto e ci sono altri appuntamenti
+    if (clientWasAdded && existingAppointments.length > 1 && mounted) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(l10n.applyClientToAllAppointmentsTitle),
+          content: Text(
+            l10n.applyClientToAllAppointmentsMessage(
+              existingAppointments.length - 1,
             ),
-          );
-
-          if (confirmed != true) {
-            // Utente ha annullato, non salvare
-            return;
-          }
-
-          // Aggiorna il cliente su tutti gli appuntamenti della prenotazione
-          ref
-              .read(appointmentsProvider.notifier)
-              .updateClientForBooking(
-                bookingId: bookingId,
-                clientId: clientId,
-                clientName: clientName,
-              );
-
-          if (mounted) {
-            Navigator.of(context).pop();
-          }
-          return;
-        }
-      }
-
-      // Aggiornamento normale (singolo appuntamento)
-      final updated = widget.initial!.copyWith(
-        staffId: _serviceItem.staffId!,
-        serviceId: service.id,
-        serviceVariantId: selectedVariant.id,
-        clientId: clientId,
-        clientName: clientName,
-        serviceName: service.name,
-        startTime: start,
-        endTime: end,
-        price: selectedVariant.price,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.actionCancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(l10n.actionConfirm),
+            ),
+          ],
+        ),
       );
-      ref.read(appointmentsProvider.notifier).updateAppointment(updated);
-      // Aggiorna le note nella booking associata
-      ref
-          .read(bookingsProvider.notifier)
-          .setNotes(widget.initial!.bookingId, notes);
+
+      if (confirmed == true) {
+        // Aggiorna il cliente su tutti gli appuntamenti della prenotazione
+        ref
+            .read(appointmentsProvider.notifier)
+            .updateClientForBooking(
+              bookingId: bookingId,
+              clientId: clientId,
+              clientName: clientName,
+            );
+      } else if (confirmed == null) {
+        // Utente ha annullato, non salvare
+        return;
+      }
     }
+
+    // Aggiorna tutti i servizi
+    final existingIds = existingAppointments.map((a) => a.id).toSet();
+    final processedIds = <int>{};
+
+    for (int i = 0; i < validItems.length; i++) {
+      final item = validItems[i];
+      final selectedVariant = variants.firstWhere(
+        (v) => v.serviceId == item.serviceId,
+        orElse: () => variants.first,
+      );
+      final service = services.firstWhere((s) => s.id == item.serviceId);
+
+      final start = DateTime(
+        _date.year,
+        _date.month,
+        _date.day,
+        item.startTime.hour,
+        item.startTime.minute,
+      );
+
+      final duration = item.durationMinutes > 0
+          ? item.durationMinutes
+          : selectedVariant.durationMinutes;
+      final end = start.add(Duration(minutes: duration));
+
+      if (i < existingAppointments.length) {
+        // Aggiorna appuntamento esistente
+        final existing = existingAppointments[i];
+        processedIds.add(existing.id);
+
+        final updated = existing.copyWith(
+          staffId: item.staffId!,
+          serviceId: service.id,
+          serviceVariantId: selectedVariant.id,
+          clientId: clientId,
+          clientName: clientName,
+          serviceName: service.name,
+          startTime: start,
+          endTime: end,
+          price: selectedVariant.price,
+        );
+        ref.read(appointmentsProvider.notifier).updateAppointment(updated);
+      } else {
+        // Crea nuovo appuntamento (aggiunto durante la modifica)
+        ref
+            .read(appointmentsProvider.notifier)
+            .addAppointment(
+              bookingId: bookingId,
+              staffId: item.staffId!,
+              serviceId: service.id,
+              serviceVariantId: selectedVariant.id,
+              clientId: clientId,
+              clientName: clientName,
+              serviceName: service.name,
+              start: start,
+              end: end,
+              price: selectedVariant.price,
+            );
+      }
+    }
+
+    // Elimina appuntamenti rimossi
+    for (final id in existingIds.difference(processedIds)) {
+      ref.read(appointmentsProvider.notifier).deleteAppointment(id);
+    }
+
+    // Aggiorna le note nella booking associata
+    ref.read(bookingsProvider.notifier).setNotes(bookingId, notes);
+
+    // Rimuovi la booking se vuota
+    ref.read(bookingsProvider.notifier).removeIfEmpty(bookingId);
 
     if (mounted) {
       Navigator.of(context).pop();

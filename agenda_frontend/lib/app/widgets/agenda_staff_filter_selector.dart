@@ -102,6 +102,11 @@ class _AgendaStaffFilterSelectorState
         tooltip: l10n.staffFilterTooltip,
         icon: const Icon(Icons.people_outline),
         iconSize: 22,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(
+          width: kAgendaControlHeight,
+          height: kAgendaControlHeight,
+        ),
         onPressed: () => _showMobileSheet(context),
       );
     }
