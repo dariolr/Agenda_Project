@@ -2,6 +2,7 @@ import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/app/theme/app_spacing.dart';
 import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
 import 'package:agenda_frontend/core/widgets/labeled_form_field.dart';
+import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +17,6 @@ import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/services_provider.dart';
-import '../../domain/config/layout_config.dart';
 import '../../domain/service_item_data.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
@@ -55,8 +55,8 @@ Future<void> showBookingDialog(
     await AppBottomSheet.show(
       context: context,
       useRootNavigator: true,
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
       builder: (_) => content,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       heightFactor: AppBottomSheet.defaultHeightFactor,
     );
   }
@@ -195,140 +195,102 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         constraints: BoxConstraints(
           maxWidth: isDesktop ? 340 : double.infinity,
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: AppSpacing.formFirstRowSpacing),
+        child: ScrollConfiguration(
+          behavior: const NoScrollbarBehavior(),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: AppSpacing.formFirstRowSpacing),
 
-              // Client selection
-              _ClientSelectionField(
-                clientId: _clientId,
-                clientName: clientName,
-                clients: clients,
-                onClientSelected: (id, name) {
-                  setState(() {
-                    _clientId = id;
-                    _customClientName = name;
-                  });
-                },
-                onClientRemoved: () {
-                  setState(() {
-                    _clientId = null;
-                    _customClientName = '';
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.formRowSpacing),
-
-              // Date and Time selector (row)
-              Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: LabeledFormField(
-                      label: l10n.formDate,
-                      child: InkWell(
-                        onTap: _pickDate,
-                        borderRadius: BorderRadius.circular(8),
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(DtFmt.shortDate(context, _date)),
-                              const Icon(Icons.calendar_today, size: 16),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: LabeledFormField(
-                      label: l10n.formTime,
-                      child: InkWell(
-                        onTap: _pickStartTime,
-                        borderRadius: BorderRadius.circular(8),
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _serviceItems.isNotEmpty
-                                    ? _formatTime(_serviceItems.first.startTime)
-                                    : '--:--',
-                              ),
-                              const Icon(Icons.schedule, size: 16),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.formRowSpacing),
-
-              // Services section header
-              // Services list
-              ..._buildServiceItems(
-                services: services,
-                categories: serviceCategories,
-                variants: variants,
-                allStaff: allStaff,
-                formFactor: formFactor,
-              ),
-
-              const SizedBox(height: AppSpacing.formRowSpacing),
-
-              // Notes field
-              LabeledFormField(
-                label: l10n.formNotes,
-                child: TextField(
-                  controller: _notesController,
-                  decoration: InputDecoration(
-                    hintText: l10n.notesPlaceholder,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  maxLines: 2,
-                  textCapitalization: TextCapitalization.sentences,
+                // Client selection
+                _ClientSelectionField(
+                  clientId: _clientId,
+                  clientName: clientName,
+                  clients: clients,
+                  onClientSelected: (id, name) {
+                    setState(() {
+                      _clientId = id;
+                      _customClientName = name;
+                    });
+                  },
+                  onClientRemoved: () {
+                    setState(() {
+                      _clientId = null;
+                      _customClientName = '';
+                    });
+                  },
                 ),
-              ),
-              const SizedBox(height: AppSpacing.formRowSpacing),
-            ],
+                const SizedBox(height: AppSpacing.formRowSpacing),
+
+                // Date and Time selector (row)
+                LabeledFormField(
+                  label: l10n.formDate,
+                  child: InkWell(
+                    onTap: _pickDate,
+                    borderRadius: BorderRadius.circular(8),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(DtFmt.shortDate(context, _date)),
+                          const Icon(Icons.calendar_today, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.formRowSpacing),
+
+                // Services section header
+                // Services list
+                ..._buildServiceItems(
+                  services: services,
+                  categories: serviceCategories,
+                  variants: variants,
+                  allStaff: allStaff,
+                  formFactor: formFactor,
+                ),
+
+                const SizedBox(height: AppSpacing.formRowSpacing),
+
+                // Notes field
+                LabeledFormField(
+                  label: l10n.formNotes,
+                  child: TextField(
+                    controller: _notesController,
+                    decoration: InputDecoration(
+                      hintText: l10n.notesPlaceholder,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    maxLines: 2,
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.formRowSpacing),
+              ],
+            ),
           ),
         ),
       ),
     );
 
     final actions = [
-      SizedBox(
-        width: AppButtonStyles.dialogButtonWidth,
-        child: AppOutlinedActionButton(
-          onPressed: () => Navigator.of(context).pop(),
-          padding: AppButtonStyles.dialogButtonPadding,
-          child: Text(l10n.actionCancel),
-        ),
+      AppOutlinedActionButton(
+        onPressed: () => Navigator.of(context).pop(),
+        padding: AppButtonStyles.dialogButtonPadding,
+        child: Text(l10n.actionCancel),
       ),
-      SizedBox(
-        width: AppButtonStyles.dialogButtonWidth,
-        child: AppFilledButton(
-          onPressed: _onSave,
-          padding: AppButtonStyles.dialogButtonPadding,
-          child: Text(l10n.actionSave),
-        ),
+      AppFilledButton(
+        onPressed: _onSave,
+        padding: AppButtonStyles.dialogButtonPadding,
+        child: Text(l10n.actionSave),
       ),
     ];
 
@@ -356,7 +318,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     children: [
                       for (int i = 0; i < actions.length; i++) ...[
                         if (i > 0) const SizedBox(width: 8),
-                        actions[i],
+                        SizedBox(
+                          width: AppButtonStyles.dialogButtonWidth,
+                          child: actions[i],
+                        ),
                       ],
                     ],
                   ),
@@ -369,27 +334,58 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     }
 
     // Bottom sheet layout
+    const horizontalPadding = 20.0;
+    final titlePadding = EdgeInsets.fromLTRB(
+      horizontalPadding,
+      0,
+      horizontalPadding,
+      12,
+    );
+
     return SafeArea(
       top: false,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: titlePadding,
             child: Text(title, style: Theme.of(context).textTheme.titleLarge),
           ),
-          Expanded(child: content),
-          const SizedBox(height: AppSpacing.formToActionsSpacing),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              for (int i = 0; i < actions.length; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                actions[i],
-              ],
-            ],
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: content,
+            ),
           ),
+          DecoratedBox(
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Color(0x1F000000), width: 0.5),
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                AppSpacing.formFirstRowSpacing,
+                horizontalPadding,
+                0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  for (int i = 0; i < actions.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    SizedBox(
+                      width: AppButtonStyles.dialogButtonWidth,
+                      child: actions[i],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
           SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
         ],
       ),
@@ -651,61 +647,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     if (picked != null) {
       setState(() => _date = DateUtils.dateOnly(picked));
     }
-  }
-
-  Future<void> _pickStartTime() async {
-    if (_serviceItems.isEmpty) return;
-
-    final l10n = context.l10n;
-    final formFactor = ref.read(formFactorProvider);
-    final currentTime = _serviceItems.first.startTime;
-
-    TimeOfDay? picked;
-    if (formFactor != AppFormFactor.desktop) {
-      picked = await AppBottomSheet.show<TimeOfDay>(
-        context: context,
-        useRootNavigator: true,
-        padding: EdgeInsets.zero,
-        heightFactor: AppBottomSheet.defaultHeightFactor,
-        builder: (ctx) => _TimeGridPicker(
-          initial: currentTime,
-          stepMinutes: 15,
-          title: l10n.formTime,
-        ),
-      );
-    } else {
-      picked = await showDialog<TimeOfDay>(
-        context: context,
-        builder: (ctx) => Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 32,
-            vertical: 24,
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: _TimeGridPicker(
-                initial: currentTime,
-                stepMinutes: 15,
-                title: l10n.formTime,
-                useSafeArea: false,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (picked != null) {
-      _updateServiceStartTime(0, picked);
-    }
-  }
-
-  String _formatTime(TimeOfDay time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
   }
 
   void _onSave() {
@@ -1189,188 +1130,5 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
         ),
       ),
     );
-  }
-}
-
-/// Grid picker per la selezione dell'orario
-class _TimeGridPicker extends StatefulWidget {
-  const _TimeGridPicker({
-    required this.initial,
-    required this.stepMinutes,
-    this.title,
-    this.useSafeArea = true,
-  });
-  final TimeOfDay initial;
-  final int stepMinutes;
-  final String? title;
-  final bool useSafeArea;
-
-  @override
-  State<_TimeGridPicker> createState() => _TimeGridPickerState();
-}
-
-class _TimeGridPickerState extends State<_TimeGridPicker> {
-  late final ScrollController _scrollController;
-  late final List<TimeOfDay?> _entries;
-  late final int _selectedIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-
-    // Genera la lista degli orari con 4 colonne per riga
-    _entries = <TimeOfDay?>[];
-    for (int m = 0; m < LayoutConfig.hoursInDay * 60; m += widget.stepMinutes) {
-      final h = m ~/ 60;
-      final mm = m % 60;
-      _entries.add(TimeOfDay(hour: h, minute: mm));
-    }
-
-    // Verifica se l'orario iniziale è già nella lista
-    int exactIndex = _entries.indexWhere(
-      (t) =>
-          t != null &&
-          t.hour == widget.initial.hour &&
-          t.minute == widget.initial.minute,
-    );
-
-    if (exactIndex >= 0) {
-      // L'orario è già presente
-      _selectedIndex = exactIndex;
-    } else {
-      // L'orario non è presente: inserisci una NUOVA RIGA con l'orario
-      // nella colonna corretta e le altre colonne vuote
-      final columnsPerRow = 60 ~/ widget.stepMinutes;
-      final targetColumn = widget.initial.minute ~/ widget.stepMinutes;
-      final baseIndex = (widget.initial.hour + 1) * columnsPerRow;
-
-      // Crea la nuova riga con 4 elementi (solo uno valorizzato)
-      final newRow = List<TimeOfDay?>.filled(columnsPerRow, null);
-      newRow[targetColumn] = widget.initial;
-
-      // Inserisci la nuova riga
-      final insertIndex = baseIndex.clamp(0, _entries.length);
-      _entries.insertAll(insertIndex, newRow);
-
-      // L'indice dell'orario selezionato è la posizione nella nuova riga
-      _selectedIndex = insertIndex + targetColumn;
-    }
-
-    // Scroll all'orario selezionato dopo il primo frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToSelected();
-    });
-  }
-
-  void _scrollToSelected() {
-    if (!_scrollController.hasClients) return;
-
-    const crossAxisCount = 4;
-    const mainAxisSpacing = 6.0;
-    const childAspectRatio = 2.7;
-    const padding = 12.0;
-
-    // Usa la larghezza effettiva del context
-    final screenWidth = MediaQuery.of(context).size.width;
-    final availableWidth = screenWidth - padding * 2;
-    final itemWidth =
-        (availableWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
-    final itemHeight = itemWidth / childAspectRatio;
-    final rowHeight = itemHeight + mainAxisSpacing;
-
-    // Calcola la riga dell'elemento selezionato
-    final selectedRow = _selectedIndex ~/ crossAxisCount;
-
-    // Calcola l'offset per centrare la riga selezionata
-    final viewportHeight = _scrollController.position.viewportDimension;
-    // Offset aggiuntivo per centrare meglio (compensa header visivo)
-    const headerOffset = 40.0;
-    final targetOffset =
-        (selectedRow * rowHeight) -
-        (viewportHeight / 2) +
-        (rowHeight / 2) +
-        headerOffset;
-
-    // Limita l'offset ai bounds dello scroll
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final clampedOffset = targetOffset.clamp(0.0, maxScroll);
-
-    _scrollController.animateTo(
-      clampedOffset,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    Widget content = Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.schedule, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                widget.title ??
-                    MaterialLocalizations.of(context).timePickerHourLabel,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: GridView.builder(
-              controller: _scrollController,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 6,
-                crossAxisSpacing: 6,
-                childAspectRatio: 2.7,
-              ),
-              itemCount: _entries.length,
-              itemBuilder: (context, index) {
-                final t = _entries[index];
-                // Se la cella è vuota, mostra uno spazio vuoto
-                if (t == null) {
-                  return const SizedBox.shrink();
-                }
-                final isSelected = index == _selectedIndex;
-                return OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: isSelected
-                        ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                        : null,
-                    side: BorderSide(
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).dividerColor,
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  onPressed: () => Navigator.pop(context, t),
-                  child: Text(DtFmt.hm(context, t.hour, t.minute)),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (widget.useSafeArea) {
-      return SafeArea(child: content);
-    }
-    return content;
   }
 }

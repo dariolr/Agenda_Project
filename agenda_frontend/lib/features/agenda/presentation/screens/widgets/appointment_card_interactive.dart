@@ -182,8 +182,7 @@ class _AppointmentCardInteractiveState
               child: LongPressDraggable<Appointment>(
                 data: widget.appointment,
                 feedback: Consumer(
-                  builder: (c, r, _) =>
-                      _buildFollowerFeedback(c, r, isSelected, formFactor),
+                  builder: (c, r, _) => _buildFollowerFeedback(c, r, isSelected),
                 ),
                 feedbackOffset: Offset.zero,
                 dragAnchorStrategy: childDragAnchorStrategy,
@@ -192,7 +191,6 @@ class _AppointmentCardInteractiveState
                   isGhost: true,
                   showThickBorder: showThickBorder,
                   isSelected: isSelected,
-                  formFactor: formFactor,
                 ),
 
                 onDragStarted: () {
@@ -239,7 +237,6 @@ class _AppointmentCardInteractiveState
                   showThickBorder: showThickBorder,
                   isResizingDisabled: isDragging,
                   isSelected: isSelected,
-                  formFactor: formFactor,
                 ),
               ),
             ),
@@ -388,12 +385,6 @@ class _AppointmentCardInteractiveState
   }
 
   void _evaluateDragBlock(RenderBox cardBox, Offset globalPosition) {
-    final formFactor = ref.read(formFactorProvider);
-    if (formFactor == AppFormFactor.mobile) {
-      _updateDragBlock(false);
-      return;
-    }
-
     final selection = ref.read(selectedAppointmentProvider);
     if (!selection.contains(widget.appointment.id)) {
       _updateDragBlock(false);
@@ -449,7 +440,7 @@ class _AppointmentCardInteractiveState
     ref.read(selectedAppointmentProvider.notifier).clear();
   }
 
-  // 🔹 Logica per il tap su MOBILE
+  // 🔹 Logica per il tap su MOBILE (apre il dialogo di modifica come prima)
   void _handleMobileTap() async {
     final resizingNow = ref.read(isResizingProvider);
     if (resizingNow) return;
@@ -475,7 +466,6 @@ class _AppointmentCardInteractiveState
     bool showThickBorder = false,
     bool isResizingDisabled = false,
     required bool isSelected,
-    required AppFormFactor formFactor,
     DateTime? overrideStart,
     DateTime? overrideEnd,
   }) {
@@ -546,8 +536,7 @@ class _AppointmentCardInteractiveState
               ),
               if (!forFeedback &&
                   !isResizingDisabled &&
-                  isSelected &&
-                  formFactor != AppFormFactor.mobile)
+                  isSelected)
                 _buildResizeHandle(),
             ],
           ),
@@ -746,7 +735,6 @@ class _AppointmentCardInteractiveState
     BuildContext context,
     WidgetRef ref,
     bool isSelected,
-    AppFormFactor formFactor,
   ) {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final times = ref.watch(tempDragTimeProvider);
@@ -846,7 +834,6 @@ class _AppointmentCardInteractiveState
                   overrideStart: start,
                   overrideEnd: end,
                   isSelected: isSelected,
-                  formFactor: formFactor,
                 ),
               ),
             ),

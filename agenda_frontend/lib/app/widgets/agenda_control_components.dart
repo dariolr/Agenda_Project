@@ -99,6 +99,7 @@ class AgendaDateSwitcher extends StatefulWidget {
     this.onPreviousMonth,
     this.onNextMonth,
     required this.onSelectDate,
+    this.showWeekNavigation = true,
   });
 
   final String label;
@@ -116,6 +117,7 @@ class AgendaDateSwitcher extends StatefulWidget {
   final VoidCallback? onPreviousMonth;
   final VoidCallback? onNextMonth;
   final ValueChanged<DateTime> onSelectDate;
+  final bool showWeekNavigation;
 
   @override
   State<AgendaDateSwitcher> createState() => _AgendaDateSwitcherState();
@@ -233,12 +235,12 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.isCompact) {
+    /*if (widget.isCompact) {
       return _CompactDateSwitcher(
         label: widget.label,
         onTap: () => _handleTap(context),
       );
-    }
+    }*/
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final interactions = Theme.of(context).extension<AppInteractionColors>();
@@ -344,7 +346,8 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
                 borderRadius: leftRadius,
               ),
               buildDivider(widget.onPreviousMonth!),
-            ] else if (widget.onPreviousWeek != null) ...[
+            ] else if (widget.showWeekNavigation &&
+                widget.onPreviousWeek != null) ...[
               buildArrowButton(
                 icon: Icons.keyboard_double_arrow_left,
                 onTap: widget.onPreviousWeek!,
@@ -352,8 +355,10 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
                 borderRadius: leftRadius,
               ),
               buildDivider(widget.onPreviousWeek!),
-            ] else ...[
+            ] else if (widget.showWeekNavigation) ...[
               SizedBox(width: arrowExtent, height: kAgendaControlHeight),
+              SizedBox(width: dividerWidth),
+            ] else ...[
               SizedBox(width: dividerWidth),
             ],
             buildArrowButton(
@@ -387,7 +392,8 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
                 semanticsLabel: l10n.agendaNextMonth,
                 borderRadius: rightRadius,
               ),
-            ] else if (widget.onNextWeek != null) ...[
+            ] else if (widget.showWeekNavigation &&
+                widget.onNextWeek != null) ...[
               buildDivider(widget.onNextWeek!),
               buildArrowButton(
                 icon: Icons.keyboard_double_arrow_right,
@@ -395,9 +401,11 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
                 semanticsLabel: l10n.agendaNextWeek,
                 borderRadius: rightRadius,
               ),
-            ] else ...[
+            ] else if (widget.showWeekNavigation) ...[
               SizedBox(width: dividerWidth),
               SizedBox(width: arrowExtent, height: kAgendaControlHeight),
+            ] else ...[
+              SizedBox(width: dividerWidth),
             ],
           ]);
 
@@ -833,11 +841,13 @@ class AgendaLocationSelector extends ConsumerStatefulWidget {
     required this.locations,
     required this.current,
     required this.onSelected,
+    this.iconOnly = false,
   });
 
   final List<Location> locations;
   final Location current;
   final void Function(int id) onSelected;
+  final bool iconOnly;
 
   @override
   ConsumerState<AgendaLocationSelector> createState() =>
@@ -884,49 +894,77 @@ class _AgendaLocationSelectorState
         child: Semantics(
           button: true,
           label: l10n.agendaSelectLocation,
-          child: ClipRRect(
-            borderRadius: kAgendaPillRadius,
-            child: Container(
-              height: kAgendaControlHeight,
-              decoration: BoxDecoration(
-                borderRadius: kAgendaPillRadius,
-                border: Border.all(color: Colors.grey.withOpacity(0.35)),
-                color: backgroundColor,
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  const compactBreakpoint = 220.0;
-                  final maxWidth = constraints.maxWidth;
-                  final isCompact =
-                      maxWidth.isFinite &&
-                      maxWidth > 0 &&
-                      maxWidth < compactBreakpoint;
-                  final horizontalPadding = isCompact
-                      ? 12.0
-                      : kAgendaControlHorizontalPadding;
+          child: widget.iconOnly
+              ? Tooltip(
+                  message: l10n.agendaSelectLocation,
+                  child: Container(
+                    height: kAgendaControlHeight,
+                    width: kAgendaControlHeight,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(
+                        kAgendaControlHeight / 2,
+                      ),
+                      color: backgroundColor,
+                    ),
+                    child: Icon(
+                      Icons.place_outlined,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              : ClipRRect(
+                  borderRadius: kAgendaPillRadius,
+                  child: Container(
+                    height: kAgendaControlHeight,
+                    decoration: BoxDecoration(
+                      borderRadius: kAgendaPillRadius,
+                      border: Border.all(color: Colors.grey.withOpacity(0.35)),
+                      color: backgroundColor,
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        const compactBreakpoint = 220.0;
+                        final maxWidth = constraints.maxWidth;
+                        final isCompact =
+                            maxWidth.isFinite &&
+                            maxWidth > 0 &&
+                            maxWidth < compactBreakpoint;
+                        final horizontalPadding = isCompact
+                            ? 12.0
+                            : kAgendaControlHorizontalPadding;
 
-                  return Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            widget.current.name,
-                            overflow: TextOverflow.ellipsis,
+                        if (maxWidth.isFinite &&
+                            maxWidth < kAgendaControlHeight) {
+                          return const SizedBox.shrink();
+                        }
+
+                        return Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: horizontalPadding,
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
-                      ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.current.name,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-            ),
-          ),
+                  ),
+                ),
         ),
       ),
     );

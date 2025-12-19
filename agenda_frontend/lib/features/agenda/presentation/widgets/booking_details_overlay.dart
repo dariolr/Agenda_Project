@@ -25,6 +25,13 @@ class _BookingDetailsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final summary = ref.watch(bookingSummaryProvider(bookingId));
+    final isSingleAppointment = summary?.itemsCount == 1;
+    final deleteTitle = isSingleAppointment
+        ? l10n.deleteAppointmentConfirmTitle
+        : l10n.deleteBookingConfirmTitle;
+    final deleteMessage = isSingleAppointment
+        ? l10n.deleteAppointmentConfirmMessage
+        : l10n.deleteBookingConfirmMessage;
     final bookings = ref.watch(bookingsProvider);
     final booking = bookings[bookingId];
 
@@ -95,8 +102,8 @@ class _BookingDetailsSheet extends ConsumerWidget {
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (_) => AlertDialog(
-                          title: Text(l10n.deleteBookingConfirmTitle),
-                          content: Text(l10n.deleteBookingConfirmMessage),
+                          title: Text(deleteTitle),
+                          content: Text(deleteMessage),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
