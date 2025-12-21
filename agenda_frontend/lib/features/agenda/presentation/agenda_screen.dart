@@ -1,7 +1,3 @@
-import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
-import 'package:agenda_frontend/app/widgets/agenda_control_components.dart';
-import 'package:agenda_frontend/app/widgets/agenda_staff_filter_selector.dart';
-import 'package:agenda_frontend/core/models/location.dart';
 import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/agenda_day.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/components/hour_column.dart';
@@ -9,9 +5,7 @@ import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/age
 import 'package:agenda_frontend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_frontend/features/agenda/providers/is_resizing_provider.dart';
 import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
-import 'package:agenda_frontend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_frontend/features/agenda/providers/staff_filter_providers.dart';
-import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -120,50 +114,12 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     return false;
   }
 
-  Widget? _buildMobileLocationStaffColumn({
-    required double width,
-    required bool showLocationSelector,
-    required bool showStaffSelector,
-    required List<Location> locations,
-    required Location currentLocation,
-    required ValueChanged<int> onLocationSelected,
-  }) {
-    if (!showLocationSelector && !showStaffSelector) {
-      return null;
-    }
-
-    final children = <Widget>[];
-    if (showLocationSelector) {
-      children.add(
-        AgendaLocationSelector(
-          locations: locations,
-          current: currentLocation,
-          onSelected: onLocationSelected,
-          iconOnly: true,
-        ),
-      );
-    }
-    if (showStaffSelector) {
-      children.add(AgendaStaffFilterSelector(isCompact: true));
-    }
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: children,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
-    final formFactor = ref.watch(formFactorProvider);
     final staffList = ref.watch(filteredStaffProvider);
-    final staffForLocation = ref.watch(staffForCurrentLocationProvider);
     final isResizing = ref.watch(isResizingProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
-    final locations = ref.watch(locationsProvider);
-    final currentLocation = ref.watch(currentLocationProvider);
-    final locationController = ref.read(currentLocationIdProvider.notifier);
 
     final hourColumnWidth = layoutConfig.hourColumnWidth;
     final totalHeight = layoutConfig.totalHeight;
@@ -180,18 +136,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
             .createQuickBookingForClient(initialClientId);
       });
     }
-
-    final isMobile = formFactor == AppFormFactor.mobile;
-    final showMobileLocationSelector = isMobile && locations.length > 1;
-    final showMobileStaffSelector = isMobile && staffForLocation.length > 1;
-    final mobileColumn = _buildMobileLocationStaffColumn(
-      width: hourColumnWidth,
-      showLocationSelector: showMobileLocationSelector,
-      showStaffSelector: showMobileStaffSelector,
-      locations: locations,
-      currentLocation: currentLocation,
-      onLocationSelected: locationController.set,
-    );
 
     final hourColumnStack = SizedBox(
       width: hourColumnWidth,
@@ -239,14 +183,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
               ),
             ],
           ),
-
-          if (mobileColumn != null)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Align(alignment: Alignment.topCenter, child: mobileColumn),
-            ),
         ],
       ),
     );

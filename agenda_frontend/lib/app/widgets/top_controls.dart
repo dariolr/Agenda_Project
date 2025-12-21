@@ -61,6 +61,10 @@ class TopControls extends ConsumerWidget {
       selectedDate = weekMeta.effectivePickerDate;
     }
     final showTopDateSwitcher = mode != TopControlsMode.agenda;
+    final showAgendaLocationSelector =
+        mode == TopControlsMode.agenda && data.locations.length > 1;
+    final showAgendaStaffSelector = mode == TopControlsMode.agenda &&
+        ref.watch(staffForCurrentLocationProvider).length > 1;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -99,6 +103,19 @@ class TopControls extends ConsumerWidget {
           const SizedBox(width: 8),
         ] else
           const SizedBox(width: 8),
+        if (showAgendaLocationSelector) ...[
+          IconButton(
+            tooltip: data.l10n.agendaSelectLocation,
+            icon: const Icon(Icons.place_outlined),
+            iconSize: 22,
+            onPressed: () async {
+              await _showLocationSheet(context, data, ref);
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+        if (showAgendaStaffSelector)
+          const AgendaStaffFilterSelector(),
         if (mode == TopControlsMode.staff && data.locations.length > 1)
           IconButton(
             tooltip: data.l10n.agendaSelectLocation,
