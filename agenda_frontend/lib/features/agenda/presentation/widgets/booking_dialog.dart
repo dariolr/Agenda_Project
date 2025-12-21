@@ -18,9 +18,11 @@ import '../../../clients/providers/clients_providers.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../domain/service_item_data.dart';
+import '../../providers/layout_config_provider.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/date_range_provider.dart';
+import '../../providers/staff_slot_availability_provider.dart';
 import 'service_item_card.dart';
 
 /// Show the Booking dialog for creating a new multi-service booking.
@@ -101,6 +103,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
   /// Contatore per generare chiavi univoche
   int _itemKeyCounter = 0;
+
+  bool _warningDismissed = false;
 
   @override
   void initState() {
@@ -306,6 +310,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     ];
 
     if (isDialog) {
+      final hasConflicts = _hasAvailabilityConflicts();
       return DismissibleDialog(
         child: Dialog(
           insetPadding: const EdgeInsets.symmetric(
@@ -324,6 +329,12 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                   const SizedBox(height: 8),
                   Flexible(child: content),
                   const SizedBox(height: AppSpacing.formToActionsSpacing),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: AppSpacing.formFirstRowSpacing,
+                    ),
+                    child: _warningBanner(20, hasConflicts),
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -353,6 +364,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       12,
     );
 
+    final hasConflicts = _hasAvailabilityConflicts();
+
     return SafeArea(
       top: false,
       child: Column(
@@ -369,31 +382,66 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
               child: content,
             ),
           ),
-          DecoratedBox(
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0x1F000000), width: 0.5),
-              ),
-            ),
-            child: Padding(
+          if (hasConflicts && !_warningDismissed)
+            Container(
+              width: double.infinity,
+              color: Colors.amber.withOpacity(0.18),
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
-                AppSpacing.formFirstRowSpacing,
+                12,
                 horizontalPadding,
-                0,
+                12,
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  for (int i = 0; i < actions.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 8),
-                    SizedBox(
-                      width: AppButtonStyles.dialogButtonWidth,
-                      child: actions[i],
+                  const Icon(Icons.warning_amber_rounded,
+                      color: Colors.amber, size: 20),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Attenzione: l’orario selezionato include fasce non disponibili per lo staff scelto.',
+                      style: TextStyle(
+                        color: Color(0xFF8A4D00),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    color: const Color(0xFF8A4D00),
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints.tightFor(width: 32, height: 32),
+                    onPressed: () {
+                      setState(() => _warningDismissed = true);
+                    },
+                  ),
                 ],
               ),
+            ),
+          const Divider(
+            height: 1,
+            thickness: 0.5,
+            color: Color(0x1F000000),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              AppSpacing.formFirstRowSpacing,
+              horizontalPadding,
+              0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                for (int i = 0; i < actions.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  SizedBox(
+                    width: AppButtonStyles.dialogButtonWidth,
+                    child: actions[i],
+                  ),
+                ],
+              ],
             ),
           ),
 
@@ -514,6 +562,76 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     }
 
     return widgets;
+  }
+
+  Widget _warningBanner(double horizontalPadding, bool hasConflicts) {
+    if (!hasConflicts || _warningDismissed) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        12,
+        horizontalPadding,
+        12,
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded,
+              color: Colors.amber, size: 20),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Attenzione: l’orario selezionato include fasce non disponibili per lo staff scelto.',
+              style: TextStyle(
+                color: Color(0xFF8A4D00),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            color: const Color(0xFF8A4D00),
+            padding: EdgeInsets.zero,
+            constraints:
+                const BoxConstraints.tightFor(width: 32, height: 32),
+            onPressed: () {
+              setState(() => _warningDismissed = true);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _hasAvailabilityConflicts() {
+    final layout = ref.watch(layoutConfigProvider);
+    final Map<int, Set<int>> cache = {};
+
+    for (final item in _serviceItems) {
+      final staffId = item.staffId;
+      if (staffId == null) continue;
+
+      final available = cache.putIfAbsent(
+        staffId,
+        () => ref.watch(staffSlotAvailabilityProvider(staffId)),
+      );
+
+      if (available.isEmpty) return true;
+
+      final startMinutes = item.startTime.hour * 60 + item.startTime.minute;
+      final endMinutes = startMinutes + item.durationMinutes;
+      final startSlot = startMinutes ~/ layout.minutesPerSlot;
+      final endSlot = (endMinutes / layout.minutesPerSlot).ceil();
+
+      for (int slot = startSlot; slot < endSlot; slot++) {
+        if (!available.contains(slot)) return true;
+      }
+    }
+    return false;
   }
 
   void _scheduleAutoClientPicker() {
