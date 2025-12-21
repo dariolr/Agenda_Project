@@ -135,6 +135,7 @@ class _AdaptiveDropdownState<T> extends ConsumerState<AdaptiveDropdown<T>> {
 
     final result = await AppBottomSheet.show<T>(
       context: context,
+      heightFactor: null,
       builder: (ctx) => _MobileSheetContent<T>(
         items: widget.items,
         selectedValue: widget.selectedValue,

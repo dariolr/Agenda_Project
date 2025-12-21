@@ -19,9 +19,8 @@ class AppBottomSheet {
 
     /// Fraction of screen height (0.0 to 1.0). If provided, the bottom sheet
     /// will have a minimum height of this fraction of the screen.
-    double? heightFactor,
+    double? heightFactor = defaultHeightFactor,
   }) {
-    final effectiveHeightFactor = heightFactor ?? defaultHeightFactor;
     final effectivePadding =
         padding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
     return showModalBottomSheet<T>(
@@ -35,7 +34,7 @@ class AppBottomSheet {
       ),
       builder: (ctx) => AppBottomSheetContainer(
         padding: effectivePadding,
-        heightFactor: effectiveHeightFactor,
+        heightFactor: heightFactor,
         child: builder(ctx),
       ),
     );
@@ -65,22 +64,28 @@ class AppBottomSheetContainer extends StatelessWidget {
     // Ottieni l'altezza della tastiera per aggiungere padding extra
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
-    // Ensure bottom padding is at least 50.0 to leave space above
-    // system UI / controls and provide consistent spacing across sheets.
-    final resolved = padding.resolve(Directionality.of(context));
-    final effectivePadding = resolved.copyWith(
-      bottom: math.max(resolved.bottom, 50.0),
-    );
-
-    Widget content = Padding(padding: effectivePadding, child: child);
+    Widget content;
 
     // Apply height constraint if heightFactor is provided
     // Use SizedBox (not ConstrainedBox) to provide a finite height
     // so that Expanded children inside Column can work properly
     if (heightFactor != null) {
+      // Ensure bottom padding is at least 50.0 to leave space above
+      // system UI / controls and provide consistent spacing across sheets.
+      final resolved = padding.resolve(Directionality.of(context));
+      final effectivePadding = resolved.copyWith(
+        bottom: math.max(resolved.bottom, 50.0),
+      );
       final screenHeight = MediaQuery.of(context).size.height;
       final height = screenHeight * heightFactor!;
-      content = SizedBox(height: height, child: content);
+      content = SizedBox(
+        height: height,
+        child: Padding(padding: effectivePadding, child: child),
+      );
+    } else {
+      // Quando heightFactor è null, il contenuto si adatta all'altezza naturale
+      // Usa solo il padding fornito senza forzare altezza minima
+      content = Padding(padding: padding, child: child);
     }
 
     if (!showHandle) {

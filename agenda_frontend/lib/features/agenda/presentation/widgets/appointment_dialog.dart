@@ -18,6 +18,8 @@ import '../../../services/providers/services_provider.dart';
 import '../../domain/service_item_data.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
+import '../../providers/layout_config_provider.dart';
+import '../../providers/staff_slot_availability_provider.dart';
 import 'service_item_card.dart';
 
 /// Show the Appointment dialog for editing an existing appointment.
@@ -44,7 +46,7 @@ Future<void> showAppointmentDialog(
       context: context,
       useRootNavigator: true,
       builder: (_) => content,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
       heightFactor: AppBottomSheet.defaultHeightFactor,
     );
   }
@@ -76,6 +78,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
   /// Contatore per generare chiavi univoche
   int _itemKeyCounter = 0;
+
+  bool _warningDismissed = false;
 
   /// Stato iniziale per rilevare modifiche
   late DateTime _initialDate;
@@ -353,6 +357,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     ];
 
     if (isDialog) {
+      final hasConflicts = _hasAvailabilityConflicts();
       return PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, _) async {
@@ -376,6 +381,12 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   const SizedBox(height: 8),
                   Flexible(child: content),
                   const SizedBox(height: AppSpacing.formToActionsSpacing),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: AppSpacing.formFirstRowSpacing,
+                    ),
+                    child: _warningBanner(8, hasConflicts),
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -396,6 +407,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       );
     }
     const horizontalPadding = 20.0;
+    final hasConflicts = _hasAvailabilityConflicts();
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
@@ -404,44 +416,47 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       },
       child: SafeArea(
         top: false,
+        left: false,
+        right: false,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                0,
+                horizontalPadding,
+                12,
+              ),
               child: Text(title, style: Theme.of(context).textTheme.titleLarge),
             ),
-            Expanded(child: content),
-
-            DecoratedBox(
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Color(0x1F000000), width: 0.5),
-                ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: content,
               ),
-              child: SizedBox(
-                width: double.infinity,
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    horizontalPadding,
-                    AppSpacing.formFirstRowSpacing,
-                    horizontalPadding,
-                    0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (int i = 0; i < actions.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 8),
-                        SizedBox(
-                          width: AppButtonStyles.dialogButtonWidth,
-                          child: actions[i],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+            ),
+            _warningBanner(horizontalPadding, hasConflicts),
+            const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                AppSpacing.formFirstRowSpacing,
+                horizontalPadding,
+                0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  for (int i = 0; i < actions.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    SizedBox(
+                      width: AppButtonStyles.dialogButtonWidth,
+                      child: actions[i],
+                    ),
+                  ],
+                ],
               ),
             ),
             SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
@@ -569,6 +584,78 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     }
 
     return widgets;
+  }
+
+  Widget _warningBanner(double horizontalPadding, bool hasConflicts) {
+    if (!hasConflicts || _warningDismissed) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        12,
+        horizontalPadding,
+        12,
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.amber,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Attenzione: l’orario selezionato include fasce non disponibili per lo staff scelto.',
+              style: TextStyle(
+                color: Color(0xFF8A4D00),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            color: const Color(0xFF8A4D00),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+            onPressed: () {
+              setState(() => _warningDismissed = true);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _hasAvailabilityConflicts() {
+    final layout = ref.watch(layoutConfigProvider);
+    final Map<int, Set<int>> cache = {};
+
+    for (final item in _serviceItems) {
+      final staffId = item.staffId;
+      if (staffId == null) continue;
+
+      final available = cache.putIfAbsent(
+        staffId,
+        () => ref.watch(staffSlotAvailabilityProvider(staffId)),
+      );
+
+      if (available.isEmpty) return true;
+
+      final startMinutes = item.startTime.hour * 60 + item.startTime.minute;
+      final endMinutes = startMinutes + item.durationMinutes;
+      final startSlot = startMinutes ~/ layout.minutesPerSlot;
+      final endSlot = (endMinutes / layout.minutesPerSlot).ceil();
+
+      for (int slot = startSlot; slot < endSlot; slot++) {
+        if (!available.contains(slot)) return true;
+      }
+    }
+    return false;
   }
 
   void _addService() {

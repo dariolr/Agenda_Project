@@ -258,8 +258,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         double? newOffsetX;
         if (localPos.dx < leftEdge && currentX > 0) {
           newOffsetX = (currentX - _scrollSpeed).clamp(0, maxHorizontal);
-        } else if (localPos.dx > rightEdge &&
-            currentX < maxHorizontal) {
+        } else if (localPos.dx > rightEdge && currentX < maxHorizontal) {
           newOffsetX = (currentX + _scrollSpeed).clamp(0, maxHorizontal);
         }
 
@@ -326,8 +325,8 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       builder: (context, constraints) {
         final availableWidth =
             constraints.hasBoundedWidth && constraints.maxWidth.isFinite
-                ? constraints.maxWidth
-                : MediaQuery.of(context).size.width;
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width;
 
         final layout = ResponsiveLayout.of(
           context,
@@ -366,13 +365,13 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
             CurrentTimeLine(
               hourColumnWidth: widget.hourColumnWidth,
               verticalOffset: widget.currentTimeVerticalOffset,
-              horizontalOffset: -widget.hourColumnWidth +
-                  CurrentTimeLine.horizontalMargin,
+              horizontalOffset:
+                  -widget.hourColumnWidth + CurrentTimeLine.horizontalMargin,
             ),
             // HEADER staff
             Positioned(
               top: 0,
-              left: -widget.hourColumnWidth,
+              left: 0,
               right: 0,
               height: headerHeight,
               child: KeyedSubtree(

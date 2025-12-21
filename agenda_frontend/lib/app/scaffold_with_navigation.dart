@@ -126,7 +126,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         children: [
           if (showBottomDateSwitcher) ...[
             const AgendaHorizontalDivider(),
-            const _MobileAgendaDateSwitcher(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: const _MobileAgendaDateSwitcher(),
+            ),
           ],
           ColoredBox(
             color: bottomNavColor,
@@ -402,24 +405,40 @@ class _MobileAgendaDateSwitcher extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final agendaDate = ref.watch(agendaDateProvider);
     final dateController = ref.read(agendaDateProvider.notifier);
+    final isToday = DateUtils.isSameDay(agendaDate, DateTime.now());
     final localeTag = Localizations.localeOf(context).toLanguageTag();
     final label = DateFormat('EEE d MMM', localeTag).format(agendaDate);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: AgendaDateSwitcher(
-        label: label,
-        selectedDate: agendaDate,
-        onPrevious: dateController.previousDay,
-        onNext: dateController.nextDay,
-        onPreviousWeek: dateController.previousWeek,
-        onNextWeek: dateController.nextWeek,
-        onPreviousMonth: dateController.previousMonth,
-        onNextMonth: dateController.nextMonth,
-        onSelectDate: (date) {
-          dateController.set(DateUtils.dateOnly(date));
-        },
-        isCompact: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: context.l10n.agendaToday,
+            icon: const Icon(Icons.today_outlined),
+            iconSize: 22,
+            onPressed: isToday ? null : dateController.setToday,
+          ),
+          const SizedBox(width: 24),
+          Flexible(
+            fit: FlexFit.loose,
+            child: AgendaDateSwitcher(
+              label: label,
+              selectedDate: agendaDate,
+              onPrevious: dateController.previousDay,
+              onNext: dateController.nextDay,
+              onPreviousWeek: dateController.previousWeek,
+              onNextWeek: dateController.nextWeek,
+              onPreviousMonth: null,
+              onNextMonth: null,
+              onSelectDate: (date) {
+                dateController.set(DateUtils.dateOnly(date));
+              },
+              isCompact: true,
+            ),
+          ),
+        ],
       ),
     );
   }
