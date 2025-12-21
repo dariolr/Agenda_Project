@@ -99,7 +99,6 @@ class AgendaDateSwitcher extends StatefulWidget {
     this.onPreviousMonth,
     this.onNextMonth,
     required this.onSelectDate,
-    this.showWeekNavigation = true,
   });
 
   final String label;
@@ -117,7 +116,6 @@ class AgendaDateSwitcher extends StatefulWidget {
   final VoidCallback? onPreviousMonth;
   final VoidCallback? onNextMonth;
   final ValueChanged<DateTime> onSelectDate;
-  final bool showWeekNavigation;
 
   @override
   State<AgendaDateSwitcher> createState() => _AgendaDateSwitcherState();
@@ -252,6 +250,7 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
 
     const double dividerWidth = kAgendaDividerWidth;
     final double arrowExtent = kAgendaControlHeight;
+    final double navIconSize = arrowExtent <= 32 ? 16.0 : 18.0;
     const BorderRadius leftRadius = BorderRadius.only(
       topLeft: Radius.circular(999),
       bottomLeft: Radius.circular(999),
@@ -271,12 +270,6 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final maxWidth = constraints.maxWidth;
-          // Treat widths below ~330px as compact to avoid horizontal overflow.
-          // Breakdown of minimum non-compact width:
-          // - 4 arrows @40px = 160
-          // - 4 dividers @1px = 4
-          // - label min width 120 + default padding 20*2 = 160
-          // Total ≈ 324px (use some safety margin)
           const compactBreakpoint = 330.0;
           final isCompact =
               maxWidth.isFinite && maxWidth > 0 && maxWidth < compactBreakpoint;
@@ -286,8 +279,6 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
           final labelSemantics = MaterialLocalizations.of(
             context,
           ).datePickerHelpText;
-
-          // Use app l10n via context.l10n for semantics labels
 
           Widget buildDivider(VoidCallback onTap) => GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -301,20 +292,26 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
             ),
           );
 
-          Widget buildArrowButton({
-            required IconData icon,
-            required VoidCallback onTap,
-            required String semanticsLabel,
-            required BorderRadius borderRadius,
-          }) {
+          Widget buildStaticDivider() => SizedBox(
+            width: dividerWidth,
+            height: kAgendaControlHeight,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: borderColor.withOpacity(0.5)),
+            ),
+          );
+
+          Widget buildArrowButton(
+            _NavButtonSpec spec,
+            BorderRadius borderRadius,
+          ) {
             return _HoverableRegion(
-              onTap: onTap,
-              semanticsLabel: semanticsLabel,
+              onTap: spec.onTap,
+              semanticsLabel: spec.semanticsLabel,
               hoverColor: hoverFill,
               width: arrowExtent,
               borderRadius: borderRadius,
               child: Center(
-                child: Icon(icon, size: arrowExtent <= 32 ? 16.0 : 18.0),
+                child: spec.iconWidget ?? Icon(spec.icon, size: navIconSize),
               ),
             );
           }
@@ -336,36 +333,104 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
             ),
           );
 
-          final labelRegion = buildLabelRegion();
-          final children = <Widget>[
-            if (widget.onPreviousMonth != null) ...[
-              buildArrowButton(
-                icon: Icons.keyboard_double_arrow_left,
+          List<Widget> buildNavButtons(
+            List<_NavButtonSpec> specs, {
+            BorderRadius? firstRadius,
+            BorderRadius? lastRadius,
+          }) {
+            final widgets = <Widget>[];
+            for (var i = 0; i < specs.length; i++) {
+              if (i > 0) {
+                widgets.add(buildStaticDivider());
+              }
+              final spec = specs[i];
+              BorderRadius buttonRadius = BorderRadius.zero;
+              if (i == 0 && firstRadius != null) {
+                buttonRadius = firstRadius;
+              }
+              if (i == specs.length - 1 && lastRadius != null) {
+                buttonRadius = lastRadius;
+              }
+              widgets.add(buildArrowButton(spec, buttonRadius));
+            }
+            return widgets;
+          }
+
+          final leadingSpecs = <_NavButtonSpec>[];
+          if (widget.onPreviousMonth != null) {
+            leadingSpecs.add(
+              _NavButtonSpec(
+                iconWidget: _TripleArrowIcons(
+                  icon: Icons.keyboard_arrow_left,
+                  iconSize: navIconSize,
+                  width: arrowExtent,
+                ),
                 onTap: widget.onPreviousMonth!,
                 semanticsLabel: l10n.agendaPrevMonth,
-                borderRadius: leftRadius,
               ),
-              buildDivider(widget.onPreviousMonth!),
-            ] else if (widget.showWeekNavigation &&
-                widget.onPreviousWeek != null) ...[
-              buildArrowButton(
-                icon: Icons.keyboard_double_arrow_left,
+            );
+          }
+          if (widget.onPreviousWeek != null) {
+            leadingSpecs.add(
+              _NavButtonSpec(
+                icon: widget.onPrevious != null
+                    ? Icons.keyboard_double_arrow_left
+                    : Icons.keyboard_arrow_left,
                 onTap: widget.onPreviousWeek!,
                 semanticsLabel: l10n.agendaPrevWeek,
-                borderRadius: leftRadius,
               ),
-              buildDivider(widget.onPreviousWeek!),
-            ] else if (widget.showWeekNavigation) ...[
-              SizedBox(width: arrowExtent, height: kAgendaControlHeight),
-              SizedBox(width: dividerWidth),
-            ] else ...[
-              SizedBox(width: dividerWidth),
-            ],
-            buildArrowButton(
-              icon: Icons.keyboard_arrow_left,
-              onTap: widget.onPrevious ?? () {},
-              semanticsLabel: l10n.agendaPrevDay,
-              borderRadius: BorderRadius.zero,
+            );
+          }
+          if (widget.onPrevious != null) {
+            leadingSpecs.add(
+              _NavButtonSpec(
+                icon: Icons.keyboard_arrow_left,
+                onTap: widget.onPrevious ?? () {},
+                semanticsLabel: l10n.agendaPrevDay,
+              ),
+            );
+          }
+
+          final trailingSpecs = <_NavButtonSpec>[];
+          if (widget.onNext != null) {
+            trailingSpecs.add(
+              _NavButtonSpec(
+                icon: Icons.keyboard_arrow_right,
+                onTap: widget.onNext ?? () {},
+                semanticsLabel: l10n.agendaNextDay,
+              ),
+            );
+          }
+          if (widget.onNextWeek != null) {
+            trailingSpecs.add(
+              _NavButtonSpec(
+                icon: widget.onNext != null
+                    ? Icons.keyboard_double_arrow_right
+                    : Icons.keyboard_arrow_right,
+                onTap: widget.onNextWeek!,
+                semanticsLabel: l10n.agendaNextWeek,
+              ),
+            );
+          }
+          if (widget.onNextMonth != null) {
+            trailingSpecs.add(
+              _NavButtonSpec(
+                iconWidget: _TripleArrowIcons(
+                  icon: Icons.keyboard_arrow_right,
+                  iconSize: navIconSize,
+                  width: arrowExtent,
+                ),
+                onTap: widget.onNextMonth!,
+                semanticsLabel: l10n.agendaNextMonth,
+              ),
+            );
+          }
+
+          final labelRegion = buildLabelRegion();
+          final children = <Widget>[
+            ...buildNavButtons(
+              leadingSpecs,
+              firstRadius: leadingSpecs.isNotEmpty ? leftRadius : null,
             ),
             buildDivider(() => _handleTap(context)),
           ];
@@ -378,35 +443,10 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
 
           children.addAll([
             buildDivider(() => _handleTap(context)),
-            buildArrowButton(
-              icon: Icons.keyboard_arrow_right,
-              onTap: widget.onNext ?? () {},
-              semanticsLabel: l10n.agendaNextDay,
-              borderRadius: BorderRadius.zero,
+            ...buildNavButtons(
+              trailingSpecs,
+              lastRadius: trailingSpecs.isNotEmpty ? rightRadius : null,
             ),
-            if (widget.onNextMonth != null) ...[
-              buildDivider(widget.onNextMonth!),
-              buildArrowButton(
-                icon: Icons.keyboard_double_arrow_right,
-                onTap: widget.onNextMonth!,
-                semanticsLabel: l10n.agendaNextMonth,
-                borderRadius: rightRadius,
-              ),
-            ] else if (widget.showWeekNavigation &&
-                widget.onNextWeek != null) ...[
-              buildDivider(widget.onNextWeek!),
-              buildArrowButton(
-                icon: Icons.keyboard_double_arrow_right,
-                onTap: widget.onNextWeek!,
-                semanticsLabel: l10n.agendaNextWeek,
-                borderRadius: rightRadius,
-              ),
-            ] else if (widget.showWeekNavigation) ...[
-              SizedBox(width: dividerWidth),
-              SizedBox(width: arrowExtent, height: kAgendaControlHeight),
-            ] else ...[
-              SizedBox(width: dividerWidth),
-            ],
           ]);
 
           return Row(
@@ -465,6 +505,55 @@ class _WeekPickerContent extends StatefulWidget {
 
   @override
   State<_WeekPickerContent> createState() => _WeekPickerContentState();
+}
+
+class _NavButtonSpec {
+  const _NavButtonSpec({
+    this.icon,
+    this.iconWidget,
+    required this.onTap,
+    required this.semanticsLabel,
+  }) : assert(icon != null || iconWidget != null);
+
+  final IconData? icon;
+  final Widget? iconWidget;
+  final VoidCallback onTap;
+  final String semanticsLabel;
+}
+
+class _TripleArrowIcons extends StatelessWidget {
+  const _TripleArrowIcons({
+    required this.icon,
+    required this.iconSize,
+    required this.width,
+  });
+
+  final IconData icon;
+  final double iconSize;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).iconTheme.color;
+    return SizedBox(
+      width: width,
+      height: iconSize,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: List.generate(3, (index) {
+          final spacing = iconSize * 0.3;
+          return Positioned(
+            left: (width - iconSize) / 2 + (index - 1) * spacing,
+            child: Icon(
+              icon,
+              size: iconSize,
+              color: color,
+            ),
+          );
+        }),
+      ),
+    );
+  }
 }
 
 class _WeekPickerContentState extends State<_WeekPickerContent> {

@@ -60,6 +60,8 @@ class TopControls extends ConsumerWidget {
       label = weekMeta.label;
       selectedDate = weekMeta.effectivePickerDate;
     }
+    final showTopDateSwitcher = mode != TopControlsMode.agenda;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -69,24 +71,34 @@ class TopControls extends ConsumerWidget {
           iconSize: 22,
           onPressed: data.isToday ? null : data.dateController.setToday,
         ),
-        const SizedBox(width: 8),
-        AgendaDateSwitcher(
-          label: label,
-          selectedDate: selectedDate,
-          onPrevious: mode == TopControlsMode.agenda
-              ? data.dateController.previousDay
-              : data.dateController.previousWeek,
-          onNext: mode == TopControlsMode.agenda
-              ? data.dateController.nextDay
-              : data.dateController.nextWeek,
-          onSelectDate: (date) {
-            data.dateController.set(DateUtils.dateOnly(date));
-          },
-          useWeekRangePicker: mode == TopControlsMode.staff,
-          isCompact: compact,
-          showWeekNavigation: false,
-        ),
-        const SizedBox(width: 8),
+        if (showTopDateSwitcher) ...[
+          const SizedBox(width: 8),
+          AgendaDateSwitcher(
+            label: label,
+            selectedDate: selectedDate,
+            onPrevious: mode == TopControlsMode.agenda
+                ? data.dateController.previousDay
+                : null,
+            onNext: mode == TopControlsMode.agenda
+                ? data.dateController.nextDay
+                : null,
+            onPreviousWeek: mode == TopControlsMode.staff
+                ? data.dateController.previousWeek
+                : null,
+            onNextWeek: mode == TopControlsMode.staff
+                ? data.dateController.nextWeek
+                : null,
+            onPreviousMonth: null,
+            onNextMonth: null,
+            onSelectDate: (date) {
+              data.dateController.set(DateUtils.dateOnly(date));
+            },
+            useWeekRangePicker: mode == TopControlsMode.staff,
+            isCompact: compact,
+          ),
+          const SizedBox(width: 8),
+        ] else
+          const SizedBox(width: 8),
         if (mode == TopControlsMode.staff && data.locations.length > 1)
           IconButton(
             tooltip: data.l10n.agendaSelectLocation,
@@ -132,22 +144,22 @@ class TopControls extends ConsumerWidget {
             selectedDate: selectedDate,
             onPrevious: mode == TopControlsMode.agenda
                 ? data.dateController.previousDay
-                : data.dateController.previousWeek,
+                : null,
             onNext: mode == TopControlsMode.agenda
                 ? data.dateController.nextDay
-                : data.dateController.nextWeek,
-            onPreviousWeek: mode == TopControlsMode.agenda
+                : null,
+            onPreviousWeek: mode == TopControlsMode.staff
                 ? data.dateController.previousWeek
                 : null,
-            onNextWeek: mode == TopControlsMode.agenda
+            onNextWeek: mode == TopControlsMode.staff
                 ? data.dateController.nextWeek
                 : null,
-            onPreviousMonth: mode == TopControlsMode.agenda
-                ? null
-                : data.dateController.previousMonth,
-            onNextMonth: mode == TopControlsMode.agenda
-                ? null
-                : data.dateController.nextMonth,
+            onPreviousMonth: mode == TopControlsMode.staff
+                ? data.dateController.previousMonth
+                : null,
+            onNextMonth: mode == TopControlsMode.staff
+                ? data.dateController.nextMonth
+                : null,
             onSelectDate: (date) {
               data.dateController.set(DateUtils.dateOnly(date));
             },
@@ -200,18 +212,22 @@ class TopControls extends ConsumerWidget {
             selectedDate: selectedDate,
             onPrevious: mode == TopControlsMode.agenda
                 ? data.dateController.previousDay
-                : data.dateController.previousWeek,
+                : null,
             onNext: mode == TopControlsMode.agenda
                 ? data.dateController.nextDay
-                : data.dateController.nextWeek,
-            onPreviousWeek: data.dateController.previousWeek,
-            onNextWeek: data.dateController.nextWeek,
-            onPreviousMonth: mode == TopControlsMode.agenda
-                ? null
-                : data.dateController.previousMonth,
-            onNextMonth: mode == TopControlsMode.agenda
-                ? null
-                : data.dateController.nextMonth,
+                : null,
+            onPreviousWeek: mode == TopControlsMode.staff
+                ? data.dateController.previousWeek
+                : null,
+            onNextWeek: mode == TopControlsMode.staff
+                ? data.dateController.nextWeek
+                : null,
+            onPreviousMonth: mode == TopControlsMode.staff
+                ? data.dateController.previousMonth
+                : null,
+            onNextMonth: mode == TopControlsMode.staff
+                ? data.dateController.nextMonth
+                : null,
             onSelectDate: (date) {
               data.dateController.set(DateUtils.dateOnly(date));
             },
