@@ -32,6 +32,8 @@ class ServiceItemCard extends ConsumerWidget {
     required this.onDurationChanged,
     this.canRemove = true,
     this.isServiceRequired = true,
+    this.autoOpenServicePicker = false,
+    this.onServicePickerAutoOpened,
   });
 
   final ServiceItemData item;
@@ -51,6 +53,8 @@ class ServiceItemCard extends ConsumerWidget {
 
   /// Se true, la selezione del servizio è obbligatoria (mostra errore di validazione).
   final bool isServiceRequired;
+  final bool autoOpenServicePicker;
+  final VoidCallback? onServicePickerAutoOpened;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -138,6 +142,8 @@ class ServiceItemCard extends ConsumerWidget {
       validator: isServiceRequired
           ? (v) => v == null ? l10n.validationRequired : null
           : null,
+      autoOpenPicker: autoOpenServicePicker,
+      onAutoOpenPickerTriggered: onServicePickerAutoOpened,
     );
   }
 

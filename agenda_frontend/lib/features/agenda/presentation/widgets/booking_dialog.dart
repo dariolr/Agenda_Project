@@ -90,6 +90,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   late DateTime _date;
   int? _clientId;
 
+  bool _clientPickerAutoRequested = false;
+  bool _shouldAutoOpenServicePicker = false;
+
   /// Nome cliente personalizzato (usato solo per clienti nuovi non ancora salvati)
   String _customClientName = '';
 
@@ -152,6 +155,13 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           staffId: widget.initialStaffId,
         ),
       );
+    }
+
+    if (widget.existing == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _scheduleAutoClientPicker();
+      });
     }
   }
 
@@ -221,6 +231,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                       _customClientName = '';
                     });
                   },
+                  onOpenPicker: _openClientPicker,
                 ),
                 const SizedBox(height: AppSpacing.formRowSpacing),
 
@@ -453,6 +464,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 onEndTimeChanged: (time) => _updateServiceEndTime(i, time),
                 onDurationChanged: (duration) =>
                     _updateServiceDuration(i, duration),
+                autoOpenServicePicker: _shouldAutoOpenServicePicker && i == 0,
+                onServicePickerAutoOpened:
+                    _shouldAutoOpenServicePicker && i == 0
+                    ? _onServicePickerAutoOpened
+                    : null,
               ),
             ),
             if (isLast && item.serviceId != null) ...[
@@ -498,6 +514,115 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     }
 
     return widgets;
+  }
+
+  void _scheduleAutoClientPicker() {
+    if (_clientPickerAutoRequested) return;
+    _clientPickerAutoRequested = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _openClientPicker(triggerServiceAutoOpen: true);
+    });
+  }
+
+  Future<void> _openClientPicker({bool triggerServiceAutoOpen = false}) async {
+    final formFactor = ref.read(formFactorProvider);
+    final isDesktop = formFactor == AppFormFactor.desktop;
+
+    while (mounted) {
+      if (!mounted) return;
+      final clients = ref.read(clientsProvider);
+      _ClientItem? result;
+      if (isDesktop) {
+        result = await showDialog<_ClientItem?>(
+          context: context,
+          builder: (ctx) => Dialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 32,
+              vertical: 24,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minWidth: 600,
+                maxWidth: 720,
+                maxHeight: 600,
+              ),
+              child: _ClientPickerSheet(
+                clients: clients,
+                selectedClientId: _clientId,
+              ),
+            ),
+          ),
+        );
+      } else {
+        result = await AppBottomSheet.show<_ClientItem?>(
+          context: context,
+          useRootNavigator: true,
+          padding: EdgeInsets.zero,
+          heightFactor: AppBottomSheet.defaultHeightFactor,
+          builder: (ctx) =>
+              _ClientPickerSheet(clients: clients, selectedClientId: _clientId),
+        );
+      }
+
+      if (result == null) {
+        break;
+      }
+      final selectedResult = result;
+      if (selectedResult.id == -2) {
+        if (!mounted) return;
+        Client? initialClient;
+        if (selectedResult.name.isNotEmpty) {
+          final nameParts = Client.splitFullName(selectedResult.name);
+          initialClient = Client(
+            id: 0,
+            businessId: 0,
+            firstName: nameParts.firstName,
+            lastName: nameParts.lastName,
+            createdAt: DateTime.now(),
+          );
+        }
+        final newClient = await showClientEditDialog(
+          context,
+          ref,
+          client: initialClient,
+        );
+        if (newClient != null) {
+          setState(() {
+            _clientId = newClient.id;
+            _customClientName = newClient.name;
+          });
+          break;
+        }
+        continue;
+      } else if (selectedResult.id == -1) {
+        setState(() {
+          _clientId = null;
+          _customClientName = '';
+        });
+        break;
+      } else {
+        setState(() {
+          _clientId = selectedResult.id;
+          _customClientName = selectedResult.name;
+        });
+        break;
+      }
+    }
+
+    if (!mounted) return;
+    if (triggerServiceAutoOpen) {
+      setState(() {
+        _shouldAutoOpenServicePicker = true;
+      });
+    }
+  }
+
+  void _onServicePickerAutoOpened() {
+    if (!_shouldAutoOpenServicePicker) return;
+    setState(() {
+      _shouldAutoOpenServicePicker = false;
+    });
   }
 
   void _addService() {
@@ -739,6 +864,7 @@ class _ClientSelectionField extends ConsumerWidget {
     required this.clients,
     required this.onClientSelected,
     required this.onClientRemoved,
+    required this.onOpenPicker,
   });
 
   final int? clientId;
@@ -746,6 +872,7 @@ class _ClientSelectionField extends ConsumerWidget {
   final List<Client> clients;
   final void Function(int? id, String name) onClientSelected;
   final VoidCallback onClientRemoved;
+  final Future<void> Function()? onOpenPicker;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -764,12 +891,12 @@ class _ClientSelectionField extends ConsumerWidget {
         if (hasClient)
           _SelectedClientTile(
             clientName: clientName,
-            onTap: () => _showClientPicker(context, ref),
+            onTap: () => onOpenPicker?.call(),
             onRemove: onClientRemoved,
           )
         else
           InkWell(
-            onTap: () => _showClientPicker(context, ref),
+            onTap: () => onOpenPicker?.call(),
             borderRadius: BorderRadius.circular(8),
             child: Container(
               width: double.infinity,
@@ -806,83 +933,6 @@ class _ClientSelectionField extends ConsumerWidget {
         ),
       ],
     );
-  }
-
-  Future<void> _showClientPicker(BuildContext context, WidgetRef ref) async {
-    final formFactor = ref.read(formFactorProvider);
-    final isDesktop = formFactor == AppFormFactor.desktop;
-
-    while (true) {
-      if (!context.mounted) return;
-      _ClientItem? result;
-      if (isDesktop) {
-        result = await showDialog<_ClientItem?>(
-          context: context,
-          builder: (ctx) => Dialog(
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 32,
-              vertical: 24,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                minWidth: 600,
-                maxWidth: 720,
-                maxHeight: 600,
-              ),
-              child: _ClientPickerSheet(
-                clients: clients,
-                selectedClientId: clientId,
-              ),
-            ),
-          ),
-        );
-      } else {
-        result = await AppBottomSheet.show<_ClientItem?>(
-          context: context,
-          useRootNavigator: true,
-          padding: EdgeInsets.zero,
-          heightFactor: AppBottomSheet.defaultHeightFactor,
-          builder: (ctx) =>
-              _ClientPickerSheet(clients: clients, selectedClientId: clientId),
-        );
-      }
-      if (result == null) {
-        return;
-      }
-      if (result.id == -2) {
-        // "Create new client" was selected
-        if (context.mounted) {
-          Client? initialClient;
-          if (result.name.isNotEmpty) {
-            final nameParts = Client.splitFullName(result.name);
-            initialClient = Client(
-              id: 0,
-              businessId: 0,
-              firstName: nameParts.firstName,
-              lastName: nameParts.lastName,
-              createdAt: DateTime.now(),
-            );
-          }
-          final newClient = await showClientEditDialog(
-            context,
-            ref,
-            client: initialClient,
-          );
-          if (newClient != null) {
-            onClientSelected(newClient.id, newClient.name);
-            return;
-          }
-          continue;
-        }
-        return;
-      } else if (result.id == -1) {
-        onClientRemoved();
-        return;
-      } else {
-        onClientSelected(result.id, result.name);
-        return;
-      }
-    }
   }
 }
 

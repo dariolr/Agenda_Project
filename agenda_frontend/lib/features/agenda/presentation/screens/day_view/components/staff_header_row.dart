@@ -35,7 +35,6 @@ class StaffHeaderRow extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(width: hourColumnWidth),
         ...staffList.asMap().entries.map((entry) {
           final index = entry.key;
           final staff = entry.value;
