@@ -32,75 +32,75 @@ class StaffHeaderRow extends ConsumerWidget {
     final avatarSize = math.min(avatarDefault, headerHeight * 0.55);
     final highlightedId = ref.watch(highlightedStaffIdProvider);
 
-    // ⚠️ Nessuna SizedBox iniziale qui! Lo spazio per l'ora è già messo nel parent.
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: staffList.asMap().entries.map((entry) {
-        final index = entry.key;
-        final staff = entry.value;
-        final isLast = index == staffList.length - 1;
-        final isHighlighted = highlightedId == staff.id;
+      children: [
+        ...staffList.asMap().entries.map((entry) {
+          final index = entry.key;
+          final staff = entry.value;
+          final isLast = index == staffList.length - 1;
+          final isHighlighted = highlightedId == staff.id;
 
-        final initials = staff.initials;
-        final displayName = staff.displayName;
+          final initials = staff.initials;
+          final displayName = staff.displayName;
 
-        return Stack(
-          children: [
-            Container(
-              width: columnWidth,
-              height: headerHeight,
-              padding: EdgeInsets.symmetric(horizontal: headerHeight * 0.08),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    StaffCircleAvatar(
-                      height: avatarSize,
-                      color: staff.color,
-                      isHighlighted: isHighlighted,
-                      initials: initials,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      displayName,
-                      maxLines: 1,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                        color: Colors.black87,
+          return Stack(
+            children: [
+              Container(
+                width: columnWidth,
+                height: headerHeight,
+                padding: EdgeInsets.symmetric(horizontal: headerHeight * 0.08),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      StaffCircleAvatar(
+                        height: avatarSize,
+                        color: staff.color,
+                        isHighlighted: isHighlighted,
+                        initials: initials,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Divider sfumato sul bordo destro
-            if (!isLast)
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  width: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.grey.withOpacity(0.0),
-                        Colors.grey.withOpacity(0.25),
-                      ],
-                      stops: const [0.0, 0.7],
-                    ),
+                      const SizedBox(height: 4),
+                      Text(
+                        displayName,
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-          ],
-        );
-      }).toList(),
+              if (!isLast)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 1,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.grey.withOpacity(0.0),
+                          Colors.grey.withOpacity(0.25),
+                        ],
+                        stops: const [0.0, 0.7],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        }),
+      ],
     );
   }
 }

@@ -273,17 +273,17 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
     return Stack(
       children: [
+        // 🔴 Current time line sincronizzata con lo scroll (via _verticalOffset)
+        CurrentTimeLine(
+          hourColumnWidth: hourColumnWidth,
+          verticalOffset: _verticalOffset,
+        ),
+
         Positioned.fill(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [Expanded(child: mainRow)],
           ),
-        ),
-
-        // 🔴 Current time line sincronizzata con lo scroll (via _verticalOffset)
-        CurrentTimeLine(
-          hourColumnWidth: hourColumnWidth,
-          verticalOffset: _verticalOffset,
         ),
       ],
     );
