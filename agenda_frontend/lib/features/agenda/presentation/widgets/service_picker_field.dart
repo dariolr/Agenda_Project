@@ -22,6 +22,8 @@ class ServicePickerField extends StatefulWidget {
     this.onClear,
     this.validator,
     this.autovalidateMode = AutovalidateMode.disabled,
+    this.autoOpenPicker = false,
+    this.onAutoOpenPickerTriggered,
   });
 
   final List<Service> services;
@@ -34,6 +36,8 @@ class ServicePickerField extends StatefulWidget {
   /// Se null, l'icona non viene mostrata.
   final VoidCallback? onClear;
   final FormFieldValidator<int>? validator;
+  final bool autoOpenPicker;
+  final VoidCallback? onAutoOpenPickerTriggered;
 
   /// Modalità di autovalidazione. Default: disabled (valida solo su submit).
   final AutovalidateMode autovalidateMode;
@@ -44,6 +48,7 @@ class ServicePickerField extends StatefulWidget {
 
 class _ServicePickerFieldState extends State<ServicePickerField> {
   final _formFieldKey = GlobalKey<FormFieldState<int>>();
+  bool _autoPickerInvoked = false;
 
   Service? get _selectedService {
     if (widget.value == null) return null;
@@ -62,6 +67,9 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
         }
       });
     }
+    if (oldWidget.autoOpenPicker != widget.autoOpenPicker) {
+      _autoPickerInvoked = false;
+    }
   }
 
   @override
@@ -77,6 +85,15 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
         final borderColor = hasError
             ? theme.colorScheme.error
             : theme.colorScheme.outline;
+
+        if (widget.autoOpenPicker && !_autoPickerInvoked) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || _autoPickerInvoked) return;
+            _autoPickerInvoked = true;
+            _openPicker(field);
+            widget.onAutoOpenPickerTriggered?.call();
+          });
+        }
 
         return InkWell(
           onTap: () => _openPicker(field),
