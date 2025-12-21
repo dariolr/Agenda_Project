@@ -13,13 +13,17 @@ import '../../../providers/layout_config_provider.dart';
 /// - la posizione verticale effettiva viene corretta con [verticalOffset]
 ///   passato da AgendaScreen (offset di scroll della giornata).
 class CurrentTimeLine extends ConsumerStatefulWidget {
+  static const double horizontalMargin = 4.0;
+
   final double hourColumnWidth;
   final double verticalOffset;
+  final double horizontalOffset;
 
   const CurrentTimeLine({
     super.key,
     required this.hourColumnWidth,
     required this.verticalOffset,
+    this.horizontalOffset = 0,
   });
 
   @override
@@ -35,7 +39,7 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   // 🔹 Definiamo l'altezza della linea come costante
   static const double _lineHeight = 1.0;
   // 🔹 Definiamo il margine/gap che conterrà la linea
-  static const double _lineMargin = 4.0;
+  static const double _lineMargin = CurrentTimeLine.horizontalMargin;
 
   @override
   void initState() {
@@ -108,7 +112,7 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
 
     return Positioned(
       top: lineTopY,
-      left: 0,
+      left: widget.horizontalOffset,
       right: 0,
       child: Stack(
         clipBehavior: Clip.none,

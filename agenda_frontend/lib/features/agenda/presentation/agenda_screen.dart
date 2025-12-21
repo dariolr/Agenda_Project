@@ -6,7 +6,6 @@ import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/agenda_day.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/day_view/components/hour_column.dart';
 import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
-import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/current_time_line.dart';
 import 'package:agenda_frontend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_frontend/features/agenda/providers/is_resizing_provider.dart';
 import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
@@ -266,6 +265,8 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
             staffList: staffList,
             onVerticalOffsetChanged: _handleMasterScroll,
             controller: _timelineController,
+            hourColumnWidth: hourColumnWidth,
+            currentTimeVerticalOffset: _verticalOffset,
           ),
         ),
       ],
@@ -273,12 +274,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
     return Stack(
       children: [
-        // 🔴 Current time line sincronizzata con lo scroll (via _verticalOffset)
-        CurrentTimeLine(
-          hourColumnWidth: hourColumnWidth,
-          verticalOffset: _verticalOffset,
-        ),
-
         Positioned.fill(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

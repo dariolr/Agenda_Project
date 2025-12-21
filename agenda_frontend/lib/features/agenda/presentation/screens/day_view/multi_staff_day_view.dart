@@ -14,6 +14,7 @@ import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../helper/responsive_layout.dart';
+import '../widgets/current_time_line.dart';
 import 'agenda_staff_body.dart';
 import 'components/agenda_staff_header.dart';
 
@@ -22,6 +23,8 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
   final double initialScrollOffset;
   final ValueChanged<double>? onScrollOffsetChanged;
   final ValueChanged<ScrollController>? onVerticalControllerChanged;
+  final double hourColumnWidth;
+  final double currentTimeVerticalOffset;
 
   const MultiStaffDayView({
     super.key,
@@ -29,6 +32,8 @@ class MultiStaffDayView extends ConsumerStatefulWidget {
     required this.initialScrollOffset,
     this.onScrollOffsetChanged,
     this.onVerticalControllerChanged,
+    required this.hourColumnWidth,
+    required this.currentTimeVerticalOffset,
   });
 
   @override
@@ -321,8 +326,8 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       builder: (context, constraints) {
         final availableWidth =
             constraints.hasBoundedWidth && constraints.maxWidth.isFinite
-            ? constraints.maxWidth
-            : MediaQuery.of(context).size.width;
+                ? constraints.maxWidth
+                : MediaQuery.of(context).size.width;
 
         final layout = ResponsiveLayout.of(
           context,
@@ -339,6 +344,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         final isResizing = ref.watch(isResizingProvider);
 
         return Stack(
+          clipBehavior: Clip.none,
           children: [
             // BODY scrollabile
             Positioned.fill(
@@ -356,10 +362,17 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 isInteractionLocked: isInteractionLocked,
               ),
             ),
+            // LINEA ORARIO
+            CurrentTimeLine(
+              hourColumnWidth: widget.hourColumnWidth,
+              verticalOffset: widget.currentTimeVerticalOffset,
+              horizontalOffset: -widget.hourColumnWidth +
+                  CurrentTimeLine.horizontalMargin,
+            ),
             // HEADER staff
             Positioned(
               top: 0,
-              left: 0,
+              left: -widget.hourColumnWidth,
               right: 0,
               height: headerHeight,
               child: KeyedSubtree(

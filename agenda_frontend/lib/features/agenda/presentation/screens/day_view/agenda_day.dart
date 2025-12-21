@@ -44,11 +44,15 @@ class AgendaDay extends ConsumerStatefulWidget {
     required this.staffList,
     this.onVerticalOffsetChanged,
     this.controller,
+    required this.hourColumnWidth,
+    required this.currentTimeVerticalOffset,
   });
 
   final List<Staff> staffList;
   final ValueChanged<double>? onVerticalOffsetChanged;
   final AgendaDayController? controller;
+  final double hourColumnWidth;
+  final double currentTimeVerticalOffset;
 
   @override
   ConsumerState<AgendaDay> createState() => _AgendaDayState();
@@ -169,6 +173,8 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
         currentScrollOffset: _currentScrollOffset,
         onVerticalOffsetChanged: widget.onVerticalOffsetChanged,
         onVerticalControllerChanged: _handleCenterVerticalController,
+        hourColumnWidth: widget.hourColumnWidth,
+        currentTimeVerticalOffset: widget.currentTimeVerticalOffset,
       ),
     );
   }
@@ -187,12 +193,16 @@ class _AnimatedDayContainer extends StatelessWidget {
     required this.currentScrollOffset,
     this.onVerticalOffsetChanged,
     required this.onVerticalControllerChanged,
+    required this.hourColumnWidth,
+    required this.currentTimeVerticalOffset,
   });
 
   final List<Staff> staffList;
   final double currentScrollOffset;
   final ValueChanged<double>? onVerticalOffsetChanged;
   final ValueChanged<ScrollController> onVerticalControllerChanged;
+  final double hourColumnWidth;
+  final double currentTimeVerticalOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -205,6 +215,8 @@ class _AnimatedDayContainer extends StatelessWidget {
             onVerticalOffsetChanged?.call(offset);
           },
           onVerticalControllerChanged: onVerticalControllerChanged,
+          hourColumnWidth: hourColumnWidth,
+          currentTimeVerticalOffset: currentTimeVerticalOffset,
         );
       },
     );
