@@ -1,7 +1,11 @@
 // Cleaned duplicate header
+import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
+import 'package:agenda_frontend/app/widgets/agenda_control_components.dart';
+import 'package:agenda_frontend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../core/l10n/l10_extension.dart';
 import '../core/widgets/adaptive_dropdown.dart';
@@ -13,7 +17,6 @@ import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/services/presentation/dialogs/category_dialog.dart';
 import '../features/services/presentation/dialogs/service_dialog.dart';
-import 'providers/form_factor_provider.dart';
 
 class ScaffoldWithNavigation extends ConsumerWidget {
   const ScaffoldWithNavigation({super.key, required this.navigationShell});
@@ -91,6 +94,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isClients = navigationShell.currentIndex == 1;
     final isServices = navigationShell.currentIndex == 2;
     final isTablet = formFactor == AppFormFactor.tablet;
+    final showBottomDateSwitcher =
+        isAgenda && formFactor == AppFormFactor.mobile;
     final bottomNavColor =
         Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
         Theme.of(context).colorScheme.surface;
@@ -116,28 +121,37 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                         : null)),
       ),
       body: navigationShell,
-      bottomNavigationBar: ColoredBox(
-        color: bottomNavColor,
-        child: SafeArea(
-          top: false,
-          left: false,
-          right: false,
-          minimum: const EdgeInsets.only(bottom: 15),
-          child: BottomNavigationBar(
-            currentIndex: navigationShell.currentIndex,
-            onTap: (index) => _goBranch(index),
-            type: BottomNavigationBarType.fixed,
-            items: destinations
-                .map(
-                  (d) => BottomNavigationBarItem(
-                    icon: Icon(d.iconData),
-                    activeIcon: Icon(d.selectedIconData),
-                    label: d.label,
-                  ),
-                )
-                .toList(),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showBottomDateSwitcher) ...[
+            const AgendaHorizontalDivider(),
+            const _MobileAgendaDateSwitcher(),
+          ],
+          ColoredBox(
+            color: bottomNavColor,
+            child: SafeArea(
+              top: false,
+              left: false,
+              right: false,
+              minimum: const EdgeInsets.only(bottom: 15),
+              child: BottomNavigationBar(
+                currentIndex: navigationShell.currentIndex,
+                onTap: (index) => _goBranch(index),
+                type: BottomNavigationBarType.fixed,
+                items: destinations
+                    .map(
+                      (d) => BottomNavigationBarItem(
+                        icon: Icon(d.iconData),
+                        activeIcon: Icon(d.selectedIconData),
+                        label: d.label,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -376,6 +390,36 @@ class _ClientsAddAction extends ConsumerWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _MobileAgendaDateSwitcher extends ConsumerWidget {
+  const _MobileAgendaDateSwitcher();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final agendaDate = ref.watch(agendaDateProvider);
+    final dateController = ref.read(agendaDateProvider.notifier);
+    final localeTag = Localizations.localeOf(context).toLanguageTag();
+    final label = DateFormat('EEE d MMM', localeTag).format(agendaDate);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: AgendaDateSwitcher(
+        label: label,
+        selectedDate: agendaDate,
+        onPrevious: dateController.previousDay,
+        onNext: dateController.nextDay,
+        onPreviousWeek: dateController.previousWeek,
+        onNextWeek: dateController.nextWeek,
+        onPreviousMonth: dateController.previousMonth,
+        onNextMonth: dateController.nextMonth,
+        onSelectDate: (date) {
+          dateController.set(DateUtils.dateOnly(date));
+        },
+        isCompact: true,
       ),
     );
   }
