@@ -646,6 +646,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   Future<void> _openClientPicker({bool triggerServiceAutoOpen = false}) async {
     final formFactor = ref.read(formFactorProvider);
     final isDesktop = formFactor == AppFormFactor.desktop;
+    bool dismissed = false;
 
     while (mounted) {
       if (!mounted) return;
@@ -684,6 +685,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       }
 
       if (result == null) {
+        dismissed = true;
         break;
       }
       final selectedResult = result;
@@ -729,7 +731,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     }
 
     if (!mounted) return;
-    if (triggerServiceAutoOpen) {
+    if (triggerServiceAutoOpen && !dismissed) {
       setState(() {
         _shouldAutoOpenServicePicker = true;
       });
