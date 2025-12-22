@@ -230,7 +230,12 @@ class _AgendaAddAction extends ConsumerWidget {
         ],
         onSelected: (value) {
           if (value == 'appointment') {
-            showBookingDialog(context, ref, date: agendaDate);
+            showBookingDialog(
+              context,
+              ref,
+              date: agendaDate,
+              autoOpenDatePicker: true,
+            );
           } else if (value == 'block') {
             showAddBlockDialog(context, ref, date: agendaDate);
           }
