@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/utils/string_utils.dart';
@@ -76,6 +77,114 @@ class ClientFormState extends ConsumerState<ClientForm> {
   Widget build(BuildContext context) {
     final business = ref.watch(currentBusinessProvider);
     final l10n = context.l10n;
+    final formFactor = ref.watch(formFactorProvider);
+    final isSingleColumn = formFactor != AppFormFactor.desktop;
+
+    final firstNameField = LabeledFormField(
+      label: l10n.formFirstName,
+      child: TextFormField(
+        controller: _firstName,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+        textInputAction: TextInputAction.next,
+        textCapitalization: TextCapitalization.words,
+        onChanged: (_) {
+          _formKey.currentState?.validate();
+          widget.onChanged?.call();
+        },
+        validator: (v) {
+          final firstName = v?.trim() ?? '';
+          final lastName = _lastName.text.trim();
+          if (firstName.isEmpty && lastName.isEmpty) {
+            return l10n.validationNameOrLastNameRequired;
+          }
+          return null;
+        },
+      ),
+    );
+
+    final lastNameField = LabeledFormField(
+      label: l10n.formLastName,
+      child: TextFormField(
+        controller: _lastName,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+        textInputAction: TextInputAction.next,
+        textCapitalization: TextCapitalization.words,
+        onChanged: (_) {
+          _formKey.currentState?.validate();
+          widget.onChanged?.call();
+        },
+        validator: (v) {
+          final lastName = v?.trim() ?? '';
+          final firstName = _firstName.text.trim();
+          if (firstName.isEmpty && lastName.isEmpty) {
+            return l10n.validationNameOrLastNameRequired;
+          }
+          return null;
+        },
+      ),
+    );
+
+    final emailField = LabeledFormField(
+      label: l10n.formEmail,
+      child: TextFormField(
+        controller: _email,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+        keyboardType: TextInputType.emailAddress,
+        textInputAction: TextInputAction.next,
+        onChanged: (_) => widget.onChanged?.call(),
+        validator: (v) {
+          final t = v?.trim() ?? '';
+          if (t.isEmpty) return null;
+          final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+          if (!emailRegex.hasMatch(t)) {
+            return l10n.validationInvalidEmail;
+          }
+          return null;
+        },
+      ),
+    );
+
+    final phoneField = LabeledFormField(
+      label: l10n.formPhone,
+      child: PhoneInputField(
+        key: _phoneFieldKey,
+        defaultPrefix: business.defaultPhonePrefix,
+        initialPhone: widget.initial?.phone,
+        isDense: true,
+        useOutlineBorder: true,
+        onChanged: (_) => widget.onChanged?.call(),
+        validator: (v) {
+          final t = v?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
+          if (t.isEmpty) return null;
+          if (!RegExp(r'^\d{6,15}$').hasMatch(t)) {
+            return l10n.validationInvalidPhone;
+          }
+          return null;
+        },
+      ),
+    );
+
+    final notesField = LabeledFormField(
+      label: l10n.formNotes,
+      child: TextFormField(
+        controller: _notes,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+        maxLines: 3,
+        onChanged: (_) => widget.onChanged?.call(),
+      ),
+    );
 
     return Form(
       key: _formKey,
@@ -83,134 +192,42 @@ class ClientFormState extends ConsumerState<ClientForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Riga 1: Nome + Cognome
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: LabeledFormField(
-                  label: l10n.formFirstName,
-                  child: TextFormField(
-                    controller: _firstName,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    textInputAction: TextInputAction.next,
-                    textCapitalization: TextCapitalization.words,
-                    onChanged: (_) {
-                      _formKey.currentState?.validate();
-                      widget.onChanged?.call();
-                    },
-                    validator: (v) {
-                      final firstName = v?.trim() ?? '';
-                      final lastName = _lastName.text.trim();
-                      if (firstName.isEmpty && lastName.isEmpty) {
-                        return l10n.validationNameOrLastNameRequired;
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.formFieldSpacing),
-              Expanded(
-                child: LabeledFormField(
-                  label: l10n.formLastName,
-                  child: TextFormField(
-                    controller: _lastName,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    textInputAction: TextInputAction.next,
-                    textCapitalization: TextCapitalization.words,
-                    onChanged: (_) {
-                      _formKey.currentState?.validate();
-                      widget.onChanged?.call();
-                    },
-                    validator: (v) {
-                      final lastName = v?.trim() ?? '';
-                      final firstName = _firstName.text.trim();
-                      if (firstName.isEmpty && lastName.isEmpty) {
-                        return l10n.validationNameOrLastNameRequired;
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.formRowSpacing),
-
-          // Riga 2: Email + Telefono
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: LabeledFormField(
-                  label: l10n.formEmail,
-                  child: TextFormField(
-                    controller: _email,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    onChanged: (_) => widget.onChanged?.call(),
-                    validator: (v) {
-                      final t = v?.trim() ?? '';
-                      if (t.isEmpty) return null;
-                      final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                      if (!emailRegex.hasMatch(t)) {
-                        return l10n.validationInvalidEmail;
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.formFieldSpacing),
-              Expanded(
-                child: LabeledFormField(
-                  label: l10n.formPhone,
-                  child: PhoneInputField(
-                    key: _phoneFieldKey,
-                    defaultPrefix: business.defaultPhonePrefix,
-                    initialPhone: widget.initial?.phone,
-                    isDense: true,
-                    useOutlineBorder: true,
-                    onChanged: (_) => widget.onChanged?.call(),
-                    validator: (v) {
-                      final t = v?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
-                      if (t.isEmpty) return null;
-                      if (!RegExp(r'^\d{6,15}$').hasMatch(t)) {
-                        return l10n.validationInvalidPhone;
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.formRowSpacing),
-
-          // Riga 3: Note (sempre full width)
-          LabeledFormField(
-            label: l10n.formNotes,
-            child: TextFormField(
-              controller: _notes,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              maxLines: 3,
-              onChanged: (_) => widget.onChanged?.call(),
+          if (isSingleColumn) ...[
+            firstNameField,
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            lastNameField,
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            emailField,
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            phoneField,
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            notesField,
+          ] else ...[
+            // Riga 1: Nome + Cognome
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: firstNameField),
+                const SizedBox(width: AppSpacing.formFieldSpacing),
+                Expanded(child: lastNameField),
+              ],
             ),
-          ),
+            const SizedBox(height: AppSpacing.formRowSpacing),
+
+            // Riga 2: Email + Telefono
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: emailField),
+                const SizedBox(width: AppSpacing.formFieldSpacing),
+                Expanded(child: phoneField),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.formRowSpacing),
+
+            // Riga 3: Note (sempre full width)
+            notesField,
+          ],
         ],
       ),
     );
