@@ -14,7 +14,7 @@ import '../../domain/service_item_data.dart';
 import 'service_picker_field.dart';
 
 /// Card per visualizzare e modificare un singolo servizio nella prenotazione.
-class ServiceItemCard extends ConsumerWidget {
+class ServiceItemCard extends ConsumerStatefulWidget {
   const ServiceItemCard({
     super.key,
     required this.item,
@@ -57,7 +57,47 @@ class ServiceItemCard extends ConsumerWidget {
   final VoidCallback? onServicePickerAutoOpened;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ServiceItemCard> createState() => _ServiceItemCardState();
+}
+
+class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
+  bool _autoOpenStaffRequested = false;
+  bool _shouldAutoOpenStaff = false;
+
+  ServiceItemData get item => widget.item;
+  int get index => widget.index;
+  List<Service> get services => widget.services;
+  List<ServiceCategory> get categories => widget.categories;
+  List<ServiceVariant> get variants => widget.variants;
+  List<int> get eligibleStaff => widget.eligibleStaff;
+  List<Staff> get allStaff => widget.allStaff;
+  AppFormFactor get formFactor => widget.formFactor;
+  ValueChanged<ServiceItemData> get onChanged => widget.onChanged;
+  VoidCallback get onRemove => widget.onRemove;
+  ValueChanged<TimeOfDay> get onStartTimeChanged => widget.onStartTimeChanged;
+  ValueChanged<TimeOfDay> get onEndTimeChanged => widget.onEndTimeChanged;
+  ValueChanged<int> get onDurationChanged => widget.onDurationChanged;
+  bool get canRemove => widget.canRemove;
+  bool get isServiceRequired => widget.isServiceRequired;
+  bool get autoOpenServicePicker => widget.autoOpenServicePicker;
+  VoidCallback? get onServicePickerAutoOpened => widget.onServicePickerAutoOpened;
+
+  @override
+  void didUpdateWidget(covariant ServiceItemCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.serviceId != widget.item.serviceId) {
+      _autoOpenStaffRequested = false;
+      _shouldAutoOpenStaff =
+          widget.item.serviceId != null && widget.item.staffId == null;
+    }
+    if (widget.item.staffId != null) {
+      _autoOpenStaffRequested = false;
+      _shouldAutoOpenStaff = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
 
@@ -163,6 +203,15 @@ class ServiceItemCard extends ConsumerWidget {
           ? (v) => v == null ? l10n.validationRequired : null
           : null,
       builder: (field) {
+        if (_shouldAutoOpenStaff && !_autoOpenStaffRequested) {
+          _autoOpenStaffRequested = true;
+          _shouldAutoOpenStaff = false;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _showStaffPicker(context, availableStaff, field);
+          });
+        }
+
         final hasError = field.hasError;
         final borderColor = hasError
             ? theme.colorScheme.error
