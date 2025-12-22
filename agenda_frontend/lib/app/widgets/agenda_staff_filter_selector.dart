@@ -96,17 +96,12 @@ class _AgendaStaffFilterSelectorState
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-
+    final formFactor = ref.watch(formFactorProvider);
     if (widget.isCompact) {
       return IconButton(
         tooltip: l10n.staffFilterTooltip,
         icon: const Icon(Icons.people_outline),
-        iconSize: 22,
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(
-          width: kAgendaControlHeight,
-          height: kAgendaControlHeight,
-        ),
+        iconSize: formFactor == AppFormFactor.mobile ? 22 : 33,
         onPressed: () => _showMobileSheet(context),
       );
     }

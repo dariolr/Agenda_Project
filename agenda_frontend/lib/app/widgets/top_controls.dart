@@ -4,6 +4,7 @@ import 'package:agenda_frontend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_frontend/app/widgets/top_controls_scaffold.dart';
 import 'package:agenda_frontend/core/models/location.dart';
 import 'package:agenda_frontend/core/widgets/app_bottom_sheet.dart';
+import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,11 +64,13 @@ class TopControls extends ConsumerWidget {
     final showTopDateSwitcher = mode != TopControlsMode.agenda;
     final showAgendaLocationSelector =
         mode == TopControlsMode.agenda && data.locations.length > 1;
-    final showAgendaStaffSelector = mode == TopControlsMode.agenda &&
+    final showAgendaStaffSelector =
+        mode == TopControlsMode.agenda &&
         ref.watch(staffForCurrentLocationProvider).length > 1;
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      //mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
           tooltip: todayLabel ?? data.l10n.agendaToday,
@@ -114,8 +117,7 @@ class TopControls extends ConsumerWidget {
           ),
           const SizedBox(width: 8),
         ],
-        if (showAgendaStaffSelector)
-          const AgendaStaffFilterSelector(),
+        if (showAgendaStaffSelector) const AgendaStaffFilterSelector(),
         if (mode == TopControlsMode.staff && data.locations.length > 1)
           IconButton(
             tooltip: data.l10n.agendaSelectLocation,
@@ -145,9 +147,11 @@ class TopControls extends ConsumerWidget {
       label = weekMeta.label;
       selectedDate = weekMeta.effectivePickerDate;
     }
+    final layoutConfig = ref.watch(layoutConfigProvider);
     return Row(
       mainAxisSize: MainAxisSize.max,
       children: [
+        SizedBox(width: layoutConfig.hourColumnWidth),
         IconButton(
           tooltip: todayLabel ?? data.l10n.agendaToday,
           icon: const Icon(Icons.today_outlined),
@@ -165,10 +169,12 @@ class TopControls extends ConsumerWidget {
             onNext: mode == TopControlsMode.agenda
                 ? data.dateController.nextDay
                 : null,
-            onPreviousWeek: mode == TopControlsMode.staff
+            onPreviousWeek:
+                mode == TopControlsMode.staff || mode == TopControlsMode.agenda
                 ? data.dateController.previousWeek
                 : null,
-            onNextWeek: mode == TopControlsMode.staff
+            onNextWeek:
+                mode == TopControlsMode.staff || mode == TopControlsMode.agenda
                 ? data.dateController.nextWeek
                 : null,
             onPreviousMonth: mode == TopControlsMode.staff
