@@ -11,7 +11,6 @@ class StaffScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.navStaff)),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(

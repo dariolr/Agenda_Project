@@ -108,16 +108,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final isWide = ref.watch(formFactorProvider) != AppFormFactor.mobile;
 
     if (categories.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            context.l10n.servicesTitle,
-            style: Theme.of(context).textTheme.titleLarge,
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     return GestureDetector(
