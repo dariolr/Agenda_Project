@@ -16,6 +16,7 @@ import '../../../clients/providers/clients_providers.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../domain/service_item_data.dart';
+import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/layout_config_provider.dart';
@@ -883,6 +884,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     // Aggiorna tutti i servizi
     final existingIds = existingAppointments.map((a) => a.id).toSet();
     final processedIds = <int>{};
+    Appointment? scrollTarget;
 
     for (int i = 0; i < validItems.length; i++) {
       final item = validItems[i];
@@ -923,9 +925,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           price: effectivePrice,
         );
         ref.read(appointmentsProvider.notifier).updateAppointment(updated);
+        scrollTarget ??= updated;
       } else {
         // Crea nuovo appuntamento (aggiunto durante la modifica)
-        ref
+        final created = ref
             .read(appointmentsProvider.notifier)
             .addAppointment(
               bookingId: bookingId,
@@ -939,6 +942,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               end: end,
               price: effectivePrice,
             );
+        scrollTarget ??= created;
       }
     }
 
@@ -953,6 +957,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     // Rimuovi la booking se vuota
     ref.read(bookingsProvider.notifier).removeIfEmpty(bookingId);
 
+    if (scrollTarget != null) {
+      ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
+    }
     if (mounted) {
       Navigator.of(context).pop();
     }

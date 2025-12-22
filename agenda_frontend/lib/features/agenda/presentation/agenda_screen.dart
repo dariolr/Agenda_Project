@@ -9,6 +9,9 @@ import 'package:agenda_frontend/features/agenda/providers/staff_filter_providers
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/agenda_scroll_request_provider.dart';
+import '../providers/date_range_provider.dart';
+
 class AgendaScreen extends ConsumerStatefulWidget {
   const AgendaScreen({super.key, this.initialClientId});
 
@@ -22,6 +25,7 @@ class AgendaScreen extends ConsumerStatefulWidget {
 class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   final ScrollController _hourColumnController = ScrollController();
   final AgendaDayController _timelineController = AgendaDayController();
+  late final ProviderSubscription<AgendaScrollRequest?> _scrollRequestSub;
 
   double? _pendingHourOffset;
   bool _pendingApplyScheduled = false;
@@ -33,6 +37,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
   @override
   void dispose() {
+    _scrollRequestSub.close();
     _timelineController.dispose();
     _hourColumnController.dispose();
     super.dispose();
@@ -112,6 +117,22 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       _timelineController.jumpTo(offset);
     }
     return false;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollRequestSub = ref.listenManual<AgendaScrollRequest?>(
+      agendaScrollRequestProvider,
+      (prev, next) {
+        if (next == null) return;
+        final currentDate = ref.read(agendaDateProvider);
+        final targetDate = next.date;
+        if (!DateUtils.isSameDay(currentDate, targetDate)) {
+          ref.read(agendaDateProvider.notifier).set(targetDate);
+        }
+      },
+    );
   }
 
   @override

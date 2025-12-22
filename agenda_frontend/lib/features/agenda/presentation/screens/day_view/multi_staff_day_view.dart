@@ -9,6 +9,7 @@ import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_interaction_lock_provider.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
+import '../../../providers/agenda_scroll_request_provider.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/drag_layer_link_provider.dart';
@@ -51,6 +52,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
   late final ProviderSubscription<Offset?> _dragSub;
   late final ProviderSubscription<LayoutConfig> _layoutSub;
+  late final ProviderSubscription<AgendaScrollRequest?> _scrollRequestSub;
 
   final ScrollController _headerHCtrl = ScrollController();
   bool _isSyncing = false;
@@ -62,6 +64,8 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   List<int>? _staffSignature;
 
   late final DragBodyBoxNotifier _dragBodyNotifier;
+  AgendaScrollRequest? _pendingScrollRequest;
+  Timer? _scrollRetryTimer;
 
   Timer? _syncDebounce;
 
@@ -109,6 +113,17 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       }
     });
 
+    _scrollRequestSub = ref.listenManual<AgendaScrollRequest?>(
+      agendaScrollRequestProvider,
+      (prev, next) {
+        if (next == null) return;
+        final selectedDate = ref.read(agendaDateProvider);
+        if (!DateUtils.isSameDay(selectedDate, next.date)) return;
+        _pendingScrollRequest = next;
+        _scheduleScrollToPending();
+      },
+    );
+
     // Prima inizializzazione
     _scheduleSyncUpdate();
   }
@@ -120,6 +135,91 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       _registerBodyBox();
       _setupHorizontalSync(force: true);
     });
+  }
+
+  void _scheduleScrollToPending() {
+    _scrollRetryTimer?.cancel();
+    _scrollRetryTimer = Timer(const Duration(milliseconds: 60), () {
+      if (!mounted) return;
+      _tryScrollToPending();
+    });
+  }
+
+  void _tryScrollToPending() {
+    final request = _pendingScrollRequest;
+    if (request == null) return;
+
+    final selectedDate = ref.read(agendaDateProvider);
+    if (!DateUtils.isSameDay(selectedDate, request.date)) return;
+
+    final appointments = ref.read(appointmentsForCurrentLocationProvider);
+    final target = appointments
+        .where((a) => a.id == request.appointment.id)
+        .cast()
+        .toList();
+    if (target.isEmpty) {
+      _scheduleScrollToPending();
+      return;
+    }
+
+    final appointment = target.first;
+    final scrollState = ref.read(agendaScrollProvider(_scrollKey));
+    final verticalCtrl = scrollState.verticalScrollCtrl;
+    final horizontalCtrl = scrollState.horizontalScrollCtrl;
+    if (!verticalCtrl.hasClients || !horizontalCtrl.hasClients) {
+      _scheduleScrollToPending();
+      return;
+    }
+
+    final layoutConfig = ref.read(layoutConfigProvider);
+    final bodyBox = _bodyKey.currentContext?.findRenderObject() as RenderBox?;
+    final viewportHeight =
+        bodyBox?.size.height ?? verticalCtrl.position.viewportDimension;
+    final viewportWidth =
+        bodyBox?.size.width ?? horizontalCtrl.position.viewportDimension;
+
+    final startMinutes =
+        appointment.startTime.hour * 60 + appointment.startTime.minute;
+    final startOffset =
+        (startMinutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
+    final durationMinutes = appointment.endTime
+        .difference(appointment.startTime)
+        .inMinutes
+        .clamp(layoutConfig.minutesPerSlot, 1440);
+    final cardHeight =
+        (durationMinutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
+
+    final targetY =
+        startOffset - (viewportHeight - cardHeight).clamp(0, viewportHeight) / 2;
+    final maxY = verticalCtrl.position.maxScrollExtent;
+    final clampedY = targetY.clamp(0.0, maxY);
+
+    final staffIndex = widget.staffList.indexWhere(
+      (s) => s.id == appointment.staffId,
+    );
+    if (staffIndex >= 0) {
+      final layout = ResponsiveLayout.of(
+        context,
+        staffCount: widget.staffList.length,
+        config: layoutConfig,
+        availableWidth: viewportWidth,
+      );
+      final columnWidth = layout.columnWidth;
+      final targetX =
+          (staffIndex * columnWidth) - (viewportWidth - columnWidth) / 2;
+      final maxX = horizontalCtrl.position.maxScrollExtent;
+      final clampedX = targetX.clamp(0.0, maxX);
+      if ((horizontalCtrl.offset - clampedX).abs() > 0.5) {
+        horizontalCtrl.jumpTo(clampedX);
+      }
+    }
+
+    if ((verticalCtrl.offset - clampedY).abs() > 0.5) {
+      verticalCtrl.jumpTo(clampedY);
+    }
+
+    _pendingScrollRequest = null;
+    ref.read(agendaScrollRequestProvider.notifier).clear();
   }
 
   void _registerBodyBox() {
@@ -281,8 +381,10 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   void dispose() {
     _dragSub.close();
     _layoutSub.close();
+    _scrollRequestSub.close();
     _stopAutoScroll();
     _syncDebounce?.cancel();
+    _scrollRetryTimer?.cancel();
 
     _bodyHorizontalCtrl?.removeListener(_onBodyHorizontalScroll);
     _headerHCtrl.removeListener(_onHeaderHorizontalScroll);
