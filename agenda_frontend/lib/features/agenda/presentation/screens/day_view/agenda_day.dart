@@ -132,7 +132,7 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
 
     // calcola direzione
     if (_previousDate != null && _previousDate != date) {
-      _slideFromRight = date.isAfter(_previousDate!);
+      _slideFromRight = date.isBefore(_previousDate!);
     }
     _previousDate = date;
 
@@ -152,8 +152,8 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
       transitionBuilder: (Widget child, Animation<double> animation) {
         final offsetTween = Tween<Offset>(
           begin: _slideFromRight
-              ? const Offset(-1.0, 0.0)
-              : const Offset(1.0, 0.0),
+              ? const Offset(1.0, 0.0)
+              : const Offset(-1.0, 0.0),
           end: Offset.zero,
         ).chain(CurveTween(curve: Curves.easeOutCubic));
 
