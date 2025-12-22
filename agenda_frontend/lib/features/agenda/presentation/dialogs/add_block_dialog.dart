@@ -76,6 +76,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
   late TimeOfDay _endTime;
   late Set<int> _selectedStaffIds;
   final _reasonController = TextEditingController();
+  final ScrollController _staffScrollController = ScrollController();
   bool _isAllDay = false;
   String? _staffError;
   String? _timeError;
@@ -119,6 +120,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
   @override
   void dispose() {
     _reasonController.dispose();
+    _staffScrollController.dispose();
     super.dispose();
   }
 
@@ -265,33 +267,38 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 constraints: const BoxConstraints(maxHeight: 200),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: staff.length,
-                  itemBuilder: (context, index) {
-                    final member = staff[index];
-                    final isSelected = _selectedStaffIds.contains(member.id);
-                    return CheckboxListTile(
-                      value: isSelected,
-                      onChanged: (v) {
-                        setState(() {
-                          _staffError = null;
-                          if (v == true) {
-                            _selectedStaffIds.add(member.id);
-                          } else {
-                            _selectedStaffIds.remove(member.id);
-                          }
-                        });
-                      },
-                      title: Text(member.name),
-                      secondary: CircleAvatar(
-                        backgroundColor: member.color,
-                        radius: 12,
-                      ),
-                      dense: true,
-                      controlAffinity: ListTileControlAffinity.leading,
-                    );
-                  },
+                child: Scrollbar(
+                  controller: _staffScrollController,
+                  thumbVisibility: staff.length * 48.0 > 200,
+                  child: ListView.builder(
+                    controller: _staffScrollController,
+                    shrinkWrap: true,
+                    itemCount: staff.length,
+                    itemBuilder: (context, index) {
+                      final member = staff[index];
+                      final isSelected = _selectedStaffIds.contains(member.id);
+                      return CheckboxListTile(
+                        value: isSelected,
+                        onChanged: (v) {
+                          setState(() {
+                            _staffError = null;
+                            if (v == true) {
+                              _selectedStaffIds.add(member.id);
+                            } else {
+                              _selectedStaffIds.remove(member.id);
+                            }
+                          });
+                        },
+                        title: Text(member.name),
+                        secondary: CircleAvatar(
+                          backgroundColor: member.color,
+                          radius: 12,
+                        ),
+                        dense: true,
+                        controlAffinity: ListTileControlAffinity.leading,
+                      );
+                    },
+                  ),
                 ),
               ),
               if (_staffError != null)
