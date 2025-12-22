@@ -14,8 +14,8 @@ git checkout master
 
 elimina dalla tua memoria ogni punto di ripristino ed eventuali file contenenti codice dart. poi crea un nuovo punto di ripristino, analizzalo e d'ora in poi fai riferimento a tutti questi file per l'implementazione dell'agenda rispetto alle versione di flutter 3.35.6 e la versione di dart: 3.9.2. chiama il punto di ripristino base_app e ricorda sempre che l'implementazione deve essere fortemente orientata al deploy sul web. 
 
-flutter build web --release --no-tree-shake-icons
 
 dart run build_runner build --delete-conflicting-outputs
 
 
+flutter build web --release --no-tree-shake-icons --pwa-strategy=none
