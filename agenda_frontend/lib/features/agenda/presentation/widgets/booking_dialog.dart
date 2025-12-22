@@ -1,6 +1,7 @@
 import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/app/theme/app_spacing.dart';
 import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
+import 'package:agenda_frontend/core/models/appointment.dart';
 import 'package:agenda_frontend/core/widgets/labeled_form_field.dart';
 import 'package:agenda_frontend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
@@ -18,10 +19,11 @@ import '../../../clients/providers/clients_providers.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../domain/service_item_data.dart';
-import '../../providers/layout_config_provider.dart';
+import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/date_range_provider.dart';
+import '../../providers/layout_config_provider.dart';
 import '../../providers/staff_slot_availability_provider.dart';
 import 'service_item_card.dart';
 
@@ -406,8 +408,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded,
-                      color: Colors.amber, size: 20),
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.amber,
+                    size: 20,
+                  ),
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
@@ -422,8 +427,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     icon: const Icon(Icons.close, size: 18),
                     color: const Color(0xFF8A4D00),
                     padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints.tightFor(width: 32, height: 32),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
                     onPressed: () {
                       setState(() => _warningDismissed = true);
                     },
@@ -431,11 +438,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 ],
               ),
             ),
-          const Divider(
-            height: 1,
-            thickness: 0.5,
-            color: Color(0x1F000000),
-          ),
+          const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
           Padding(
             padding: EdgeInsets.fromLTRB(
               horizontalPadding,
@@ -594,8 +597,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded,
-              color: Colors.amber, size: 20),
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.amber,
+            size: 20,
+          ),
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
@@ -610,8 +616,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
             icon: const Icon(Icons.close, size: 18),
             color: const Color(0xFF8A4D00),
             padding: EdgeInsets.zero,
-            constraints:
-                const BoxConstraints.tightFor(width: 32, height: 32),
+            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
             onPressed: () {
               setState(() => _warningDismissed = true);
             },
@@ -957,6 +962,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       notes: _notesController.text.isNotEmpty ? _notesController.text : null,
     );
 
+    Appointment? scrollTarget;
+
     // Add appointments for each service
     for (final item in validItems) {
       final variant = variants.firstWhere(
@@ -978,7 +985,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           : variant.durationMinutes;
       final end = start.add(Duration(minutes: durationMinutes));
 
-      appointmentsNotifier.addAppointment(
+      final created = appointmentsNotifier.addAppointment(
         bookingId: bookingId,
         staffId: item.staffId!,
         serviceId: service.id,
@@ -990,8 +997,12 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         end: end,
         price: effectivePrice,
       );
+      scrollTarget ??= created;
     }
 
+    if (scrollTarget != null) {
+      ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
+    }
     Navigator.of(context).pop();
   }
 }
