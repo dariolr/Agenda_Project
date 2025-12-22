@@ -10,6 +10,7 @@ import '../../../providers/agenda_interaction_lock_provider.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/date_range_provider.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/layout_config_provider.dart';
@@ -339,6 +340,11 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         final hourW = layoutConfig.hourColumnWidth;
         final headerHeight = layoutConfig.headerHeight;
         final LayerLink? link = ref.watch(dragLayerLinkProvider);
+        final selectedDate = ref.watch(agendaDateProvider);
+        final isToday = DateUtils.isSameDay(
+          selectedDate,
+          DateUtils.dateOnly(DateTime.now()),
+        );
 
         final isResizing = ref.watch(isResizingProvider);
 
@@ -361,13 +367,14 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 isInteractionLocked: isInteractionLocked,
               ),
             ),
-            // LINEA ORARIO
-            CurrentTimeLine(
-              hourColumnWidth: widget.hourColumnWidth,
-              verticalOffset: widget.currentTimeVerticalOffset,
-              horizontalOffset:
-                  -widget.hourColumnWidth + CurrentTimeLine.horizontalMargin,
-            ),
+            // LINEA ORARIO (solo per la data odierna)
+            if (isToday)
+              CurrentTimeLine(
+                hourColumnWidth: widget.hourColumnWidth,
+                verticalOffset: widget.currentTimeVerticalOffset,
+                horizontalOffset:
+                    -widget.hourColumnWidth + CurrentTimeLine.horizontalMargin,
+              ),
             // HEADER staff
             Positioned(
               top: 0,
