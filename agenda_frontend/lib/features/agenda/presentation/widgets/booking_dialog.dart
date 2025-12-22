@@ -949,6 +949,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         orElse: () => variants.first,
       );
       final service = services.firstWhere((s) => s.id == item.serviceId);
+      final effectivePrice = service.isFree ? null : service.price;
 
       final start = DateTime(
         _date.year,
@@ -972,7 +973,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         serviceName: service.name,
         start: start,
         end: end,
-        price: variant.price,
+        price: effectivePrice,
       );
     }
 
