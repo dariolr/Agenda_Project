@@ -33,6 +33,7 @@ Future<void> showBookingDialog(
   DateTime? date,
   TimeOfDay? time,
   int? initialStaffId,
+  bool autoOpenDatePicker = false,
 }) async {
   final formFactor = ref.read(formFactorProvider);
   final presentation = formFactor == AppFormFactor.desktop
@@ -44,6 +45,7 @@ Future<void> showBookingDialog(
     initialDate: date,
     initialTime: time,
     initialStaffId: initialStaffId,
+    autoOpenDatePicker: autoOpenDatePicker,
     presentation: presentation,
   );
 
@@ -72,6 +74,7 @@ class _BookingDialog extends ConsumerStatefulWidget {
     this.initialDate,
     this.initialTime,
     this.initialStaffId,
+    this.autoOpenDatePicker = false,
     required this.presentation,
   });
 
@@ -79,6 +82,7 @@ class _BookingDialog extends ConsumerStatefulWidget {
   final DateTime? initialDate;
   final TimeOfDay? initialTime;
   final int? initialStaffId;
+  final bool autoOpenDatePicker;
   final _BookingPresentation presentation;
 
   @override
@@ -95,6 +99,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
   bool _clientPickerAutoRequested = false;
   bool _shouldAutoOpenServicePicker = false;
+  bool _datePickerAutoRequested = false;
 
   /// Nome cliente personalizzato (usato solo per clienti nuovi non ancora salvati)
   String _customClientName = '';
@@ -163,7 +168,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     }
 
     if (widget.existing == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        if (widget.autoOpenDatePicker) {
+          await _scheduleAutoDatePicker();
+        }
         if (!mounted) return;
         _scheduleAutoClientPicker();
       });
@@ -646,6 +655,12 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       if (!mounted) return;
       _openClientPicker(triggerServiceAutoOpen: true);
     });
+  }
+
+  Future<void> _scheduleAutoDatePicker() async {
+    if (_datePickerAutoRequested) return;
+    _datePickerAutoRequested = true;
+    await _pickDate();
   }
 
   Future<void> _openClientPicker({bool triggerServiceAutoOpen = false}) async {
