@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/widgets/app_dialogs.dart';
@@ -17,7 +18,14 @@ class ClientCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final tags = client.tags ?? const [];
+    final scheme = theme.colorScheme;
+    //final tags = client.tags ?? const [];
+    final email = client.email;
+    final phone = client.phone;
+    final isEmailValid = email != null && _isValidEmail(email);
+    final isPhoneValid = phone != null && _isValidPhone(phone);
+    final emailTap = isEmailValid ? () => _openEmail(email) : null;
+    final phoneTap = isPhoneValid ? () => _openPhone(phone) : null;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -49,17 +57,29 @@ class ClientCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 8),
-            if (client.email != null)
-              Text(client.email!, style: theme.textTheme.bodySmall),
-            if (client.phone != null)
-              Text(client.phone!, style: theme.textTheme.bodySmall),
+            if (email != null)
+              _LinkText(
+                text: email,
+                onTap: emailTap,
+                style: theme.textTheme.bodySmall,
+                linkColor: scheme.primary,
+              ),
+            if (client.email != null && client.phone != null)
+              const SizedBox(height: 12),
+            if (phone != null)
+              _LinkText(
+                text: phone,
+                onTap: phoneTap,
+                style: theme.textTheme.bodySmall,
+                linkColor: scheme.primary,
+              ),
             // Riga con ultima visita e icona appuntamenti
             Row(
               children: [
                 if (client.lastVisit != null)
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 4),
+                      padding: const EdgeInsets.only(top: 12),
                       child: Text(
                         _buildLastVisitLabel(context, client.lastVisit!),
                         style: theme.textTheme.labelSmall,
@@ -71,6 +91,7 @@ class ClientCard extends ConsumerWidget {
                 _AppointmentsButton(client: client),
               ],
             ),
+            /*
             if (tags.isNotEmpty)
               Wrap(
                 spacing: 4,
@@ -90,6 +111,7 @@ class ClientCard extends ConsumerWidget {
                     ),
                 ],
               ),
+            */
           ],
         ),
       ),
@@ -103,6 +125,66 @@ class ClientCard extends ConsumerWidget {
     // Nota: il label non è ancora in L10n; lasciamo la stringa italiana di default.
     return 'Ultima visita: $formatted';
   }
+}
+
+class _LinkText extends StatelessWidget {
+  const _LinkText({
+    required this.text,
+    required this.onTap,
+    required this.style,
+    required this.linkColor,
+  });
+
+  final String text;
+  final VoidCallback? onTap;
+  final TextStyle? style;
+  final Color linkColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveStyle = onTap == null
+        ? style
+        : style?.copyWith(
+                color: linkColor,
+                decoration: TextDecoration.underline,
+                decorationColor: linkColor,
+              ) ??
+              TextStyle(
+                color: linkColor,
+                decoration: TextDecoration.underline,
+                decorationColor: linkColor,
+              );
+    return InkWell(
+      onTap: onTap,
+      child: Text(text, style: effectiveStyle),
+    );
+  }
+}
+
+bool _isValidEmail(String email) {
+  final trimmed = email.trim();
+  if (trimmed.isEmpty) return false;
+  final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+  return emailRegex.hasMatch(trimmed);
+}
+
+bool _isValidPhone(String phone) {
+  final trimmed = phone.trim();
+  if (trimmed.isEmpty) return false;
+  final normalized = trimmed.replaceAll(RegExp(r'\s+'), '');
+  final phoneRegex = RegExp(r'^\+?\d{6,15}$');
+  return phoneRegex.hasMatch(normalized);
+}
+
+Future<void> _openEmail(String email) async {
+  final uri = Uri(scheme: 'mailto', path: email.trim());
+  await launchUrl(uri, mode: LaunchMode.externalApplication);
+}
+
+Future<void> _openPhone(String phone) async {
+  final normalized = phone.trim().replaceAll(RegExp(r'\s+'), '');
+  final uri = Uri(scheme: 'tel', path: normalized);
+  await launchUrl(uri, mode: LaunchMode.externalApplication);
 }
 
 class _AppointmentsButton extends ConsumerWidget {
