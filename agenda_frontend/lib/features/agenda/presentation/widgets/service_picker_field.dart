@@ -24,6 +24,7 @@ class ServicePickerField extends StatefulWidget {
     this.autovalidateMode = AutovalidateMode.disabled,
     this.autoOpenPicker = false,
     this.onAutoOpenPickerTriggered,
+    this.onAutoOpenPickerCompleted,
   });
 
   final List<Service> services;
@@ -38,6 +39,7 @@ class ServicePickerField extends StatefulWidget {
   final FormFieldValidator<int>? validator;
   final bool autoOpenPicker;
   final VoidCallback? onAutoOpenPickerTriggered;
+  final VoidCallback? onAutoOpenPickerCompleted;
 
   /// Modalità di autovalidazione. Default: disabled (valida solo su submit).
   final AutovalidateMode autovalidateMode;
@@ -49,6 +51,7 @@ class ServicePickerField extends StatefulWidget {
 class _ServicePickerFieldState extends State<ServicePickerField> {
   final _formFieldKey = GlobalKey<FormFieldState<int>>();
   bool _autoPickerInvoked = false;
+  bool _autoOpenInProgress = false;
 
   Service? get _selectedService {
     if (widget.value == null) return null;
@@ -90,6 +93,7 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted || _autoPickerInvoked) return;
             _autoPickerInvoked = true;
+            _autoOpenInProgress = true;
             _openPicker(field);
             widget.onAutoOpenPickerTriggered?.call();
           });
@@ -143,16 +147,16 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
     );
   }
 
-  void _openPicker(FormFieldState<int> field) {
+  Future<void> _openPicker(FormFieldState<int> field) async {
     if (widget.formFactor == AppFormFactor.desktop) {
-      _openDesktopDialogWithField(field);
+      await _openDesktopDialogWithField(field);
     } else {
-      _openBottomSheetWithField(field);
+      await _openBottomSheetWithField(field);
     }
   }
 
-  void _openBottomSheetWithField(FormFieldState<int> field) {
-    AppBottomSheet.show<int>(
+  Future<void> _openBottomSheetWithField(FormFieldState<int> field) async {
+    await AppBottomSheet.show<int>(
       context: context,
       heightFactor: AppBottomSheet.defaultHeightFactor,
       padding: EdgeInsets.zero,
@@ -161,17 +165,23 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
         categories: widget.categories,
         selectedId: widget.value,
         onSelected: (id) {
+          final wasAutoOpen = _autoOpenInProgress;
           Navigator.of(ctx).pop();
           field.didChange(id);
           field.validate(); // Ri-valida per rimuovere l'errore
           widget.onChanged?.call(id);
+          if (wasAutoOpen) {
+            _autoOpenInProgress = false;
+            widget.onAutoOpenPickerCompleted?.call();
+          }
         },
       ),
     );
+    _autoOpenInProgress = false;
   }
 
-  void _openDesktopDialogWithField(FormFieldState<int> field) {
-    showDialog<int>(
+  Future<void> _openDesktopDialogWithField(FormFieldState<int> field) async {
+    await showDialog<int>(
       context: context,
       builder: (ctx) => Dialog(
         insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
@@ -186,15 +196,21 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
             categories: widget.categories,
             selectedId: widget.value,
             onSelected: (id) {
+              final wasAutoOpen = _autoOpenInProgress;
               Navigator.of(ctx).pop();
               field.didChange(id);
               field.validate(); // Ri-valida per rimuovere l'errore
               widget.onChanged?.call(id);
+              if (wasAutoOpen) {
+                _autoOpenInProgress = false;
+                widget.onAutoOpenPickerCompleted?.call();
+              }
             },
           ),
         ),
       ),
     );
+    _autoOpenInProgress = false;
   }
 }
 

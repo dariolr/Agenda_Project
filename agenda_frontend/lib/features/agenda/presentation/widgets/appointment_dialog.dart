@@ -67,6 +67,7 @@ class _AppointmentDialog extends ConsumerStatefulWidget {
 class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   late DateTime _date;
   int? _clientId;
@@ -157,13 +158,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         .toList();
   }
 
-  String _nextItemKey() => 'item_${_itemKeyCounter++}';
-
   @override
   void dispose() {
     _notesController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
+
+  String _nextItemKey() => 'item_${_itemKeyCounter++}';
 
   /// Verifica se ci sono modifiche non salvate
   bool get _hasUnsavedChanges {
@@ -233,6 +235,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final content = ScrollConfiguration(
       behavior: const NoScrollbarBehavior(),
       child: SingleChildScrollView(
+        controller: _scrollController,
         child: Form(
           key: _formKey,
           child: Column(
@@ -478,6 +481,15 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     }
   }
 
+  void _scrollFormToBottom() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+  }
+
   List<Widget> _buildServiceItems({
     required List<dynamic> services,
     required List<dynamic> categories,
@@ -539,6 +551,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                 onEndTimeChanged: (time) => _updateServiceEndTime(i, time),
                 onDurationChanged: (duration) =>
                     _updateServiceDuration(i, duration),
+                onServicePickerAutoCompleted: _scrollFormToBottom,
+                onAutoOpenStaffPickerCompleted: _scrollFormToBottom,
               ),
             ),
             if (isLast && item.serviceId != null) ...[
