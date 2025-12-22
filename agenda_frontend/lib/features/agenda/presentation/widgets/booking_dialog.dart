@@ -88,6 +88,7 @@ class _BookingDialog extends ConsumerStatefulWidget {
 class _BookingDialogState extends ConsumerState<_BookingDialog> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   late DateTime _date;
   int? _clientId;
@@ -172,6 +173,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   @override
   void dispose() {
     _notesController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -212,6 +214,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         child: ScrollConfiguration(
           behavior: const NoScrollbarBehavior(),
           child: SingleChildScrollView(
+            controller: _scrollController,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -517,6 +520,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     _shouldAutoOpenServicePicker && i == 0
                     ? _onServicePickerAutoOpened
                     : null,
+                onServicePickerAutoCompleted: _scrollFormToBottom,
+                onAutoOpenStaffPickerCompleted: _scrollFormToBottom,
               ),
             ),
             if (isLast && item.serviceId != null) ...[
@@ -892,6 +897,15 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     if (picked != null) {
       setState(() => _date = DateUtils.dateOnly(picked));
     }
+  }
+
+  void _scrollFormToBottom() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
   }
 
   void _onSave() {

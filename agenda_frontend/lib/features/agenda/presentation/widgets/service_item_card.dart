@@ -34,6 +34,8 @@ class ServiceItemCard extends ConsumerStatefulWidget {
     this.isServiceRequired = true,
     this.autoOpenServicePicker = false,
     this.onServicePickerAutoOpened,
+    this.onServicePickerAutoCompleted,
+    this.onAutoOpenStaffPickerCompleted,
   });
 
   final ServiceItemData item;
@@ -55,6 +57,8 @@ class ServiceItemCard extends ConsumerStatefulWidget {
   final bool isServiceRequired;
   final bool autoOpenServicePicker;
   final VoidCallback? onServicePickerAutoOpened;
+  final VoidCallback? onServicePickerAutoCompleted;
+  final VoidCallback? onAutoOpenStaffPickerCompleted;
 
   @override
   ConsumerState<ServiceItemCard> createState() => _ServiceItemCardState();
@@ -81,6 +85,10 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
   bool get isServiceRequired => widget.isServiceRequired;
   bool get autoOpenServicePicker => widget.autoOpenServicePicker;
   VoidCallback? get onServicePickerAutoOpened => widget.onServicePickerAutoOpened;
+  VoidCallback? get onServicePickerAutoCompleted =>
+      widget.onServicePickerAutoCompleted;
+  VoidCallback? get onAutoOpenStaffPickerCompleted =>
+      widget.onAutoOpenStaffPickerCompleted;
 
   @override
   void didUpdateWidget(covariant ServiceItemCard oldWidget) {
@@ -184,6 +192,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
           : null,
       autoOpenPicker: autoOpenServicePicker,
       onAutoOpenPickerTriggered: onServicePickerAutoOpened,
+      onAutoOpenPickerCompleted: onServicePickerAutoCompleted,
     );
   }
 
@@ -208,7 +217,10 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
           _shouldAutoOpenStaff = false;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            _showStaffPicker(context, availableStaff, field);
+            _showStaffPicker(context, availableStaff, field).whenComplete(() {
+              if (!mounted) return;
+              onAutoOpenStaffPickerCompleted?.call();
+            });
           });
         }
 
@@ -522,15 +534,15 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
     return '$hours h $mins min';
   }
 
-  void _showStaffPicker(
+  Future<void> _showStaffPicker(
     BuildContext context,
     List<Staff> availableStaff,
     FormFieldState<int> field,
-  ) {
+  ) async {
     final l10n = context.l10n;
 
     if (formFactor != AppFormFactor.desktop) {
-      AppBottomSheet.show(
+      await AppBottomSheet.show(
         context: context,
         padding: EdgeInsets.zero,
         builder: (ctx) => SafeArea(
@@ -567,7 +579,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
       );
     } else {
       // Per desktop, usa un dialog semplice con scroll
-      showDialog(
+      await showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(l10n.selectStaffTitle),
