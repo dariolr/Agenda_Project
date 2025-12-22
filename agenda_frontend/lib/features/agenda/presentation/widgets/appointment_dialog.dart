@@ -891,6 +891,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         orElse: () => variants.first,
       );
       final service = services.firstWhere((s) => s.id == item.serviceId);
+      final effectivePrice = service.isFree ? null : service.price;
 
       final start = DateTime(
         _date.year,
@@ -919,7 +920,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           serviceName: service.name,
           startTime: start,
           endTime: end,
-          price: selectedVariant.price,
+          price: effectivePrice,
         );
         ref.read(appointmentsProvider.notifier).updateAppointment(updated);
       } else {
@@ -936,7 +937,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               serviceName: service.name,
               start: start,
               end: end,
-              price: selectedVariant.price,
+              price: effectivePrice,
             );
       }
     }
