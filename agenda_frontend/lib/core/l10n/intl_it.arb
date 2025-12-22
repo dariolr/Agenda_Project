@@ -91,7 +91,7 @@
   "formLastName": "Cognome",
   "formEmail": "Email",
   "formPhone": "Telefono",
-  "formNotes": "Note (non visibile al cliente)",
+  "formNotes": "Note (non visibili al cliente)",
   "validationRequired": "Richiesto",
   "validationInvalidEmail": "Email non valida",
   "validationInvalidPhone": "Telefono non valido",
