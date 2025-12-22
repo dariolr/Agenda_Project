@@ -18,6 +18,42 @@ import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/services/presentation/dialogs/category_dialog.dart';
 import '../features/services/presentation/dialogs/service_dialog.dart';
 
+Widget _buildAddButtonContent({
+  required bool showLabelEffective,
+  required bool compact,
+  required String label,
+  required Color onContainer,
+}) {
+  if (compact) {
+    return showLabelEffective
+        ? Text(
+            label,
+            style: TextStyle(
+              color: onContainer,
+              fontWeight: FontWeight.w600,
+            ),
+          )
+        : Icon(Icons.add_outlined, size: 22, color: onContainer);
+  }
+  if (!showLabelEffective) {
+    return Icon(Icons.add_outlined, size: 22, color: onContainer);
+  }
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(Icons.add_outlined, size: 22, color: onContainer),
+      const SizedBox(width: 8),
+      Text(
+        label,
+        style: TextStyle(
+          color: onContainer,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
+  );
+}
+
 class ScaffoldWithNavigation extends ConsumerWidget {
   const ScaffoldWithNavigation({super.key, required this.navigationShell});
 
@@ -177,6 +213,11 @@ class _AgendaAddAction extends ConsumerWidget {
     final agendaDate = ref.watch(agendaDateProvider);
     final scheme = Theme.of(context).colorScheme;
     final onContainer = scheme.onSecondaryContainer;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective =
+        showLabel || formFactor != AppFormFactor.mobile;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -211,28 +252,12 @@ class _AgendaAddAction extends ConsumerWidget {
           clipBehavior: Clip.antiAlias,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: compact
-                ? Text(
-                    l10n.agendaAdd,
-                    style: TextStyle(
-                      color: onContainer,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_outlined, size: 22, color: onContainer),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.agendaAdd,
-                        style: TextStyle(
-                          color: onContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+            child: _buildAddButtonContent(
+              showLabelEffective: showLabelEffective,
+              compact: compact,
+              label: l10n.agendaAdd,
+              onContainer: onContainer,
+            ),
           ),
         ),
       ),
@@ -249,6 +274,11 @@ class _ServicesAddAction extends ConsumerWidget {
     final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
     final onContainer = scheme.onSecondaryContainer;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective =
+        showLabel || formFactor != AppFormFactor.mobile;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -283,28 +313,12 @@ class _ServicesAddAction extends ConsumerWidget {
           clipBehavior: Clip.antiAlias,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: compact
-                ? Text(
-                    l10n.agendaAdd,
-                    style: TextStyle(
-                      color: onContainer,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_outlined, size: 22, color: onContainer),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.agendaAdd,
-                        style: TextStyle(
-                          color: onContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+            child: _buildAddButtonContent(
+              showLabelEffective: showLabelEffective,
+              compact: compact,
+              label: l10n.agendaAdd,
+              onContainer: onContainer,
+            ),
           ),
         ),
       ),
@@ -319,6 +333,11 @@ class _ClientsAddAction extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective =
+        showLabel || formFactor != AppFormFactor.mobile;
     if (compact) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -342,12 +361,11 @@ class _ClientsAddAction extends ConsumerWidget {
                     horizontal: 12,
                     vertical: 8,
                   ),
-                  child: Text(
-                    l10n.agendaAdd,
-                    style: TextStyle(
-                      color: onContainer,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: _buildAddButtonContent(
+                    showLabelEffective: showLabelEffective,
+                    compact: compact,
+                    label: l10n.agendaAdd,
+                    onContainer: onContainer,
                   ),
                 ),
               );
@@ -373,26 +391,18 @@ class _ClientsAddAction extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 28, 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_outlined, size: 22, color: onContainer),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.agendaAdd,
-                      style: TextStyle(
-                        color: onContainer,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 28, 8),
+              child: _buildAddButtonContent(
+                showLabelEffective: showLabelEffective,
+                compact: compact,
+                label: l10n.agendaAdd,
+                onContainer: onContainer,
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
+      ),
       ),
     );
   }

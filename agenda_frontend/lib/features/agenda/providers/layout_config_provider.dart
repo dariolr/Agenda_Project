@@ -135,4 +135,12 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
     }
     state = state.copyWith(useServiceColorsForAppointments: enabled);
   }
+
+  /// Permette di mostrare la label del pulsante "Aggiungi" in topbar.
+  void setShowTopbarAddLabel(bool enabled) {
+    if (state.showTopbarAddLabel == enabled) {
+      return;
+    }
+    state = state.copyWith(showTopbarAddLabel: enabled);
+  }
 }

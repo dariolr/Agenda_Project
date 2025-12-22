@@ -35,6 +35,7 @@ class LayoutConfig {
     useClusterMaxConcurrency: true,
     useServiceColorsForAppointments: true,
     enableOccupiedSlotStrip: false,
+    showTopbarAddLabel: false,
   );
 
   // ──────────────────────────────────────────────
@@ -52,6 +53,9 @@ class LayoutConfig {
   /// Permette di cliccare sullo spazio libero per creare nuovi appuntamenti.
   final bool enableOccupiedSlotStrip;
 
+  /// Se true, il pulsante "Aggiungi" in topbar mostra anche la label.
+  final bool showTopbarAddLabel;
+
   const LayoutConfig({
     required this.slotHeight,
     required this.headerHeight,
@@ -60,6 +64,7 @@ class LayoutConfig {
     required this.useClusterMaxConcurrency,
     required this.useServiceColorsForAppointments,
     required this.enableOccupiedSlotStrip,
+    required this.showTopbarAddLabel,
   });
 
   @override
@@ -73,7 +78,8 @@ class LayoutConfig {
         useClusterMaxConcurrency == other.useClusterMaxConcurrency &&
         useServiceColorsForAppointments ==
             other.useServiceColorsForAppointments &&
-        enableOccupiedSlotStrip == other.enableOccupiedSlotStrip;
+        enableOccupiedSlotStrip == other.enableOccupiedSlotStrip &&
+        showTopbarAddLabel == other.showTopbarAddLabel;
   }
 
   @override
@@ -85,6 +91,7 @@ class LayoutConfig {
     useClusterMaxConcurrency,
     useServiceColorsForAppointments,
     enableOccupiedSlotStrip,
+    showTopbarAddLabel,
   );
 
   LayoutConfig copyWith({
@@ -95,6 +102,7 @@ class LayoutConfig {
     bool? useClusterMaxConcurrency,
     bool? useServiceColorsForAppointments,
     bool? enableOccupiedSlotStrip,
+    bool? showTopbarAddLabel,
   }) {
     return LayoutConfig(
       slotHeight: slotHeight ?? this.slotHeight,
@@ -108,6 +116,7 @@ class LayoutConfig {
           this.useServiceColorsForAppointments,
       enableOccupiedSlotStrip:
           enableOccupiedSlotStrip ?? this.enableOccupiedSlotStrip,
+      showTopbarAddLabel: showTopbarAddLabel ?? this.showTopbarAddLabel,
     );
   }
 
