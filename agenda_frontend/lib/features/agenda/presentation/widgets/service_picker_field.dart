@@ -233,9 +233,28 @@ class _ServicePickerContent extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = context.l10n;
 
-    // Sort categories by sortOrder
+    final servicesByCategory = <int, List<Service>>{};
+    for (final service in services) {
+      (servicesByCategory[service.categoryId] ??= []).add(service);
+    }
+
+    final hasServicesMap = <int, bool>{
+      for (final category in categories)
+        category.id: (servicesByCategory[category.id]?.isNotEmpty ?? false),
+    };
+
+    // Sort categories like services section:
+    // 1) non-empty before empty, 2) sortOrder, 3) name
     final sortedCategories = [...categories]
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      ..sort((a, b) {
+        final aEmpty = !(hasServicesMap[a.id] ?? false);
+        final bEmpty = !(hasServicesMap[b.id] ?? false);
+        if (aEmpty != bEmpty) return aEmpty ? 1 : -1;
+        final so = a.sortOrder.compareTo(b.sortOrder);
+        return so != 0
+            ? so
+            : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -260,8 +279,13 @@ class _ServicePickerContent extends StatelessWidget {
             itemBuilder: (ctx, index) {
               final category = sortedCategories[index];
               final categoryServices =
-                  services.where((s) => s.categoryId == category.id).toList()
-                    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+                  (servicesByCategory[category.id] ?? []).toList()
+                    ..sort((a, b) {
+                      final so = a.sortOrder.compareTo(b.sortOrder);
+                      return so != 0
+                          ? so
+                          : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+                    });
 
               if (categoryServices.isEmpty) {
                 return const SizedBox.shrink();

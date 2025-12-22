@@ -67,11 +67,11 @@ Future<void> showCategoryDialog(
     );
   }
 
-  Future<void> handleSave() async {
+  Future<bool> handleSave() async {
     final rawName = nameController.text.trim();
     if (rawName.isEmpty) {
       nameError = true;
-      return;
+      return false;
     }
 
     final formattedName = StringUtils.toTitleCase(rawName);
@@ -82,7 +82,7 @@ Future<void> showCategoryDialog(
       excludeId: category?.id,
     )) {
       duplicateError = true;
-      return;
+      return false;
     }
 
     final newCategory = ServiceCategory(
@@ -102,6 +102,7 @@ Future<void> showCategoryDialog(
     }
 
     Navigator.pop(context);
+    return true;
   }
 
   final title = category == null
@@ -125,8 +126,10 @@ Future<void> showCategoryDialog(
         width: AppButtonStyles.dialogButtonWidth,
         child: AppFilledButton(
           onPressed: () async {
-            await handleSave();
-            setState(() {});
+            final closed = await handleSave();
+            if (!closed) {
+              setState(() {});
+            }
           },
           padding: AppButtonStyles.dialogButtonPadding,
           child: Text(context.l10n.actionSave),

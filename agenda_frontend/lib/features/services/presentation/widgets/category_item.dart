@@ -79,36 +79,45 @@ class CategoryItem extends StatelessWidget {
               vertical: 14,
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Titolo + descrizione
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      category.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onPrimaryContainer,
-                          ),
-                    ),
-                    if (category.description != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          category.description!,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onPrimaryContainer
-                                        .withOpacity(0.8),
-                                  ),
-                        ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        category.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onPrimaryContainer,
+                            ),
                       ),
-                  ],
+                      if (category.description != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            category.description!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: colorScheme.onPrimaryContainer
+                                      .withOpacity(0.8),
+                                ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 12),
 
                 // Pulsanti azione (solo in vista normale)
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       tooltip: context.l10n.addServiceTooltip,
@@ -126,13 +135,13 @@ class CategoryItem extends StatelessWidget {
                       ),
                       onPressed: onEditCategory,
                     ),
-                    IconButton(
-                      tooltip: context.l10n.actionDelete,
-                      icon: const Icon(Icons.delete_outline),
-                      color: colorScheme.onPrimaryContainer,
-                      onPressed:
-                          isEmptyCategory ? onDeleteCategory : onDeleteBlocked,
-                    ),
+                    if (isEmptyCategory)
+                      IconButton(
+                        tooltip: context.l10n.actionDelete,
+                        icon: const Icon(Icons.delete_outline),
+                        color: colorScheme.onPrimaryContainer,
+                        onPressed: onDeleteCategory,
+                      ),
                   ],
                 ),
               ],

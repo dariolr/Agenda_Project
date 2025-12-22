@@ -85,12 +85,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               : NavigationToolbar.kMiddleSpacing,
           title: isAgenda
               ? const AgendaTopControls()
-              : Text(
-                  _ScaffoldWithNavigationHelpers.getLocalizedTitle(
-                    context,
-                    navigationShell.currentIndex,
-                  ),
-                ),
+              : const SizedBox.shrink(),
           centerTitle: false,
           toolbarHeight: 76,
           actions: isAgenda
@@ -141,12 +136,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         titleSpacing: isAgenda ? 4 : NavigationToolbar.kMiddleSpacing,
         title: isAgenda
             ? const AgendaTopControls(compact: true)
-            : Text(
-                _ScaffoldWithNavigationHelpers.getLocalizedTitle(
-                  context,
-                  navigationShell.currentIndex,
-                ),
-              ),
+            : const SizedBox.shrink(),
         centerTitle: false,
         actions: isAgenda
             ? const [_AgendaAddAction(compact: true)]
