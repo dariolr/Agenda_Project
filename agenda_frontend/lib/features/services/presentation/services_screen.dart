@@ -117,58 +117,72 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ---------- Toolbar ----------
+          // ---------- Corpo ----------
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: isReorderCategories
+                  ? _buildReorderCategories(context, ref, categories)
+                  : isReorderServices
+                  ? _buildReorderServices(context, ref, categories)
+                  : _buildNormalList(
+                      context,
+                      ref,
+                      categories,
+                      isWide,
+                      colorScheme,
+                    ),
+            ),
+          ),
+          const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
+
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.all(16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ReorderTogglePanel(
-                  isWide: isWide,
-                  children: [
-                    ReorderToggleButton(
-                      isActive: isReorderCategories,
-                      onPressed: _toggleCategoryReorder,
-                      activeLabel: context.l10n.doneCategoriesButton,
-                      inactiveLabel: context.l10n.editCategoriesOrderButton,
-                      activeIcon: Icons.check,
-                      inactiveIcon: Icons.drag_indicator,
-                    ),
-                    ReorderToggleButton(
-                      isActive: isReorderServices,
-                      onPressed: _toggleServiceReorder,
-                      activeLabel: context.l10n.doneServicesButton,
-                      inactiveLabel: context.l10n.editServicesOrderButton,
-                      activeIcon: Icons.check,
-                      inactiveIcon: Icons.drag_indicator,
-                    ),
-                  ],
+                Text(
+                  'Modifica ordinamento',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Text(
-                    context.l10n.reorderHelpDescription,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+                    child: Text(
+                      context.l10n.reorderHelpDescription,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
+                  ),
+                ),
+                Center(
+                  child: ReorderTogglePanel(
+                    isWide: isWide,
+                    children: [
+                      ReorderToggleButton(
+                        isActive: isReorderCategories,
+                        onPressed: _toggleCategoryReorder,
+                        activeLabel: 'Categorie',
+                        inactiveLabel: 'Categorie',
+                        activeIcon: Icons.check,
+                        inactiveIcon: Icons.drag_indicator,
+                      ),
+                      ReorderToggleButton(
+                        isActive: isReorderServices,
+                        onPressed: _toggleServiceReorder,
+                        activeLabel: 'Servizi',
+                        inactiveLabel: 'Servizi',
+                        activeIcon: Icons.check,
+                        inactiveIcon: Icons.drag_indicator,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-
-          // ---------- Corpo ----------
-          Expanded(
-            child: isReorderCategories
-                ? _buildReorderCategories(context, ref, categories)
-                : isReorderServices
-                ? _buildReorderServices(context, ref, categories)
-                : _buildNormalList(
-                    context,
-                    ref,
-                    categories,
-                    isWide,
-                    colorScheme,
-                  ),
           ),
         ],
       ),
