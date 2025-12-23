@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/l10n/l10_extension.dart';
 import '../../../../../core/models/time_block.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../dialogs/add_block_dialog.dart';
@@ -75,7 +76,7 @@ class TimeBlockWidget extends ConsumerWidget {
                     if (height > 40) ...[
                       const SizedBox(height: 2),
                       Text(
-                        _formatTimeRange(block),
+                        _formatTimeRange(context, block),
                         style: TextStyle(
                           fontSize: 10,
                           color: colorScheme.error.withOpacity(0.8),
@@ -92,9 +93,9 @@ class TimeBlockWidget extends ConsumerWidget {
     );
   }
 
-  String _formatTimeRange(TimeBlock block) {
+  String _formatTimeRange(BuildContext context, TimeBlock block) {
     if (block.isAllDay) {
-      return 'Giornata intera';
+      return context.l10n.blockAllDay;
     }
     final start =
         '${block.startTime.hour.toString().padLeft(2, '0')}:${block.startTime.minute.toString().padLeft(2, '0')}';

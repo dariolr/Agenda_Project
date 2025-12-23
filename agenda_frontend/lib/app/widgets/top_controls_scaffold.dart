@@ -15,17 +15,17 @@ typedef TopControlsBuilderFn =
     Widget Function(BuildContext context, TopControlsData data);
 
 class TopControlsBuilder {
-  const TopControlsBuilder.single(TopControlsBuilderFn builder)
+  TopControlsBuilder.single(TopControlsBuilderFn builder)
     : _single = builder,
       mobile = null,
       tablet = null,
       desktop = null;
 
-  const TopControlsBuilder.adaptive({this.mobile, this.tablet, this.desktop})
+  TopControlsBuilder.adaptive({this.mobile, this.tablet, this.desktop})
     : _single = null,
       assert(
         mobile != null || tablet != null || desktop != null,
-        'Specificare almeno un builder per form factor',
+        L10n.current.errorFormFactorBuilderRequired,
       );
 
   final TopControlsBuilderFn? _single;
@@ -55,7 +55,9 @@ class TopControlsBuilder {
         break;
     }
     if (resolved == null) {
-      throw StateError('Nessun builder disponibile per $factor');
+      throw StateError(
+        L10n.current.errorFormFactorBuilderMissing(factor.name),
+      );
     }
     return resolved;
   }

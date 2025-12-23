@@ -414,10 +414,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     size: 20,
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Attenzione: l’orario selezionato include fasce non disponibili per lo staff scelto.',
-                      style: TextStyle(
+                      context.l10n.bookingUnavailableTimeWarning,
+                      style: const TextStyle(
                         color: Color(0xFF8A4D00),
                         fontWeight: FontWeight.w600,
                       ),
@@ -603,10 +603,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
             size: 20,
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Attenzione: l’orario selezionato include fasce non disponibili per lo staff scelto.',
-              style: TextStyle(
+              context.l10n.bookingUnavailableTimeWarning,
+              style: const TextStyle(
                 color: Color(0xFF8A4D00),
                 fontWeight: FontWeight.w600,
               ),

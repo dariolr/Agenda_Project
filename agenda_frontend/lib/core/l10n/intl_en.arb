@@ -8,6 +8,9 @@
   "clientsTitle": "Clients List",
   "servicesTitle": "Services List",
   "staffTitle": "Staff List",
+  "errorFormFactorBuilderRequired": "Specify at least one builder for form factor",
+  "errorFormFactorBuilderMissing": "No builder available for {factor}",
+  "@errorFormFactorBuilderMissing": {"placeholders": {"factor": {"type": "String"}}},
   "errorTitle": "Error",
   "errorNotFound": "Page not found: {path}",
   "@errorNotFound": {
@@ -17,6 +20,9 @@
       }
     }
   },
+  "errorServiceNotFound": "Service not found",
+  "errorExceptionNotFound": "Exception not found: {id}",
+  "@errorExceptionNotFound": {"placeholders": {"id": {"type": "int"}}},
   "staffScreenPlaceholder": "Staff Screen",
   "actionResize": "Resize",
   "actionMove": "Move",
@@ -95,6 +101,8 @@
   "validationRequired": "Required",
   "validationInvalidEmail": "Invalid email",
   "validationInvalidPhone": "Invalid phone",
+  "lastVisitLabel": "Last visit: {date}",
+  "@lastVisitLabel": {"placeholders": {"date": {"type": "String"}}},
   "validationNameOrLastNameRequired": "Enter at least first name or last name"
 
   ,"agendaAdd": "Add"
@@ -114,6 +122,7 @@
   ,"bookingNotes": "Booking notes"
   ,"bookingItems": "Services"
   ,"bookingTotal": "Total"
+  ,"bookingUnavailableTimeWarning": "Warning: the selected time includes unavailable slots for the chosen staff."
   ,"actionDeleteBooking": "Delete booking"
   ,"deleteAppointmentConfirmTitle": "Delete appointment?"
   ,"deleteAppointmentConfirmMessage": "The appointment will be removed. This action cannot be undone."
@@ -127,6 +136,7 @@
   "editCategoriesOrderButton": "Reorder categories",
   "doneServicesButton": "Done (Services)",
   "editServicesOrderButton": "Reorder services",
+  "reorderTitle": "Reorder",
   "addServiceTooltip": "Add service",
   "cannotDeleteTitle": "Cannot delete",
   "cannotDeleteCategoryContent": "This category contains one or more services.",
@@ -269,6 +279,9 @@
   "exceptionStartTime": "Start time",
   "exceptionEndTime": "End time",
   "exceptionReason": "Reason (optional)",
+  "exceptionReasonVacation": "Vacation",
+  "exceptionReasonExtraShift": "Extra shift",
+  "exceptionReasonMedicalVisit": "Medical visit",
   "exceptionReasonHint": "E.g. Holiday, Medical visit, Extra shift...",
   "exceptionTimeError": "End time must be after start time",
   "exceptionDeleteTitle": "Delete exception?",

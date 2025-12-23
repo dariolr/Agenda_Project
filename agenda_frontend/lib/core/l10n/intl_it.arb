@@ -1,6 +1,6 @@
 {
   "@@locale": "it",
-  "appTitle": "Agenda",
+  "appTitle": "Agenda Platform",
   "navAgenda": "Agenda",
   "navClients": "Clienti",
   "navServices": "Servizi",
@@ -8,6 +8,9 @@
   "clientsTitle": "Elenco Clienti",
   "servicesTitle": "Elenco Servizi",
   "staffTitle": "Elenco Staff",
+  "errorFormFactorBuilderRequired": "Specificare almeno un builder per form factor",
+  "errorFormFactorBuilderMissing": "Nessun builder disponibile per {factor}",
+  "@errorFormFactorBuilderMissing": {"placeholders": {"factor": {"type": "String"}}},
   "errorTitle": "Errore",
   "errorNotFound": "Pagina non trovata: {path}",
   "@errorNotFound": {
@@ -17,6 +20,9 @@
       }
     }
   },
+  "errorServiceNotFound": "Servizio non trovato",
+  "errorExceptionNotFound": "Eccezione non trovata: {id}",
+  "@errorExceptionNotFound": {"placeholders": {"id": {"type": "int"}}},
   "staffScreenPlaceholder": "Schermata Staff",
   "actionResize": "Ridimensiona",
   "actionMove": "Sposta",
@@ -95,6 +101,8 @@
   "validationRequired": "Richiesto",
   "validationInvalidEmail": "Email non valida",
   "validationInvalidPhone": "Telefono non valido",
+  "lastVisitLabel": "Ultima visita: {date}",
+  "@lastVisitLabel": {"placeholders": {"date": {"type": "String"}}},
   "validationNameOrLastNameRequired": "Inserire almeno nome o cognome"
 
   ,"agendaAdd": "Aggiungi"
@@ -114,6 +122,7 @@
   ,"bookingNotes": "Note prenotazione"
   ,"bookingItems": "Servizi"
   ,"bookingTotal": "Totale"
+  ,"bookingUnavailableTimeWarning": "Attenzione: l’orario selezionato include fasce non disponibili per lo staff scelto."
   ,"actionDeleteBooking": "Elimina prenotazione"  ,"deleteAppointmentConfirmTitle": "Eliminare l'appuntamento?"
   ,"deleteAppointmentConfirmMessage": "L'appuntamento verrà rimosso. L'operazione non può essere annullata."  ,"deleteBookingConfirmTitle": "Eliminare l’intera prenotazione?"
 ,"deleteBookingConfirmMessage": "Verranno rimossi tutti i servizi collegati. L'operazione non può essere annullata."
@@ -125,6 +134,7 @@
   "editCategoriesOrderButton": "Modifica ordine categorie",
   "doneServicesButton": "Fine servizi",
   "editServicesOrderButton": "Modifica ordine servizi",
+  "reorderTitle": "Modifica ordinamento",
   "addServiceTooltip": "Aggiungi servizio",
   "cannotDeleteTitle": "Impossibile eliminare",
   "cannotDeleteCategoryContent": "La categoria contiene uno o più servizi.",
@@ -267,6 +277,9 @@
   "exceptionStartTime": "Orario inizio",
   "exceptionEndTime": "Orario fine",
   "exceptionReason": "Motivo (opzionale)",
+  "exceptionReasonVacation": "Ferie",
+  "exceptionReasonExtraShift": "Turno extra",
+  "exceptionReasonMedicalVisit": "Visita medica",
   "exceptionReasonHint": "Es. Ferie, Visita medica, Turno extra...",
   "exceptionTimeError": "L'ora di fine deve essere successiva all'ora di inizio",
   "exceptionDeleteTitle": "Eliminare l'eccezione?",
