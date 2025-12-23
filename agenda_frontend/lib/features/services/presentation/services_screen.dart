@@ -71,6 +71,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       isReorderCategories = !isReorderCategories;
       if (isReorderCategories) isReorderServices = false;
     });
+    if (!isReorderCategories) {
+      ref.read(servicesReorderPanelProvider.notifier).setVisible(false);
+    }
   }
 
   void _toggleServiceReorder() {
@@ -78,6 +81,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       isReorderServices = !isReorderServices;
       if (isReorderServices) isReorderCategories = false;
     });
+    if (!isReorderServices) {
+      ref.read(servicesReorderPanelProvider.notifier).setVisible(false);
+    }
   }
 
   @override
@@ -96,6 +102,16 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
     final colorScheme = Theme.of(context).colorScheme;
     final isWide = ref.watch(formFactorProvider) != AppFormFactor.mobile;
+    final showReorderPanel = ref.watch(servicesReorderPanelProvider);
+
+    ref.listen<bool>(servicesReorderPanelProvider, (previous, next) {
+      if (!next && (isReorderCategories || isReorderServices)) {
+        setState(() {
+          isReorderCategories = false;
+          isReorderServices = false;
+        });
+      }
+    });
 
     if (categories.isEmpty) {
       return const SizedBox.shrink();
@@ -124,53 +140,54 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                     ),
             ),
           ),
-          const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
-
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Center(
-              child: Column(
-                children: [
-                  Text(
-                    context.l10n.reorderTitle,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
-                    child: Text(
-                      context.l10n.reorderHelpDescription,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+          if (showReorderPanel) ...[
+            const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: Column(
+                  children: [
+                    Text(
+                      context.l10n.reorderTitle,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                  ReorderTogglePanel(
-                    isWide: isWide,
-                    children: [
-                      ReorderToggleButton(
-                        isActive: isReorderCategories,
-                        onPressed: _toggleCategoryReorder,
-                        activeLabel: 'Categorie',
-                        inactiveLabel: 'Categorie',
-                        activeIcon: Icons.check,
-                        inactiveIcon: Icons.drag_indicator,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+                      child: Text(
+                        context.l10n.reorderHelpDescription,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                      ReorderToggleButton(
-                        isActive: isReorderServices,
-                        onPressed: _toggleServiceReorder,
-                        activeLabel: 'Servizi',
-                        inactiveLabel: 'Servizi',
-                        activeIcon: Icons.check,
-                        inactiveIcon: Icons.drag_indicator,
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                    ReorderTogglePanel(
+                      isWide: isWide,
+                      children: [
+                        ReorderToggleButton(
+                          isActive: isReorderCategories,
+                          onPressed: _toggleCategoryReorder,
+                          activeLabel: 'Categorie',
+                          inactiveLabel: 'Categorie',
+                          activeIcon: Icons.check,
+                          inactiveIcon: Icons.drag_indicator,
+                        ),
+                        ReorderToggleButton(
+                          isActive: isReorderServices,
+                          onPressed: _toggleServiceReorder,
+                          activeLabel: 'Servizi',
+                          inactiveLabel: 'Servizi',
+                          activeIcon: Icons.check,
+                          inactiveIcon: Icons.drag_indicator,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
