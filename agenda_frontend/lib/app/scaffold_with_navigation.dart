@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import '../core/l10n/l10_extension.dart';
 import '../core/widgets/adaptive_dropdown.dart';
+import '../core/widgets/app_buttons.dart';
 import '../features/agenda/presentation/dialogs/add_block_dialog.dart';
 import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
 import '../features/agenda/presentation/widgets/booking_dialog.dart';
@@ -17,6 +18,7 @@ import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/services/presentation/dialogs/category_dialog.dart';
 import '../features/services/presentation/dialogs/service_dialog.dart';
+import '../features/services/providers/services_reorder_provider.dart';
 
 Widget _buildAddButtonContent({
   required bool showLabelEffective,
@@ -271,48 +273,73 @@ class _ServicesAddAction extends ConsumerWidget {
     final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
     final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    final showReorderPanel = ref.watch(servicesReorderPanelProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: AdaptiveDropdown<String>(
-        modalTitle: l10n.agendaAdd,
-        alignment: AdaptiveDropdownAlignment.right,
-        verticalPosition: AdaptiveDropdownVerticalPosition.above,
-        forcePopup: true,
-        hideTriggerWhenOpen: true,
-        popupWidth: 200,
-        items: [
-          AdaptiveDropdownItem(
-            value: 'category',
-            child: Text(l10n.createCategoryButtonLabel),
-          ),
-          AdaptiveDropdownItem(
-            value: 'service',
-            child: Text(l10n.servicesNewServiceMenu),
-          ),
-        ],
-        onSelected: (value) {
-          if (value == 'category') {
-            showCategoryDialog(context, ref);
-          } else if (value == 'service') {
-            showServiceDialog(context, ref, requireCategorySelection: true);
-          }
-        },
-        child: Material(
-          elevation: 0,
-          color: scheme.secondaryContainer,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: _buildAddButtonContent(
-              showLabelEffective: showLabelEffective,
-              compact: compact,
-              label: l10n.agendaAdd,
-              onContainer: onContainer,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Tooltip(
+            message: l10n.reorderTitle,
+            child: SizedBox(
+              height: 36,
+              child: AppOutlinedActionButton(
+                onPressed: () {
+                  ref.read(servicesReorderPanelProvider.notifier).toggle();
+                },
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                borderRadius: BorderRadius.circular(8),
+                borderColor: scheme.primary,
+                foregroundColor: scheme.primary,
+                child: const Icon(Icons.sort, size: 20),
+              ),
             ),
           ),
-        ),
+          const SizedBox(width: 8),
+          AdaptiveDropdown<String>(
+            modalTitle: l10n.agendaAdd,
+            alignment: AdaptiveDropdownAlignment.right,
+            verticalPosition: AdaptiveDropdownVerticalPosition.above,
+            forcePopup: true,
+            hideTriggerWhenOpen: true,
+            popupWidth: 200,
+            items: [
+              AdaptiveDropdownItem(
+                value: 'category',
+                child: Text(l10n.createCategoryButtonLabel),
+              ),
+              AdaptiveDropdownItem(
+                value: 'service',
+                child: Text(l10n.servicesNewServiceMenu),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 'category') {
+                showCategoryDialog(context, ref);
+              } else if (value == 'service') {
+                showServiceDialog(context, ref, requireCategorySelection: true);
+              }
+            },
+            child: Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: _buildAddButtonContent(
+                  showLabelEffective: showLabelEffective,
+                  compact: compact,
+                  label: l10n.agendaAdd,
+                  onContainer: onContainer,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

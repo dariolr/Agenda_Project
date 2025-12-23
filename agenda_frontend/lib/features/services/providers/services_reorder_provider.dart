@@ -137,3 +137,17 @@ class ServicesReorderNotifier extends Notifier<bool> {
 final servicesReorderProvider = NotifierProvider<ServicesReorderNotifier, bool>(
   ServicesReorderNotifier.new,
 );
+
+class ServicesReorderPanelNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+
+  void setVisible(bool value) => state = value;
+}
+
+final servicesReorderPanelProvider =
+    NotifierProvider<ServicesReorderPanelNotifier, bool>(
+  ServicesReorderPanelNotifier.new,
+);
