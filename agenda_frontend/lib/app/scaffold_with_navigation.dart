@@ -273,7 +273,6 @@ class _ServicesAddAction extends ConsumerWidget {
     final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
     final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
-    final showReorderPanel = ref.watch(servicesReorderPanelProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -288,7 +287,10 @@ class _ServicesAddAction extends ConsumerWidget {
                 onPressed: () {
                   ref.read(servicesReorderPanelProvider.notifier).toggle();
                 },
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 borderRadius: BorderRadius.circular(8),
                 borderColor: scheme.primary,
                 foregroundColor: scheme.primary,
@@ -329,7 +331,10 @@ class _ServicesAddAction extends ConsumerWidget {
               ),
               clipBehavior: Clip.antiAlias,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 child: _buildAddButtonContent(
                   showLabelEffective: showLabelEffective,
                   compact: compact,
