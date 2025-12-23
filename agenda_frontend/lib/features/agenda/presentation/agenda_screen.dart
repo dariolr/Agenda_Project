@@ -29,7 +29,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
   double? _pendingHourOffset;
   bool _pendingApplyScheduled = false;
-  bool _isSyncingFromMaster = false;
   bool _quickBookingTriggered = false;
 
   // 🔹 offset verticale "master" della giornata (usato anche dalla CurrentTimeLine)
@@ -68,12 +67,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       return;
     }
 
-    _isSyncingFromMaster = true;
-    try {
-      _hourColumnController.jumpTo(target);
-    } finally {
-      _isSyncingFromMaster = false;
-    }
+    _hourColumnController.jumpTo(target);
   }
 
   void _applyPendingOffset() {
@@ -102,21 +96,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       if (!mounted) return;
       _applyPendingOffset();
     });
-  }
-
-  bool _handleHourColumnScroll(ScrollNotification notification) {
-    if (notification.metrics.axis != Axis.vertical) {
-      return false;
-    }
-    if (_isSyncingFromMaster) {
-      return false;
-    }
-
-    if (notification is ScrollUpdateNotification) {
-      final offset = notification.metrics.pixels;
-      _timelineController.jumpTo(offset);
-    }
-    return false;
   }
 
   @override
@@ -193,19 +172,16 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
               Expanded(
                 child: ScrollConfiguration(
                   behavior: const NoScrollbarBehavior(),
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: _handleHourColumnScroll,
-                    child: SingleChildScrollView(
-                      controller: _hourColumnController,
-                      scrollDirection: Axis.vertical,
-                      physics:
-                          isResizing || hasStaff
-                              ? const NeverScrollableScrollPhysics()
-                              : null,
-                      child: SizedBox(
-                        width: hourColumnWidth,
-                        child: const HourColumn(),
-                      ),
+                  child: SingleChildScrollView(
+                    controller: _hourColumnController,
+                    scrollDirection: Axis.vertical,
+                    physics:
+                        isResizing || hasStaff
+                            ? const NeverScrollableScrollPhysics()
+                            : null,
+                    child: SizedBox(
+                      width: hourColumnWidth,
+                      child: const HourColumn(),
                     ),
                   ),
                 ),
