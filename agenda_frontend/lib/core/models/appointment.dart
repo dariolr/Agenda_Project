@@ -1,3 +1,20 @@
+enum ExtraMinutesType { processing, blocked }
+
+ExtraMinutesType? _extraMinutesTypeFromJson(Object? value) {
+  if (value is String) {
+    for (final type in ExtraMinutesType.values) {
+      if (type.name == value) {
+        return type;
+      }
+    }
+  }
+  return null;
+}
+
+String? _extraMinutesTypeToJson(ExtraMinutesType? value) {
+  return value?.name;
+}
+
 class Appointment {
   final int id;
   final int bookingId;
@@ -12,6 +29,8 @@ class Appointment {
   final DateTime startTime;
   final DateTime endTime;
   final double? price; // prezzo applicato al singolo appuntamento
+  final int? extraMinutes; // tempo aggiuntivo applicato (processing+blocked)
+  final ExtraMinutesType? extraMinutesType;
 
   const Appointment({
     required this.id,
@@ -27,6 +46,8 @@ class Appointment {
     required this.startTime,
     required this.endTime,
     this.price,
+    this.extraMinutes,
+    this.extraMinutesType,
   });
 
   factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
@@ -43,6 +64,10 @@ class Appointment {
     startTime: DateTime.parse(json['start_time'] as String),
     endTime: DateTime.parse(json['end_time'] as String),
     price: json['price'] != null ? (json['price'] as num).toDouble() : null,
+    extraMinutes: json['extra_minutes'] as int?,
+    extraMinutesType: _extraMinutesTypeFromJson(
+      json['extra_minutes_type'],
+    ),
   );
 
   Appointment copyWith({
@@ -59,6 +84,8 @@ class Appointment {
     DateTime? startTime,
     DateTime? endTime,
     double? price,
+    int? extraMinutes,
+    ExtraMinutesType? extraMinutesType,
   }) {
     return Appointment(
       id: id ?? this.id,
@@ -74,6 +101,8 @@ class Appointment {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       price: price ?? this.price,
+      extraMinutes: extraMinutes ?? this.extraMinutes,
+      extraMinutesType: extraMinutesType ?? this.extraMinutesType,
     );
   }
 
@@ -92,6 +121,9 @@ class Appointment {
       'start_time': startTime.toIso8601String(),
       'end_time': endTime.toIso8601String(),
       if (price != null) 'price': price,
+      if (extraMinutes != null) 'extra_minutes': extraMinutes,
+      if (extraMinutesType != null)
+        'extra_minutes_type': _extraMinutesTypeToJson(extraMinutesType),
     };
   }
 

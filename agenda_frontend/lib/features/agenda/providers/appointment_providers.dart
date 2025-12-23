@@ -49,7 +49,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       now.hour,
       0,
     ).add(Duration(minutes: roundedMinute));
-    final end = start.add(const Duration(hours: 2));
+    final end = start.add(const Duration(minutes: 30));
 
     return [
       Appointment(
@@ -66,6 +66,8 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         startTime: start,
         endTime: end,
         price: 45,
+        extraMinutes: 0,
+        extraMinutesType: null,
       ),
       Appointment(
         id: 2,
@@ -81,6 +83,8 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         startTime: start.add(const Duration(hours: 3)),
         endTime: start.add(const Duration(hours: 3, minutes: 45)),
         price: 62,
+        extraMinutes: 0,
+        extraMinutesType: null,
       ),
       Appointment(
         id: 3,
@@ -93,9 +97,11 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         clientId: 3,
         clientName: 'Luca Verdi',
         serviceName: 'Trattamento Viso',
-        startTime: start.add(const Duration(hours: 3)),
-        endTime: start.add(const Duration(hours: 3, minutes: 40)),
+        startTime: start.add(const Duration(hours: 4)),
+        endTime: start.add(const Duration(hours: 4, minutes: 40)),
         price: 55,
+        extraMinutes: 0,
+        extraMinutesType: null,
       ),
     ];
   }
@@ -299,6 +305,8 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     required DateTime start,
     required DateTime end,
     double? price,
+    int? extraMinutes,
+    ExtraMinutesType? extraMinutesType,
   }) {
     final business = ref.read(currentBusinessProvider);
     final location = ref.read(currentLocationProvider);
@@ -332,6 +340,8 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       startTime: roundedStart,
       endTime: roundedEnd,
       price: price,
+      extraMinutes: extraMinutes,
+      extraMinutesType: extraMinutesType,
     );
 
     state = [...state, appt];
