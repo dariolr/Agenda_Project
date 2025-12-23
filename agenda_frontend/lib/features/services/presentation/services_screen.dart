@@ -139,6 +139,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -147,39 +148,35 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                     context,
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
-                    child: Text(
-                      context.l10n.reorderHelpDescription,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+                  child: Text(
+                    context.l10n.reorderHelpDescription,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
-                Center(
-                  child: ReorderTogglePanel(
-                    isWide: isWide,
-                    children: [
-                      ReorderToggleButton(
-                        isActive: isReorderCategories,
-                        onPressed: _toggleCategoryReorder,
-                        activeLabel: 'Categorie',
-                        inactiveLabel: 'Categorie',
-                        activeIcon: Icons.check,
-                        inactiveIcon: Icons.drag_indicator,
-                      ),
-                      ReorderToggleButton(
-                        isActive: isReorderServices,
-                        onPressed: _toggleServiceReorder,
-                        activeLabel: 'Servizi',
-                        inactiveLabel: 'Servizi',
-                        activeIcon: Icons.check,
-                        inactiveIcon: Icons.drag_indicator,
-                      ),
-                    ],
-                  ),
+                ReorderTogglePanel(
+                  isWide: isWide,
+                  children: [
+                    ReorderToggleButton(
+                      isActive: isReorderCategories,
+                      onPressed: _toggleCategoryReorder,
+                      activeLabel: 'Categorie',
+                      inactiveLabel: 'Categorie',
+                      activeIcon: Icons.check,
+                      inactiveIcon: Icons.drag_indicator,
+                    ),
+                    ReorderToggleButton(
+                      isActive: isReorderServices,
+                      onPressed: _toggleServiceReorder,
+                      activeLabel: 'Servizi',
+                      inactiveLabel: 'Servizi',
+                      activeIcon: Icons.check,
+                      inactiveIcon: Icons.drag_indicator,
+                    ),
+                  ],
                 ),
               ],
             ),
