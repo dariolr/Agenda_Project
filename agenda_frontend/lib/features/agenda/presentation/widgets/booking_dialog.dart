@@ -971,6 +971,14 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         orElse: () => variants.first,
       );
       final service = services.firstWhere((s) => s.id == item.serviceId);
+      final extraMinutes =
+          (service.processingTime ?? 0) + (service.blockedTime ?? 0);
+      final extraMinutesType =
+          (service.processingTime ?? 0) > 0
+              ? ExtraMinutesType.processing
+              : ((service.blockedTime ?? 0) > 0
+                  ? ExtraMinutesType.blocked
+                  : null);
       final effectivePrice = service.isFree ? null : service.price;
 
       final start = DateTime(
@@ -980,8 +988,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         item.startTime.hour,
         item.startTime.minute,
       );
-      final extraMinutes =
-          (service.processingTime ?? 0) + (service.blockedTime ?? 0);
       final durationMinutes = (item.durationMinutes > 0
               ? item.durationMinutes
               : variant.durationMinutes) +
@@ -999,6 +1005,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         start: start,
         end: end,
         price: effectivePrice,
+        extraMinutes: extraMinutes,
+        extraMinutesType: extraMinutesType,
       );
       scrollTarget ??= created;
     }

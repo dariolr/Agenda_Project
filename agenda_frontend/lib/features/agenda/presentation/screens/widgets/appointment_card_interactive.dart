@@ -182,7 +182,8 @@ class _AppointmentCardInteractiveState
               child: LongPressDraggable<Appointment>(
                 data: widget.appointment,
                 feedback: Consumer(
-                  builder: (c, r, _) => _buildFollowerFeedback(c, r, isSelected),
+                  builder: (c, r, _) =>
+                      _buildFollowerFeedback(c, r, isSelected),
                 ),
                 feedbackOffset: Offset.zero,
                 dragAnchorStrategy: childDragAnchorStrategy,
@@ -527,6 +528,11 @@ class _AppointmentCardInteractiveState
           ),
           child: Stack(
             children: [
+              _ExtraMinutesBand(
+                ratio: _extraMinutesRatio(startTime, endTime),
+                color: widget.color,
+              ),
+
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: Align(
@@ -534,9 +540,7 @@ class _AppointmentCardInteractiveState
                   child: _buildContent(start, formattedEndTime, client, info),
                 ),
               ),
-              if (!forFeedback &&
-                  !isResizingDisabled &&
-                  isSelected)
+              if (!forFeedback && !isResizingDisabled && isSelected)
                 _buildResizeHandle(),
             ],
           ),
@@ -610,6 +614,22 @@ class _AppointmentCardInteractiveState
         ],
       ),
     );
+  }
+
+  
+  double _extraMinutesRatio(DateTime start, DateTime end) {
+    final totalMinutes = end.difference(start).inMinutes;
+    if (totalMinutes <= 0) return 0;
+    final extra = _extraMinutesForAppointment();
+    if (extra <= 0) return 0;
+    final ratio = extra / totalMinutes;
+    if (ratio < 0) return 0;
+    if (ratio > 1) return 1;
+    return ratio;
+  }
+
+  int _extraMinutesForAppointment() {
+    return widget.appointment.extraMinutes ?? 0;
   }
 
   void _performResizeUpdate(PointerEvent details) {
@@ -842,4 +862,34 @@ class _AppointmentCardInteractiveState
       ),
     );
   }
+
 } // Closing brace for _AppointmentCardInteractiveState
+
+class _ExtraMinutesBand extends StatelessWidget {
+  const _ExtraMinutesBand({required this.ratio, required this.color});
+
+  final double ratio;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    if (ratio <= 0) return const SizedBox.shrink();
+    return Positioned.fill(
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: FractionallySizedBox(
+          heightFactor: ratio,
+          widthFactor: 1,
+          child: Container(
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.18),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(6),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

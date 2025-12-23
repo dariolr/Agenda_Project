@@ -708,7 +708,172 @@ class _DurationField extends StatelessWidget {
   }
 }
 
-/// Content widget per la selezione dello staff
+class _TimeGridPicker extends StatefulWidget {
+  const _TimeGridPicker({
+    required this.initial,
+    required this.stepMinutes,
+    required this.title,
+    this.useSafeArea = true,
+  });
+
+  final TimeOfDay initial;
+  final int stepMinutes;
+  final String title;
+  final bool useSafeArea;
+
+  @override
+  State<_TimeGridPicker> createState() => _TimeGridPickerState();
+}
+
+class _TimeGridPickerState extends State<_TimeGridPicker> {
+  late final ScrollController _scrollController;
+  late final List<TimeOfDay?> _entries;
+  late final int _scrollToIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+
+    _entries = <TimeOfDay?>[];
+    for (int m = 0; m < LayoutConfig.hoursInDay * 60; m += widget.stepMinutes) {
+      final h = m ~/ 60;
+      final mm = m % 60;
+      _entries.add(TimeOfDay(hour: h, minute: mm));
+    }
+
+    int exactIndex = _entries.indexWhere(
+      (t) =>
+          t != null &&
+          t.hour == widget.initial.hour &&
+          t.minute == widget.initial.minute,
+    );
+
+    if (exactIndex >= 0) {
+      _scrollToIndex = exactIndex;
+    } else {
+      final columnsPerRow = 60 ~/ widget.stepMinutes;
+      final targetColumn = widget.initial.minute ~/ widget.stepMinutes;
+      final baseIndex = (widget.initial.hour + 1) * columnsPerRow;
+
+      final newRow = List<TimeOfDay?>.filled(columnsPerRow, null);
+      newRow[targetColumn] = widget.initial;
+
+      final insertIndex = baseIndex.clamp(0, _entries.length);
+      _entries.insertAll(insertIndex, newRow);
+      _scrollToIndex = insertIndex + targetColumn;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelected();
+    });
+  }
+
+  void _scrollToSelected() {
+    if (!_scrollController.hasClients) return;
+
+    const crossAxisCount = 4;
+    const mainAxisSpacing = 6.0;
+    const childAspectRatio = 2.7;
+    const padding = 12.0;
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - padding * 2;
+    final itemWidth =
+        (availableWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
+    final itemHeight = itemWidth / childAspectRatio;
+    final rowHeight = itemHeight + mainAxisSpacing;
+
+    final targetRow = _scrollToIndex ~/ crossAxisCount;
+
+    final viewportHeight = _scrollController.position.viewportDimension;
+    const headerOffset = 40.0;
+    final targetOffset =
+        (targetRow * rowHeight) -
+        (viewportHeight / 2) +
+        (rowHeight / 2) +
+        headerOffset;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final clampedOffset = targetOffset.clamp(0.0, maxScroll);
+
+    _scrollController.animateTo(
+      clampedOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.schedule, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                widget.title,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: GridView.builder(
+              controller: _scrollController,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: 6,
+                crossAxisSpacing: 6,
+                childAspectRatio: 2.7,
+              ),
+              itemCount: _entries.length,
+              itemBuilder: (context, index) {
+                final t = _entries[index];
+                if (t == null) {
+                  return const SizedBox.shrink();
+                }
+                final isSelected = index == _scrollToIndex;
+                return OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: isSelected
+                        ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                        : null,
+                    side: BorderSide(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).dividerColor,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  onPressed: () => Navigator.pop(context, t),
+                  child: Text(DtFmt.hm(context, t.hour, t.minute)),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!widget.useSafeArea) {
+      return content;
+    }
+    return SafeArea(child: content);
+  }
+}
+
 class _StaffPickerContent extends StatelessWidget {
   const _StaffPickerContent({
     required this.staff,
@@ -754,7 +919,7 @@ class _StaffPickerContent extends StatelessWidget {
                 ),
               ),
             ),
-            title: Text(member.name),
+            title: Text('${member.name} ${member.surname}'.trim()),
             trailing: member.id == selectedId
                 ? Icon(Icons.check, color: theme.colorScheme.primary)
                 : null,
@@ -763,197 +928,5 @@ class _StaffPickerContent extends StatelessWidget {
           ),
       ],
     );
-  }
-}
-
-/// Grid picker per la selezione dell'orario
-class _TimeGridPicker extends StatefulWidget {
-  const _TimeGridPicker({
-    required this.initial,
-    required this.stepMinutes,
-    this.title,
-    this.useSafeArea = true,
-  });
-  final TimeOfDay initial;
-  final int stepMinutes;
-  final String? title;
-  final bool useSafeArea;
-
-  @override
-  State<_TimeGridPicker> createState() => _TimeGridPickerState();
-}
-
-class _TimeGridPickerState extends State<_TimeGridPicker> {
-  late final ScrollController _scrollController;
-  late final List<TimeOfDay?> _entries;
-  late final int _scrollToIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-
-    // Genera la lista degli orari con 4 colonne per riga
-    // Colonna 0: minuti 00, Colonna 1: minuti 15, Colonna 2: minuti 30, Colonna 3: minuti 45
-    _entries = <TimeOfDay?>[];
-    for (int m = 0; m < LayoutConfig.hoursInDay * 60; m += widget.stepMinutes) {
-      final h = m ~/ 60;
-      final mm = m % 60;
-      _entries.add(TimeOfDay(hour: h, minute: mm));
-    }
-
-    // Verifica se l'orario iniziale è già nella lista
-    int exactIndex = _entries.indexWhere(
-      (t) =>
-          t != null &&
-          t.hour == widget.initial.hour &&
-          t.minute == widget.initial.minute,
-    );
-
-    if (exactIndex >= 0) {
-      // L'orario è già presente
-      _scrollToIndex = exactIndex;
-    } else {
-      // L'orario non è presente: inserisci una NUOVA RIGA con l'orario
-      // nella colonna corretta e le altre colonne vuote
-
-      final columnsPerRow = 60 ~/ widget.stepMinutes; // 4 con step di 15
-
-      // Determina in quale colonna deve andare l'orario custom
-      // basandosi sui minuti (0-14 → col 0, 15-29 → col 1, 30-44 → col 2, 45-59 → col 3)
-      final targetColumn = widget.initial.minute ~/ widget.stepMinutes;
-
-      // Trova la riga dopo la quale inserire la nuova riga
-      // La nuova riga va dopo la riga dell'ora corrente (es. dopo 10:00-10:45 se l'orario è 10:07)
-      final baseIndex = (widget.initial.hour + 1) * columnsPerRow;
-
-      // Crea la nuova riga con 4 elementi (solo uno valorizzato)
-      final newRow = List<TimeOfDay?>.filled(columnsPerRow, null);
-      newRow[targetColumn] = widget.initial;
-
-      // Inserisci la nuova riga
-      final insertIndex = baseIndex.clamp(0, _entries.length);
-      _entries.insertAll(insertIndex, newRow);
-
-      // L'indice dell'orario selezionato è la posizione nella nuova riga
-      _scrollToIndex = insertIndex + targetColumn;
-    }
-
-    // Scroll all'orario dopo il primo frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToSelected();
-    });
-  }
-
-  void _scrollToSelected() {
-    if (!_scrollController.hasClients) return;
-
-    const crossAxisCount = 4;
-    const mainAxisSpacing = 6.0;
-    const childAspectRatio = 2.7;
-    const padding = 12.0;
-
-    // Usa la larghezza effettiva del context
-    final screenWidth = MediaQuery.of(context).size.width;
-    final availableWidth = screenWidth - padding * 2;
-    final itemWidth =
-        (availableWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
-    final itemHeight = itemWidth / childAspectRatio;
-    final rowHeight = itemHeight + mainAxisSpacing;
-
-    // Calcola la riga dell'elemento target
-    final targetRow = _scrollToIndex ~/ crossAxisCount;
-
-    // Calcola l'offset per centrare la riga target
-    final viewportHeight = _scrollController.position.viewportDimension;
-    // Offset aggiuntivo per centrare meglio (compensa header visivo)
-    const headerOffset = 40.0;
-    final targetOffset =
-        (targetRow * rowHeight) -
-        (viewportHeight / 2) +
-        (rowHeight / 2) +
-        headerOffset;
-
-    // Limita l'offset ai bounds dello scroll
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final clampedOffset = targetOffset.clamp(0.0, maxScroll);
-
-    _scrollController.animateTo(
-      clampedOffset,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final content = Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.schedule, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                widget.title ??
-                    MaterialLocalizations.of(context).timePickerHourLabel,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: GridView.builder(
-              controller: _scrollController,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 6,
-                crossAxisSpacing: 6,
-                childAspectRatio: 2.7,
-              ),
-              itemCount: _entries.length,
-              itemBuilder: (context, index) {
-                final t = _entries[index];
-                // Se la cella è vuota, mostra uno spazio vuoto
-                if (t == null) {
-                  return const SizedBox.shrink();
-                }
-                // Evidenzia l'orario selezionato
-                final isSelected = index == _scrollToIndex;
-                return OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: isSelected
-                        ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                        : null,
-                    side: BorderSide(
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).dividerColor,
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  onPressed: () => Navigator.pop(context, t),
-                  child: Text(DtFmt.hm(context, t.hour, t.minute)),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (widget.useSafeArea) {
-      return SafeArea(child: content);
-    }
-    return content;
   }
 }
