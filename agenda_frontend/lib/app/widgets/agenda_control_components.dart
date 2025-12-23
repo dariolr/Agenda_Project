@@ -360,11 +360,17 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
           if (widget.onPreviousMonth != null) {
             leadingSpecs.add(
               _NavButtonSpec(
-                iconWidget: _TripleArrowIcons(
-                  icon: Icons.keyboard_arrow_left,
-                  iconSize: navIconSize,
-                  width: arrowExtent,
-                ),
+                iconWidget: widget.onPrevious != null
+                    ? _TripleArrowIcons(
+                        icon: Icons.keyboard_arrow_left,
+                        iconSize: navIconSize,
+                        width: arrowExtent,
+                      )
+                    : null,
+
+                icon: widget.onPrevious == null
+                    ? Icons.keyboard_double_arrow_left
+                    : null,
                 onTap: widget.onPreviousMonth!,
                 semanticsLabel: l10n.agendaPrevMonth,
               ),
@@ -415,11 +421,16 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
           if (widget.onNextMonth != null) {
             trailingSpecs.add(
               _NavButtonSpec(
-                iconWidget: _TripleArrowIcons(
-                  icon: Icons.keyboard_arrow_right,
-                  iconSize: navIconSize,
-                  width: arrowExtent,
-                ),
+                iconWidget: widget.onNext != null
+                    ? _TripleArrowIcons(
+                        icon: Icons.keyboard_arrow_right,
+                        iconSize: navIconSize,
+                        width: arrowExtent,
+                      )
+                    : null,
+                icon: widget.onNext == null
+                    ? Icons.keyboard_double_arrow_right
+                    : null,
                 onTap: widget.onNextMonth!,
                 semanticsLabel: l10n.agendaNextMonth,
               ),
@@ -544,11 +555,7 @@ class _TripleArrowIcons extends StatelessWidget {
           final spacing = iconSize * 0.3;
           return Positioned(
             left: (width - iconSize) / 2 + (index - 1) * spacing,
-            child: Icon(
-              icon,
-              size: iconSize,
-              color: color,
-            ),
+            child: Icon(icon, size: iconSize, color: color),
           );
         }),
       ),
