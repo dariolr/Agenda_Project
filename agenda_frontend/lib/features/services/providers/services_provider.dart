@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/service.dart';
@@ -10,6 +11,7 @@ import '../../../core/utils/color_utils.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../utils/service_seed_texts.dart';
+import '../../../core/models/service_category.dart';
 import 'service_categories_provider.dart';
 
 // Le categorie sono ora gestite in providers/service_categories_provider.dart
@@ -22,6 +24,48 @@ class ServicesNotifier extends Notifier<List<Service>> {
   List<Service> build() {
     final business = ref.watch(currentBusinessProvider);
     final currency = ref.watch(effectiveCurrencyProvider); // 🔹 valuta coerente
+    final palette = <Color>[
+      // Same palette used in service_dialog.dart
+      Color(0xFFFFCDD2),
+      Color(0xFFFFC1C9),
+      Color(0xFFFFB4BC),
+      Color(0xFFFFD6B3),
+      Color(0xFFFFC9A3),
+      Color(0xFFFFBD93),
+      Color(0xFFFFF0B3),
+      Color(0xFFFFE6A3),
+      Color(0xFFFFDC93),
+      Color(0xFFEAF2B3),
+      Color(0xFFDFEAA3),
+      Color(0xFFD4E293),
+      Color(0xFFCDECCF),
+      Color(0xFFC1E4C4),
+      Color(0xFFB6DCB9),
+      Color(0xFFBFE8E0),
+      Color(0xFFB1DFD6),
+      Color(0xFFA3D6CB),
+      Color(0xFFBDEFF4),
+      Color(0xFFB0E6EF),
+      Color(0xFFA3DDEA),
+      Color(0xFFBFD9FF),
+      Color(0xFFB0CEFF),
+      Color(0xFFA1C3FF),
+      Color(0xFFC7D0FF),
+      Color(0xFFBAC4FF),
+      Color(0xFFAEB8FF),
+      Color(0xFFE0D0FF),
+      Color(0xFFD4C4FF),
+      Color(0xFFC9B8FF),
+    ];
+    Color colorForCategory(
+      int categoryId,
+      List<ServiceCategory> cats,
+    ) {
+      final index = cats.indexWhere((c) => c.id == categoryId);
+      final paletteIndex = index >= 0 ? index % palette.length : 0;
+      return palette[paletteIndex];
+    }
+    final cats = ref.read(serviceCategoriesProvider);
     // Base: tre servizi fissi per compatibilita' con i test esistenti
     final seed = <Service>[
       Service(
@@ -32,7 +76,7 @@ class ServicesNotifier extends Notifier<List<Service>> {
         description: ServiceSeedTexts.serviceRelaxDescription,
         duration: 30,
         price: 45,
-        color: ColorUtils.fromHex('#6EC5A6'),
+        color: colorForCategory(10, cats),
         isBookableOnline: true,
         isFree: false,
         isPriceStartingFrom: false,
@@ -46,7 +90,7 @@ class ServicesNotifier extends Notifier<List<Service>> {
         description: ServiceSeedTexts.serviceSportDescription,
         duration: 45,
         price: 60,
-        color: ColorUtils.fromHex('#57A0D3'),
+        color: colorForCategory(11, cats),
         isBookableOnline: true,
         isFree: false,
         isPriceStartingFrom: true,
@@ -60,7 +104,7 @@ class ServicesNotifier extends Notifier<List<Service>> {
         description: ServiceSeedTexts.serviceFaceDescription,
         duration: 40,
         price: 55,
-        color: ColorUtils.fromHex('#F4B942'),
+        color: colorForCategory(12, cats),
         isBookableOnline: false,
         isFree: false,
         isPriceStartingFrom: false,
@@ -70,17 +114,6 @@ class ServicesNotifier extends Notifier<List<Service>> {
 
     // Aggiunge mock extra per ciascuna categoria non vincolata dai test
     // (10 e 11), fino a un totale casuale di 5..10 servizi per categoria.
-    final cats = ref.read(serviceCategoriesProvider);
-    final palette = <String>[
-      '#6EC5A6',
-      '#57A0D3',
-      '#F4B942',
-      '#C678DD',
-      '#E06C75',
-      '#98C379',
-      '#61AFEF',
-      '#D19A66',
-    ];
     final durations = <int>[15, 30, 45, 60, 75, 90];
     int nextId = 4;
 
@@ -101,7 +134,7 @@ class ServicesNotifier extends Notifier<List<Service>> {
           // Prezzo proporzionale alla durata, arrotondato a 5
           final rawPrice = dur * (1.0 + rnd.nextDouble() * 0.6); // 1.0x..1.6x
           final price = (rawPrice / 5).round() * 5;
-          final colorHex = palette[(nextId + i) % palette.length];
+          final color = colorForCategory(cat.id, cats);
           final isFrom = rnd.nextInt(5) == 0; // ~20%
 
           final nameIndex = existingInCat + i + 1;
@@ -113,7 +146,7 @@ class ServicesNotifier extends Notifier<List<Service>> {
             description: null,
             duration: dur,
             price: price.toDouble(),
-            color: ColorUtils.fromHex(colorHex),
+            color: color,
             isBookableOnline: true,
             isFree: false,
             isPriceStartingFrom: isFrom,

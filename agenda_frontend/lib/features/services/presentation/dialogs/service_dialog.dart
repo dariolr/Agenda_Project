@@ -142,6 +142,7 @@ Future<void> showServiceDialog(
   WidgetRef ref, {
   Service? service,
   int? preselectedCategoryId,
+  Color? preselectedColor,
   bool requireCategorySelection = false,
 }) async {
   final notifier = ref.read(servicesProvider.notifier);
@@ -175,18 +176,22 @@ Future<void> showServiceDialog(
   int? selectedDuration = service?.duration;
   int selectedProcessingTime = service?.processingTime ?? 0;
   int selectedBlockedTime = service?.blockedTime ?? 0;
-  final palette = <Color>[
-    ..._serviceColorPalette,
-  ];
+  final palette = <Color>[..._serviceColorPalette];
   final seen = <int>{};
   final uniquePalette = <Color>[
     for (final c in palette)
       if (seen.add(c.value)) c,
   ];
   final serviceColor = service?.color;
+  final hasPreselectedColor =
+      preselectedColor != null &&
+      uniquePalette.any((c) => c.value == preselectedColor.value);
   final hasServiceColor =
-      serviceColor != null && uniquePalette.any((c) => c.value == serviceColor.value);
-  Color selectedColor = hasServiceColor ? serviceColor : uniquePalette.first;
+      serviceColor != null &&
+      uniquePalette.any((c) => c.value == serviceColor.value);
+  Color selectedColor = hasServiceColor
+      ? serviceColor
+      : (hasPreselectedColor ? preselectedColor : uniquePalette.first);
 
   if (selectedProcessingTime > 0 && selectedBlockedTime > 0) {
     selectedBlockedTime = 0;
@@ -219,7 +224,8 @@ Future<void> showServiceDialog(
     const double colorItemSpacing = 10;
     const double colorListPadding = 4;
     final viewport = colorScrollController.position.viewportDimension;
-    final target = index * (colorItemSize + colorItemSpacing) -
+    final target =
+        index * (colorItemSize + colorItemSpacing) -
         (viewport - colorItemSize) / 2 -
         colorListPadding;
     final maxExtent = colorScrollController.position.maxScrollExtent;

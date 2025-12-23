@@ -499,6 +499,28 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     ColorScheme colorScheme,
   ) {
     final servicesNotifier = ref.read(servicesProvider.notifier);
+    Color? mostUsedColorForCategory(ServiceCategory category) {
+      final services = ref
+          .read(servicesProvider)
+          .where((s) => s.categoryId == category.id)
+          .toList();
+      if (services.isEmpty) return null;
+      final counts = <int, int>{};
+      Color? topColor;
+      int topCount = 0;
+      for (final service in services) {
+        final color = service.color;
+        if (color == null) continue;
+        final key = color.value;
+        final nextCount = (counts[key] ?? 0) + 1;
+        counts[key] = nextCount;
+        if (nextCount > topCount) {
+          topCount = nextCount;
+          topColor = color;
+        }
+      }
+      return topColor;
+    }
 
     return CategoriesList(
       categories: cats,
@@ -507,8 +529,12 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       hoveredService: _hoveredService,
       selectedService: _selectedService,
       scrollController: _scrollController,
-      onAddService: (category) =>
-          _openServiceDialog(context, ref, preselectedCategoryId: category.id),
+      onAddService: (category) => _openServiceDialog(
+        context,
+        ref,
+        preselectedCategoryId: category.id,
+        preselectedColor: mostUsedColorForCategory(category),
+      ),
       onEditCategory: (category) =>
           showCategoryDialog(context, ref, category: category),
       onDeleteCategory: (categoryId) =>
@@ -555,12 +581,14 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     WidgetRef ref, {
     Service? service,
     int? preselectedCategoryId,
+    Color? preselectedColor,
   }) {
     return showServiceDialog(
       context,
       ref,
       service: service,
       preselectedCategoryId: preselectedCategoryId,
+      preselectedColor: preselectedColor,
     ).then((_) => _selectedService.value = null);
   }
 
