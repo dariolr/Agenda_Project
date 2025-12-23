@@ -130,6 +130,12 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
         final targetDate = next.date;
         if (!DateUtils.isSameDay(currentDate, targetDate)) {
           ref.read(agendaDateProvider.notifier).set(targetDate);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            ref
+                .read(agendaScrollRequestProvider.notifier)
+                .request(next.appointment);
+          });
         }
       },
     );
