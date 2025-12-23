@@ -311,9 +311,13 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
               ? variants.where((v) => v.serviceId == item.serviceId).firstOrNull
               : null);
     // Priorità: item.durationMinutes > variant.durationMinutes > 30
-    final duration = item.durationMinutes > 0
+    final baseDuration = item.durationMinutes > 0
         ? item.durationMinutes
         : (variant?.durationMinutes ?? 30);
+    final extraMinutes =
+        (selectedService?.processingTime ?? 0) +
+        (selectedService?.blockedTime ?? 0);
+    final duration = baseDuration + extraMinutes;
     // Usa la stessa durata per calcolare endTime
     final endTime = item.getEndTime(duration);
 

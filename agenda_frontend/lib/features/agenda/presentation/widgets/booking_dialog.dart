@@ -980,9 +980,12 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         item.startTime.hour,
         item.startTime.minute,
       );
-      final durationMinutes = item.durationMinutes > 0
-          ? item.durationMinutes
-          : variant.durationMinutes;
+      final extraMinutes =
+          (service.processingTime ?? 0) + (service.blockedTime ?? 0);
+      final durationMinutes = (item.durationMinutes > 0
+              ? item.durationMinutes
+              : variant.durationMinutes) +
+          extraMinutes;
       final end = start.add(Duration(minutes: durationMinutes));
 
       final created = appointmentsNotifier.addAppointment(

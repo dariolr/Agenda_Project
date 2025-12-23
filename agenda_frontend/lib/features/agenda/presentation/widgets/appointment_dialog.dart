@@ -903,9 +903,12 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         item.startTime.minute,
       );
 
-      final duration = item.durationMinutes > 0
-          ? item.durationMinutes
-          : selectedVariant.durationMinutes;
+      final extraMinutes =
+          (service.processingTime ?? 0) + (service.blockedTime ?? 0);
+      final duration = (item.durationMinutes > 0
+              ? item.durationMinutes
+              : selectedVariant.durationMinutes) +
+          extraMinutes;
       final end = start.add(Duration(minutes: duration));
 
       if (i < existingAppointments.length) {
