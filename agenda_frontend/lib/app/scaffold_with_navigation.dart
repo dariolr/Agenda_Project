@@ -104,7 +104,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               ),
               child: NavigationRail(
                 selectedIndex: navigationShell.currentIndex,
-                onDestinationSelected: (index) => _goBranch(index),
+                onDestinationSelected: (index) => _goBranch(index, ref),
                 labelType: NavigationRailLabelType.none,
                 useIndicator: false, // disattiva highlight di sistema su tap
                 destinations: railDestinations,
@@ -166,7 +166,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               minimum: const EdgeInsets.only(bottom: 15),
               child: BottomNavigationBar(
                 currentIndex: navigationShell.currentIndex,
-                onTap: (index) => _goBranch(index),
+                onTap: (index) => _goBranch(index, ref),
                 type: BottomNavigationBarType.fixed,
                 items: destinations
                     .map(
@@ -185,7 +185,14 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     );
   }
 
-  void _goBranch(int index) {
+  void _goBranch(int index, WidgetRef ref) {
+    if (index == 0 && navigationShell.currentIndex == 0) {
+      final selectedDate = ref.read(agendaDateProvider);
+      final today = DateUtils.dateOnly(DateTime.now());
+      if (!DateUtils.isSameDay(selectedDate, today)) {
+        ref.read(agendaDateProvider.notifier).setToday();
+      }
+    }
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,
