@@ -151,6 +151,7 @@
   "fieldNameRequiredError": "Name is required",
   "categoryDuplicateError": "A category with this name already exists",
   "fieldDescriptionLabel": "Description",
+  "serviceColorLabel": "Service color",
   "newServiceTitle": "New service",
   "editServiceTitle": "Edit service",
   "fieldCategoryLabel": "Category",

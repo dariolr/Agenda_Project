@@ -66,28 +66,18 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   void _stopAutoScroll() => _autoScrollTimer?.cancel();
 
-  void _showOrderSavedSnackBar() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(context.l10n.orderSavedMessage)));
-  }
-
   void _toggleCategoryReorder() {
-    final wasActive = isReorderCategories;
     setState(() {
       isReorderCategories = !isReorderCategories;
       if (isReorderCategories) isReorderServices = false;
     });
-    if (wasActive) _showOrderSavedSnackBar();
   }
 
   void _toggleServiceReorder() {
-    final wasActive = isReorderServices;
     setState(() {
       isReorderServices = !isReorderServices;
       if (isReorderServices) isReorderCategories = false;
     });
-    if (wasActive) _showOrderSavedSnackBar();
   }
 
   @override
@@ -138,47 +128,47 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.reorderTitle,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
-                  child: Text(
-                    context.l10n.reorderHelpDescription,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+            child: Center(
+              child: Column(
+                children: [
+                  Text(
+                    context.l10n.reorderTitle,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-                ReorderTogglePanel(
-                  isWide: isWide,
-                  children: [
-                    ReorderToggleButton(
-                      isActive: isReorderCategories,
-                      onPressed: _toggleCategoryReorder,
-                      activeLabel: 'Categorie',
-                      inactiveLabel: 'Categorie',
-                      activeIcon: Icons.check,
-                      inactiveIcon: Icons.drag_indicator,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+                    child: Text(
+                      context.l10n.reorderHelpDescription,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                    ReorderToggleButton(
-                      isActive: isReorderServices,
-                      onPressed: _toggleServiceReorder,
-                      activeLabel: 'Servizi',
-                      inactiveLabel: 'Servizi',
-                      activeIcon: Icons.check,
-                      inactiveIcon: Icons.drag_indicator,
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                  ReorderTogglePanel(
+                    isWide: isWide,
+                    children: [
+                      ReorderToggleButton(
+                        isActive: isReorderCategories,
+                        onPressed: _toggleCategoryReorder,
+                        activeLabel: 'Categorie',
+                        inactiveLabel: 'Categorie',
+                        activeIcon: Icons.check,
+                        inactiveIcon: Icons.drag_indicator,
+                      ),
+                      ReorderToggleButton(
+                        isActive: isReorderServices,
+                        onPressed: _toggleServiceReorder,
+                        activeLabel: 'Servizi',
+                        inactiveLabel: 'Servizi',
+                        activeIcon: Icons.check,
+                        inactiveIcon: Icons.drag_indicator,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],

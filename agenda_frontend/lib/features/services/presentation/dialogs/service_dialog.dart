@@ -2,6 +2,7 @@ import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/app/theme/app_spacing.dart';
 import 'package:agenda_frontend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_frontend/features/agenda/providers/location_providers.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +21,57 @@ import '../../providers/services_provider.dart';
 import '../../utils/service_validators.dart';
 
 enum _AdditionalTimeSelection { none, processing, blocked }
+
+const List<Color> _serviceColorPalette = [
+  // Reds
+  Color(0xFFFFCDD2),
+  Color(0xFFFFC1C9),
+  Color(0xFFFFB4BC),
+  // Oranges
+  Color(0xFFFFD6B3),
+  Color(0xFFFFC9A3),
+  Color(0xFFFFBD93),
+  // Yellows
+  Color(0xFFFFF0B3),
+  Color(0xFFFFE6A3),
+  Color(0xFFFFDC93),
+  // Yellow-greens
+  Color(0xFFEAF2B3),
+  Color(0xFFDFEAA3),
+  Color(0xFFD4E293),
+  // Greens
+  Color(0xFFCDECCF),
+  Color(0xFFC1E4C4),
+  Color(0xFFB6DCB9),
+  // Teals
+  Color(0xFFBFE8E0),
+  Color(0xFFB1DFD6),
+  Color(0xFFA3D6CB),
+  // Cyans
+  Color(0xFFBDEFF4),
+  Color(0xFFB0E6EF),
+  Color(0xFFA3DDEA),
+  // Blues
+  Color(0xFFBFD9FF),
+  Color(0xFFB0CEFF),
+  Color(0xFFA1C3FF),
+  // Indigos
+  Color(0xFFC7D0FF),
+  Color(0xFFBAC4FF),
+  Color(0xFFADB8FF),
+  // Purples
+  Color(0xFFDCC9FF),
+  Color(0xFFD0BDFF),
+  Color(0xFFC4B1FF),
+  // Pinks
+  Color(0xFFFFC7E3),
+  Color(0xFFFFB7D9),
+  Color(0xFFFFA8CF),
+];
+
+Color _contrastFor(Color color) {
+  return color.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+}
 
 class _SwitchTile extends StatelessWidget {
   const _SwitchTile({
@@ -100,6 +152,8 @@ Future<void> showServiceDialog(
     name: currencyCode,
   ).currencySymbol;
   final isDesktop = ref.read(formFactorProvider) == AppFormFactor.desktop;
+  final colorScrollController = ScrollController();
+  bool didAutoScroll = false;
 
   final nameController = TextEditingController(text: service?.name ?? '');
   final priceController = TextEditingController(
@@ -121,6 +175,18 @@ Future<void> showServiceDialog(
   int? selectedDuration = service?.duration;
   int selectedProcessingTime = service?.processingTime ?? 0;
   int selectedBlockedTime = service?.blockedTime ?? 0;
+  final palette = <Color>[
+    ..._serviceColorPalette,
+  ];
+  final seen = <int>{};
+  final uniquePalette = <Color>[
+    for (final c in palette)
+      if (seen.add(c.value)) c,
+  ];
+  final serviceColor = service?.color;
+  final hasServiceColor =
+      serviceColor != null && uniquePalette.any((c) => c.value == serviceColor.value);
+  Color selectedColor = hasServiceColor ? serviceColor : uniquePalette.first;
 
   if (selectedProcessingTime > 0 && selectedBlockedTime > 0) {
     selectedBlockedTime = 0;
@@ -142,6 +208,32 @@ Future<void> showServiceDialog(
   bool nameError = false;
   bool durationError = false;
   bool categoryError = false;
+
+  void scrollToSelected({required bool animate}) {
+    if (!colorScrollController.hasClients) return;
+    final index = uniquePalette.indexWhere(
+      (c) => c.value == selectedColor.value,
+    );
+    if (index < 0) return;
+    const double colorItemSize = 36;
+    const double colorItemSpacing = 10;
+    const double colorListPadding = 4;
+    final viewport = colorScrollController.position.viewportDimension;
+    final target = index * (colorItemSize + colorItemSpacing) -
+        (viewport - colorItemSize) / 2 -
+        colorListPadding;
+    final maxExtent = colorScrollController.position.maxScrollExtent;
+    final clamped = target.clamp(0.0, maxExtent);
+    if (animate) {
+      colorScrollController.animateTo(
+        clamped,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      colorScrollController.jumpTo(clamped);
+    }
+  }
 
   Future<void> handleSave() async {
     final name = nameController.text.trim();
@@ -192,7 +284,7 @@ Future<void> showServiceDialog(
         processingTime: processingToSave,
         blockedTime: blockedToSave,
         price: finalPrice,
-        color: service?.color,
+        color: selectedColor,
         isBookableOnline: isBookableOnline,
         isFree: effectiveIsFree,
         isPriceStartingFrom: finalIsPriceStartingFrom,
@@ -268,6 +360,133 @@ Future<void> showServiceDialog(
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
               isDense: true,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.formRowSpacing),
+        LabeledFormField(
+          label: context.l10n.serviceColorLabel,
+          child: SizedBox(
+            height: 44,
+            child: Row(
+              children: [
+                Expanded(
+                  child: ShaderMask(
+                    shaderCallback: (rect) {
+                      return const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black,
+                          Colors.black,
+                          Colors.transparent,
+                        ],
+                        stops: [0.0, 0.01, 0.99, 1.0],
+                      ).createShader(rect);
+                    },
+                    blendMode: BlendMode.dstIn,
+                    child: ScrollConfiguration(
+                      behavior: const ScrollBehavior().copyWith(
+                        dragDevices: {
+                          PointerDeviceKind.touch,
+                          PointerDeviceKind.mouse,
+                          PointerDeviceKind.trackpad,
+                        },
+                      ),
+                      child: ListView.separated(
+                        controller: colorScrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: uniquePalette.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        itemBuilder: (context, index) {
+                          final color = uniquePalette[index];
+                          return GestureDetector(
+                            onTap: () => setState(() {
+                              selectedColor = color;
+                            }),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: selectedColor.value == color.value
+                                      ? Theme.of(context).colorScheme.onSurface
+                                      : Colors.black.withOpacity(0.08),
+                                  width: selectedColor.value == color.value
+                                      ? 2
+                                      : 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.08),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: selectedColor.value == color.value
+                                  ? Icon(
+                                      Icons.check,
+                                      color: _contrastFor(color),
+                                      size: 18,
+                                    )
+                                  : null,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.formRowSpacing),
+        Align(
+          alignment: Alignment.center,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 300),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: selectedColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: DefaultTextStyle(
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '09:00 - 10:00  ${context.l10n.formClient}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      nameController.text.trim().isEmpty
+                          ? context.l10n.formService
+                          : nameController.text.trim(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -416,6 +635,12 @@ Future<void> showServiceDialog(
 
   final builder = StatefulBuilder(
     builder: (context, setState) {
+      if (!didAutoScroll) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          scrollToSelected(animate: false);
+        });
+        didAutoScroll = true;
+      }
       final body = buildBody(context, setState);
 
       final cancelButton = SizedBox(

@@ -711,16 +711,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         Color cardColor = widget.staff.color;
         if (layoutConfig.useServiceColorsForAppointments) {
-          final variant = ref.watch(
-            serviceVariantByIdProvider(originalAppt.serviceVariantId),
-          );
-          if (variant != null && variant.colorHex != null) {
-            cardColor = ColorUtils.fromHex(variant.colorHex!);
+          // Priorità: colore del servizio (configurabile dall'operatore).
+          final serviceColor = serviceColorMap[originalAppt.serviceId];
+          if (serviceColor != null) {
+            cardColor = serviceColor;
           } else {
-            // Usa la mappa pre-calcolata invece di watch dentro il loop
-            final serviceColor = serviceColorMap[originalAppt.serviceId];
-            if (serviceColor != null) {
-              cardColor = serviceColor;
+            final variant = ref.watch(
+              serviceVariantByIdProvider(originalAppt.serviceVariantId),
+            );
+            if (variant != null && variant.colorHex != null) {
+              cardColor = ColorUtils.fromHex(variant.colorHex!);
             }
           }
         }
@@ -786,16 +786,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         Color cardColor = widget.staff.color;
         if (layoutConfig.useServiceColorsForAppointments) {
-          final variant = ref.watch(
-            serviceVariantByIdProvider(originalAppt.serviceVariantId),
-          );
-          if (variant != null && variant.colorHex != null) {
-            cardColor = ColorUtils.fromHex(variant.colorHex!);
+          // Priorità: colore del servizio (configurabile dall'operatore).
+          final serviceColor = serviceColorMap[originalAppt.serviceId];
+          if (serviceColor != null) {
+            cardColor = serviceColor;
           } else {
-            // Usa la mappa pre-calcolata
-            final serviceColor = serviceColorMap[originalAppt.serviceId];
-            if (serviceColor != null) {
-              cardColor = serviceColor;
+            final variant = ref.watch(
+              serviceVariantByIdProvider(originalAppt.serviceVariantId),
+            );
+            if (variant != null && variant.colorHex != null) {
+              cardColor = ColorUtils.fromHex(variant.colorHex!);
             }
           }
         }
