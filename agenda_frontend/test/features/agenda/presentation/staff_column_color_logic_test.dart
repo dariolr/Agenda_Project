@@ -1,4 +1,5 @@
-import 'package:agenda_frontend/core/models/service.dart';
+import 'package:agenda_frontend/core/models/service_variant.dart';
+import 'package:agenda_frontend/core/utils/color_utils.dart';
 import 'package:agenda_frontend/features/agenda/providers/pending_drop_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,42 +9,47 @@ void main() {
   group('Service Color Map Logic', () {
     test('buildServiceColorMap creates correct mapping from services', () {
       // Simula la logica usata in staff_column.dart
-      final services = [
-        const Service(
-          id: 1,
-          businessId: 1,
-          categoryId: 1,
-          name: 'Taglio',
-          color: Colors.red,
+      final variants = [
+        ServiceVariant(
+          id: 1001,
+          serviceId: 1,
+          locationId: 1,
+          durationMinutes: 30,
+          price: 10,
+          colorHex: ColorUtils.toHex(Colors.red),
         ),
-        const Service(
-          id: 2,
-          businessId: 1,
-          categoryId: 1,
-          name: 'Piega',
-          color: Colors.blue,
+        ServiceVariant(
+          id: 1002,
+          serviceId: 2,
+          locationId: 1,
+          durationMinutes: 30,
+          price: 10,
+          colorHex: ColorUtils.toHex(Colors.blue),
         ),
-        const Service(
-          id: 3,
-          businessId: 1,
-          categoryId: 1,
-          name: 'Colore',
-          color: null, // Servizio senza colore
+        ServiceVariant(
+          id: 1003,
+          serviceId: 3,
+          locationId: 1,
+          durationMinutes: 30,
+          price: 10,
+          colorHex: null, // Servizio senza colore
         ),
-        const Service(
-          id: 4,
-          businessId: 1,
-          categoryId: 1,
-          name: 'Trattamento',
-          color: Colors.green,
+        ServiceVariant(
+          id: 1004,
+          serviceId: 4,
+          locationId: 1,
+          durationMinutes: 30,
+          price: 10,
+          colorHex: ColorUtils.toHex(Colors.green),
         ),
       ];
 
       // Questa è la stessa logica del codice ottimizzato in staff_column.dart
       final serviceColorMap = <int, Color>{};
-      for (final service in services) {
-        if (service.color != null) {
-          serviceColorMap[service.id] = service.color!;
+      for (final variant in variants) {
+        if (variant.colorHex != null) {
+          serviceColorMap[variant.serviceId] =
+              ColorUtils.fromHex(variant.colorHex!);
         }
       }
 
@@ -56,27 +62,30 @@ void main() {
     });
 
     test('serviceColorMap lookup returns correct color', () {
-      final services = [
-        const Service(
-          id: 10,
-          businessId: 1,
-          categoryId: 1,
-          name: 'Servizio A',
-          color: Colors.orange,
+      final variants = [
+        ServiceVariant(
+          id: 1010,
+          serviceId: 10,
+          locationId: 1,
+          durationMinutes: 30,
+          price: 10,
+          colorHex: ColorUtils.toHex(Colors.orange),
         ),
-        const Service(
-          id: 20,
-          businessId: 1,
-          categoryId: 1,
-          name: 'Servizio B',
-          color: Colors.purple,
+        ServiceVariant(
+          id: 1020,
+          serviceId: 20,
+          locationId: 1,
+          durationMinutes: 30,
+          price: 10,
+          colorHex: ColorUtils.toHex(Colors.purple),
         ),
       ];
 
       final serviceColorMap = <int, Color>{};
-      for (final service in services) {
-        if (service.color != null) {
-          serviceColorMap[service.id] = service.color!;
+      for (final variant in variants) {
+        if (variant.colorHex != null) {
+          serviceColorMap[variant.serviceId] =
+              ColorUtils.fromHex(variant.colorHex!);
         }
       }
 
@@ -94,20 +103,22 @@ void main() {
     });
 
     test('serviceColorMap lookup returns default when service not found', () {
-      final services = [
-        const Service(
-          id: 10,
-          businessId: 1,
-          categoryId: 1,
-          name: 'Servizio A',
-          color: Colors.orange,
+      final variants = [
+        ServiceVariant(
+          id: 1010,
+          serviceId: 10,
+          locationId: 1,
+          durationMinutes: 30,
+          price: 10,
+          colorHex: ColorUtils.toHex(Colors.orange),
         ),
       ];
 
       final serviceColorMap = <int, Color>{};
-      for (final service in services) {
-        if (service.color != null) {
-          serviceColorMap[service.id] = service.color!;
+      for (final variant in variants) {
+        if (variant.colorHex != null) {
+          serviceColorMap[variant.serviceId] =
+              ColorUtils.fromHex(variant.colorHex!);
         }
       }
 
@@ -126,12 +137,13 @@ void main() {
     });
 
     test('empty services list results in empty map', () {
-      final services = <Service>[];
+      final variants = <ServiceVariant>[];
 
       final serviceColorMap = <int, Color>{};
-      for (final service in services) {
-        if (service.color != null) {
-          serviceColorMap[service.id] = service.color!;
+      for (final variant in variants) {
+        if (variant.colorHex != null) {
+          serviceColorMap[variant.serviceId] =
+              ColorUtils.fromHex(variant.colorHex!);
         }
       }
 

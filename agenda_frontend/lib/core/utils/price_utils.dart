@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../features/agenda/providers/business_providers.dart';
 import '../../features/agenda/providers/location_providers.dart';
 import '../l10n/l10_extension.dart'; // ✅ per usare context.l10n
-import '../models/service.dart';
+import '../models/service_variant.dart';
 
 /// Utility per formattazione e parsing dei prezzi, coerente con la valuta
 /// effettiva del business o della location.
@@ -77,25 +77,25 @@ class PriceFormatter {
     return double.tryParse(cleaned);
   }
 
-  /// Formatta un [Service] tenendo conto delle impostazioni di valuta e
+  /// Formatta un [ServiceVariant] tenendo conto delle impostazioni di valuta e
   /// dei flag `isFree` e `isPriceStartingFrom`.
-  static String formatService({
+  static String formatVariant({
     required BuildContext context,
     required WidgetRef ref,
-    required Service service,
+    required ServiceVariant variant,
   }) {
-    final currency = effectiveCurrency(ref);
+    final currency = variant.currency ?? effectiveCurrency(ref);
 
-    if (service.isFree) return context.l10n.freeLabel;
-    if (service.price == null) return context.l10n.priceNotAvailable;
+    if (variant.isFree) return context.l10n.freeLabel;
+    if (variant.price <= 0) return context.l10n.priceNotAvailable;
 
     final formatted = format(
       context: context,
-      amount: service.price!,
+      amount: variant.price,
       currencyCode: currency,
     );
 
-    return service.isPriceStartingFrom
+    return variant.isPriceStartingFrom
         ? '${context.l10n.priceStartingFromPrefix} $formatted'
         : formatted;
   }

@@ -10,6 +10,8 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
+import '../../../../core/models/service_variant.dart';
+import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/price_utils.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
@@ -148,6 +150,9 @@ Future<void> showServiceDialog(
   final notifier = ref.read(servicesProvider.notifier);
   final allServices = ref.read(servicesProvider);
   final categories = ref.read(serviceCategoriesProvider);
+  final existingVariant = service != null
+      ? ref.read(serviceVariantByServiceIdProvider(service.id))
+      : null;
   final currencyCode = ref.read(effectiveCurrencyProvider);
   final currencySymbol = NumberFormat.currency(
     name: currencyCode,
@@ -158,11 +163,11 @@ Future<void> showServiceDialog(
 
   final nameController = TextEditingController(text: service?.name ?? '');
   final priceController = TextEditingController(
-    text: service?.price != null
+    text: (existingVariant != null && existingVariant.price > 0)
         ? PriceFormatter.format(
             context: context,
-            amount: service!.price!,
-            currencyCode: currencyCode,
+            amount: existingVariant.price,
+            currencyCode: existingVariant.currency ?? currencyCode,
           )
         : '',
   );
@@ -173,16 +178,18 @@ Future<void> showServiceDialog(
   int? selectedCategory = requireCategorySelection
       ? (service?.categoryId ?? preselectedCategoryId)
       : (service?.categoryId ?? preselectedCategoryId ?? categories.first.id);
-  int? selectedDuration = service?.duration;
-  int selectedProcessingTime = service?.processingTime ?? 0;
-  int selectedBlockedTime = service?.blockedTime ?? 0;
+  int? selectedDuration = existingVariant?.durationMinutes;
+  int selectedProcessingTime = existingVariant?.processingTime ?? 0;
+  int selectedBlockedTime = existingVariant?.blockedTime ?? 0;
   final palette = <Color>[..._serviceColorPalette];
   final seen = <int>{};
   final uniquePalette = <Color>[
     for (final c in palette)
       if (seen.add(c.value)) c,
   ];
-  final serviceColor = service?.color;
+  final serviceColor = existingVariant?.colorHex != null
+      ? ColorUtils.fromHex(existingVariant!.colorHex!)
+      : null;
   final hasPreselectedColor =
       preselectedColor != null &&
       uniquePalette.any((c) => c.value == preselectedColor.value);
@@ -206,9 +213,9 @@ Future<void> showServiceDialog(
       ? selectedProcessingTime
       : selectedBlockedTime;
 
-  bool isBookableOnline = service?.isBookableOnline ?? true;
-  bool isFree = service?.isFree ?? false;
-  bool isPriceStartingFrom = service?.isPriceStartingFrom ?? false;
+  bool isBookableOnline = existingVariant?.isBookableOnline ?? true;
+  bool isFree = existingVariant?.isFree ?? false;
+  bool isPriceStartingFrom = existingVariant?.isPriceStartingFrom ?? false;
 
   bool nameError = false;
   bool durationError = false;
@@ -286,16 +293,24 @@ Future<void> showServiceDialog(
         description: descController.text.trim().isEmpty
             ? null
             : descController.text.trim(),
-        duration: selectedDuration,
+        sortOrder: service?.sortOrder ?? 0,
+      );
+
+      final newVariant = ServiceVariant(
+        id: existingVariant?.id ?? (900000 + newService.id),
+        serviceId: newService.id,
+        locationId: ref.read(currentLocationProvider).id,
+        durationMinutes: selectedDuration!,
         processingTime: processingToSave,
         blockedTime: blockedToSave,
-        price: finalPrice,
-        color: selectedColor,
+        price: finalPrice ?? 0,
+        colorHex: ColorUtils.toHex(selectedColor),
+        currency: currencyCode,
         isBookableOnline: isBookableOnline,
         isFree: effectiveIsFree,
         isPriceStartingFrom: finalIsPriceStartingFrom,
-        currency: service?.currency ?? currencyCode,
-        sortOrder: service?.sortOrder ?? 0,
+        resourceRequirements:
+            existingVariant?.resourceRequirements ?? const [],
       );
 
       if (service == null) {
@@ -303,6 +318,7 @@ Future<void> showServiceDialog(
       } else {
         notifier.update(newService);
       }
+      ref.read(serviceVariantsProvider.notifier).upsert(newVariant);
 
       Navigator.of(context, rootNavigator: true).pop();
     }

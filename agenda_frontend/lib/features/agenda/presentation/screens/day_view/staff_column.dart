@@ -601,14 +601,15 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final layoutConfig = ref.watch(layoutConfigProvider);
     // 🔹 Watch fuori dal loop per evitare rebuild multipli
     final pendingDrop = ref.watch(pendingDropProvider);
-    final services = layoutConfig.useServiceColorsForAppointments
-        ? ref.watch(servicesProvider)
+    final variants = layoutConfig.useServiceColorsForAppointments
+        ? ref.watch(serviceVariantsProvider)
         : <dynamic>[];
-    // Pre-calcola la mappa dei colori dei servizi
+    // Pre-calcola la mappa dei colori dei servizi (da varianti)
     final serviceColorMap = <int, Color>{};
-    for (final service in services) {
-      if (service.color != null) {
-        serviceColorMap[service.id as int] = service.color as Color;
+    for (final variant in variants) {
+      if (variant.colorHex != null) {
+        serviceColorMap[variant.serviceId] =
+            ColorUtils.fromHex(variant.colorHex!);
       }
     }
 

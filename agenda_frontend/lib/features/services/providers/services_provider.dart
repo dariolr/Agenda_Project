@@ -1,17 +1,16 @@
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/service.dart';
 import '../../../core/models/service_staff_eligibility.dart';
 import '../../../core/models/service_variant.dart';
 import '../../../core/utils/color_utils.dart';
+import 'package:flutter/material.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../utils/service_seed_texts.dart';
-import '../../../core/models/service_category.dart';
 import 'service_categories_provider.dart';
 
 // Le categorie sono ora gestite in providers/service_categories_provider.dart
@@ -23,48 +22,6 @@ class ServicesNotifier extends Notifier<List<Service>> {
   @override
   List<Service> build() {
     final business = ref.watch(currentBusinessProvider);
-    final currency = ref.watch(effectiveCurrencyProvider); // 🔹 valuta coerente
-    final palette = <Color>[
-      // Same palette used in service_dialog.dart
-      Color(0xFFFFCDD2),
-      Color(0xFFFFC1C9),
-      Color(0xFFFFB4BC),
-      Color(0xFFFFD6B3),
-      Color(0xFFFFC9A3),
-      Color(0xFFFFBD93),
-      Color(0xFFFFF0B3),
-      Color(0xFFFFE6A3),
-      Color(0xFFFFDC93),
-      Color(0xFFEAF2B3),
-      Color(0xFFDFEAA3),
-      Color(0xFFD4E293),
-      Color(0xFFCDECCF),
-      Color(0xFFC1E4C4),
-      Color(0xFFB6DCB9),
-      Color(0xFFBFE8E0),
-      Color(0xFFB1DFD6),
-      Color(0xFFA3D6CB),
-      Color(0xFFBDEFF4),
-      Color(0xFFB0E6EF),
-      Color(0xFFA3DDEA),
-      Color(0xFFBFD9FF),
-      Color(0xFFB0CEFF),
-      Color(0xFFA1C3FF),
-      Color(0xFFC7D0FF),
-      Color(0xFFBAC4FF),
-      Color(0xFFAEB8FF),
-      Color(0xFFE0D0FF),
-      Color(0xFFD4C4FF),
-      Color(0xFFC9B8FF),
-    ];
-    Color colorForCategory(
-      int categoryId,
-      List<ServiceCategory> cats,
-    ) {
-      final index = cats.indexWhere((c) => c.id == categoryId);
-      final paletteIndex = index >= 0 ? index % palette.length : 0;
-      return palette[paletteIndex];
-    }
     final cats = ref.read(serviceCategoriesProvider);
     // Base: tre servizi fissi per compatibilita' con i test esistenti
     final seed = <Service>[
@@ -74,13 +31,6 @@ class ServicesNotifier extends Notifier<List<Service>> {
         categoryId: 10,
         name: ServiceSeedTexts.serviceRelaxName,
         description: ServiceSeedTexts.serviceRelaxDescription,
-        duration: 30,
-        price: 45,
-        color: colorForCategory(10, cats),
-        isBookableOnline: true,
-        isFree: false,
-        isPriceStartingFrom: false,
-        currency: currency,
       ),
       Service(
         id: 2,
@@ -88,13 +38,6 @@ class ServicesNotifier extends Notifier<List<Service>> {
         categoryId: 11,
         name: ServiceSeedTexts.serviceSportName,
         description: ServiceSeedTexts.serviceSportDescription,
-        duration: 45,
-        price: 60,
-        color: colorForCategory(11, cats),
-        isBookableOnline: true,
-        isFree: false,
-        isPriceStartingFrom: true,
-        currency: currency,
       ),
       Service(
         id: 3,
@@ -102,19 +45,11 @@ class ServicesNotifier extends Notifier<List<Service>> {
         categoryId: 12,
         name: ServiceSeedTexts.serviceFaceName,
         description: ServiceSeedTexts.serviceFaceDescription,
-        duration: 40,
-        price: 55,
-        color: colorForCategory(12, cats),
-        isBookableOnline: false,
-        isFree: false,
-        isPriceStartingFrom: false,
-        currency: currency,
       ),
     ];
 
     // Aggiunge mock extra per ciascuna categoria non vincolata dai test
     // (10 e 11), fino a un totale casuale di 5..10 servizi per categoria.
-    final durations = <int>[15, 30, 45, 60, 75, 90];
     int nextId = 4;
 
     var all = <Service>[...seed];
@@ -130,13 +65,6 @@ class ServicesNotifier extends Notifier<List<Service>> {
         final toAdd = (desiredTotal - existingInCat).clamp(0, 10);
 
         for (int i = 0; i < toAdd; i++) {
-          final dur = durations[rnd.nextInt(durations.length)];
-          // Prezzo proporzionale alla durata, arrotondato a 5
-          final rawPrice = dur * (1.0 + rnd.nextDouble() * 0.6); // 1.0x..1.6x
-          final price = (rawPrice / 5).round() * 5;
-          final color = colorForCategory(cat.id, cats);
-          final isFrom = rnd.nextInt(5) == 0; // ~20%
-
           final nameIndex = existingInCat + i + 1;
           final svc = Service(
             id: nextId++,
@@ -144,13 +72,6 @@ class ServicesNotifier extends Notifier<List<Service>> {
             categoryId: cat.id,
             name: '${cat.name} $nameIndex',
             description: null,
-            duration: dur,
-            price: price.toDouble(),
-            color: color,
-            isBookableOnline: true,
-            isFree: false,
-            isPriceStartingFrom: isFrom,
-            currency: currency,
           );
           all.add(svc);
         }
@@ -194,6 +115,7 @@ class ServicesNotifier extends Notifier<List<Service>> {
       }
     }
     state = state.where((s) => s.id != id).toList();
+    ref.read(serviceVariantsProvider.notifier).removeByServiceId(id);
     // Salvaguardia per i mock dei test: se abbiamo rimosso il servizio
     // della categoria 12, assicurati che la categoria diventi effettivamente vuota.
     if (removedCat == 12) {
@@ -268,15 +190,19 @@ class ServicesNotifier extends Notifier<List<Service>> {
       categoryId: original.categoryId,
       name: makeDuplicateName(original.name),
       description: original.description,
-      duration: original.duration,
-      price: original.price,
-      color: original.color,
-      isBookableOnline: original.isBookableOnline,
-      isFree: original.isFree,
-      isPriceStartingFrom: original.isPriceStartingFrom,
-      currency: original.currency, // 🔹 mantiene la stessa valuta
     );
     add(copy);
+    final originalVariant = ref.read(
+      serviceVariantByServiceIdProvider(original.id),
+    );
+    if (originalVariant != null) {
+      ref.read(serviceVariantsProvider.notifier).upsert(
+            originalVariant.copyWith(
+              id: 900000 + newId,
+              serviceId: newId,
+            ),
+          );
+    }
     // Un duplicato potrebbe rendere non vuota una categoria
     ref
         .read(serviceCategoriesProvider.notifier)
@@ -297,28 +223,109 @@ final servicesProvider = NotifierProvider<ServicesNotifier, List<Service>>(
 ///
 /// VARIANTI SERVIZI (mock, filtrate per location)
 ///
-final serviceVariantsProvider = Provider<List<ServiceVariant>>((ref) {
-  final location = ref.watch(currentLocationProvider);
-  final currency = ref.watch(effectiveCurrencyProvider); // 🔹 valuta effettiva
-  final services = ref.watch(servicesProvider);
+class ServiceVariantsNotifier extends Notifier<List<ServiceVariant>> {
+  @override
+  List<ServiceVariant> build() {
+    final location = ref.read(currentLocationProvider);
+    final currency = ref.read(effectiveCurrencyProvider);
+    final services = ref.read(servicesProvider);
+    final cats = ref.read(serviceCategoriesProvider);
 
-  // Per ora: ogni servizio ha UNA sola variante di default
-  // indipendente dal numero di location.
-  const generatedBaseId = 900000;
-  return [
-    for (final service in services)
-      ServiceVariant(
-        id: generatedBaseId + service.id,
-        serviceId: service.id,
-        locationId: location.id,
-        durationMinutes: service.duration ?? 0,
-        price: service.price ?? 0,
-        colorHex: service.color != null ? ColorUtils.toHex(service.color!) : null,
-        currency: currency,
-        resourceRequirements: const [],
-      ),
-  ];
-});
+    final palette = <Color>[
+      // Same palette used in service_dialog.dart
+      Color(0xFFFFCDD2),
+      Color(0xFFFFC1C9),
+      Color(0xFFFFB4BC),
+      Color(0xFFFFD6B3),
+      Color(0xFFFFC9A3),
+      Color(0xFFFFBD93),
+      Color(0xFFFFF0B3),
+      Color(0xFFFFE6A3),
+      Color(0xFFFFDC93),
+      Color(0xFFEAF2B3),
+      Color(0xFFDFEAA3),
+      Color(0xFFD4E293),
+      Color(0xFFCDECCF),
+      Color(0xFFC1E4C4),
+      Color(0xFFB6DCB9),
+      Color(0xFFBFE8E0),
+      Color(0xFFB1DFD6),
+      Color(0xFFA3D6CB),
+      Color(0xFFBDEFF4),
+      Color(0xFFB0E6EF),
+      Color(0xFFA3DDEA),
+      Color(0xFFBFD9FF),
+      Color(0xFFB0CEFF),
+      Color(0xFFA1C3FF),
+      Color(0xFFC7D0FF),
+      Color(0xFFBAC4FF),
+      Color(0xFFAEB8FF),
+      Color(0xFFE0D0FF),
+      Color(0xFFD4C4FF),
+      Color(0xFFC9B8FF),
+    ];
+    Color colorForCategory(int categoryId) {
+      final index = cats.indexWhere((c) => c.id == categoryId);
+      final paletteIndex = index >= 0 ? index % palette.length : 0;
+      return palette[paletteIndex];
+    }
+
+    final durations = <int>[15, 30, 45, 60, 75, 90];
+    const generatedBaseId = 900000;
+    final variants = <ServiceVariant>[];
+
+    for (final cat in cats) {
+      final inCat = services.where((s) => s.categoryId == cat.id).toList();
+      inCat.sort((a, b) => a.id.compareTo(b.id));
+
+      final rnd = Random(cat.id);
+      for (final service in inCat) {
+        final dur = durations[rnd.nextInt(durations.length)];
+        final rawPrice = dur * (1.0 + rnd.nextDouble() * 0.6);
+        final price = (rawPrice / 5).round() * 5;
+        final isFrom = rnd.nextInt(5) == 0;
+        final color = colorForCategory(cat.id);
+
+        variants.add(
+          ServiceVariant(
+            id: generatedBaseId + service.id,
+            serviceId: service.id,
+            locationId: location.id,
+            durationMinutes: dur,
+            processingTime: 0,
+            blockedTime: 0,
+            price: price.toDouble(),
+            colorHex: ColorUtils.toHex(color),
+            currency: currency,
+            isBookableOnline: true,
+            isFree: false,
+            isPriceStartingFrom: isFrom,
+            resourceRequirements: const [],
+          ),
+        );
+      }
+    }
+
+    return variants;
+  }
+
+  void upsert(ServiceVariant variant) {
+    state = [
+      for (final v in state)
+        if (v.id == variant.id) variant else v,
+      if (!state.any((v) => v.id == variant.id)) variant,
+    ];
+  }
+
+  void removeByServiceId(int serviceId) {
+    state = state.where((v) => v.serviceId != serviceId).toList();
+  }
+}
+
+final serviceVariantsProvider =
+    NotifierProvider<ServiceVariantsNotifier, List<ServiceVariant>>(
+  ServiceVariantsNotifier.new,
+);
 
 ///
 /// SERVICE VARIANT BY ID
@@ -330,6 +337,18 @@ final serviceVariantByIdProvider = Provider.family<ServiceVariant?, int>((
   final variants = ref.watch(serviceVariantsProvider);
   for (final variant in variants) {
     if (variant.id == variantId) return variant;
+  }
+  return null;
+});
+
+final serviceVariantByServiceIdProvider =
+    Provider.family<ServiceVariant?, int>((ref, serviceId) {
+  final location = ref.watch(currentLocationProvider);
+  final variants = ref.watch(serviceVariantsProvider);
+  for (final variant in variants) {
+    if (variant.serviceId == serviceId && variant.locationId == location.id) {
+      return variant;
+    }
   }
   return null;
 });

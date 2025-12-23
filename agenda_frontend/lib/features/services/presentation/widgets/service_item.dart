@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/extensions.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
+import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/price_utils.dart';
+import '../../providers/services_provider.dart';
 
 class ServiceItem extends ConsumerWidget {
   final Service service;
@@ -43,6 +45,7 @@ class ServiceItem extends ConsumerWidget {
     final interactionColors = Theme.of(
       context,
     ).extension<AppInteractionColors>();
+    final variant = ref.watch(serviceVariantByServiceIdProvider(service.id));
     final baseColor = isEvenRow
         ? (interactionColors?.alternatingRowFill ??
               colorScheme.onSurface.withOpacity(0.04))
@@ -72,7 +75,9 @@ class ServiceItem extends ConsumerWidget {
                 Container(
                   width: 4,
                   decoration: BoxDecoration(
-                    color: service.color ?? colorScheme.primary,
+                    color: variant?.colorHex != null
+                        ? ColorUtils.fromHex(variant!.colorHex!)
+                        : colorScheme.primary,
                     borderRadius: BorderRadius.only(
                       bottomLeft: isLast
                           ? const Radius.circular(16)
@@ -91,18 +96,18 @@ class ServiceItem extends ConsumerWidget {
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.w500),
                         ),
-                        if (service.duration != null ||
-                            service.price != null ||
-                            service.isFree)
+                        if (variant?.durationMinutes != null ||
+                            variant?.price != null ||
+                            (variant?.isFree ?? false))
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (service.duration != null)
+                                if (variant?.durationMinutes != null)
                                   Text(
                                     context.localizedDurationLabel(
-                                      service.duration!,
+                                      variant!.durationMinutes,
                                     ),
                                     style: const TextStyle(
                                       fontSize: 11,
@@ -110,10 +115,11 @@ class ServiceItem extends ConsumerWidget {
                                       height: 1.1,
                                     ),
                                   ),
-                                if (service.duration != null &&
-                                    (service.price != null || service.isFree))
+                                if (variant?.durationMinutes != null &&
+                                    (variant?.price != null ||
+                                        (variant?.isFree ?? false)))
                                   const SizedBox(width: 8),
-                                if (service.isFree)
+                                if (variant?.isFree ?? false)
                                   Text(
                                     context.l10n.freeLabel,
                                     style: const TextStyle(
@@ -122,12 +128,12 @@ class ServiceItem extends ConsumerWidget {
                                       height: 1.1,
                                     ),
                                   )
-                                else if (service.price != null)
+                                else if (variant?.price != null)
                                   Text(
-                                    PriceFormatter.formatService(
+                                    PriceFormatter.formatVariant(
                                       context: context,
                                       ref: ref,
-                                      service: service,
+                                      variant: variant!,
                                     ),
                                     style: const TextStyle(
                                       fontSize: 11,
@@ -138,7 +144,7 @@ class ServiceItem extends ConsumerWidget {
                               ],
                             ),
                           ),
-                        if (!service.isBookableOnline)
+                        if (!(variant?.isBookableOnline ?? true))
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(

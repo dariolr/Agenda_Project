@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
+import '../../../core/models/service_variant.dart';
+import '../../../core/utils/color_utils.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/reorder_toggle_button.dart';
 import '../../../core/widgets/reorder_toggle_panel.dart';
@@ -505,12 +507,21 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           .where((s) => s.categoryId == category.id)
           .toList();
       if (services.isEmpty) return null;
+      final variants = ref.read(serviceVariantsProvider);
       final counts = <int, int>{};
       Color? topColor;
       int topCount = 0;
       for (final service in services) {
-        final color = service.color;
-        if (color == null) continue;
+        ServiceVariant? variant;
+        for (final v in variants) {
+          if (v.serviceId == service.id) {
+            variant = v;
+            break;
+          }
+        }
+        final colorHex = variant?.colorHex;
+        if (colorHex == null) continue;
+        final color = ColorUtils.fromHex(colorHex);
         final key = color.value;
         final nextCount = (counts[key] ?? 0) + 1;
         counts[key] = nextCount;
