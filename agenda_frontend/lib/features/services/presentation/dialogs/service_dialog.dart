@@ -309,8 +309,7 @@ Future<void> showServiceDialog(
         isBookableOnline: isBookableOnline,
         isFree: effectiveIsFree,
         isPriceStartingFrom: finalIsPriceStartingFrom,
-        resourceRequirements:
-            existingVariant?.resourceRequirements ?? const [],
+        resourceRequirements: existingVariant?.resourceRequirements ?? const [],
       );
 
       if (service == null) {
@@ -470,7 +469,7 @@ Future<void> showServiceDialog(
             ),
           ),
         ),
-        const SizedBox(height: AppSpacing.formRowSpacing),
+        const SizedBox(height: AppSpacing.medium),
         Align(
           alignment: Alignment.center,
           child: ConstrainedBox(
@@ -543,15 +542,18 @@ Future<void> showServiceDialog(
           LabeledFormField(
             label: context.l10n.additionalTimeSwitch,
             child: DropdownButtonFormField<_AdditionalTimeSelection>(
-              value: additionalSelection,
+              value: additionalSelection == _AdditionalTimeSelection.none
+                  ? null
+                  : additionalSelection,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
+              hint: const Text(''),
               items: [
                 DropdownMenuItem(
                   value: _AdditionalTimeSelection.none,
-                  child: Text(context.l10n.additionalTimeOptionNone),
+                  child: const Text(''),
                 ),
                 DropdownMenuItem(
                   value: _AdditionalTimeSelection.processing,
