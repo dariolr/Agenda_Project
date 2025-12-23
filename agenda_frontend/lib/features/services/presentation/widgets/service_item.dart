@@ -65,74 +65,92 @@ class ServiceItem extends ConsumerWidget {
               bottomRight: isLast ? const Radius.circular(16) : Radius.zero,
             ),
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 6,
-            ),
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  service.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
+                Container(
+                  width: 4,
+                  decoration: BoxDecoration(
+                    color: service.color ?? colorScheme.primary,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: isLast ? const Radius.circular(16) : Radius.zero,
+                    ),
                   ),
                 ),
-                if (!service.isBookableOnline)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      context.l10n.notBookableOnline,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.red[600],
-                        fontStyle: FontStyle.italic,
-                      ),
+                Expanded(
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          service.name,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (!service.isBookableOnline)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              context.l10n.notBookableOnline,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.red[600],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    subtitle: service.description != null
+                        ? Text(
+                            service.description!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        : null,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (service.isFree)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green.withOpacity(0.3)),
+                            ),
+                            child: Text(
+                              context.l10n.freeLabel,
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          )
+                        else
+                          Text(
+                            PriceFormatter.formatService(
+                              context: context,
+                              ref: ref,
+                              service: service,
+                            ),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        const SizedBox(width: 8),
+                        if (isWide) _buildActionIcons(context) else _buildPopupMenu(),
+                      ],
                     ),
                   ),
-              ],
-            ),
-            subtitle: service.description != null
-                ? Text(
-                    service.description!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                : null,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (service.isFree)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
-                    ),
-                    child: Text(
-                      context.l10n.freeLabel,
-                      style: const TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  )
-                else
-                  Text(
-                    PriceFormatter.formatService(
-                      context: context,
-                      ref: ref,
-                      service: service,
-                    ),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                const SizedBox(width: 8),
-                if (isWide) _buildActionIcons(context) else _buildPopupMenu(),
+                ),
               ],
             ),
           ),

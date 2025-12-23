@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_staff_eligibility.dart';
 import '../../../core/models/service_variant.dart';
-import '../../../core/models/service_variant_resource_requirement.dart';
 import '../../../core/utils/color_utils.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
@@ -268,112 +267,24 @@ final servicesProvider = NotifierProvider<ServicesNotifier, List<Service>>(
 final serviceVariantsProvider = Provider<List<ServiceVariant>>((ref) {
   final location = ref.watch(currentLocationProvider);
   final currency = ref.watch(effectiveCurrencyProvider); // 🔹 valuta effettiva
+  final services = ref.watch(servicesProvider);
 
-  // Mock variants personalizzate per sede e valuta
+  // Per ora: ogni servizio ha UNA sola variante di default
+  // indipendente dal numero di location.
+  const generatedBaseId = 900000;
   return [
-    ServiceVariant(
-      id: 1001,
-      serviceId: 1,
-      locationId: 101,
-      durationMinutes: 30,
-      price: 45,
-      colorHex: '#6EC5A6',
-      currency: currency,
-      resourceRequirements: const [
-        ServiceVariantResourceRequirement(
-          id: 1,
-          serviceVariantId: 1001,
-          resourceId: 1,
-          unitsRequired: 1,
-        ),
-      ],
-    ),
-    ServiceVariant(
-      id: 1002,
-      serviceId: 1,
-      locationId: 102,
-      durationMinutes: 35,
-      price: 48,
-      colorHex: '#6EC5A6',
-      currency: currency,
-      resourceRequirements: const [
-        ServiceVariantResourceRequirement(
-          id: 2,
-          serviceVariantId: 1002,
-          resourceId: 4,
-          unitsRequired: 1,
-        ),
-      ],
-    ),
-    ServiceVariant(
-      id: 2001,
-      serviceId: 2,
-      locationId: 101,
-      durationMinutes: 45,
-      price: 62,
-      colorHex: '#57A0D3',
-      currency: currency,
-      resourceRequirements: const [
-        ServiceVariantResourceRequirement(
-          id: 3,
-          serviceVariantId: 2001,
-          resourceId: 2,
-          unitsRequired: 1,
-        ),
-      ],
-    ),
-    ServiceVariant(
-      id: 2002,
-      serviceId: 2,
-      locationId: 102,
-      durationMinutes: 50,
-      price: 65,
-      colorHex: '#57A0D3',
-      currency: currency,
-      resourceRequirements: const [
-        ServiceVariantResourceRequirement(
-          id: 4,
-          serviceVariantId: 2002,
-          resourceId: 5,
-          unitsRequired: 1,
-        ),
-      ],
-    ),
-    ServiceVariant(
-      id: 3001,
-      serviceId: 3,
-      locationId: 101,
-      durationMinutes: 40,
-      price: 55,
-      colorHex: '#F4B942',
-      currency: currency,
-      resourceRequirements: const [
-        ServiceVariantResourceRequirement(
-          id: 5,
-          serviceVariantId: 3001,
-          resourceId: 3,
-          unitsRequired: 1,
-        ),
-      ],
-    ),
-    ServiceVariant(
-      id: 3002,
-      serviceId: 3,
-      locationId: 102,
-      durationMinutes: 45,
-      price: 58,
-      colorHex: '#F4B942',
-      currency: currency,
-      resourceRequirements: const [
-        ServiceVariantResourceRequirement(
-          id: 6,
-          serviceVariantId: 3002,
-          resourceId: 6,
-          unitsRequired: 1,
-        ),
-      ],
-    ),
-  ].where((variant) => variant.locationId == location.id).toList();
+    for (final service in services)
+      ServiceVariant(
+        id: generatedBaseId + service.id,
+        serviceId: service.id,
+        locationId: location.id,
+        durationMinutes: service.duration ?? 0,
+        price: service.price ?? 0,
+        colorHex: service.color != null ? ColorUtils.toHex(service.color!) : null,
+        currency: currency,
+        resourceRequirements: const [],
+      ),
+  ];
 });
 
 ///

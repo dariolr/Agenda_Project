@@ -149,6 +149,7 @@
   "fieldNameRequiredError": "Il nome è obbligatorio",
   "categoryDuplicateError": "Esiste già una categoria con questo nome",
   "fieldDescriptionLabel": "Descrizione",
+  "serviceColorLabel": "Colore servizio",
   "newServiceTitle": "Nuovo servizio",
   "editServiceTitle": "Modifica servizio",
   "fieldCategoryLabel": "Categoria",
