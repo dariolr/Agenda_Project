@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/l10n.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import 'service_categories_provider.dart';
@@ -100,7 +101,7 @@ class ServicesReorderNotifier extends Notifier<bool> {
     // servizio selezionato
     final movedService = all.firstWhere(
       (s) => s.id == serviceId,
-      orElse: () => throw Exception('Service not found'),
+      orElse: () => throw Exception(L10n.current.errorServiceNotFound),
     );
 
     // rimuovi da categoria precedente

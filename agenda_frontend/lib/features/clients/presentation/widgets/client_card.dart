@@ -122,8 +122,7 @@ class ClientCard extends ConsumerWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
     // Esempio coerente con altre parti dell'app (e.g. staff widgets): d MMM y
     final formatted = DateFormat('d MMM y', locale).format(date);
-    // Nota: il label non è ancora in L10n; lasciamo la stringa italiana di default.
-    return 'Ultima visita: $formatted';
+    return context.l10n.lastVisitLabel(formatted);
   }
 }
 

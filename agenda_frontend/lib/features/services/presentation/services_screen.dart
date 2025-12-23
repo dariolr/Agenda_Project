@@ -143,7 +143,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Modifica ordinamento',
+                  context.l10n.reorderTitle,
                   style: Theme.of(
                     context,
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),

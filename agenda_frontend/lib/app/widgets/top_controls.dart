@@ -2,6 +2,7 @@ import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
 import 'package:agenda_frontend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_frontend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_frontend/app/widgets/top_controls_scaffold.dart';
+import 'package:agenda_frontend/core/l10n/l10_extension.dart';
 import 'package:agenda_frontend/core/models/location.dart';
 import 'package:agenda_frontend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_frontend/features/agenda/providers/layout_config_provider.dart';
@@ -449,7 +450,7 @@ class _LocationSheetContent extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              allLocationsLabel ?? 'All locations',
+                              allLocationsLabel ?? context.l10n.allLocations,
                               style: TextStyle(
                                 color: colorScheme.onSurface,
                                 fontWeight: isSelected

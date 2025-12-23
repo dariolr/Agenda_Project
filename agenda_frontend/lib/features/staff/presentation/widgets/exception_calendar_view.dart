@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/availability_exception.dart';
@@ -132,21 +133,8 @@ class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
   }
 
   String _formatMonth(DateTime date) {
-    final months = [
-      'Gennaio',
-      'Febbraio',
-      'Marzo',
-      'Aprile',
-      'Maggio',
-      'Giugno',
-      'Luglio',
-      'Agosto',
-      'Settembre',
-      'Ottobre',
-      'Novembre',
-      'Dicembre',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    return DateFormat('MMMM y', locale).format(date);
   }
 
   List<AvailabilityException> _filterExceptionsForMonth(
@@ -205,9 +193,11 @@ class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
                       ? Colors.green
                       : Theme.of(ctx).colorScheme.error,
                 ),
-                title: Text(e.reason ?? _getDefaultReason(e.type)),
+                title: Text(e.reason ?? _getDefaultReason(e.type, context)),
                 subtitle: Text(
-                  e.isAllDay ? 'Giornata intera' : _formatTimeRange(e),
+                  e.isAllDay
+                      ? context.l10n.exceptionAllDay
+                      : _formatTimeRange(e, context),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -227,14 +217,17 @@ class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
     );
   }
 
-  String _getDefaultReason(AvailabilityExceptionType type) {
+  String _getDefaultReason(
+    AvailabilityExceptionType type,
+    BuildContext context,
+  ) {
     return type == AvailabilityExceptionType.available
-        ? 'Disponibile'
-        : 'Non disponibile';
+        ? context.l10n.exceptionTypeAvailable
+        : context.l10n.exceptionTypeUnavailable;
   }
 
-  String _formatTimeRange(AvailabilityException e) {
-    if (e.isAllDay) return 'Giornata intera';
+  String _formatTimeRange(AvailabilityException e, BuildContext context) {
+    if (e.isAllDay) return context.l10n.exceptionAllDay;
     final start =
         '${e.startTime!.hour.toString().padLeft(2, '0')}:${e.startTime!.minute.toString().padLeft(2, '0')}';
     final end =
@@ -455,11 +448,14 @@ class _ExceptionTile extends ConsumerWidget {
         ),
       ),
       title: Text(
-        exception.reason ?? (isAvailable ? 'Disponibile' : 'Non disponibile'),
+        exception.reason ??
+            (isAvailable
+                ? context.l10n.exceptionTypeAvailable
+                : context.l10n.exceptionTypeUnavailable),
         style: theme.textTheme.bodyLarge,
       ),
       subtitle: Text(
-        '${_formatDate(exception.date)} • ${_formatTimeRange(exception)}',
+        '${_formatDate(context, exception.date)} • ${_formatTimeRange(exception, context)}',
         style: theme.textTheme.bodySmall?.copyWith(
           color: colorScheme.onSurfaceVariant,
         ),
@@ -482,13 +478,14 @@ class _ExceptionTile extends ConsumerWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
-    return '${weekdays[date.weekday - 1]} ${date.day}/${date.month}';
+  String _formatDate(BuildContext context, DateTime date) {
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final weekday = DateFormat('EEE', locale).format(date);
+    return '$weekday ${date.day}/${date.month}';
   }
 
-  String _formatTimeRange(AvailabilityException e) {
-    if (e.isAllDay) return 'Giornata intera';
+  String _formatTimeRange(AvailabilityException e, BuildContext context) {
+    if (e.isAllDay) return context.l10n.exceptionAllDay;
     final start =
         '${e.startTime!.hour.toString().padLeft(2, '0')}:${e.startTime!.minute.toString().padLeft(2, '0')}';
     final end =

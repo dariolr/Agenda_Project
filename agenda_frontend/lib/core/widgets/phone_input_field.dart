@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/l10_extension.dart';
 /// Lista dei prefissi telefonici più comuni
 const kPhonePrefixes = <PhonePrefix>[
   PhonePrefix('+39', 'IT', '🇮🇹'),
@@ -201,7 +202,7 @@ class PhoneInputFieldState extends State<PhoneInputField> {
             final t = v?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
             if (t.isEmpty) return null; // optional
             if (!RegExp(r'^\d{6,15}$').hasMatch(t)) {
-              return 'Numero non valido';
+              return context.l10n.validationInvalidPhone;
             }
             return null;
           },
