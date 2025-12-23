@@ -123,25 +123,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ---------- Corpo ----------
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: isReorderCategories
-                  ? _buildReorderCategories(context, ref, categories)
-                  : isReorderServices
-                  ? _buildReorderServices(context, ref, categories)
-                  : _buildNormalList(
-                      context,
-                      ref,
-                      categories,
-                      isWide,
-                      colorScheme,
-                    ),
-            ),
-          ),
           if (showReorderPanel) ...[
-            const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Center(
@@ -188,6 +170,24 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
               ),
             ),
           ],
+
+          // ---------- Corpo ----------
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: isReorderCategories
+                  ? _buildReorderCategories(context, ref, categories)
+                  : isReorderServices
+                  ? _buildReorderServices(context, ref, categories)
+                  : _buildNormalList(
+                      context,
+                      ref,
+                      categories,
+                      isWide,
+                      colorScheme,
+                    ),
+            ),
+          ),
         ],
       ),
     );
