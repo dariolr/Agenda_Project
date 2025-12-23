@@ -28,10 +28,7 @@ Widget _buildAddButtonContent({
     return showLabelEffective
         ? Text(
             label,
-            style: TextStyle(
-              color: onContainer,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(color: onContainer, fontWeight: FontWeight.w600),
           )
         : Icon(Icons.add_outlined, size: 22, color: onContainer);
   }
@@ -45,10 +42,7 @@ Widget _buildAddButtonContent({
       const SizedBox(width: 8),
       Text(
         label,
-        style: TextStyle(
-          color: onContainer,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TextStyle(color: onContainer, fontWeight: FontWeight.w600),
       ),
     ],
   );
@@ -83,9 +77,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           titleSpacing: isTablet && isAgenda
               ? 4
               : NavigationToolbar.kMiddleSpacing,
-          title: isAgenda
-              ? const AgendaTopControls()
-              : const SizedBox.shrink(),
+          title: isAgenda ? const AgendaTopControls() : const SizedBox.shrink(),
           centerTitle: false,
           toolbarHeight: 76,
           actions: isAgenda
@@ -213,8 +205,7 @@ class _AgendaAddAction extends ConsumerWidget {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
-    final showLabelEffective =
-        showLabel || formFactor != AppFormFactor.mobile;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -279,8 +270,7 @@ class _ServicesAddAction extends ConsumerWidget {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
-    final showLabelEffective =
-        showLabel || formFactor != AppFormFactor.mobile;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -338,8 +328,7 @@ class _ClientsAddAction extends ConsumerWidget {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
-    final showLabelEffective =
-        showLabel || formFactor != AppFormFactor.mobile;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
     if (compact) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -393,18 +382,18 @@ class _ClientsAddAction extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               clipBehavior: Clip.antiAlias,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 28, 8),
-              child: _buildAddButtonContent(
-                showLabelEffective: showLabelEffective,
-                compact: compact,
-                label: l10n.agendaAdd,
-                onContainer: onContainer,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 28, 8),
+                child: _buildAddButtonContent(
+                  showLabelEffective: showLabelEffective,
+                  compact: compact,
+                  label: l10n.agendaAdd,
+                  onContainer: onContainer,
+                ),
               ),
-            ),
-          );
-        },
-      ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -441,22 +430,6 @@ class _MobileAgendaDateSwitcher extends ConsumerWidget {
 }
 
 class _ScaffoldWithNavigationHelpers {
-  static String getLocalizedTitle(BuildContext context, int index) {
-    final l10n = context.l10n;
-    switch (index) {
-      case 0:
-        return l10n.navAgenda;
-      case 1:
-        return l10n.navClients;
-      case 2:
-        return l10n.navServices;
-      case 3:
-        return l10n.navStaff;
-      default:
-        return l10n.appTitle;
-    }
-  }
-
   static List<NavigationDestination> getDestinations(BuildContext context) {
     final l10n = context.l10n;
     return [
