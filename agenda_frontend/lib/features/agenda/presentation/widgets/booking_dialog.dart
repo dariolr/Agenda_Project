@@ -971,14 +971,14 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         orElse: () => variants.first,
       );
       final service = services.firstWhere((s) => s.id == item.serviceId);
-      final processingMinutes = service.processingTime ?? 0;
-      final blockedMinutes = service.blockedTime ?? 0;
+      final processingMinutes = variant.processingTime ?? 0;
+      final blockedMinutes = variant.blockedTime ?? 0;
       final extraMinutes = blockedMinutes;
       final extraMinutesType =
           blockedMinutes > 0
               ? ExtraMinutesType.blocked
               : (processingMinutes > 0 ? ExtraMinutesType.processing : null);
-      final effectivePrice = service.isFree ? null : service.price;
+      final effectivePrice = variant.isFree ? null : variant.price;
 
       final start = DateTime(
         _date.year,
@@ -987,10 +987,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         item.startTime.hour,
         item.startTime.minute,
       );
-      final durationMinutes = (item.durationMinutes > 0
-              ? item.durationMinutes
-              : variant.durationMinutes) +
-          extraMinutes;
+      final durationMinutes = ((item.durationMinutes > 0
+                  ? item.durationMinutes
+                  : variant.durationMinutes) +
+              extraMinutes)
+          .toInt();
       final end = start.add(Duration(minutes: durationMinutes));
 
       final created = appointmentsNotifier.addAppointment(

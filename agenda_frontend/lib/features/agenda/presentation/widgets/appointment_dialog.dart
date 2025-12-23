@@ -893,14 +893,15 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         orElse: () => variants.first,
       );
       final service = services.firstWhere((s) => s.id == item.serviceId);
-      final processingMinutes = service.processingTime ?? 0;
-      final blockedMinutes = service.blockedTime ?? 0;
+      final processingMinutes = selectedVariant.processingTime ?? 0;
+      final blockedMinutes = selectedVariant.blockedTime ?? 0;
       final extraMinutes = blockedMinutes;
       final extraMinutesType =
           blockedMinutes > 0
               ? ExtraMinutesType.blocked
               : (processingMinutes > 0 ? ExtraMinutesType.processing : null);
-      final effectivePrice = service.isFree ? null : service.price;
+      final effectivePrice =
+          selectedVariant.isFree ? null : selectedVariant.price;
 
       final start = DateTime(
         _date.year,
