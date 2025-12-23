@@ -139,6 +139,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   Widget build(BuildContext context) {
     final ref = this.ref;
     final staffList = ref.watch(filteredStaffProvider);
+    final hasStaff = staffList.isNotEmpty;
     final isResizing = ref.watch(isResizingProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
 
@@ -191,9 +192,10 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
                     child: SingleChildScrollView(
                       controller: _hourColumnController,
                       scrollDirection: Axis.vertical,
-                      physics: isResizing
-                          ? const NeverScrollableScrollPhysics()
-                          : null,
+                      physics:
+                          isResizing || hasStaff
+                              ? const NeverScrollableScrollPhysics()
+                              : null,
                       child: SizedBox(
                         width: hourColumnWidth,
                         child: const HourColumn(),
@@ -211,12 +213,13 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final mainRow = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        hourColumnStack,
-        AgendaVerticalDivider(
-          height: totalHeight,
-          thickness: 1,
-          fadeTopHeight: layoutConfig.headerHeight,
-        ),
+        if (hasStaff) hourColumnStack,
+        if (hasStaff)
+          AgendaVerticalDivider(
+            height: totalHeight,
+            thickness: 1,
+            fadeTopHeight: layoutConfig.headerHeight,
+          ),
         Expanded(
           child: AgendaDay(
             staffList: staffList,
