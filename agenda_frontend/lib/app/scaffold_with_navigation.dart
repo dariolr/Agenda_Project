@@ -127,7 +127,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isStaff = navigationShell.currentIndex == 3;
     final isTablet = formFactor == AppFormFactor.tablet;
     final showBottomDateSwitcher =
-        isAgenda && formFactor == AppFormFactor.mobile;
+        isAgenda && formFactor != AppFormFactor.desktop;
     final bottomNavColor =
         Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
         Theme.of(context).colorScheme.surface;
@@ -216,7 +216,8 @@ class _AgendaAddAction extends ConsumerWidget {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
-    final showLabelEffective = showLabel ||
+    final showLabelEffective =
+        showLabel ||
         formFactor == AppFormFactor.tablet ||
         formFactor == AppFormFactor.desktop;
 
@@ -284,7 +285,8 @@ class _ServicesAddAction extends ConsumerWidget {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
-    final showLabelEffective = showLabel ||
+    final showLabelEffective =
+        showLabel ||
         formFactor == AppFormFactor.tablet ||
         formFactor == AppFormFactor.desktop;
     const iconOnlyWidth = 46.0;
