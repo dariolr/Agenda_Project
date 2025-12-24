@@ -206,6 +206,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 class _AgendaAddAction extends ConsumerWidget {
   const _AgendaAddAction({this.compact = false});
   final bool compact;
+  static const double _actionButtonHeight = 40;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -220,6 +221,8 @@ class _AgendaAddAction extends ConsumerWidget {
         showLabel ||
         formFactor == AppFormFactor.tablet ||
         formFactor == AppFormFactor.desktop;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -257,13 +260,17 @@ class _AgendaAddAction extends ConsumerWidget {
           color: scheme.secondaryContainer,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: _buildAddButtonContent(
-              showLabelEffective: showLabelEffective,
-              compact: compact,
-              label: l10n.agendaAdd,
-              onContainer: onContainer,
+          child: SizedBox(
+            height: _actionButtonHeight,
+            width: isIconOnly ? iconOnlyWidth : null,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: _buildAddButtonContent(
+                showLabelEffective: showLabelEffective,
+                compact: compact,
+                label: l10n.agendaAdd,
+                onContainer: onContainer,
+              ),
             ),
           ),
         ),
@@ -361,16 +368,20 @@ class _ServicesAddAction extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: _buildAddButtonContent(
-                  showLabelEffective: showLabelEffective,
-                  compact: compact,
-                  label: l10n.agendaAdd,
-                  onContainer: onContainer,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: _buildAddButtonContent(
+                    showLabelEffective: showLabelEffective,
+                    compact: compact,
+                    label: l10n.agendaAdd,
+                    onContainer: onContainer,
+                  ),
                 ),
               ),
             ),
@@ -489,16 +500,20 @@ class _TeamAddAction extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: _buildAddButtonContent(
-                  showLabelEffective: showLabelEffective,
-                  compact: compact,
-                  label: l10n.agendaAdd,
-                  onContainer: onContainer,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: _buildAddButtonContent(
+                    showLabelEffective: showLabelEffective,
+                    compact: compact,
+                    label: l10n.agendaAdd,
+                    onContainer: onContainer,
+                  ),
                 ),
               ),
             ),
@@ -512,6 +527,7 @@ class _TeamAddAction extends ConsumerWidget {
 class _ClientsAddAction extends ConsumerWidget {
   const _ClientsAddAction({this.compact = false});
   final bool compact;
+  static const double _actionButtonHeight = 40;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -520,6 +536,8 @@ class _ClientsAddAction extends ConsumerWidget {
     final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
     final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
     if (compact) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -538,16 +556,20 @@ class _ClientsAddAction extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  child: _buildAddButtonContent(
-                    showLabelEffective: showLabelEffective,
-                    compact: compact,
-                    label: l10n.agendaAdd,
-                    onContainer: onContainer,
+                child: SizedBox(
+                  height: _actionButtonHeight,
+                  width: isIconOnly ? iconOnlyWidth : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: _buildAddButtonContent(
+                      showLabelEffective: showLabelEffective,
+                      compact: compact,
+                      label: l10n.agendaAdd,
+                      onContainer: onContainer,
+                    ),
                   ),
                 ),
               );
@@ -573,13 +595,17 @@ class _ClientsAddAction extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 28, 8),
-                child: _buildAddButtonContent(
-                  showLabelEffective: showLabelEffective,
-                  compact: compact,
-                  label: l10n.agendaAdd,
-                  onContainer: onContainer,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 28, 8),
+                  child: _buildAddButtonContent(
+                    showLabelEffective: showLabelEffective,
+                    compact: compact,
+                    label: l10n.agendaAdd,
+                    onContainer: onContainer,
+                  ),
                 ),
               ),
             );
