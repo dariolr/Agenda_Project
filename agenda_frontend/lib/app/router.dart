@@ -87,18 +87,17 @@ final GoRouter appRouter = GoRouter(
               name: 'staff',
               builder: (BuildContext context, GoRouterState state) =>
                   const TeamScreen(),
-              routes: [
-                GoRoute(
-                  path: 'availability',
-                  name: 'staff-availability',
-                  builder: (BuildContext context, GoRouterState state) =>
-                      const StaffWeekOverviewScreen(),
-                ),
-              ],
             ),
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: '/staff-availability',
+      name: 'staff-availability',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (BuildContext context, GoRouterState state) =>
+          const StaffWeekOverviewScreen(),
     ),
   ],
 );

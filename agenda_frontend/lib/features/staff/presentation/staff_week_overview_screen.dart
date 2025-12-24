@@ -1426,6 +1426,7 @@ class _StaffWeekOverviewScreenState
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
+        leading: const BackButton(),
         title: StaffTopControls(
           todayLabel: context.l10n.currentWeek,
           labelOverride: weekLabel,
