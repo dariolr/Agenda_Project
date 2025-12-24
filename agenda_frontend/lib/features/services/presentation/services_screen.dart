@@ -175,20 +175,17 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
           // ---------- Corpo ----------
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: isReorderCategories
-                  ? _buildReorderCategories(context, ref, categories)
-                  : isReorderServices
-                  ? _buildReorderServices(context, ref, categories)
-                  : _buildNormalList(
-                      context,
-                      ref,
-                      categories,
-                      isWide,
-                      colorScheme,
-                    ),
-            ),
+            child: isReorderCategories
+                ? _buildReorderCategories(context, ref, categories)
+                : isReorderServices
+                ? _buildReorderServices(context, ref, categories)
+                : _buildNormalList(
+                    context,
+                    ref,
+                    categories,
+                    isWide,
+                    colorScheme,
+                  ),
           ),
         ],
       ),

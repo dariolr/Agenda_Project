@@ -88,18 +88,16 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
                     Text(
                       context.l10n.reorderTitle,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
                       child: Text(
                         context.l10n.teamReorderHelpDescription,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                     ReorderTogglePanel(
@@ -129,14 +127,11 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
             ),
           ],
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: isReorderLocations
-                  ? _buildReorderLocations(context, ref, locations)
-                  : isReorderStaff
-                      ? _buildReorderStaff(context, ref, locations)
-                      : _buildNormalList(context, ref, locations, isWide),
-            ),
+            child: isReorderLocations
+                ? _buildReorderLocations(context, ref, locations)
+                : isReorderStaff
+                ? _buildReorderStaff(context, ref, locations)
+                : _buildNormalList(context, ref, locations, isWide),
           ),
         ],
       ),
@@ -255,9 +250,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
             child: Text(
               loc.name,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onPrimaryContainer,
-                  ),
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onPrimaryContainer,
+              ),
             ),
           );
         }
@@ -307,16 +302,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
           location: loc,
           staff: staff,
           isWide: isWide,
-          onAddStaff: () => showStaffDialog(
-                context,
-                ref,
-                initialLocationId: loc.id,
-              ),
-          onEditLocation: () => showLocationDialog(
-                context,
-                ref,
-                initial: loc,
-              ),
+          onAddStaff: () =>
+              showStaffDialog(context, ref, initialLocationId: loc.id),
+          onEditLocation: () => showLocationDialog(context, ref, initial: loc),
           onDeleteLocation: () async {
             if (staff.isNotEmpty) {
               await showAppInfoDialog(
@@ -337,17 +325,13 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
               ref.read(locationsProvider.notifier).delete(loc.id);
             }
           },
-          onEditStaff: (staff) => showStaffDialog(
-                context,
-                ref,
-                initial: staff,
-              ),
+          onEditStaff: (staff) => showStaffDialog(context, ref, initial: staff),
           onDuplicateStaff: (staff) => showStaffDialog(
-                context,
-                ref,
-                initial: staff,
-                duplicateFrom: true,
-              ),
+            context,
+            ref,
+            initial: staff,
+            duplicateFrom: true,
+          ),
           onDeleteStaff: (staff) async {
             final confirmed = await showConfirmDialog(
               context,

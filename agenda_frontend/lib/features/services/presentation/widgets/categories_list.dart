@@ -45,7 +45,7 @@ class CategoriesList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView.builder(
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
       itemCount: categories.length,
       itemBuilder: (context, index) {
         final category = categories[index];
@@ -55,8 +55,10 @@ class CategoriesList extends ConsumerWidget {
         final hasPrev = index > 0;
         final prevIsNonEmpty = hasPrev
             ? ref
-                .watch(sortedServicesByCategoryProvider(categories[index - 1].id))
-                .isNotEmpty
+                  .watch(
+                    sortedServicesByCategoryProvider(categories[index - 1].id),
+                  )
+                  .isNotEmpty
             : false;
         final isFirstEmptyAfterNonEmpty =
             services.isEmpty && (!hasPrev || prevIsNonEmpty);

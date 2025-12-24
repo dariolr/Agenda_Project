@@ -102,6 +102,16 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     );
     _clientId = appt.clientId;
     _clientName = appt.clientName;
+    Future.microtask(() {
+      if (!mounted) return;
+      ref.read(bookingsProvider.notifier).ensureBooking(
+            bookingId: appt.bookingId,
+            businessId: appt.businessId,
+            locationId: appt.locationId,
+            clientId: appt.clientId,
+            customerName: appt.clientName,
+          );
+    });
     // Leggi le note dalla Booking associata
     final booking = ref.read(bookingsProvider)[appt.bookingId];
     _notesController.text = booking?.notes ?? '';
