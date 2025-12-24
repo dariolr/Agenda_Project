@@ -36,6 +36,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
     this.onServicePickerAutoOpened,
     this.onServicePickerAutoCompleted,
     this.onAutoOpenStaffPickerCompleted,
+    this.availabilityWarningMessage,
   });
 
   final ServiceItemData item;
@@ -59,6 +60,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
   final VoidCallback? onServicePickerAutoOpened;
   final VoidCallback? onServicePickerAutoCompleted;
   final VoidCallback? onAutoOpenStaffPickerCompleted;
+  final String? availabilityWarningMessage;
 
   @override
   ConsumerState<ServiceItemCard> createState() => _ServiceItemCardState();
@@ -89,6 +91,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
       widget.onServicePickerAutoCompleted;
   VoidCallback? get onAutoOpenStaffPickerCompleted =>
       widget.onAutoOpenStaffPickerCompleted;
+  String? get availabilityWarningMessage => widget.availabilityWarningMessage;
 
   @override
   void didUpdateWidget(covariant ServiceItemCard oldWidget) {
@@ -151,6 +154,11 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
 
             // Orario
             _buildTimeSelector(context, l10n, theme),
+
+            if (availabilityWarningMessage != null) ...[
+              const SizedBox(height: 12),
+              _buildAvailabilityWarning(availabilityWarningMessage!),
+            ],
           ],
         ),
       ),
@@ -193,6 +201,37 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
       autoOpenPicker: autoOpenServicePicker,
       onAutoOpenPickerTriggered: onServicePickerAutoOpened,
       onAutoOpenPickerCompleted: onServicePickerAutoCompleted,
+    );
+  }
+
+  Widget _buildAvailabilityWarning(String message) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.amber,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Color(0xFF8A4D00),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

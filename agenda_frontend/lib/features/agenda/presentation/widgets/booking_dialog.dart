@@ -215,6 +215,18 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         : l10n.appointmentDialogTitleNew;
 
     final isDesktop = widget.presentation == _BookingPresentation.dialog;
+    final conflictFlags = _serviceConflictFlags();
+    final eligibleIndices = <int>[];
+    for (int i = 0; i < _serviceItems.length; i++) {
+      if (_isWarningEligible(_serviceItems[i])) {
+        eligibleIndices.add(i);
+      }
+    }
+    final allEligibleConflict = eligibleIndices.isNotEmpty &&
+        eligibleIndices.every((i) => conflictFlags[i]);
+    final showAppointmentWarning =
+        eligibleIndices.length > 1 && allEligibleConflict;
+    final showServiceWarnings = !showAppointmentWarning;
     final content = Form(
       key: _formKey,
       child: ConstrainedBox(
@@ -284,6 +296,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                   variants: variants,
                   allStaff: allStaff,
                   formFactor: formFactor,
+                  conflictFlags: conflictFlags,
+                  showServiceWarnings: showServiceWarnings,
+                  serviceWarningMessage:
+                      l10n.bookingUnavailableTimeWarningService,
                 ),
 
                 const SizedBox(height: AppSpacing.formRowSpacing),
@@ -324,7 +340,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     ];
 
     if (isDialog) {
-      final hasConflicts = _hasAvailabilityConflicts();
       return DismissibleDialog(
         child: Dialog(
           insetPadding: const EdgeInsets.symmetric(
@@ -347,7 +362,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     padding: const EdgeInsets.only(
                       bottom: AppSpacing.formFirstRowSpacing,
                     ),
-                    child: _warningBanner(20, hasConflicts),
+                    child: _warningBanner(
+                      20,
+                      showAppointmentWarning,
+                      l10n.bookingUnavailableTimeWarningAppointment,
+                    ),
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -378,8 +397,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       12,
     );
 
-    final hasConflicts = _hasAvailabilityConflicts();
-
     return SafeArea(
       top: false,
       child: Column(
@@ -396,48 +413,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
               child: content,
             ),
           ),
-          if (hasConflicts && !_warningDismissed)
-            Container(
-              width: double.infinity,
-              color: Colors.amber.withOpacity(0.18),
-              padding: EdgeInsets.fromLTRB(
-                horizontalPadding,
-                12,
-                horizontalPadding,
-                12,
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.amber,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      context.l10n.bookingUnavailableTimeWarning,
-                      style: const TextStyle(
-                        color: Color(0xFF8A4D00),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 18),
-                    color: const Color(0xFF8A4D00),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 32,
-                      height: 32,
-                    ),
-                    onPressed: () {
-                      setState(() => _warningDismissed = true);
-                    },
-                  ),
-                ],
-              ),
-            ),
+          _warningBanner(
+            horizontalPadding,
+            showAppointmentWarning,
+            l10n.bookingUnavailableTimeWarningAppointment,
+          ),
           const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
           Padding(
             padding: EdgeInsets.fromLTRB(
@@ -472,6 +452,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     required List<dynamic> variants,
     required List<dynamic> allStaff,
     required AppFormFactor formFactor,
+    required List<bool> conflictFlags,
+    required bool showServiceWarnings,
+    required String serviceWarningMessage,
   }) {
     final widgets = <Widget>[];
 
@@ -482,6 +465,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
     for (int i = 0; i < _serviceItems.length; i++) {
       final item = _serviceItems[i];
+      final showWarning = showServiceWarnings &&
+          _isWarningEligible(item) &&
+          i < conflictFlags.length &&
+          conflictFlags[i];
 
       // Get eligible staff for this service
       final eligibleStaffIds = item.serviceId != null
@@ -534,6 +521,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     : null,
                 onServicePickerAutoCompleted: _scrollFormToBottom,
                 onAutoOpenStaffPickerCompleted: _scrollFormToBottom,
+                availabilityWarningMessage:
+                    showWarning ? serviceWarningMessage : null,
               ),
             ),
             if (isLast && item.serviceId != null) ...[
@@ -581,7 +570,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     return widgets;
   }
 
-  Widget _warningBanner(double horizontalPadding, bool hasConflicts) {
+  Widget _warningBanner(
+    double horizontalPadding,
+    bool hasConflicts,
+    String message,
+  ) {
     if (!hasConflicts || _warningDismissed) return const SizedBox.shrink();
     return Container(
       width: double.infinity,
@@ -605,7 +598,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              context.l10n.bookingUnavailableTimeWarning,
+              message,
               style: const TextStyle(
                 color: Color(0xFF8A4D00),
                 fontWeight: FontWeight.w600,
@@ -626,31 +619,47 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     );
   }
 
-  bool _hasAvailabilityConflicts() {
+  bool _isWarningEligible(ServiceItemData item) {
+    return item.serviceId != null && item.staffId != null;
+  }
+
+  List<bool> _serviceConflictFlags() {
     final layout = ref.watch(layoutConfigProvider);
     final Map<int, Set<int>> cache = {};
+    final flags = <bool>[];
 
     for (final item in _serviceItems) {
       final staffId = item.staffId;
-      if (staffId == null) continue;
+      if (staffId == null || item.serviceId == null) {
+        flags.add(false);
+        continue;
+      }
 
       final available = cache.putIfAbsent(
         staffId,
         () => ref.watch(staffSlotAvailabilityProvider(staffId)),
       );
 
-      if (available.isEmpty) return true;
+      if (available.isEmpty) {
+        flags.add(true);
+        continue;
+      }
 
       final startMinutes = item.startTime.hour * 60 + item.startTime.minute;
       final endMinutes = startMinutes + item.durationMinutes;
       final startSlot = startMinutes ~/ layout.minutesPerSlot;
       final endSlot = (endMinutes / layout.minutesPerSlot).ceil();
 
+      var hasConflict = false;
       for (int slot = startSlot; slot < endSlot; slot++) {
-        if (!available.contains(slot)) return true;
+        if (!available.contains(slot)) {
+          hasConflict = true;
+          break;
+        }
       }
+      flags.add(hasConflict);
     }
-    return false;
+    return flags;
   }
 
   void _scheduleAutoClientPicker() {

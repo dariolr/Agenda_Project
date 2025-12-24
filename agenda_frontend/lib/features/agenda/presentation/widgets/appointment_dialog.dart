@@ -233,6 +233,19 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     // aveva già un cliente associato (clientId != null)
     final isClientLocked = widget.initial.clientId != null;
 
+    final conflictFlags = _serviceConflictFlags();
+    final eligibleIndices = <int>[];
+    for (int i = 0; i < _serviceItems.length; i++) {
+      if (_isWarningEligible(_serviceItems[i])) {
+        eligibleIndices.add(i);
+      }
+    }
+    final allEligibleConflict = eligibleIndices.isNotEmpty &&
+        eligibleIndices.every((i) => conflictFlags[i]);
+    final showAppointmentWarning =
+        eligibleIndices.length > 1 && allEligibleConflict;
+    final showServiceWarnings = !showAppointmentWarning;
+
     final content = ScrollConfiguration(
       behavior: const NoScrollbarBehavior(),
       child: SingleChildScrollView(
@@ -290,6 +303,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                 variants: variants,
                 allStaff: staff,
                 formFactor: formFactor,
+                conflictFlags: conflictFlags,
+                showServiceWarnings: showServiceWarnings,
+                serviceWarningMessage:
+                    l10n.bookingUnavailableTimeWarningService,
               ),
               const SizedBox(height: AppSpacing.formRowSpacing),
               // Notes field
@@ -361,7 +378,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     ];
 
     if (isDialog) {
-      final hasConflicts = _hasAvailabilityConflicts();
       return PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, _) async {
@@ -389,7 +405,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                     padding: const EdgeInsets.only(
                       bottom: AppSpacing.formFirstRowSpacing,
                     ),
-                    child: _warningBanner(8, hasConflicts),
+                    child: _warningBanner(
+                      8,
+                      showAppointmentWarning,
+                      l10n.bookingUnavailableTimeWarningAppointment,
+                    ),
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -411,7 +431,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       );
     }
     const horizontalPadding = 20.0;
-    final hasConflicts = _hasAvailabilityConflicts();
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
@@ -435,14 +454,18 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               ),
               child: Text(title, style: Theme.of(context).textTheme.titleLarge),
             ),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: content,
-              ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: content,
             ),
-            _warningBanner(horizontalPadding, hasConflicts),
-            const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
+          ),
+          _warningBanner(
+            horizontalPadding,
+            showAppointmentWarning,
+            l10n.bookingUnavailableTimeWarningAppointment,
+          ),
+          const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
             Padding(
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
@@ -497,6 +520,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     required List<dynamic> variants,
     required List<dynamic> allStaff,
     required AppFormFactor formFactor,
+    required List<bool> conflictFlags,
+    required bool showServiceWarnings,
+    required String serviceWarningMessage,
   }) {
     final widgets = <Widget>[];
 
@@ -507,6 +533,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
     for (int i = 0; i < _serviceItems.length; i++) {
       final item = _serviceItems[i];
+      final showWarning = showServiceWarnings &&
+          _isWarningEligible(item) &&
+          i < conflictFlags.length &&
+          conflictFlags[i];
 
       // Get eligible staff for this service
       final eligibleStaffIds = item.serviceId != null
@@ -554,6 +584,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                     _updateServiceDuration(i, duration),
                 onServicePickerAutoCompleted: _scrollFormToBottom,
                 onAutoOpenStaffPickerCompleted: _scrollFormToBottom,
+                availabilityWarningMessage:
+                    showWarning ? serviceWarningMessage : null,
               ),
             ),
             if (isLast && item.serviceId != null) ...[
@@ -601,7 +633,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     return widgets;
   }
 
-  Widget _warningBanner(double horizontalPadding, bool hasConflicts) {
+  Widget _warningBanner(
+    double horizontalPadding,
+    bool hasConflicts,
+    String message,
+  ) {
     if (!hasConflicts || _warningDismissed) return const SizedBox.shrink();
     return Container(
       width: double.infinity,
@@ -625,7 +661,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              context.l10n.bookingUnavailableTimeWarning,
+              message,
               style: const TextStyle(
                 color: Color(0xFF8A4D00),
                 fontWeight: FontWeight.w600,
@@ -646,31 +682,47 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     );
   }
 
-  bool _hasAvailabilityConflicts() {
+  bool _isWarningEligible(ServiceItemData item) {
+    return item.serviceId != null && item.staffId != null;
+  }
+
+  List<bool> _serviceConflictFlags() {
     final layout = ref.watch(layoutConfigProvider);
     final Map<int, Set<int>> cache = {};
+    final flags = <bool>[];
 
     for (final item in _serviceItems) {
       final staffId = item.staffId;
-      if (staffId == null) continue;
+      if (staffId == null || item.serviceId == null) {
+        flags.add(false);
+        continue;
+      }
 
       final available = cache.putIfAbsent(
         staffId,
         () => ref.watch(staffSlotAvailabilityProvider(staffId)),
       );
 
-      if (available.isEmpty) return true;
+      if (available.isEmpty) {
+        flags.add(true);
+        continue;
+      }
 
       final startMinutes = item.startTime.hour * 60 + item.startTime.minute;
       final endMinutes = startMinutes + item.durationMinutes;
       final startSlot = startMinutes ~/ layout.minutesPerSlot;
       final endSlot = (endMinutes / layout.minutesPerSlot).ceil();
 
+      var hasConflict = false;
       for (int slot = startSlot; slot < endSlot; slot++) {
-        if (!available.contains(slot)) return true;
+        if (!available.contains(slot)) {
+          hasConflict = true;
+          break;
+        }
       }
+      flags.add(hasConflict);
     }
-    return false;
+    return flags;
   }
 
   void _addService() {

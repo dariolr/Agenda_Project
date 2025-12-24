@@ -123,6 +123,8 @@
   ,"bookingItems": "Servizi"
   ,"bookingTotal": "Totale"
   ,"bookingUnavailableTimeWarning": "Attenzione: l’orario selezionato include fasce non disponibili per lo staff scelto."
+  ,"bookingUnavailableTimeWarningAppointment": "Attenzione: l’orario selezionato per l’appuntamento include fasce non disponibili per lo staff scelto."
+  ,"bookingUnavailableTimeWarningService": "Attenzione: l’orario di questo servizio include fasce non disponibili per lo staff scelto."
   ,"actionDeleteBooking": "Elimina prenotazione"  ,"deleteAppointmentConfirmTitle": "Eliminare l'appuntamento?"
   ,"deleteAppointmentConfirmMessage": "L'appuntamento verrà rimosso. L'operazione non può essere annullata."  ,"deleteBookingConfirmTitle": "Eliminare l’intera prenotazione?"
 ,"deleteBookingConfirmMessage": "Verranno rimossi tutti i servizi collegati. L'operazione non può essere annullata."
