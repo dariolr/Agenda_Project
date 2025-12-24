@@ -1,4 +1,5 @@
 import 'package:agenda_frontend/app/providers/form_factor_provider.dart';
+import 'package:agenda_frontend/app/theme/app_spacing.dart';
 import 'package:agenda_frontend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_frontend/core/widgets/labeled_form_field.dart';
 import 'package:agenda_frontend/features/staff/providers/staff_providers.dart';
@@ -399,32 +400,58 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
     return SafeArea(
       top: false,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SizedBox(
+            height: constraints.maxHeight,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            title,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ),
+                        content,
+                        const SizedBox(height: 24),
+                        const SizedBox(height: AppSpacing.formRowSpacing),
+                      ],
+                    ),
+                  ),
+                ),
+                const Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: Color(0x1F000000),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: bottomActions,
+                    ),
+                  ),
+                ),
+                SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
+              ],
             ),
-            content,
-            const SizedBox(height: 24),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Wrap(
-                alignment: WrapAlignment.end,
-                spacing: 8,
-                runSpacing: 8,
-                children: bottomActions,
-              ),
-            ),
-            SizedBox(height: 32 + MediaQuery.of(context).viewPadding.bottom),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
