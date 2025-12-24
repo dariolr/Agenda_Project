@@ -1,0 +1,658 @@
+// DO NOT EDIT. This is code generated via package:intl/generate_localized.dart
+// This is a library that provides messages for a en locale. All the
+// messages from the main program should be duplicated here with the same
+// function name.
+
+// Ignore issues from commonly used lints in this file.
+// ignore_for_file:unnecessary_brace_in_string_interps, unnecessary_new
+// ignore_for_file:prefer_single_quotes,comment_references, directives_ordering
+// ignore_for_file:annotate_overrides,prefer_generic_function_type_aliases
+// ignore_for_file:unused_import, file_names, avoid_escaping_inner_quotes
+// ignore_for_file:unnecessary_string_interpolations, unnecessary_string_escapes
+
+import 'package:intl/intl.dart';
+import 'package:intl/message_lookup_by_library.dart';
+
+final messages = new MessageLookup();
+
+typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
+
+class MessageLookup extends MessageLookupByLibrary {
+  String get localeName => 'en';
+
+  static String m0(count) =>
+      "The client will also be associated with the other ${count} appointments in this booking.";
+
+  static String m1(name) => "Availability – ${name}";
+
+  static String m2(clientName) => "${clientName}\'s appointments";
+
+  static String m3(hours) => "${hours} hour";
+
+  static String m4(hours, minutes) => "${hours} hour ${minutes} min";
+
+  static String m5(minutes) => "${minutes} min";
+
+  static String m6(id) => "Exception not found: ${id}";
+
+  static String m7(factor) => "No builder available for ${factor}";
+
+  static String m8(path) => "Page not found: ${path}";
+
+  static String m9(count) =>
+      "${count} ${Intl.plural(count, one: 'day', other: 'days')}";
+
+  static String m10(hours) => "${hours}h";
+
+  static String m11(hours, minutes) => "${hours}h ${minutes}m";
+
+  static String m12(date) => "Last visit: ${date}";
+
+  static String m13(newTime, staffName) =>
+      "The appointment will be moved to ${newTime} for ${staffName}.";
+
+  static String m14(count) => "${count} eligible team members";
+
+  static String m15(count) =>
+      "${Intl.plural(count, one: '1 service selected', other: '${count} services selected')}";
+
+  static String m16(dayName) =>
+      "Delete the weekly time slot for every ${dayName}";
+
+  static String m17(date) => "Delete only the time slot of ${date}";
+
+  static String m18(dayName) =>
+      "Edit the weekly time slot for every ${dayName}";
+
+  static String m19(date) => "Edit only the time slot of ${date}";
+
+  static String m20(count) => "${count} eligible services";
+
+  static String m21(selected, total) => "${selected} of ${total}";
+
+  static String m22(hours) => "${hours} hours total";
+
+  final messages = _notInlinedMessages(_notInlinedMessages);
+  static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+    "actionCancel": MessageLookupByLibrary.simpleMessage("Cancel"),
+    "actionClose": MessageLookupByLibrary.simpleMessage("Close"),
+    "actionConfirm": MessageLookupByLibrary.simpleMessage("Confirm"),
+    "actionDelete": MessageLookupByLibrary.simpleMessage("Delete"),
+    "actionDeleteBooking": MessageLookupByLibrary.simpleMessage(
+      "Delete booking",
+    ),
+    "actionDiscard": MessageLookupByLibrary.simpleMessage("Cancel"),
+    "actionEdit": MessageLookupByLibrary.simpleMessage("Edit"),
+    "actionKeepEditing": MessageLookupByLibrary.simpleMessage("Keep editing"),
+    "actionSave": MessageLookupByLibrary.simpleMessage("Save"),
+    "addClientToAppointment": MessageLookupByLibrary.simpleMessage(
+      "Add a client to the appointment",
+    ),
+    "addService": MessageLookupByLibrary.simpleMessage("Add service"),
+    "addServiceTooltip": MessageLookupByLibrary.simpleMessage("Add service"),
+    "additionalTimeOptionBlocked": MessageLookupByLibrary.simpleMessage(
+      "Blocked time",
+    ),
+    "additionalTimeOptionProcessing": MessageLookupByLibrary.simpleMessage(
+      "Processing time",
+    ),
+    "additionalTimeSwitch": MessageLookupByLibrary.simpleMessage(
+      "Additional time",
+    ),
+    "agendaAdd": MessageLookupByLibrary.simpleMessage("Add"),
+    "agendaAddAppointment": MessageLookupByLibrary.simpleMessage(
+      "New appointment",
+    ),
+    "agendaAddBlock": MessageLookupByLibrary.simpleMessage("New block"),
+    "agendaAddTitle": MessageLookupByLibrary.simpleMessage("Add a..."),
+    "agendaNextDay": MessageLookupByLibrary.simpleMessage("Next day"),
+    "agendaNextMonth": MessageLookupByLibrary.simpleMessage("Next month"),
+    "agendaNextWeek": MessageLookupByLibrary.simpleMessage("Next Week"),
+    "agendaNoLocations": MessageLookupByLibrary.simpleMessage(
+      "No locations available",
+    ),
+    "agendaPrevDay": MessageLookupByLibrary.simpleMessage("Previous day"),
+    "agendaPrevMonth": MessageLookupByLibrary.simpleMessage("Previous month"),
+    "agendaPrevWeek": MessageLookupByLibrary.simpleMessage("Previous Week"),
+    "agendaSelectLocation": MessageLookupByLibrary.simpleMessage(
+      "Select location",
+    ),
+    "agendaToday": MessageLookupByLibrary.simpleMessage("Today"),
+    "allLocations": MessageLookupByLibrary.simpleMessage("All locations"),
+    "appTitle": MessageLookupByLibrary.simpleMessage("Agenda Platform"),
+    "applyClientToAllAppointmentsMessage": m0,
+    "applyClientToAllAppointmentsTitle": MessageLookupByLibrary.simpleMessage(
+      "Apply client to entire booking?",
+    ),
+    "appointmentDialogTitleEdit": MessageLookupByLibrary.simpleMessage(
+      "Edit appointment",
+    ),
+    "appointmentDialogTitleNew": MessageLookupByLibrary.simpleMessage(
+      "New appointment",
+    ),
+    "appointmentNoteLabel": MessageLookupByLibrary.simpleMessage(
+      "Appointment note",
+    ),
+    "appointmentNotesTitle": MessageLookupByLibrary.simpleMessage("Notes"),
+    "atLeastOneServiceRequired": MessageLookupByLibrary.simpleMessage(
+      "Add at least one service",
+    ),
+    "availabilitySave": MessageLookupByLibrary.simpleMessage("Save changes"),
+    "availabilityTitle": MessageLookupByLibrary.simpleMessage(
+      "Weekly availability",
+    ),
+    "availabilityTitleFor": m1,
+    "blockAllDay": MessageLookupByLibrary.simpleMessage("All day"),
+    "blockDialogTitleEdit": MessageLookupByLibrary.simpleMessage("Edit block"),
+    "blockDialogTitleNew": MessageLookupByLibrary.simpleMessage("New block"),
+    "blockEndTime": MessageLookupByLibrary.simpleMessage("End time"),
+    "blockReason": MessageLookupByLibrary.simpleMessage("Reason (optional)"),
+    "blockReasonHint": MessageLookupByLibrary.simpleMessage(
+      "E.g. Meeting, Break, etc.",
+    ),
+    "blockSelectStaff": MessageLookupByLibrary.simpleMessage("Select team"),
+    "blockSelectStaffError": MessageLookupByLibrary.simpleMessage(
+      "Select at least one team member",
+    ),
+    "blockStartTime": MessageLookupByLibrary.simpleMessage("Start time"),
+    "blockTimeError": MessageLookupByLibrary.simpleMessage(
+      "End time must be after start time",
+    ),
+    "bookableOnlineSwitch": MessageLookupByLibrary.simpleMessage(
+      "Bookable online",
+    ),
+    "bookingDetails": MessageLookupByLibrary.simpleMessage("Booking details"),
+    "bookingItems": MessageLookupByLibrary.simpleMessage("Services"),
+    "bookingNotes": MessageLookupByLibrary.simpleMessage("Booking notes"),
+    "bookingStaffNotEligibleWarning": MessageLookupByLibrary.simpleMessage(
+      "Warning: the selected team member is not eligible for this service.",
+    ),
+    "bookingTotal": MessageLookupByLibrary.simpleMessage("Total"),
+    "bookingUnavailableTimeWarningAppointment":
+        MessageLookupByLibrary.simpleMessage(
+          "Warning: the appointment time includes unavailable slots for the chosen team.",
+        ),
+    "bookingUnavailableTimeWarningService": MessageLookupByLibrary.simpleMessage(
+      "Warning: this service time includes unavailable slots for the chosen team.",
+    ),
+    "cannotDeleteCategoryContent": MessageLookupByLibrary.simpleMessage(
+      "This category contains one or more services.",
+    ),
+    "cannotDeleteTitle": MessageLookupByLibrary.simpleMessage("Cannot delete"),
+    "cannotUndoWarning": MessageLookupByLibrary.simpleMessage(
+      "This action cannot be undone.",
+    ),
+    "categoryDuplicateError": MessageLookupByLibrary.simpleMessage(
+      "A category with this name already exists",
+    ),
+    "clientAppointmentsEmpty": MessageLookupByLibrary.simpleMessage(
+      "No appointments",
+    ),
+    "clientAppointmentsPast": MessageLookupByLibrary.simpleMessage("Past"),
+    "clientAppointmentsTitle": m2,
+    "clientAppointmentsUpcoming": MessageLookupByLibrary.simpleMessage(
+      "Upcoming",
+    ),
+    "clientLockedHint": MessageLookupByLibrary.simpleMessage(
+      "Client cannot be changed for this appointment",
+    ),
+    "clientNoteLabel": MessageLookupByLibrary.simpleMessage("Client note"),
+    "clientOptionalHint": MessageLookupByLibrary.simpleMessage(
+      "Leave empty if you don\'t want to associate a client with the appointment",
+    ),
+    "clientsEdit": MessageLookupByLibrary.simpleMessage("Edit client"),
+    "clientsEmpty": MessageLookupByLibrary.simpleMessage("No clients"),
+    "clientsNew": MessageLookupByLibrary.simpleMessage("New client"),
+    "clientsTitle": MessageLookupByLibrary.simpleMessage("Clients List"),
+    "createCategoryButtonLabel": MessageLookupByLibrary.simpleMessage(
+      "New category",
+    ),
+    "createNewClient": MessageLookupByLibrary.simpleMessage(
+      "Create new client",
+    ),
+    "currentWeek": MessageLookupByLibrary.simpleMessage("Current week"),
+    "dayFridayFull": MessageLookupByLibrary.simpleMessage("Friday"),
+    "dayMondayFull": MessageLookupByLibrary.simpleMessage("Monday"),
+    "daySaturdayFull": MessageLookupByLibrary.simpleMessage("Saturday"),
+    "daySundayFull": MessageLookupByLibrary.simpleMessage("Sunday"),
+    "dayThursdayFull": MessageLookupByLibrary.simpleMessage("Thursday"),
+    "dayTuesdayFull": MessageLookupByLibrary.simpleMessage("Tuesday"),
+    "dayWednesdayFull": MessageLookupByLibrary.simpleMessage("Wednesday"),
+    "deleteAppointmentConfirmMessage": MessageLookupByLibrary.simpleMessage(
+      "The appointment will be removed. This action cannot be undone.",
+    ),
+    "deleteAppointmentConfirmTitle": MessageLookupByLibrary.simpleMessage(
+      "Delete appointment?",
+    ),
+    "deleteBookingConfirmMessage": MessageLookupByLibrary.simpleMessage(
+      "All linked services will be removed. This action cannot be undone.",
+    ),
+    "deleteBookingConfirmTitle": MessageLookupByLibrary.simpleMessage(
+      "Delete entire booking?",
+    ),
+    "deleteClientConfirmMessage": MessageLookupByLibrary.simpleMessage(
+      "The client will be permanently deleted. This action cannot be undone.",
+    ),
+    "deleteClientConfirmTitle": MessageLookupByLibrary.simpleMessage(
+      "Delete client?",
+    ),
+    "deleteConfirmationTitle": MessageLookupByLibrary.simpleMessage(
+      "Confirm deletion?",
+    ),
+    "deleteServiceQuestion": MessageLookupByLibrary.simpleMessage(
+      "Delete this service?",
+    ),
+    "discardChangesMessage": MessageLookupByLibrary.simpleMessage(
+      "You have unsaved changes. Do you want to discard them?",
+    ),
+    "discardChangesTitle": MessageLookupByLibrary.simpleMessage(
+      "Unsaved changes",
+    ),
+    "duplicateAction": MessageLookupByLibrary.simpleMessage("Duplicate"),
+    "durationHour": m3,
+    "durationHourMinute": m4,
+    "durationMinute": m5,
+    "editCategoryTitle": MessageLookupByLibrary.simpleMessage("Edit category"),
+    "editServiceTitle": MessageLookupByLibrary.simpleMessage("Edit service"),
+    "emptyCategoriesNotReorderableNote": MessageLookupByLibrary.simpleMessage(
+      "Categories without services cannot be reordered and stay at the end.",
+    ),
+    "errorExceptionNotFound": m6,
+    "errorFormFactorBuilderMissing": m7,
+    "errorFormFactorBuilderRequired": MessageLookupByLibrary.simpleMessage(
+      "Specify at least one builder for form factor",
+    ),
+    "errorNotFound": m8,
+    "errorServiceNotFound": MessageLookupByLibrary.simpleMessage(
+      "Service not found",
+    ),
+    "errorTitle": MessageLookupByLibrary.simpleMessage("Error"),
+    "exceptionAllDay": MessageLookupByLibrary.simpleMessage("All day"),
+    "exceptionDateFrom": MessageLookupByLibrary.simpleMessage("Start date"),
+    "exceptionDateTo": MessageLookupByLibrary.simpleMessage("End date"),
+    "exceptionDeleteMessage": MessageLookupByLibrary.simpleMessage(
+      "The exception will be permanently deleted.",
+    ),
+    "exceptionDeleteShift": MessageLookupByLibrary.simpleMessage(
+      "Delete exception",
+    ),
+    "exceptionDeleteShiftDesc": MessageLookupByLibrary.simpleMessage(
+      "Restore base availability",
+    ),
+    "exceptionDeleteTitle": MessageLookupByLibrary.simpleMessage(
+      "Delete exception?",
+    ),
+    "exceptionDialogTitleEdit": MessageLookupByLibrary.simpleMessage(
+      "Edit exception",
+    ),
+    "exceptionDialogTitleNew": MessageLookupByLibrary.simpleMessage(
+      "New exception",
+    ),
+    "exceptionDuration": MessageLookupByLibrary.simpleMessage(
+      "Duration (days)",
+    ),
+    "exceptionDurationDays": m9,
+    "exceptionEditShift": MessageLookupByLibrary.simpleMessage(
+      "Edit exception",
+    ),
+    "exceptionEditShiftDesc": MessageLookupByLibrary.simpleMessage(
+      "Edit the times of this exception",
+    ),
+    "exceptionEndTime": MessageLookupByLibrary.simpleMessage("End time"),
+    "exceptionPeriodDuration": MessageLookupByLibrary.simpleMessage("Duration"),
+    "exceptionPeriodMode": MessageLookupByLibrary.simpleMessage("Period"),
+    "exceptionPeriodRange": MessageLookupByLibrary.simpleMessage("From - To"),
+    "exceptionPeriodSingle": MessageLookupByLibrary.simpleMessage("Single day"),
+    "exceptionReason": MessageLookupByLibrary.simpleMessage(
+      "Reason (optional)",
+    ),
+    "exceptionReasonExtraShift": MessageLookupByLibrary.simpleMessage(
+      "Extra shift",
+    ),
+    "exceptionReasonHint": MessageLookupByLibrary.simpleMessage(
+      "E.g. Holiday, Medical visit, Extra shift...",
+    ),
+    "exceptionReasonMedicalVisit": MessageLookupByLibrary.simpleMessage(
+      "Medical visit",
+    ),
+    "exceptionReasonVacation": MessageLookupByLibrary.simpleMessage("Vacation"),
+    "exceptionSelectTime": MessageLookupByLibrary.simpleMessage("Select time"),
+    "exceptionStartTime": MessageLookupByLibrary.simpleMessage("Start time"),
+    "exceptionTimeError": MessageLookupByLibrary.simpleMessage(
+      "End time must be after start time",
+    ),
+    "exceptionType": MessageLookupByLibrary.simpleMessage("Exception type"),
+    "exceptionTypeAvailable": MessageLookupByLibrary.simpleMessage("Available"),
+    "exceptionTypeUnavailable": MessageLookupByLibrary.simpleMessage(
+      "Unavailable",
+    ),
+    "exceptionsAdd": MessageLookupByLibrary.simpleMessage("Add exception"),
+    "exceptionsEmpty": MessageLookupByLibrary.simpleMessage(
+      "No exceptions configured",
+    ),
+    "exceptionsTitle": MessageLookupByLibrary.simpleMessage("Exceptions"),
+    "fieldBlockedTimeLabel": MessageLookupByLibrary.simpleMessage(
+      "Blocked time",
+    ),
+    "fieldCategoryRequiredLabel": MessageLookupByLibrary.simpleMessage(
+      "Category *",
+    ),
+    "fieldDescriptionLabel": MessageLookupByLibrary.simpleMessage(
+      "Description",
+    ),
+    "fieldDurationRequiredError": MessageLookupByLibrary.simpleMessage(
+      "Please select a duration",
+    ),
+    "fieldDurationRequiredLabel": MessageLookupByLibrary.simpleMessage(
+      "Duration *",
+    ),
+    "fieldNameRequiredError": MessageLookupByLibrary.simpleMessage(
+      "Name is required",
+    ),
+    "fieldNameRequiredLabel": MessageLookupByLibrary.simpleMessage("Name *"),
+    "fieldPriceLabel": MessageLookupByLibrary.simpleMessage("Price"),
+    "fieldProcessingTimeLabel": MessageLookupByLibrary.simpleMessage(
+      "Processing time",
+    ),
+    "filterAll": MessageLookupByLibrary.simpleMessage("All"),
+    "filterInactive": MessageLookupByLibrary.simpleMessage("Inactive"),
+    "filterNew": MessageLookupByLibrary.simpleMessage("New"),
+    "filterVIP": MessageLookupByLibrary.simpleMessage("VIP"),
+    "formClient": MessageLookupByLibrary.simpleMessage("Client"),
+    "formDate": MessageLookupByLibrary.simpleMessage("Date"),
+    "formEmail": MessageLookupByLibrary.simpleMessage("Email"),
+    "formFirstName": MessageLookupByLibrary.simpleMessage("First name"),
+    "formLastName": MessageLookupByLibrary.simpleMessage("Last name"),
+    "formNotes": MessageLookupByLibrary.simpleMessage(
+      "Notes (not visible to client)",
+    ),
+    "formPhone": MessageLookupByLibrary.simpleMessage("Phone"),
+    "formService": MessageLookupByLibrary.simpleMessage("Service"),
+    "formServices": MessageLookupByLibrary.simpleMessage("Services"),
+    "formStaff": MessageLookupByLibrary.simpleMessage("Team"),
+    "freeLabel": MessageLookupByLibrary.simpleMessage("Free"),
+    "freeServiceSwitch": MessageLookupByLibrary.simpleMessage("Free service"),
+    "hoursHoursOnly": m10,
+    "hoursMinutesCompact": m11,
+    "labelSelect": MessageLookupByLibrary.simpleMessage("Select"),
+    "labelStaff": MessageLookupByLibrary.simpleMessage("Team:"),
+    "lastVisitLabel": m12,
+    "moveAppointmentConfirmMessage": m13,
+    "moveAppointmentConfirmTitle": MessageLookupByLibrary.simpleMessage(
+      "Confirm move?",
+    ),
+    "navAgenda": MessageLookupByLibrary.simpleMessage("Agenda"),
+    "navClients": MessageLookupByLibrary.simpleMessage("Clients"),
+    "navServices": MessageLookupByLibrary.simpleMessage("Services"),
+    "navStaff": MessageLookupByLibrary.simpleMessage("Team"),
+    "newCategoryTitle": MessageLookupByLibrary.simpleMessage("New category"),
+    "newServiceTitle": MessageLookupByLibrary.simpleMessage("New service"),
+    "noClientForAppointment": MessageLookupByLibrary.simpleMessage(
+      "No client for the appointment",
+    ),
+    "noServicesAdded": MessageLookupByLibrary.simpleMessage(
+      "No services added",
+    ),
+    "noServicesInCategory": MessageLookupByLibrary.simpleMessage(
+      "No services in this category",
+    ),
+    "noStaffAvailable": MessageLookupByLibrary.simpleMessage(
+      "No team available",
+    ),
+    "notBookableOnline": MessageLookupByLibrary.simpleMessage(
+      "Not bookable online",
+    ),
+    "notesPlaceholder": MessageLookupByLibrary.simpleMessage(
+      "Notes about the appointment...",
+    ),
+    "priceNotAvailable": MessageLookupByLibrary.simpleMessage("N/A"),
+    "priceStartingFromPrefix": MessageLookupByLibrary.simpleMessage(
+      "starting from",
+    ),
+    "priceStartingFromSwitch": MessageLookupByLibrary.simpleMessage(
+      "Price “starting from”",
+    ),
+    "removeClient": MessageLookupByLibrary.simpleMessage("Remove client"),
+    "reorderHelpDescription": MessageLookupByLibrary.simpleMessage(
+      "Reorder categories and services by dragging them: the same order will be applied to online booking.",
+    ),
+    "reorderTitle": MessageLookupByLibrary.simpleMessage("Reorder"),
+    "searchClientPlaceholder": MessageLookupByLibrary.simpleMessage(
+      "Search client...",
+    ),
+    "selectClientTitle": MessageLookupByLibrary.simpleMessage("Select client"),
+    "selectService": MessageLookupByLibrary.simpleMessage("Select service"),
+    "selectStaffTitle": MessageLookupByLibrary.simpleMessage("Select team"),
+    "serviceColorLabel": MessageLookupByLibrary.simpleMessage("Service color"),
+    "serviceDuplicateCopyWord": MessageLookupByLibrary.simpleMessage("Copy"),
+    "serviceDuplicateError": MessageLookupByLibrary.simpleMessage(
+      "A service with this name already exists",
+    ),
+    "serviceEligibleStaffCount": m14,
+    "serviceEligibleStaffNone": MessageLookupByLibrary.simpleMessage(
+      "No eligible team members",
+    ),
+    "serviceSeedCategoryBodyDescription": MessageLookupByLibrary.simpleMessage(
+      "Services dedicated to body wellness",
+    ),
+    "serviceSeedCategoryBodyName": MessageLookupByLibrary.simpleMessage(
+      "Body Treatments",
+    ),
+    "serviceSeedCategoryFaceDescription": MessageLookupByLibrary.simpleMessage(
+      "Aesthetic and rejuvenating care for the face",
+    ),
+    "serviceSeedCategoryFaceName": MessageLookupByLibrary.simpleMessage(
+      "Facial Treatments",
+    ),
+    "serviceSeedCategorySportsDescription":
+        MessageLookupByLibrary.simpleMessage(
+          "Programs designed for athletes and active people",
+        ),
+    "serviceSeedCategorySportsName": MessageLookupByLibrary.simpleMessage(
+      "Sports Treatments",
+    ),
+    "serviceSeedServiceFaceDescription": MessageLookupByLibrary.simpleMessage(
+      "Cleansing and illuminating treatment",
+    ),
+    "serviceSeedServiceFaceName": MessageLookupByLibrary.simpleMessage(
+      "Facial Treatment",
+    ),
+    "serviceSeedServiceRelaxDescription": MessageLookupByLibrary.simpleMessage(
+      "Relaxing 30-minute treatment",
+    ),
+    "serviceSeedServiceRelaxName": MessageLookupByLibrary.simpleMessage(
+      "Relax Massage",
+    ),
+    "serviceSeedServiceSportDescription": MessageLookupByLibrary.simpleMessage(
+      "Intensive decontracting treatment",
+    ),
+    "serviceSeedServiceSportName": MessageLookupByLibrary.simpleMessage(
+      "Sports Massage",
+    ),
+    "servicesNewServiceMenu": MessageLookupByLibrary.simpleMessage(
+      "New service",
+    ),
+    "servicesSelectedCount": m15,
+    "setPriceToEnable": MessageLookupByLibrary.simpleMessage(
+      "Set a price to enable this option",
+    ),
+    "shiftDeleteAll": MessageLookupByLibrary.simpleMessage(
+      "Delete all these shifts",
+    ),
+    "shiftDeleteAllDesc": m16,
+    "shiftDeleteThisOnly": MessageLookupByLibrary.simpleMessage(
+      "Delete only this shift",
+    ),
+    "shiftDeleteThisOnlyDesc": m17,
+    "shiftEditAll": MessageLookupByLibrary.simpleMessage(
+      "Edit all these shifts",
+    ),
+    "shiftEditAllDesc": m18,
+    "shiftEditThisOnly": MessageLookupByLibrary.simpleMessage(
+      "Edit only this shift",
+    ),
+    "shiftEditThisOnlyDesc": m19,
+    "shiftEditTitle": MessageLookupByLibrary.simpleMessage("Edit shift"),
+    "shiftEndTime": MessageLookupByLibrary.simpleMessage("End time"),
+    "shiftStartTime": MessageLookupByLibrary.simpleMessage("Start time"),
+    "sortByCreatedAtAsc": MessageLookupByLibrary.simpleMessage(
+      "Created (oldest)",
+    ),
+    "sortByCreatedAtDesc": MessageLookupByLibrary.simpleMessage(
+      "Created (newest)",
+    ),
+    "sortByLastNameAsc": MessageLookupByLibrary.simpleMessage(
+      "Last name (A-Z)",
+    ),
+    "sortByLastNameDesc": MessageLookupByLibrary.simpleMessage(
+      "Last name (Z-A)",
+    ),
+    "sortByLastVisitAsc": MessageLookupByLibrary.simpleMessage(
+      "Last visit (oldest)",
+    ),
+    "sortByLastVisitDesc": MessageLookupByLibrary.simpleMessage(
+      "Last visit (recent)",
+    ),
+    "sortByNameAsc": MessageLookupByLibrary.simpleMessage("Name (A-Z)"),
+    "sortByNameDesc": MessageLookupByLibrary.simpleMessage("Name (Z-A)"),
+    "sortByTitle": MessageLookupByLibrary.simpleMessage("Sort by"),
+    "staffEditHours": MessageLookupByLibrary.simpleMessage("Edit hours"),
+    "staffFilterAllTeam": MessageLookupByLibrary.simpleMessage("All team"),
+    "staffFilterOnDuty": MessageLookupByLibrary.simpleMessage("On duty team"),
+    "staffFilterSelectMembers": MessageLookupByLibrary.simpleMessage(
+      "Select team members",
+    ),
+    "staffFilterTitle": MessageLookupByLibrary.simpleMessage("Filter team"),
+    "staffFilterTooltip": MessageLookupByLibrary.simpleMessage("Filter team"),
+    "staffHubAvailabilitySubtitle": MessageLookupByLibrary.simpleMessage(
+      "Configure weekly working hours",
+    ),
+    "staffHubAvailabilityTitle": MessageLookupByLibrary.simpleMessage(
+      "Availability",
+    ),
+    "staffHubNotYetAvailable": MessageLookupByLibrary.simpleMessage(
+      "Not yet available",
+    ),
+    "staffHubStatsSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Performance and workloads",
+    ),
+    "staffHubStatsTitle": MessageLookupByLibrary.simpleMessage("Statistics"),
+    "staffHubTeamSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Manage members and roles",
+    ),
+    "staffHubTeamTitle": MessageLookupByLibrary.simpleMessage("Team"),
+    "staffNotBookableOnlineMessage": MessageLookupByLibrary.simpleMessage(
+      "This team member is not enabled for online bookings. You can change this in the staff edit form.",
+    ),
+    "staffNotBookableOnlineTitle": MessageLookupByLibrary.simpleMessage(
+      "Not bookable online",
+    ),
+    "staffNotBookableOnlineTooltip": MessageLookupByLibrary.simpleMessage(
+      "Not bookable online",
+    ),
+    "staffScreenPlaceholder": MessageLookupByLibrary.simpleMessage(
+      "Team Screen",
+    ),
+    "teamAddStaff": MessageLookupByLibrary.simpleMessage("Add team member"),
+    "teamChooseLocationSingleButton": MessageLookupByLibrary.simpleMessage(
+      "Select location",
+    ),
+    "teamChooseLocationsButton": MessageLookupByLibrary.simpleMessage(
+      "Select locations",
+    ),
+    "teamDeleteLocationBlockedMessage": MessageLookupByLibrary.simpleMessage(
+      "Remove all team members assigned to this location first.",
+    ),
+    "teamDeleteLocationBlockedTitle": MessageLookupByLibrary.simpleMessage(
+      "Cannot delete location",
+    ),
+    "teamDeleteLocationMessage": MessageLookupByLibrary.simpleMessage(
+      "The location will be removed from the team. This action cannot be undone.",
+    ),
+    "teamDeleteLocationTitle": MessageLookupByLibrary.simpleMessage(
+      "Delete location?",
+    ),
+    "teamDeleteStaffMessage": MessageLookupByLibrary.simpleMessage(
+      "The member will be removed from the team. This action cannot be undone.",
+    ),
+    "teamDeleteStaffTitle": MessageLookupByLibrary.simpleMessage(
+      "Delete team member?",
+    ),
+    "teamEditLocationTitle": MessageLookupByLibrary.simpleMessage(
+      "Edit location",
+    ),
+    "teamEditStaffTitle": MessageLookupByLibrary.simpleMessage(
+      "Edit team member",
+    ),
+    "teamEligibleServicesCount": m20,
+    "teamEligibleServicesLabel": MessageLookupByLibrary.simpleMessage(
+      "Eligible services",
+    ),
+    "teamEligibleServicesNone": MessageLookupByLibrary.simpleMessage(
+      "No eligible services",
+    ),
+    "teamEligibleStaffLabel": MessageLookupByLibrary.simpleMessage(
+      "Eligible team members",
+    ),
+    "teamLocationAddressLabel": MessageLookupByLibrary.simpleMessage("Address"),
+    "teamLocationLabel": MessageLookupByLibrary.simpleMessage("Location"),
+    "teamLocationNameLabel": MessageLookupByLibrary.simpleMessage(
+      "Location name",
+    ),
+    "teamLocationsLabel": MessageLookupByLibrary.simpleMessage("Locations"),
+    "teamNewLocationTitle": MessageLookupByLibrary.simpleMessage(
+      "New location",
+    ),
+    "teamNewStaffTitle": MessageLookupByLibrary.simpleMessage(
+      "New team member",
+    ),
+    "teamNoStaffInLocation": MessageLookupByLibrary.simpleMessage(
+      "No team members in this location",
+    ),
+    "teamReorderHelpDescription": MessageLookupByLibrary.simpleMessage(
+      "Reorder locations and team members by dragging them. The order will also apply in the agenda section.",
+    ),
+    "teamSelectAllLocations": MessageLookupByLibrary.simpleMessage(
+      "Select all",
+    ),
+    "teamSelectAllServices": MessageLookupByLibrary.simpleMessage("Select all"),
+    "teamSelectedServicesButton": MessageLookupByLibrary.simpleMessage(
+      "Selected services",
+    ),
+    "teamSelectedServicesCount": m21,
+    "teamServicesLabel": MessageLookupByLibrary.simpleMessage("Services"),
+    "teamStaffBookableOnlineLabel": MessageLookupByLibrary.simpleMessage(
+      "Enabled for online bookings",
+    ),
+    "teamStaffColorLabel": MessageLookupByLibrary.simpleMessage("Color"),
+    "teamStaffLabel": MessageLookupByLibrary.simpleMessage("Team"),
+    "teamStaffLocationsLabel": MessageLookupByLibrary.simpleMessage(
+      "Assigned locations",
+    ),
+    "teamStaffMultiLocationWarning": MessageLookupByLibrary.simpleMessage(
+      "If the member works across multiple locations, make sure availability aligns with the selected locations.",
+    ),
+    "teamStaffNameLabel": MessageLookupByLibrary.simpleMessage("First name"),
+    "teamStaffSurnameLabel": MessageLookupByLibrary.simpleMessage("Last name"),
+    "validationInvalidEmail": MessageLookupByLibrary.simpleMessage(
+      "Invalid email",
+    ),
+    "validationInvalidPhone": MessageLookupByLibrary.simpleMessage(
+      "Invalid phone",
+    ),
+    "validationNameOrLastNameRequired": MessageLookupByLibrary.simpleMessage(
+      "Enter at least first name or last name",
+    ),
+    "validationRequired": MessageLookupByLibrary.simpleMessage("Required"),
+    "weeklyScheduleAddShift": MessageLookupByLibrary.simpleMessage("Add shift"),
+    "weeklyScheduleFor": MessageLookupByLibrary.simpleMessage("to"),
+    "weeklyScheduleNotWorking": MessageLookupByLibrary.simpleMessage(
+      "Not working",
+    ),
+    "weeklyScheduleRemoveShift": MessageLookupByLibrary.simpleMessage(
+      "Remove shift",
+    ),
+    "weeklyScheduleTitle": MessageLookupByLibrary.simpleMessage("Weekly"),
+    "weeklyScheduleTotalHours": m22,
+  };
+}
