@@ -824,17 +824,68 @@ class _StaffWeekOverviewScreenState
           formFactor: formFactor,
         );
         if (result != null) {
-          // Crea eccezione di disponibilità con i nuovi orari
-          await ref
-              .read(availabilityExceptionsProvider.notifier)
-              .addException(
-                staffId: staffId,
-                date: date,
-                startTime: result.startTime,
-                endTime: result.endTime,
-                type: AvailabilityExceptionType.available,
-                reason: null,
-              );
+          Future<void> addDeltaException(
+            int startMinutes,
+            int endMinutes,
+            AvailabilityExceptionType type,
+          ) async {
+            if (endMinutes <= startMinutes) return;
+            await ref
+                .read(availabilityExceptionsProvider.notifier)
+                .addException(
+                  staffId: staffId,
+                  date: date,
+                  startTime: TimeOfDay(
+                    hour: startMinutes ~/ 60,
+                    minute: startMinutes % 60,
+                  ),
+                  endTime: TimeOfDay(
+                    hour: endMinutes ~/ 60,
+                    minute: endMinutes % 60,
+                  ),
+                  type: type,
+                  reason: null,
+                );
+          }
+
+          final baseStartMinutes = range.startHour * 60 + range.startMinute;
+          final baseEndMinutes = range.endHour * 60 + range.endMinute;
+          final newStartMinutes =
+              result.startTime.hour * 60 + result.startTime.minute;
+          final newEndMinutes =
+              result.endTime.hour * 60 + result.endTime.minute;
+
+          // Rimuovi le ore tolte rispetto al turno base
+          if (newStartMinutes > baseStartMinutes) {
+            await addDeltaException(
+              baseStartMinutes,
+              newStartMinutes,
+              AvailabilityExceptionType.unavailable,
+            );
+          }
+          if (newEndMinutes < baseEndMinutes) {
+            await addDeltaException(
+              newEndMinutes,
+              baseEndMinutes,
+              AvailabilityExceptionType.unavailable,
+            );
+          }
+
+          // Aggiungi eventuali estensioni rispetto al turno base
+          if (newStartMinutes < baseStartMinutes) {
+            await addDeltaException(
+              newStartMinutes,
+              baseStartMinutes,
+              AvailabilityExceptionType.available,
+            );
+          }
+          if (newEndMinutes > baseEndMinutes) {
+            await addDeltaException(
+              baseEndMinutes,
+              newEndMinutes,
+              AvailabilityExceptionType.available,
+            );
+          }
         }
       }
 
