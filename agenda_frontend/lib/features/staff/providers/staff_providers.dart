@@ -18,6 +18,7 @@ class StaffNotifier extends Notifier<List<Staff>> {
         color: Colors.green,
         locationIds: const [101],
         sortOrder: 0,
+        isBookableOnline: true,
       ),
       Staff(
         id: 2,
@@ -27,6 +28,7 @@ class StaffNotifier extends Notifier<List<Staff>> {
         color: Colors.cyan,
         locationIds: const [102],
         sortOrder: 1,
+        isBookableOnline: true,
       ),
       Staff(
         id: 3,
@@ -36,6 +38,7 @@ class StaffNotifier extends Notifier<List<Staff>> {
         color: Colors.orange,
         locationIds: const [101, 102],
         sortOrder: 2,
+        isBookableOnline: false,
       ),
       Staff(
         id: 4,
@@ -45,6 +48,7 @@ class StaffNotifier extends Notifier<List<Staff>> {
         color: Colors.pinkAccent,
         locationIds: const [101],
         sortOrder: 3,
+        isBookableOnline: true,
       ),
     ];
   }

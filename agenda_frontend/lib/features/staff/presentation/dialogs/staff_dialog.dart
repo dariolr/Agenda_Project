@@ -7,6 +7,9 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../services/presentation/widgets/service_eligibility_selector.dart';
+import '../../../services/providers/service_categories_provider.dart';
+import '../../../services/providers/services_provider.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../../agenda/providers/location_providers.dart';
 import '../../providers/staff_providers.dart';
@@ -57,7 +60,11 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
 
   late Color _selectedColor;
   final Set<int> _selectedLocationIds = {};
+  final Set<int> _selectedServiceIds = {};
   String? _locationsError;
+  bool _isSelectingServices = false;
+  bool _isSelectingLocations = false;
+  bool _isBookableOnline = true;
 
   static const List<Color> _palette = [
     Colors.green,
@@ -87,6 +94,10 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       _nameController.text = initial.name;
       _surnameController.text = initial.surname;
       _selectedLocationIds.addAll(initial.locationIds);
+      _isBookableOnline = initial.isBookableOnline;
+      _selectedServiceIds.addAll(
+        ref.read(eligibleServicesForStaffProvider(initial.id)),
+      );
     } else if (widget.initialLocationId != null) {
       _selectedLocationIds.add(widget.initialLocationId!);
     }
@@ -105,6 +116,8 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final title =
         widget.isEditing ? l10n.teamEditStaffTitle : l10n.teamNewStaffTitle;
     final locations = ref.watch(locationsProvider);
+    final totalServicesCount = ref.watch(servicesProvider).length;
+    final totalLocationsCount = locations.length;
 
     final actions = [
       AppOutlinedActionButton(
@@ -173,30 +186,43 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
             ],
           ),
           const SizedBox(height: AppSpacing.formRowSpacing),
-          Text(
-            l10n.teamStaffLocationsLabel,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          Column(
-            children: [
-              for (final loc in locations)
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: _selectedLocationIds.contains(loc.id),
-                  onChanged: (value) {
-                    setState(() {
-                      if (value == true) {
-                        _selectedLocationIds.add(loc.id);
-                      } else {
-                        _selectedLocationIds.remove(loc.id);
-                      }
-                      _locationsError = null;
-                    });
-                  },
-                  title: Text(loc.name),
+          AppOutlinedActionButton(
+            onPressed: _openLocationsSelector,
+            expand: true,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(l10n.teamChooseLocationsButton),
+                  ),
                 ),
-            ],
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_selectedLocationIds.length}/$totalLocationsCount',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ],
+            ),
           ),
           if (_locationsError != null)
             Padding(
@@ -209,6 +235,51 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                     ?.copyWith(color: Theme.of(context).colorScheme.error),
               ),
             ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          AppOutlinedActionButton(
+            onPressed: _openServicesSelector,
+            expand: true,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(l10n.teamChooseServicesButton),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_selectedServiceIds.length}/$totalServicesCount',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          _SwitchTile(
+            title: l10n.teamStaffBookableOnlineLabel,
+            value: _isBookableOnline,
+            onChanged: (v) => setState(() => _isBookableOnline = v),
+          ),
           const SizedBox(height: AppSpacing.formRowSpacing),
           Text(
             l10n.teamStaffMultiLocationWarning,
@@ -323,27 +394,424 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final surname = _surnameController.text.trim();
 
     if (widget.initial != null) {
+      ref.read(serviceStaffEligibilityProvider.notifier).setEligibleServicesForStaff(
+            staffId: widget.initial!.id,
+            locationId: ref.read(currentLocationProvider).id,
+            serviceIds: _selectedServiceIds,
+          );
       notifier.update(
         widget.initial!.copyWith(
           name: name,
           surname: surname,
           color: _selectedColor,
           locationIds: _selectedLocationIds.toList(),
+          isBookableOnline: _isBookableOnline,
         ),
       );
     } else {
+      final newId = notifier.nextId();
       notifier.add(
         Staff(
-          id: notifier.nextId(),
+          id: newId,
           businessId: business.id,
           name: name,
           surname: surname,
           color: _selectedColor,
           locationIds: _selectedLocationIds.toList(),
           sortOrder: notifier.nextSortOrderForLocations(_selectedLocationIds),
+          isBookableOnline: _isBookableOnline,
+        ),
+      );
+      ref.read(serviceStaffEligibilityProvider.notifier).setEligibleServicesForStaff(
+            staffId: newId,
+            locationId: ref.read(currentLocationProvider).id,
+            serviceIds: _selectedServiceIds,
+          );
+    }
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _openServicesSelector() async {
+    if (_isSelectingServices) return;
+    setState(() => _isSelectingServices = true);
+    final l10n = context.l10n;
+    final services = ref.read(servicesProvider);
+    final categories = ref.read(serviceCategoriesProvider);
+    final formFactor = ref.read(formFactorProvider);
+    Set<int> current = {..._selectedServiceIds};
+
+    Future<void> openDialog(BuildContext ctx) async {
+      await showDialog<void>(
+        context: ctx,
+        builder: (dialogCtx) => StatefulBuilder(
+          builder: (context, setStateLocal) {
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 24,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 600,
+                  maxWidth: 720,
+                  maxHeight: 560,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                      child: Text(
+                        l10n.teamEligibleServicesLabel,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                          child: ServiceEligibilitySelector(
+                            services: services,
+                            categories: categories,
+                            selectedServiceIds: current,
+                            onChanged: (value) => setStateLocal(() {
+                              current = {...value};
+                            }),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: AppFilledButton(
+                          onPressed: () => Navigator.of(dialogCtx).pop(),
+                          padding: AppButtonStyles.dialogButtonPadding,
+                          child: Text(l10n.actionConfirm),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       );
     }
-    Navigator.of(context).pop();
+
+    Future<void> openSheet(BuildContext ctx) async {
+      await AppBottomSheet.show<void>(
+        context: ctx,
+        heightFactor: AppBottomSheet.defaultHeightFactor,
+        padding: EdgeInsets.zero,
+        builder: (sheetCtx) => StatefulBuilder(
+          builder: (context, setStateLocal) {
+            return SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Text(
+                      l10n.teamEligibleServicesLabel,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: ServiceEligibilitySelector(
+                          services: services,
+                          categories: categories,
+                          selectedServiceIds: current,
+                          onChanged: (value) => setStateLocal(() {
+                            current = {...value};
+                          }),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: AppFilledButton(
+                        onPressed: () => Navigator.of(sheetCtx).pop(),
+                        padding: AppButtonStyles.dialogButtonPadding,
+                        child: Text(l10n.actionConfirm),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    if (formFactor == AppFormFactor.desktop) {
+      await openDialog(context);
+    } else {
+      await openSheet(context);
+    }
+
+    setState(() {
+      _selectedServiceIds
+        ..clear()
+        ..addAll(current);
+      _isSelectingServices = false;
+    });
+  }
+
+  Future<void> _openLocationsSelector() async {
+    if (_isSelectingLocations) return;
+    setState(() => _isSelectingLocations = true);
+    final l10n = context.l10n;
+    final locations = ref.read(locationsProvider);
+    final formFactor = ref.read(formFactorProvider);
+    Set<int> current = {..._selectedLocationIds};
+
+    Widget buildLocationRows(void Function(VoidCallback) setStateLocal) {
+      final allIds = [for (final l in locations) l.id];
+      final allSelected =
+          allIds.isNotEmpty && allIds.every(current.contains);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _SelectableRow(
+            label: l10n.teamSelectAllLocations,
+            selected: allSelected,
+            onTap: () {
+              if (allSelected) {
+                current.clear();
+              } else {
+                current
+                  ..clear()
+                  ..addAll(allIds);
+              }
+              setStateLocal(() {});
+            },
+          ),
+          const Divider(height: 1),
+          for (final loc in locations)
+            _SelectableRow(
+              label: loc.name,
+              selected: current.contains(loc.id),
+              onTap: () {
+                if (current.contains(loc.id)) {
+                  current.remove(loc.id);
+                } else {
+                  current.add(loc.id);
+                }
+                setStateLocal(() {});
+              },
+            ),
+        ],
+      );
+    }
+
+    Future<void> openDialog(BuildContext ctx) async {
+      await showDialog<void>(
+        context: ctx,
+        builder: (dialogCtx) => StatefulBuilder(
+          builder: (context, setStateLocal) {
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 24,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 600,
+                  maxWidth: 720,
+                  maxHeight: 560,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                      child: Text(
+                        l10n.teamChooseLocationsButton,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                          child: buildLocationRows(setStateLocal),
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: AppFilledButton(
+                          onPressed: () => Navigator.of(dialogCtx).pop(),
+                          padding: AppButtonStyles.dialogButtonPadding,
+                          child: Text(l10n.actionConfirm),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    Future<void> openSheet(BuildContext ctx) async {
+      await AppBottomSheet.show<void>(
+        context: ctx,
+        heightFactor: AppBottomSheet.defaultHeightFactor,
+        padding: EdgeInsets.zero,
+        builder: (sheetCtx) => StatefulBuilder(
+          builder: (context, setStateLocal) {
+            return SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Text(
+                      l10n.teamChooseLocationsButton,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: buildLocationRows(setStateLocal),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: AppFilledButton(
+                        onPressed: () => Navigator.of(sheetCtx).pop(),
+                        padding: AppButtonStyles.dialogButtonPadding,
+                        child: Text(l10n.actionConfirm),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    if (formFactor == AppFormFactor.desktop) {
+      await openDialog(context);
+    } else {
+      await openSheet(context);
+    }
+
+    setState(() {
+      _selectedLocationIds
+        ..clear()
+        ..addAll(current);
+      _locationsError = null;
+      _isSelectingLocations = false;
+    });
+  }
+}
+
+class _SwitchTile extends StatelessWidget {
+  const _SwitchTile({
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleStyle = Theme.of(context).textTheme.titleSmall;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(title, style: titleStyle),
+          ),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeColor: Theme.of(context).colorScheme.primary,
+            activeTrackColor:
+                Theme.of(context).colorScheme.primary.withOpacity(0.35),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectableRow extends StatelessWidget {
+  const _SelectableRow({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(child: Text(label)),
+              if (selected)
+                Icon(
+                  Icons.check,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

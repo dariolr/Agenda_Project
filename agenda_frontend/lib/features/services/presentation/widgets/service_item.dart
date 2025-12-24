@@ -46,6 +46,9 @@ class ServiceItem extends ConsumerWidget {
       context,
     ).extension<AppInteractionColors>();
     final variant = ref.watch(serviceVariantByServiceIdProvider(service.id));
+    final eligibleStaffIds =
+        ref.watch(eligibleStaffForServiceProvider(service.id));
+    final eligibleStaffCount = eligibleStaffIds.length;
     final baseColor = isEvenRow
         ? (interactionColors?.alternatingRowFill ??
               colorScheme.onSurface.withOpacity(0.04))
@@ -96,17 +99,35 @@ class ServiceItem extends ConsumerWidget {
                     child: ListTile(
                       contentPadding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
                       mouseCursor: SystemMouseCursors.click,
-                      title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            service.name,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w500),
-                          ),
-                          if (variant?.durationMinutes != null ||
-                              variant?.price != null ||
-                              (variant?.isFree ?? false))
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          service.name,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          eligibleStaffCount == 0
+                              ? context.l10n.serviceEligibleStaffNone
+                              : context.l10n.serviceEligibleStaffCount(
+                                  eligibleStaffCount,
+                                ),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: eligibleStaffCount == 0
+                                    ? Theme.of(context).colorScheme.error
+                                    : Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                fontStyle: eligibleStaffCount == 0
+                                    ? FontStyle.italic
+                                    : FontStyle.normal,
+                              ),
+                        ),
+                        if (variant?.durationMinutes != null ||
+                            variant?.price != null ||
+                            (variant?.isFree ?? false))
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Row(

@@ -476,7 +476,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           : <int>[];
       final isStaffIneligible = item.serviceId != null &&
           item.staffId != null &&
-          eligibleStaffIds.isNotEmpty &&
           !eligibleStaffIds.contains(item.staffId);
 
       final isFirst = i == 0;

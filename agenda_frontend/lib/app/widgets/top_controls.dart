@@ -267,9 +267,8 @@ class TopControls extends ConsumerWidget {
   Future<void> _showLocationSheet(
     BuildContext context,
     TopControlsData data,
-    WidgetRef ref, {
-    bool tablet = false,
-  }) async {
+    WidgetRef ref,
+  ) async {
     final isStaffMode = mode == TopControlsMode.staff;
     final currentStaffLocationId = isStaffMode
         ? ref.read(staffSectionLocationIdProvider)

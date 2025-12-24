@@ -147,6 +147,34 @@
   "teamStaffColorLabel": "Colore",
   "teamStaffLocationsLabel": "Sedi associate",
   "teamStaffMultiLocationWarning": "Se il membro lavora su più sedi, ricorda di allineare disponibilità e orari con le sedi selezionate.",
+  "teamEligibleStaffLabel": "Team abilitato",
+  "teamEligibleServicesLabel": "Servizi abilitati",
+  "teamSelectAllServices": "Seleziona tutto",
+  "teamEligibleServicesCount": "{count} servizi abilitati",
+  "@teamEligibleServicesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamEligibleServicesNone": "Nessun servizio abilitato",
+  "teamChooseServicesButton": "Seleziona servizi",
+  "teamChooseLocationsButton": "Seleziona sedi",
+  "teamSelectAllLocations": "Seleziona tutto",
+  "teamStaffBookableOnlineLabel": "Abilitato alle prenotazioni online",
+  "staffNotBookableOnlineTooltip": "Non prenotabile online",
+  "staffNotBookableOnlineTitle": "Non prenotabile online",
+  "staffNotBookableOnlineMessage": "Questo membro del team non è abilitato alle prenotazioni online. Puoi modificare l’impostazione dal form di modifica dello staff.",
+  "serviceEligibleStaffCount": "{count} membri abilitati",
+  "@serviceEligibleStaffCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceEligibleStaffNone": "Nessun membro abilitato",
   "teamReorderHelpDescription": "Riordina sedi e membri del team trascinandoli. L’ordine sarà lo stesso anche nella sezione agenda.",
   "createCategoryButtonLabel": "Nuova categoria",
   "servicesNewServiceMenu": "Nuovo servizio",
