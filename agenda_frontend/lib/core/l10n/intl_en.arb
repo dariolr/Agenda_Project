@@ -4,13 +4,17 @@
   "navAgenda": "Agenda",
   "navClients": "Clients",
   "navServices": "Services",
-  "navStaff": "Staff",
+  "navStaff": "Team",
   "clientsTitle": "Clients List",
-  "servicesTitle": "Services List",
-  "staffTitle": "Staff List",
   "errorFormFactorBuilderRequired": "Specify at least one builder for form factor",
   "errorFormFactorBuilderMissing": "No builder available for {factor}",
-  "@errorFormFactorBuilderMissing": {"placeholders": {"factor": {"type": "String"}}},
+  "@errorFormFactorBuilderMissing": {
+    "placeholders": {
+      "factor": {
+        "type": "String"
+      }
+    }
+  },
   "errorTitle": "Error",
   "errorNotFound": "Page not found: {path}",
   "@errorNotFound": {
@@ -22,16 +26,19 @@
   },
   "errorServiceNotFound": "Service not found",
   "errorExceptionNotFound": "Exception not found: {id}",
-  "@errorExceptionNotFound": {"placeholders": {"id": {"type": "int"}}},
-  "staffScreenPlaceholder": "Staff Screen",
-  "actionResize": "Resize",
-  "actionMove": "Move",
+  "@errorExceptionNotFound": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "staffScreenPlaceholder": "Team Screen",
   "actionDelete": "Delete",
   "actionCancel": "Cancel",
   "actionConfirm": "Confirm",
   "actionClose": "Close",
   "deleteConfirmationTitle": "Confirm deletion?",
-  "appointmentDeletedMessage": "Appointment deleted",
   "agendaToday": "Today",
   "agendaPrevDay": "Previous day",
   "agendaNextDay": "Next day",
@@ -42,57 +49,44 @@
   "agendaNoLocations": "No locations available",
   "agendaSelectLocation": "Select location",
   "allLocations": "All locations",
-  "servicesCategoryEmpty": "No services available for this category.",
   "availabilityTitle": "Weekly availability",
   "availabilityTitleFor": "Availability – {name}",
-  "@availabilityTitleFor": {"placeholders": {"name": {"type": "String"}}},
+  "@availabilityTitleFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "availabilitySave": "Save changes",
-  "availabilitySaved": "Availability saved (mock).",
-  "availabilitySavedFor": "Availability saved for staff {name} (mock).",
-  "@availabilitySavedFor": {"placeholders": {"name": {"type": "String"}}},
-  "availabilityCopyToAll": "Copy to all",
-  "availabilityClear": "Clear",
   "currentWeek": "Current week",
   "hoursMinutesCompact": "{hours}h {minutes}m",
   "hoursHoursOnly": "{hours}h",
-  "labelStaff": "Staff:",
+  "labelStaff": "Team:",
   "labelSelect": "Select",
-  "dayMonShort": "Mon",
-  "dayTueShort": "Tue",
-  "dayWedShort": "Wed",
-  "dayThuShort": "Thu",
-  "dayFriShort": "Fri",
-  "daySatShort": "Sat",
-  "daySunShort": "Sun"
-  ,"staffHubAvailabilityTitle": "Availability"
-  ,"staffHubAvailabilitySubtitle": "Configure weekly working hours"
-  ,"staffHubTeamTitle": "Team"
-  ,"staffHubTeamSubtitle": "Manage members and roles"
-  ,"staffHubStatsTitle": "Statistics"
-  ,"staffHubStatsSubtitle": "Performance and workloads"
-  ,"staffHubNotYetAvailable": "Not yet available"
-  ,"staffEditHours": "Edit hours"
-  ,"actionEdit": "Edit"
-  ,"durationMinute": "{minutes} min",
-"durationMinute_plural": "{minutes} min",
-"durationHour": "{hours} hour",
-"durationHour_plural": "{hours} hours",
-"durationHourMinute": "{hours} hour {minutes} min",
-"durationHourMinute_plural": "{hours} hours {minutes} min",
-"freeLabel": "Free",
+  "staffHubAvailabilityTitle": "Availability",
+  "staffHubAvailabilitySubtitle": "Configure weekly working hours",
+  "staffHubTeamTitle": "Team",
+  "staffHubTeamSubtitle": "Manage members and roles",
+  "staffHubStatsTitle": "Statistics",
+  "staffHubStatsSubtitle": "Performance and workloads",
+  "staffHubNotYetAvailable": "Not yet available",
+  "staffEditHours": "Edit hours",
+  "actionEdit": "Edit",
+  "durationMinute": "{minutes} min",
+  "durationHour": "{hours} hour",
+  "durationHourMinute": "{hours} hour {minutes} min",
+  "freeLabel": "Free",
   "priceStartingFromPrefix": "starting from",
   "priceNotAvailable": "N/A",
   "clientsNew": "New client",
   "clientsEdit": "Edit client",
   "clientsEmpty": "No clients",
   "actionSave": "Save",
-  "actionNew": "New",
-  "actionNewBooking": "New booking",
   "filterAll": "All",
   "filterVIP": "VIP",
   "filterInactive": "Inactive",
   "filterNew": "New",
-  "formName": "Name",
   "formFirstName": "First name",
   "formLastName": "Last name",
   "formEmail": "Email",
@@ -102,42 +96,37 @@
   "validationInvalidEmail": "Invalid email",
   "validationInvalidPhone": "Invalid phone",
   "lastVisitLabel": "Last visit: {date}",
-  "@lastVisitLabel": {"placeholders": {"date": {"type": "String"}}},
-  "validationNameOrLastNameRequired": "Enter at least first name or last name"
-
-  ,"agendaAdd": "Add"
-  ,"agendaAddTitle": "Add a..."
-  ,"agendaAddAppointment": "New appointment"
-  ,"agendaAddBlock": "New block"
-  ,"appointmentDialogTitleNew": "New appointment"
-  ,"appointmentDialogTitleEdit": "Edit appointment"
-  ,"formDate": "Date"
-  ,"formTime": "Time"
-  ,"formService": "Service"
-  ,"formClient": "Client"
-  ,"formStaff": "Staff"
-  ,"actionDuplicate": "Duplicate"
-  ,"actionAddToBooking": "Add to booking"
-  ,"bookingDetails": "Booking details"
-  ,"bookingNotes": "Booking notes"
-  ,"bookingItems": "Services"
-  ,"bookingTotal": "Total"
-  ,"bookingUnavailableTimeWarning": "Warning: the selected time includes unavailable slots for the chosen staff."
-  ,"bookingUnavailableTimeWarningAppointment": "Warning: the appointment time includes unavailable slots for the chosen staff."
-  ,"bookingUnavailableTimeWarningService": "Warning: this service time includes unavailable slots for the chosen staff."
-  ,"actionDeleteBooking": "Delete booking"
-  ,"deleteAppointmentConfirmTitle": "Delete appointment?"
-  ,"deleteAppointmentConfirmMessage": "The appointment will be removed. This action cannot be undone."
-  ,"deleteBookingConfirmTitle": "Delete entire booking?"
-  ,"deleteBookingConfirmMessage": "All linked services will be removed. This action cannot be undone."
-  ,"otherServicesInBooking": "Other services in this booking:"
-  ,"createCategoryButtonLabel": "New category",
+  "@lastVisitLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "validationNameOrLastNameRequired": "Enter at least first name or last name",
+  "agendaAdd": "Add",
+  "agendaAddTitle": "Add a...",
+  "agendaAddAppointment": "New appointment",
+  "agendaAddBlock": "New block",
+  "appointmentDialogTitleNew": "New appointment",
+  "appointmentDialogTitleEdit": "Edit appointment",
+  "formDate": "Date",
+  "formService": "Service",
+  "formClient": "Client",
+  "formStaff": "Team",
+  "bookingDetails": "Booking details",
+  "bookingNotes": "Booking notes",
+  "bookingItems": "Services",
+  "bookingTotal": "Total",
+  "bookingUnavailableTimeWarningAppointment": "Warning: the appointment time includes unavailable slots for the chosen team.",
+  "bookingUnavailableTimeWarningService": "Warning: this service time includes unavailable slots for the chosen team.",
+  "actionDeleteBooking": "Delete booking",
+  "deleteAppointmentConfirmTitle": "Delete appointment?",
+  "deleteAppointmentConfirmMessage": "The appointment will be removed. This action cannot be undone.",
+  "deleteBookingConfirmTitle": "Delete entire booking?",
+  "deleteBookingConfirmMessage": "All linked services will be removed. This action cannot be undone.",
+  "createCategoryButtonLabel": "New category",
   "servicesNewServiceMenu": "New service",
-  "orderSavedMessage": "Order saved successfully",
-  "doneCategoriesButton": "Done (Categories)",
-  "editCategoriesOrderButton": "Reorder categories",
-  "doneServicesButton": "Done (Services)",
-  "editServicesOrderButton": "Reorder services",
   "reorderTitle": "Reorder",
   "addServiceTooltip": "Add service",
   "cannotDeleteTitle": "Cannot delete",
@@ -156,7 +145,6 @@
   "serviceColorLabel": "Service color",
   "newServiceTitle": "New service",
   "editServiceTitle": "Edit service",
-  "fieldCategoryLabel": "Category",
   "fieldCategoryRequiredLabel": "Category *",
   "fieldDurationRequiredLabel": "Duration *",
   "fieldDurationRequiredError": "Please select a duration",
@@ -164,7 +152,6 @@
   "fieldProcessingTimeLabel": "Processing time",
   "fieldBlockedTimeLabel": "Blocked time",
   "additionalTimeSwitch": "Additional time",
-  "additionalTimeOptionNone": "Additional time",
   "additionalTimeOptionProcessing": "Processing time",
   "additionalTimeOptionBlocked": "Blocked time",
   "bookableOnlineSwitch": "Bookable online",
@@ -189,14 +176,22 @@
   "serviceDuplicateCopyWord": "Copy",
   "moveAppointmentConfirmTitle": "Confirm move?",
   "moveAppointmentConfirmMessage": "The appointment will be moved to {newTime} for {staffName}.",
-  "@moveAppointmentConfirmMessage": {"placeholders": {"newTime": {"type": "String"}, "staffName": {"type": "String"}}},
+  "@moveAppointmentConfirmMessage": {
+    "placeholders": {
+      "newTime": {
+        "type": "String"
+      },
+      "staffName": {
+        "type": "String"
+      }
+    }
+  },
   "discardChangesTitle": "Unsaved changes",
   "discardChangesMessage": "You have unsaved changes. Do you want to discard them?",
   "actionDiscard": "Cancel",
   "actionKeepEditing": "Keep editing",
   "deleteClientConfirmTitle": "Delete client?",
   "deleteClientConfirmMessage": "The client will be permanently deleted. This action cannot be undone.",
-
   "sortByNameAsc": "Name (A-Z)",
   "sortByNameDesc": "Name (Z-A)",
   "sortByLastNameAsc": "Last name (A-Z)",
@@ -205,43 +200,41 @@
   "sortByLastVisitAsc": "Last visit (oldest)",
   "sortByCreatedAtDesc": "Created (newest)",
   "sortByCreatedAtAsc": "Created (oldest)",
-
   "clientAppointmentsTitle": "{clientName}'s appointments",
-  "@clientAppointmentsTitle": {"placeholders": {"clientName": {"type": "String"}}},
+  "@clientAppointmentsTitle": {
+    "placeholders": {
+      "clientName": {
+        "type": "String"
+      }
+    }
+  },
   "clientAppointmentsUpcoming": "Upcoming",
   "clientAppointmentsPast": "Past",
   "clientAppointmentsEmpty": "No appointments",
-
-  "staffFilterTooltip": "Filter staff",
-  "staffFilterTitle": "Filter staff",
+  "staffFilterTooltip": "Filter team",
+  "staffFilterTitle": "Filter team",
   "staffFilterAllTeam": "All team",
   "staffFilterOnDuty": "On duty team",
-  "staffFilterSelectMembers": "Select staff members",
-
+  "staffFilterSelectMembers": "Select team members",
   "blockDialogTitleNew": "New block",
   "blockDialogTitleEdit": "Edit block",
   "blockAllDay": "All day",
   "blockStartTime": "Start time",
   "blockEndTime": "End time",
-  "blockSelectStaff": "Select staff",
-  "blockSelectStaffError": "Select at least one staff member",
+  "blockSelectStaff": "Select team",
+  "blockSelectStaffError": "Select at least one team member",
   "blockTimeError": "End time must be after start time",
   "blockReason": "Reason (optional)",
   "blockReasonHint": "E.g. Meeting, Break, etc.",
-
   "sortByTitle": "Sort by",
-  "selectStaffTitle": "Select staff",
-
+  "selectStaffTitle": "Select team",
   "addClientToAppointment": "Add a client to the appointment",
   "clientOptionalHint": "Leave empty if you don't want to associate a client with the appointment",
   "selectClientTitle": "Select client",
-  "noClientSelected": "No client selected",
   "removeClient": "Remove client",
   "searchClientPlaceholder": "Search client...",
   "createNewClient": "Create new client",
   "noClientForAppointment": "No client for the appointment",
-  "noService": "No service",
-
   "formServices": "Services",
   "servicesSelectedCount": "{count, plural, =1{1 service selected} other{{count} services selected}}",
   "@servicesSelectedCount": {
@@ -256,11 +249,16 @@
   "noServicesAdded": "No services added",
   "atLeastOneServiceRequired": "Add at least one service",
   "notesPlaceholder": "Notes about the appointment...",
-  "noStaffAvailable": "No staff available",
-
+  "noStaffAvailable": "No team available",
   "weeklyScheduleTitle": "Weekly",
   "weeklyScheduleTotalHours": "{hours} hours total",
-  "@weeklyScheduleTotalHours": {"placeholders": {"hours": {"type": "int"}}},
+  "@weeklyScheduleTotalHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
   "weeklyScheduleNotWorking": "Not working",
   "weeklyScheduleFor": "to",
   "weeklyScheduleAddShift": "Add shift",
@@ -272,7 +270,6 @@
   "dayFridayFull": "Friday",
   "daySaturdayFull": "Saturday",
   "daySundayFull": "Sunday",
-
   "exceptionDialogTitleNew": "New exception",
   "exceptionDialogTitleEdit": "Edit exception",
   "exceptionType": "Exception type",
@@ -301,34 +298,64 @@
   "exceptionDateTo": "End date",
   "exceptionDuration": "Duration (days)",
   "exceptionDurationDays": "{count} {count, plural, =1{day} other{days}}",
-  "@exceptionDurationDays": {"placeholders": {"count": {"type": "int"}}},
-  "exceptionCreatedCount": "{count} {count, plural, =1{exception created} other{exceptions created}}",
-  "@exceptionCreatedCount": {"placeholders": {"count": {"type": "int"}}},
-
-  "shiftOptions": "Shift options",
+  "@exceptionDurationDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "shiftDeleteThisOnly": "Delete only this shift",
   "shiftDeleteThisOnlyDesc": "Delete only the time slot of {date}",
-  "@shiftDeleteThisOnlyDesc": {"placeholders": {"date": {"type": "String"}}},
+  "@shiftDeleteThisOnlyDesc": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "shiftDeleteAll": "Delete all these shifts",
   "shiftDeleteAllDesc": "Delete the weekly time slot for every {dayName}",
-  "@shiftDeleteAllDesc": {"placeholders": {"dayName": {"type": "String"}}},
+  "@shiftDeleteAllDesc": {
+    "placeholders": {
+      "dayName": {
+        "type": "String"
+      }
+    }
+  },
   "shiftEditThisOnly": "Edit only this shift",
   "shiftEditThisOnlyDesc": "Edit only the time slot of {date}",
-  "@shiftEditThisOnlyDesc": {"placeholders": {"date": {"type": "String"}}},
+  "@shiftEditThisOnlyDesc": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "shiftEditAll": "Edit all these shifts",
   "shiftEditAllDesc": "Edit the weekly time slot for every {dayName}",
-  "@shiftEditAllDesc": {"placeholders": {"dayName": {"type": "String"}}},
+  "@shiftEditAllDesc": {
+    "placeholders": {
+      "dayName": {
+        "type": "String"
+      }
+    }
+  },
   "shiftEditTitle": "Edit shift",
   "shiftStartTime": "Start time",
   "shiftEndTime": "End time",
-
   "exceptionEditShift": "Edit exception",
   "exceptionEditShiftDesc": "Edit the times of this exception",
   "exceptionDeleteShift": "Delete exception",
   "exceptionDeleteShiftDesc": "Restore base availability",
-
   "clientLockedHint": "Client cannot be changed for this appointment",
   "applyClientToAllAppointmentsTitle": "Apply client to entire booking?",
   "applyClientToAllAppointmentsMessage": "The client will also be associated with the other {count} appointments in this booking.",
-  "@applyClientToAllAppointmentsMessage": {"placeholders": {"count": {"type": "int"}}}
+  "@applyClientToAllAppointmentsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

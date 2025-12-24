@@ -435,6 +435,15 @@ class _StaffWeekOverviewScreenState
       );
       final minutes = _totalMinutesForStaff(availability[staffId] ?? const {});
       final isMobile = formFactor == AppFormFactor.mobile;
+      void openStaffAvailability() {
+        final vn = ref.read(initialStaffToEditProvider);
+        vn.value = staffId;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const StaffAvailabilityScreen(),
+          ),
+        );
+      }
 
       if (isMobile) {
         // Mobile: avatar sopra, nome sotto, icona modifica
@@ -444,25 +453,20 @@ class _StaffWeekOverviewScreenState
             // Avatar con icona modifica in overlay
             Stack(
               children: [
-                StaffCircleAvatar(
-                  height: 42,
-                  color: staff.color,
-                  isHighlighted: false,
-                  initials: staff.initials,
+                GestureDetector(
+                  onTap: openStaffAvailability,
+                  child: StaffCircleAvatar(
+                    height: 42,
+                    color: staff.color,
+                    isHighlighted: false,
+                    initials: staff.initials,
+                  ),
                 ),
                 Positioned(
                   right: -4,
                   bottom: -4,
                   child: GestureDetector(
-                    onTap: () {
-                      final vn = ref.read(initialStaffToEditProvider);
-                      vn.value = staffId;
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StaffAvailabilityScreen(),
-                        ),
-                      );
-                    },
+                    onTap: openStaffAvailability,
                     child: Container(
                       padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
@@ -507,11 +511,14 @@ class _StaffWeekOverviewScreenState
       // Desktop/Tablet: layout orizzontale
       return Row(
         children: [
-          StaffCircleAvatar(
-            height: 42,
-            color: staff.color,
-            isHighlighted: false,
-            initials: staff.initials,
+          GestureDetector(
+            onTap: openStaffAvailability,
+            child: StaffCircleAvatar(
+              height: 42,
+              color: staff.color,
+              isHighlighted: false,
+              initials: staff.initials,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -538,16 +545,7 @@ class _StaffWeekOverviewScreenState
             tooltip: context.l10n.staffEditHours,
             iconSize: 20,
             padding: const EdgeInsets.all(4),
-            onPressed: () {
-              // store staff id then navigate to availability editor
-              final vn = ref.read(initialStaffToEditProvider);
-              vn.value = staffId;
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const StaffAvailabilityScreen(),
-                ),
-              );
-            },
+            onPressed: openStaffAvailability,
             icon: const Icon(Icons.edit_outlined),
           ),
         ],

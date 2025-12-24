@@ -4,13 +4,17 @@
   "navAgenda": "Agenda",
   "navClients": "Clienti",
   "navServices": "Servizi",
-  "navStaff": "Staff",
+  "navStaff": "Team",
   "clientsTitle": "Elenco Clienti",
-  "servicesTitle": "Elenco Servizi",
-  "staffTitle": "Elenco Staff",
   "errorFormFactorBuilderRequired": "Specificare almeno un builder per form factor",
   "errorFormFactorBuilderMissing": "Nessun builder disponibile per {factor}",
-  "@errorFormFactorBuilderMissing": {"placeholders": {"factor": {"type": "String"}}},
+  "@errorFormFactorBuilderMissing": {
+    "placeholders": {
+      "factor": {
+        "type": "String"
+      }
+    }
+  },
   "errorTitle": "Errore",
   "errorNotFound": "Pagina non trovata: {path}",
   "@errorNotFound": {
@@ -22,16 +26,19 @@
   },
   "errorServiceNotFound": "Servizio non trovato",
   "errorExceptionNotFound": "Eccezione non trovata: {id}",
-  "@errorExceptionNotFound": {"placeholders": {"id": {"type": "int"}}},
-  "staffScreenPlaceholder": "Schermata Staff",
-  "actionResize": "Ridimensiona",
-  "actionMove": "Sposta",
+  "@errorExceptionNotFound": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "staffScreenPlaceholder": "Schermata Team",
   "actionDelete": "Elimina",
   "actionCancel": "Annulla",
   "actionConfirm": "Conferma",
   "actionClose": "Conferma",
   "deleteConfirmationTitle": "Confermi l’eliminazione?",
-  "appointmentDeletedMessage": "Appuntamento eliminato",
   "agendaToday": "Oggi",
   "agendaPrevDay": "Giorno precedente",
   "agendaNextDay": "Giorno successivo",
@@ -42,57 +49,44 @@
   "agendaNoLocations": "Nessuna sede disponibile",
   "agendaSelectLocation": "Seleziona sede",
   "allLocations": "Tutte le sedi",
-  "servicesCategoryEmpty": "Nessun servizio disponibile per questa categoria.",
   "availabilityTitle": "Disponibilità settimanale",
   "availabilityTitleFor": "Disponibilità – {name}",
-  "@availabilityTitleFor": {"placeholders": {"name": {"type": "String"}}},
+  "@availabilityTitleFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "availabilitySave": "Salva modifiche",
-  "availabilitySaved": "Disponibilità salvate (mock).",
-  "availabilitySavedFor": "Disponibilità salvate per staff {name} (mock).",
-  "@availabilitySavedFor": {"placeholders": {"name": {"type": "String"}}},
-  "availabilityCopyToAll": "Copia su tutte",
-  "availabilityClear": "Azzera",
   "currentWeek": "Settimana corrente",
   "hoursMinutesCompact": "{hours}h {minutes}m",
   "hoursHoursOnly": "{hours}h",
-  "labelStaff": "Staff:",
+  "labelStaff": "Team:",
   "labelSelect": "Seleziona",
-  "dayMonShort": "Lun",
-  "dayTueShort": "Mar",
-  "dayWedShort": "Mer",
-  "dayThuShort": "Gio",
-  "dayFriShort": "Ven",
-  "daySatShort": "Sab",
-  "daySunShort": "Dom"
-  ,"staffHubAvailabilityTitle": "Disponibilità"
-  ,"staffHubAvailabilitySubtitle": "Configura gli orari di lavoro settimanali"
-  ,"staffHubTeamTitle": "Team"
-  ,"staffHubTeamSubtitle": "Gestione membri e ruoli"
-  ,"staffHubStatsTitle": "Statistiche"
-  ,"staffHubStatsSubtitle": "Performance e carichi di lavoro"
-  ,"staffHubNotYetAvailable": "Non ancora disponibile"
-    ,"staffEditHours": "Modifica orari"
-    ,"actionEdit": "Modifica"
-  ,"durationMinute": "{minutes} min",
-"durationMinute_plural": "{minutes} min",
-"durationHour": "{hours} ora",
-"durationHour_plural": "{hours} ore",
-"durationHourMinute": "{hours} ora {minutes} min",
-"durationHourMinute_plural": "{hours} ore {minutes} min",
-"freeLabel": "Gratis",
+  "staffHubAvailabilityTitle": "Disponibilità",
+  "staffHubAvailabilitySubtitle": "Configura gli orari di lavoro settimanali",
+  "staffHubTeamTitle": "Team",
+  "staffHubTeamSubtitle": "Gestione membri e ruoli",
+  "staffHubStatsTitle": "Statistiche",
+  "staffHubStatsSubtitle": "Performance e carichi di lavoro",
+  "staffHubNotYetAvailable": "Non ancora disponibile",
+  "staffEditHours": "Modifica orari",
+  "actionEdit": "Modifica",
+  "durationMinute": "{minutes} min",
+  "durationHour": "{hours} ora",
+  "durationHourMinute": "{hours} ora {minutes} min",
+  "freeLabel": "Gratis",
   "priceStartingFromPrefix": "a partire da",
   "priceNotAvailable": "N/D",
   "clientsNew": "Nuovo cliente",
   "clientsEdit": "Modifica cliente",
   "clientsEmpty": "Nessun cliente",
   "actionSave": "Salva",
-  "actionNew": "Nuovo",
-  "actionNewBooking": "Nuova prenotazione",
   "filterAll": "Tutti",
   "filterVIP": "VIP",
   "filterInactive": "Inattivi",
   "filterNew": "Nuovi",
-  "formName": "Nome",
   "formFirstName": "Nome",
   "formLastName": "Cognome",
   "formEmail": "Email",
@@ -102,40 +96,37 @@
   "validationInvalidEmail": "Email non valida",
   "validationInvalidPhone": "Telefono non valido",
   "lastVisitLabel": "Ultima visita: {date}",
-  "@lastVisitLabel": {"placeholders": {"date": {"type": "String"}}},
-  "validationNameOrLastNameRequired": "Inserire almeno nome o cognome"
-
-  ,"agendaAdd": "Aggiungi"
-  ,"agendaAddTitle": "Aggiungi un..."
-  ,"agendaAddAppointment": "Nuovo appuntamento"
-  ,"agendaAddBlock": "Nuovo blocco"
-  ,"appointmentDialogTitleNew": "Nuovo appuntamento"
-  ,"appointmentDialogTitleEdit": "Modifica appuntamento"
-  ,"formDate": "Data"
-  ,"formTime": "Orario"
-  ,"formService": "Servizio"
-  ,"formClient": "Cliente"
-  ,"formStaff": "Staff"
-  ,"actionDuplicate": "Duplica"
-  ,"actionAddToBooking": "Aggiungi alla prenotazione"
-  ,"bookingDetails": "Dettagli prenotazione"
-  ,"bookingNotes": "Note prenotazione"
-  ,"bookingItems": "Servizi"
-  ,"bookingTotal": "Totale"
-  ,"bookingUnavailableTimeWarning": "Attenzione: l’orario selezionato include fasce non disponibili per lo staff scelto."
-  ,"bookingUnavailableTimeWarningAppointment": "Attenzione: l’orario selezionato per l’appuntamento include fasce non disponibili per lo staff scelto."
-  ,"bookingUnavailableTimeWarningService": "Attenzione: l’orario di questo servizio include fasce non disponibili per lo staff scelto."
-  ,"actionDeleteBooking": "Elimina prenotazione"  ,"deleteAppointmentConfirmTitle": "Eliminare l'appuntamento?"
-  ,"deleteAppointmentConfirmMessage": "L'appuntamento verrà rimosso. L'operazione non può essere annullata."  ,"deleteBookingConfirmTitle": "Eliminare l’intera prenotazione?"
-,"deleteBookingConfirmMessage": "Verranno rimossi tutti i servizi collegati. L'operazione non può essere annullata."
-  ,"otherServicesInBooking": "Altri servizi nella prenotazione:"
-  ,"createCategoryButtonLabel": "Nuova categoria"
-  ,"servicesNewServiceMenu": "Nuovo servizio",
-  "orderSavedMessage": "Ordine salvato correttamente",
-  "doneCategoriesButton": "Fine categorie",
-  "editCategoriesOrderButton": "Modifica ordine categorie",
-  "doneServicesButton": "Fine servizi",
-  "editServicesOrderButton": "Modifica ordine servizi",
+  "@lastVisitLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "validationNameOrLastNameRequired": "Inserire almeno nome o cognome",
+  "agendaAdd": "Aggiungi",
+  "agendaAddTitle": "Aggiungi un...",
+  "agendaAddAppointment": "Nuovo appuntamento",
+  "agendaAddBlock": "Nuovo blocco",
+  "appointmentDialogTitleNew": "Nuovo appuntamento",
+  "appointmentDialogTitleEdit": "Modifica appuntamento",
+  "formDate": "Data",
+  "formService": "Servizio",
+  "formClient": "Cliente",
+  "formStaff": "Team",
+  "bookingDetails": "Dettagli prenotazione",
+  "bookingNotes": "Note prenotazione",
+  "bookingItems": "Servizi",
+  "bookingTotal": "Totale",
+  "bookingUnavailableTimeWarningAppointment": "Attenzione: l’orario selezionato per l’appuntamento include fasce non disponibili per il team scelto.",
+  "bookingUnavailableTimeWarningService": "Attenzione: l’orario di questo servizio include fasce non disponibili per il team scelto.",
+  "actionDeleteBooking": "Elimina prenotazione",
+  "deleteAppointmentConfirmTitle": "Eliminare l'appuntamento?",
+  "deleteAppointmentConfirmMessage": "L'appuntamento verrà rimosso. L'operazione non può essere annullata.",
+  "deleteBookingConfirmTitle": "Eliminare l’intera prenotazione?",
+  "deleteBookingConfirmMessage": "Verranno rimossi tutti i servizi collegati. L'operazione non può essere annullata.",
+  "createCategoryButtonLabel": "Nuova categoria",
+  "servicesNewServiceMenu": "Nuovo servizio",
   "reorderTitle": "Modifica ordinamento",
   "addServiceTooltip": "Aggiungi servizio",
   "cannotDeleteTitle": "Impossibile eliminare",
@@ -154,7 +145,6 @@
   "serviceColorLabel": "Colore servizio",
   "newServiceTitle": "Nuovo servizio",
   "editServiceTitle": "Modifica servizio",
-  "fieldCategoryLabel": "Categoria",
   "fieldCategoryRequiredLabel": "Categoria *",
   "fieldDurationRequiredLabel": "Durata *",
   "fieldDurationRequiredError": "Seleziona una durata",
@@ -162,7 +152,6 @@
   "fieldProcessingTimeLabel": "Tempo di lavorazione",
   "fieldBlockedTimeLabel": "Tempo bloccato",
   "additionalTimeSwitch": "Tempo aggiuntivo",
-  "additionalTimeOptionNone": "Tempo aggiuntivo",
   "additionalTimeOptionProcessing": "Tempo di lavorazione",
   "additionalTimeOptionBlocked": "Tempo bloccato",
   "bookableOnlineSwitch": "Prenotabile online",
@@ -187,14 +176,22 @@
   "serviceDuplicateCopyWord": "Copia",
   "moveAppointmentConfirmTitle": "Confermi lo spostamento?",
   "moveAppointmentConfirmMessage": "L'appuntamento verrà spostato alle {newTime} per {staffName}.",
-  "@moveAppointmentConfirmMessage": {"placeholders": {"newTime": {"type": "String"}, "staffName": {"type": "String"}}},
+  "@moveAppointmentConfirmMessage": {
+    "placeholders": {
+      "newTime": {
+        "type": "String"
+      },
+      "staffName": {
+        "type": "String"
+      }
+    }
+  },
   "discardChangesTitle": "Modifiche non salvate",
   "discardChangesMessage": "Hai delle modifiche non salvate. Vuoi scartarle?",
   "actionDiscard": "Annulla",
   "actionKeepEditing": "Continua a modificare",
   "deleteClientConfirmTitle": "Eliminare il cliente?",
   "deleteClientConfirmMessage": "Il cliente verrà eliminato definitivamente. Questa azione non può essere annullata.",
-
   "sortByNameAsc": "Nome (A-Z)",
   "sortByNameDesc": "Nome (Z-A)",
   "sortByLastNameAsc": "Cognome (A-Z)",
@@ -203,43 +200,41 @@
   "sortByLastVisitAsc": "Ultima visita (meno recenti)",
   "sortByCreatedAtDesc": "Data creazione (nuovi)",
   "sortByCreatedAtAsc": "Data creazione (vecchi)",
-
   "clientAppointmentsTitle": "Appuntamenti di {clientName}",
-  "@clientAppointmentsTitle": {"placeholders": {"clientName": {"type": "String"}}},
+  "@clientAppointmentsTitle": {
+    "placeholders": {
+      "clientName": {
+        "type": "String"
+      }
+    }
+  },
   "clientAppointmentsUpcoming": "Prossimi",
   "clientAppointmentsPast": "Passati",
   "clientAppointmentsEmpty": "Nessun appuntamento",
-
-  "staffFilterTooltip": "Filtra staff",
-  "staffFilterTitle": "Filtra staff",
+  "staffFilterTooltip": "Filtra team",
+  "staffFilterTitle": "Filtra team",
   "staffFilterAllTeam": "Tutto il team",
   "staffFilterOnDuty": "Team di turno",
-  "staffFilterSelectMembers": "Seleziona membri dello staff",
-
+  "staffFilterSelectMembers": "Seleziona membri del team",
   "blockDialogTitleNew": "Nuovo blocco",
   "blockDialogTitleEdit": "Modifica blocco",
   "blockAllDay": "Giornata intera",
   "blockStartTime": "Orario inizio",
   "blockEndTime": "Orario fine",
-  "blockSelectStaff": "Seleziona staff",
-  "blockSelectStaffError": "Seleziona almeno uno staff",
+  "blockSelectStaff": "Seleziona team",
+  "blockSelectStaffError": "Seleziona almeno un team",
   "blockTimeError": "L'ora di fine deve essere successiva all'ora di inizio",
   "blockReason": "Motivo (opzionale)",
   "blockReasonHint": "Es. Riunione, Pausa, ecc.",
-
   "sortByTitle": "Ordina per",
-  "selectStaffTitle": "Seleziona staff",
-
+  "selectStaffTitle": "Seleziona team",
   "addClientToAppointment": "Aggiungi un cliente all'appuntamento",
   "clientOptionalHint": "Lascia il campo vuoto se non vuoi associare un cliente all'appuntamento",
   "selectClientTitle": "Seleziona cliente",
-  "noClientSelected": "Nessun cliente selezionato",
   "removeClient": "Rimuovi cliente",
   "searchClientPlaceholder": "Cerca cliente...",
   "createNewClient": "Crea nuovo cliente",
   "noClientForAppointment": "Nessun cliente per l'appuntamento",
-  "noService": "Nessun servizio",
-
   "formServices": "Servizi",
   "servicesSelectedCount": "{count, plural, =1{1 servizio selezionato} other{{count} servizi selezionati}}",
   "@servicesSelectedCount": {
@@ -254,11 +249,16 @@
   "noServicesAdded": "Nessun servizio aggiunto",
   "atLeastOneServiceRequired": "Aggiungi almeno un servizio",
   "notesPlaceholder": "Note sull'appuntamento...",
-  "noStaffAvailable": "Nessuno staff disponibile",
-
+  "noStaffAvailable": "Nessun team disponibile",
   "weeklyScheduleTitle": "Orario settimanale",
   "weeklyScheduleTotalHours": "{hours} ore totale",
-  "@weeklyScheduleTotalHours": {"placeholders": {"hours": {"type": "int"}}},
+  "@weeklyScheduleTotalHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
   "weeklyScheduleNotWorking": "Non lavora",
   "weeklyScheduleFor": "-",
   "weeklyScheduleAddShift": "Aggiungi turno",
@@ -270,7 +270,6 @@
   "dayFridayFull": "venerdì",
   "daySaturdayFull": "sabato",
   "daySundayFull": "domenica",
-
   "exceptionDialogTitleNew": "Nuova eccezione",
   "exceptionDialogTitleEdit": "Modifica eccezione",
   "exceptionType": "Tipo eccezione",
@@ -299,34 +298,64 @@
   "exceptionDateTo": "Data fine",
   "exceptionDuration": "Durata (giorni)",
   "exceptionDurationDays": "{count} {count, plural, =1{giorno} other{giorni}}",
-  "@exceptionDurationDays": {"placeholders": {"count": {"type": "int"}}},
-  "exceptionCreatedCount": "{count} {count, plural, =1{eccezione creata} other{eccezioni create}}",
-  "@exceptionCreatedCount": {"placeholders": {"count": {"type": "int"}}},
-
-  "shiftOptions": "Opzioni turno",
+  "@exceptionDurationDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "shiftDeleteThisOnly": "Elimina solo questo turno",
   "shiftDeleteThisOnlyDesc": "Elimina solo la fascia oraria di {date}",
-  "@shiftDeleteThisOnlyDesc": {"placeholders": {"date": {"type": "String"}}},
+  "@shiftDeleteThisOnlyDesc": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "shiftDeleteAll": "Elimina tutti questi turni",
   "shiftDeleteAllDesc": "Elimina la fascia oraria settimanale di ogni {dayName}",
-  "@shiftDeleteAllDesc": {"placeholders": {"dayName": {"type": "String"}}},
+  "@shiftDeleteAllDesc": {
+    "placeholders": {
+      "dayName": {
+        "type": "String"
+      }
+    }
+  },
   "shiftEditThisOnly": "Modifica solo questo turno",
   "shiftEditThisOnlyDesc": "Modifica solo la fascia oraria di {date}",
-  "@shiftEditThisOnlyDesc": {"placeholders": {"date": {"type": "String"}}},
+  "@shiftEditThisOnlyDesc": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "shiftEditAll": "Modifica tutti questi turni",
   "shiftEditAllDesc": "Modifica la fascia oraria settimanale di ogni {dayName}",
-  "@shiftEditAllDesc": {"placeholders": {"dayName": {"type": "String"}}},
+  "@shiftEditAllDesc": {
+    "placeholders": {
+      "dayName": {
+        "type": "String"
+      }
+    }
+  },
   "shiftEditTitle": "Modifica turno",
   "shiftStartTime": "Ora inizio",
   "shiftEndTime": "Ora fine",
-
   "exceptionEditShift": "Modifica eccezione",
   "exceptionEditShiftDesc": "Modifica gli orari di questa eccezione",
   "exceptionDeleteShift": "Elimina eccezione",
   "exceptionDeleteShiftDesc": "Ripristina la disponibilità base",
-
   "clientLockedHint": "Il cliente non può essere modificato per questo appuntamento",
   "applyClientToAllAppointmentsTitle": "Applicare il cliente a tutta la prenotazione?",
   "applyClientToAllAppointmentsMessage": "Il cliente verrà associato anche agli altri {count} appuntamenti di questa prenotazione.",
-  "@applyClientToAllAppointmentsMessage": {"placeholders": {"count": {"type": "int"}}}
+  "@applyClientToAllAppointmentsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
