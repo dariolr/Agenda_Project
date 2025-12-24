@@ -36,6 +36,9 @@ class AvailabilityException {
   /// Tipo di eccezione: disponibile o non disponibile.
   final AvailabilityExceptionType type;
 
+  /// Codice motivo opzionale (es. "vacation", "medical_visit", "extra_shift").
+  final String? reasonCode;
+
   /// Motivo opzionale (es. "Ferie", "Visita medica", "Turno extra").
   final String? reason;
 
@@ -46,6 +49,7 @@ class AvailabilityException {
     this.startTime,
     this.endTime,
     required this.type,
+    this.reasonCode,
     this.reason,
   });
 
@@ -58,6 +62,7 @@ class AvailabilityException {
     required int staffId,
     required DateTime date,
     required AvailabilityExceptionType type,
+    String? reasonCode,
     String? reason,
   }) {
     return AvailabilityException(
@@ -67,6 +72,7 @@ class AvailabilityException {
       startTime: null,
       endTime: null,
       type: type,
+      reasonCode: reasonCode,
       reason: reason,
     );
   }
@@ -79,6 +85,7 @@ class AvailabilityException {
     required TimeOfDay startTime,
     required TimeOfDay endTime,
     required AvailabilityExceptionType type,
+    String? reasonCode,
     String? reason,
   }) {
     return AvailabilityException(
@@ -88,6 +95,7 @@ class AvailabilityException {
       startTime: startTime,
       endTime: endTime,
       type: type,
+      reasonCode: reasonCode,
       reason: reason,
     );
   }
@@ -99,9 +107,11 @@ class AvailabilityException {
     TimeOfDay? startTime,
     TimeOfDay? endTime,
     AvailabilityExceptionType? type,
+    String? reasonCode,
     String? reason,
     bool clearStartTime = false,
     bool clearEndTime = false,
+    bool clearReasonCode = false,
     bool clearReason = false,
   }) {
     return AvailabilityException(
@@ -111,6 +121,7 @@ class AvailabilityException {
       startTime: clearStartTime ? null : (startTime ?? this.startTime),
       endTime: clearEndTime ? null : (endTime ?? this.endTime),
       type: type ?? this.type,
+      reasonCode: clearReasonCode ? null : (reasonCode ?? this.reasonCode),
       reason: clearReason ? null : (reason ?? this.reason),
     );
   }
@@ -130,6 +141,7 @@ class AvailabilityException {
         (e) => e.name == json['type'],
         orElse: () => AvailabilityExceptionType.unavailable,
       ),
+      reasonCode: json['reason_code'] as String?,
       reason: json['reason'] as String?,
     );
   }
@@ -141,6 +153,7 @@ class AvailabilityException {
     if (startTime != null) 'start_time': _timeOfDayToString(startTime!),
     if (endTime != null) 'end_time': _timeOfDayToString(endTime!),
     'type': type.name,
+    if (reasonCode != null) 'reason_code': reasonCode,
     if (reason != null) 'reason': reason,
   };
 
@@ -196,6 +209,6 @@ class AvailabilityException {
     final timeStr = isAllDay
         ? 'all day'
         : '${_timeOfDayToString(startTime!)}-${_timeOfDayToString(endTime!)}';
-    return 'AvailabilityException(id: $id, staffId: $staffId, date: ${date.toIso8601String().split('T').first}, $timeStr, type: ${type.name}, reason: $reason)';
+    return 'AvailabilityException(id: $id, staffId: $staffId, date: ${date.toIso8601String().split('T').first}, $timeStr, type: ${type.name}, reasonCode: $reasonCode, reason: $reason)';
   }
 }
