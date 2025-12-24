@@ -141,6 +141,42 @@ class _SwitchTile extends StatelessWidget {
   }
 }
 
+class _SelectableRow extends StatelessWidget {
+  const _SelectableRow({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(child: Text(label)),
+              if (selected)
+                Icon(
+                  Icons.check,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 Future<void> showServiceDialog(
   BuildContext context,
   WidgetRef ref, {
@@ -230,6 +266,7 @@ Future<void> showServiceDialog(
       service != null
           ? ref.read(eligibleStaffForServiceProvider(service.id)).toSet()
           : <int>{};
+  bool isSelectingStaff = false;
 
   int? selectedCategory = requireCategorySelection
       ? (service?.categoryId ?? preselectedCategoryId)
@@ -400,6 +437,163 @@ Future<void> showServiceDialog(
   }
 
   Widget buildBody(BuildContext context, void Function(VoidCallback) setState) {
+    Future<void> openStaffSelector() async {
+      if (isSelectingStaff) return;
+      setState(() => isSelectingStaff = true);
+      final l10n = context.l10n;
+      final formFactor = ref.read(formFactorProvider);
+      Set<int> current = {...selectedStaffIds};
+
+      Widget buildStaffRows(void Function(VoidCallback) setStateLocal) {
+        final allIds = [for (final s in staffList) s.id];
+        final allSelected =
+            allIds.isNotEmpty && allIds.every(current.contains);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SelectableRow(
+              label: l10n.teamSelectAllServices,
+              selected: allSelected,
+              onTap: () {
+                if (allSelected) {
+                  current.clear();
+                } else {
+                  current
+                    ..clear()
+                    ..addAll(allIds);
+                }
+                setStateLocal(() {});
+              },
+            ),
+            const Divider(height: 1),
+            for (final member in staffList)
+              _SelectableRow(
+                label: member.displayName,
+                selected: current.contains(member.id),
+                onTap: () {
+                  if (current.contains(member.id)) {
+                    current.remove(member.id);
+                  } else {
+                    current.add(member.id);
+                  }
+                  setStateLocal(() {});
+                },
+              ),
+          ],
+        );
+      }
+
+      Future<void> openDialog(BuildContext ctx) async {
+        await showDialog<void>(
+          context: ctx,
+          builder: (dialogCtx) => StatefulBuilder(
+            builder: (context, setStateLocal) {
+              return Dialog(
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 520,
+                    maxWidth: 680,
+                    maxHeight: 520,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                        child: Text(
+                          l10n.teamEligibleStaffLabel,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: buildStaffRows(setStateLocal),
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: AppFilledButton(
+                            onPressed: () => Navigator.of(dialogCtx).pop(),
+                            padding: AppButtonStyles.dialogButtonPadding,
+                            child: Text(l10n.actionConfirm),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      }
+
+      Future<void> openSheet(BuildContext ctx) async {
+        await AppBottomSheet.show<void>(
+          context: ctx,
+          heightFactor: AppBottomSheet.defaultHeightFactor,
+          padding: EdgeInsets.zero,
+          builder: (sheetCtx) => StatefulBuilder(
+            builder: (context, setStateLocal) {
+              return SafeArea(
+                top: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Text(
+                        l10n.teamEligibleStaffLabel,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: buildStaffRows(setStateLocal),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: AppFilledButton(
+                          onPressed: () => Navigator.of(sheetCtx).pop(),
+                          padding: AppButtonStyles.dialogButtonPadding,
+                          child: Text(l10n.actionConfirm),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      }
+
+      if (formFactor == AppFormFactor.desktop) {
+        await openDialog(context);
+      } else {
+        await openSheet(context);
+      }
+
+      setState(() {
+        selectedStaffIds = {...current};
+        isSelectingStaff = false;
+      });
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -448,23 +642,41 @@ Future<void> showServiceDialog(
           ),
         ),
         const SizedBox(height: AppSpacing.formRowSpacing),
-        LabeledFormField(
-          label: context.l10n.teamEligibleStaffLabel,
-          child: Column(
+        AppOutlinedActionButton(
+          onPressed: openStaffSelector,
+          expand: true,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+          child: Row(
             children: [
-              for (final member in staffList)
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: selectedStaffIds.contains(member.id),
-                  onChanged: (value) => setState(() {
-                    if (value == true) {
-                      selectedStaffIds.add(member.id);
-                    } else {
-                      selectedStaffIds.remove(member.id);
-                    }
-                  }),
-                  title: Text(member.displayName),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(context.l10n.teamEligibleStaffLabel),
                 ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${selectedStaffIds.length}/${staffList.length}',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
             ],
           ),
         ),
