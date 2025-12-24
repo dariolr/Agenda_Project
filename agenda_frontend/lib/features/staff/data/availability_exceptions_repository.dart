@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/l10n/l10n.dart';
-
 import '../../../core/models/availability_exception.dart';
 
 /// Repository per la gestione delle eccezioni alla disponibilità.
@@ -55,7 +53,7 @@ class MockAvailabilityExceptionsRepository
         staffId: 1,
         date: today.add(const Duration(days: 1)),
         type: AvailabilityExceptionType.unavailable,
-        reason: L10n.current.exceptionReasonVacation,
+        reasonCode: 'vacation',
       ),
     );
 
@@ -69,7 +67,7 @@ class MockAvailabilityExceptionsRepository
         startTime: const TimeOfDay(hour: 10, minute: 0),
         endTime: const TimeOfDay(hour: 14, minute: 0),
         type: AvailabilityExceptionType.available,
-        reason: L10n.current.exceptionReasonExtraShift,
+        reasonCode: 'extra_shift',
       ),
     );
 
@@ -82,7 +80,7 @@ class MockAvailabilityExceptionsRepository
         startTime: const TimeOfDay(hour: 9, minute: 0),
         endTime: const TimeOfDay(hour: 12, minute: 0),
         type: AvailabilityExceptionType.unavailable,
-        reason: L10n.current.exceptionReasonMedicalVisit,
+        reasonCode: 'medical_visit',
       ),
     );
   }
@@ -143,9 +141,7 @@ class MockAvailabilityExceptionsRepository
 
     final index = _exceptions.indexWhere((e) => e.id == exception.id);
     if (index == -1) {
-      throw Exception(
-        L10n.current.errorExceptionNotFound(exception.id),
-      );
+      throw Exception('Exception not found: ${exception.id}');
     }
 
     _exceptions[index] = exception;

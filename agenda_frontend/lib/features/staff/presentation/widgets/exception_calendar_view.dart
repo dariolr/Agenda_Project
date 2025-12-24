@@ -19,6 +19,20 @@ class ExceptionCalendarView extends ConsumerStatefulWidget {
       _ExceptionCalendarViewState();
 }
 
+String? _localizedReasonCode(String? code, BuildContext context) {
+  if (code == null || code.isEmpty) return null;
+  final l10n = context.l10n;
+  switch (code) {
+    case 'vacation':
+      return l10n.exceptionReasonVacation;
+    case 'extra_shift':
+      return l10n.exceptionReasonExtraShift;
+    case 'medical_visit':
+      return l10n.exceptionReasonMedicalVisit;
+  }
+  return null;
+}
+
 class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
   late DateTime _currentMonth;
 
@@ -193,7 +207,11 @@ class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
                       ? Colors.green
                       : Theme.of(ctx).colorScheme.error,
                 ),
-                title: Text(e.reason ?? _getDefaultReason(e.type, context)),
+                title: Text(
+                  e.reason ??
+                      _localizedReasonCode(e.reasonCode, context) ??
+                      _getDefaultReason(e.type, context),
+                ),
                 subtitle: Text(
                   e.isAllDay
                       ? context.l10n.exceptionAllDay
@@ -449,6 +467,7 @@ class _ExceptionTile extends ConsumerWidget {
       ),
       title: Text(
         exception.reason ??
+            _localizedReasonCode(exception.reasonCode, context) ??
             (isAvailable
                 ? context.l10n.exceptionTypeAvailable
                 : context.l10n.exceptionTypeUnavailable),
