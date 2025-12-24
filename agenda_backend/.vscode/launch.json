@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Solo Chrome",
+      "type": "dart",
+      "request": "launch",
+      "deviceId": "chrome",
+      "args": ["--web-port=8080"]
+    },
+    {
+      "name": "Solo iPhone",
+      "type": "dart",
+      "request": "launch",
+      "deviceId": "web-server",
+      "flutterMode": "release",
+      "args": [
+        "--web-hostname=0.0.0.0",
+        "--web-port=8081"
+      ]
+    },
+    {
+      "name": "Chrome + iPhone viewer",
+      "type": "dart",
+      "request": "launch",
+      "deviceId": "chrome",
+      "args": ["--web-port=8080"],
+      "preLaunchTask": "Start iPhone viewer (web-server release :8081)"
+    }
+
+
+
+    
+  ]
+}
