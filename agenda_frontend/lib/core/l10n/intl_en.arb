@@ -123,6 +123,8 @@
   ,"bookingItems": "Services"
   ,"bookingTotal": "Total"
   ,"bookingUnavailableTimeWarning": "Warning: the selected time includes unavailable slots for the chosen staff."
+  ,"bookingUnavailableTimeWarningAppointment": "Warning: the appointment time includes unavailable slots for the chosen staff."
+  ,"bookingUnavailableTimeWarningService": "Warning: this service time includes unavailable slots for the chosen staff."
   ,"actionDeleteBooking": "Delete booking"
   ,"deleteAppointmentConfirmTitle": "Delete appointment?"
   ,"deleteAppointmentConfirmMessage": "The appointment will be removed. This action cannot be undone."
