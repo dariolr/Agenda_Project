@@ -635,7 +635,7 @@ class _ScaffoldWithNavigationHelpers {
         label: l10n.navClients,
       ),
       NavigationDestination(
-        iconData: Icons.cut_outlined,
+        iconData: Icons.category_outlined,
         selectedIconData: Icons.cut,
         label: l10n.navServices,
       ),
