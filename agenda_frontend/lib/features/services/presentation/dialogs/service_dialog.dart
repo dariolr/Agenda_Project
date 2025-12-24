@@ -18,11 +18,11 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
+import '../../../staff/providers/staff_providers.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../providers/services_provider.dart';
 import '../../utils/service_seed_texts.dart';
 import '../../utils/service_validators.dart';
-import '../../../staff/providers/staff_providers.dart';
 
 enum _AdditionalTimeSelection { none, processing, blocked }
 
@@ -216,7 +216,8 @@ Future<void> showServiceDialog(
       caseSensitive: false,
     );
 
-    final match = reNew.firstMatch(originalName) ?? reOld.firstMatch(originalName);
+    final match =
+        reNew.firstMatch(originalName) ?? reOld.firstMatch(originalName);
     if (match != null) {
       base = (match.group(1) ?? '').trim();
       final n = match.group(2);
@@ -260,12 +261,13 @@ Future<void> showServiceDialog(
     text: service?.description ?? '',
   );
   final staffList = ref.read(staffForCurrentLocationProvider);
-  final eligibilityNotifier = ref.read(serviceStaffEligibilityProvider.notifier);
+  final eligibilityNotifier = ref.read(
+    serviceStaffEligibilityProvider.notifier,
+  );
   final locationId = ref.read(currentLocationProvider).id;
-  Set<int> selectedStaffIds =
-      service != null
-          ? ref.read(eligibleStaffForServiceProvider(service.id)).toSet()
-          : <int>{};
+  Set<int> selectedStaffIds = service != null
+      ? ref.read(eligibleStaffForServiceProvider(service.id)).toSet()
+      : <int>{};
   bool isSelectingStaff = false;
 
   int? selectedCategory = requireCategorySelection
@@ -351,7 +353,7 @@ Future<void> showServiceDialog(
     final isDuplicate = ServiceValidators.isDuplicateServiceName(
       allServices,
       normalizedName,
-      excludeId: isEditing ? service?.id : null,
+      excludeId: isEditing ? service.id : null,
     );
     if (selectedDuration == null) {
       durationError = true;
@@ -379,7 +381,7 @@ Future<void> showServiceDialog(
         blockedToSave = additionalMinutes;
       }
       final newService = Service(
-        id: isEditing ? service!.id : DateTime.now().millisecondsSinceEpoch,
+        id: isEditing ? service.id : DateTime.now().millisecondsSinceEpoch,
         businessId: ref.read(currentBusinessProvider).id,
         categoryId: selectedCategory!,
         name: normalizedName,
@@ -446,8 +448,7 @@ Future<void> showServiceDialog(
 
       Widget buildStaffRows(void Function(VoidCallback) setStateLocal) {
         final allIds = [for (final s in staffList) s.id];
-        final allSelected =
-            allIds.isNotEmpty && allIds.every(current.contains);
+        final allSelected = allIds.isNotEmpty && allIds.every(current.contains);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -645,10 +646,7 @@ Future<void> showServiceDialog(
         AppOutlinedActionButton(
           onPressed: openStaffSelector,
           expand: true,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             children: [
               Expanded(
@@ -663,18 +661,17 @@ Future<void> showServiceDialog(
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withOpacity(0.12),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${selectedStaffIds.length}/${staffList.length}',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -1022,64 +1019,62 @@ Future<void> showServiceDialog(
         );
       }
 
-        return SafeArea(
-          top: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SizedBox(
-                height: constraints.maxHeight,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.only(
-                          bottom: MediaQuery.of(context).viewInsets.bottom,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Text(
-                                dialogTitle,
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
+      return SafeArea(
+        top: false,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SizedBox(
+              height: constraints.maxHeight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              dialogTitle,
+                              style: Theme.of(context).textTheme.titleLarge,
                             ),
-                            body,
-                            const SizedBox(height: 24),
-                            const SizedBox(height: AppSpacing.formRowSpacing),
-                          ],
-                        ),
+                          ),
+                          body,
+                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSpacing.formRowSpacing),
+                        ],
                       ),
                     ),
-                    const Divider(
-                      height: 1,
-                      thickness: 0.5,
-                      color: Color(0x1F000000),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Wrap(
-                          alignment: WrapAlignment.end,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [cancelButton, saveButton],
-                        ),
+                  ),
+                  const Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    color: Color(0x1F000000),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [cancelButton, saveButton],
                       ),
                     ),
-                    SizedBox(
-                      height: MediaQuery.of(context).viewPadding.bottom,
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        );
+                  ),
+                  SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
+                ],
+              ),
+            );
+          },
+        ),
+      );
     },
   );
 

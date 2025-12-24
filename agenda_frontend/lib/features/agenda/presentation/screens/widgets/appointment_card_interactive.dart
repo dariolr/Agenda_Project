@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/appointment.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
+import '../../../../../../core/l10n/l10_extension.dart';
+import '../../../../../../core/widgets/app_dialogs.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_interaction_lock_provider.dart';
@@ -22,6 +24,8 @@ import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../../widgets/appointment_dialog.dart';
+import '../../../../clients/providers/clients_providers.dart';
+import '../../../providers/bookings_provider.dart';
 
 /// 🔹 Versione unificata per DESKTOP e MOBILE.
 /// Mantiene drag, resize, ghost, select, ma cambia il comportamento del tap:
@@ -473,6 +477,18 @@ class _AppointmentCardInteractiveState
     final resizingEntry = ref.watch(
       resizingEntryProvider(widget.appointment.id),
     );
+    final booking = ref.watch(bookingsProvider)[widget.appointment.bookingId];
+    final bookingNotes = booking?.notes?.trim();
+    final clientNotes = widget.appointment.clientId != null
+        ? ref
+            .watch(clientsByIdProvider)[widget.appointment.clientId!]
+            ?.notes
+            ?.trim()
+        : null;
+    final hasBookingNotes =
+        bookingNotes != null && bookingNotes.isNotEmpty;
+    final hasClientNotes = clientNotes != null && clientNotes.isNotEmpty;
+    final hasNotes = hasBookingNotes || hasClientNotes;
 
     final baseColor = widget.color.withOpacity(0.15);
     const r = BorderRadius.all(Radius.circular(6));
@@ -537,7 +553,19 @@ class _AppointmentCardInteractiveState
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: Align(
                   alignment: Alignment.topLeft,
-                  child: _buildContent(start, formattedEndTime, client, info),
+                  child: _buildContent(
+                    start,
+                    formattedEndTime,
+                    client,
+                    info,
+                    showNotes: hasNotes && !forFeedback,
+                    onNotesTap: hasNotes && !forFeedback
+                        ? () => _showNotesDialog(
+                              bookingNotes: hasBookingNotes ? bookingNotes : null,
+                              clientNotes: hasClientNotes ? clientNotes : null,
+                            )
+                        : null,
+                  ),
                 ),
               ),
               if (!forFeedback && !isResizingDisabled && isSelected)
@@ -566,35 +594,67 @@ class _AppointmentCardInteractiveState
 
   // Menu contestuale disabilitato su desktop: rimosso
 
-  Widget _buildContent(String start, String end, String client, String info) {
+  Widget _buildContent(
+    String start,
+    String end,
+    String client,
+    String info, {
+    required bool showNotes,
+    VoidCallback? onNotesTap,
+  }) {
     return ClipRect(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Flexible(
-            child: RichText(
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: '$start - $end  ',
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w700,
+            child: Row(
+              children: [
+                Expanded(
+                  child: RichText(
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '$start - $end  ',
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        TextSpan(
+                          text: client,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  TextSpan(
-                    text: client,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w600,
+                ),
+                if (showNotes)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Tooltip(
+                      message: context.l10n.appointmentNotesTitle,
+                      child: InkWell(
+                        onTap: onNotesTap,
+                        borderRadius: BorderRadius.circular(6),
+                        child: const Padding(
+                          padding: EdgeInsets.all(2),
+                          child: Icon(
+                            Icons.sticky_note_2_outlined,
+                            size: 14,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
           ),
           if (info.isNotEmpty)
@@ -613,6 +673,50 @@ class _AppointmentCardInteractiveState
             ),
         ],
       ),
+    );
+  }
+
+  void _showNotesDialog({
+    String? bookingNotes,
+    String? clientNotes,
+  }) {
+    if ((bookingNotes == null || bookingNotes.trim().isEmpty) &&
+        (clientNotes == null || clientNotes.trim().isEmpty)) {
+      return;
+    }
+    final l10n = context.l10n;
+    final sections = <Widget>[];
+    if (clientNotes != null && clientNotes.trim().isNotEmpty) {
+      sections.add(Text(
+        l10n.clientNoteLabel,
+        style: Theme.of(context).textTheme.titleSmall,
+      ));
+      sections.add(const SizedBox(height: 4));
+      sections.add(Text(clientNotes.trim()));
+    }
+    if (bookingNotes != null && bookingNotes.trim().isNotEmpty) {
+      if (sections.isNotEmpty) {
+        sections.add(const SizedBox(height: 12));
+      }
+      sections.add(Text(
+        l10n.appointmentNoteLabel,
+        style: Theme.of(context).textTheme.titleSmall,
+      ));
+      sections.add(const SizedBox(height: 4));
+      sections.add(Text(bookingNotes.trim()));
+    }
+    showAppInfoDialog(
+      context,
+      title: Text(l10n.appointmentNotesTitle),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: sections,
+        ),
+      ),
+      closeLabel: l10n.actionClose,
     );
   }
 

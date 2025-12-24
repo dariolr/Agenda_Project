@@ -24,7 +24,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
 
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
