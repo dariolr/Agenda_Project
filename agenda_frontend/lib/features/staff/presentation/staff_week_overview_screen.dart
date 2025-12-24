@@ -496,8 +496,21 @@ class _StaffWeekOverviewScreenState
     double rowHeightForStaff(int staffId) {
       int maxRanges = 0;
       for (final d in days) {
-        final count =
-            (availability[staffId]?[d.weekday] ?? const <HourRange>[]).length;
+        final ranges =
+            availability[staffId]?[d.weekday] ?? const <HourRange>[];
+        final exceptions = ref.watch(
+          exceptionsForStaffOnDateProvider((staffId: staffId, date: d)),
+        );
+        final extraUnavailable = exceptions
+            .where(
+              (e) =>
+                  e.type == AvailabilityExceptionType.unavailable &&
+                  e.startTime != null &&
+                  e.endTime != null,
+            )
+            .length;
+        var count = ranges.length + extraUnavailable;
+        if (count == 0 && exceptions.isNotEmpty) count = 1;
         if (count > maxRanges) maxRanges = count;
       }
       if (maxRanges <= 1) return baseRowHeight; // 0 o 1 chip: altezza base
