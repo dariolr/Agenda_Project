@@ -356,8 +356,10 @@ final serviceVariantByServiceIdProvider =
 ///
 /// ELIGIBILITY STAFF
 ///
-final serviceStaffEligibilityProvider = Provider<List<ServiceStaffEligibility>>(
-  (ref) {
+class ServiceStaffEligibilityNotifier
+    extends Notifier<List<ServiceStaffEligibility>> {
+  @override
+  List<ServiceStaffEligibility> build() {
     return const [
       ServiceStaffEligibility(serviceId: 1, staffId: 1, locationId: 101),
       ServiceStaffEligibility(serviceId: 1, staffId: 3, locationId: 101),
@@ -370,8 +372,56 @@ final serviceStaffEligibilityProvider = Provider<List<ServiceStaffEligibility>>(
       ServiceStaffEligibility(serviceId: 3, staffId: 2, locationId: 102),
       ServiceStaffEligibility(serviceId: 3, staffId: 3, locationId: 102),
     ];
-  },
-);
+  }
+
+  void setEligibleStaffForService({
+    required int serviceId,
+    required int locationId,
+    required Iterable<int> staffIds,
+  }) {
+    final retained = [
+      for (final entry in state)
+        if (!(entry.serviceId == serviceId &&
+            (entry.locationId == null || entry.locationId == locationId)))
+          entry,
+    ];
+    final updated = [
+      for (final staffId in staffIds)
+        ServiceStaffEligibility(
+          serviceId: serviceId,
+          staffId: staffId,
+          locationId: locationId,
+        ),
+    ];
+    state = [...retained, ...updated];
+  }
+
+  void setEligibleServicesForStaff({
+    required int staffId,
+    required int locationId,
+    required Iterable<int> serviceIds,
+  }) {
+    final retained = [
+      for (final entry in state)
+        if (!(entry.staffId == staffId &&
+            (entry.locationId == null || entry.locationId == locationId)))
+          entry,
+    ];
+    final updated = [
+      for (final serviceId in serviceIds)
+        ServiceStaffEligibility(
+          serviceId: serviceId,
+          staffId: staffId,
+          locationId: locationId,
+        ),
+    ];
+    state = [...retained, ...updated];
+  }
+}
+
+final serviceStaffEligibilityProvider =
+    NotifierProvider<ServiceStaffEligibilityNotifier,
+        List<ServiceStaffEligibility>>(ServiceStaffEligibilityNotifier.new);
 
 final eligibleStaffForServiceProvider = Provider.family<List<int>, int>((
   ref,
@@ -385,6 +435,20 @@ final eligibleStaffForServiceProvider = Provider.family<List<int>, int>((
       if (entry.serviceId == serviceId &&
           (entry.locationId == null || entry.locationId == location.id))
         entry.staffId,
+  ];
+});
+
+final eligibleServicesForStaffProvider = Provider.family<List<int>, int>((
+  ref,
+  staffId,
+) {
+  final location = ref.watch(currentLocationProvider);
+  final eligibilities = ref.watch(serviceStaffEligibilityProvider);
+  return [
+    for (final entry in eligibilities)
+      if (entry.staffId == staffId &&
+          (entry.locationId == null || entry.locationId == location.id))
+        entry.serviceId,
   ];
 });
 

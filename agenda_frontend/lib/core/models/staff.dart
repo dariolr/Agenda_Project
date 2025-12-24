@@ -11,6 +11,7 @@ class Staff {
   final List<int> locationIds;
   final int sortOrder; // 🔹 ordine in agenda
   final bool isDefault; // 🔹 staff predefinito
+  final bool isBookableOnline; // 🔹 abilitato alle prenotazioni online
 
   const Staff({
     required this.id,
@@ -21,6 +22,7 @@ class Staff {
     required this.locationIds,
     this.sortOrder = 0,
     this.isDefault = false,
+    this.isBookableOnline = true,
   });
 
   Staff copyWith({
@@ -32,6 +34,7 @@ class Staff {
     List<int>? locationIds,
     int? sortOrder,
     bool? isDefault,
+    bool? isBookableOnline,
   }) => Staff(
     id: id ?? this.id,
     businessId: businessId ?? this.businessId,
@@ -41,6 +44,7 @@ class Staff {
     locationIds: locationIds ?? this.locationIds,
     sortOrder: sortOrder ?? this.sortOrder,
     isDefault: isDefault ?? this.isDefault,
+    isBookableOnline: isBookableOnline ?? this.isBookableOnline,
   );
 
   factory Staff.fromJson(Map<String, dynamic> json) => Staff(
@@ -56,6 +60,7 @@ class Staff {
         .toList(),
     sortOrder: json['sort_order'] as int? ?? 0,
     isDefault: json['is_default'] as bool? ?? false,
+    isBookableOnline: json['is_bookable_online'] as bool? ?? true,
   );
 
   Map<String, dynamic> toJson() => {
@@ -67,6 +72,7 @@ class Staff {
     'location_ids': locationIds,
     'sort_order': sortOrder,
     'is_default': isDefault,
+    'is_bookable_online': isBookableOnline,
   };
 
   bool worksAtLocation(int locationId) =>

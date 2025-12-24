@@ -147,6 +147,34 @@
   "teamStaffColorLabel": "Color",
   "teamStaffLocationsLabel": "Assigned locations",
   "teamStaffMultiLocationWarning": "If the member works across multiple locations, make sure availability aligns with the selected locations.",
+  "teamEligibleStaffLabel": "Eligible team members",
+  "teamEligibleServicesLabel": "Eligible services",
+  "teamSelectAllServices": "Select all",
+  "teamEligibleServicesCount": "{count} eligible services",
+  "@teamEligibleServicesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamEligibleServicesNone": "No eligible services",
+  "teamChooseServicesButton": "Select services",
+  "teamChooseLocationsButton": "Select locations",
+  "teamSelectAllLocations": "Select all",
+  "teamStaffBookableOnlineLabel": "Enabled for online bookings",
+  "staffNotBookableOnlineTooltip": "Not bookable online",
+  "staffNotBookableOnlineTitle": "Not bookable online",
+  "staffNotBookableOnlineMessage": "This team member is not enabled for online bookings. You can change this in the staff edit form.",
+  "serviceEligibleStaffCount": "{count} eligible team members",
+  "@serviceEligibleStaffCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceEligibleStaffNone": "No eligible team members",
   "teamReorderHelpDescription": "Reorder locations and team members by dragging them. The order will also apply in the agenda section.",
   "createCategoryButtonLabel": "New category",
   "servicesNewServiceMenu": "New service",

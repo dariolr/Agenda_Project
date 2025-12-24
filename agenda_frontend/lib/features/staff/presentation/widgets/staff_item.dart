@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/extensions.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/staff.dart';
+import '../../../services/providers/services_provider.dart';
 
-class StaffItem extends StatefulWidget {
+class StaffItem extends ConsumerStatefulWidget {
   const StaffItem({
     super.key,
     required this.staff,
@@ -27,10 +29,10 @@ class StaffItem extends StatefulWidget {
   final Widget? trailingOverride;
 
   @override
-  State<StaffItem> createState() => _StaffItemState();
+  ConsumerState<StaffItem> createState() => _StaffItemState();
 }
 
-class _StaffItemState extends State<StaffItem> {
+class _StaffItemState extends ConsumerState<StaffItem> {
   bool _isHovered = false;
 
   @override
@@ -45,6 +47,11 @@ class _StaffItemState extends State<StaffItem> {
     final hoverFill = interactionColors?.hoverFill ??
         colorScheme.primaryContainer.withOpacity(0.1);
     final bgColor = _isHovered ? hoverFill : baseColor;
+
+    final eligibleServices = ref.watch(
+      eligibleServicesForStaffProvider(widget.staff.id),
+    );
+    final eligibleServicesCount = eligibleServices.length;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -75,12 +82,37 @@ class _StaffItemState extends State<StaffItem> {
               ),
             ),
           ),
-          title: Text(
-            widget.staff.displayName,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w500),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.staff.displayName,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w500),
+              ),
+              if (eligibleServicesCount == 0) ...[
+                const SizedBox(height: 2),
+                Text(
+                  context.l10n.teamEligibleServicesNone,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
+              ],
+              if (!widget.staff.isBookableOnline) ...[
+                const SizedBox(height: 2),
+                Text(
+                  context.l10n.staffNotBookableOnlineTooltip,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
+              ],
+            ],
           ),
           onTap: widget.onEdit,
           mouseCursor: SystemMouseCursors.click,

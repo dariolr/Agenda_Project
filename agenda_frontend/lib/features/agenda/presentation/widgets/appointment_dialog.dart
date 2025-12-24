@@ -544,7 +544,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           : <int>[];
       final isStaffIneligible = item.serviceId != null &&
           item.staffId != null &&
-          eligibleStaffIds.isNotEmpty &&
           !eligibleStaffIds.contains(item.staffId);
 
       final isFirst = i == 0;

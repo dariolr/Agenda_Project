@@ -21,6 +21,7 @@ import '../../../../core/widgets/labeled_form_field.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../providers/services_provider.dart';
 import '../../utils/service_validators.dart';
+import '../../../staff/providers/staff_providers.dart';
 
 enum _AdditionalTimeSelection { none, processing, blocked }
 
@@ -174,6 +175,13 @@ Future<void> showServiceDialog(
   final descController = TextEditingController(
     text: service?.description ?? '',
   );
+  final staffList = ref.read(staffForCurrentLocationProvider);
+  final eligibilityNotifier = ref.read(serviceStaffEligibilityProvider.notifier);
+  final locationId = ref.read(currentLocationProvider).id;
+  Set<int> selectedStaffIds =
+      service != null
+          ? ref.read(eligibleStaffForServiceProvider(service.id)).toSet()
+          : <int>{};
 
   int? selectedCategory = requireCategorySelection
       ? (service?.categoryId ?? preselectedCategoryId)
@@ -318,6 +326,11 @@ Future<void> showServiceDialog(
         notifier.update(newService);
       }
       ref.read(serviceVariantsProvider.notifier).upsert(newVariant);
+      eligibilityNotifier.setEligibleStaffForService(
+        serviceId: newService.id,
+        locationId: locationId,
+        staffIds: selectedStaffIds,
+      );
 
       Navigator.of(context, rootNavigator: true).pop();
     }
@@ -382,6 +395,27 @@ Future<void> showServiceDialog(
               border: OutlineInputBorder(),
               isDense: true,
             ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.formRowSpacing),
+        LabeledFormField(
+          label: context.l10n.teamEligibleStaffLabel,
+          child: Column(
+            children: [
+              for (final member in staffList)
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: selectedStaffIds.contains(member.id),
+                  onChanged: (value) => setState(() {
+                    if (value == true) {
+                      selectedStaffIds.add(member.id);
+                    } else {
+                      selectedStaffIds.remove(member.id);
+                    }
+                  }),
+                  title: Text(member.displayName),
+                ),
+            ],
           ),
         ),
         const SizedBox(height: AppSpacing.formRowSpacing),

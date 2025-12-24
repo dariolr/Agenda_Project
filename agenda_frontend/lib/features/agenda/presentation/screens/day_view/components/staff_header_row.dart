@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../../app/widgets/staff_circle_avatar.dart';
+import '../../../../../../core/l10n/l10_extension.dart';
 import '../../../../../../core/models/staff.dart';
+import '../../../../../../core/widgets/app_dialogs.dart';
 import '../../../../domain/config/layout_config.dart';
 import '../../../../providers/highlighted_staff_provider.dart';
 import '../../../../providers/layout_config_provider.dart';
@@ -55,11 +57,73 @@ class StaffHeaderRow extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      StaffCircleAvatar(
-                        height: avatarSize,
-                        color: staff.color,
-                        isHighlighted: isHighlighted,
-                        initials: initials,
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          StaffCircleAvatar(
+                            height: avatarSize,
+                            color: staff.color,
+                            isHighlighted: isHighlighted,
+                            initials: initials,
+                          ),
+                          if (!staff.isBookableOnline)
+                            Positioned.fill(
+                              child: Align(
+                                alignment: const Alignment(0.78, 0.78),
+                                child: Transform.translate(
+                                  offset: Offset(
+                                    avatarSize * 0.02,
+                                    avatarSize * 0.02,
+                                  ),
+                                  child: Tooltip(
+                                    message: context.l10n
+                                        .staffNotBookableOnlineTooltip,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        showAppInfoDialog(
+                                          context,
+                                          title: Text(
+                                            context.l10n
+                                                .staffNotBookableOnlineTitle,
+                                          ),
+                                          content: Text(
+                                            context.l10n
+                                                .staffNotBookableOnlineMessage,
+                                          ),
+                                          closeLabel:
+                                              context.l10n.actionClose,
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surface,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                              blurRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                        child: Icon(
+                                          Icons.cloud_off_outlined,
+                                          size: 14,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
