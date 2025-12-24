@@ -33,14 +33,13 @@ class AvailabilityExceptionsNotifier
     DateTime? fromDate,
     DateTime? toDate,
   }) async {
-    final current = state.value ?? {};
-
     final exceptions = await _repository.getExceptionsForStaff(
       staffId,
       fromDate: fromDate,
       toDate: toDate,
     );
 
+    final current = state.value ?? {};
     state = AsyncData({...current, staffId: exceptions});
   }
 

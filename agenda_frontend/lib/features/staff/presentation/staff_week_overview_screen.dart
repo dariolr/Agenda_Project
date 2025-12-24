@@ -3,6 +3,7 @@ import 'package:agenda_frontend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_frontend/core/l10n/date_time_formats.dart';
 import 'package:agenda_frontend/core/l10n/l10_extension.dart';
 import 'package:agenda_frontend/core/models/availability_exception.dart';
+import 'package:agenda_frontend/core/models/staff.dart';
 import 'package:agenda_frontend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_frontend/core/widgets/app_buttons.dart';
 import 'package:agenda_frontend/core/widgets/app_dialogs.dart';
@@ -37,6 +38,22 @@ class HourRange {
       '${DtFmt.hm(context, startHour, startMinute)} - ${DtFmt.hm(context, endHour, endMinute)}';
 }
 
+class _DisplayRange {
+  _DisplayRange({
+    required this.startMinutes,
+    required this.endMinutes,
+    required this.label,
+    required this.isException,
+    this.hourRange,
+  });
+
+  final int startMinutes;
+  final int endMinutes;
+  final String label;
+  final bool isException;
+  final HourRange? hourRange;
+}
+
 /// Mock provider: staffId -> day(1..7) -> ranges
 final weeklyStaffAvailabilityMockProvider =
     Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
@@ -61,6 +78,43 @@ final weeklyStaffAvailabilityMockProvider =
 /// 1. Base: template settimanale (es. Lun-Ven 09:00-18:00)
 /// 2. + Eccezioni "available": aggiungono slot disponibili
 /// 3. - Eccezioni "unavailable": rimuovono slot disponibili
+class WeeklyExceptionsLoadKeyNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setKey(String? value) => state = value;
+}
+
+final weeklyExceptionsLoadKeyProvider =
+    NotifierProvider<WeeklyExceptionsLoadKeyNotifier, String?>(
+      WeeklyExceptionsLoadKeyNotifier.new,
+    );
+
+void _ensureExceptionsLoadedForWeekWithKey(
+  String? lastKey,
+  void Function(String? value) setKey,
+  Future<void> Function(int staffId, {DateTime? fromDate, DateTime? toDate})
+  loadForStaff,
+  DateTime agendaDate,
+  List<Staff> staffList,
+) {
+  if (staffList.isEmpty) return;
+  final monday = _mondayOfWeek(agendaDate);
+  final staffIds = staffList.map((s) => s.id).toList()..sort();
+  final key =
+      '${monday.toIso8601String().split('T').first}|${staffIds.join(",")}';
+  if (lastKey == key) return;
+  final fromDate = monday;
+  final toDate = monday.add(const Duration(days: 6));
+  for (final staff in staffList) {
+    loadForStaff(
+      staff.id,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
+  }
+}
+
 final weeklyStaffAvailabilityFromEditorProvider =
     Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
       final staffList = ref.watch(staffForStaffSectionProvider);
@@ -71,6 +125,13 @@ final weeklyStaffAvailabilityFromEditorProvider =
 
       // Ottieni la data corrente dell'agenda per calcolare la settimana mostrata
       final agendaDate = ref.watch(agendaDateProvider);
+      _ensureExceptionsLoadedForWeekWithKey(
+        ref.watch(weeklyExceptionsLoadKeyProvider),
+        ref.read(weeklyExceptionsLoadKeyProvider.notifier).setKey,
+        ref.read(availabilityExceptionsProvider.notifier).loadExceptionsForStaff,
+        agendaDate,
+        staffList,
+      );
       final monday = _mondayOfWeek(agendaDate);
 
       List<HourRange> slotsToHourRanges(Set<int> slots) {
@@ -209,6 +270,13 @@ final weeklyStaffBaseAvailabilityProvider =
 final weeklyExceptionDaysProvider = Provider<Map<int, Set<int>>>((ref) {
   final staffList = ref.watch(staffForStaffSectionProvider);
   final agendaDate = ref.watch(agendaDateProvider);
+  _ensureExceptionsLoadedForWeekWithKey(
+    ref.watch(weeklyExceptionsLoadKeyProvider),
+    ref.read(weeklyExceptionsLoadKeyProvider.notifier).setKey,
+    ref.read(availabilityExceptionsProvider.notifier).loadExceptionsForStaff,
+    agendaDate,
+    staffList,
+  );
   final monday = _mondayOfWeek(agendaDate);
 
   final Map<int, Set<int>> result = {};
@@ -304,6 +372,8 @@ class _StaffWeekOverviewScreenState
     super.dispose();
   }
 
+  // Caricamento eccezioni gestito dai provider
+
   @override
   Widget build(BuildContext context) {
     // Data sources
@@ -318,6 +388,13 @@ class _StaffWeekOverviewScreenState
     // Track which staff/day combinations have exceptions applied
     final exceptionDays = ref.watch(weeklyExceptionDaysProvider);
     final formFactor = ref.watch(formFactorProvider);
+    _ensureExceptionsLoadedForWeekWithKey(
+      ref.watch(weeklyExceptionsLoadKeyProvider),
+      ref.read(weeklyExceptionsLoadKeyProvider.notifier).setKey,
+      ref.read(availabilityExceptionsProvider.notifier).loadExceptionsForStaff,
+      selectedDate,
+      staffList,
+    );
 
     // Week days (Mon..Sun)
     final weekStart = _mondayOfWeek(selectedDate);
@@ -1163,9 +1240,54 @@ class _StaffWeekOverviewScreenState
       }
     }
 
+    List<_DisplayRange> mergeRangesForDisplay(
+      List<HourRange> ranges,
+      List<AvailabilityException> exceptions,
+      BuildContext context,
+      bool Function(HourRange range) isInBase,
+    ) {
+      final items = <_DisplayRange>[];
+
+      for (final r in ranges) {
+        final isException = !isInBase(r);
+        items.add(
+          _DisplayRange(
+            startMinutes: r.startHour * 60 + r.startMinute,
+            endMinutes: r.endHour * 60 + r.endMinute,
+            label: r.label(context),
+            isException: isException,
+            hourRange: r,
+          ),
+        );
+      }
+
+      for (final e in exceptions) {
+        if (e.type != AvailabilityExceptionType.unavailable) continue;
+        if (e.startTime == null || e.endTime == null) continue;
+        final label =
+            '${DtFmt.hm(context, e.startTime!.hour, e.startTime!.minute)} - ${DtFmt.hm(context, e.endTime!.hour, e.endTime!.minute)}';
+        items.add(
+          _DisplayRange(
+            startMinutes: e.startTime!.hour * 60 + e.startTime!.minute,
+            endMinutes: e.endTime!.hour * 60 + e.endTime!.minute,
+            label: label,
+            isException: true,
+          ),
+        );
+      }
+
+      items.sort(
+        (a, b) => a.startMinutes.compareTo(b.startMinutes),
+      );
+      return items;
+    }
+
+    // _DisplayRange è definita a livello di file per poter essere usata nel sort.
+
     Widget buildDayCell(
       List<HourRange> ranges,
       List<HourRange> baseRanges,
+      List<AvailabilityException> exceptions,
       int staffId,
       int weekday,
       DateTime date, {
@@ -1223,53 +1345,66 @@ class _StaffWeekOverviewScreenState
         return const SizedBox.shrink();
       }
 
+      final displayRanges = mergeRangesForDisplay(
+        ranges,
+        exceptions,
+        context,
+        isInBase,
+      );
+
+      Widget buildChipForRange(_DisplayRange range) {
+        final bgColor = range.isException ? chipColorWithException : chipColor;
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: () {
+              if (range.hourRange != null) {
+                showShiftOptionsMenu(
+                  staffId,
+                  weekday,
+                  0,
+                  range.hourRange!,
+                  date,
+                  isException: range.isException,
+                );
+              }
+            },
+            child: Container(
+              height: chipHeight,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: AgendaTheme.appointmentBorder,
+                  width: 0.6,
+                ),
+              ),
+              child: Text(
+                range.label,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: range.isException
+                      ? const Color(0xFF8A4D00)
+                      : Colors.black87,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          for (int i = 0; i < ranges.length; i++) ...[
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(6),
-                onTap: () {
-                  final isExceptionChip = !isInBase(ranges[i]);
-                  showShiftOptionsMenu(
-                    staffId,
-                    weekday,
-                    i,
-                    ranges[i],
-                    date,
-                    isException: isExceptionChip,
-                  );
-                },
-                child: Container(
-                  height: chipHeight,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isInBase(ranges[i])
-                        ? chipColor
-                        : chipColorWithException,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: AgendaTheme.appointmentBorder,
-                      width: 0.6,
-                    ),
-                  ),
-                  child: Text(
-                    ranges[i].label(context),
-                    maxLines: 1,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (i < ranges.length - 1) SizedBox(height: chipVGap),
+          for (int i = 0; i < displayRanges.length; i++) ...[
+            buildChipForRange(displayRanges[i]),
+            if (i < displayRanges.length - 1) SizedBox(height: chipVGap),
           ],
         ],
       );
@@ -1374,6 +1509,12 @@ class _StaffWeekOverviewScreenState
                                             const <HourRange>[],
                                         (baseAvailability[s.id]?[d.weekday]) ??
                                             const <HourRange>[],
+                                        ref.watch(
+                                          exceptionsForStaffOnDateProvider((
+                                            staffId: s.id,
+                                            date: d,
+                                          )),
+                                        ),
                                         s.id,
                                         d.weekday,
                                         d,
