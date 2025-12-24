@@ -162,8 +162,22 @@
     }
   },
   "teamEligibleServicesNone": "No eligible services",
-  "teamChooseServicesButton": "Select services",
+  "teamSelectedServicesButton": "Selected services",
+  "teamSelectedServicesCount": "{selected} of {total}",
+  "@teamSelectedServicesCount": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "teamServicesLabel": "Services",
   "teamChooseLocationsButton": "Select locations",
+  "teamChooseLocationSingleButton": "Select location",
+  "teamLocationLabel": "Location",
   "teamSelectAllLocations": "Select all",
   "teamStaffBookableOnlineLabel": "Enabled for online bookings",
   "staffNotBookableOnlineTooltip": "Not bookable online",

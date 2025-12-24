@@ -162,8 +162,22 @@
     }
   },
   "teamEligibleServicesNone": "Nessun servizio abilitato",
-  "teamChooseServicesButton": "Seleziona servizi",
+  "teamSelectedServicesButton": "Servizi selezionati",
+  "teamSelectedServicesCount": "{selected} su {total}",
+  "@teamSelectedServicesCount": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "teamServicesLabel": "Servizi",
   "teamChooseLocationsButton": "Seleziona sedi",
+  "teamChooseLocationSingleButton": "Seleziona la sede",
+  "teamLocationLabel": "Sede",
   "teamSelectAllLocations": "Seleziona tutto",
   "teamStaffBookableOnlineLabel": "Abilitato alle prenotazioni online",
   "staffNotBookableOnlineTooltip": "Non prenotabile online",
