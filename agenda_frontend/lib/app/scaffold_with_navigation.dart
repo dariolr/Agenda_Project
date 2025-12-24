@@ -216,7 +216,9 @@ class _AgendaAddAction extends ConsumerWidget {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
-    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    final showLabelEffective = showLabel ||
+        formFactor == AppFormFactor.tablet ||
+        formFactor == AppFormFactor.desktop;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -272,6 +274,7 @@ class _AgendaAddAction extends ConsumerWidget {
 class _ServicesAddAction extends ConsumerWidget {
   const _ServicesAddAction({this.compact = false});
   final bool compact;
+  static const double _actionButtonHeight = 40;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -281,7 +284,23 @@ class _ServicesAddAction extends ConsumerWidget {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
-    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    final showLabelEffective = showLabel ||
+        formFactor == AppFormFactor.tablet ||
+        formFactor == AppFormFactor.desktop;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
+    Widget buildActionLabel(IconData icon, String label) {
+      return showLabelEffective
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 22),
+                const SizedBox(width: 8),
+                Text(label),
+              ],
+            )
+          : Icon(icon, size: 22);
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -291,7 +310,8 @@ class _ServicesAddAction extends ConsumerWidget {
           Tooltip(
             message: l10n.reorderTitle,
             child: SizedBox(
-              height: 36,
+              height: _actionButtonHeight,
+              width: isIconOnly ? iconOnlyWidth : null,
               child: AppOutlinedActionButton(
                 onPressed: () {
                   ref.read(servicesReorderPanelProvider.notifier).toggle();
@@ -303,7 +323,7 @@ class _ServicesAddAction extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
                 borderColor: scheme.primary,
                 foregroundColor: scheme.primary,
-                child: const Icon(Icons.sort, size: 20),
+                child: buildActionLabel(Icons.sort, l10n.reorderTitle),
               ),
             ),
           ),
@@ -362,6 +382,7 @@ class _ServicesAddAction extends ConsumerWidget {
 class _TeamAddAction extends ConsumerWidget {
   const _TeamAddAction({this.compact = false});
   final bool compact;
+  static const double _actionButtonHeight = 40;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -372,6 +393,20 @@ class _TeamAddAction extends ConsumerWidget {
     final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
     final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
+    Widget buildActionLabel(IconData icon, String label) {
+      return showLabelEffective
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 22),
+                const SizedBox(width: 8),
+                Text(label),
+              ],
+            )
+          : Icon(icon, size: 22);
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -379,9 +414,32 @@ class _TeamAddAction extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Tooltip(
+            message: l10n.staffHubAvailabilityTitle,
+            child: SizedBox(
+              height: _actionButtonHeight,
+              width: isIconOnly ? iconOnlyWidth : null,
+              child: AppOutlinedActionButton(
+                onPressed: () => context.pushNamed('staff-availability'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                borderColor: scheme.primary,
+                foregroundColor: scheme.primary,
+                child: buildActionLabel(
+                  Icons.schedule_outlined,
+                  l10n.staffHubAvailabilityTitle,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Tooltip(
             message: l10n.reorderTitle,
             child: SizedBox(
-              height: 36,
+              height: _actionButtonHeight,
+              width: isIconOnly ? iconOnlyWidth : null,
               child: AppOutlinedActionButton(
                 onPressed: () {
                   ref.read(teamReorderPanelProvider.notifier).toggle();
@@ -393,7 +451,7 @@ class _TeamAddAction extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
                 borderColor: scheme.primary,
                 foregroundColor: scheme.primary,
-                child: const Icon(Icons.sort, size: 20),
+                child: buildActionLabel(Icons.sort, l10n.reorderTitle),
               ),
             ),
           ),
