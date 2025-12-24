@@ -195,8 +195,8 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
               serviceId: serviceId,
               serviceVariantId: variant?.id,
               durationMinutes: duration,
-              // Lo staff verrà ricalcolato dal parent
-              staffId: null,
+              // Mantieni lo staff selezionato se presente
+              staffId: item.staffId,
             ),
           );
         }
