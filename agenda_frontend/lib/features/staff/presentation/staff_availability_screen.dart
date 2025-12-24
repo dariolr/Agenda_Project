@@ -315,6 +315,8 @@ class _StaffAvailabilityScreenState
             staffName == null
                 ? context.l10n.availabilityTitle
                 : context.l10n.availabilityTitleFor(staffName),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           bottom: TabBar(
             controller: _tabController,
