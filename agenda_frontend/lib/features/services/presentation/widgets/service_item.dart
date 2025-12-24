@@ -51,122 +51,131 @@ class ServiceItem extends ConsumerWidget {
               colorScheme.onSurface.withOpacity(0.04))
         : Colors.transparent;
 
-    final bgColor = (isHovered || isSelected)
-        ? colorScheme.primaryContainer.withOpacity(0.1)
-        : baseColor;
+    final hoverFill = interactionColors?.hoverFill ??
+        colorScheme.primaryContainer.withOpacity(0.1);
+    final bgColor = (isHovered || isSelected) ? hoverFill : baseColor;
 
     return MouseRegion(
+      cursor: SystemMouseCursors.click,
       onEnter: (_) => onEnter(),
       onExit: (_) => onExit(),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.only(
-              bottomLeft: isLast ? const Radius.circular(16) : Radius.zero,
-              bottomRight: isLast ? const Radius.circular(16) : Radius.zero,
-            ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.only(
+            bottomLeft: isLast ? const Radius.circular(16) : Radius.zero,
+            bottomRight: isLast ? const Radius.circular(16) : Radius.zero,
           ),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  width: 4,
-                  decoration: BoxDecoration(
-                    color: variant?.colorHex != null
-                        ? ColorUtils.fromHex(variant!.colorHex!)
-                        : colorScheme.primary,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: isLast
-                          ? const Radius.circular(16)
-                          : Radius.zero,
+          child: Container(
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.only(
+                bottomLeft: isLast ? const Radius.circular(16) : Radius.zero,
+                bottomRight: isLast ? const Radius.circular(16) : Radius.zero,
+              ),
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    width: 4,
+                    decoration: BoxDecoration(
+                      color: variant?.colorHex != null
+                          ? ColorUtils.fromHex(variant!.colorHex!)
+                          : colorScheme.primary,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: isLast
+                            ? const Radius.circular(16)
+                            : Radius.zero,
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          service.name,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w500),
-                        ),
-                        if (variant?.durationMinutes != null ||
-                            variant?.price != null ||
-                            (variant?.isFree ?? false))
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (variant?.durationMinutes != null)
-                                  Text(
-                                    context.localizedDurationLabel(
-                                      variant!.durationMinutes,
-                                    ),
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.black54,
-                                      height: 1.1,
-                                    ),
-                                  ),
-                                if (variant?.durationMinutes != null &&
-                                    (variant?.price != null ||
-                                        (variant?.isFree ?? false)))
-                                  const SizedBox(width: 8),
-                                if (variant?.isFree ?? false)
-                                  Text(
-                                    context.l10n.freeLabel,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.black54,
-                                      height: 1.1,
-                                    ),
-                                  )
-                                else if (variant?.price != null)
-                                  Text(
-                                    PriceFormatter.formatVariant(
-                                      context: context,
-                                      ref: ref,
-                                      variant: variant!,
-                                    ),
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.black54,
-                                      height: 1.1,
-                                    ),
-                                  ),
-                              ],
-                            ),
+                  Expanded(
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
+                      mouseCursor: SystemMouseCursors.click,
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            service.name,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w500),
                           ),
-                        if (!(variant?.isBookableOnline ?? true))
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              context.l10n.notBookableOnline,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Colors.red[600],
-                                    fontStyle: FontStyle.italic,
-                                  ),
+                          if (variant?.durationMinutes != null ||
+                              variant?.price != null ||
+                              (variant?.isFree ?? false))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (variant?.durationMinutes != null)
+                                    Text(
+                                      context.localizedDurationLabel(
+                                        variant!.durationMinutes,
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.black54,
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                  if (variant?.durationMinutes != null &&
+                                      (variant?.price != null ||
+                                          (variant?.isFree ?? false)))
+                                    const SizedBox(width: 8),
+                                  if (variant?.isFree ?? false)
+                                    Text(
+                                      context.l10n.freeLabel,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.black54,
+                                        height: 1.1,
+                                      ),
+                                    )
+                                  else if (variant?.price != null)
+                                    Text(
+                                      PriceFormatter.formatVariant(
+                                        context: context,
+                                        ref: ref,
+                                        variant: variant!,
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.black54,
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
-                      ],
-                    ),
-                    trailing: UnconstrainedBox(
-                      alignment: Alignment.centerRight,
-                      child: isWide
-                          ? _buildActionIcons(context)
-                          : _buildPopupMenu(),
+                          if (!(variant?.isBookableOnline ?? true))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                context.l10n.notBookableOnline,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Colors.red[600],
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      trailing: UnconstrainedBox(
+                        alignment: Alignment.centerRight,
+                        child: isWide
+                            ? _buildActionIcons(context)
+                            : _buildPopupMenu(),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

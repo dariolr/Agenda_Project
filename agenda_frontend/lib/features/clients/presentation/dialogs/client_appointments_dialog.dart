@@ -153,7 +153,7 @@ class _AppointmentTile extends ConsumerWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
 
     // Recupera staff
-    final allStaff = ref.watch(allStaffProvider);
+    final allStaff = ref.watch(sortedAllStaffProvider);
     final staff = allStaff
         .where((s) => s.id == appointment.staffId)
         .firstOrNull;

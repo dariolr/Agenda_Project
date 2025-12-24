@@ -8,6 +8,7 @@ import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
 import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_week_overview_screen.dart';
+import '../features/staff/presentation/team_screen.dart';
 // Importa la nostra "Shell"
 import 'scaffold_with_navigation.dart';
 
@@ -85,7 +86,7 @@ final GoRouter appRouter = GoRouter(
               path: '/staff',
               name: 'staff',
               builder: (BuildContext context, GoRouterState state) =>
-                  const StaffWeekOverviewScreen(),
+                  const TeamScreen(),
               routes: [
                 GoRoute(
                   path: 'availability',

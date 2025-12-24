@@ -6,41 +6,82 @@ import '../../agenda/providers/business_providers.dart';
 ///
 /// 🔹 ELENCO LOCATIONS (mock statiche)
 ///
-final locationsProvider = Provider<List<Location>>((ref) {
-  final business = ref.watch(currentBusinessProvider);
-  return [
-    Location(
-      id: 101,
-      businessId: business.id,
-      name: 'Sede Centrale',
-      address: 'Via Roma 12',
-      city: 'Roma',
-      region: 'Lazio',
-      country: 'Italia',
-      phone: '+39 06 1234567',
-      email: 'roma@azienda.it',
-      latitude: 41.9028,
-      longitude: 12.4964,
-      currency: 'EUR', // 🔹 Valuta locale per la sede
-      isDefault: true, // ✅ aggiunto per default
-    ),
-    Location(
-      id: 102,
-      businessId: business.id,
-      name: 'Filiale Estera',
-      address: 'Main Street 22',
-      city: 'Lugano',
-      region: 'TI',
-      country: 'Svizzera',
-      phone: '+41 91 654321',
-      email: 'lugano@azienda.ch',
-      latitude: 46.0037,
-      longitude: 8.9511,
-      currency: 'CHF', // 🔹 Valuta diversa (franchi svizzeri)
-      isDefault: false,
-    ),
-  ];
-});
+class LocationsNotifier extends Notifier<List<Location>> {
+  @override
+  List<Location> build() {
+    final business = ref.watch(currentBusinessProvider);
+    return [
+      Location(
+        id: 101,
+        businessId: business.id,
+        name: 'Sede Centrale',
+        address: 'Via Roma 12',
+        city: 'Roma',
+        region: 'Lazio',
+        country: 'Italia',
+        phone: '+39 06 1234567',
+        email: 'roma@azienda.it',
+        latitude: 41.9028,
+        longitude: 12.4964,
+        currency: 'EUR', // 🔹 Valuta locale per la sede
+        isDefault: true, // ✅ aggiunto per default
+      ),
+      Location(
+        id: 102,
+        businessId: business.id,
+        name: 'Filiale Estera',
+        address: 'Main Street 22',
+        city: 'Lugano',
+        region: 'TI',
+        country: 'Svizzera',
+        phone: '+41 91 654321',
+        email: 'lugano@azienda.ch',
+        latitude: 46.0037,
+        longitude: 8.9511,
+        currency: 'CHF', // 🔹 Valuta diversa (franchi svizzeri)
+        isDefault: false,
+      ),
+    ];
+  }
+
+  void add(Location location) {
+    state = [...state, location];
+  }
+
+  void update(Location updated) {
+    state = [
+      for (final l in state)
+        if (l.id == updated.id) updated else l,
+    ];
+  }
+
+  void delete(int id) {
+    final currentId = ref.read(currentLocationIdProvider);
+    state = state.where((l) => l.id != id).toList();
+    if (state.isEmpty) return;
+    if (currentId == id) {
+      ref.read(currentLocationIdProvider.notifier).set(state.first.id);
+    }
+  }
+
+  void reorder(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex -= 1;
+    final list = [...state];
+    final item = list.removeAt(oldIndex);
+    list.insert(newIndex, item);
+    state = list;
+  }
+
+  int nextId() {
+    if (state.isEmpty) return 1;
+    final maxId = state.map((l) => l.id).reduce((a, b) => a > b ? a : b);
+    return maxId + 1;
+  }
+}
+
+final locationsProvider = NotifierProvider<LocationsNotifier, List<Location>>(
+  LocationsNotifier.new,
+);
 
 ///
 /// 🔹 LOCATION CORRENTE

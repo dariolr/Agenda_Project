@@ -19,6 +19,9 @@ import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/services/presentation/dialogs/category_dialog.dart';
 import '../features/services/presentation/dialogs/service_dialog.dart';
 import '../features/services/providers/services_reorder_provider.dart';
+import '../features/staff/presentation/dialogs/location_dialog.dart';
+import '../features/staff/presentation/dialogs/staff_dialog.dart';
+import '../features/staff/providers/staff_reorder_provider.dart';
 
 Widget _buildAddButtonContent({
   required bool showLabelEffective,
@@ -71,6 +74,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       final isAgenda = navigationShell.currentIndex == 0;
       final isClients = navigationShell.currentIndex == 1;
       final isServices = navigationShell.currentIndex == 2;
+      final isStaff = navigationShell.currentIndex == 3;
 
       final isTablet = formFactor == AppFormFactor.tablet;
 
@@ -86,7 +90,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               ? [const _AgendaAddAction()]
               : (isServices
                     ? [const _ServicesAddAction()]
-                    : (isClients ? [const _ClientsAddAction()] : null)),
+                    : (isClients
+                          ? [const _ClientsAddAction()]
+                          : (isStaff ? [const _TeamAddAction()] : null))),
         ),
         body: Row(
           children: [
@@ -118,6 +124,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isAgenda = navigationShell.currentIndex == 0;
     final isClients = navigationShell.currentIndex == 1;
     final isServices = navigationShell.currentIndex == 2;
+    final isStaff = navigationShell.currentIndex == 3;
     final isTablet = formFactor == AppFormFactor.tablet;
     final showBottomDateSwitcher =
         isAgenda && formFactor == AppFormFactor.mobile;
@@ -138,7 +145,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                   ? const [_ServicesAddAction(compact: true)]
                   : (isClients
                         ? const [_ClientsAddAction(compact: true)]
-                        : null)),
+                        : (isStaff
+                              ? const [_TeamAddAction(compact: true)]
+                              : null))),
       ),
       body: navigationShell,
       bottomNavigationBar: Column(
@@ -321,6 +330,96 @@ class _ServicesAddAction extends ConsumerWidget {
                 showCategoryDialog(context, ref);
               } else if (value == 'service') {
                 showServiceDialog(context, ref, requireCategorySelection: true);
+              }
+            },
+            child: Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: _buildAddButtonContent(
+                  showLabelEffective: showLabelEffective,
+                  compact: compact,
+                  label: l10n.agendaAdd,
+                  onContainer: onContainer,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TeamAddAction extends ConsumerWidget {
+  const _TeamAddAction({this.compact = false});
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    final onContainer = scheme.onSecondaryContainer;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Tooltip(
+            message: l10n.reorderTitle,
+            child: SizedBox(
+              height: 36,
+              child: AppOutlinedActionButton(
+                onPressed: () {
+                  ref.read(teamReorderPanelProvider.notifier).toggle();
+                },
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                borderColor: scheme.primary,
+                foregroundColor: scheme.primary,
+                child: const Icon(Icons.sort, size: 20),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          AdaptiveDropdown<String>(
+            modalTitle: l10n.agendaAdd,
+            alignment: AdaptiveDropdownAlignment.right,
+            verticalPosition: AdaptiveDropdownVerticalPosition.above,
+            forcePopup: true,
+            hideTriggerWhenOpen: true,
+            popupWidth: 220,
+            items: [
+              AdaptiveDropdownItem(
+                value: 'location',
+                child: Text(l10n.teamNewLocationTitle),
+              ),
+              AdaptiveDropdownItem(
+                value: 'staff',
+                child: Text(l10n.teamNewStaffTitle),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 'location') {
+                showLocationDialog(context, ref);
+              } else if (value == 'staff') {
+                showStaffDialog(context, ref);
               }
             },
             child: Material(
