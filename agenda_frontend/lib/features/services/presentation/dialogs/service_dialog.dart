@@ -20,6 +20,7 @@ import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../providers/services_provider.dart';
+import '../../utils/service_seed_texts.dart';
 import '../../utils/service_validators.dart';
 import '../../../staff/providers/staff_providers.dart';
 
@@ -147,10 +148,12 @@ Future<void> showServiceDialog(
   int? preselectedCategoryId,
   Color? preselectedColor,
   bool requireCategorySelection = false,
+  bool duplicateFrom = false,
 }) async {
   final notifier = ref.read(servicesProvider.notifier);
   final allServices = ref.read(servicesProvider);
   final categories = ref.read(serviceCategoriesProvider);
+  final isEditing = service != null && !duplicateFrom;
   final existingVariant = service != null
       ? ref.read(serviceVariantByServiceIdProvider(service.id))
       : null;
@@ -162,7 +165,52 @@ Future<void> showServiceDialog(
   final colorScrollController = ScrollController();
   bool didAutoScroll = false;
 
-  final nameController = TextEditingController(text: service?.name ?? '');
+  String makeDuplicateName(String originalName) {
+    final copyWord = ServiceSeedTexts.duplicateCopyWord;
+    final copyWordEscaped = RegExp.escape(copyWord);
+    String base = originalName;
+    int? startFrom;
+
+    final reNew = RegExp(
+      '^(.*?)(?:\\s$copyWordEscaped(?:\\s(\\d+))?)\$',
+      caseSensitive: false,
+    );
+    final reOld = RegExp(
+      '^(.*?)(?:\\s\\((?:$copyWordEscaped)(?:\\s(\\d+))?\\))\$',
+      caseSensitive: false,
+    );
+
+    final match = reNew.firstMatch(originalName) ?? reOld.firstMatch(originalName);
+    if (match != null) {
+      base = (match.group(1) ?? '').trim();
+      final n = match.group(2);
+      if (n != null) {
+        final parsed = int.tryParse(n);
+        if (parsed != null) startFrom = parsed + 1;
+      } else {
+        startFrom = 1;
+      }
+    }
+
+    final existingNames = allServices.map((s) => s.name).toSet();
+    String candidate = '$base $copyWord';
+    if (!existingNames.contains(candidate)) return candidate;
+
+    int i = startFrom ?? 1;
+    while (true) {
+      candidate = '$base $copyWord $i';
+      if (!existingNames.contains(candidate)) return candidate;
+      i++;
+      if (i > 9999) break;
+    }
+    return '$base $copyWord';
+  }
+
+  final nameController = TextEditingController(
+    text: (duplicateFrom && service != null)
+        ? makeDuplicateName(service.name)
+        : (service?.name ?? ''),
+  );
   final priceController = TextEditingController(
     text: (existingVariant != null && existingVariant.price > 0)
         ? PriceFormatter.format(
@@ -266,7 +314,7 @@ Future<void> showServiceDialog(
     final isDuplicate = ServiceValidators.isDuplicateServiceName(
       allServices,
       normalizedName,
-      excludeId: service?.id,
+      excludeId: isEditing ? service?.id : null,
     );
     if (selectedDuration == null) {
       durationError = true;
@@ -294,7 +342,7 @@ Future<void> showServiceDialog(
         blockedToSave = additionalMinutes;
       }
       final newService = Service(
-        id: service?.id ?? DateTime.now().millisecondsSinceEpoch,
+        id: isEditing ? service!.id : DateTime.now().millisecondsSinceEpoch,
         businessId: ref.read(currentBusinessProvider).id,
         categoryId: selectedCategory!,
         name: normalizedName,
@@ -305,7 +353,9 @@ Future<void> showServiceDialog(
       );
 
       final newVariant = ServiceVariant(
-        id: existingVariant?.id ?? (900000 + newService.id),
+        id: isEditing
+            ? (existingVariant?.id ?? (900000 + newService.id))
+            : (900000 + newService.id),
         serviceId: newService.id,
         locationId: ref.read(currentLocationProvider).id,
         durationMinutes: selectedDuration!,
@@ -320,7 +370,7 @@ Future<void> showServiceDialog(
         resourceRequirements: existingVariant?.resourceRequirements ?? const [],
       );
 
-      if (service == null) {
+      if (!isEditing) {
         notifier.add(newService);
       } else {
         notifier.update(newService);
@@ -687,7 +737,7 @@ Future<void> showServiceDialog(
     );
   }
 
-  final dialogTitle = service == null
+  final dialogTitle = !isEditing
       ? context.l10n.newServiceTitle
       : context.l10n.editServiceTitle;
 

@@ -555,7 +555,12 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           _openServiceDialog(context, ref, service: service),
       onServiceEdit: (service) =>
           _openServiceDialog(context, ref, service: service),
-      onServiceDuplicate: (service) => servicesNotifier.duplicate(service),
+      onServiceDuplicate: (service) => _openServiceDialog(
+        context,
+        ref,
+        service: service,
+        duplicateFrom: true,
+      ),
       onServiceDelete: (id) =>
           _confirmDelete(context, onConfirm: () => servicesNotifier.delete(id)),
     );
@@ -593,6 +598,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     Service? service,
     int? preselectedCategoryId,
     Color? preselectedColor,
+    bool duplicateFrom = false,
   }) {
     return showServiceDialog(
       context,
@@ -600,6 +606,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       service: service,
       preselectedCategoryId: preselectedCategoryId,
       preselectedColor: preselectedColor,
+      duplicateFrom: duplicateFrom,
     ).then((_) => _selectedService.value = null);
   }
 

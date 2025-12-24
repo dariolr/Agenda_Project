@@ -19,6 +19,7 @@ Future<void> showStaffDialog(
   WidgetRef ref, {
   Staff? initial,
   int? initialLocationId,
+  bool duplicateFrom = false,
 }) async {
   final formFactor = ref.read(formFactorProvider);
   final isDesktop = formFactor == AppFormFactor.desktop;
@@ -26,6 +27,7 @@ Future<void> showStaffDialog(
   final dialog = _StaffDialog(
     initial: initial,
     initialLocationId: initialLocationId,
+    isDuplicating: duplicateFrom,
   );
 
   if (isDesktop) {
@@ -42,12 +44,17 @@ Future<void> showStaffDialog(
 }
 
 class _StaffDialog extends ConsumerStatefulWidget {
-  const _StaffDialog({this.initial, this.initialLocationId});
+  const _StaffDialog({
+    this.initial,
+    this.initialLocationId,
+    this.isDuplicating = false,
+  });
 
   final Staff? initial;
   final int? initialLocationId;
+  final bool isDuplicating;
 
-  bool get isEditing => initial != null;
+  bool get isEditing => initial != null && !isDuplicating;
 
   @override
   ConsumerState<_StaffDialog> createState() => _StaffDialogState();
@@ -91,8 +98,24 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final initial = widget.initial;
     _selectedColor = initial?.color ?? _palette.first;
     if (initial != null) {
-      _nameController.text = initial.name;
-      _surnameController.text = initial.surname;
+      if (widget.isDuplicating) {
+        final existingNames =
+            ref.read(allStaffProvider).map((s) => s.displayName).toSet();
+        var base = initial.displayName;
+        var candidate = '$base Copia';
+        var i = 1;
+        while (existingNames.contains(candidate)) {
+          candidate = '$base Copia $i';
+          i++;
+        }
+        final parts = candidate.split(' ');
+        _nameController.text = parts.first;
+        _surnameController.text =
+            parts.length > 1 ? parts.sublist(1).join(' ') : initial.surname;
+      } else {
+        _nameController.text = initial.name;
+        _surnameController.text = initial.surname;
+      }
       _selectedLocationIds.addAll(initial.locationIds);
       _isBookableOnline = initial.isBookableOnline;
       _selectedServiceIds.addAll(
@@ -392,13 +415,10 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final business = ref.read(currentBusinessProvider);
     final name = _nameController.text.trim();
     final surname = _surnameController.text.trim();
+    final isEditing = widget.isEditing;
+    final staffId = isEditing ? widget.initial!.id : notifier.nextId();
 
-    if (widget.initial != null) {
-      ref.read(serviceStaffEligibilityProvider.notifier).setEligibleServicesForStaff(
-            staffId: widget.initial!.id,
-            locationId: ref.read(currentLocationProvider).id,
-            serviceIds: _selectedServiceIds,
-          );
+    if (isEditing) {
       notifier.update(
         widget.initial!.copyWith(
           name: name,
@@ -409,10 +429,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         ),
       );
     } else {
-      final newId = notifier.nextId();
       notifier.add(
         Staff(
-          id: newId,
+          id: staffId,
           businessId: business.id,
           name: name,
           surname: surname,
@@ -422,12 +441,12 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
           isBookableOnline: _isBookableOnline,
         ),
       );
-      ref.read(serviceStaffEligibilityProvider.notifier).setEligibleServicesForStaff(
-            staffId: newId,
-            locationId: ref.read(currentLocationProvider).id,
-            serviceIds: _selectedServiceIds,
-          );
     }
+    ref.read(serviceStaffEligibilityProvider.notifier).setEligibleServicesForStaff(
+          staffId: staffId,
+          locationId: ref.read(currentLocationProvider).id,
+          serviceIds: _selectedServiceIds,
+        );
     Navigator.of(context).pop();
   }
 

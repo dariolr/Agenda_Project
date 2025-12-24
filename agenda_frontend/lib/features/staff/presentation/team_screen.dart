@@ -342,8 +342,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
                 ref,
                 initial: staff,
               ),
-          onDuplicateStaff: (staff) =>
-              ref.read(allStaffProvider.notifier).duplicate(staff),
+          onDuplicateStaff: (staff) => showStaffDialog(
+                context,
+                ref,
+                initial: staff,
+                duplicateFrom: true,
+              ),
           onDeleteStaff: (staff) async {
             final confirmed = await showConfirmDialog(
               context,
