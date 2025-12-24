@@ -107,24 +107,16 @@ class ServiceItem extends ConsumerWidget {
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.w500),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          eligibleStaffCount == 0
-                              ? context.l10n.serviceEligibleStaffNone
-                              : context.l10n.serviceEligibleStaffCount(
-                                  eligibleStaffCount,
+                        if (eligibleStaffCount == 0) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            context.l10n.serviceEligibleStaffNone,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.error,
+                                  fontStyle: FontStyle.italic,
                                 ),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: eligibleStaffCount == 0
-                                    ? Theme.of(context).colorScheme.error
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                fontStyle: eligibleStaffCount == 0
-                                    ? FontStyle.italic
-                                    : FontStyle.normal,
-                              ),
-                        ),
+                          ),
+                        ],
                         if (variant?.durationMinutes != null ||
                             variant?.price != null ||
                             (variant?.isFree ?? false))

@@ -86,6 +86,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           title: isAgenda ? const AgendaTopControls() : const SizedBox.shrink(),
           centerTitle: false,
           toolbarHeight: 76,
+          actionsPadding: const EdgeInsets.only(right: 6),
           actions: isAgenda
               ? [const _AgendaAddAction()]
               : (isServices
@@ -139,6 +140,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
             ? const AgendaTopControls(compact: true)
             : const SizedBox.shrink(),
         centerTitle: false,
+        actionsPadding: const EdgeInsets.only(right: 6),
         actions: isAgenda
             ? const [_AgendaAddAction(compact: true)]
             : (isServices
