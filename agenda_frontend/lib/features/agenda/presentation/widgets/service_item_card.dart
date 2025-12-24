@@ -37,6 +37,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
     this.onServicePickerAutoCompleted,
     this.onAutoOpenStaffPickerCompleted,
     this.availabilityWarningMessage,
+    this.staffEligibilityWarningMessage,
   });
 
   final ServiceItemData item;
@@ -61,6 +62,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
   final VoidCallback? onServicePickerAutoCompleted;
   final VoidCallback? onAutoOpenStaffPickerCompleted;
   final String? availabilityWarningMessage;
+  final String? staffEligibilityWarningMessage;
 
   @override
   ConsumerState<ServiceItemCard> createState() => _ServiceItemCardState();
@@ -92,6 +94,8 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
   VoidCallback? get onAutoOpenStaffPickerCompleted =>
       widget.onAutoOpenStaffPickerCompleted;
   String? get availabilityWarningMessage => widget.availabilityWarningMessage;
+  String? get staffEligibilityWarningMessage =>
+      widget.staffEligibilityWarningMessage;
 
   @override
   void didUpdateWidget(covariant ServiceItemCard oldWidget) {
@@ -158,6 +162,10 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
             if (availabilityWarningMessage != null) ...[
               const SizedBox(height: 12),
               _buildAvailabilityWarning(availabilityWarningMessage!),
+            ],
+            if (staffEligibilityWarningMessage != null) ...[
+              const SizedBox(height: 12),
+              _buildAvailabilityWarning(staffEligibilityWarningMessage!),
             ],
           ],
         ),

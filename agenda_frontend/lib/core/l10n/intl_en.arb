@@ -120,6 +120,7 @@
   "bookingTotal": "Total",
   "bookingUnavailableTimeWarningAppointment": "Warning: the appointment time includes unavailable slots for the chosen team.",
   "bookingUnavailableTimeWarningService": "Warning: this service time includes unavailable slots for the chosen team.",
+  "bookingStaffNotEligibleWarning": "Warning: the selected team member is not eligible for this service.",
   "actionDeleteBooking": "Delete booking",
   "deleteAppointmentConfirmTitle": "Delete appointment?",
   "deleteAppointmentConfirmMessage": "The appointment will be removed. This action cannot be undone.",

@@ -474,6 +474,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       final eligibleStaffIds = item.serviceId != null
           ? ref.watch(eligibleStaffForServiceProvider(item.serviceId!))
           : <int>[];
+      final isStaffIneligible = item.serviceId != null &&
+          item.staffId != null &&
+          eligibleStaffIds.isNotEmpty &&
+          !eligibleStaffIds.contains(item.staffId);
 
       final isFirst = i == 0;
       final isLast = i == _serviceItems.length - 1;
@@ -523,6 +527,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 onAutoOpenStaffPickerCompleted: _scrollFormToBottom,
                 availabilityWarningMessage:
                     showWarning ? serviceWarningMessage : null,
+                staffEligibilityWarningMessage: isStaffIneligible
+                    ? context.l10n.bookingStaffNotEligibleWarning
+                    : null,
               ),
             ),
             if (isLast && item.serviceId != null) ...[
@@ -828,18 +835,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       // Se cambia il servizio, potremmo dover aggiornare lo staff
       // e ricalcolare gli orari successivi
       _recalculateTimesFrom(index + 1, variants.cast());
-
-      // Smart staff selection se lo staff corrente non è più eligible
-      if (updated.serviceId != null && updated.staffId != null) {
-        final eligibleIds = ref.read(
-          eligibleStaffForServiceProvider(updated.serviceId!),
-        );
-        if (!eligibleIds.contains(updated.staffId)) {
-          // Staff non eligible, proviamo a trovarne uno valido
-          final newStaffId = _findBestStaff(updated.serviceId!);
-          _serviceItems[index] = updated.copyWith(staffId: newStaffId);
-        }
-      }
     });
   }
 
@@ -896,24 +891,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       final prevEnd = prevItem.endTime;
       _serviceItems[i] = _serviceItems[i].copyWith(startTime: prevEnd);
     }
-  }
-
-  /// Trova lo staff migliore per un servizio:
-  /// 1. initialStaffId se eligible
-  /// 2. Primo staff eligible disponibile
-  /// 3. null per selezione manuale
-  int? _findBestStaff(int serviceId) {
-    final eligibleIds = ref.read(eligibleStaffForServiceProvider(serviceId));
-    if (eligibleIds.isEmpty) return null;
-
-    // Se initialStaffId è eligible, usalo
-    if (widget.initialStaffId != null &&
-        eligibleIds.contains(widget.initialStaffId)) {
-      return widget.initialStaffId;
-    }
-
-    // Altrimenti prendi il primo eligible
-    return eligibleIds.first;
   }
 
   Future<void> _pickDate() async {
