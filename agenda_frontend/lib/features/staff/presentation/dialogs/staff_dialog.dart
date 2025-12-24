@@ -1,6 +1,8 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/app_constants.dart';
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/l10n/l10_extension.dart';
@@ -66,30 +68,72 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
   final _surnameController = TextEditingController();
 
   late Color _selectedColor;
+  final ScrollController _colorScrollController = ScrollController();
   final Set<int> _selectedLocationIds = {};
   final Set<int> _selectedServiceIds = {};
   String? _locationsError;
   bool _isSelectingServices = false;
   bool _isSelectingLocations = false;
   bool _isBookableOnline = true;
+  bool _didAutoScrollColor = false;
 
   static const List<Color> _palette = [
-    Colors.green,
-    Colors.cyan,
-    Colors.orange,
-    Colors.pinkAccent,
-    Colors.blue,
-    Colors.teal,
-    Colors.indigo,
-    Colors.red,
-    Colors.purple,
-    Colors.deepPurple,
-    Colors.lightBlue,
-    Colors.amber,
-    Colors.lime,
-    Colors.lightGreen,
-    Colors.blueGrey,
-    Colors.brown,
+    // Giallo
+    Color(0xFFFFF176),
+    Color(0xFFFFEB3B),
+    Color(0xFFF9A825),
+    // Arancione
+    Color(0xFFFFB74D),
+    Color(0xFFFF9800),
+    Color(0xFFEF6C00),
+    // Rosso
+    Color(0xFFEF5350),
+    Color(0xFFE53935),
+    Color(0xFFB71C1C),
+    // Rosa
+    Color(0xFFFF80AB),
+    Color(0xFFFF4081),
+    Color(0xFFC2185B),
+    // Viola
+    Color(0xFFB39DDB),
+    Color(0xFF7E57C2),
+    Color(0xFF512DA8),
+    // Blu
+    Color(0xFF64B5F6),
+    Color(0xFF2196F3),
+    Color(0xFF0D47A1),
+    // Azzurro
+    Color(0xFF4FC3F7),
+    Color(0xFF03A9F4),
+    Color(0xFF01579B),
+    // Ciano
+    Color(0xFF26C6DA),
+    Color(0xFF00BCD4),
+    Color(0xFF006064),
+    // Turchese/Teal
+    Color(0xFF4DB6AC),
+    Color(0xFF009688),
+    Color(0xFF004D40),
+    // Verde
+    Color(0xFF81C784),
+    Color(0xFF43A047),
+    Color(0xFF1B5E20),
+    // Lime
+    Color(0xFFDCE775),
+    Color(0xFFCDDC39),
+    Color(0xFF827717),
+    // Indaco
+    Color(0xFF7986CB),
+    Color(0xFF3F51B5),
+    Color(0xFF1A237E),
+    // Marrone
+    Color(0xFFA1887F),
+    Color(0xFF795548),
+    Color(0xFF3E2723),
+    // Grigio (neutri vividi)
+    Color(0xFFB0BEC5),
+    Color(0xFF607D8B),
+    Color(0xFF263238),
   ];
 
   @override
@@ -116,7 +160,11 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         _nameController.text = initial.name;
         _surnameController.text = initial.surname;
       }
-      _selectedLocationIds.addAll(initial.locationIds);
+      if (kAllowStaffMultiLocationSelection) {
+        _selectedLocationIds.addAll(initial.locationIds);
+      } else if (initial.locationIds.isNotEmpty) {
+        _selectedLocationIds.add(initial.locationIds.first);
+      }
       _isBookableOnline = initial.isBookableOnline;
       _selectedServiceIds.addAll(
         ref.read(eligibleServicesForStaffProvider(initial.id)),
@@ -124,13 +172,53 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     } else if (widget.initialLocationId != null) {
       _selectedLocationIds.add(widget.initialLocationId!);
     }
+    _nameController.addListener(_handleNameChange);
+    _surnameController.addListener(_handleNameChange);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _surnameController.dispose();
+    _colorScrollController.dispose();
+    _nameController.removeListener(_handleNameChange);
+    _surnameController.removeListener(_handleNameChange);
     super.dispose();
+  }
+
+  void _handleNameChange() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  String _buildInitials() {
+    final name = _nameController.text.trim();
+    final surname = _surnameController.text.trim();
+    final nameParts =
+        name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final surnameParts =
+        surname.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+
+    if (nameParts.isEmpty && surnameParts.isEmpty) return '';
+
+    var initials = '';
+    if (nameParts.isNotEmpty) {
+      initials += nameParts.first[0].toUpperCase();
+    }
+    for (final part in surnameParts) {
+      initials += part[0].toUpperCase();
+      if (initials.length >= 3) break;
+    }
+    if (initials.length < 3 && surnameParts.isEmpty && nameParts.length > 1) {
+      for (int i = 1; i < nameParts.length; i++) {
+        initials += nameParts[i][0].toUpperCase();
+        if (initials.length >= 3) break;
+      }
+    }
+    if (initials.length < 2 && name.length > 1) {
+      initials += name[1].toUpperCase();
+    }
+    return initials.substring(0, initials.length.clamp(1, 3));
   }
 
   @override
@@ -141,6 +229,34 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final locations = ref.watch(locationsProvider);
     final totalServicesCount = ref.watch(servicesProvider).length;
     final totalLocationsCount = locations.length;
+    final selectedLocationName = !kAllowStaffMultiLocationSelection &&
+            _selectedLocationIds.isNotEmpty
+        ? locations
+            .firstWhere(
+              (loc) => loc.id == _selectedLocationIds.first,
+              orElse: () => locations.first,
+            )
+            .name
+        : null;
+    if (!_didAutoScrollColor) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_colorScrollController.hasClients) return;
+        final index =
+            _palette.indexWhere((c) => c.value == _selectedColor.value);
+        if (index < 0) return;
+        const double colorItemSize = 36;
+        const double colorItemSpacing = 10;
+        const double colorListPadding = 4;
+        final viewport = _colorScrollController.position.viewportDimension;
+        final target =
+            index * (colorItemSize + colorItemSpacing) -
+            (viewport - colorItemSize) / 2 -
+            colorListPadding;
+        final max = _colorScrollController.position.maxScrollExtent;
+        _colorScrollController.jumpTo(target.clamp(0.0, max));
+      });
+      _didAutoScrollColor = true;
+    }
 
     final actions = [
       AppOutlinedActionButton(
@@ -184,67 +300,130 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final color in _palette)
-                GestureDetector(
-                  onTap: () => setState(() => _selectedColor = color),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _selectedColor == color
-                            ? Theme.of(context).colorScheme.onSurface
-                            : Colors.black.withOpacity(0.08),
-                        width: _selectedColor == color ? 2 : 1,
+          SizedBox(
+            height: 44,
+            child: Row(
+              children: [
+                Expanded(
+                  child: ShaderMask(
+                    shaderCallback: (rect) {
+                      return const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black,
+                          Colors.black,
+                          Colors.transparent,
+                        ],
+                        stops: [0.0, 0.01, 0.99, 1.0],
+                      ).createShader(rect);
+                    },
+                    blendMode: BlendMode.dstIn,
+                    child: ScrollConfiguration(
+                      behavior: const ScrollBehavior().copyWith(
+                        dragDevices: {
+                          PointerDeviceKind.touch,
+                          PointerDeviceKind.mouse,
+                          PointerDeviceKind.trackpad,
+                        },
+                      ),
+                      child: ListView.separated(
+                        controller: _colorScrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: _palette.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        itemBuilder: (context, index) {
+                          final color = _palette[index];
+                          final initials = _buildInitials();
+                          return GestureDetector(
+                            onTap: () => setState(() => _selectedColor = color),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: _selectedColor == color
+                                      ? Theme.of(context).colorScheme.onSurface
+                                      : Colors.black.withOpacity(0.08),
+                                  width: _selectedColor == color ? 2 : 1,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  initials,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.formRowSpacing),
-          AppOutlinedActionButton(
-            onPressed: _openLocationsSelector,
-            expand: true,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
+          if (!kAllowStaffMultiLocationSelection) ...[
+            Text(
+              l10n.teamLocationLabel,
+              style: Theme.of(context).textTheme.titleSmall,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(l10n.teamChooseLocationsButton),
+            const SizedBox(height: 8),
+          ],
+          SizedBox(
+            height: 48,
+            child: AppOutlinedActionButton(
+              onPressed: _openLocationsSelector,
+              expand: true,
+              padding: AppButtonStyles.defaultPadding,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        kAllowStaffMultiLocationSelection
+                            ? l10n.teamChooseLocationsButton
+                            : (selectedLocationName ??
+                                l10n.teamChooseLocationSingleButton),
+                      ),
+                    ),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${_selectedLocationIds.length}/$totalLocationsCount',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                ),
-              ],
+                  if (kAllowStaffMultiLocationSelection)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_selectedLocationIds.length}/$totalLocationsCount',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
           if (_locationsError != null)
@@ -259,42 +438,51 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
               ),
             ),
           const SizedBox(height: AppSpacing.formRowSpacing),
-          AppOutlinedActionButton(
-            onPressed: _openServicesSelector,
-            expand: true,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(l10n.teamChooseServicesButton),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${_selectedServiceIds.length}/$totalServicesCount',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+          Text(
+            l10n.teamServicesLabel,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 48,
+            child: AppOutlinedActionButton(
+              onPressed: _openServicesSelector,
+              expand: true,
+              padding: AppButtonStyles.defaultPadding,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    Text(l10n.teamSelectedServicesButton),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        l10n.teamSelectedServicesCount(
+                          _selectedServiceIds.length,
+                          totalServicesCount,
                         ),
-                  ),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.formRowSpacing),
@@ -304,12 +492,13 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
             onChanged: (v) => setState(() => _isBookableOnline = v),
           ),
           const SizedBox(height: AppSpacing.formRowSpacing),
-          Text(
-            l10n.teamStaffMultiLocationWarning,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
+          if (kAllowStaffMultiLocationSelection)
+            Text(
+              l10n.teamStaffMultiLocationWarning,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
         ],
       ),
     );
@@ -410,6 +599,13 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     if (_selectedLocationIds.isEmpty) {
       setState(() => _locationsError = context.l10n.validationRequired);
       return;
+    }
+    if (!kAllowStaffMultiLocationSelection &&
+        _selectedLocationIds.length > 1) {
+      final firstId = _selectedLocationIds.first;
+      _selectedLocationIds
+        ..clear()
+        ..add(firstId);
     }
     final notifier = ref.read(allStaffProvider.notifier);
     final business = ref.read(currentBusinessProvider);
@@ -608,32 +804,43 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _SelectableRow(
-            label: l10n.teamSelectAllLocations,
-            selected: allSelected,
-            onTap: () {
-              if (allSelected) {
-                current.clear();
-              } else {
-                current
-                  ..clear()
-                  ..addAll(allIds);
-              }
-              setStateLocal(() {});
-            },
-          ),
-          const Divider(height: 1),
+          if (kAllowStaffMultiLocationSelection) ...[
+            _SelectableRow(
+              label: l10n.teamSelectAllLocations,
+              selected: allSelected,
+              onTap: () {
+                if (allSelected) {
+                  current.clear();
+                } else {
+                  current
+                    ..clear()
+                    ..addAll(allIds);
+                }
+                setStateLocal(() {});
+              },
+            ),
+            const Divider(height: 1),
+          ],
           for (final loc in locations)
             _SelectableRow(
               label: loc.name,
               selected: current.contains(loc.id),
               onTap: () {
-                if (current.contains(loc.id)) {
-                  current.remove(loc.id);
+                if (kAllowStaffMultiLocationSelection) {
+                  if (current.contains(loc.id)) {
+                    current.remove(loc.id);
+                  } else {
+                    current.add(loc.id);
+                  }
                 } else {
-                  current.add(loc.id);
+                  current
+                    ..clear()
+                    ..add(loc.id);
                 }
                 setStateLocal(() {});
+                if (!kAllowStaffMultiLocationSelection) {
+                  Navigator.of(context).pop();
+                }
               },
             ),
         ],
@@ -662,7 +869,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                       child: Text(
-                        l10n.teamChooseLocationsButton,
+                        kAllowStaffMultiLocationSelection
+                            ? l10n.teamChooseLocationsButton
+                            : l10n.teamChooseLocationSingleButton,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
@@ -675,18 +884,20 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         ),
                       ),
                     ),
-                    const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: AppFilledButton(
-                          onPressed: () => Navigator.of(dialogCtx).pop(),
-                          padding: AppButtonStyles.dialogButtonPadding,
-                          child: Text(l10n.actionConfirm),
+                    if (kAllowStaffMultiLocationSelection) ...[
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: AppFilledButton(
+                            onPressed: () => Navigator.of(dialogCtx).pop(),
+                            padding: AppButtonStyles.dialogButtonPadding,
+                            child: Text(l10n.actionConfirm),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -711,7 +922,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                     child: Text(
-                      l10n.teamChooseLocationsButton,
+                      kAllowStaffMultiLocationSelection
+                          ? l10n.teamChooseLocationsButton
+                          : l10n.teamChooseLocationSingleButton,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
@@ -724,19 +937,21 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                       ),
                     ),
                   ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: AppFilledButton(
-                        onPressed: () => Navigator.of(sheetCtx).pop(),
-                        padding: AppButtonStyles.dialogButtonPadding,
-                        child: Text(l10n.actionConfirm),
+                  if (kAllowStaffMultiLocationSelection) ...[
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: AppFilledButton(
+                          onPressed: () => Navigator.of(sheetCtx).pop(),
+                          padding: AppButtonStyles.dialogButtonPadding,
+                          child: Text(l10n.actionConfirm),
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
+                    SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
+                  ],
                 ],
               ),
             );
@@ -775,11 +990,16 @@ class _SwitchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final titleStyle = Theme.of(context).textTheme.titleSmall;
+    final borderRadius = AppButtonStyles.defaultBorderRadius;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: AppButtonStyles.defaultPadding,
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outline),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary,
+          width: 1.4,
+        ),
+        borderRadius: borderRadius,
       ),
       child: Row(
         children: [
