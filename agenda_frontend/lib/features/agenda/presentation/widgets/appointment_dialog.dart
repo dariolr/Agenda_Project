@@ -782,6 +782,12 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       // Se cambia il servizio, potremmo dover aggiornare lo staff
       // e ricalcolare gli orari successivi
       _recalculateTimesFrom(index + 1, variants.cast());
+
+      // Se lo staff è ancora null, seleziona automaticamente un eligible
+      if (updated.serviceId != null && updated.staffId == null) {
+        final newStaffId = _findBestStaff(updated.serviceId!);
+        _serviceItems[index] = updated.copyWith(staffId: newStaffId);
+      }
     });
   }
 
@@ -838,6 +844,15 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       final prevEnd = prevItem.endTime;
       _serviceItems[i] = _serviceItems[i].copyWith(startTime: prevEnd);
     }
+  }
+
+  /// Trova lo staff migliore per un servizio:
+  /// 1. Primo staff eligible disponibile
+  /// 2. null per selezione manuale
+  int? _findBestStaff(int serviceId) {
+    final eligibleIds = ref.read(eligibleStaffForServiceProvider(serviceId));
+    if (eligibleIds.isEmpty) return null;
+    return eligibleIds.first;
   }
 
   void _onSave() async {
