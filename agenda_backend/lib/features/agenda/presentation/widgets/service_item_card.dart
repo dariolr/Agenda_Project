@@ -31,6 +31,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
     required this.onStartTimeChanged,
     required this.onEndTimeChanged,
     required this.onDurationChanged,
+    this.suggestedStartTime,
     this.canRemove = true,
     this.isServiceRequired = true,
     this.autoOpenServicePicker = false,
@@ -54,6 +55,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
   final ValueChanged<TimeOfDay> onStartTimeChanged;
   final ValueChanged<TimeOfDay> onEndTimeChanged;
   final ValueChanged<int> onDurationChanged;
+  final TimeOfDay? suggestedStartTime;
   final bool canRemove;
 
   /// Se true, la selezione del servizio è obbligatoria (mostra errore di validazione).
@@ -86,6 +88,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
   ValueChanged<TimeOfDay> get onStartTimeChanged => widget.onStartTimeChanged;
   ValueChanged<TimeOfDay> get onEndTimeChanged => widget.onEndTimeChanged;
   ValueChanged<int> get onDurationChanged => widget.onDurationChanged;
+  TimeOfDay? get suggestedStartTime => widget.suggestedStartTime;
   bool get canRemove => widget.canRemove;
   bool get isServiceRequired => widget.isServiceRequired;
   bool get autoOpenServicePicker => widget.autoOpenServicePicker;
@@ -424,6 +427,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
         heightFactor: AppBottomSheet.defaultHeightFactor,
         builder: (ctx) => _TimeGridPicker(
           initial: item.startTime,
+          includeTime: suggestedStartTime,
           stepMinutes: 15,
           title: l10n.blockStartTime,
         ),
@@ -444,12 +448,13 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
             constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: _TimeGridPicker(
-                initial: item.startTime,
-                stepMinutes: 15,
-                title: l10n.blockStartTime,
-                useSafeArea: false,
-              ),
+            child: _TimeGridPicker(
+              initial: item.startTime,
+              includeTime: suggestedStartTime,
+              stepMinutes: 15,
+              title: l10n.blockStartTime,
+              useSafeArea: false,
+            ),
             ),
           ),
         ),
@@ -752,12 +757,14 @@ class _DurationField extends StatelessWidget {
 class _TimeGridPicker extends StatefulWidget {
   const _TimeGridPicker({
     required this.initial,
+    this.includeTime,
     required this.stepMinutes,
     required this.title,
     this.useSafeArea = true,
   });
 
   final TimeOfDay initial;
+  final TimeOfDay? includeTime;
   final int stepMinutes;
   final String title;
   final bool useSafeArea;
@@ -783,31 +790,38 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
       _entries.add(TimeOfDay(hour: h, minute: mm));
     }
 
-    int exactIndex = _entries.indexWhere(
-      (t) =>
-          t != null &&
-          t.hour == widget.initial.hour &&
-          t.minute == widget.initial.minute,
-    );
-
-    if (exactIndex >= 0) {
-      _scrollToIndex = exactIndex;
-    } else {
-      final columnsPerRow = 60 ~/ widget.stepMinutes;
-      final targetColumn = widget.initial.minute ~/ widget.stepMinutes;
-      final baseIndex = (widget.initial.hour + 1) * columnsPerRow;
-
-      final newRow = List<TimeOfDay?>.filled(columnsPerRow, null);
-      newRow[targetColumn] = widget.initial;
-
-      final insertIndex = baseIndex.clamp(0, _entries.length);
-      _entries.insertAll(insertIndex, newRow);
-      _scrollToIndex = insertIndex + targetColumn;
+    _scrollToIndex = _ensureTimeInEntries(widget.initial);
+    if (widget.includeTime != null &&
+        !_isSameTime(widget.includeTime!, widget.initial)) {
+      _ensureTimeInEntries(widget.includeTime!);
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToSelected();
     });
+  }
+
+  bool _isSameTime(TimeOfDay a, TimeOfDay b) =>
+      a.hour == b.hour && a.minute == b.minute;
+
+  int _ensureTimeInEntries(TimeOfDay time) {
+    final existingIndex = _entries.indexWhere(
+      (t) => t != null && _isSameTime(t, time),
+    );
+    if (existingIndex >= 0) {
+      return existingIndex;
+    }
+
+    final columnsPerRow = 60 ~/ widget.stepMinutes;
+    final targetColumn = time.minute ~/ widget.stepMinutes;
+    final baseIndex = (time.hour + 1) * columnsPerRow;
+
+    final newRow = List<TimeOfDay?>.filled(columnsPerRow, null);
+    newRow[targetColumn] = time;
+
+    final insertIndex = baseIndex.clamp(0, _entries.length);
+    _entries.insertAll(insertIndex, newRow);
+    return insertIndex + targetColumn;
   }
 
   void _scrollToSelected() {

@@ -285,6 +285,8 @@ class ServiceVariantsNotifier extends Notifier<List<ServiceVariant>> {
         final price = (rawPrice / 5).round() * 5;
         final isFrom = rnd.nextInt(5) == 0;
         final color = colorForCategory(cat.id);
+        final blockedTime = service.id == 1 ? 10 : 0;
+        final processingTime = service.name == 'Trattamenti Corpo 2' ? 10 : 0;
 
         variants.add(
           ServiceVariant(
@@ -292,8 +294,8 @@ class ServiceVariantsNotifier extends Notifier<List<ServiceVariant>> {
             serviceId: service.id,
             locationId: location.id,
             durationMinutes: dur,
-            processingTime: 0,
-            blockedTime: 0,
+            processingTime: processingTime,
+            blockedTime: blockedTime,
             price: price.toDouble(),
             colorHex: ColorUtils.toHex(color),
             currency: currency,
