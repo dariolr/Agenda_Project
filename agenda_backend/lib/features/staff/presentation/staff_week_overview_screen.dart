@@ -107,11 +107,7 @@ void _ensureExceptionsLoadedForWeekWithKey(
   final fromDate = monday;
   final toDate = monday.add(const Duration(days: 6));
   for (final staff in staffList) {
-    loadForStaff(
-      staff.id,
-      fromDate: fromDate,
-      toDate: toDate,
-    );
+    loadForStaff(staff.id, fromDate: fromDate, toDate: toDate);
   }
 }
 
@@ -128,7 +124,9 @@ final weeklyStaffAvailabilityFromEditorProvider =
       _ensureExceptionsLoadedForWeekWithKey(
         ref.watch(weeklyExceptionsLoadKeyProvider),
         ref.read(weeklyExceptionsLoadKeyProvider.notifier).setKey,
-        ref.read(availabilityExceptionsProvider.notifier).loadExceptionsForStaff,
+        ref
+            .read(availabilityExceptionsProvider.notifier)
+            .loadExceptionsForStaff,
         agendaDate,
         staffList,
       );
@@ -314,7 +312,9 @@ String _dayHeaderLabel(BuildContext context, DateTime day) {
 int _totalMinutesForDay(Iterable<List<HourRange>> rangesPerStaff) {
   int total = 0;
   for (final list in rangesPerStaff) {
-    for (final r in list) total += r.minutes;
+    for (final r in list) {
+      total += r.minutes;
+    }
   }
   return total;
 }
@@ -322,7 +322,9 @@ int _totalMinutesForDay(Iterable<List<HourRange>> rangesPerStaff) {
 int _totalMinutesForStaff(Map<int, List<HourRange>> byDay) {
   int total = 0;
   for (final list in byDay.values) {
-    for (final r in list) total += r.minutes;
+    for (final r in list) {
+      total += r.minutes;
+    }
   }
   return total;
 }
@@ -496,8 +498,7 @@ class _StaffWeekOverviewScreenState
     double rowHeightForStaff(int staffId) {
       int maxRanges = 0;
       for (final d in days) {
-        final ranges =
-            availability[staffId]?[d.weekday] ?? const <HourRange>[];
+        final ranges = availability[staffId]?[d.weekday] ?? const <HourRange>[];
         final exceptions = ref.watch(
           exceptionsForStaffOnDateProvider((staffId: staffId, date: d)),
         );
@@ -1289,9 +1290,7 @@ class _StaffWeekOverviewScreenState
         );
       }
 
-      items.sort(
-        (a, b) => a.startMinutes.compareTo(b.startMinutes),
-      );
+      items.sort((a, b) => a.startMinutes.compareTo(b.startMinutes));
       return items;
     }
 

@@ -9,11 +9,8 @@
 # packages, and plugins designed to encourage good coding practices.
 analyzer:
   errors:
-    curly_braces_in_flow_control_structures: ignore
     deprecated_member_use: ignore
     library_private_types_in_public_api: ignore
-  exclude:
-    - lib/features/clients/presentation/widgets/client_form.dart # Temporarily excluded due to corruption; replaced by client_form_fixed.dart
 include: package:flutter_lints/flutter.yaml
 
 linter:

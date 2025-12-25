@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/date_time_formats.dart';
 import '../../../../core/l10n/l10_extension.dart';
-import '../../../../core/models/appointment.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service_variant.dart';
@@ -208,13 +207,6 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
               .where((v) => v.serviceId == serviceId)
               .firstOrNull;
           final duration = variant?.durationMinutes ?? 30;
-          final processingMinutes = variant?.processingTime ?? 0;
-          final blockedMinutes = variant?.blockedTime ?? 0;
-          final extraMinutes = processingMinutes + blockedMinutes;
-          final extraType = blockedMinutes > 0
-              ? ExtraMinutesType.blocked
-              : (processingMinutes > 0 ? ExtraMinutesType.processing : null);
-          final extraStartTime = item.getEndTime(duration);
           onChanged(
             item.copyWith(
               serviceId: serviceId,
@@ -222,10 +214,8 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
               durationMinutes: duration,
               // Mantieni lo staff selezionato se presente
               staffId: item.staffId,
-              extraEnabled: extraMinutes > 0,
-              extraMinutesType: extraMinutes > 0 ? extraType : null,
-              extraStartTime: extraMinutes > 0 ? extraStartTime : null,
-              extraDurationMinutes: extraMinutes,
+              blockedExtraMinutes: variant?.blockedTime ?? 0,
+              processingExtraMinutes: variant?.processingTime ?? 0,
             ),
           );
         }

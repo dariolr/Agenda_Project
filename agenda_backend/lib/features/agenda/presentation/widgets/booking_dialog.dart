@@ -135,12 +135,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
       for (final appointment in bookingAppointments) {
         final baseDuration = _baseDurationFromAppointment(appointment);
-        final extraMinutes = appointment.extraMinutes ?? 0;
-        final extraEnabled =
-            appointment.extraMinutesType != null && extraMinutes > 0;
-        final baseEnd = appointment.startTime.add(
-          Duration(minutes: baseDuration),
-        );
+        final blockedExtraMinutes = appointment.blockedExtraMinutes;
+        final processingExtraMinutes = appointment.processingExtraMinutes;
         _serviceItems.add(
           ServiceItemData(
             key: _nextItemKey(),
@@ -149,13 +145,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
             serviceId: appointment.serviceId,
             serviceVariantId: appointment.serviceVariantId,
             durationMinutes: baseDuration,
-            extraEnabled: extraEnabled,
-            extraMinutesType: appointment.extraMinutesType,
-            extraStartTime: extraEnabled
-                ? TimeOfDay.fromDateTime(baseEnd)
-                : null,
-            extraDurationMinutes: extraEnabled ? extraMinutes : 0,
-            extraStartIsAuto: true,
+            blockedExtraMinutes: blockedExtraMinutes,
+            processingExtraMinutes: processingExtraMinutes,
           ),
         );
       }
@@ -206,10 +197,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final totalMinutes = appointment.endTime
         .difference(appointment.startTime)
         .inMinutes;
-    final extraMinutes =
-        appointment.extraMinutesType == ExtraMinutesType.blocked
-        ? (appointment.extraMinutes ?? 0)
-        : 0;
+    final extraMinutes = appointment.blockedExtraMinutes;
     final base = totalMinutes - extraMinutes;
     return base > 0 ? base : 0;
   }
@@ -503,10 +491,17 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           : null;
       final defaultProcessing = variant?.processingTime ?? 0;
       final defaultBlocked = variant?.blockedTime ?? 0;
-      final defaultExtraMinutes = defaultProcessing + defaultBlocked;
       final defaultExtraType = defaultBlocked > 0
           ? ExtraMinutesType.blocked
           : (defaultProcessing > 0 ? ExtraMinutesType.processing : null);
+      final hasBlockedExtra = item.blockedExtraMinutes > 0;
+      final hasProcessingExtra = item.processingExtraMinutes > 0;
+      final canAddDefaultExtra =
+          defaultExtraType == ExtraMinutesType.blocked
+              ? !hasBlockedExtra
+              : (defaultExtraType == ExtraMinutesType.processing
+                    ? !hasProcessingExtra
+                    : false);
       final showWarning =
           showServiceWarnings &&
           _isWarningEligible(item) &&
@@ -577,20 +572,21 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     : null,
               ),
             ),
-            if (!item.extraEnabled && defaultExtraMinutes > 0) ...[
+            if (canAddDefaultExtra) ...[
               if (isLast && item.serviceId != null)
                 Row(
                   children: [
                     AppOutlinedActionButton(
                       onPressed: () {
                         setState(() {
-                          _serviceItems[i] = _serviceItems[i].copyWith(
-                            extraEnabled: true,
-                            extraMinutesType: defaultExtraType,
-                            extraStartTime: _baseEndTime(item, variants.cast()),
-                            extraDurationMinutes: defaultExtraMinutes,
-                            extraStartIsAuto: true,
-                          );
+                          _serviceItems[i] = defaultExtraType ==
+                                  ExtraMinutesType.blocked
+                              ? _serviceItems[i].copyWith(
+                                  blockedExtraMinutes: defaultBlocked,
+                                )
+                              : _serviceItems[i].copyWith(
+                                  processingExtraMinutes: defaultProcessing,
+                                );
                           _recalculateTimesFrom(i + 1, variants.cast());
                         });
                       },
@@ -623,13 +619,14 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                   child: AppOutlinedActionButton(
                     onPressed: () {
                       setState(() {
-                        _serviceItems[i] = _serviceItems[i].copyWith(
-                          extraEnabled: true,
-                          extraMinutesType: defaultExtraType,
-                          extraStartTime: _baseEndTime(item, variants.cast()),
-                          extraDurationMinutes: defaultExtraMinutes,
-                          extraStartIsAuto: true,
-                        );
+                        _serviceItems[i] = defaultExtraType ==
+                                ExtraMinutesType.blocked
+                            ? _serviceItems[i].copyWith(
+                                blockedExtraMinutes: defaultBlocked,
+                              )
+                            : _serviceItems[i].copyWith(
+                                processingExtraMinutes: defaultProcessing,
+                              );
                         _recalculateTimesFrom(i + 1, variants.cast());
                       });
                     },
@@ -645,30 +642,17 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 ),
               const SizedBox(height: 16),
             ],
-            if (item.extraEnabled && item.extraDurationMinutes > 0) ...[
+            if (hasBlockedExtra) ...[
               ExtraTimeCard(
-                title: item.extraMinutesType == ExtraMinutesType.blocked
-                    ? context.l10n.fieldBlockedTimeLabel
-                    : (item.extraMinutesType == ExtraMinutesType.processing
-                          ? context.l10n.fieldProcessingTimeLabel
-                          : context.l10n.additionalTimeSwitch),
-                startTime:
-                    item.extraStartTime ?? _baseEndTime(item, variants.cast()),
-                durationMinutes: item.extraDurationMinutes,
+                title: context.l10n.fieldBlockedTimeLabel,
+                startTime: _baseEndTime(item, variants.cast()),
+                durationMinutes: item.blockedExtraMinutes,
                 formFactor: formFactor,
-                onStartTimeChanged: (time) {
-                  setState(() {
-                    _serviceItems[i] = _serviceItems[i].copyWith(
-                      extraStartTime: time,
-                      extraStartIsAuto: false,
-                    );
-                    _recalculateTimesFrom(i + 1, variants.cast());
-                  });
-                },
+                onStartTimeChanged: (_) {},
                 onDurationChanged: (duration) {
                   setState(() {
                     _serviceItems[i] = _serviceItems[i].copyWith(
-                      extraDurationMinutes: duration,
+                      blockedExtraMinutes: duration,
                     );
                     _recalculateTimesFrom(i + 1, variants.cast());
                   });
@@ -676,11 +660,36 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 onRemove: () {
                   setState(() {
                     _serviceItems[i] = _serviceItems[i].copyWith(
-                      extraEnabled: false,
-                      extraMinutesType: null,
-                      extraStartTime: null,
-                      extraDurationMinutes: 0,
-                      extraStartIsAuto: false,
+                      blockedExtraMinutes: 0,
+                    );
+                    _recalculateTimesFrom(i + 1, variants.cast());
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (hasProcessingExtra) ...[
+              ExtraTimeCard(
+                title: context.l10n.fieldProcessingTimeLabel,
+                startTime: _addMinutes(
+                  _baseEndTime(item, variants.cast()),
+                  item.blockedExtraMinutes,
+                ),
+                durationMinutes: item.processingExtraMinutes,
+                formFactor: formFactor,
+                onStartTimeChanged: (_) {},
+                onDurationChanged: (duration) {
+                  setState(() {
+                    _serviceItems[i] = _serviceItems[i].copyWith(
+                      processingExtraMinutes: duration,
+                    );
+                    _recalculateTimesFrom(i + 1, variants.cast());
+                  });
+                },
+                onRemove: () {
+                  setState(() {
+                    _serviceItems[i] = _serviceItems[i].copyWith(
+                      processingExtraMinutes: 0,
                     );
                     _recalculateTimesFrom(i + 1, variants.cast());
                   });
@@ -689,7 +698,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
               const SizedBox(height: 8),
             ],
             if (isLast && item.serviceId != null &&
-                !( !item.extraEnabled && defaultExtraMinutes > 0)) ...[
+                !canAddDefaultExtra) ...[
               Align(
                 alignment: Alignment.centerRight,
                 child: AppOutlinedActionButton(
@@ -1072,19 +1081,17 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     List<ServiceVariant> variants,
   ) {
     final baseEnd = _baseEndTime(item, variants);
-    if (!item.extraEnabled || item.extraDurationMinutes <= 0) {
+    if (item.blockedExtraMinutes <= 0) {
       return baseEnd;
     }
-    final extraStart = item.extraStartTime ?? baseEnd;
-    return _addMinutes(extraStart, item.extraDurationMinutes);
+    return _addMinutes(baseEnd, item.blockedExtraMinutes);
   }
 
   ServiceItemData _applyAutoExtraStart(
     ServiceItemData item,
     List<ServiceVariant> variants,
   ) {
-    if (!item.extraEnabled || !item.extraStartIsAuto) return item;
-    return item.copyWith(extraStartTime: _baseEndTime(item, variants));
+    return item;
   }
 
   TimeOfDay _baseEndTime(ServiceItemData item, List<ServiceVariant> variants) {
@@ -1200,15 +1207,18 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         orElse: () => variants.first,
       );
       final service = services.firstWhere((s) => s.id == item.serviceId);
-      final processingMinutes = variant.processingTime ?? 0;
-      final blockedMinutes = variant.blockedTime ?? 0;
-      final fallbackExtraType = blockedMinutes > 0
+      final blockedExtraMinutes = item.blockedExtraMinutes;
+      final processingExtraMinutes = item.processingExtraMinutes;
+      final extraMinutesType = blockedExtraMinutes > 0
           ? ExtraMinutesType.blocked
-          : (processingMinutes > 0 ? ExtraMinutesType.processing : null);
-      final extraMinutes = item.extraEnabled ? item.extraDurationMinutes : 0;
-      final extraMinutesType = item.extraEnabled
-          ? (item.extraMinutesType ?? fallbackExtraType)
-          : null;
+          : (processingExtraMinutes > 0
+                ? ExtraMinutesType.processing
+                : null);
+      final extraMinutes = extraMinutesType == ExtraMinutesType.blocked
+          ? blockedExtraMinutes
+          : (extraMinutesType == ExtraMinutesType.processing
+                ? processingExtraMinutes
+                : 0);
       final effectivePrice = variant.isFree ? null : variant.price;
 
       final start = DateTime(
@@ -1222,10 +1232,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           ? item.durationMinutes
           : variant.durationMinutes;
       final durationMinutes =
-          (baseDuration +
-                  (extraMinutesType == ExtraMinutesType.blocked
-                      ? extraMinutes
-                      : 0))
+          (baseDuration + (blockedExtraMinutes > 0 ? blockedExtraMinutes : 0))
               .toInt();
       final end = start.add(Duration(minutes: durationMinutes));
 
@@ -1242,6 +1249,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         price: effectivePrice,
         extraMinutes: extraMinutes,
         extraMinutesType: extraMinutesType,
+        extraBlockedMinutes: blockedExtraMinutes,
+        extraProcessingMinutes: processingExtraMinutes,
       );
       scrollTarget ??= created;
     }
