@@ -4,7 +4,7 @@ import 'package:agenda_backend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_backend/app/widgets/top_controls_scaffold.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/location.dart';
-import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
+import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
@@ -63,12 +63,6 @@ class TopControls extends ConsumerWidget {
       selectedDate = weekMeta.effectivePickerDate;
     }
     final showTopDateSwitcher = mode != TopControlsMode.agenda;
-    final showAgendaLocationSelector =
-        mode == TopControlsMode.agenda ||
-        mode == TopControlsMode.staff && data.locations.length > 1;
-    final showAgendaStaffSelector =
-        mode == TopControlsMode.agenda &&
-        ref.watch(staffForCurrentLocationProvider).length > 1;
     final layoutConfig = ref.watch(layoutConfigProvider);
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -95,18 +89,6 @@ class TopControls extends ConsumerWidget {
         ],
         if (mode == TopControlsMode.agenda)
           SizedBox(width: layoutConfig.hourColumnWidth),
-        if (showAgendaStaffSelector) const AgendaStaffFilterSelector(),
-        if (showAgendaLocationSelector) ...[
-          const SizedBox(width: 16),
-          IconButton(
-            tooltip: data.l10n.agendaSelectLocation,
-            icon: const Icon(Icons.place_outlined),
-            iconSize: 22,
-            onPressed: () async {
-              await _showLocationSheet(context, data, ref);
-            },
-          ),
-        ],
       ],
     );
   }
@@ -193,10 +175,48 @@ class TopControls extends ConsumerWidget {
       label = weekMeta.label;
       selectedDate = weekMeta.effectivePickerDate;
     }
-    return Row(
-      children: [
-        Flexible(
-          child: AgendaDateSwitcher(
+    final showStaffSelector =
+        (mode == TopControlsMode.agenda || mode == TopControlsMode.staff) &&
+        ref.watch(staffForCurrentLocationProvider).length > 1;
+    final showLocationSelector = data.locations.length > 1;
+
+    List<Widget> buildChildren({required bool allowFlex}) {
+      return [
+        if (allowFlex)
+          Flexible(
+            child: AgendaDateSwitcher(
+              label: label,
+              selectedDate: selectedDate,
+              onPrevious: mode == TopControlsMode.agenda
+                  ? data.dateController.previousDay
+                  : null,
+              onNext: mode == TopControlsMode.agenda
+                  ? data.dateController.nextDay
+                  : null,
+              onPreviousWeek:
+                  mode == TopControlsMode.agenda ||
+                      mode == TopControlsMode.staff
+                  ? data.dateController.previousWeek
+                  : null,
+              onNextWeek:
+                  mode == TopControlsMode.agenda ||
+                      mode == TopControlsMode.staff
+                  ? data.dateController.nextWeek
+                  : null,
+              onPreviousMonth: mode == TopControlsMode.agenda
+                  ? data.dateController.previousMonth
+                  : null,
+              onNextMonth: mode == TopControlsMode.agenda
+                  ? data.dateController.nextMonth
+                  : null,
+              onSelectDate: (date) {
+                data.dateController.set(DateUtils.dateOnly(date));
+              },
+              useWeekRangePicker: mode == TopControlsMode.staff,
+            ),
+          )
+        else
+          AgendaDateSwitcher(
             label: label,
             selectedDate: selectedDate,
             onPrevious: mode == TopControlsMode.agenda
@@ -224,15 +244,13 @@ class TopControls extends ConsumerWidget {
             },
             useWeekRangePicker: mode == TopControlsMode.staff,
           ),
-        ),
-        if ((mode == TopControlsMode.agenda || mode == TopControlsMode.staff) &&
-            ref.watch(staffForCurrentLocationProvider).length > 1)
-          const SizedBox(width: 16),
-        const Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: AgendaStaffFilterSelector(isCompact: false),
-        ),
-        if (data.locations.length > 1) ...[
+        if (showStaffSelector) const SizedBox(width: 16),
+        if (showStaffSelector)
+          const Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AgendaStaffFilterSelector(isCompact: false),
+          ),
+        if (showLocationSelector) ...[
           const SizedBox(width: 16),
           if (mode == TopControlsMode.staff)
             Align(
@@ -255,48 +273,33 @@ class TopControls extends ConsumerWidget {
               ),
             ),
         ],
-      ],
+      ];
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useScrollFallback =
+            constraints.hasBoundedWidth && constraints.maxWidth < 420;
+        if (useScrollFallback) {
+          return ScrollConfiguration(
+            behavior: const NoScrollbarBehavior(),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: buildChildren(allowFlex: false),
+              ),
+            ),
+          );
+        }
+        return Row(children: buildChildren(allowFlex: true));
+      },
     );
   }
 
   String _formatSingleDate(TopControlsData data) {
     final localeTag = data.locale.toLanguageTag();
     return DateFormat('EEE d MMM', localeTag).format(data.agendaDate);
-  }
-
-  Future<void> _showLocationSheet(
-    BuildContext context,
-    TopControlsData data,
-    WidgetRef ref,
-  ) async {
-    final isStaffMode = mode == TopControlsMode.staff;
-    final currentStaffLocationId = isStaffMode
-        ? ref.read(staffSectionLocationIdProvider)
-        : null;
-
-    final result = await AppBottomSheet.show<int?>(
-      context: context,
-      builder: (ctx) => _LocationSheetContent(
-        locations: data.locations,
-        currentLocationId: isStaffMode
-            ? currentStaffLocationId
-            : data.currentLocation.id,
-        title: data.l10n.agendaSelectLocation,
-        onSelected: (id) => Navigator.of(ctx).pop(id),
-        showAllLocationsOption: isStaffMode,
-        allLocationsLabel: data.l10n.allLocations,
-      ),
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-    );
-
-    if (result != null || (isStaffMode && result == null)) {
-      if (isStaffMode) {
-        ref.read(staffSectionLocationIdProvider.notifier).set(result);
-      } else if (result != null) {
-        data.locationController.set(result);
-      }
-    }
   }
 
   _StaffWeekMeta _resolveWeekMeta(TopControlsData data) {
@@ -352,8 +355,9 @@ class _StaffWeekMeta {
 }
 
 /// Content widget for the location bottom sheet, consistent with other dropdowns.
-class _LocationSheetContent extends StatelessWidget {
-  const _LocationSheetContent({
+class LocationSheetContent extends StatelessWidget {
+  const LocationSheetContent({
+    super.key,
     required this.locations,
     required this.currentLocationId,
     required this.title,

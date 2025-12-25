@@ -1,13 +1,17 @@
 // Cleaned duplicate header
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
+import 'package:agenda_backend/app/widgets/agenda_staff_filter_selector.dart';
+import 'package:agenda_backend/app/widgets/top_controls.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../core/models/location.dart';
 import '../core/l10n/l10_extension.dart';
+import '../core/widgets/app_bottom_sheet.dart';
 import '../core/widgets/adaptive_dropdown.dart';
 import '../core/widgets/app_buttons.dart';
 import '../features/agenda/presentation/dialogs/add_block_dialog.dart';
@@ -15,6 +19,7 @@ import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
 import '../features/agenda/presentation/widgets/booking_dialog.dart';
 import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
+import '../features/agenda/providers/location_providers.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/services/presentation/dialogs/category_dialog.dart';
 import '../features/services/presentation/dialogs/service_dialog.dart';
@@ -22,6 +27,7 @@ import '../features/services/providers/services_reorder_provider.dart';
 import '../features/staff/presentation/dialogs/location_dialog.dart';
 import '../features/staff/presentation/dialogs/staff_dialog.dart';
 import '../features/staff/providers/staff_reorder_provider.dart';
+import '../features/staff/providers/staff_providers.dart';
 
 Widget _buildAddButtonContent({
   required bool showLabelEffective,
@@ -157,7 +163,14 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         centerTitle: false,
         actionsPadding: const EdgeInsets.only(right: 6),
         actions: isAgenda
-            ? const [_AgendaAddAction(compact: true)]
+            ? (formFactor == AppFormFactor.mobile
+                ? const [
+                    _AgendaFilterActions(
+                      padding: EdgeInsets.only(left: 8),
+                    ),
+                    _AgendaAddAction(compact: true),
+                  ]
+                : const [_AgendaAddAction(compact: true)])
             : (isServices
                   ? const [_ServicesAddAction(compact: true)]
                   : (isClients
@@ -293,6 +306,141 @@ class _AgendaAddAction extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class _AgendaFilterActions extends ConsumerWidget {
+  const _AgendaFilterActions({
+    this.padding = const EdgeInsets.symmetric(horizontal: 8),
+  });
+
+  static const double _actionButtonHeight = 40;
+  static const double _iconOnlyWidth = 46;
+  static const double _spacing = 8;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective =
+        showLabel ||
+        formFactor == AppFormFactor.tablet ||
+        formFactor == AppFormFactor.desktop;
+    final staffCount = ref.watch(staffForCurrentLocationProvider).length;
+    final locations = ref.watch(locationsProvider);
+    final currentLocationId = ref.watch(currentLocationIdProvider);
+    final showStaffSelector = staffCount > 1;
+    final showLocationSelector = locations.length > 1;
+
+    if (!showStaffSelector && !showLocationSelector) {
+      return const SizedBox.shrink();
+    }
+
+    Widget buildActionLabel(IconData icon, String label) {
+      return showLabelEffective
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 22),
+                const SizedBox(width: 8),
+                Text(label),
+              ],
+            )
+          : Icon(icon, size: 22);
+    }
+
+    return Padding(
+      padding: padding,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showStaffSelector)
+            AgendaStaffFilterSelector(
+              compactBuilder: (context, onPressed, tooltip) {
+                return Tooltip(
+                  message: tooltip,
+                  child: SizedBox(
+                    height: _actionButtonHeight,
+                    width: showLabelEffective ? null : _iconOnlyWidth,
+                    child: AppOutlinedActionButton(
+                      onPressed: onPressed,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      borderColor: scheme.primary,
+                      foregroundColor: scheme.primary,
+                      child: buildActionLabel(
+                        Icons.people_outline,
+                        l10n.staffFilterTitle,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          if (showStaffSelector && showLocationSelector)
+            const SizedBox(width: _spacing),
+          if (showLocationSelector)
+            Tooltip(
+              message: l10n.agendaSelectLocation,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: showLabelEffective ? null : _iconOnlyWidth,
+                child: AppOutlinedActionButton(
+                  onPressed: () => _showLocationSheet(
+                    context,
+                    ref,
+                    locations,
+                    currentLocationId,
+                    l10n.agendaSelectLocation,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  borderColor: scheme.primary,
+                  foregroundColor: scheme.primary,
+                  child: buildActionLabel(
+                    Icons.place_outlined,
+                    l10n.agendaSelectLocation,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showLocationSheet(
+    BuildContext context,
+    WidgetRef ref,
+    List<Location> locations,
+    int currentLocationId,
+    String title,
+  ) async {
+    final result = await AppBottomSheet.show<int?>(
+      context: context,
+      builder: (ctx) => LocationSheetContent(
+        locations: locations,
+        currentLocationId: currentLocationId,
+        title: title,
+        onSelected: (id) => Navigator.of(ctx).pop(id),
+      ),
+      useRootNavigator: true,
+      padding: EdgeInsets.zero,
+    );
+
+    if (result != null) {
+      ref.read(currentLocationIdProvider.notifier).set(result);
+    }
   }
 }
 
