@@ -1,3 +1,4 @@
+import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/agenda_day.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/components/hour_column.dart';
@@ -6,6 +7,7 @@ import 'package:agenda_backend/features/agenda/providers/appointment_providers.d
 import 'package:agenda_backend/features/agenda/providers/is_resizing_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
+import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -124,6 +126,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   Widget build(BuildContext context) {
     final ref = this.ref;
     final staffList = ref.watch(filteredStaffProvider);
+    final staffFilterMode = ref.watch(staffFilterModeProvider);
     final hasStaff = staffList.isNotEmpty;
     final isResizing = ref.watch(isResizingProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
@@ -219,7 +222,37 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
         Positioned.fill(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [Expanded(child: mainRow)],
+            children: [
+              Expanded(
+                child: hasStaff
+                    ? mainRow
+                    : Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              staffFilterMode == StaffFilterMode.onDutyTeam
+                                  ? context.l10n.agendaNoOnDutyTeamTitle
+                                  : context.l10n.agendaNoSelectedTeamTitle,
+                              style: Theme.of(context).textTheme.titleMedium,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () {
+                                ref
+                                    .read(staffFilterModeProvider.notifier)
+                                    .set(StaffFilterMode.allTeam);
+                              },
+                              child: Text(
+                                context.l10n.agendaShowAllTeamButton,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
           ),
         ),
       ],

@@ -264,7 +264,9 @@ class _StaffFilterPopupContent extends ConsumerWidget {
               ),
               onChanged: (selected) {
                 if (mode != StaffFilterMode.custom) {
-                  final ids = allStaff.map((s) => s.id).toList();
+                  final ids = mode == StaffFilterMode.onDutyTeam
+                      ? onDutyIds.toList()
+                      : allStaff.map((s) => s.id).toList();
                   ref.read(selectedStaffIdsProvider.notifier).setFromList(ids);
                   ref
                       .read(staffFilterModeProvider.notifier)
@@ -292,7 +294,7 @@ class _StaffFilterPopupContent extends ConsumerWidget {
       case StaffFilterMode.onDutyTeam:
         return onDutyIds.contains(staffId);
       case StaffFilterMode.custom:
-        return selectedIds.isEmpty || selectedIds.contains(staffId);
+        return selectedIds.contains(staffId);
     }
   }
 }
@@ -517,7 +519,9 @@ class _StaffFilterSheet extends ConsumerWidget {
                 ),
                 onChanged: (selected) {
                   if (mode != StaffFilterMode.custom) {
-                    final ids = allStaff.map((s) => s.id).toList();
+                    final ids = mode == StaffFilterMode.onDutyTeam
+                        ? onDutyIds.toList()
+                        : allStaff.map((s) => s.id).toList();
                     ref
                         .read(selectedStaffIdsProvider.notifier)
                         .setFromList(ids);
@@ -548,7 +552,7 @@ class _StaffFilterSheet extends ConsumerWidget {
       case StaffFilterMode.onDutyTeam:
         return onDutyIds.contains(staffId);
       case StaffFilterMode.custom:
-        return selectedIds.isEmpty || selectedIds.contains(staffId);
+        return selectedIds.contains(staffId);
     }
   }
 }
