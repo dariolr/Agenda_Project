@@ -298,7 +298,8 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     state = [
       for (final appt in state)
         if (appt.id == appointmentId)
-          appt.copyWith(
+          _applyResizeToAppointment(
+            appt,
             staffId: newStaffId,
             startTime: roundedStart,
             endTime: roundedEnd,
@@ -307,6 +308,44 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
           appt,
     ];
     await Future.delayed(Duration.zero);
+  }
+
+  Appointment _applyResizeToAppointment(
+    Appointment appt, {
+    required int staffId,
+    required DateTime startTime,
+    required DateTime endTime,
+  }) {
+    final oldTotalMinutes = appt.endTime.difference(appt.startTime).inMinutes;
+    final newTotalMinutes = endTime.difference(startTime).inMinutes;
+    final oldExtra = appt.extraMinutes ?? 0;
+    final hasExtra = appt.extraMinutesType != null && oldExtra > 0;
+    final baseMinutes = hasExtra && appt.extraMinutesType == ExtraMinutesType.blocked
+        ? (oldTotalMinutes - oldExtra)
+        : oldTotalMinutes;
+
+    int newExtra = oldExtra;
+    ExtraMinutesType? newExtraType = appt.extraMinutesType;
+
+    if (hasExtra) {
+      if (newTotalMinutes < baseMinutes) {
+        newExtra = 0;
+      } else {
+        final maxExtraAllowed = newTotalMinutes - baseMinutes;
+        newExtra = maxExtraAllowed.clamp(0, oldExtra);
+      }
+      if (newExtra == 0) {
+        newExtraType = null;
+      }
+    }
+
+    return appt.copyWith(
+      staffId: staffId,
+      startTime: startTime,
+      endTime: endTime,
+      extraMinutes: newExtra,
+      extraMinutesType: newExtraType,
+    );
   }
 
   void deleteAppointment(int appointmentId) {
