@@ -67,8 +67,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         startTime: start,
         endTime: endWithBlocked,
         price: 45,
-        extraMinutes: 10,
-        extraMinutesType: ExtraMinutesType.blocked,
+        extraBlockedMinutes: 10,
       ),
       Appointment(
         id: 2,
@@ -118,8 +117,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         startTime: start.add(const Duration(hours: 5)),
         endTime: start.add(const Duration(hours: 5, minutes: 30)),
         price: 50,
-        extraMinutes: 10,
-        extraMinutesType: ExtraMinutesType.processing,
+        extraProcessingMinutes: 10,
       ),
       Appointment(
         id: 5,
@@ -135,8 +133,7 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
         startTime: start.add(const Duration(hours: 1)),
         endTime: start.add(const Duration(hours: 1, minutes: 30)),
         price: 50,
-        extraMinutes: 10,
-        extraMinutesType: ExtraMinutesType.processing,
+        extraProcessingMinutes: 10,
       ),
     ];
   }
@@ -318,30 +315,34 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
   }) {
     final oldTotalMinutes = appt.endTime.difference(appt.startTime).inMinutes;
     final newTotalMinutes = endTime.difference(startTime).inMinutes;
-    final oldExtra = appt.extraMinutes ?? 0;
-    final hasExtra = appt.extraMinutesType != null && oldExtra > 0;
-    final isBlockedExtra = appt.extraMinutesType == ExtraMinutesType.blocked;
-    final baseMinutes =
-        hasExtra && isBlockedExtra ? (oldTotalMinutes - oldExtra) : oldTotalMinutes;
+    final oldBlocked = appt.blockedExtraMinutes;
+    final baseMinutes = oldTotalMinutes - oldBlocked;
 
-    int newExtra = oldExtra;
-    ExtraMinutesType? newExtraType = appt.extraMinutesType;
-
-    if (hasExtra && isBlockedExtra) {
-      if (newTotalMinutes <= baseMinutes) {
-        newExtra = 0;
-        newExtraType = null;
-      } else {
-        newExtra = newTotalMinutes - baseMinutes;
-      }
+    int newBlocked = oldBlocked;
+    if (newTotalMinutes <= baseMinutes) {
+      newBlocked = 0;
+    } else {
+      newBlocked = newTotalMinutes - baseMinutes;
     }
+
+    final processingMinutes = appt.processingExtraMinutes;
+    final extraMinutesType = newBlocked > 0
+        ? ExtraMinutesType.blocked
+        : (processingMinutes > 0 ? ExtraMinutesType.processing : null);
+    final extraMinutes = extraMinutesType == ExtraMinutesType.blocked
+        ? newBlocked
+        : (extraMinutesType == ExtraMinutesType.processing
+              ? processingMinutes
+              : null);
 
     return appt.copyWith(
       staffId: staffId,
       startTime: startTime,
       endTime: endTime,
-      extraMinutes: newExtra,
-      extraMinutesType: newExtraType,
+      extraMinutes: extraMinutes,
+      extraMinutesType: extraMinutesType,
+      extraBlockedMinutes: newBlocked,
+      extraProcessingMinutes: processingMinutes,
     );
   }
 
@@ -378,6 +379,8 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     double? price,
     int? extraMinutes,
     ExtraMinutesType? extraMinutesType,
+    int? extraBlockedMinutes,
+    int? extraProcessingMinutes,
   }) {
     final business = ref.read(currentBusinessProvider);
     final location = ref.read(currentLocationProvider);
@@ -413,6 +416,8 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
       price: price,
       extraMinutes: extraMinutes,
       extraMinutesType: extraMinutesType,
+      extraBlockedMinutes: extraBlockedMinutes,
+      extraProcessingMinutes: extraProcessingMinutes,
     );
 
     state = [...state, appt];

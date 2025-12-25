@@ -733,9 +733,7 @@ class _AppointmentCardInteractiveState
   }
 
   int _extraMinutesForAppointment() {
-    return widget.appointment.extraMinutesType == ExtraMinutesType.blocked
-        ? (widget.appointment.extraMinutes ?? 0)
-        : 0;
+    return widget.appointment.blockedExtraMinutes;
   }
 
   void _performResizeUpdate(PointerEvent details) {

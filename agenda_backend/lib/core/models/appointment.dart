@@ -29,8 +29,12 @@ class Appointment {
   final DateTime startTime;
   final DateTime endTime;
   final double? price; // prezzo applicato al singolo appuntamento
-  final int? extraMinutes; // tempo aggiuntivo applicato (processing+blocked)
+  // Legacy single extra fields (kept for backward compatibility)
+  final int? extraMinutes;
   final ExtraMinutesType? extraMinutesType;
+  // New split extras
+  final int? extraBlockedMinutes;
+  final int? extraProcessingMinutes;
 
   const Appointment({
     required this.id,
@@ -48,6 +52,8 @@ class Appointment {
     this.price,
     this.extraMinutes,
     this.extraMinutesType,
+    this.extraBlockedMinutes,
+    this.extraProcessingMinutes,
   });
 
   factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
@@ -68,6 +74,8 @@ class Appointment {
     extraMinutesType: _extraMinutesTypeFromJson(
       json['extra_minutes_type'],
     ),
+    extraBlockedMinutes: json['extra_blocked_minutes'] as int?,
+    extraProcessingMinutes: json['extra_processing_minutes'] as int?,
   );
 
   Appointment copyWith({
@@ -86,6 +94,8 @@ class Appointment {
     double? price,
     int? extraMinutes,
     ExtraMinutesType? extraMinutesType,
+    int? extraBlockedMinutes,
+    int? extraProcessingMinutes,
   }) {
     return Appointment(
       id: id ?? this.id,
@@ -103,10 +113,21 @@ class Appointment {
       price: price ?? this.price,
       extraMinutes: extraMinutes ?? this.extraMinutes,
       extraMinutesType: extraMinutesType ?? this.extraMinutesType,
+      extraBlockedMinutes: extraBlockedMinutes ?? this.extraBlockedMinutes,
+      extraProcessingMinutes:
+          extraProcessingMinutes ?? this.extraProcessingMinutes,
     );
   }
 
   Map<String, dynamic> toJson() {
+    final blocked = blockedExtraMinutes;
+    final processing = processingExtraMinutes;
+    final legacyType = blocked > 0
+        ? ExtraMinutesType.blocked
+        : (processing > 0 ? ExtraMinutesType.processing : null);
+    final legacyMinutes = legacyType == ExtraMinutesType.blocked
+        ? blocked
+        : (legacyType == ExtraMinutesType.processing ? processing : null);
     return {
       'id': id,
       'booking_id': bookingId,
@@ -121,10 +142,30 @@ class Appointment {
       'start_time': startTime.toIso8601String(),
       'end_time': endTime.toIso8601String(),
       if (price != null) 'price': price,
-      if (extraMinutes != null) 'extra_minutes': extraMinutes,
-      if (extraMinutesType != null)
-        'extra_minutes_type': _extraMinutesTypeToJson(extraMinutesType),
+      if (legacyMinutes != null) 'extra_minutes': legacyMinutes,
+      if (legacyType != null)
+        'extra_minutes_type': _extraMinutesTypeToJson(legacyType),
+      if (extraBlockedMinutes != null)
+        'extra_blocked_minutes': extraBlockedMinutes,
+      if (extraProcessingMinutes != null)
+        'extra_processing_minutes': extraProcessingMinutes,
     };
+  }
+
+  int get blockedExtraMinutes {
+    if (extraBlockedMinutes != null) return extraBlockedMinutes!;
+    if (extraMinutesType == ExtraMinutesType.blocked) {
+      return extraMinutes ?? 0;
+    }
+    return 0;
+  }
+
+  int get processingExtraMinutes {
+    if (extraProcessingMinutes != null) return extraProcessingMinutes!;
+    if (extraMinutesType == ExtraMinutesType.processing) {
+      return extraMinutes ?? 0;
+    }
+    return 0;
   }
 
   int get totalDuration => endTime.difference(startTime).inMinutes;

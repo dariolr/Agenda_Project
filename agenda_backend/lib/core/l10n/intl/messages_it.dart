@@ -117,6 +117,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "agendaNoLocations": MessageLookupByLibrary.simpleMessage(
       "Nessuna sede disponibile",
     ),
+    "agendaNoOnDutyTeamTitle": MessageLookupByLibrary.simpleMessage(
+      "Nessun membro del team di turno oggi",
+    ),
+    "agendaNoSelectedTeamTitle": MessageLookupByLibrary.simpleMessage(
+      "Nessun membro del team selezionato",
+    ),
     "agendaPrevDay": MessageLookupByLibrary.simpleMessage("Giorno precedente"),
     "agendaPrevMonth": MessageLookupByLibrary.simpleMessage("Mese precedente"),
     "agendaPrevWeek": MessageLookupByLibrary.simpleMessage(
@@ -124,6 +130,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "agendaSelectLocation": MessageLookupByLibrary.simpleMessage(
       "Seleziona sede",
+    ),
+    "agendaShowAllTeamButton": MessageLookupByLibrary.simpleMessage(
+      "Visualizza tutto il team",
     ),
     "agendaToday": MessageLookupByLibrary.simpleMessage("Oggi"),
     "allLocations": MessageLookupByLibrary.simpleMessage("Tutte le sedi"),
@@ -549,15 +558,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "staffEditHours": MessageLookupByLibrary.simpleMessage("Modifica orari"),
     "staffFilterAllTeam": MessageLookupByLibrary.simpleMessage("Tutto il team"),
     "staffFilterOnDuty": MessageLookupByLibrary.simpleMessage("Team di turno"),
-    "agendaNoOnDutyTeamTitle": MessageLookupByLibrary.simpleMessage(
-      "Nessun membro del team di turno oggi",
-    ),
-    "agendaNoSelectedTeamTitle": MessageLookupByLibrary.simpleMessage(
-      "Nessun membro del team selezionato",
-    ),
-    "agendaShowAllTeamButton": MessageLookupByLibrary.simpleMessage(
-      "Visualizza tutto il team",
-    ),
     "staffFilterSelectMembers": MessageLookupByLibrary.simpleMessage(
       "Seleziona membri del team",
     ),
