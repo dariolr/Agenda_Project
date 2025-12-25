@@ -508,11 +508,18 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+    final picked = await showDialog<DateTime>(
       context: context,
-      initialDate: _date,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      builder: (context) {
+        return Dialog(
+          child: CalendarDatePicker(
+            initialDate: _date,
+            firstDate: DateTime.now().subtract(const Duration(days: 365)),
+            lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+            onDateChanged: (value) => Navigator.of(context).pop(value),
+          ),
+        );
+      },
     );
     if (picked != null) {
       setState(() => _date = DateUtils.dateOnly(picked));
