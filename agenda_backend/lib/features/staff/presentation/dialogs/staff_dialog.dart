@@ -138,19 +138,8 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     _selectedColor = initial?.color ?? _palette.first;
     if (initial != null) {
       if (widget.isDuplicating) {
-        final existingNames =
-            ref.read(allStaffProvider).map((s) => s.displayName).toSet();
-        var base = initial.displayName;
-        var candidate = '$base ${context.l10n.serviceDuplicateCopyWord}';
-        var i = 1;
-        while (existingNames.contains(candidate)) {
-          candidate = '$base ${context.l10n.serviceDuplicateCopyWord} $i';
-          i++;
-        }
-        final parts = candidate.split(' ');
-        _nameController.text = parts.first;
-        _surnameController.text =
-            parts.length > 1 ? parts.sublist(1).join(' ') : initial.surname;
+        _nameController.clear();
+        _surnameController.clear();
       } else {
         _nameController.text = initial.name;
         _surnameController.text = initial.surname;
