@@ -320,22 +320,19 @@ class AppointmentsNotifier extends Notifier<List<Appointment>> {
     final newTotalMinutes = endTime.difference(startTime).inMinutes;
     final oldExtra = appt.extraMinutes ?? 0;
     final hasExtra = appt.extraMinutesType != null && oldExtra > 0;
-    final baseMinutes = hasExtra && appt.extraMinutesType == ExtraMinutesType.blocked
-        ? (oldTotalMinutes - oldExtra)
-        : oldTotalMinutes;
+    final isBlockedExtra = appt.extraMinutesType == ExtraMinutesType.blocked;
+    final baseMinutes =
+        hasExtra && isBlockedExtra ? (oldTotalMinutes - oldExtra) : oldTotalMinutes;
 
     int newExtra = oldExtra;
     ExtraMinutesType? newExtraType = appt.extraMinutesType;
 
-    if (hasExtra) {
-      if (newTotalMinutes < baseMinutes) {
+    if (hasExtra && isBlockedExtra) {
+      if (newTotalMinutes <= baseMinutes) {
         newExtra = 0;
-      } else {
-        final maxExtraAllowed = newTotalMinutes - baseMinutes;
-        newExtra = maxExtraAllowed.clamp(0, oldExtra);
-      }
-      if (newExtra == 0) {
         newExtraType = null;
+      } else {
+        newExtra = newTotalMinutes - baseMinutes;
       }
     }
 
