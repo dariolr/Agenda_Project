@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/models/appointment.dart';
 
 /// Rappresenta un singolo servizio in una prenotazione multi-servizio.
 /// Usato internamente nel form di creazione/modifica prenotazione.
@@ -9,6 +10,11 @@ class ServiceItemData {
   final int? staffId;
   final TimeOfDay startTime;
   final int durationMinutes;
+  final bool extraEnabled;
+  final ExtraMinutesType? extraMinutesType;
+  final TimeOfDay? extraStartTime;
+  final int extraDurationMinutes;
+  final bool extraStartIsAuto;
 
   const ServiceItemData({
     required this.key,
@@ -17,6 +23,11 @@ class ServiceItemData {
     this.staffId,
     required this.startTime,
     this.durationMinutes = 30,
+    this.extraEnabled = false,
+    this.extraMinutesType,
+    this.extraStartTime,
+    this.extraDurationMinutes = 0,
+    this.extraStartIsAuto = true,
   });
 
   /// Calcola l'orario di fine basato su startTime e durationMinutes
@@ -49,6 +60,11 @@ class ServiceItemData {
     int? staffId,
     TimeOfDay? startTime,
     int? durationMinutes,
+    bool? extraEnabled,
+    ExtraMinutesType? extraMinutesType,
+    TimeOfDay? extraStartTime,
+    int? extraDurationMinutes,
+    bool? extraStartIsAuto,
   }) {
     return ServiceItemData(
       key: key ?? this.key,
@@ -57,6 +73,11 @@ class ServiceItemData {
       staffId: staffId ?? this.staffId,
       startTime: startTime ?? this.startTime,
       durationMinutes: durationMinutes ?? this.durationMinutes,
+      extraEnabled: extraEnabled ?? this.extraEnabled,
+      extraMinutesType: extraMinutesType ?? this.extraMinutesType,
+      extraStartTime: extraStartTime ?? this.extraStartTime,
+      extraDurationMinutes: extraDurationMinutes ?? this.extraDurationMinutes,
+      extraStartIsAuto: extraStartIsAuto ?? this.extraStartIsAuto,
     );
   }
 
@@ -69,6 +90,11 @@ class ServiceItemData {
       staffId: null,
       startTime: startTime,
       durationMinutes: 30,
+      extraEnabled: false,
+      extraMinutesType: null,
+      extraStartTime: null,
+      extraDurationMinutes: 0,
+      extraStartIsAuto: true,
     );
   }
 

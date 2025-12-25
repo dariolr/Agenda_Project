@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/date_time_formats.dart';
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/appointment.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service_variant.dart';
@@ -13,6 +14,18 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../domain/config/layout_config.dart';
 import '../../domain/service_item_data.dart';
 import 'service_picker_field.dart';
+
+String _formatExtraDuration(int minutes) {
+  if (minutes < 60) {
+    return '$minutes min';
+  }
+  final hours = minutes ~/ 60;
+  final mins = minutes % 60;
+  if (mins == 0) {
+    return '$hours h';
+  }
+  return '$hours h $mins min';
+}
 
 /// Card per visualizzare e modificare un singolo servizio nella prenotazione.
 class ServiceItemCard extends ConsumerStatefulWidget {
@@ -92,7 +105,8 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
   bool get canRemove => widget.canRemove;
   bool get isServiceRequired => widget.isServiceRequired;
   bool get autoOpenServicePicker => widget.autoOpenServicePicker;
-  VoidCallback? get onServicePickerAutoOpened => widget.onServicePickerAutoOpened;
+  VoidCallback? get onServicePickerAutoOpened =>
+      widget.onServicePickerAutoOpened;
   VoidCallback? get onServicePickerAutoCompleted =>
       widget.onServicePickerAutoCompleted;
   VoidCallback? get onAutoOpenStaffPickerCompleted =>
@@ -194,6 +208,13 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
               .where((v) => v.serviceId == serviceId)
               .firstOrNull;
           final duration = variant?.durationMinutes ?? 30;
+          final processingMinutes = variant?.processingTime ?? 0;
+          final blockedMinutes = variant?.blockedTime ?? 0;
+          final extraMinutes = processingMinutes + blockedMinutes;
+          final extraType = blockedMinutes > 0
+              ? ExtraMinutesType.blocked
+              : (processingMinutes > 0 ? ExtraMinutesType.processing : null);
+          final extraStartTime = item.getEndTime(duration);
           onChanged(
             item.copyWith(
               serviceId: serviceId,
@@ -201,6 +222,10 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
               durationMinutes: duration,
               // Mantieni lo staff selezionato se presente
               staffId: item.staffId,
+              extraEnabled: extraMinutes > 0,
+              extraMinutesType: extraMinutes > 0 ? extraType : null,
+              extraStartTime: extraMinutes > 0 ? extraStartTime : null,
+              extraDurationMinutes: extraMinutes,
             ),
           );
         }
@@ -359,11 +384,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
     final baseDuration = item.durationMinutes > 0
         ? item.durationMinutes
         : (variant?.durationMinutes ?? 30);
-    final extraMinutes =
-        (variant?.processingTime ?? 0) + (variant?.blockedTime ?? 0);
-    final duration = baseDuration + extraMinutes;
-    // Usa la stessa durata per calcolare endTime
-    final endTime = item.getEndTime(duration);
+    final endTime = item.getEndTime(baseDuration);
 
     // Costruiamo sempre tre colonne (Start, End, Duration) in modo che
     // l'elemento "Start" assuma sempre le dimensioni che avrebbe quando
@@ -407,8 +428,8 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
           child: buildInvisibleIfNoService(
             _DurationField(
               label: l10n.fieldDurationRequiredLabel.replaceAll(' *', ''),
-              durationMinutes: duration,
-              onTap: () => _showDurationPicker(context, duration),
+              durationMinutes: baseDuration,
+              onTap: () => _showDurationPicker(context, baseDuration),
               theme: theme,
             ),
           ),
@@ -448,13 +469,13 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
             constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
             child: Padding(
               padding: const EdgeInsets.all(20),
-            child: _TimeGridPicker(
-              initial: item.startTime,
-              includeTime: suggestedStartTime,
-              stepMinutes: 15,
-              title: l10n.blockStartTime,
-              useSafeArea: false,
-            ),
+              child: _TimeGridPicker(
+                initial: item.startTime,
+                includeTime: suggestedStartTime,
+                stepMinutes: 15,
+                title: l10n.blockStartTime,
+                useSafeArea: false,
+              ),
             ),
           ),
         ),
@@ -513,7 +534,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
                 const Divider(height: 1),
                 ...durations.map(
                   (d) => ListTile(
-                    title: Text(_formatDuration(d)),
+                    title: Text(_formatExtraDuration(d)),
                     trailing: d == currentDuration
                         ? Icon(
                             Icons.check,
@@ -706,6 +727,214 @@ class _TimeField extends StatelessWidget {
   }
 }
 
+class ExtraTimeCard extends StatefulWidget {
+  const ExtraTimeCard({
+    super.key,
+    required this.title,
+    required this.startTime,
+    required this.durationMinutes,
+    required this.onStartTimeChanged,
+    required this.onDurationChanged,
+    required this.onRemove,
+    required this.formFactor,
+  });
+
+  final String title;
+  final TimeOfDay startTime;
+  final int durationMinutes;
+  final ValueChanged<TimeOfDay> onStartTimeChanged;
+  final ValueChanged<int> onDurationChanged;
+  final VoidCallback onRemove;
+  final AppFormFactor formFactor;
+
+  @override
+  State<ExtraTimeCard> createState() => _ExtraTimeCardState();
+}
+
+class _ExtraTimeCardState extends State<ExtraTimeCard> {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final endTime = _addMinutes(widget.startTime, widget.durationMinutes);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.actionClose,
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: widget.onRemove,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _TimeField(
+                    label: l10n.blockStartTime,
+                    time: widget.startTime,
+                    onTap: null,
+                    theme: theme,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _TimeField(
+                    label: l10n.blockEndTime,
+                    time: endTime,
+                    onTap: null,
+                    theme: theme,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _DurationField(
+                    label: l10n.fieldDurationRequiredLabel.replaceAll(' *', ''),
+                    durationMinutes: widget.durationMinutes,
+                    onTap: () =>
+                        _showDurationPicker(context, widget.durationMinutes),
+                    theme: theme,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  TimeOfDay _addMinutes(TimeOfDay time, int minutes) {
+    final totalMinutes = time.hour * 60 + time.minute + minutes;
+    return TimeOfDay(
+      hour: (totalMinutes ~/ 60) % 24,
+      minute: totalMinutes % 60,
+    );
+  }
+
+  void _showDurationPicker(BuildContext context, int currentDuration) {
+    final l10n = context.l10n;
+
+    // Calcola i minuti disponibili fino a mezzanotte (24:00)
+    final startMinutes = widget.startTime.hour * 60 + widget.startTime.minute;
+    final maxMinutesAvailable = (24 * 60) - startMinutes;
+
+    // Durate comuni in minuti: fino a 60 con step variabili, dopo 60 con step di 15 min
+    final allDurations = <int>[
+      5,
+      10,
+      15,
+      30,
+      45,
+      60,
+      for (int m = 75; m <= 360; m += 15) m,
+    ];
+    final durations = allDurations
+        .where((d) => d <= maxMinutesAvailable)
+        .toList();
+
+    if (currentDuration > 0 &&
+        currentDuration <= maxMinutesAvailable &&
+        !durations.contains(currentDuration)) {
+      durations.add(currentDuration);
+      durations.sort();
+    }
+
+    if (widget.formFactor != AppFormFactor.desktop) {
+      AppBottomSheet.show(
+        context: context,
+        padding: EdgeInsets.zero,
+        builder: (ctx) => SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    l10n.fieldDurationRequiredLabel.replaceAll(' *', ''),
+                    style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const Divider(height: 1),
+                ...durations.map(
+                  (d) => ListTile(
+                    title: Text(_formatExtraDuration(d)),
+                    trailing: d == currentDuration
+                        ? Icon(
+                            Icons.check,
+                            color: Theme.of(ctx).colorScheme.primary,
+                          )
+                        : null,
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      widget.onDurationChanged(d);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.fieldDurationRequiredLabel.replaceAll(' *', '')),
+          content: SizedBox(
+            width: 320,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: durations.length,
+              itemBuilder: (_, index) {
+                final d = durations[index];
+                return ListTile(
+                  title: Text(_formatExtraDuration(d)),
+                  trailing: d == currentDuration
+                      ? Icon(
+                          Icons.check,
+                          color: Theme.of(ctx).colorScheme.primary,
+                        )
+                      : null,
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    widget.onDurationChanged(d);
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+  }
+}
+
 /// Widget per mostrare un campo durata cliccabile
 class _DurationField extends StatelessWidget {
   const _DurationField({
@@ -717,7 +946,7 @@ class _DurationField extends StatelessWidget {
 
   final String label;
   final int durationMinutes;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final ThemeData theme;
 
   @override
@@ -735,6 +964,7 @@ class _DurationField extends StatelessWidget {
       }
     }
 
+    final isDisabled = onTap == null;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(4),
@@ -747,8 +977,16 @@ class _DurationField extends StatelessWidget {
           ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
           isDense: true,
+          enabled: !isDisabled,
         ),
-        child: Text(formatted, style: theme.textTheme.bodyMedium),
+        child: Text(
+          formatted,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: isDisabled
+                ? theme.colorScheme.onSurface.withOpacity(0.5)
+                : null,
+          ),
+        ),
       ),
     );
   }
