@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start iPhone viewer (web-server release :8081)",
+      "type": "shell",
+      "command": "nohup flutter run -d web-server --release --web-hostname=0.0.0.0 --web-port=8081 > /tmp/flutter_viewer_8081.log 2>&1 &",
+      "problemMatcher": []
+    },
+    {
+      "label": "Stop iPhone viewer (:8081)",
+      "type": "shell",
+      "command": "lsof -t -iTCP:8081 -sTCP:LISTEN | xargs kill -9",
+      "problemMatcher": []
+    }
+  ]
+}

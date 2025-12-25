@@ -1,0 +1,55 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/register_screen.dart';
+import '../features/auth/providers/auth_provider.dart';
+import '../features/booking/presentation/screens/booking_screen.dart';
+
+final routerProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authProvider);
+
+  return GoRouter(
+    initialLocation: '/booking',
+    debugLogDiagnostics: true,
+    redirect: (context, state) {
+      final isLoggedIn = authState.isAuthenticated;
+      final isLoggingIn = state.matchedLocation == '/login';
+      final isRegistering = state.matchedLocation == '/register';
+
+      // Se non è autenticato e non sta cercando di loggarsi o registrarsi
+      if (!isLoggedIn && !isLoggingIn && !isRegistering) {
+        return '/booking';
+      }
+
+      // Se è autenticato e sta cercando di accedere a login/register
+      if (isLoggedIn && (isLoggingIn || isRegistering)) {
+        return '/booking';
+      }
+
+      return null;
+    },
+    routes: [
+      GoRoute(path: '/', redirect: (context, state) => '/booking'),
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        name: 'register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/booking',
+        name: 'booking',
+        builder: (context, state) => const BookingScreen(),
+      ),
+    ],
+    errorBuilder: (context, state) => Scaffold(
+      body: Center(child: Text('Pagina non trovata: ${state.uri.path}')),
+    ),
+  );
+});
