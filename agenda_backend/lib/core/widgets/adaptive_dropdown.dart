@@ -1,6 +1,8 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/desktop_popup_container.dart';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -289,8 +291,10 @@ class _MobileSheetContent<T> extends StatelessWidget {
             ),
           );
         }),
-        // Safe area padding for bottom
-        SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
+        // Safe area padding for bottom with minimum inset
+        SizedBox(
+          height: math.max(MediaQuery.of(context).viewPadding.bottom, 15),
+        ),
       ],
     );
   }
