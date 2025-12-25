@@ -1204,10 +1204,10 @@ class L10n {
     );
   }
 
-  /// `Riordina sedi e membri del team trascinandoli. L’ordine sarà lo stesso anche nella sezione agenda.`
+  /// `Riordina sedi e membri del team trascinandoli. Seleziona se ordinare sedi o team. L’ordine sarà lo stesso anche nella sezione agenda.`
   String get teamReorderHelpDescription {
     return Intl.message(
-      'Riordina sedi e membri del team trascinandoli. L’ordine sarà lo stesso anche nella sezione agenda.',
+      'Riordina sedi e membri del team trascinandoli. Seleziona se ordinare sedi o team. L’ordine sarà lo stesso anche nella sezione agenda.',
       name: 'teamReorderHelpDescription',
       desc: '',
       args: [],
@@ -1544,11 +1544,31 @@ class L10n {
     );
   }
 
-  /// `Riordina categorie e servizi trascinandoli: l’ordine sarà lo stesso anche nella prenotazione online.`
+  /// `Riordina categorie e servizi trascinandoli: l’ordine sarà lo stesso anche nella prenotazione online. Seleziona se ordinare categorie o servizi.`
   String get reorderHelpDescription {
     return Intl.message(
-      'Riordina categorie e servizi trascinandoli: l’ordine sarà lo stesso anche nella prenotazione online.',
+      'Riordina categorie e servizi trascinandoli: l’ordine sarà lo stesso anche nella prenotazione online. Seleziona se ordinare categorie o servizi.',
       name: 'reorderHelpDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Categorie`
+  String get reorderCategoriesLabel {
+    return Intl.message(
+      'Categorie',
+      name: 'reorderCategoriesLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizi`
+  String get reorderServicesLabel {
+    return Intl.message(
+      'Servizi',
+      name: 'reorderServicesLabel',
       desc: '',
       args: [],
     );

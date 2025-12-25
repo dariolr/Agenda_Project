@@ -423,8 +423,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "removeClient": MessageLookupByLibrary.simpleMessage("Remove client"),
     "reorderHelpDescription": MessageLookupByLibrary.simpleMessage(
-      "Reorder categories and services by dragging them: the same order will be applied to online booking.",
+      "Reorder categories and services by dragging them: the same order will be applied to online booking. Select whether to sort categories or services.",
     ),
+    "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage(
+      "Categories",
+    ),
+    "reorderServicesLabel": MessageLookupByLibrary.simpleMessage("Services"),
     "reorderTitle": MessageLookupByLibrary.simpleMessage("Reorder"),
     "searchClientPlaceholder": MessageLookupByLibrary.simpleMessage(
       "Search client...",
@@ -619,7 +623,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "No team members in this location",
     ),
     "teamReorderHelpDescription": MessageLookupByLibrary.simpleMessage(
-      "Reorder locations and team members by dragging them. The order will also apply in the agenda section.",
+      "Reorder locations and team members by dragging them. Select whether to sort locations or team. The order will also apply in the agenda section.",
     ),
     "teamSelectAllLocations": MessageLookupByLibrary.simpleMessage(
       "Select all",
