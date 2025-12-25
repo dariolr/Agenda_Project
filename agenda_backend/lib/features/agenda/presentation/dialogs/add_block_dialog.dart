@@ -12,6 +12,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/time_block.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../../core/widgets/app_dividers.dart';
 import '../../domain/config/layout_config.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
@@ -433,11 +434,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
                     ),
                   ),
                 ),
-                const Divider(
-                  height: 1,
-                  thickness: 0.5,
-                  color: Color(0x1F000000),
-                ),
+                const AppBottomSheetDivider(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
                   child: Align(

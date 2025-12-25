@@ -10,6 +10,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../../agenda/providers/location_providers.dart';
@@ -41,7 +42,7 @@ Future<void> showStaffDialog(
       context: context,
       builder: (_) => dialog,
       useRootNavigator: true,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      padding: EdgeInsets.zero,
       heightFactor: AppBottomSheet.defaultHeightFactor,
     );
   }
@@ -522,10 +523,11 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
               children: [
                 Expanded(
                   child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom,
+                    ),
                     child: Padding(
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).viewInsets.bottom,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
@@ -545,13 +547,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                     ),
                   ),
                 ),
-                const Divider(
-                  height: 1,
-                  thickness: 0.5,
-                  color: Color(0x1F000000),
-                ),
+                const AppBottomSheetDivider(),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Wrap(
@@ -660,7 +658,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    const Divider(height: 1),
+                    const AppBottomSheetDivider(),
                     Expanded(
                       child: SingleChildScrollView(
                         child: Padding(
@@ -676,7 +674,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         ),
                       ),
                     ),
-                    const Divider(height: 1),
+                    const AppBottomSheetDivider(),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       child: Align(
@@ -716,7 +714,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
-                  const Divider(height: 1),
+                  const AppBottomSheetDivider(),
                   Expanded(
                     child: SingleChildScrollView(
                       child: Padding(
@@ -732,7 +730,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                       ),
                     ),
                   ),
-                  const Divider(height: 1),
+                  const AppBottomSheetDivider(),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                     child: Align(
@@ -796,7 +794,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                 setStateLocal(() {});
               },
             ),
-            const Divider(height: 1),
+            const AppBottomSheetDivider(),
           ],
           for (final loc in locations)
             _SelectableRow(
@@ -852,7 +850,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    const Divider(height: 1),
+                    const AppBottomSheetDivider(),
                     Expanded(
                       child: SingleChildScrollView(
                         child: Padding(
@@ -862,7 +860,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                       ),
                     ),
                     if (kAllowStaffMultiLocationSelection) ...[
-                      const Divider(height: 1),
+                      const AppBottomSheetDivider(),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                         child: Align(
@@ -905,7 +903,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
-                  const Divider(height: 1),
+                  const AppBottomSheetDivider(),
                   Expanded(
                     child: SingleChildScrollView(
                       child: Padding(
@@ -915,7 +913,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                     ),
                   ),
                   if (kAllowStaffMultiLocationSelection) ...[
-                    const Divider(height: 1),
+                    const AppBottomSheetDivider(),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       child: Align(

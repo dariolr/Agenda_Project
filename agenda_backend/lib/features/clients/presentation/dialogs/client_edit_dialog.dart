@@ -7,6 +7,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../../core/widgets/app_dividers.dart';
 import '../../domain/clients.dart';
 import '../../providers/clients_providers.dart';
 import '../widgets/client_form.dart';
@@ -34,7 +35,7 @@ Future<Client?> showClientEditDialog(
     return await AppBottomSheet.show<Client>(
       context: context,
       useRootNavigator: true,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      padding: EdgeInsets.zero,
       heightFactor: AppBottomSheet.defaultHeightFactor,
       builder: (_) => ClientEditBottomSheet(initial: client),
     );
@@ -254,29 +255,39 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(title, style: theme.textTheme.titleLarge),
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  title,
+                                  style: theme.textTheme.titleLarge,
+                                ),
+                              ),
+                              ClientForm(
+                                key: _form,
+                                initial: widget.initial,
+                                onChanged: () {
+                                  if (!_hasChanges) {
+                                    setState(() => _hasChanges = true);
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 24),
+                              const SizedBox(height: AppSpacing.formRowSpacing),
+                            ],
+                          ),
                         ),
-                        ClientForm(
-                          key: _form,
-                          initial: widget.initial,
-                          onChanged: () {
-                            if (!_hasChanges) setState(() => _hasChanges = true);
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        const SizedBox(height: AppSpacing.formRowSpacing),
                       ],
                     ),
                   ),
                 ),
-                const Divider(
-                  height: 1,
-                  thickness: 0.5,
-                  color: Color(0x1F000000),
-                ),
+                const AppBottomSheetDivider(),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Wrap(

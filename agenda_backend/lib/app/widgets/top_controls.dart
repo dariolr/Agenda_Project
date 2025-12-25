@@ -4,6 +4,7 @@ import 'package:agenda_backend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_backend/app/widgets/top_controls_scaffold.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/location.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
@@ -408,7 +409,7 @@ class LocationSheetContent extends StatelessWidget {
               ),
             ),
           ),
-          Divider(height: 1, color: Colors.grey.withOpacity(0.35)),
+          const AppBottomSheetDivider(),
           Expanded(
             child: ListView.builder(
               itemCount: itemCount,

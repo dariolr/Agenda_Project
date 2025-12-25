@@ -4,6 +4,7 @@ import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/core/widgets/desktop_popup_container.dart';
 import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
@@ -230,7 +231,7 @@ class _StaffFilterPopupContent extends ConsumerWidget {
               ),
             ),
           ),
-          Divider(height: 1, color: Colors.grey.withOpacity(0.35)),
+          const AppBottomSheetDivider(),
 
           // Opzione: Tutto il team
           _DesktopFilterOptionTile(
@@ -257,7 +258,7 @@ class _StaffFilterPopupContent extends ConsumerWidget {
           ),
 
           // Divider
-          Divider(height: 1, color: Colors.grey.withOpacity(0.35)),
+          const AppBottomSheetDivider(),
 
           // Header staff
           Padding(
@@ -485,7 +486,7 @@ class _StaffFilterSheet extends ConsumerWidget {
                 ),
               ),
             ),
-            Divider(height: 1, color: Colors.grey.withOpacity(0.35)),
+            const AppBottomSheetDivider(),
 
             // Opzione: Tutto il team
             _MobileFilterOptionTile(
@@ -512,7 +513,7 @@ class _StaffFilterSheet extends ConsumerWidget {
             ),
 
             // Divider
-            Divider(height: 1, color: Colors.grey.withOpacity(0.35)),
+            const AppBottomSheetDivider(),
 
             // Header staff
             Padding(
