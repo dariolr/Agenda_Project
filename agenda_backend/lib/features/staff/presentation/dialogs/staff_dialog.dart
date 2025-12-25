@@ -141,10 +141,10 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         final existingNames =
             ref.read(allStaffProvider).map((s) => s.displayName).toSet();
         var base = initial.displayName;
-        var candidate = '$base Copia';
+        var candidate = '$base ${context.l10n.serviceDuplicateCopyWord}';
         var i = 1;
         while (existingNames.contains(candidate)) {
-          candidate = '$base Copia $i';
+          candidate = '$base ${context.l10n.serviceDuplicateCopyWord} $i';
           i++;
         }
         final parts = candidate.split(' ');
