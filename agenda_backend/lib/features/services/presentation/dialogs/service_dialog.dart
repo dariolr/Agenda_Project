@@ -1023,10 +1023,12 @@ Future<void> showServiceDialog(
       return SafeArea(
         top: false,
         child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SizedBox(
-              height: constraints.maxHeight,
-              child: Column(
+        builder: (context, constraints) {
+          final isKeyboardOpen =
+              MediaQuery.of(context).viewInsets.bottom > 0;
+          return SizedBox(
+            height: constraints.maxHeight,
+            child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                 Expanded(
@@ -1061,19 +1063,21 @@ Future<void> showServiceDialog(
                     ),
                   ),
                 ),
-                const AppBottomSheetDivider(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Wrap(
-                        alignment: WrapAlignment.end,
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [cancelButton, saveButton],
+                  if (!isKeyboardOpen) ...[
+                    const AppBottomSheetDivider(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Wrap(
+                          alignment: WrapAlignment.end,
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [cancelButton, saveButton],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                   SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
                 ],
               ),

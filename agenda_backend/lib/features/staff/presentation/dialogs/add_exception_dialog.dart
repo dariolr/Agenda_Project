@@ -504,6 +504,8 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       top: false,
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final isKeyboardOpen =
+              MediaQuery.of(context).viewInsets.bottom > 0;
           return SizedBox(
             height: constraints.maxHeight,
             child: Column(
@@ -532,19 +534,21 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
                     ),
                   ),
                 ),
-                const AppBottomSheetDivider(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Wrap(
-                      alignment: WrapAlignment.end,
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: bottomActions,
+                if (!isKeyboardOpen) ...[
+                  const AppBottomSheetDivider(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: bottomActions,
+                      ),
                     ),
                   ),
-                ),
+                ],
                 SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
               ],
             ),

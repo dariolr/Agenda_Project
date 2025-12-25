@@ -176,6 +176,8 @@ Future<void> showCategoryDialog(
         top: false,
         child: LayoutBuilder(
           builder: (ctx, constraints) {
+            final isKeyboardOpen =
+                MediaQuery.of(ctx).viewInsets.bottom > 0;
             return SizedBox(
               height: constraints.maxHeight,
               child: Column(
@@ -213,19 +215,21 @@ Future<void> showCategoryDialog(
                     ),
                   ),
                 ),
-                const AppBottomSheetDivider(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Wrap(
-                        alignment: WrapAlignment.end,
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [cancelButton, saveButton],
+                  if (!isKeyboardOpen) ...[
+                    const AppBottomSheetDivider(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Wrap(
+                          alignment: WrapAlignment.end,
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [cancelButton, saveButton],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                   SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
                 ],
               ),
