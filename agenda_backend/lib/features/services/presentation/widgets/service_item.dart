@@ -58,6 +58,16 @@ class ServiceItem extends ConsumerWidget {
         colorScheme.primaryContainer.withOpacity(0.1);
     final bgColor = (isHovered || isSelected) ? hoverFill : baseColor;
 
+    final durationMinutes = variant?.durationMinutes;
+    final extraMinutes =
+        (variant?.processingTime ?? 0) + (variant?.blockedTime ?? 0);
+    final totalMinutes = (durationMinutes ?? 0) + extraMinutes;
+    final durationLabel = durationMinutes != null
+        ? context.localizedDurationLabel(
+            extraMinutes > 0 ? totalMinutes : durationMinutes,
+          )
+        : null;
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => onEnter(),
@@ -99,44 +109,45 @@ class ServiceItem extends ConsumerWidget {
                     child: ListTile(
                       contentPadding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
                       mouseCursor: SystemMouseCursors.click,
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          service.name,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w500),
-                        ),
-                        if (eligibleStaffCount == 0) ...[
-                          const SizedBox(height: 2),
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            context.l10n.serviceEligibleStaffNone,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.error,
-                                  fontStyle: FontStyle.italic,
-                                ),
+                            service.name,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w500),
                           ),
-                        ],
-                        if (variant?.durationMinutes != null ||
-                            variant?.price != null ||
-                            (variant?.isFree ?? false))
+                          if (eligibleStaffCount == 0) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              context.l10n.serviceEligibleStaffNone,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                            ),
+                          ],
+                          if (durationLabel != null ||
+                              variant?.price != null ||
+                              (variant?.isFree ?? false))
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  if (variant?.durationMinutes != null)
+                                  if (durationLabel != null)
                                     Text(
-                                      context.localizedDurationLabel(
-                                        variant!.durationMinutes,
-                                      ),
+                                      durationLabel,
                                       style: const TextStyle(
                                         fontSize: 11,
                                         color: Colors.black54,
                                         height: 1.1,
                                       ),
                                     ),
-                                  if (variant?.durationMinutes != null &&
+                                  if (durationLabel != null &&
                                       (variant?.price != null ||
                                           (variant?.isFree ?? false)))
                                     const SizedBox(width: 8),
