@@ -811,6 +811,7 @@ class _MobileAgendaDateSwitcher extends ConsumerWidget {
   }
 }
 
+
 class _ScaffoldWithNavigationHelpers {
   static List<NavigationDestination> getDestinations(BuildContext context) {
     final l10n = context.l10n;

@@ -63,7 +63,6 @@ class TopControls extends ConsumerWidget {
       selectedDate = weekMeta.effectivePickerDate;
     }
     final showTopDateSwitcher = mode != TopControlsMode.agenda;
-    final layoutConfig = ref.watch(layoutConfigProvider);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -86,9 +85,19 @@ class TopControls extends ConsumerWidget {
             isCompact: compact,
           ),
           const SizedBox(width: 8),
+          if (data.locations.length > 1) ...[
+            const SizedBox(width: 16),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: AgendaLocationSelector(
+                locations: data.locations,
+                current: data.currentLocation,
+                onSelected: data.locationController.set,
+                iconOnly: true,
+              ),
+            ),
+          ],
         ],
-        if (mode == TopControlsMode.agenda)
-          SizedBox(width: layoutConfig.hourColumnWidth),
       ],
     );
   }
@@ -109,7 +118,10 @@ class TopControls extends ConsumerWidget {
       label = weekMeta.label;
       selectedDate = weekMeta.effectivePickerDate;
     }
-    final showTopDateSwitcher = mode != TopControlsMode.agenda;
+    final showTopDateSwitcher =
+        mode != TopControlsMode.agenda &&
+        !(mode == TopControlsMode.staff &&
+            data.formFactor == AppFormFactor.mobile);
 
     final layoutConfig = ref.watch(layoutConfigProvider);
 
@@ -176,7 +188,7 @@ class TopControls extends ConsumerWidget {
       selectedDate = weekMeta.effectivePickerDate;
     }
     final showStaffSelector =
-        (mode == TopControlsMode.agenda || mode == TopControlsMode.staff) &&
+        mode == TopControlsMode.agenda &&
         ref.watch(staffForCurrentLocationProvider).length > 1;
     final showLocationSelector = data.locations.length > 1;
 
