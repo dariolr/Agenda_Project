@@ -2486,6 +2486,36 @@ class L10n {
     );
   }
 
+  /// `Non puoi aggiungere una non disponibilità in un giorno senza disponibilità base.`
+  String get exceptionUnavailableNoBase {
+    return Intl.message(
+      'Non puoi aggiungere una non disponibilità in un giorno senza disponibilità base.',
+      name: 'exceptionUnavailableNoBase',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La non disponibilità deve sovrapporsi alla disponibilità base.`
+  String get exceptionUnavailableNoOverlap {
+    return Intl.message(
+      'La non disponibilità deve sovrapporsi alla disponibilità base.',
+      name: 'exceptionUnavailableNoOverlap',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La disponibilità extra deve aggiungere ore rispetto alla disponibilità base.`
+  String get exceptionAvailableNoEffect {
+    return Intl.message(
+      'La disponibilità extra deve aggiungere ore rispetto alla disponibilità base.',
+      name: 'exceptionAvailableNoEffect',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Eliminare l'eccezione?`
   String get exceptionDeleteTitle {
     return Intl.message(

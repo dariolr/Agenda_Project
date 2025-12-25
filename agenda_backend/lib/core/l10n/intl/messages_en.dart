@@ -277,6 +277,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Error"),
     "exceptionAllDay": MessageLookupByLibrary.simpleMessage("All day"),
+    "exceptionAvailableNoEffect": MessageLookupByLibrary.simpleMessage(
+      "Extra availability must add hours beyond the base availability.",
+    ),
     "exceptionDateFrom": MessageLookupByLibrary.simpleMessage("Start date"),
     "exceptionDateTo": MessageLookupByLibrary.simpleMessage("End date"),
     "exceptionDeleteMessage": MessageLookupByLibrary.simpleMessage(
@@ -334,6 +337,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "exceptionTypeAvailable": MessageLookupByLibrary.simpleMessage("Available"),
     "exceptionTypeUnavailable": MessageLookupByLibrary.simpleMessage(
       "Unavailable",
+    ),
+    "exceptionUnavailableNoBase": MessageLookupByLibrary.simpleMessage(
+      "You can\'t add unavailability on a day with no base availability.",
+    ),
+    "exceptionUnavailableNoOverlap": MessageLookupByLibrary.simpleMessage(
+      "Unavailability must overlap the base availability.",
     ),
     "exceptionsAdd": MessageLookupByLibrary.simpleMessage("Add exception"),
     "exceptionsEmpty": MessageLookupByLibrary.simpleMessage(
@@ -422,11 +431,11 @@ class MessageLookup extends MessageLookupByLibrary {
       "Price “starting from”",
     ),
     "removeClient": MessageLookupByLibrary.simpleMessage("Remove client"),
-    "reorderHelpDescription": MessageLookupByLibrary.simpleMessage(
-      "Reorder categories and services by dragging them: the same order will be applied to online booking. Select whether to sort categories or services.",
-    ),
     "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage(
       "Categories",
+    ),
+    "reorderHelpDescription": MessageLookupByLibrary.simpleMessage(
+      "Reorder categories and services by dragging them: the same order will be applied to online booking. Select whether to sort categories or services.",
     ),
     "reorderServicesLabel": MessageLookupByLibrary.simpleMessage("Services"),
     "reorderTitle": MessageLookupByLibrary.simpleMessage("Reorder"),

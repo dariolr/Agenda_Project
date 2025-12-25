@@ -11,6 +11,7 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../agenda/providers/layout_config_provider.dart';
+import '../../presentation/staff_availability_screen.dart';
 import '../../providers/availability_exceptions_provider.dart';
 
 /// Mostra il dialog per creare o modificare un'eccezione alla disponibilità.
@@ -89,6 +90,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
   final _reasonController = TextEditingController();
   bool _isAllDay = false;
   String? _timeError;
+  String? _validationError;
   bool _isSaving = false;
 
   @override
@@ -157,7 +159,10 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
             ],
             selected: {_type},
             onSelectionChanged: (selected) {
-              setState(() => _type = selected.first);
+              setState(() {
+                _type = selected.first;
+                _validationError = null;
+              });
             },
           ),
         ),
@@ -184,7 +189,10 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
               ],
               selected: {_periodMode},
               onSelectionChanged: (selected) {
-                setState(() => _periodMode = selected.first);
+                setState(() {
+                  _periodMode = selected.first;
+                  _validationError = null;
+                });
               },
             ),
           ),
@@ -305,7 +313,10 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
                   label: l10n.exceptionDuration,
                   child: _DurationDropdown(
                     value: _durationDays,
-                    onChanged: (v) => setState(() => _durationDays = v),
+                    onChanged: (v) => setState(() {
+                      _durationDays = v;
+                      _validationError = null;
+                    }),
                   ),
                 ),
               ),
@@ -329,12 +340,27 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
           children: [
             Switch(
               value: _isAllDay,
-              onChanged: (v) => setState(() => _isAllDay = v),
+              onChanged: (v) => setState(() {
+                _isAllDay = v;
+                _timeError = null;
+                _validationError = null;
+              }),
             ),
             const SizedBox(width: 8),
             Text(l10n.exceptionAllDay),
           ],
         ),
+        if (_isAllDay && _validationError != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 12),
+            child: Text(
+              _validationError!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 12,
+              ),
+            ),
+          ),
         const SizedBox(height: 12),
 
         // Orari
@@ -405,6 +431,17 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
               padding: const EdgeInsets.only(top: 6, left: 12),
               child: Text(
                 _timeError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          if (_validationError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 12),
+              child: Text(
+                _validationError!,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.error,
                   fontSize: 12,
@@ -578,7 +615,10 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
     );
     if (picked != null) {
-      setState(() => _date = DateUtils.dateOnly(picked));
+      setState(() {
+        _date = DateUtils.dateOnly(picked);
+        _validationError = null;
+      });
     }
   }
 
@@ -592,6 +632,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
     if (picked != null) {
       setState(() {
         _startDate = DateUtils.dateOnly(picked);
+        _validationError = null;
         // Se la data di fine è prima della data di inizio, aggiornala
         if (_endDate.isBefore(_startDate)) {
           _endDate = _startDate.add(Duration(days: _durationDays - 1));
@@ -608,7 +649,10 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
     );
     if (picked != null) {
-      setState(() => _endDate = DateUtils.dateOnly(picked));
+      setState(() {
+        _endDate = DateUtils.dateOnly(picked);
+        _validationError = null;
+      });
     }
   }
 
@@ -632,6 +676,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
     if (selected != null) {
       setState(() {
         _timeError = null;
+        _validationError = null;
         if (isStart) {
           _startTime = selected;
           // Se l'orario di fine è prima dell'inizio, aggiustalo
@@ -652,12 +697,83 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
 
   bool _validate() {
     final l10n = context.l10n;
+    _validationError = null;
 
     if (!_isAllDay) {
       final startMinutes = _startTime.hour * 60 + _startTime.minute;
       final endMinutes = _endTime.hour * 60 + _endTime.minute;
       if (endMinutes <= startMinutes) {
         setState(() => _timeError = l10n.exceptionTimeError);
+        return false;
+      }
+    }
+
+    final availabilityByStaff =
+        ref.read(staffAvailabilityByStaffProvider).value;
+    if (availabilityByStaff == null) {
+      return true;
+    }
+
+    final layout = ref.read(layoutConfigProvider);
+    final minutesPerSlot = layout.minutesPerSlot;
+    final totalSlots = layout.totalSlots;
+
+    Set<int> exceptionSlots() {
+      if (_isAllDay) {
+        return {for (int i = 0; i < totalSlots; i++) i};
+      }
+      final startMinutes = _startTime.hour * 60 + _startTime.minute;
+      final endMinutes = _endTime.hour * 60 + _endTime.minute;
+      final startSlot = startMinutes ~/ minutesPerSlot;
+      final endSlot = endMinutes ~/ minutesPerSlot;
+      return {for (int i = startSlot; i < endSlot; i++) i};
+    }
+
+    bool validateDate(DateTime date) {
+      final baseSlots =
+          availabilityByStaff[widget.staffId]?[date.weekday] ?? <int>{};
+      final excSlots = exceptionSlots();
+      if (_type == AvailabilityExceptionType.unavailable) {
+        if (baseSlots.isEmpty) {
+          _validationError = l10n.exceptionUnavailableNoBase;
+          return false;
+        }
+        if (baseSlots.intersection(excSlots).isEmpty) {
+          _validationError = l10n.exceptionUnavailableNoOverlap;
+          return false;
+        }
+      } else {
+        if (excSlots.difference(baseSlots).isEmpty) {
+          _validationError = l10n.exceptionAvailableNoEffect;
+          return false;
+        }
+      }
+      return true;
+    }
+
+    if (widget.initial != null || _periodMode == _PeriodMode.single) {
+      if (!validateDate(_date)) {
+        setState(() {});
+        return false;
+      }
+      return true;
+    }
+
+    final DateTime startDate;
+    final DateTime endDate;
+    if (_periodMode == _PeriodMode.range) {
+      startDate = _startDate;
+      endDate = _endDate;
+    } else {
+      startDate = _startDate;
+      endDate = _startDate.add(Duration(days: _durationDays - 1));
+    }
+
+    for (var d = startDate;
+        !d.isAfter(endDate);
+        d = d.add(const Duration(days: 1))) {
+      if (!validateDate(d)) {
+        setState(() {});
         return false;
       }
     }

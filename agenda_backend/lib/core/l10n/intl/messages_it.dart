@@ -295,6 +295,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Errore"),
     "exceptionAllDay": MessageLookupByLibrary.simpleMessage("Giornata intera"),
+    "exceptionAvailableNoEffect": MessageLookupByLibrary.simpleMessage(
+      "La disponibilità extra deve aggiungere ore rispetto alla disponibilità base.",
+    ),
     "exceptionDateFrom": MessageLookupByLibrary.simpleMessage("Data inizio"),
     "exceptionDateTo": MessageLookupByLibrary.simpleMessage("Data fine"),
     "exceptionDeleteMessage": MessageLookupByLibrary.simpleMessage(
@@ -358,6 +361,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "exceptionTypeUnavailable": MessageLookupByLibrary.simpleMessage(
       "Non disponibile",
+    ),
+    "exceptionUnavailableNoBase": MessageLookupByLibrary.simpleMessage(
+      "Non puoi aggiungere una non disponibilità in un giorno senza disponibilità base.",
+    ),
+    "exceptionUnavailableNoOverlap": MessageLookupByLibrary.simpleMessage(
+      "La non disponibilità deve sovrapporsi alla disponibilità base.",
     ),
     "exceptionsAdd": MessageLookupByLibrary.simpleMessage("Aggiungi eccezione"),
     "exceptionsEmpty": MessageLookupByLibrary.simpleMessage(
@@ -448,10 +457,10 @@ class MessageLookup extends MessageLookupByLibrary {
       "Prezzo \"a partire da\"",
     ),
     "removeClient": MessageLookupByLibrary.simpleMessage("Rimuovi cliente"),
+    "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage("Categorie"),
     "reorderHelpDescription": MessageLookupByLibrary.simpleMessage(
       "Riordina categorie e servizi trascinandoli: l’ordine sarà lo stesso anche nella prenotazione online. Seleziona se ordinare categorie o servizi.",
     ),
-    "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage("Categorie"),
     "reorderServicesLabel": MessageLookupByLibrary.simpleMessage("Servizi"),
     "reorderTitle": MessageLookupByLibrary.simpleMessage(
       "Modifica ordinamento",

@@ -447,7 +447,8 @@ class _StaffWeekOverviewScreenState
     ); // Moccasin - colore arancione chiaro per eccezioni
     const double chipHeight = 40.0;
     const double chipVGap = 3.0;
-    const double baseRowHeight = chipHeight * 2 + (chipVGap * 3) + 5.0;
+    const double chipTopPadding = 4.0;
+    const double baseRowHeight = chipHeight * 2 + (chipVGap * 3) + 36.0;
     const double dayColumnWidth = 100.0;
     const double rightPadding = 5.0;
     final dividerColor = Colors.transparent; // vertical separators
@@ -504,25 +505,78 @@ class _StaffWeekOverviewScreenState
 
     double rowHeightForStaff(int staffId) {
       int maxRanges = 0;
-      for (final d in days) {
-        final ranges = availability[staffId]?[d.weekday] ?? const <HourRange>[];
-        final exceptions = ref.watch(
-          exceptionsForStaffOnDateProvider((staffId: staffId, date: d)),
-        );
-        final extraUnavailable = exceptions
+      int countSegmentsForDay(
+        List<HourRange> baseRanges,
+        List<AvailabilityException> exceptions,
+      ) {
+        final unavailable = exceptions
             .where(
               (e) =>
                   e.type == AvailabilityExceptionType.unavailable &&
                   e.startTime != null &&
                   e.endTime != null,
             )
+            .map<({int start, int end})>(
+              (e) => (
+                start: e.startTime!.hour * 60 + e.startTime!.minute,
+                end: e.endTime!.hour * 60 + e.endTime!.minute,
+              ),
+            )
+            .toList();
+
+        var baseCount = 0;
+        for (final r in baseRanges) {
+          final baseStart = r.startHour * 60 + r.startMinute;
+          final baseEnd = r.endHour * 60 + r.endMinute;
+          var segments = <({int start, int end})>[
+            (start: baseStart, end: baseEnd),
+          ];
+          for (final u in unavailable) {
+            final next = <({int start, int end})>[];
+            for (final seg in segments) {
+              if (u.end <= seg.start || u.start >= seg.end) {
+                next.add(seg);
+                continue;
+              }
+              if (u.start > seg.start) {
+                final leftEnd = u.start < seg.end ? u.start : seg.end;
+                if (leftEnd > seg.start) {
+                  next.add((start: seg.start, end: leftEnd));
+                }
+              }
+              if (u.end < seg.end) {
+                final rightStart = u.end > seg.start ? u.end : seg.start;
+                if (seg.end > rightStart) {
+                  next.add((start: rightStart, end: seg.end));
+                }
+              }
+            }
+            segments = next;
+            if (segments.isEmpty) break;
+          }
+          baseCount += segments.length;
+        }
+        final exceptionCount = exceptions
+            .where((e) => e.startTime != null && e.endTime != null)
             .length;
-        var count = ranges.length + extraUnavailable;
+        return baseCount + exceptionCount;
+      }
+
+      for (final d in days) {
+        final exceptions = ref.watch(
+          exceptionsForStaffOnDateProvider((staffId: staffId, date: d)),
+        );
+        final baseRanges =
+            baseAvailability[staffId]?[d.weekday] ?? const <HourRange>[];
+        var count = countSegmentsForDay(baseRanges, exceptions);
         if (count == 0 && exceptions.isNotEmpty) count = 1;
         if (count > maxRanges) maxRanges = count;
       }
       if (maxRanges <= 1) return baseRowHeight; // 0 o 1 chip: altezza base
-      final required = maxRanges * chipHeight + (maxRanges - 1) * chipVGap;
+      final required =
+          chipTopPadding +
+          maxRanges * chipHeight +
+          (maxRanges - 1) * chipVGap;
       return required > baseRowHeight ? required : baseRowHeight;
     }
 
@@ -1262,28 +1316,79 @@ class _StaffWeekOverviewScreenState
     }
 
     List<_DisplayRange> mergeRangesForDisplay(
-      List<HourRange> ranges,
+      List<HourRange> baseRanges,
       List<AvailabilityException> exceptions,
       BuildContext context,
-      bool Function(HourRange range) isInBase,
     ) {
       final items = <_DisplayRange>[];
 
-      for (final r in ranges) {
-        final isException = !isInBase(r);
-        items.add(
-          _DisplayRange(
-            startMinutes: r.startHour * 60 + r.startMinute,
-            endMinutes: r.endHour * 60 + r.endMinute,
-            label: r.label(context),
-            isException: isException,
-            hourRange: r,
-          ),
-        );
+      final unavailable = exceptions
+          .where(
+            (e) =>
+                e.type == AvailabilityExceptionType.unavailable &&
+                e.startTime != null &&
+                e.endTime != null,
+          )
+          .map<({int start, int end})>(
+            (e) => (
+              start: e.startTime!.hour * 60 + e.startTime!.minute,
+              end: e.endTime!.hour * 60 + e.endTime!.minute,
+            ),
+          )
+          .toList();
+
+      for (final r in baseRanges) {
+        final baseStart = r.startHour * 60 + r.startMinute;
+        final baseEnd = r.endHour * 60 + r.endMinute;
+        var segments = <({int start, int end})>[
+          (start: baseStart, end: baseEnd),
+        ];
+
+        for (final u in unavailable) {
+          final next = <({int start, int end})>[];
+          for (final seg in segments) {
+            if (u.end <= seg.start || u.start >= seg.end) {
+              next.add(seg);
+              continue;
+            }
+            if (u.start > seg.start) {
+              final leftEnd = u.start < seg.end ? u.start : seg.end;
+              if (leftEnd > seg.start) {
+                next.add((start: seg.start, end: leftEnd));
+              }
+            }
+            if (u.end < seg.end) {
+              final rightStart = u.end > seg.start ? u.end : seg.start;
+              if (seg.end > rightStart) {
+                next.add((start: rightStart, end: seg.end));
+              }
+            }
+          }
+          segments = next;
+          if (segments.isEmpty) break;
+        }
+
+        for (final seg in segments) {
+          final label =
+              '${DtFmt.hm(context, seg.start ~/ 60, seg.start % 60)} - ${DtFmt.hm(context, seg.end ~/ 60, seg.end % 60)}';
+          items.add(
+            _DisplayRange(
+              startMinutes: seg.start,
+              endMinutes: seg.end,
+              label: label,
+              isException: false,
+              hourRange: HourRange(
+                seg.start ~/ 60,
+                seg.start % 60,
+                seg.end ~/ 60,
+                seg.end % 60,
+              ),
+            ),
+          );
+        }
       }
 
       for (final e in exceptions) {
-        if (e.type != AvailabilityExceptionType.unavailable) continue;
         if (e.startTime == null || e.endTime == null) continue;
         final label =
             '${DtFmt.hm(context, e.startTime!.hour, e.startTime!.minute)} - ${DtFmt.hm(context, e.endTime!.hour, e.endTime!.minute)}';
@@ -1293,6 +1398,12 @@ class _StaffWeekOverviewScreenState
             endMinutes: e.endTime!.hour * 60 + e.endTime!.minute,
             label: label,
             isException: true,
+            hourRange: HourRange(
+              e.startTime!.hour,
+              e.startTime!.minute,
+              e.endTime!.hour,
+              e.endTime!.minute,
+            ),
           ),
         );
       }
@@ -1312,19 +1423,14 @@ class _StaffWeekOverviewScreenState
       DateTime date, {
       bool hasException = false,
     }) {
-      // Verifica se un range è presente nella disponibilità base
-      bool isInBase(HourRange range) {
-        return baseRanges.any(
-          (base) =>
-              base.startHour == range.startHour &&
-              base.startMinute == range.startMinute &&
-              base.endHour == range.endHour &&
-              base.endMinute == range.endMinute,
-        );
-      }
+      final displayRanges = mergeRangesForDisplay(
+        baseRanges,
+        exceptions,
+        context,
+      );
 
       // Se non ci sono fasce orarie ma c'è un'eccezione, mostra uno slot vuoto arancione
-      if (ranges.isEmpty) {
+      if (displayRanges.isEmpty) {
         if (hasException) {
           // Slot arancione vuoto per indicare "non lavora" a causa di eccezione
           return Center(
@@ -1363,13 +1469,6 @@ class _StaffWeekOverviewScreenState
         }
         return const SizedBox.shrink();
       }
-
-      final displayRanges = mergeRangesForDisplay(
-        ranges,
-        exceptions,
-        context,
-        isInBase,
-      );
 
       Widget buildChipForRange(_DisplayRange range) {
         final bgColor = range.isException ? chipColorWithException : chipColor;
@@ -1421,6 +1520,7 @@ class _StaffWeekOverviewScreenState
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const SizedBox(height: chipTopPadding),
           for (int i = 0; i < displayRanges.length; i++) ...[
             buildChipForRange(displayRanges[i]),
             if (i < displayRanges.length - 1) SizedBox(height: chipVGap),
@@ -1475,6 +1575,7 @@ class _StaffWeekOverviewScreenState
                 ),
               ],
             ),
+            const SizedBox(height: 12),
             // Body
             Expanded(
               child: SingleChildScrollView(

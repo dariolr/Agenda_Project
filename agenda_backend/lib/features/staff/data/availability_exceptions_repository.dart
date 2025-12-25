@@ -45,38 +45,53 @@ class MockAvailabilityExceptionsRepository
   void _initMockData() {
     // Dati mock di esempio
     final today = DateTime.now();
+    DateTime nextWorkingDay(DateTime from) {
+      var d = from;
+      while (d.weekday == DateTime.sunday) {
+        d = d.add(const Duration(days: 1));
+      }
+      return d;
+    }
 
-    // Eccezione: Dario non lavora domani (ferie)
+    // Eccezione: Dario non lavora domani mattina (dentro orario base)
+    final darioExceptionDate = nextWorkingDay(
+      today.add(const Duration(days: 1)),
+    );
     _exceptions.add(
-      AvailabilityException.allDay(
+      AvailabilityException.timeRange(
         id: _nextId++,
         staffId: 1,
-        date: today.add(const Duration(days: 1)),
+        date: darioExceptionDate,
+        startTime: const TimeOfDay(hour: 9, minute: 0),
+        endTime: const TimeOfDay(hour: 12, minute: 0),
         type: AvailabilityExceptionType.unavailable,
         reasonCode: 'vacation',
       ),
     );
 
-    // Eccezione: Sara lavora sabato prossimo (turno extra)
+    // Eccezione: Sara lavora sabato prossimo nel buco 13:00-14:00 (fuori orario base)
     final nextSaturday = today.add(Duration(days: (6 - today.weekday + 7) % 7));
     _exceptions.add(
       AvailabilityException.timeRange(
         id: _nextId++,
         staffId: 3,
         date: nextSaturday,
-        startTime: const TimeOfDay(hour: 10, minute: 0),
+        startTime: const TimeOfDay(hour: 13, minute: 0),
         endTime: const TimeOfDay(hour: 14, minute: 0),
         type: AvailabilityExceptionType.available,
         reasonCode: 'extra_shift',
       ),
     );
 
-    // Eccezione: Luca visita medica tra 3 giorni (mattina)
+    // Eccezione: Luca visita medica in un giorno lavorativo (dentro orario base)
+    final lucaExceptionDate = nextWorkingDay(
+      today.add(const Duration(days: 3)),
+    );
     _exceptions.add(
       AvailabilityException.timeRange(
         id: _nextId++,
         staffId: 2,
-        date: today.add(const Duration(days: 3)),
+        date: lucaExceptionDate,
         startTime: const TimeOfDay(hour: 9, minute: 0),
         endTime: const TimeOfDay(hour: 12, minute: 0),
         type: AvailabilityExceptionType.unavailable,
