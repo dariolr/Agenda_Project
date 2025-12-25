@@ -449,8 +449,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "removeClient": MessageLookupByLibrary.simpleMessage("Rimuovi cliente"),
     "reorderHelpDescription": MessageLookupByLibrary.simpleMessage(
-      "Riordina categorie e servizi trascinandoli: l’ordine sarà lo stesso anche nella prenotazione online.",
+      "Riordina categorie e servizi trascinandoli: l’ordine sarà lo stesso anche nella prenotazione online. Seleziona se ordinare categorie o servizi.",
     ),
+    "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage("Categorie"),
+    "reorderServicesLabel": MessageLookupByLibrary.simpleMessage("Servizi"),
     "reorderTitle": MessageLookupByLibrary.simpleMessage(
       "Modifica ordinamento",
     ),
@@ -647,7 +649,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Nessun membro in questa sede",
     ),
     "teamReorderHelpDescription": MessageLookupByLibrary.simpleMessage(
-      "Riordina sedi e membri del team trascinandoli. L’ordine sarà lo stesso anche nella sezione agenda.",
+      "Riordina sedi e membri del team trascinandoli. Seleziona se ordinare sedi o team. L’ordine sarà lo stesso anche nella sezione agenda.",
     ),
     "teamSelectAllLocations": MessageLookupByLibrary.simpleMessage(
       "Seleziona tutto",
