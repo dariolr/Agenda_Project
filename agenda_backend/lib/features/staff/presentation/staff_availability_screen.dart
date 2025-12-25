@@ -193,7 +193,10 @@ class _StaffAvailabilityScreenState
     });
   }
 
-  void _switchStaff(int newStaffId) {
+  void _switchStaff(
+    int newStaffId, {
+    bool updateWeeklyState = true,
+  }) {
     final currentId = _selectedStaffId;
     if (currentId == newStaffId) return;
     // Salva lo stato corrente nello staff precedente
@@ -208,10 +211,16 @@ class _StaffAvailabilityScreenState
     final loaded = _staffSelections[newStaffId]!;
     setState(() {
       _selectedStaffId = newStaffId;
-      _weeklySelections = {
-        for (final entry in loaded.entries)
-          entry.key: Set<int>.from(entry.value),
-      };
+      if (updateWeeklyState) {
+        _weeklySelections = {
+          for (final entry in loaded.entries)
+            entry.key: Set<int>.from(entry.value),
+        };
+        _savedWeeklySelections = {
+          for (final entry in loaded.entries)
+            entry.key: Set<int>.from(entry.value),
+        };
+      }
     });
   }
 
@@ -342,7 +351,10 @@ class _StaffAvailabilityScreenState
                   _StaffSelectorDropdown(
                     staffList: staffList,
                     selectedStaffId: _selectedStaffId,
-                    onSelected: _switchStaff,
+                    onSelected: (staffId) => _switchStaff(
+                      staffId,
+                      updateWeeklyState: _tabController.index == 0,
+                    ),
                   ),
                   // Mostra pulsante salva solo nella tab orario settimanale
                   AnimatedBuilder(

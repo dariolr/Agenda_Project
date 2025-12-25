@@ -88,7 +88,6 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
   late TimeOfDay _endTime;
   late AvailabilityExceptionType _type;
   final _reasonController = TextEditingController();
-  bool _isAllDay = false;
   String? _timeError;
   String? _validationError;
   bool _isSaving = false;
@@ -102,9 +101,13 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       _date = DateTime(exc.date.year, exc.date.month, exc.date.day);
       _startDate = _date;
       _endDate = _date;
-      _isAllDay = exc.isAllDay;
-      _startTime = exc.startTime ?? const TimeOfDay(hour: 9, minute: 0);
-      _endTime = exc.endTime ?? const TimeOfDay(hour: 18, minute: 0);
+      if (exc.isAllDay) {
+        _startTime = const TimeOfDay(hour: 0, minute: 0);
+        _endTime = const TimeOfDay(hour: 24, minute: 0);
+      } else {
+        _startTime = exc.startTime ?? const TimeOfDay(hour: 9, minute: 0);
+        _endTime = exc.endTime ?? const TimeOfDay(hour: 18, minute: 0);
+      }
       _type = exc.type;
       _reasonController.text = exc.reason ?? '';
     } else {
@@ -117,7 +120,6 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
         minute: _startTime.minute,
       );
       _type = AvailabilityExceptionType.unavailable;
-      _isAllDay = true; // Default giornata intera per periodi
     }
   }
 
@@ -335,22 +337,80 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
         ],
         const SizedBox(height: 12),
 
-        // Giornata intera switch
+        // Orari
         Row(
           children: [
-            Switch(
-              value: _isAllDay,
-              onChanged: (v) => setState(() {
-                _isAllDay = v;
-                _timeError = null;
-                _validationError = null;
-              }),
+            Expanded(
+              child: LabeledFormField(
+                label: l10n.exceptionStartTime,
+                child: InkWell(
+                  onTap: () => _pickTime(isStart: true),
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                      enabledBorder: _timeError != null
+                          ? OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            )
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(_formatTime(_startTime)),
+                        const Icon(Icons.schedule, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(width: 8),
-            Text(l10n.exceptionAllDay),
+            const SizedBox(width: 12),
+            Expanded(
+              child: LabeledFormField(
+                label: l10n.exceptionEndTime,
+                child: InkWell(
+                  onTap: () => _pickTime(isStart: false),
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                      enabledBorder: _timeError != null
+                          ? OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            )
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(_formatTime(_endTime)),
+                        const Icon(Icons.schedule, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
-        if (_isAllDay && _validationError != null)
+        if (_timeError != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 12),
+            child: Text(
+              _timeError!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        if (_validationError != null)
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 12),
             child: Text(
@@ -362,94 +422,6 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
             ),
           ),
         const SizedBox(height: 12),
-
-        // Orari
-        if (!_isAllDay) ...[
-          Row(
-            children: [
-              Expanded(
-                child: LabeledFormField(
-                  label: l10n.exceptionStartTime,
-                  child: InkWell(
-                    onTap: () => _pickTime(isStart: true),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                        enabledBorder: _timeError != null
-                            ? OutlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                              )
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(_formatTime(_startTime)),
-                          const Icon(Icons.schedule, size: 16),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: LabeledFormField(
-                  label: l10n.exceptionEndTime,
-                  child: InkWell(
-                    onTap: () => _pickTime(isStart: false),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                        enabledBorder: _timeError != null
-                            ? OutlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                              )
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(_formatTime(_endTime)),
-                          const Icon(Icons.schedule, size: 16),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (_timeError != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, left: 12),
-              child: Text(
-                _timeError!,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          if (_validationError != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, left: 12),
-              child: Text(
-                _validationError!,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          const SizedBox(height: 12),
-        ],
 
         // Motivo opzionale
         LabeledFormField(
@@ -699,13 +671,11 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
     final l10n = context.l10n;
     _validationError = null;
 
-    if (!_isAllDay) {
-      final startMinutes = _startTime.hour * 60 + _startTime.minute;
-      final endMinutes = _endTime.hour * 60 + _endTime.minute;
-      if (endMinutes <= startMinutes) {
-        setState(() => _timeError = l10n.exceptionTimeError);
-        return false;
-      }
+    final startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+    if (endMinutes <= startMinutes) {
+      setState(() => _timeError = l10n.exceptionTimeError);
+      return false;
     }
 
     final availabilityByStaff =
@@ -716,12 +686,8 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
 
     final layout = ref.read(layoutConfigProvider);
     final minutesPerSlot = layout.minutesPerSlot;
-    final totalSlots = layout.totalSlots;
 
     Set<int> exceptionSlots() {
-      if (_isAllDay) {
-        return {for (int i = 0; i < totalSlots; i++) i};
-      }
       final startMinutes = _startTime.hour * 60 + _startTime.minute;
       final endMinutes = _endTime.hour * 60 + _endTime.minute;
       final startSlot = startMinutes ~/ minutesPerSlot;
@@ -794,12 +760,10 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
         // Modifica eccezione esistente (solo singolo giorno)
         final updated = widget.initial!.copyWith(
           date: _date,
-          startTime: _isAllDay ? null : _startTime,
-          endTime: _isAllDay ? null : _endTime,
+          startTime: _startTime,
+          endTime: _endTime,
           type: _type,
           reason: reason.isEmpty ? null : reason,
-          clearStartTime: _isAllDay,
-          clearEndTime: _isAllDay,
           clearReason: reason.isEmpty,
         );
         await notifier.updateException(updated);
@@ -810,8 +774,8 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
           await notifier.addException(
             staffId: widget.staffId,
             date: _date,
-            startTime: _isAllDay ? null : _startTime,
-            endTime: _isAllDay ? null : _endTime,
+            startTime: _startTime,
+            endTime: _endTime,
             type: _type,
             reason: reason.isEmpty ? null : reason,
           );
@@ -833,8 +797,8 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
             staffId: widget.staffId,
             startDate: startDate,
             endDate: endDate,
-            startTime: _isAllDay ? null : _startTime,
-            endTime: _isAllDay ? null : _endTime,
+            startTime: _startTime,
+            endTime: _endTime,
             type: _type,
             reason: reason.isEmpty ? null : reason,
           );
@@ -1016,10 +980,7 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
                 context.l10n.exceptionSelectTime,
                 style: theme.textTheme.titleMedium,
               ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(_selected),
-                child: Text(context.l10n.actionConfirm),
-              ),
+              const SizedBox.shrink(),
             ],
           ),
         ),
@@ -1041,7 +1002,8 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
               if (time == null) {
                 return const SizedBox.shrink();
               }
-              final isSelected = index == _scrollToIndex;
+              final isSelected =
+                  time.hour == _selected.hour && time.minute == _selected.minute;
               final label = time.hour == 24
                   ? '24:00'
                   : '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
@@ -1052,7 +1014,7 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
                     : colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
                 child: InkWell(
-                  onTap: () => setState(() => _selected = time),
+                  onTap: () => Navigator.of(context).pop(time),
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: Text(
