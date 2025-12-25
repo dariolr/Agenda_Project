@@ -1,6 +1,7 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/extensions.dart';
 import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
+import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/widgets/desktop_popup_container.dart';
@@ -8,16 +9,25 @@ import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Selector per filtrare lo staff visualizzato nell'agenda.
 /// [isCompact] = true: solo icona (mobile/tablet)
 /// [isCompact] = false: pill con icona + label + freccia (desktop)
 class AgendaStaffFilterSelector extends ConsumerStatefulWidget {
-  const AgendaStaffFilterSelector({super.key, this.isCompact = true});
+  const AgendaStaffFilterSelector({
+    super.key,
+    this.isCompact = true,
+    this.compactBuilder,
+  });
 
   final bool isCompact;
+  final Widget Function(
+    BuildContext context,
+    VoidCallback onPressed,
+    String tooltip,
+  )?
+  compactBuilder;
 
   @override
   ConsumerState<AgendaStaffFilterSelector> createState() =>
@@ -99,11 +109,19 @@ class _AgendaStaffFilterSelectorState
     final l10n = context.l10n;
     final formFactor = ref.watch(formFactorProvider);
     if (widget.isCompact) {
+      Future<void> onPressed() => _showMobileSheet(context);
+      if (widget.compactBuilder != null) {
+        return widget.compactBuilder!(
+          context,
+          onPressed,
+          l10n.staffFilterTooltip,
+        );
+      }
       return IconButton(
         tooltip: l10n.staffFilterTooltip,
         icon: const Icon(Icons.people_outline),
         iconSize: formFactor == AppFormFactor.mobile ? 22 : 33,
-        onPressed: () => _showMobileSheet(context),
+        onPressed: onPressed,
       );
     }
 
