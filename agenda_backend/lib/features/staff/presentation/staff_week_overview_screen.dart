@@ -14,6 +14,7 @@ import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agen
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/presentation/staff_availability_screen.dart';
+import 'package:agenda_backend/features/staff/presentation/dialogs/add_exception_dialog.dart';
 import 'package:agenda_backend/features/staff/providers/availability_exceptions_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:agenda_backend/features/staff/widgets/staff_top_controls.dart';
@@ -46,6 +47,7 @@ class _DisplayRange {
     required this.endMinutes,
     required this.label,
     required this.isException,
+    this.exceptionType,
     this.hourRange,
   });
 
@@ -53,7 +55,244 @@ class _DisplayRange {
   final int endMinutes;
   final String label;
   final bool isException;
+  final AvailabilityExceptionType? exceptionType;
   final HourRange? hourRange;
+}
+
+class _DashedRoundedRectPainter extends CustomPainter {
+  _DashedRoundedRectPainter({
+    required this.color,
+    required this.radius,
+  });
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const strokeWidth = 0.6;
+    const dashLength = 4.0;
+    const gapLength = 3.0;
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    final path = Path()..addRRect(rrect);
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = (distance + dashLength).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(distance, next), paint);
+        distance += dashLength + gapLength;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRoundedRectPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.radius != radius;
+  }
+}
+
+List<_DisplayRange> _mergeRangesForDisplay(
+  List<HourRange> baseRanges,
+  List<AvailabilityException> exceptions,
+  BuildContext context, {
+  bool applyUnavailableSplit = true,
+  bool subtractAvailableFromBase = false,
+}) {
+  final items = <_DisplayRange>[];
+
+  final availableToSubtract = subtractAvailableFromBase
+      ? exceptions
+          .where(
+            (e) =>
+                e.type == AvailabilityExceptionType.available &&
+                e.startTime != null &&
+                e.endTime != null,
+          )
+          .map<({int start, int end})>(
+            (e) => (
+              start: e.startTime!.hour * 60 + e.startTime!.minute,
+              end: e.endTime!.hour * 60 + e.endTime!.minute,
+            ),
+          )
+          .toList()
+      : const <({int start, int end})>[];
+
+  final unavailable = applyUnavailableSplit
+      ? exceptions
+          .where(
+            (e) =>
+                e.type == AvailabilityExceptionType.unavailable &&
+                e.startTime != null &&
+                e.endTime != null,
+          )
+          .map<({int start, int end})>(
+            (e) => (
+              start: e.startTime!.hour * 60 + e.startTime!.minute,
+              end: e.endTime!.hour * 60 + e.endTime!.minute,
+            ),
+          )
+          .toList()
+      : const <({int start, int end})>[];
+
+  for (final r in baseRanges) {
+    final baseStart = r.startHour * 60 + r.startMinute;
+    final baseEnd = r.endHour * 60 + r.endMinute;
+    var segments = <({int start, int end})>[
+      (start: baseStart, end: baseEnd),
+    ];
+
+    if (availableToSubtract.isNotEmpty) {
+      for (final a in availableToSubtract) {
+        final next = <({int start, int end})>[];
+        for (final seg in segments) {
+          if (a.end <= seg.start || a.start >= seg.end) {
+            next.add(seg);
+            continue;
+          }
+          if (a.start > seg.start) {
+            final leftEnd = a.start < seg.end ? a.start : seg.end;
+            if (leftEnd > seg.start) {
+              next.add((start: seg.start, end: leftEnd));
+            }
+          }
+          if (a.end < seg.end) {
+            final rightStart = a.end > seg.start ? a.end : seg.start;
+            if (seg.end > rightStart) {
+              next.add((start: rightStart, end: seg.end));
+            }
+          }
+        }
+        segments = next;
+        if (segments.isEmpty) break;
+      }
+    }
+
+    if (unavailable.isNotEmpty) {
+      for (final u in unavailable) {
+        final next = <({int start, int end})>[];
+        for (final seg in segments) {
+          if (u.end <= seg.start || u.start >= seg.end) {
+            next.add(seg);
+            continue;
+          }
+          if (u.start > seg.start) {
+            final leftEnd = u.start < seg.end ? u.start : seg.end;
+            if (leftEnd > seg.start) {
+              next.add((start: seg.start, end: leftEnd));
+            }
+          }
+          if (u.end < seg.end) {
+            final rightStart = u.end > seg.start ? u.end : seg.start;
+            if (seg.end > rightStart) {
+              next.add((start: rightStart, end: seg.end));
+            }
+          }
+        }
+        segments = next;
+        if (segments.isEmpty) break;
+      }
+    }
+
+    for (final seg in segments) {
+      final isAllDay = seg.start == 0 && seg.end == 24 * 60;
+      final label = isAllDay
+          ? context.l10n.exceptionAllDay
+          : '${DtFmt.hm(context, seg.start ~/ 60, seg.start % 60)} - ${DtFmt.hm(context, seg.end ~/ 60, seg.end % 60)}';
+      items.add(
+        _DisplayRange(
+          startMinutes: seg.start,
+          endMinutes: seg.end,
+          label: label,
+          isException: false,
+          exceptionType: null,
+          hourRange: HourRange(
+            seg.start ~/ 60,
+            seg.start % 60,
+            seg.end ~/ 60,
+            seg.end % 60,
+          ),
+        ),
+      );
+    }
+  }
+
+  final allDayExceptions = exceptions.where(
+    (e) => e.startTime == null && e.endTime == null,
+  );
+  for (final e in allDayExceptions) {
+    items.add(
+      _DisplayRange(
+        startMinutes: 0,
+        endMinutes: 24 * 60,
+        label: context.l10n.exceptionAllDay,
+        isException: true,
+        exceptionType: e.type,
+        hourRange: const HourRange(0, 0, 24, 0),
+      ),
+    );
+  }
+
+  for (final e in exceptions) {
+    if (e.startTime == null || e.endTime == null) continue;
+    final label =
+        '${DtFmt.hm(context, e.startTime!.hour, e.startTime!.minute)} - ${DtFmt.hm(context, e.endTime!.hour, e.endTime!.minute)}';
+    items.add(
+      _DisplayRange(
+        startMinutes: e.startTime!.hour * 60 + e.startTime!.minute,
+        endMinutes: e.endTime!.hour * 60 + e.endTime!.minute,
+        label: label,
+        isException: true,
+        exceptionType: e.type,
+        hourRange: HourRange(
+          e.startTime!.hour,
+          e.startTime!.minute,
+          e.endTime!.hour,
+          e.endTime!.minute,
+        ),
+      ),
+    );
+  }
+
+  // De-duplicate exact same ranges, prefer exception styling if present.
+  final Map<String, _DisplayRange> unique = {};
+  for (final item in items) {
+    final key = '${item.startMinutes}-${item.endMinutes}';
+    final existing = unique[key];
+    if (existing == null) {
+      unique[key] = item;
+      continue;
+    }
+    if (!existing.isException && item.isException) {
+      unique[key] = item;
+    }
+  }
+
+  final result = unique.values.toList()
+    ..sort((a, b) => a.startMinutes.compareTo(b.startMinutes));
+  return result;
+}
+
+int _countSegmentsForDay(
+  BuildContext context,
+  List<HourRange> ranges,
+  List<AvailabilityException> exceptions,
+) {
+  final displayRanges = _mergeRangesForDisplay(
+    ranges,
+    exceptions,
+    context,
+    applyUnavailableSplit: false,
+    subtractAvailableFromBase: true,
+  );
+  // +1 per il chip "aggiungi eccezione"
+  return displayRanges.length + 1;
 }
 
 /// Mock provider: staffId -> day(1..7) -> ranges
@@ -387,8 +626,6 @@ class _StaffWeekOverviewScreenState
     final staffList = ref.watch(staffForStaffSectionProvider);
     // Use real availability coming from the editor provider, mapped to overview ranges
     final availability = ref.watch(weeklyStaffAvailabilityFromEditorProvider);
-    // Base availability (without exceptions) for comparison
-    final baseAvailability = ref.watch(weeklyStaffBaseAvailabilityProvider);
     // Track which staff/day combinations have exceptions applied
     final exceptionDays = ref.watch(weeklyExceptionDaysProvider);
     final formFactor = ref.watch(formFactorProvider);
@@ -445,10 +682,14 @@ class _StaffWeekOverviewScreenState
     const chipColorWithException = Color(
       0xFFFFE4B5,
     ); // Moccasin - colore arancione chiaro per eccezioni
+    const chipColorWithAvailableException = Color(0xFFDFF5D8);
+    const chipTextColorWithAvailableException = Color(0xFF0F6A36);
+    const chipDisabledTextColor = Color(0xFF6B6B6B);
     const double chipHeight = 40.0;
     const double chipVGap = 3.0;
     const double chipTopPadding = 4.0;
     const double baseRowHeight = chipHeight * 2 + (chipVGap * 3) + 36.0;
+    const double staffRowGap = 24.0;
     const double dayColumnWidth = 100.0;
     const double rightPadding = 5.0;
     final dividerColor = Colors.transparent; // vertical separators
@@ -505,78 +746,19 @@ class _StaffWeekOverviewScreenState
 
     double rowHeightForStaff(int staffId) {
       int maxRanges = 0;
-      int countSegmentsForDay(
-        List<HourRange> baseRanges,
-        List<AvailabilityException> exceptions,
-      ) {
-        final unavailable = exceptions
-            .where(
-              (e) =>
-                  e.type == AvailabilityExceptionType.unavailable &&
-                  e.startTime != null &&
-                  e.endTime != null,
-            )
-            .map<({int start, int end})>(
-              (e) => (
-                start: e.startTime!.hour * 60 + e.startTime!.minute,
-                end: e.endTime!.hour * 60 + e.endTime!.minute,
-              ),
-            )
-            .toList();
-
-        var baseCount = 0;
-        for (final r in baseRanges) {
-          final baseStart = r.startHour * 60 + r.startMinute;
-          final baseEnd = r.endHour * 60 + r.endMinute;
-          var segments = <({int start, int end})>[
-            (start: baseStart, end: baseEnd),
-          ];
-          for (final u in unavailable) {
-            final next = <({int start, int end})>[];
-            for (final seg in segments) {
-              if (u.end <= seg.start || u.start >= seg.end) {
-                next.add(seg);
-                continue;
-              }
-              if (u.start > seg.start) {
-                final leftEnd = u.start < seg.end ? u.start : seg.end;
-                if (leftEnd > seg.start) {
-                  next.add((start: seg.start, end: leftEnd));
-                }
-              }
-              if (u.end < seg.end) {
-                final rightStart = u.end > seg.start ? u.end : seg.start;
-                if (seg.end > rightStart) {
-                  next.add((start: rightStart, end: seg.end));
-                }
-              }
-            }
-            segments = next;
-            if (segments.isEmpty) break;
-          }
-          baseCount += segments.length;
-        }
-        final exceptionCount = exceptions
-            .where((e) => e.startTime != null && e.endTime != null)
-            .length;
-        return baseCount + exceptionCount;
-      }
-
       for (final d in days) {
         final exceptions = ref.watch(
           exceptionsForStaffOnDateProvider((staffId: staffId, date: d)),
         );
-        final baseRanges =
-            baseAvailability[staffId]?[d.weekday] ?? const <HourRange>[];
-        var count = countSegmentsForDay(baseRanges, exceptions);
-        if (count == 0 && exceptions.isNotEmpty) count = 1;
+        final dayRanges =
+            availability[staffId]?[d.weekday] ?? const <HourRange>[];
+        var count = _countSegmentsForDay(context, dayRanges, exceptions);
+        if (count == 0) count = 1;
         if (count > maxRanges) maxRanges = count;
       }
       if (maxRanges <= 1) return baseRowHeight; // 0 o 1 chip: altezza base
       final required =
-          chipTopPadding +
-          maxRanges * chipHeight +
-          (maxRanges - 1) * chipVGap;
+          chipTopPadding + maxRanges * chipHeight + (maxRanges - 1) * chipVGap;
       return required > baseRowHeight ? required : baseRowHeight;
     }
 
@@ -795,6 +977,16 @@ class _StaffWeekOverviewScreenState
       final staffName = staff.displayName;
 
       // Trova tutte le eccezioni per questa data
+      AvailabilityException? findAllDayException() {
+        final exceptions = ref.read(
+          exceptionsForStaffOnDateProvider((staffId: staffId, date: date)),
+        );
+        for (final exc in exceptions) {
+          if (exc.isAllDay) return exc;
+        }
+        return null;
+      }
+
       Future<void> deleteAllDayException() async {
         final exceptions = ref.read(
           exceptionsForStaffOnDateProvider((staffId: staffId, date: date)),
@@ -812,6 +1004,26 @@ class _StaffWeekOverviewScreenState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            ListTile(
+              leading: const Icon(Icons.edit_calendar_outlined),
+              title: Text(l10n.exceptionEditShift),
+              subtitle: Text(
+                l10n.exceptionEditShiftDesc,
+                style: Theme.of(ctx).textTheme.bodySmall,
+              ),
+              onTap: () async {
+                final exc = findAllDayException();
+                if (exc == null) return;
+                Navigator.pop(ctx);
+                await showAddExceptionDialog(
+                  context,
+                  ref,
+                  staffId: staffId,
+                  initial: exc,
+                );
+              },
+            ),
+            const Divider(height: 1),
             ListTile(
               leading: Icon(
                 Icons.restore_outlined,
@@ -1060,8 +1272,14 @@ class _StaffWeekOverviewScreenState
             date: specificDate,
           )),
         );
+        final isAllDayRange =
+            range.startHour == 0 &&
+            range.startMinute == 0 &&
+            range.endHour == 24 &&
+            range.endMinute == 0;
         // Cerca l'eccezione che corrisponde a questo range orario
         for (final exc in exceptions) {
+          if (isAllDayRange && exc.isAllDay) return exc;
           if (exc.startTime != null &&
               exc.endTime != null &&
               exc.startTime!.hour == range.startHour &&
@@ -1088,6 +1306,16 @@ class _StaffWeekOverviewScreenState
       Future<void> editException() async {
         final exc = findMatchingException();
         if (exc == null) return;
+
+        if (exc.isAllDay) {
+          await showAddExceptionDialog(
+            context,
+            ref,
+            staffId: staffId,
+            initial: exc,
+          );
+          return;
+        }
 
         final result = await _showEditShiftDialog(
           context: context,
@@ -1315,169 +1543,150 @@ class _StaffWeekOverviewScreenState
       }
     }
 
-    List<_DisplayRange> mergeRangesForDisplay(
-      List<HourRange> baseRanges,
-      List<AvailabilityException> exceptions,
-      BuildContext context,
-    ) {
-      final items = <_DisplayRange>[];
-
-      final unavailable = exceptions
-          .where(
-            (e) =>
-                e.type == AvailabilityExceptionType.unavailable &&
-                e.startTime != null &&
-                e.endTime != null,
-          )
-          .map<({int start, int end})>(
-            (e) => (
-              start: e.startTime!.hour * 60 + e.startTime!.minute,
-              end: e.endTime!.hour * 60 + e.endTime!.minute,
-            ),
-          )
-          .toList();
-
-      for (final r in baseRanges) {
-        final baseStart = r.startHour * 60 + r.startMinute;
-        final baseEnd = r.endHour * 60 + r.endMinute;
-        var segments = <({int start, int end})>[
-          (start: baseStart, end: baseEnd),
-        ];
-
-        for (final u in unavailable) {
-          final next = <({int start, int end})>[];
-          for (final seg in segments) {
-            if (u.end <= seg.start || u.start >= seg.end) {
-              next.add(seg);
-              continue;
-            }
-            if (u.start > seg.start) {
-              final leftEnd = u.start < seg.end ? u.start : seg.end;
-              if (leftEnd > seg.start) {
-                next.add((start: seg.start, end: leftEnd));
-              }
-            }
-            if (u.end < seg.end) {
-              final rightStart = u.end > seg.start ? u.end : seg.start;
-              if (seg.end > rightStart) {
-                next.add((start: rightStart, end: seg.end));
-              }
-            }
-          }
-          segments = next;
-          if (segments.isEmpty) break;
-        }
-
-        for (final seg in segments) {
-          final label =
-              '${DtFmt.hm(context, seg.start ~/ 60, seg.start % 60)} - ${DtFmt.hm(context, seg.end ~/ 60, seg.end % 60)}';
-          items.add(
-            _DisplayRange(
-              startMinutes: seg.start,
-              endMinutes: seg.end,
-              label: label,
-              isException: false,
-              hourRange: HourRange(
-                seg.start ~/ 60,
-                seg.start % 60,
-                seg.end ~/ 60,
-                seg.end % 60,
-              ),
-            ),
-          );
-        }
-      }
-
-      for (final e in exceptions) {
-        if (e.startTime == null || e.endTime == null) continue;
-        final label =
-            '${DtFmt.hm(context, e.startTime!.hour, e.startTime!.minute)} - ${DtFmt.hm(context, e.endTime!.hour, e.endTime!.minute)}';
-        items.add(
-          _DisplayRange(
-            startMinutes: e.startTime!.hour * 60 + e.startTime!.minute,
-            endMinutes: e.endTime!.hour * 60 + e.endTime!.minute,
-            label: label,
-            isException: true,
-            hourRange: HourRange(
-              e.startTime!.hour,
-              e.startTime!.minute,
-              e.endTime!.hour,
-              e.endTime!.minute,
-            ),
-          ),
-        );
-      }
-
-      items.sort((a, b) => a.startMinutes.compareTo(b.startMinutes));
-      return items;
-    }
-
     // _DisplayRange è definita a livello di file per poter essere usata nel sort.
 
     Widget buildDayCell(
       List<HourRange> ranges,
-      List<HourRange> baseRanges,
       List<AvailabilityException> exceptions,
       int staffId,
       int weekday,
       DateTime date, {
       bool hasException = false,
     }) {
-      final displayRanges = mergeRangesForDisplay(
-        baseRanges,
+      final displayRanges = _mergeRangesForDisplay(
+        ranges,
         exceptions,
         context,
+        applyUnavailableSplit: false,
+        subtractAvailableFromBase: true,
+      );
+      final hasAllDayAvailable = exceptions.any(
+        (e) =>
+            e.type == AvailabilityExceptionType.available &&
+            e.startTime == null &&
+            e.endTime == null,
       );
 
-      // Se non ci sono fasce orarie ma c'è un'eccezione, mostra uno slot vuoto arancione
-      if (displayRanges.isEmpty) {
-        if (hasException) {
-          // Slot arancione vuoto per indicare "non lavora" a causa di eccezione
-          return Center(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(6),
-                onTap: () {
-                  // Mostra menu per eccezione "tutto il giorno"
-                  showAllDayExceptionMenu(staffId, weekday, date);
-                },
-                child: Container(
-                  height: chipHeight,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: chipColorWithException,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: AgendaTheme.appointmentBorder,
-                      width: 0.6,
+      Widget buildAllDayChip() {
+        final bgColor = hasAllDayAvailable
+            ? chipColorWithAvailableException
+            : chipColorWithException.withOpacity(0.45);
+        final textColor = hasAllDayAvailable
+            ? chipTextColorWithAvailableException
+            : chipDisabledTextColor.withOpacity(0.7);
+        final borderRadius = BorderRadius.circular(6);
+        final borderColor = AgendaTheme.appointmentBorder.withOpacity(0.4);
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: () {
+              // Mostra menu per eccezione "tutto il giorno"
+              showAllDayExceptionMenu(staffId, weekday, date);
+            },
+            child: CustomPaint(
+              painter: hasAllDayAvailable
+                  ? null
+                  : _DashedRoundedRectPainter(
+                      color: borderColor,
+                      radius: 6,
                     ),
-                  ),
-                  child: Text(
-                    '—',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
-                    ),
+              child: Container(
+                height: chipHeight,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: borderRadius,
+                  border: hasAllDayAvailable
+                      ? Border.all(
+                          color: AgendaTheme.appointmentBorder,
+                          width: 0.6,
+                        )
+                      : null,
+                ),
+                child: Text(
+                  context.l10n.exceptionAllDay,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
                   ),
                 ),
               ),
             ),
-          );
-        }
-        return const SizedBox.shrink();
+          ),
+        );
       }
 
       Widget buildChipForRange(_DisplayRange range) {
-        final bgColor = range.isException ? chipColorWithException : chipColor;
+        final isAvailableException =
+            range.exceptionType == AvailabilityExceptionType.available;
+        final isUnavailableException =
+            range.exceptionType == AvailabilityExceptionType.unavailable;
+        final bgColor = range.isException
+            ? (isAvailableException
+                  ? chipColorWithAvailableException
+                  : chipColorWithException.withOpacity(0.45))
+            : chipColor;
+        final textColor = range.isException
+            ? (isAvailableException
+                  ? chipTextColorWithAvailableException
+                  : chipDisabledTextColor.withOpacity(0.7))
+            : Colors.black87;
+        final borderRadius = BorderRadius.circular(6);
+        final borderColor = AgendaTheme.appointmentBorder.withOpacity(0.4);
         return Material(
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(6),
             onTap: () {
               if (range.hourRange != null) {
+                final isAllDayRange =
+                    range.hourRange!.startHour == 0 &&
+                    range.hourRange!.startMinute == 0 &&
+                    range.hourRange!.endHour == 24 &&
+                    range.hourRange!.endMinute == 0;
+                if (range.isException && isAllDayRange) {
+                  AvailabilityException? exc;
+                  for (final e in exceptions) {
+                    if (e.isAllDay) {
+                      exc = e;
+                      break;
+                    }
+                  }
+                  if (exc != null) {
+                    showAddExceptionDialog(
+                      context,
+                      ref,
+                      staffId: staffId,
+                      initial: exc,
+                    );
+                    return;
+                  }
+                }
+                if (range.isException && !isAllDayRange) {
+                  AvailabilityException? exc;
+                  for (final e in exceptions) {
+                    if (e.startTime == null || e.endTime == null) continue;
+                    if (e.startTime!.hour == range.hourRange!.startHour &&
+                        e.startTime!.minute == range.hourRange!.startMinute &&
+                        e.endTime!.hour == range.hourRange!.endHour &&
+                        e.endTime!.minute == range.hourRange!.endMinute) {
+                      exc = e;
+                      break;
+                    }
+                  }
+                  if (exc != null) {
+                    showAddExceptionDialog(
+                      context,
+                      ref,
+                      staffId: staffId,
+                      initial: exc,
+                    );
+                    return;
+                  }
+                }
                 showShiftOptionsMenu(
                   staffId,
                   weekday,
@@ -1488,27 +1697,32 @@ class _StaffWeekOverviewScreenState
                 );
               }
             },
-            child: Container(
-              height: chipHeight,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: AgendaTheme.appointmentBorder,
-                  width: 0.6,
+            child: CustomPaint(
+              painter: isUnavailableException
+                  ? _DashedRoundedRectPainter(color: borderColor, radius: 6)
+                  : null,
+              child: Container(
+                height: chipHeight,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: borderRadius,
+                  border: isUnavailableException
+                      ? null
+                      : Border.all(
+                          color: AgendaTheme.appointmentBorder,
+                          width: 0.6,
+                        ),
                 ),
-              ),
-              child: Text(
-                range.label,
-                maxLines: 1,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: range.isException
-                      ? const Color(0xFF8A4D00)
-                      : Colors.black87,
+                child: Text(
+                  range.label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
                 ),
               ),
             ),
@@ -1521,10 +1735,46 @@ class _StaffWeekOverviewScreenState
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: chipTopPadding),
+          if (displayRanges.isEmpty && hasException) ...[
+            buildAllDayChip(),
+            SizedBox(height: chipVGap),
+          ],
           for (int i = 0; i < displayRanges.length; i++) ...[
             buildChipForRange(displayRanges[i]),
-            if (i < displayRanges.length - 1) SizedBox(height: chipVGap),
+            SizedBox(height: chipVGap),
           ],
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(6),
+              onTap: () {
+                showAddExceptionDialog(
+                  context,
+                  ref,
+                  staffId: staffId,
+                  date: date,
+                );
+              },
+              child: Container(
+                height: chipHeight,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: AgendaTheme.appointmentBorder.withOpacity(0.6),
+                    width: 0.6,
+                  ),
+                ),
+                child: Icon(
+                  Icons.add,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
         ],
       );
     }
@@ -1588,16 +1838,18 @@ class _StaffWeekOverviewScreenState
                       width: staffColWidth,
                       child: Column(
                         children: [
-                          for (final s in staffList) ...[
+                          for (int i = 0; i < staffList.length; i++) ...[
                             Container(
-                              height: rowHeightForStaff(s.id),
+                              height: rowHeightForStaff(staffList[i].id),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
                               ),
                               alignment: Alignment.centerLeft,
-                              child: buildStaffHeaderCell(s.id),
+                              child: buildStaffHeaderCell(staffList[i].id),
                             ),
                             divider,
+                            if (i < staffList.length - 1)
+                              const SizedBox(height: staffRowGap),
                           ],
                         ],
                       ),
@@ -1607,9 +1859,13 @@ class _StaffWeekOverviewScreenState
                       width: 8,
                       child: Column(
                         children: [
-                          for (final s in staffList) ...[
-                            SizedBox(height: rowHeightForStaff(s.id)),
+                          for (int i = 0; i < staffList.length; i++) ...[
+                            SizedBox(
+                              height: rowHeightForStaff(staffList[i].id),
+                            ),
                             divider,
+                            if (i < staffList.length - 1)
+                              const SizedBox(height: staffRowGap),
                           ],
                         ],
                       ),
@@ -1622,30 +1878,30 @@ class _StaffWeekOverviewScreenState
                         scrollDirection: Axis.horizontal,
                         child: Column(
                           children: [
-                            for (final s in staffList) ...[
+                            for (int i = 0; i < staffList.length; i++) ...[
                               // Row of day cells + vertical gaps
                               Row(
                                 children: [
                                   for (final d in days) ...[
                                     SizedBox(
                                       width: dayColumnWidth,
-                                      height: rowHeightForStaff(s.id),
+                                      height: rowHeightForStaff(
+                                        staffList[i].id,
+                                      ),
                                       child: buildDayCell(
-                                        (availability[s.id]?[d.weekday]) ??
-                                            const <HourRange>[],
-                                        (baseAvailability[s.id]?[d.weekday]) ??
+                                        (availability[staffList[i].id]?[d.weekday]) ??
                                             const <HourRange>[],
                                         ref.watch(
                                           exceptionsForStaffOnDateProvider((
-                                            staffId: s.id,
+                                            staffId: staffList[i].id,
                                             date: d,
                                           )),
                                         ),
-                                        s.id,
+                                        staffList[i].id,
                                         d.weekday,
                                         d,
                                         hasException:
-                                            exceptionDays[s.id]?.contains(
+                                            exceptionDays[staffList[i].id]?.contains(
                                               d.weekday,
                                             ) ??
                                             false,
@@ -1654,12 +1910,16 @@ class _StaffWeekOverviewScreenState
                                     if (d != days.last)
                                       SizedBox(
                                         width: 8,
-                                        height: rowHeightForStaff(s.id),
+                                        height: rowHeightForStaff(
+                                          staffList[i].id,
+                                        ),
                                       ),
                                   ],
                                   SizedBox(
                                     width: rightPadding,
-                                    height: rowHeightForStaff(s.id),
+                                    height: rowHeightForStaff(
+                                      staffList[i].id,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1676,6 +1936,8 @@ class _StaffWeekOverviewScreenState
                                   );
                                 },
                               ),
+                              if (i < staffList.length - 1)
+                                const SizedBox(height: staffRowGap),
                             ],
                           ],
                         ),
