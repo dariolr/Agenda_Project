@@ -4,6 +4,8 @@ import 'package:agenda_backend/core/widgets/desktop_popup_container.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
+import 'app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A dropdown item with a value and display widget.
@@ -256,7 +258,7 @@ class _MobileSheetContent<T> extends StatelessWidget {
               ),
             ),
           ),
-          Divider(height: 1, color: Colors.grey.withOpacity(0.35)),
+          const AppBottomSheetDivider(),
         ],
         ...items.map((item) {
           final isSelected = item.value == selectedValue;
@@ -336,7 +338,7 @@ class _DesktopDropdownContent<T> extends StatelessWidget {
               ),
             ),
           ),
-          Divider(height: 1, color: Colors.grey.withOpacity(0.35)),
+          const AppBottomSheetDivider(),
         ],
         Flexible(
           child: SingleChildScrollView(

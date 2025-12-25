@@ -9,6 +9,7 @@ import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../providers/service_categories_provider.dart';
@@ -180,39 +181,44 @@ Future<void> showCategoryDialog(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(ctx).viewInsets.bottom,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Text(
-                              title,
-                              style: Theme.of(ctx).textTheme.titleLarge,
-                            ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  title,
+                                  style: Theme.of(ctx).textTheme.titleLarge,
+                                ),
+                              ),
+                              content,
+                              const SizedBox(height: 24),
+                              const SizedBox(height: AppSpacing.formRowSpacing),
+                            ],
                           ),
-                          content,
-                          const SizedBox(height: 24),
-                          const SizedBox(height: AppSpacing.formRowSpacing),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                  const Divider(
-                    height: 1,
-                    thickness: 0.5,
-                    color: Color(0x1F000000),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Wrap(
+                ),
+                const AppBottomSheetDivider(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
                         alignment: WrapAlignment.end,
                         spacing: 8,
                         runSpacing: 8,
@@ -237,7 +243,7 @@ Future<void> showCategoryDialog(
       context: context,
       builder: (_) => builder,
       useRootNavigator: true,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      padding: EdgeInsets.zero,
     );
   }
 }

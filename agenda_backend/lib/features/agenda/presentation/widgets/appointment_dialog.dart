@@ -12,6 +12,7 @@ import '../../../../core/models/appointment.dart';
 import '../../../../core/models/service_variant.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/app_dividers.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
@@ -500,7 +501,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               showAppointmentWarning,
               l10n.bookingUnavailableTimeWarningAppointment,
             ),
-            const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
+            const AppBottomSheetDivider(),
             Padding(
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
@@ -1592,7 +1593,7 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
               ],
             ),
           ),
-          const Divider(height: 1),
+          const AppBottomSheetDivider(),
           // Quick actions: Create new client / No client
           ListTile(
             leading: StaffCircleAvatar(
@@ -1631,7 +1632,7 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
               Navigator.of(context).pop(const _ClientItem(-1, ''));
             },
           ),
-          const Divider(height: 1),
+          const AppBottomSheetDivider(),
           // Client list
           Expanded(
             child: _filteredClients.isEmpty

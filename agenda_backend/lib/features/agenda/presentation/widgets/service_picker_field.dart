@@ -6,6 +6,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
+import '../../../../core/widgets/app_dividers.dart';
 
 /// A form field for selecting a service, with services grouped by category.
 ///
@@ -270,7 +271,7 @@ class _ServicePickerContent extends StatelessWidget {
             ),
           ),
         ),
-        const Divider(height: 1),
+        const AppBottomSheetDivider(),
         // Service list
         Expanded(
           child: ListView.builder(

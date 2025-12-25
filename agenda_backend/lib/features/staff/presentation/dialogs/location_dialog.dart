@@ -6,6 +6,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/location.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/app_dividers.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../../agenda/providers/location_providers.dart';
 
@@ -176,11 +177,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                     ),
                   ),
                 ),
-                const Divider(
-                  height: 1,
-                  thickness: 0.5,
-                  color: Color(0x1F000000),
-                ),
+                const AppBottomSheetDivider(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
                   child: Align(

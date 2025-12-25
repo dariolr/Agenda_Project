@@ -9,6 +9,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/availability_exception.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../../core/widgets/app_dividers.dart';
 import '../../../agenda/providers/layout_config_provider.dart';
 import '../../providers/availability_exceptions_provider.dart';
 
@@ -531,11 +532,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
                     ),
                   ),
                 ),
-                const Divider(
-                  height: 1,
-                  thickness: 0.5,
-                  color: Color(0x1F000000),
-                ),
+                const AppBottomSheetDivider(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
                   child: Align(
@@ -906,7 +903,7 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
             ],
           ),
         ),
-        const Divider(height: 1),
+        const AppBottomSheetDivider(),
         Expanded(
           child: GridView.builder(
             controller: _scrollController,
