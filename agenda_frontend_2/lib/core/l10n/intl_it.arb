@@ -1,0 +1,184 @@
+{
+  "@@locale": "it",
+  "appTitle": "Prenota Online",
+  "actionBack": "Indietro",
+  "actionNext": "Avanti",
+  "actionConfirm": "Conferma",
+  "actionCancel": "Annulla",
+  "actionClose": "Chiudi",
+  "actionRetry": "Riprova",
+  "actionLogin": "Accedi",
+  "actionRegister": "Registrati",
+  "actionLogout": "Esci",
+  
+  "errorTitle": "Errore",
+  "errorGeneric": "Si è verificato un errore",
+  "errorNotFound": "Pagina non trovata: {path}",
+  "@errorNotFound": {
+    "placeholders": {
+      "path": { "type": "String" }
+    }
+  },
+  "errorNoAvailability": "Nessuna disponibilità per la data selezionata",
+  "errorLoadingServices": "Errore nel caricamento dei servizi",
+  "errorLoadingStaff": "Errore nel caricamento degli operatori",
+  "errorLoadingAvailability": "Errore nel caricamento delle disponibilità",
+  
+  "authWelcome": "Benvenuto",
+  "authLoginTitle": "Accedi al tuo account",
+  "authRegisterTitle": "Crea un nuovo account",
+  "authEmail": "Email",
+  "authPassword": "Password",
+  "authConfirmPassword": "Conferma password",
+  "authFirstName": "Nome",
+  "authLastName": "Cognome",
+  "authPhone": "Telefono",
+  "authForgotPassword": "Password dimenticata?",
+  "authNoAccount": "Non hai un account?",
+  "authHaveAccount": "Hai già un account?",
+  "authInvalidEmail": "Email non valida",
+  "authInvalidPassword": "Password troppo corta (min. 6 caratteri)",
+  "authPasswordMismatch": "Le password non coincidono",
+  "authRequiredField": "Campo obbligatorio",
+  "authInvalidPhone": "Numero di telefono non valido",
+  "authLoginSuccess": "Accesso effettuato",
+  "authRegisterSuccess": "Registrazione completata",
+  "authLoginFailed": "Credenziali non valide",
+  "authRegisterFailed": "Registrazione fallita",
+  "authResetPasswordTitle": "Recupera password",
+  "authResetPasswordMessage": "Inserisci la tua email e ti invieremo le istruzioni per reimpostare la password.",
+  "authResetPasswordSend": "Invia",
+  "authResetPasswordSuccess": "Email inviata! Controlla la tua casella di posta.",
+  "authResetPasswordError": "Errore durante l'invio. Riprova.",
+  
+  "bookingTitle": "Prenota appuntamento",
+  "bookingStepServices": "Servizi",
+  "bookingStepStaff": "Operatore",
+  "bookingStepDateTime": "Data e ora",
+  "bookingStepSummary": "Riepilogo",
+  
+  "servicesTitle": "Scegli i servizi",
+  "servicesSubtitle": "Puoi selezionare uno o più servizi",
+  "servicesSelected": "{count, plural, =0{Nessun servizio selezionato} =1{1 servizio selezionato} other{{count} servizi selezionati}}",
+  "@servicesSelected": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "servicesTotal": "Totale: {total}",
+  "@servicesTotal": {
+    "placeholders": {
+      "total": { "type": "String" }
+    }
+  },
+  "servicesDuration": "{duration} min",
+  "@servicesDuration": {
+    "placeholders": {
+      "duration": { "type": "int" }
+    }
+  },
+  "servicesFree": "Gratis",
+  "servicesPriceFrom": "da {price}",
+  "@servicesPriceFrom": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  
+  "staffTitle": "Scegli l'operatore",
+  "staffSubtitle": "Seleziona con chi desideri essere servito",
+  "staffAnyOperator": "Qualsiasi operatore disponibile",
+  "staffAnyOperatorSubtitle": "Ti assegneremo il primo operatore libero",
+  
+  "dateTimeTitle": "Scegli data e ora",
+  "dateTimeSubtitle": "Seleziona quando desideri prenotare",
+  "dateTimeFirstAvailable": "Prima disponibilità: {date}",
+  "@dateTimeFirstAvailable": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "dateTimeNoSlots": "Nessun orario disponibile per questa data",
+  "dateTimeSelectDate": "Seleziona una data",
+  "dateTimeMorning": "Mattina",
+  "dateTimeAfternoon": "Pomeriggio",
+  "dateTimeEvening": "Sera",
+  
+  "summaryTitle": "Riepilogo prenotazione",
+  "summarySubtitle": "Controlla i dettagli prima di confermare",
+  "summaryServices": "Servizi selezionati",
+  "summaryOperator": "Operatore",
+  "summaryDateTime": "Data e ora",
+  "summaryDuration": "Durata totale",
+  "summaryPrice": "Prezzo totale",
+  "summaryNotes": "Note (opzionale)",
+  "summaryNotesHint": "Aggiungi eventuali note per l'appuntamento...",
+  
+  "confirmationTitle": "Prenotazione confermata!",
+  "confirmationSubtitle": "Ti abbiamo inviato un'email di conferma",
+  "confirmationBookingId": "Codice prenotazione: {id}",
+  "@confirmationBookingId": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "confirmationNewBooking": "Nuova prenotazione",
+  "confirmationGoHome": "Torna alla home",
+  
+  "durationMinutes": "{minutes} min",
+  "@durationMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "durationMinute": "{minutes} min",
+  "@durationMinute": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "durationHour": "{hours} ora",
+  "@durationHour": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "durationHourMinute": "{hours} ora {minutes} min",
+  "@durationHourMinute": {
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  },
+  "priceFormat": "€{price}",
+  "@priceFormat": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  
+  "monthJanuary": "Gennaio",
+  "monthFebruary": "Febbraio",
+  "monthMarch": "Marzo",
+  "monthApril": "Aprile",
+  "monthMay": "Maggio",
+  "monthJune": "Giugno",
+  "monthJuly": "Luglio",
+  "monthAugust": "Agosto",
+  "monthSeptember": "Settembre",
+  "monthOctober": "Ottobre",
+  "monthNovember": "Novembre",
+  "monthDecember": "Dicembre",
+  
+  "weekdayMon": "Lun",
+  "weekdayTue": "Mar",
+  "weekdayWed": "Mer",
+  "weekdayThu": "Gio",
+  "weekdayFri": "Ven",
+  "weekdaySat": "Sab",
+  "weekdaySun": "Dom",
+  
+  "validationRequired": "Campo obbligatorio",
+  "validationInvalidEmail": "Email non valida",
+  "validationInvalidPhone": "Telefono non valido"
+}
