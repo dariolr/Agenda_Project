@@ -1,10 +1,10 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
+import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
@@ -105,7 +105,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     _clientName = appt.clientName;
     Future.microtask(() {
       if (!mounted) return;
-      ref.read(bookingsProvider.notifier).ensureBooking(
+      ref
+          .read(bookingsProvider.notifier)
+          .ensureBooking(
             bookingId: appt.bookingId,
             businessId: appt.businessId,
             locationId: appt.locationId,
@@ -251,7 +253,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         eligibleIndices.add(i);
       }
     }
-    final allEligibleConflict = eligibleIndices.isNotEmpty &&
+    final allEligibleConflict =
+        eligibleIndices.isNotEmpty &&
         eligibleIndices.every((i) => conflictFlags[i]);
     final showAppointmentWarning =
         eligibleIndices.length > 1 && allEligibleConflict;
@@ -465,18 +468,18 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               ),
               child: Text(title, style: Theme.of(context).textTheme.titleLarge),
             ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: content,
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: content,
+              ),
             ),
-          ),
-          _warningBanner(
-            horizontalPadding,
-            showAppointmentWarning,
-            l10n.bookingUnavailableTimeWarningAppointment,
-          ),
-          const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
+            _warningBanner(
+              horizontalPadding,
+              showAppointmentWarning,
+              l10n.bookingUnavailableTimeWarningAppointment,
+            ),
+            const Divider(height: 1, thickness: 0.5, color: Color(0x1F000000)),
             Padding(
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
@@ -544,7 +547,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
     for (int i = 0; i < _serviceItems.length; i++) {
       final item = _serviceItems[i];
-      final showWarning = showServiceWarnings &&
+      final showWarning =
+          showServiceWarnings &&
           _isWarningEligible(item) &&
           i < conflictFlags.length &&
           conflictFlags[i];
@@ -553,7 +557,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       final eligibleStaffIds = item.serviceId != null
           ? ref.watch(eligibleStaffForServiceProvider(item.serviceId!))
           : <int>[];
-      final isStaffIneligible = item.serviceId != null &&
+      final isStaffIneligible =
+          item.serviceId != null &&
           item.staffId != null &&
           !eligibleStaffIds.contains(item.staffId);
 
@@ -598,8 +603,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                     _updateServiceDuration(i, duration),
                 onServicePickerAutoCompleted: _scrollFormToBottom,
                 onAutoOpenStaffPickerCompleted: _scrollFormToBottom,
-                availabilityWarningMessage:
-                    showWarning ? serviceWarningMessage : null,
+                availabilityWarningMessage: showWarning
+                    ? serviceWarningMessage
+                    : null,
                 staffEligibilityWarningMessage: isStaffIneligible
                     ? context.l10n.bookingStaffNotEligibleWarning
                     : null,
@@ -957,12 +963,12 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       final processingMinutes = selectedVariant.processingTime ?? 0;
       final blockedMinutes = selectedVariant.blockedTime ?? 0;
       final extraMinutes = blockedMinutes;
-      final extraMinutesType =
-          blockedMinutes > 0
-              ? ExtraMinutesType.blocked
-              : (processingMinutes > 0 ? ExtraMinutesType.processing : null);
-      final effectivePrice =
-          selectedVariant.isFree ? null : selectedVariant.price;
+      final extraMinutesType = blockedMinutes > 0
+          ? ExtraMinutesType.blocked
+          : (processingMinutes > 0 ? ExtraMinutesType.processing : null);
+      final effectivePrice = selectedVariant.isFree
+          ? null
+          : selectedVariant.price;
 
       final start = DateTime(
         _date.year,
@@ -972,7 +978,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         item.startTime.minute,
       );
 
-      final duration = (item.durationMinutes > 0
+      final duration =
+          (item.durationMinutes > 0
               ? item.durationMinutes
               : selectedVariant.durationMinutes) +
           extraMinutes;
@@ -1341,12 +1348,12 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
           ListTile(
             leading: StaffCircleAvatar(
               height: 32,
-              color: theme.colorScheme.primary,
+              color: theme.colorScheme.onSurfaceVariant,
               isHighlighted: false,
               initials: '',
               child: Icon(
                 Icons.person_add_outlined,
-                color: theme.colorScheme.onPrimary,
+                color: theme.colorScheme.onSurface,
                 size: 18,
               ),
             ),

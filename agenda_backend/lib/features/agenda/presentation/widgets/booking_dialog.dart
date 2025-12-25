@@ -1,12 +1,12 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
+import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/models/appointment.dart';
 import 'package:agenda_backend/core/widgets/labeled_form_field.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
@@ -223,7 +223,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         eligibleIndices.add(i);
       }
     }
-    final allEligibleConflict = eligibleIndices.isNotEmpty &&
+    final allEligibleConflict =
+        eligibleIndices.isNotEmpty &&
         eligibleIndices.every((i) => conflictFlags[i]);
     final showAppointmentWarning =
         eligibleIndices.length > 1 && allEligibleConflict;
@@ -466,7 +467,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
     for (int i = 0; i < _serviceItems.length; i++) {
       final item = _serviceItems[i];
-      final showWarning = showServiceWarnings &&
+      final showWarning =
+          showServiceWarnings &&
           _isWarningEligible(item) &&
           i < conflictFlags.length &&
           conflictFlags[i];
@@ -475,7 +477,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       final eligibleStaffIds = item.serviceId != null
           ? ref.watch(eligibleStaffForServiceProvider(item.serviceId!))
           : <int>[];
-      final isStaffIneligible = item.serviceId != null &&
+      final isStaffIneligible =
+          item.serviceId != null &&
           item.staffId != null &&
           !eligibleStaffIds.contains(item.staffId);
 
@@ -525,8 +528,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     : null,
                 onServicePickerAutoCompleted: _scrollFormToBottom,
                 onAutoOpenStaffPickerCompleted: _scrollFormToBottom,
-                availabilityWarningMessage:
-                    showWarning ? serviceWarningMessage : null,
+                availabilityWarningMessage: showWarning
+                    ? serviceWarningMessage
+                    : null,
                 staffEligibilityWarningMessage: isStaffIneligible
                     ? context.l10n.bookingStaffNotEligibleWarning
                     : null,
@@ -975,10 +979,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       final processingMinutes = variant.processingTime ?? 0;
       final blockedMinutes = variant.blockedTime ?? 0;
       final extraMinutes = blockedMinutes;
-      final extraMinutesType =
-          blockedMinutes > 0
-              ? ExtraMinutesType.blocked
-              : (processingMinutes > 0 ? ExtraMinutesType.processing : null);
+      final extraMinutesType = blockedMinutes > 0
+          ? ExtraMinutesType.blocked
+          : (processingMinutes > 0 ? ExtraMinutesType.processing : null);
       final effectivePrice = variant.isFree ? null : variant.price;
 
       final start = DateTime(
@@ -988,11 +991,12 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         item.startTime.hour,
         item.startTime.minute,
       );
-      final durationMinutes = ((item.durationMinutes > 0
-                  ? item.durationMinutes
-                  : variant.durationMinutes) +
-              extraMinutes)
-          .toInt();
+      final durationMinutes =
+          ((item.durationMinutes > 0
+                      ? item.durationMinutes
+                      : variant.durationMinutes) +
+                  extraMinutes)
+              .toInt();
       final end = start.add(Duration(minutes: durationMinutes));
 
       final created = appointmentsNotifier.addAppointment(
@@ -1250,7 +1254,7 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                 initials: '',
                 child: Icon(
                   Icons.person_add_outlined,
-                  color: theme.colorScheme.onPrimary,
+                  color: theme.colorScheme.onSurface,
                   size: 18,
                 ),
               ),
