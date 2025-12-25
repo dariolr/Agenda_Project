@@ -1,4 +1,5 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
+import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
@@ -9,6 +10,7 @@ import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/domain/config/agenda_theme.dart';
+import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/presentation/staff_availability_screen.dart';
@@ -429,6 +431,11 @@ class _StaffWeekOverviewScreenState
     }
 
     final weekLabel = buildWeekRangeLabel();
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    final todayDate = DateUtils.dateOnly(DateTime.now());
+    final isTodayInWeek =
+        !todayDate.isBefore(weekStart) && !todayDate.isAfter(weekEnd);
+    final effectivePickerDate = isTodayInWeek ? todayDate : weekEnd;
 
     // Layout constants - responsive per mobile
     final isMobileLayout = formFactor == AppFormFactor.mobile;
@@ -1426,10 +1433,15 @@ class _StaffWeekOverviewScreenState
       appBar: AppBar(
         centerTitle: true,
         leading: const BackButton(),
-        title: StaffTopControls(
-          todayLabel: context.l10n.currentWeek,
-          labelOverride: weekLabel,
-          compact: formFactor != AppFormFactor.desktop,
+        title: Padding(
+          padding: EdgeInsets.only(
+            left: formFactor == AppFormFactor.mobile ? staffColWidth - 64.0 : 0,
+          ),
+          child: StaffTopControls(
+            todayLabel: context.l10n.currentWeek,
+            labelOverride: weekLabel,
+            compact: formFactor != AppFormFactor.desktop,
+          ),
         ),
       ),
       body: ScrollConfiguration(
@@ -1575,6 +1587,45 @@ class _StaffWeekOverviewScreenState
           ],
         ),
       ),
+      bottomNavigationBar: formFactor != AppFormFactor.mobile
+          ? null
+          : SafeArea(
+              top: false,
+              bottom: true,
+              minimum: const EdgeInsets.only(bottom: 15),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const AgendaHorizontalDivider(),
+                  Padding(
+                    padding: EdgeInsetsDirectional.only(
+                      start: formFactor == AppFormFactor.mobile
+                          ? 0
+                          : staffColWidth + 8,
+                      top: 15,
+                      bottom: 1,
+                    ),
+                    child: AgendaDateSwitcher(
+                      label: weekLabel,
+                      selectedDate: effectivePickerDate,
+                      onPreviousWeek: ref
+                          .read(agendaDateProvider.notifier)
+                          .previousWeek,
+                      onNextWeek: ref
+                          .read(agendaDateProvider.notifier)
+                          .nextWeek,
+                      onSelectDate: (date) {
+                        ref
+                            .read(agendaDateProvider.notifier)
+                            .set(DateUtils.dateOnly(date));
+                      },
+                      useWeekRangePicker: true,
+                      isCompact: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }

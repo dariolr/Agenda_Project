@@ -1005,7 +1005,7 @@ class _AgendaLocationSelectorState
                     ),
                     child: Icon(
                       Icons.place_outlined,
-                      size: 20,
+                      size: 30,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
