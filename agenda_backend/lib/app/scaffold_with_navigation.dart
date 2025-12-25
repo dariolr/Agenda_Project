@@ -60,21 +60,40 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final formFactor = ref.watch(formFactorProvider);
+    final isAgenda = navigationShell.currentIndex == 0;
+    final isClients = navigationShell.currentIndex == 1;
+    final isServices = navigationShell.currentIndex == 2;
+    final isStaff = navigationShell.currentIndex == 3;
+    final agendaDate = ref.watch(agendaDateProvider);
+    final isToday = DateUtils.isSameDay(
+      agendaDate,
+      DateUtils.dateOnly(DateTime.now()),
+    );
+
     final destinations = _ScaffoldWithNavigationHelpers.getDestinations(
       context,
     );
-    final formFactor = ref.watch(formFactorProvider);
+    final resolvedDestinations =
+        isAgenda && !isToday
+            ? [
+                NavigationDestination(
+                  iconData: Icons.today_outlined,
+                  selectedIconData: Icons.today,
+                  label: context.l10n.agendaToday,
+                ),
+                ...destinations.skip(1),
+              ]
+            : destinations;
 
     if (formFactor == AppFormFactor.desktop) {
       final layoutConfig = ref.watch(layoutConfigProvider);
       final dividerColor = Theme.of(context).dividerColor;
       const dividerThickness = 1.0;
       final railDestinations =
-          _ScaffoldWithNavigationHelpers.toRailDestinations(destinations);
-      final isAgenda = navigationShell.currentIndex == 0;
-      final isClients = navigationShell.currentIndex == 1;
-      final isServices = navigationShell.currentIndex == 2;
-      final isStaff = navigationShell.currentIndex == 3;
+          _ScaffoldWithNavigationHelpers.toRailDestinations(
+            resolvedDestinations,
+          );
 
       final isTablet = formFactor == AppFormFactor.tablet;
 
@@ -122,10 +141,6 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       );
     }
 
-    final isAgenda = navigationShell.currentIndex == 0;
-    final isClients = navigationShell.currentIndex == 1;
-    final isServices = navigationShell.currentIndex == 2;
-    final isStaff = navigationShell.currentIndex == 3;
     final isTablet = formFactor == AppFormFactor.tablet;
     final showBottomDateSwitcher =
         isAgenda && formFactor != AppFormFactor.desktop;
@@ -173,7 +188,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 currentIndex: navigationShell.currentIndex,
                 onTap: (index) => _goBranch(index, ref),
                 type: BottomNavigationBarType.fixed,
-                items: destinations
+                items: resolvedDestinations
                     .map(
                       (d) => BottomNavigationBarItem(
                         icon: Icon(d.iconData),
