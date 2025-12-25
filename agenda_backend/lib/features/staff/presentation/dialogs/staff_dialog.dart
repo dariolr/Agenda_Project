@@ -10,6 +10,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../services/presentation/widgets/service_eligibility_selector.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/services_provider.dart';
@@ -197,6 +198,8 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final l10n = context.l10n;
     final title =
         widget.isEditing ? l10n.teamEditStaffTitle : l10n.teamNewStaffTitle;
+    final formFactor = ref.read(formFactorProvider);
+    final isSingleColumn = formFactor != AppFormFactor.desktop;
     final locations = ref.watch(locationsProvider);
     final totalServicesCount = ref.watch(servicesProvider).length;
     final totalLocationsCount = locations.length;
@@ -248,23 +251,54 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         )
         .toList();
 
+    final nameField = LabeledFormField(
+      label: l10n.teamStaffNameLabel,
+      child: TextFormField(
+        controller: _nameController,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+        textInputAction: TextInputAction.next,
+        textCapitalization: TextCapitalization.words,
+        validator: (v) =>
+            v == null || v.trim().isEmpty ? l10n.validationRequired : null,
+      ),
+    );
+
+    final surnameField = LabeledFormField(
+      label: l10n.teamStaffSurnameLabel,
+      child: TextFormField(
+        controller: _surnameController,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+        textInputAction: TextInputAction.next,
+        textCapitalization: TextCapitalization.words,
+      ),
+    );
+
     final content = Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextFormField(
-            controller: _nameController,
-            decoration: InputDecoration(labelText: l10n.teamStaffNameLabel),
-            validator: (v) =>
-                v == null || v.trim().isEmpty ? l10n.validationRequired : null,
-          ),
-          const SizedBox(height: AppSpacing.formRowSpacing),
-          TextFormField(
-            controller: _surnameController,
-            decoration: InputDecoration(labelText: l10n.teamStaffSurnameLabel),
-          ),
+          if (isSingleColumn) ...[
+            nameField,
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            surnameField,
+          ] else ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: nameField),
+                const SizedBox(width: AppSpacing.formFieldSpacing),
+                Expanded(child: surnameField),
+              ],
+            ),
+          ],
           const SizedBox(height: AppSpacing.formRowSpacing),
           Text(
             l10n.teamStaffColorLabel,
