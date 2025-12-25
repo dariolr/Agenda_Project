@@ -549,6 +549,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "staffEditHours": MessageLookupByLibrary.simpleMessage("Modifica orari"),
     "staffFilterAllTeam": MessageLookupByLibrary.simpleMessage("Tutto il team"),
     "staffFilterOnDuty": MessageLookupByLibrary.simpleMessage("Team di turno"),
+    "agendaNoOnDutyTeamTitle": MessageLookupByLibrary.simpleMessage(
+      "Nessun membro del team di turno oggi",
+    ),
+    "agendaNoSelectedTeamTitle": MessageLookupByLibrary.simpleMessage(
+      "Nessun membro del team selezionato",
+    ),
+    "agendaShowAllTeamButton": MessageLookupByLibrary.simpleMessage(
+      "Visualizza tutto il team",
+    ),
     "staffFilterSelectMembers": MessageLookupByLibrary.simpleMessage(
       "Seleziona membri del team",
     ),

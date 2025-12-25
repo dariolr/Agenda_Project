@@ -1929,6 +1929,36 @@ class L10n {
     );
   }
 
+  /// `Nessun membro del team di turno oggi`
+  String get agendaNoOnDutyTeamTitle {
+    return Intl.message(
+      'Nessun membro del team di turno oggi',
+      name: 'agendaNoOnDutyTeamTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun membro del team selezionato`
+  String get agendaNoSelectedTeamTitle {
+    return Intl.message(
+      'Nessun membro del team selezionato',
+      name: 'agendaNoSelectedTeamTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Visualizza tutto il team`
+  String get agendaShowAllTeamButton {
+    return Intl.message(
+      'Visualizza tutto il team',
+      name: 'agendaShowAllTeamButton',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Seleziona membri del team`
   String get staffFilterSelectMembers {
     return Intl.message(
