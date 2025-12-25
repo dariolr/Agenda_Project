@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
+import '../../../../core/models/service_variant.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../clients/domain/clients.dart';
@@ -126,6 +127,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     _bookingHasSingleAppointment = bookingAppointments.length <= 1;
 
     for (final appointment in bookingAppointments) {
+      final baseDuration = _baseDurationFromAppointment(appointment);
       _serviceItems.add(
         ServiceItemData(
           key: _nextItemKey(),
@@ -133,9 +135,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           staffId: appointment.staffId,
           serviceId: appointment.serviceId,
           serviceVariantId: appointment.serviceVariantId,
-          durationMinutes: appointment.endTime
-              .difference(appointment.startTime)
-              .inMinutes,
+          durationMinutes: baseDuration,
         ),
       );
     }
@@ -180,6 +180,17 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   }
 
   String _nextItemKey() => 'item_${_itemKeyCounter++}';
+
+  int _baseDurationFromAppointment(Appointment appointment) {
+    final totalMinutes =
+        appointment.endTime.difference(appointment.startTime).inMinutes;
+    final extraMinutes =
+        appointment.extraMinutesType == ExtraMinutesType.blocked
+            ? (appointment.extraMinutes ?? 0)
+            : 0;
+    final base = totalMinutes - extraMinutes;
+    return base > 0 ? base : 0;
+  }
 
   /// Verifica se ci sono modifiche non salvate
   bool get _hasUnsavedChanges {
@@ -554,6 +565,12 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
     for (int i = 0; i < _serviceItems.length; i++) {
       final item = _serviceItems[i];
+      final TimeOfDay? suggestedStartTime = i > 0
+          ? _resolveServiceEndTime(
+              _serviceItems[i - 1],
+              variants.cast(),
+            )
+          : null;
       final showWarning =
           showServiceWarnings &&
           _isWarningEligible(item) &&
@@ -608,6 +625,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                 onEndTimeChanged: (time) => _updateServiceEndTime(i, time),
                 onDurationChanged: (duration) =>
                     _updateServiceDuration(i, duration),
+                suggestedStartTime: suggestedStartTime,
                 onServicePickerAutoCompleted: _scrollFormToBottom,
                 onAutoOpenStaffPickerCompleted: _scrollFormToBottom,
                 availabilityWarningMessage: showWarning
@@ -756,6 +774,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   }
 
   void _addService() {
+    final variants = ref.read(serviceVariantsProvider);
     // Calcola l'orario di inizio per il nuovo servizio
     TimeOfDay nextStart;
     if (_serviceItems.isEmpty) {
@@ -764,7 +783,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     } else {
       // Prendi l'ultimo servizio e calcola il suo orario di fine
       final lastItem = _serviceItems.last;
-      nextStart = lastItem.endTime;
+      nextStart = _resolveServiceEndTime(lastItem, variants);
     }
 
     // Smart staff selection: usa lo staff dell'ultimo servizio aggiunto
@@ -792,7 +811,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       _serviceItems.removeAt(index);
 
       // Ricalcola gli orari per i servizi successivi
-      _recalculateTimesFrom(index, variants.cast());
+      _recalculateTimesFrom(index, variants);
     });
   }
 
@@ -804,7 +823,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
       // Se cambia il servizio, potremmo dover aggiornare lo staff
       // e ricalcolare gli orari successivi
-      _recalculateTimesFrom(index + 1, variants.cast());
+      _recalculateTimesFrom(index + 1, variants);
 
       // Se lo staff è ancora null, seleziona automaticamente un eligible
       if (updated.serviceId != null && updated.staffId == null) {
@@ -821,7 +840,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       _serviceItems[index] = _serviceItems[index].copyWith(startTime: newTime);
 
       // Ricalcola gli orari per i servizi successivi
-      _recalculateTimesFrom(index + 1, variants.cast());
+      _recalculateTimesFrom(index + 1, variants);
     });
   }
 
@@ -843,7 +862,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
       // Ricalcola gli orari per i servizi successivi
       final variants = ref.read(serviceVariantsProvider);
-      _recalculateTimesFrom(index + 1, variants.cast());
+      _recalculateTimesFrom(index + 1, variants);
     });
   }
 
@@ -855,18 +874,48 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
       // Ricalcola gli orari per i servizi successivi
       final variants = ref.read(serviceVariantsProvider);
-      _recalculateTimesFrom(index + 1, variants.cast());
+      _recalculateTimesFrom(index + 1, variants);
     });
   }
 
-  void _recalculateTimesFrom(int fromIndex, List<dynamic> variants) {
+  void _recalculateTimesFrom(int fromIndex, List<ServiceVariant> variants) {
     if (fromIndex <= 0 || fromIndex >= _serviceItems.length) return;
 
     for (int i = fromIndex; i < _serviceItems.length; i++) {
       final prevItem = _serviceItems[i - 1];
-      final prevEnd = prevItem.endTime;
+      final prevEnd = _resolveServiceEndTime(prevItem, variants);
       _serviceItems[i] = _serviceItems[i].copyWith(startTime: prevEnd);
     }
+  }
+
+  TimeOfDay _resolveServiceEndTime(
+    ServiceItemData item,
+    List<ServiceVariant> variants,
+  ) {
+    ServiceVariant? variant;
+    if (item.serviceVariantId != null) {
+      for (final v in variants) {
+        if (v.id == item.serviceVariantId) {
+          variant = v;
+          break;
+        }
+      }
+    }
+    if (variant == null && item.serviceId != null) {
+      for (final v in variants) {
+        if (v.serviceId == item.serviceId) {
+          variant = v;
+          break;
+        }
+      }
+    }
+
+    final baseDuration = item.durationMinutes > 0
+        ? item.durationMinutes
+        : (variant?.durationMinutes ?? 30);
+    final extraMinutes =
+        (variant?.processingTime ?? 0) + (variant?.blockedTime ?? 0);
+    return item.getEndTime(baseDuration + extraMinutes);
   }
 
   /// Trova lo staff migliore per un servizio:
