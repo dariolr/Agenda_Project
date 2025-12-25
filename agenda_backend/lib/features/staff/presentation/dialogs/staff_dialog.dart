@@ -4,18 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/app_constants.dart';
 import '../../../../app/providers/form_factor_provider.dart';
-import '../../../../app/widgets/staff_circle_avatar.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/widgets/staff_circle_avatar.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
+import '../../../agenda/providers/business_providers.dart';
+import '../../../agenda/providers/location_providers.dart';
 import '../../../services/presentation/widgets/service_eligibility_selector.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/services_provider.dart';
-import '../../../agenda/providers/business_providers.dart';
-import '../../../agenda/providers/location_providers.dart';
 import '../../providers/staff_providers.dart';
 
 Future<void> showStaffDialog(
@@ -185,27 +185,29 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final title =
-        widget.isEditing ? l10n.teamEditStaffTitle : l10n.teamNewStaffTitle;
+    final title = widget.isEditing
+        ? l10n.teamEditStaffTitle
+        : l10n.teamNewStaffTitle;
     final formFactor = ref.read(formFactorProvider);
     final isSingleColumn = formFactor != AppFormFactor.desktop;
     final locations = ref.watch(locationsProvider);
     final totalServicesCount = ref.watch(servicesProvider).length;
     final totalLocationsCount = locations.length;
-    final selectedLocationName = !kAllowStaffMultiLocationSelection &&
-            _selectedLocationIds.isNotEmpty
+    final selectedLocationName =
+        !kAllowStaffMultiLocationSelection && _selectedLocationIds.isNotEmpty
         ? locations
-            .firstWhere(
-              (loc) => loc.id == _selectedLocationIds.first,
-              orElse: () => locations.first,
-            )
-            .name
+              .firstWhere(
+                (loc) => loc.id == _selectedLocationIds.first,
+                orElse: () => locations.first,
+              )
+              .name
         : null;
     if (!_didAutoScrollColor) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_colorScrollController.hasClients) return;
-        final index =
-            _palette.indexWhere((c) => c.value == _selectedColor.value);
+        final index = _palette.indexWhere(
+          (c) => c.value == _selectedColor.value,
+        );
         if (index < 0) return;
         const double colorItemSize = 36;
         const double colorItemSpacing = 10;
@@ -375,7 +377,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         kAllowStaffMultiLocationSelection
                             ? l10n.teamChooseLocationsButton
                             : (selectedLocationName ??
-                                l10n.teamChooseLocationSingleButton),
+                                  l10n.teamChooseLocationSingleButton),
                       ),
                     ),
                   ),
@@ -386,18 +388,17 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.12),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '${_selectedLocationIds.length}/$totalLocationsCount',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                 ],
@@ -409,10 +410,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 _locationsError!,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Theme.of(context).colorScheme.error),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
             ),
           const SizedBox(height: AppSpacing.formRowSpacing),
@@ -441,10 +441,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.12),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -453,9 +452,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                           totalServicesCount,
                         ),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -474,8 +473,8 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
             Text(
               l10n.teamStaffMultiLocationWarning,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
         ],
       ),
@@ -578,8 +577,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       setState(() => _locationsError = context.l10n.validationRequired);
       return;
     }
-    if (!kAllowStaffMultiLocationSelection &&
-        _selectedLocationIds.length > 1) {
+    if (!kAllowStaffMultiLocationSelection && _selectedLocationIds.length > 1) {
       final firstId = _selectedLocationIds.first;
       _selectedLocationIds
         ..clear()
@@ -616,7 +614,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         ),
       );
     }
-    ref.read(serviceStaffEligibilityProvider.notifier).setEligibleServicesForStaff(
+    ref
+        .read(serviceStaffEligibilityProvider.notifier)
+        .setEligibleServicesForStaff(
           staffId: staffId,
           locationId: ref.read(currentLocationProvider).id,
           serviceIds: _selectedServiceIds,
@@ -664,7 +664,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                     Expanded(
                       child: SingleChildScrollView(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                          padding: const EdgeInsets.fromLTRB(0, 12, 0, 16),
                           child: ServiceEligibilitySelector(
                             services: services,
                             categories: categories,
@@ -720,7 +720,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                   Expanded(
                     child: SingleChildScrollView(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        padding: const EdgeInsets.fromLTRB(0, 12, 0, 16),
                         child: ServiceEligibilitySelector(
                           services: services,
                           categories: categories,
@@ -777,8 +777,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
 
     Widget buildLocationRows(void Function(VoidCallback) setStateLocal) {
       final allIds = [for (final l in locations) l.id];
-      final allSelected =
-          allIds.isNotEmpty && allIds.every(current.contains);
+      final allSelected = allIds.isNotEmpty && allIds.every(current.contains);
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -970,8 +969,7 @@ class _SwitchTile extends StatelessWidget {
     final titleStyle = Theme.of(context).textTheme.titleSmall;
     final borderRadius = AppButtonStyles.defaultBorderRadius;
     return Container(
-      constraints: const BoxConstraints(minHeight: 48),
-      padding: AppButtonStyles.defaultPadding,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       decoration: BoxDecoration(
         border: Border.all(
           color: Theme.of(context).colorScheme.primary,
@@ -979,19 +977,27 @@ class _SwitchTile extends StatelessWidget {
         ),
         borderRadius: borderRadius,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(title, style: titleStyle),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onChanged == null ? null : () => onChanged!(!value),
+          splashColor: Colors.transparent,
+          hoverColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: Row(
+            children: [
+              Expanded(child: Text(title, style: titleStyle)),
+              Switch.adaptive(
+                value: value,
+                onChanged: onChanged,
+                activeColor: Theme.of(context).colorScheme.primary,
+                activeTrackColor: Theme.of(
+                  context,
+                ).colorScheme.primary.withOpacity(0.35),
+              ),
+            ],
           ),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
-            activeColor: Theme.of(context).colorScheme.primary,
-            activeTrackColor:
-                Theme.of(context).colorScheme.primary.withOpacity(0.35),
-          ),
-        ],
+        ),
       ),
     );
   }
