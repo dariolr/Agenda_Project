@@ -467,6 +467,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       );
     }
     const horizontalPadding = 20.0;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
@@ -501,27 +502,29 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               showAppointmentWarning,
               l10n.bookingUnavailableTimeWarningAppointment,
             ),
-            const AppBottomSheetDivider(),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                horizontalPadding,
-                AppSpacing.formFirstRowSpacing,
-                horizontalPadding,
-                0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  for (int i = 0; i < actions.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 8),
-                    SizedBox(
-                      width: AppButtonStyles.dialogButtonWidth,
-                      child: actions[i],
-                    ),
+            if (!isKeyboardOpen) ...[
+              const AppBottomSheetDivider(),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  AppSpacing.formFirstRowSpacing,
+                  horizontalPadding,
+                  0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    for (int i = 0; i < actions.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      SizedBox(
+                        width: AppButtonStyles.dialogButtonWidth,
+                        child: actions[i],
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
+            ],
             SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
           ],
         ),
