@@ -1,6 +1,6 @@
 {
-    "name": "agenda_frontend_2",
-    "short_name": "agenda_frontend_2",
+    "name": "agenda_frontend",
+    "short_name": "agenda_frontend",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

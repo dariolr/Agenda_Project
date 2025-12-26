@@ -1,4 +1,4 @@
-# agenda_frontend_2
+# agenda_frontend
 
 A new Flutter project.
 
