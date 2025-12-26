@@ -778,75 +778,62 @@ class _StaffWeekOverviewScreenState
       }
 
       if (isMobile) {
-        // Mobile: avatar centrato verticalmente, testi ancorati in basso
+        // Mobile: avatar, nome e totale ore raggruppati al centro
         return GestureDetector(
           onTap: openStaffAvailability,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 10.0),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: Stack(
-                    children: [
-                      StaffCircleAvatar(
-                        height: 40,
-                        color: staff.color,
-                        isHighlighted: false,
-                        initials: staff.initials,
-                      ),
-                      Positioned(
-                        right: -4,
-                        bottom: -4,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.edit_outlined,
-                            size: 14,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  children: [
+                    StaffCircleAvatar(
+                      height: 40,
+                      color: staff.color,
+                      isHighlighted: false,
+                      initials: staff.initials,
+                    ),
+                    Positioned(
+                      right: -4,
+                      bottom: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.edit_outlined,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6.0),
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        staff.displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
-                        textAlign: TextAlign.center,
-                      ),
-                      if (minutes > 0)
-                        Text(
-                          _formatTotalHM(context, minutes),
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(color: Colors.black54),
-                        ),
-                    ],
-                  ),
+                const SizedBox(height: 6),
+                Text(
+                  staff.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
                 ),
-              ),
-            ],
+                if (minutes > 0)
+                  Text(
+                    _formatTotalHM(context, minutes),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Colors.black54,
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       }
