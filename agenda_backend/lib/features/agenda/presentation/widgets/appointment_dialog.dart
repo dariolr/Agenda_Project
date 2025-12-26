@@ -1187,7 +1187,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               clientId: clientId,
               clientName: clientName,
             );
-      } else if (confirmed == null) {
+      } else {
         // Utente ha annullato, non salvare
         return;
       }
