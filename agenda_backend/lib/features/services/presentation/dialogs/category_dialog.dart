@@ -102,7 +102,6 @@ Future<void> showCategoryDialog(
       notifier.updateCategory(newCategory);
     }
 
-    Navigator.pop(context);
     return true;
   }
 
@@ -130,6 +129,10 @@ Future<void> showCategoryDialog(
             final closed = await handleSave();
             if (!closed) {
               setState(() {});
+            } else {
+              if (ctx.mounted) {
+                Navigator.of(ctx).pop();
+              }
             }
           },
           padding: AppButtonStyles.dialogButtonPadding,
