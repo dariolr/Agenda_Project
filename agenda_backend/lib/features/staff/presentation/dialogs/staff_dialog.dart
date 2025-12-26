@@ -224,6 +224,17 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       _didAutoScrollColor = true;
     }
 
+    final editAvatar = widget.isEditing
+        ? Center(
+            child: StaffCircleAvatar(
+              height: 64,
+              color: _selectedColor,
+              isHighlighted: false,
+              initials: _buildInitials(),
+            ),
+          )
+        : null;
+
     final actions = [
       AppOutlinedActionButton(
         onPressed: () => Navigator.of(context).pop(),
@@ -493,6 +504,10 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(title, style: Theme.of(context).textTheme.headlineSmall),
+                if (editAvatar != null) ...[
+                  const SizedBox(height: 12),
+                  editAvatar,
+                ],
                 const SizedBox(height: 16),
                 Flexible(child: SingleChildScrollView(child: content)),
                 const SizedBox(height: 24),
@@ -541,6 +556,10 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                           ),
+                          if (editAvatar != null) ...[
+                            editAvatar,
+                            const SizedBox(height: 12),
+                          ],
                           content,
                           const SizedBox(height: 24),
                           const SizedBox(height: AppSpacing.formRowSpacing),
