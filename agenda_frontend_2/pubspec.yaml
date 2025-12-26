@@ -1,4 +1,4 @@
-name: agenda_frontend_2
+name: agenda_frontend
 description: "Frontend per prenotazioni online - Agenda Platform"
 publish_to: 'none'
 version: 1.0.0+1
