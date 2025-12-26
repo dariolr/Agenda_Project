@@ -572,9 +572,13 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: Align(
-                      alignment: Alignment.centerRight,
+                      alignment: bottomActions.length == 3
+                          ? Alignment.center
+                          : Alignment.centerRight,
                       child: Wrap(
-                        alignment: WrapAlignment.end,
+                        alignment: bottomActions.length == 3
+                            ? WrapAlignment.center
+                            : WrapAlignment.end,
                         spacing: 8,
                         runSpacing: 8,
                         children: bottomActions,

@@ -218,19 +218,23 @@ Future<void> showCategoryDialog(
                     ),
                   ),
                 ),
-                  if (!isKeyboardOpen) ...[
-                    const AppBottomSheetDivider(),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Wrap(
-                          alignment: WrapAlignment.end,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [cancelButton, saveButton],
-                        ),
+                if (!isKeyboardOpen) ...[
+                  const AppBottomSheetDivider(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Align(
+                      alignment: 2 == 3
+                          ? Alignment.center
+                          : Alignment.centerRight,
+                      child: Wrap(
+                        alignment: 2 == 3
+                            ? WrapAlignment.center
+                            : WrapAlignment.end,
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [cancelButton, saveButton],
                       ),
+                    ),
                     ),
                   ],
                   SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
