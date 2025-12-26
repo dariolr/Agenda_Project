@@ -13,6 +13,7 @@ import '../../../../core/models/time_block.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/app_switch.dart';
 import '../../domain/config/layout_config.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
@@ -166,7 +167,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
         // Giornata intera switch
         Row(
           children: [
-            Switch(
+            AppSwitch(
               value: _isAllDay,
               onChanged: (v) => setState(() => _isAllDay = v),
             ),
