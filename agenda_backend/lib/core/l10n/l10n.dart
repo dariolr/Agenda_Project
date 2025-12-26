@@ -2516,6 +2516,46 @@ class L10n {
     );
   }
 
+  /// `Alcuni giorni non sono stati salvati: {dates}.`
+  String exceptionPartialSaveInfo(Object dates) {
+    return Intl.message(
+      'Alcuni giorni non sono stati salvati: $dates.',
+      name: 'exceptionPartialSaveInfo',
+      desc: '',
+      args: [dates],
+    );
+  }
+
+  /// `Alcuni giorni non sono stati salvati: {details}.`
+  String exceptionPartialSaveInfoDetailed(Object details) {
+    return Intl.message(
+      'Alcuni giorni non sono stati salvati: $details.',
+      name: 'exceptionPartialSaveInfoDetailed',
+      desc: '',
+      args: [details],
+    );
+  }
+
+  /// `Eccezioni non salvate`
+  String get exceptionPartialSaveTitle {
+    return Intl.message(
+      'Eccezioni non salvate',
+      name: 'exceptionPartialSaveTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `I giorni sotto non erano congruenti e non sono stati salvati:`
+  String get exceptionPartialSaveMessage {
+    return Intl.message(
+      'I giorni sotto non erano congruenti e non sono stati salvati:',
+      name: 'exceptionPartialSaveMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Eliminare l'eccezione?`
   String get exceptionDeleteTitle {
     return Intl.message(
