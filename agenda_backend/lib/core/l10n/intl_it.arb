@@ -360,6 +360,20 @@
   "exceptionUnavailableNoBase": "Non puoi aggiungere una non disponibilità in un giorno senza disponibilità base.",
   "exceptionUnavailableNoOverlap": "La non disponibilità deve sovrapporsi alla disponibilità base.",
   "exceptionAvailableNoEffect": "La disponibilità extra deve aggiungere ore rispetto alla disponibilità base.",
+  "exceptionPartialSaveInfo": "Alcuni giorni non sono stati salvati: {dates}.",
+  "@exceptionPartialSaveInfo": {
+    "placeholders": {
+      "dates": {}
+    }
+  },
+  "exceptionPartialSaveInfoDetailed": "Alcuni giorni non sono stati salvati: {details}.",
+  "@exceptionPartialSaveInfoDetailed": {
+    "placeholders": {
+      "details": {}
+    }
+  },
+  "exceptionPartialSaveTitle": "Eccezioni non salvate",
+  "exceptionPartialSaveMessage": "I giorni sotto non erano congruenti e non sono stati salvati:",
   "exceptionDeleteTitle": "Eliminare l'eccezione?",
   "exceptionDeleteMessage": "L'eccezione verrà eliminata definitivamente.",
   "exceptionSelectTime": "Seleziona orario",

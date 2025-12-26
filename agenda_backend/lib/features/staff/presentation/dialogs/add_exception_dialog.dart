@@ -13,6 +13,7 @@ import '../../../../core/widgets/app_dividers.dart';
 import '../../../agenda/providers/layout_config_provider.dart';
 import '../../presentation/staff_availability_screen.dart';
 import '../../providers/availability_exceptions_provider.dart';
+import 'package:intl/intl.dart';
 
 /// Mostra il dialog per creare o modificare un'eccezione alla disponibilità.
 Future<void> showAddExceptionDialog(
@@ -91,6 +92,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
   String? _timeError;
   String? _validationError;
   bool _isSaving = false;
+  Map<DateTime, String> _lastSkippedReasons = {};
 
   @override
   void initState() {
@@ -667,21 +669,42 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
     }
   }
 
-  bool _validate() {
+  List<DateTime>? _validatedDates() {
     final l10n = context.l10n;
-    _validationError = null;
+    setState(() {
+      _validationError = null;
+      _timeError = null;
+    });
 
     final startMinutes = _startTime.hour * 60 + _startTime.minute;
     final endMinutes = _endTime.hour * 60 + _endTime.minute;
     if (endMinutes <= startMinutes) {
       setState(() => _timeError = l10n.exceptionTimeError);
-      return false;
+      return null;
     }
 
     final availabilityByStaff =
         ref.read(staffAvailabilityByStaffProvider).value;
     if (availabilityByStaff == null) {
-      return true;
+      if (widget.initial != null || _periodMode == _PeriodMode.single) {
+        return <DateTime>[_date];
+      }
+      final DateTime startDate;
+      final DateTime endDate;
+      if (_periodMode == _PeriodMode.range) {
+        startDate = _startDate;
+        endDate = _endDate;
+      } else {
+        startDate = _startDate;
+        endDate = _startDate.add(Duration(days: _durationDays - 1));
+      }
+      final dates = <DateTime>[];
+      for (var d = startDate;
+          !d.isAfter(endDate);
+          d = d.add(const Duration(days: 1))) {
+        dates.add(d);
+      }
+      return dates;
     }
 
     final layout = ref.read(layoutConfigProvider);
@@ -695,34 +718,32 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       return {for (int i = startSlot; i < endSlot; i++) i};
     }
 
-    bool validateDate(DateTime date) {
+    String? validateDate(DateTime date) {
       final baseSlots =
           availabilityByStaff[widget.staffId]?[date.weekday] ?? <int>{};
       final excSlots = exceptionSlots();
       if (_type == AvailabilityExceptionType.unavailable) {
         if (baseSlots.isEmpty) {
-          _validationError = l10n.exceptionUnavailableNoBase;
-          return false;
+          return l10n.exceptionUnavailableNoBase;
         }
         if (baseSlots.intersection(excSlots).isEmpty) {
-          _validationError = l10n.exceptionUnavailableNoOverlap;
-          return false;
+          return l10n.exceptionUnavailableNoOverlap;
         }
       } else {
         if (excSlots.difference(baseSlots).isEmpty) {
-          _validationError = l10n.exceptionAvailableNoEffect;
-          return false;
+          return l10n.exceptionAvailableNoEffect;
         }
       }
-      return true;
+      return null;
     }
 
     if (widget.initial != null || _periodMode == _PeriodMode.single) {
-      if (!validateDate(_date)) {
-        setState(() {});
-        return false;
+      final error = validateDate(_date);
+      if (error != null) {
+        setState(() => _validationError = error);
+        return null;
       }
-      return true;
+      return <DateTime>[_date];
     }
 
     final DateTime startDate;
@@ -735,20 +756,36 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       endDate = _startDate.add(Duration(days: _durationDays - 1));
     }
 
+    final validDates = <DateTime>[];
+    final skippedReasons = <DateTime, String>{};
+    String? firstError;
     for (var d = startDate;
         !d.isAfter(endDate);
         d = d.add(const Duration(days: 1))) {
-      if (!validateDate(d)) {
-        setState(() {});
-        return false;
+      final error = validateDate(d);
+      if (error == null) {
+        validDates.add(d);
+      } else {
+        firstError ??= error;
+        skippedReasons[d] = error;
       }
     }
 
-    return true;
+    if (validDates.isEmpty) {
+      setState(() => _validationError = firstError);
+      return null;
+    }
+
+    _lastSkippedReasons = {
+      for (final entry in skippedReasons.entries)
+        DateUtils.dateOnly(entry.key): entry.value,
+    };
+    return validDates;
   }
 
   Future<void> _onSave() async {
-    if (!_validate()) return;
+    final validDates = _validatedDates();
+    if (validDates == null || validDates.isEmpty) return;
 
     setState(() => _isSaving = true);
 
@@ -759,7 +796,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       if (widget.initial != null) {
         // Modifica eccezione esistente (solo singolo giorno)
         final updated = widget.initial!.copyWith(
-          date: _date,
+          date: validDates.first,
           startTime: _startTime,
           endTime: _endTime,
           type: _type,
@@ -773,35 +810,102 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
           // Singolo giorno
           await notifier.addException(
             staffId: widget.staffId,
-            date: _date,
+            date: validDates.first,
             startTime: _startTime,
             endTime: _endTime,
             type: _type,
             reason: reason.isEmpty ? null : reason,
           );
         } else {
-          // Periodo (range o durata) - calcola le date
+          // Periodo (range o durata) - salva solo le date congruenti
           final DateTime startDate;
           final DateTime endDate;
-
           if (_periodMode == _PeriodMode.range) {
             startDate = _startDate;
             endDate = _endDate;
           } else {
-            // duration mode
             startDate = _startDate;
             endDate = _startDate.add(Duration(days: _durationDays - 1));
           }
-
-          await notifier.addExceptionsForPeriod(
-            staffId: widget.staffId,
-            startDate: startDate,
-            endDate: endDate,
-            startTime: _startTime,
-            endTime: _endTime,
-            type: _type,
-            reason: reason.isEmpty ? null : reason,
-          );
+          var totalDays = 0;
+          final skippedDates = <DateTime>[];
+          final skippedDetails = <String>[];
+          for (var d = startDate;
+              !d.isAfter(endDate);
+              d = d.add(const Duration(days: 1))) {
+            totalDays++;
+          }
+          for (final d in validDates) {
+            await notifier.addException(
+              staffId: widget.staffId,
+              date: d,
+              startTime: _startTime,
+              endTime: _endTime,
+              type: _type,
+              reason: reason.isEmpty ? null : reason,
+            );
+          }
+          if (validDates.length < totalDays) {
+            for (var d = startDate;
+                !d.isAfter(endDate);
+                d = d.add(const Duration(days: 1))) {
+              final isValid = validDates.any(
+                (v) => DateUtils.isSameDay(v, d),
+              );
+              if (!isValid) {
+                skippedDates.add(d);
+              }
+            }
+          }
+          if (mounted && skippedDates.isNotEmpty) {
+            final locale = Localizations.localeOf(context).toLanguageTag();
+            final formatter = DateFormat('d MMM', locale);
+            for (final d in skippedDates) {
+              final reason =
+                  _lastSkippedReasons[DateUtils.dateOnly(d)] ?? '';
+              final dateLabel = formatter.format(d);
+              if (reason.isEmpty) {
+                skippedDetails.add(dateLabel);
+              } else {
+                skippedDetails.add('$dateLabel — $reason');
+              }
+            }
+            await showDialog<void>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: Text(ctx.l10n.exceptionPartialSaveTitle),
+                content: SizedBox(
+                  width: 420,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(ctx.l10n.exceptionPartialSaveMessage),
+                      const SizedBox(height: 12),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 240),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: skippedDetails.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 6),
+                          itemBuilder: (context, index) => Text(
+                            '• ${skippedDetails[index]}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: Text(ctx.l10n.actionConfirm),
+                  ),
+                ],
+              ),
+            );
+          }
         }
       }
 

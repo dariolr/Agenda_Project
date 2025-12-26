@@ -360,6 +360,20 @@
   "exceptionUnavailableNoBase": "You can't add unavailability on a day with no base availability.",
   "exceptionUnavailableNoOverlap": "Unavailability must overlap the base availability.",
   "exceptionAvailableNoEffect": "Extra availability must add hours beyond the base availability.",
+  "exceptionPartialSaveInfo": "Some days were not saved: {dates}.",
+  "@exceptionPartialSaveInfo": {
+    "placeholders": {
+      "dates": {}
+    }
+  },
+  "exceptionPartialSaveInfoDetailed": "Some days were not saved: {details}.",
+  "@exceptionPartialSaveInfoDetailed": {
+    "placeholders": {
+      "details": {}
+    }
+  },
+  "exceptionPartialSaveTitle": "Exceptions not saved",
+  "exceptionPartialSaveMessage": "The days below were not congruent and were not saved:",
   "exceptionDeleteTitle": "Delete exception?",
   "exceptionDeleteMessage": "The exception will be permanently deleted.",
   "exceptionSelectTime": "Select time",
