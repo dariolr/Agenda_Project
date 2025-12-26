@@ -7,6 +7,8 @@ import '../../../../core/models/location.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/labeled_form_field.dart';
+import '../../../../app/theme/app_spacing.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../../agenda/providers/location_providers.dart';
 
@@ -27,7 +29,7 @@ Future<void> showLocationDialog(
       context: context,
       builder: (_) => dialog,
       useRootNavigator: true,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      padding: EdgeInsets.zero,
       heightFactor: AppBottomSheet.defaultHeightFactor,
     );
   }
@@ -91,24 +93,39 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
         )
         .toList();
 
+    final nameField = LabeledFormField(
+      label: l10n.teamLocationNameLabel,
+      child: TextFormField(
+        controller: _nameController,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+        validator: (v) =>
+            v == null || v.trim().isEmpty ? l10n.validationRequired : null,
+      ),
+    );
+
+    final addressField = LabeledFormField(
+      label: l10n.teamLocationAddressLabel,
+      child: TextFormField(
+        controller: _addressController,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+      ),
+    );
+
     final content = Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextFormField(
-            controller: _nameController,
-            decoration: InputDecoration(labelText: l10n.teamLocationNameLabel),
-            validator: (v) =>
-                v == null || v.trim().isEmpty ? l10n.validationRequired : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _addressController,
-            decoration:
-                InputDecoration(labelText: l10n.teamLocationAddressLabel),
-          ),
+          nameField,
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          addressField,
         ],
       ),
     );
@@ -159,6 +176,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                   child: SingleChildScrollView(
                     child: Padding(
                       padding: EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: 12,
                         bottom: MediaQuery.of(context).viewInsets.bottom,
                       ),
                       child: Column(
@@ -182,7 +202,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                 if (!isKeyboardOpen) ...[
                   const AppBottomSheetDivider(),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: Wrap(
