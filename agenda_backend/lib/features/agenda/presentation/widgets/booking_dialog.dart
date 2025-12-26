@@ -103,6 +103,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   int? _clientId;
 
   bool _clientPickerAutoRequested = false;
+  int? _autoOpenServicePickerIndex;
   bool _shouldAutoOpenServicePicker = false;
   bool _datePickerAutoRequested = false;
 
@@ -563,10 +564,18 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 onDurationChanged: (duration) =>
                     _updateServiceDuration(i, duration),
                 suggestedStartTime: suggestedStartTime,
-                autoOpenServicePicker: _shouldAutoOpenServicePicker && i == 0,
+                autoOpenServicePicker:
+                    (_shouldAutoOpenServicePicker && i == 0) ||
+                    _autoOpenServicePickerIndex == i,
                 onServicePickerAutoOpened:
-                    _shouldAutoOpenServicePicker && i == 0
-                    ? _onServicePickerAutoOpened
+                    (_shouldAutoOpenServicePicker && i == 0) ||
+                        _autoOpenServicePickerIndex == i
+                    ? () {
+                        if (_shouldAutoOpenServicePicker && i == 0) {
+                          _onServicePickerAutoOpened();
+                        }
+                        _onServicePickerAutoOpenedForIndex(i);
+                      }
                     : null,
                 onServicePickerAutoCompleted: _scrollFormToBottom,
                 onAutoOpenStaffPickerCompleted: _scrollFormToBottom,
@@ -958,6 +967,13 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     });
   }
 
+  void _onServicePickerAutoOpenedForIndex(int index) {
+    if (_autoOpenServicePickerIndex != index) return;
+    setState(() {
+      _autoOpenServicePickerIndex = null;
+    });
+  }
+
   void _addService() {
     final variants = ref.read(serviceVariantsProvider);
     // Calcola l'orario di inizio per il nuovo servizio
@@ -975,6 +991,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     // 2. Leave null for user selection
     int? smartStaffId = widget.initialStaffId;
 
+    final newIndex = _serviceItems.length;
     setState(() {
       _serviceItems.add(
         ServiceItemData(
@@ -983,6 +1000,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           staffId: smartStaffId,
         ),
       );
+      _autoOpenServicePickerIndex = newIndex;
     });
   }
 

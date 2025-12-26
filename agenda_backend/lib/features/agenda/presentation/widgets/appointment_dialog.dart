@@ -85,6 +85,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   int _itemKeyCounter = 0;
 
   bool _warningDismissed = false;
+  int? _autoOpenServicePickerIndex;
 
   /// Stato iniziale per rilevare modifiche
   late DateTime _initialDate;
@@ -658,6 +659,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                 onDurationChanged: (duration) =>
                     _updateServiceDuration(i, duration),
                 suggestedStartTime: suggestedStartTime,
+                autoOpenServicePicker: _autoOpenServicePickerIndex == i,
+                onServicePickerAutoOpened: _autoOpenServicePickerIndex == i
+                    ? () => _onServicePickerAutoOpenedForIndex(i)
+                    : null,
                 onServicePickerAutoCompleted: _scrollFormToBottom,
                 onAutoOpenStaffPickerCompleted: _scrollFormToBottom,
                 availabilityWarningMessage: showWarning
@@ -949,6 +954,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         ? _serviceItems.last.staffId
         : widget.initial.staffId;
 
+    final newIndex = _serviceItems.length;
     setState(() {
       _serviceItems.add(
         ServiceItemData(
@@ -957,6 +963,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           staffId: smartStaffId,
         ),
       );
+      _autoOpenServicePickerIndex = newIndex;
+    });
+  }
+
+  void _onServicePickerAutoOpenedForIndex(int index) {
+    if (_autoOpenServicePickerIndex != index) return;
+    setState(() {
+      _autoOpenServicePickerIndex = null;
     });
   }
 
