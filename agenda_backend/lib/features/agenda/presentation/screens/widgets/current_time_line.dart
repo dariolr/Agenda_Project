@@ -135,26 +135,25 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
           ),
           // --- Box dell'orario (centrato verticalmente sulla linea) ---
           Positioned(
-            left: 0,
-            width: widget.hourColumnWidth - _lineMargin,
+            left: -_lineMargin - 1,
+            width: widget.hourColumnWidth,
             top: 0,
             child: FractionalTranslation(
               // Sposta il box del 50% della sua altezza verso l'alto
               // così il suo centro si allinea con la linea
               translation: const Offset(0, -0.5),
               child: Align(
-                alignment: Alignment.centerRight,
+                alignment: Alignment.center,
                 child: Container(
+                  width: double.infinity,
                   decoration: BoxDecoration(
                     color: Colors.redAccent,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 5),
                   child: Text(
                     _label,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
