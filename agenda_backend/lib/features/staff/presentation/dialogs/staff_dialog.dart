@@ -11,6 +11,7 @@ import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/app_switch.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../../agenda/providers/location_providers.dart';
@@ -1008,13 +1009,9 @@ class _SwitchTile extends StatelessWidget {
           child: Row(
             children: [
               Expanded(child: Text(title, style: titleStyle)),
-              Switch.adaptive(
+              AppSwitch(
                 value: value,
                 onChanged: onChanged,
-                activeColor: Theme.of(context).colorScheme.primary,
-                activeTrackColor: Theme.of(
-                  context,
-                ).colorScheme.primary.withOpacity(0.35),
               ),
             ],
           ),
