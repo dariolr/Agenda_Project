@@ -376,7 +376,7 @@ class _AgendaFilterActions extends ConsumerWidget {
                       borderColor: scheme.primary,
                       foregroundColor: scheme.primary,
                       child: buildActionLabel(
-                        Icons.people_outline,
+                        Icons.badge_outlined,
                         l10n.staffFilterTitle,
                       ),
                     ),
