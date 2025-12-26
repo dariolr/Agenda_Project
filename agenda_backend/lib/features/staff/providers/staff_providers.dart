@@ -36,7 +36,7 @@ class StaffNotifier extends Notifier<List<Staff>> {
         name: 'Sara',
         surname: 'Verdi',
         color: const Color(0xFFF50057),
-        locationIds: const [101, 102],
+        locationIds: const [101],
         sortOrder: 2,
         isBookableOnline: false,
       ),
