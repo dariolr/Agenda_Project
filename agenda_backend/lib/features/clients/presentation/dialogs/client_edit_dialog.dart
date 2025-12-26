@@ -250,7 +250,7 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
                 Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).viewInsets.bottom,
+                      bottom: 0,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

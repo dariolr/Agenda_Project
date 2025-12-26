@@ -179,7 +179,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                         left: 16,
                         right: 16,
                         top: 12,
-                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                        bottom: 0,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

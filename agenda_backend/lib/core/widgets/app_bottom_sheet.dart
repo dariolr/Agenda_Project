@@ -61,9 +61,7 @@ class AppBottomSheetContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Ottieni l'altezza della tastiera per aggiungere padding extra
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
     Widget content;
 
     // Apply height constraint if heightFactor is provided
@@ -88,35 +86,34 @@ class AppBottomSheetContainer extends StatelessWidget {
       content = Padding(padding: padding, child: child);
     }
 
-    if (!showHandle) {
-      return Padding(
-        padding: EdgeInsets.only(bottom: keyboardHeight),
-        child: content,
-      );
-    }
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: keyboardHeight),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 8),
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(4),
+    final body = showHandle
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Flexible permette al contenuto di adattarsi senza forzare
-          // l'altezza massima della bottom sheet.
-          Flexible(child: content),
-        ],
-      ),
+              const SizedBox(height: 12),
+              // Flexible permette al contenuto di adattarsi senza forzare
+              // l'altezza massima della bottom sheet.
+              Flexible(child: content),
+            ],
+          )
+        : content;
+
+    return AnimatedPadding(
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      child: body,
     );
   }
 }
