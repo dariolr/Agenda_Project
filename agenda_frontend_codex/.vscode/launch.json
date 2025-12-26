@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FRONTEND Solo Chrome",
+      "type": "dart",
+      "request": "launch",
+      "deviceId": "chrome",
+      "args": ["--web-port=8080"]
+    }
+
+
+    
+  ]
+}
