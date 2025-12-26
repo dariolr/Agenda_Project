@@ -541,9 +541,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).viewInsets.bottom,
-                    ),
+                    padding: EdgeInsets.zero,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Column(

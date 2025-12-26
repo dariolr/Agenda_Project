@@ -189,7 +189,7 @@ Future<void> showCategoryDialog(
                 Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                      bottom: 0,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
