@@ -120,7 +120,7 @@ class _AgendaStaffFilterSelectorState
       }
       return IconButton(
         tooltip: l10n.staffFilterTooltip,
-        icon: const Icon(Icons.people_outline),
+        icon: const Icon(Icons.badge_outlined),
         iconSize: formFactor == AppFormFactor.mobile ? 22 : 33,
         onPressed: onPressed,
       );
