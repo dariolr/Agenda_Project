@@ -512,7 +512,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   0,
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: actions.length == 3
+                      ? MainAxisAlignment.center
+                      : MainAxisAlignment.end,
                   children: [
                     for (int i = 0; i < actions.length; i++) ...[
                       if (i > 0) const SizedBox(width: 8),
