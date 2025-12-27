@@ -1,57 +1,73 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/appointment.dart';
+import '../../../core/network/network_providers.dart';
 import '../../agenda/providers/appointment_providers.dart';
+import '../../agenda/providers/business_providers.dart';
 import '../data/clients_repository.dart';
-import '../data/mock_clients.dart';
 import '../domain/client_sort_option.dart';
 import '../domain/clients.dart';
 
-// Repository provider (mock)
+// Repository provider con ApiClient
 final clientsRepositoryProvider = Provider<ClientsRepository>((ref) {
-  return ClientsRepository();
+  final apiClient = ref.watch(apiClientProvider);
+  return ClientsRepository(apiClient: apiClient);
 });
 
-/// Notifier principale che mantiene la lista clienti.
-class ClientsNotifier extends Notifier<List<Client>> {
-  int _nextId = 1000;
-
+/// AsyncNotifier per caricare i clienti dall'API
+class ClientsNotifier extends AsyncNotifier<List<Client>> {
   @override
-  List<Client> build() {
-    // Stato iniziale mock
-    return kMockClients;
+  Future<List<Client>> build() async {
+    final repository = ref.watch(clientsRepositoryProvider);
+    final business = ref.watch(currentBusinessProvider);
+    return repository.getAll(business.id);
   }
 
-  /// Aggiunge un nuovo cliente e restituisce il client con l'ID assegnato.
-  Client addClient(Client client) {
-    final newClient = client.copyWith(id: _nextId++, createdAt: DateTime.now());
-    state = [...state, newClient];
+  /// Ricarica i clienti dall'API
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(clientsRepositoryProvider);
+      final business = ref.read(currentBusinessProvider);
+      return repository.getAll(business.id);
+    });
+  }
+
+  /// Aggiunge un nuovo cliente via API e aggiorna lo state locale
+  Future<Client> addClient(Client client) async {
+    final repository = ref.read(clientsRepositoryProvider);
+    final newClient = await repository.add(client);
+    state = AsyncValue.data([...state.value ?? [], newClient]);
     return newClient;
   }
 
-  void updateClient(Client client) {
-    state = [
-      for (final c in state)
-        if (c.id == client.id) client else c,
-    ];
+  /// Aggiorna un cliente via API e aggiorna lo state locale
+  Future<void> updateClient(Client client) async {
+    final repository = ref.read(clientsRepositoryProvider);
+    final updated = await repository.save(client);
+    state = AsyncValue.data([
+      for (final c in state.value ?? [])
+        if (c.id == updated.id) updated else c,
+    ]);
   }
 
-  void deleteClient(int id) {
-    // Soft delete -> isArchived
-    state = [
-      for (final c in state)
-        if (c.id == id) c.copyWith(isArchived: true) else c,
-    ];
+  /// Soft delete - imposta isArchived = true
+  Future<void> deleteClient(int id) async {
+    final current = state.value?.firstWhere((c) => c.id == id);
+    if (current == null) return;
+    final archived = current.copyWith(isArchived: true);
+    await updateClient(archived);
   }
 }
 
-final clientsProvider = NotifierProvider<ClientsNotifier, List<Client>>(
+final clientsProvider = AsyncNotifierProvider<ClientsNotifier, List<Client>>(
   ClientsNotifier.new,
 );
 
-// Indicizzazione rapida per id
+// Indicizzazione rapida per id (restituisce mappa vuota se ancora in caricamento)
 final clientsByIdProvider = Provider<Map<int, Client>>((ref) {
-  final list = ref.watch(clientsProvider);
+  final asyncClients = ref.watch(clientsProvider);
+  final list = asyncClients.value ?? [];
   return {for (final c in list) c.id: c};
 });
 
@@ -123,8 +139,8 @@ List<Client> _sortClients(List<Client> clients, ClientSortOption sort) {
 /// Provider che restituisce la lista clienti ordinata secondo il criterio corrente
 /// Esclude i clienti archiviati (isArchived = true)
 final sortedClientsProvider = Provider<List<Client>>((ref) {
-  final clients = ref
-      .watch(clientsProvider)
+  final asyncClients = ref.watch(clientsProvider);
+  final clients = (asyncClients.value ?? [])
       .where((c) => !c.isArchived)
       .toList();
   final sortOption = ref.watch(clientSortOptionProvider);
@@ -136,13 +152,14 @@ final sortedClientsProvider = Provider<List<Client>>((ref) {
 final clientsSearchProvider = Provider.family<List<Client>, String>((ref, q) {
   final sortOption = ref.watch(clientSortOptionProvider);
   final query = q.trim().toLowerCase();
+  final asyncClients = ref.watch(clientsProvider);
+  final allClients = asyncClients.value ?? [];
 
   List<Client> result;
   if (query.isEmpty) {
-    result = ref.watch(clientsProvider).where((c) => !c.isArchived).toList();
+    result = allClients.where((c) => !c.isArchived).toList();
   } else {
-    result = ref
-        .watch(clientsProvider)
+    result = allClients
         .where(
           (c) =>
               !c.isArchived &&
@@ -165,8 +182,8 @@ DateTime _now() => DateTime.now();
 
 final inactiveClientsProvider = Provider<List<Client>>((ref) {
   final limit = _now().subtract(const Duration(days: _kInactiveDays));
-  return ref
-      .watch(clientsProvider)
+  final asyncClients = ref.watch(clientsProvider);
+  return (asyncClients.value ?? [])
       .where(
         (c) =>
             !c.isArchived &&
@@ -177,23 +194,23 @@ final inactiveClientsProvider = Provider<List<Client>>((ref) {
 
 final newClientsProvider = Provider<List<Client>>((ref) {
   final limit = _now().subtract(const Duration(days: _kNewDays));
-  return ref
-      .watch(clientsProvider)
+  final asyncClients = ref.watch(clientsProvider);
+  return (asyncClients.value ?? [])
       .where((c) => !c.isArchived && c.createdAt.isAfter(limit))
       .toList();
 });
 
 final vipClientsProvider = Provider<List<Client>>((ref) {
-  return ref
-      .watch(clientsProvider)
+  final asyncClients = ref.watch(clientsProvider);
+  return (asyncClients.value ?? [])
       .where((c) => !c.isArchived && (c.tags?.contains('VIP') ?? false))
       .toList();
 });
 
 final frequentClientsProvider = Provider<List<Client>>((ref) {
+  final asyncClients = ref.watch(clientsProvider);
   // Placeholder: usa loyaltyPoints come proxy delle visite
-  return ref
-      .watch(clientsProvider)
+  return (asyncClients.value ?? [])
       .where(
         (c) => !c.isArchived && (c.loyaltyPoints ?? 0) >= _kFrequentThreshold,
       )
@@ -205,7 +222,7 @@ final clientWithAppointmentsProvider = Provider.family<List<Appointment>, int>((
   ref,
   clientId,
 ) {
-  final all = ref.watch(appointmentsProvider);
+  final all = ref.watch(appointmentsProvider).value ?? [];
   return all.where((a) => a.clientId == clientId).toList();
 });
 

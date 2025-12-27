@@ -257,10 +257,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final isDialog = widget.presentation == _AppointmentPresentation.dialog;
 
     final formFactor = ref.watch(formFactorProvider);
-    final services = ref.watch(servicesProvider);
+    final services = ref.watch(servicesProvider).value ?? [];
     final serviceCategories = ref.watch(serviceCategoriesProvider);
-    final variants = ref.watch(serviceVariantsProvider);
-    final clients = ref.watch(clientsProvider);
+    final variants = ref.watch(serviceVariantsProvider).value ?? [];
+    final asyncClients = ref.watch(clientsProvider);
+    final clients = asyncClients.value ?? [];
     final staff = ref.watch(staffForCurrentLocationProvider);
 
     final title = l10n.appointmentDialogTitleEdit;
@@ -393,7 +394,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             ),
           );
           if (confirmed == true) {
-            ref
+            await ref
                 .read(bookingsProvider.notifier)
                 .deleteBooking(widget.initial.bookingId);
             if (context.mounted) Navigator.of(context).pop();
@@ -598,12 +599,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           : (defaultProcessing > 0 ? ExtraMinutesType.processing : null);
       final hasBlockedExtra = item.blockedExtraMinutes > 0;
       final hasProcessingExtra = item.processingExtraMinutes > 0;
-      final canAddDefaultExtra =
-          defaultExtraType == ExtraMinutesType.blocked
-              ? !hasBlockedExtra
-              : (defaultExtraType == ExtraMinutesType.processing
-                    ? !hasProcessingExtra
-                    : false);
+      final canAddDefaultExtra = defaultExtraType == ExtraMinutesType.blocked
+          ? !hasBlockedExtra
+          : (defaultExtraType == ExtraMinutesType.processing
+                ? !hasProcessingExtra
+                : false);
       final showWarning =
           showServiceWarnings &&
           _isWarningEligible(item) &&
@@ -680,8 +680,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                     AppOutlinedActionButton(
                       onPressed: () {
                         setState(() {
-                          _serviceItems[i] = defaultExtraType ==
-                                  ExtraMinutesType.blocked
+                          _serviceItems[i] =
+                              defaultExtraType == ExtraMinutesType.blocked
                               ? _serviceItems[i].copyWith(
                                   blockedExtraMinutes: defaultBlocked,
                                 )
@@ -720,8 +720,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   child: AppOutlinedActionButton(
                     onPressed: () {
                       setState(() {
-                        _serviceItems[i] = defaultExtraType ==
-                                ExtraMinutesType.blocked
+                        _serviceItems[i] =
+                            defaultExtraType == ExtraMinutesType.blocked
                             ? _serviceItems[i].copyWith(
                                 blockedExtraMinutes: defaultBlocked,
                               )
@@ -798,8 +798,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               ),
               const SizedBox(height: 8),
             ],
-            if (isLast && item.serviceId != null &&
-                !canAddDefaultExtra) ...[
+            if (isLast && item.serviceId != null && !canAddDefaultExtra) ...[
               Align(
                 alignment: Alignment.centerRight,
                 child: AppOutlinedActionButton(
@@ -937,7 +936,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   }
 
   void _addService() {
-    final variants = ref.read(serviceVariantsProvider);
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
     // Calcola l'orario di inizio per il nuovo servizio
     TimeOfDay nextStart;
     if (_serviceItems.isEmpty) {
@@ -977,7 +976,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   void _removeServiceItem(int index) {
     if (_serviceItems.length <= 1) return;
 
-    final variants = ref.read(serviceVariantsProvider);
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
 
     setState(() {
       _serviceItems.removeAt(index);
@@ -988,7 +987,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   }
 
   void _updateServiceItem(int index, ServiceItemData updated) {
-    final variants = ref.read(serviceVariantsProvider);
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
 
     setState(() {
       _serviceItems[index] = updated;
@@ -1006,7 +1005,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   }
 
   void _updateServiceStartTime(int index, TimeOfDay newTime) {
-    final variants = ref.read(serviceVariantsProvider);
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
 
     setState(() {
       final updated = _serviceItems[index].copyWith(startTime: newTime);
@@ -1034,7 +1033,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       _serviceItems[index] = item.copyWith(durationMinutes: newDuration);
 
       // Ricalcola gli orari per i servizi successivi
-      final variants = ref.read(serviceVariantsProvider);
+      final variants = ref.read(serviceVariantsProvider).value ?? [];
       _serviceItems[index] = _applyAutoExtraStart(
         _serviceItems[index],
         variants,
@@ -1050,7 +1049,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       );
 
       // Ricalcola gli orari per i servizi successivi
-      final variants = ref.read(serviceVariantsProvider);
+      final variants = ref.read(serviceVariantsProvider).value ?? [];
       _serviceItems[index] = _applyAutoExtraStart(
         _serviceItems[index],
         variants,
@@ -1146,8 +1145,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       return;
     }
 
-    final variants = ref.read(serviceVariantsProvider);
-    final services = ref.read(servicesProvider);
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
+    final services = ref.read(servicesProvider).value ?? [];
 
     // Client info (può essere null se nessun cliente è associato)
     final int? clientId = _clientId;
@@ -1223,9 +1222,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       final processingExtraMinutes = item.processingExtraMinutes;
       final extraMinutesType = blockedExtraMinutes > 0
           ? ExtraMinutesType.blocked
-          : (processingExtraMinutes > 0
-                ? ExtraMinutesType.processing
-                : null);
+          : (processingExtraMinutes > 0 ? ExtraMinutesType.processing : null);
       final extraMinutes = extraMinutesType == ExtraMinutesType.blocked
           ? blockedExtraMinutes
           : (extraMinutesType == ExtraMinutesType.processing
@@ -1274,7 +1271,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         scrollTarget ??= updated;
       } else {
         // Crea nuovo appuntamento (aggiunto durante la modifica)
-        final created = ref
+        final created = await ref
             .read(appointmentsProvider.notifier)
             .addAppointment(
               bookingId: bookingId,
@@ -1564,7 +1561,8 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
 
   List<Client> get _filteredClients {
     // Use live clients from provider to get updates after creation
-    final clients = ref.watch(clientsProvider);
+    final asyncClients = ref.watch(clientsProvider);
+    final clients = asyncClients.value ?? [];
     if (_searchQuery.isEmpty) return clients;
     final q = _searchQuery.toLowerCase();
     return clients.where((c) => c.name.toLowerCase().contains(q)).toList();

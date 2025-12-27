@@ -5,11 +5,13 @@ import '/core/models/appointment.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
 import '../../../../../../core/l10n/l10_extension.dart';
 import '../../../../../../core/widgets/app_dialogs.dart';
+import '../../../../clients/providers/clients_providers.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_interaction_lock_provider.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/bookings_provider.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/drag_session_provider.dart';
@@ -24,8 +26,6 @@ import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../../widgets/appointment_dialog.dart';
-import '../../../../clients/providers/clients_providers.dart';
-import '../../../providers/bookings_provider.dart';
 
 /// 🔹 Versione unificata per DESKTOP e MOBILE.
 /// Mantiene drag, resize, ghost, select, ma cambia il comportamento del tap:
@@ -436,6 +436,7 @@ class _AppointmentCardInteractiveState
     // modificato tramite resize o drag)
     final currentAppointment = ref
         .read(appointmentsProvider)
+        .requireValue
         .firstWhere((a) => a.id == widget.appointment.id);
 
     // Apre direttamente la vista di modifica dell'appuntamento
@@ -456,6 +457,7 @@ class _AppointmentCardInteractiveState
     // modificato tramite resize o drag)
     final currentAppointment = ref
         .read(appointmentsProvider)
+        .requireValue
         .firstWhere((a) => a.id == widget.appointment.id);
 
     // Apre direttamente la vista di modifica dell'appuntamento
@@ -481,12 +483,11 @@ class _AppointmentCardInteractiveState
     final bookingNotes = booking?.notes?.trim();
     final clientNotes = widget.appointment.clientId != null
         ? ref
-            .watch(clientsByIdProvider)[widget.appointment.clientId!]
-            ?.notes
-            ?.trim()
+              .watch(clientsByIdProvider)[widget.appointment.clientId!]
+              ?.notes
+              ?.trim()
         : null;
-    final hasBookingNotes =
-        bookingNotes != null && bookingNotes.isNotEmpty;
+    final hasBookingNotes = bookingNotes != null && bookingNotes.isNotEmpty;
     final hasClientNotes = clientNotes != null && clientNotes.isNotEmpty;
     final hasNotes = hasBookingNotes || hasClientNotes;
 
@@ -561,9 +562,9 @@ class _AppointmentCardInteractiveState
                     showNotes: hasNotes && !forFeedback,
                     onNotesTap: hasNotes && !forFeedback
                         ? () => _showNotesDialog(
-                              bookingNotes: hasBookingNotes ? bookingNotes : null,
-                              clientNotes: hasClientNotes ? clientNotes : null,
-                            )
+                            bookingNotes: hasBookingNotes ? bookingNotes : null,
+                            clientNotes: hasClientNotes ? clientNotes : null,
+                          )
                         : null,
                   ),
                 ),
@@ -676,10 +677,7 @@ class _AppointmentCardInteractiveState
     );
   }
 
-  void _showNotesDialog({
-    String? bookingNotes,
-    String? clientNotes,
-  }) {
+  void _showNotesDialog({String? bookingNotes, String? clientNotes}) {
     if ((bookingNotes == null || bookingNotes.trim().isEmpty) &&
         (clientNotes == null || clientNotes.trim().isEmpty)) {
       return;
@@ -687,10 +685,12 @@ class _AppointmentCardInteractiveState
     final l10n = context.l10n;
     final sections = <Widget>[];
     if (clientNotes != null && clientNotes.trim().isNotEmpty) {
-      sections.add(Text(
-        l10n.clientNoteLabel,
-        style: Theme.of(context).textTheme.titleSmall,
-      ));
+      sections.add(
+        Text(
+          l10n.clientNoteLabel,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+      );
       sections.add(const SizedBox(height: 4));
       sections.add(Text(clientNotes.trim()));
     }
@@ -698,10 +698,12 @@ class _AppointmentCardInteractiveState
       if (sections.isNotEmpty) {
         sections.add(const SizedBox(height: 12));
       }
-      sections.add(Text(
-        l10n.appointmentNoteLabel,
-        style: Theme.of(context).textTheme.titleSmall,
-      ));
+      sections.add(
+        Text(
+          l10n.appointmentNoteLabel,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+      );
       sections.add(const SizedBox(height: 4));
       sections.add(Text(bookingNotes.trim()));
     }
@@ -720,7 +722,6 @@ class _AppointmentCardInteractiveState
     );
   }
 
-  
   double _extraMinutesRatio(DateTime start, DateTime end) {
     final totalMinutes = end.difference(start).inMinutes;
     if (totalMinutes <= 0) return 0;
@@ -966,7 +967,6 @@ class _AppointmentCardInteractiveState
       ),
     );
   }
-
 } // Closing brace for _AppointmentCardInteractiveState
 
 class _ExtraMinutesBand extends StatelessWidget {

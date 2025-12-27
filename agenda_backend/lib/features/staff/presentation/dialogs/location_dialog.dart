@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
+import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/location.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
-import '../../../../app/theme/app_spacing.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../../agenda/providers/location_providers.dart';
 
@@ -165,8 +165,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       top: false,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isKeyboardOpen =
-              MediaQuery.of(context).viewInsets.bottom > 0;
+          final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
           return SizedBox(
             height: constraints.maxHeight,
             child: Column(
@@ -235,7 +234,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     final address = _addressController.text.trim();
 
     if (widget.initial != null) {
-      notifier.update(
+      notifier.updateItem(
         widget.initial!.copyWith(
           name: name,
           address: address.isEmpty ? null : address,
