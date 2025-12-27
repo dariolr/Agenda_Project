@@ -1,76 +1,40 @@
-import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/staff.dart';
+import 'staff_repository_provider.dart';
 
-class StaffNotifier extends Notifier<List<Staff>> {
+class StaffNotifier extends AsyncNotifier<List<Staff>> {
   @override
-  List<Staff> build() {
-    final business = ref.watch(currentBusinessProvider);
-    return [
-      Staff(
-        id: 1,
-        businessId: business.id,
-        name: 'Dario',
-        surname: 'La Rosa',
-        color: const Color(0xFF2962FF),
-        locationIds: const [101],
-        sortOrder: 0,
-        isBookableOnline: true,
-      ),
-      Staff(
-        id: 2,
-        businessId: business.id,
-        name: 'Luca',
-        surname: 'Bianchi',
-        color: const Color(0xFF536DFE),
-        locationIds: const [102],
-        sortOrder: 1,
-        isBookableOnline: true,
-      ),
-      Staff(
-        id: 3,
-        businessId: business.id,
-        name: 'Sara',
-        surname: 'Verdi',
-        color: const Color(0xFFF50057),
-        locationIds: const [101],
-        sortOrder: 2,
-        isBookableOnline: false,
-      ),
-      Staff(
-        id: 4,
-        businessId: business.id,
-        name: 'Alessia',
-        surname: 'Neri',
-        color: const Color(0xFFFF4081),
-        locationIds: const [101],
-        sortOrder: 3,
-        isBookableOnline: true,
-      ),
-    ];
+  Future<List<Staff>> build() async {
+    final repository = ref.watch(staffRepositoryProvider);
+    final location = ref.watch(currentLocationProvider);
+    return repository.getByLocation(location.id);
   }
 
   void add(Staff staff) {
-    state = [...state, staff];
+    final current = state.value ?? [];
+    state = AsyncData([...current, staff]);
   }
 
-  void update(Staff updated) {
-    state = [
-      for (final s in state)
+  void updateStaff(Staff updated) {
+    final current = state.value ?? [];
+    state = AsyncData([
+      for (final s in current)
         if (s.id == updated.id) updated else s,
-    ];
+    ]);
   }
 
   void delete(int id) {
-    state = state.where((s) => s.id != id).toList();
+    final current = state.value ?? [];
+    state = AsyncData(current.where((s) => s.id != id).toList());
   }
 
   void duplicate(Staff original) {
-    final newId = _nextId();
-    final existingNames = state.map((s) => s.displayName).toSet();
+    final current = state.value ?? [];
+    final newId = _nextId(current);
+    final existingNames = current.map((s) => s.displayName).toSet();
     var base = original.displayName;
     var candidate = '$base Copia';
     var i = 1;
@@ -80,37 +44,30 @@ class StaffNotifier extends Notifier<List<Staff>> {
     }
     final parts = candidate.split(' ');
     final name = parts.first;
-    final surname =
-        parts.length > 1 ? parts.sublist(1).join(' ') : original.surname;
-    add(
-      original.copyWith(
-        id: newId,
-        name: name,
-        surname: surname,
-      ),
-    );
+    final surname = parts.length > 1
+        ? parts.sublist(1).join(' ')
+        : original.surname;
+    add(original.copyWith(id: newId, name: name, surname: surname));
   }
 
-  int nextId() => _nextId();
+  int nextId() => _nextId(state.value ?? []);
 
   int nextSortOrderForLocations(Iterable<int> locationIds) {
-    if (state.isEmpty) return 0;
+    final current = state.value ?? [];
+    if (current.isEmpty) return 0;
     final ids = locationIds.toSet();
     final relevant = ids.isEmpty
-        ? state
-        : state.where((s) => s.locationIds.any(ids.contains));
-    final base = relevant.isEmpty ? state : relevant;
-    final maxSort = base
-        .map((s) => s.sortOrder)
-        .reduce((a, b) => a > b ? a : b);
-    return maxSort + 1;
+        ? current
+        : current.where((s) => s.locationIds.any(ids.contains));
+    if (relevant.isEmpty) return 0;
+    return relevant.map((s) => s.sortOrder).reduce((a, b) => a > b ? a : b) + 1;
   }
 
   void reorderForLocation(int locationId, int oldIndex, int newIndex) {
-    final inLocation = state
-        .where((s) => s.worksAtLocation(locationId))
-        .toList()
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final current = state.value ?? [];
+    final inLocation =
+        current.where((s) => s.worksAtLocation(locationId)).toList()
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     if (newIndex > oldIndex) newIndex -= 1;
     final item = inLocation.removeAt(oldIndex);
@@ -122,24 +79,24 @@ class StaffNotifier extends Notifier<List<Staff>> {
     }
 
     final updatedAll = [
-      for (final s in state)
+      for (final s in current)
         if (s.worksAtLocation(locationId))
           updated.firstWhere((u) => u.id == s.id)
         else
           s,
     ];
 
-    state = updatedAll;
+    state = AsyncData(updatedAll);
   }
 
-  int _nextId() {
-    if (state.isEmpty) return 1;
-    final maxId = state.map((s) => s.id).reduce((a, b) => a > b ? a : b);
+  int _nextId(List<Staff> current) {
+    if (current.isEmpty) return 1;
+    final maxId = current.map((s) => s.id).reduce((a, b) => a > b ? a : b);
     return maxId + 1;
   }
 }
 
-final allStaffProvider = NotifierProvider<StaffNotifier, List<Staff>>(
+final allStaffProvider = AsyncNotifierProvider<StaffNotifier, List<Staff>>(
   StaffNotifier.new,
 );
 
@@ -153,13 +110,14 @@ List<Staff> _sortStaff(List<Staff> staff) {
 }
 
 final sortedAllStaffProvider = Provider<List<Staff>>((ref) {
-  final staff = ref.watch(allStaffProvider);
-  return _sortStaff(staff);
+  final staffAsync = ref.watch(allStaffProvider);
+  return _sortStaff(staffAsync.value ?? []);
 });
 
 final staffForCurrentLocationProvider = Provider<List<Staff>>((ref) {
   final location = ref.watch(currentLocationProvider);
-  final staff = ref.watch(allStaffProvider);
+  final staffAsync = ref.watch(allStaffProvider);
+  final staff = staffAsync.value ?? [];
   return _sortStaff([
     for (final member in staff)
       if (member.worksAtLocation(location.id)) member,
@@ -189,7 +147,8 @@ final staffSectionLocationIdProvider =
 /// Se locationId è null (tutte le sedi), restituisce tutti gli staff.
 final staffForStaffSectionProvider = Provider<List<Staff>>((ref) {
   final locationId = ref.watch(staffSectionLocationIdProvider);
-  final staff = ref.watch(allStaffProvider);
+  final staffAsync = ref.watch(allStaffProvider);
+  final staff = staffAsync.value ?? [];
 
   if (locationId == null) {
     // Tutte le sedi: restituisci tutti gli staff

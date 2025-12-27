@@ -160,24 +160,24 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
     );
     if (!confirm) return;
 
-    ref.read(clientsProvider.notifier).deleteClient(client.id);
+    await ref.read(clientsProvider.notifier).deleteClient(client.id);
     if (mounted) Navigator.of(context).pop();
   }
 
-  void _onSave() {
+  Future<void> _onSave() async {
     final formState = _form.currentState;
     if (formState == null) return;
     if (!formState.validate()) return;
 
     final client = formState.buildClient();
-    final Client savedClient;
+    Client savedClient;
     if (widget.isExistingClient) {
-      ref.read(clientsProvider.notifier).updateClient(client);
+      await ref.read(clientsProvider.notifier).updateClient(client);
       savedClient = client;
     } else {
-      savedClient = ref.read(clientsProvider.notifier).addClient(client);
+      savedClient = await ref.read(clientsProvider.notifier).addClient(client);
     }
-    Navigator.of(context).pop(savedClient);
+    if (mounted) Navigator.of(context).pop(savedClient);
   }
 }
 
@@ -240,8 +240,7 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
       top: false,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isKeyboardOpen =
-              MediaQuery.of(context).viewInsets.bottom > 0;
+          final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
           return SizedBox(
             height: constraints.maxHeight,
             child: Column(
@@ -249,9 +248,7 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      bottom: 0,
-                    ),
+                    padding: EdgeInsets.only(bottom: 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -342,23 +339,23 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
     );
     if (!confirm) return;
 
-    ref.read(clientsProvider.notifier).deleteClient(client.id);
+    await ref.read(clientsProvider.notifier).deleteClient(client.id);
     if (mounted) Navigator.of(context).pop();
   }
 
-  void _onSave() {
+  Future<void> _onSave() async {
     final formState = _form.currentState;
     if (formState == null) return;
     if (!formState.validate()) return;
 
     final client = formState.buildClient();
-    final Client savedClient;
+    Client savedClient;
     if (widget.isExistingClient) {
-      ref.read(clientsProvider.notifier).updateClient(client);
+      await ref.read(clientsProvider.notifier).updateClient(client);
       savedClient = client;
     } else {
-      savedClient = ref.read(clientsProvider.notifier).addClient(client);
+      savedClient = await ref.read(clientsProvider.notifier).addClient(client);
     }
-    Navigator.of(context).pop(savedClient);
+    if (mounted) Navigator.of(context).pop(savedClient);
   }
 }

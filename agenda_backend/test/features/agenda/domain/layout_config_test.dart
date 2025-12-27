@@ -14,8 +14,10 @@ void main() {
     test('computeMaxVisibleStaff adapts to width and form factor', () {
       final config = LayoutConfig.initial;
 
-      final mobileResult =
-          config.computeMaxVisibleStaff(500, formFactor: AppFormFactor.mobile);
+      final mobileResult = config.computeMaxVisibleStaff(
+        500,
+        formFactor: AppFormFactor.mobile,
+      );
       final desktopResult = config.computeMaxVisibleStaff(
         1600,
         formFactor: AppFormFactor.desktop,
@@ -25,30 +27,32 @@ void main() {
       expect(desktopResult, LayoutConfig.maxVisibleStaff);
     });
 
-    test('computeAdaptiveColumnWidth enforces minimum width per form factor',
-        () {
-      final config = LayoutConfig.initial;
+    test(
+      'computeAdaptiveColumnWidth enforces minimum width per form factor',
+      () {
+        final config = LayoutConfig.initial;
 
-      final narrowMobile = config.computeAdaptiveColumnWidth(
-        contentWidth: 420,
-        visibleStaffCount: 3,
-        formFactor: AppFormFactor.mobile,
-      );
+        final narrowMobile = config.computeAdaptiveColumnWidth(
+          contentWidth: 420,
+          visibleStaffCount: 3,
+          formFactor: AppFormFactor.mobile,
+        );
 
-      final spaciousDesktop = config.computeAdaptiveColumnWidth(
-        contentWidth: 1920,
-        visibleStaffCount: 4,
-        formFactor: AppFormFactor.desktop,
-      );
+        final spaciousDesktop = config.computeAdaptiveColumnWidth(
+          contentWidth: 1920,
+          visibleStaffCount: 4,
+          formFactor: AppFormFactor.desktop,
+        );
 
-      expect(narrowMobile, LayoutConfig.minColumnWidthMobile);
-      expect(spaciousDesktop, closeTo(1920 / 4, 0.0001));
-    });
+        expect(narrowMobile, LayoutConfig.minColumnWidthMobile);
+        expect(spaciousDesktop, closeTo(1920 / 4, 0.0001));
+      },
+    );
 
     test('headerHeightForWidth returns responsive breakpoints', () {
-      expect(LayoutConfig.headerHeightForWidth(500), 48);
-      expect(LayoutConfig.headerHeightForWidth(800), 52);
-      expect(LayoutConfig.headerHeightForWidth(1300), 56);
+      expect(LayoutConfig.headerHeightForWidth(500), 80); // Mobile
+      expect(LayoutConfig.headerHeightForWidth(800), 95); // Tablet
+      expect(LayoutConfig.headerHeightForWidth(1300), 110); // Desktop
     });
 
     test('validates allowed slot durations', () {

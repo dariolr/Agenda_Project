@@ -127,10 +127,7 @@ class _SwitchTile extends StatelessWidget {
                   ],
                 ),
               ),
-              AppSwitch(
-                value: value,
-                onChanged: enabled ? onChanged : null,
-              ),
+              AppSwitch(value: value, onChanged: enabled ? onChanged : null),
             ],
           ),
         ),
@@ -185,7 +182,7 @@ Future<void> showServiceDialog(
   bool duplicateFrom = false,
 }) async {
   final notifier = ref.read(servicesProvider.notifier);
-  final allServices = ref.read(servicesProvider);
+  final allServices = ref.read(servicesProvider).value ?? [];
   final categories = ref.read(serviceCategoriesProvider);
   final isEditing = service != null && !duplicateFrom;
   final existingVariant = service != null
@@ -410,7 +407,7 @@ Future<void> showServiceDialog(
       if (!isEditing) {
         notifier.add(newService);
       } else {
-        notifier.update(newService);
+        notifier.updateService(newService);
       }
       ref.read(serviceVariantsProvider.notifier).upsert(newVariant);
       eligibilityNotifier.setEligibleStaffForService(
@@ -1021,44 +1018,47 @@ Future<void> showServiceDialog(
       return SafeArea(
         top: false,
         child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isKeyboardOpen =
-              MediaQuery.of(context).viewInsets.bottom > 0;
-          return SizedBox(
-            height: constraints.maxHeight,
-            child: Column(
+          builder: (context, constraints) {
+            final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+            return SizedBox(
+              height: constraints.maxHeight,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.zero,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Text(
-                                  dialogTitle,
-                                  style: Theme.of(context).textTheme.titleLarge,
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Text(
+                                    dialogTitle,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleLarge,
+                                  ),
                                 ),
-                              ),
-                              body,
-                              const SizedBox(height: 24),
-                              const SizedBox(height: AppSpacing.formRowSpacing),
-                            ],
+                                body,
+                                const SizedBox(height: 24),
+                                const SizedBox(
+                                  height: AppSpacing.formRowSpacing,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
                   if (!isKeyboardOpen) ...[
                     const AppBottomSheetDivider(),
                     Padding(

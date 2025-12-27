@@ -203,7 +203,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     // Partiziona categorie piene e vuote
-    final services = ref.watch(servicesProvider);
+    final services = ref.watch(servicesProvider).value ?? [];
     final isNonEmpty = <int, bool>{
       for (final c in cats) c.id: services.any((s) => s.categoryId == c.id),
     };
@@ -499,12 +499,11 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   ) {
     final servicesNotifier = ref.read(servicesProvider.notifier);
     Color? mostUsedColorForCategory(ServiceCategory category) {
-      final services = ref
-          .read(servicesProvider)
+      final services = (ref.read(servicesProvider).value ?? [])
           .where((s) => s.categoryId == category.id)
           .toList();
       if (services.isEmpty) return null;
-      final variants = ref.read(serviceVariantsProvider);
+      final variants = ref.read(serviceVariantsProvider).value ?? [];
       final counts = <int, int>{};
       Color? topColor;
       int topCount = 0;

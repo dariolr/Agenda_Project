@@ -1,5 +1,4 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
-import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
@@ -10,11 +9,10 @@ import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/domain/config/agenda_theme.dart';
-import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
-import 'package:agenda_backend/features/staff/presentation/staff_availability_screen.dart';
 import 'package:agenda_backend/features/staff/presentation/dialogs/add_exception_dialog.dart';
+import 'package:agenda_backend/features/staff/presentation/staff_availability_screen.dart';
 import 'package:agenda_backend/features/staff/providers/availability_exceptions_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:agenda_backend/features/staff/widgets/staff_top_controls.dart';
@@ -60,10 +58,7 @@ class _DisplayRange {
 }
 
 class _DashedRoundedRectPainter extends CustomPainter {
-  _DashedRoundedRectPainter({
-    required this.color,
-    required this.radius,
-  });
+  _DashedRoundedRectPainter({required this.color, required this.radius});
 
   final Color color;
   final double radius;
@@ -93,8 +88,7 @@ class _DashedRoundedRectPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DashedRoundedRectPainter oldDelegate) {
-    return oldDelegate.color != color ||
-        oldDelegate.radius != radius;
+    return oldDelegate.color != color || oldDelegate.radius != radius;
   }
 }
 
@@ -109,44 +103,42 @@ List<_DisplayRange> _mergeRangesForDisplay(
 
   final availableToSubtract = subtractAvailableFromBase
       ? exceptions
-          .where(
-            (e) =>
-                e.type == AvailabilityExceptionType.available &&
-                e.startTime != null &&
-                e.endTime != null,
-          )
-          .map<({int start, int end})>(
-            (e) => (
-              start: e.startTime!.hour * 60 + e.startTime!.minute,
-              end: e.endTime!.hour * 60 + e.endTime!.minute,
-            ),
-          )
-          .toList()
+            .where(
+              (e) =>
+                  e.type == AvailabilityExceptionType.available &&
+                  e.startTime != null &&
+                  e.endTime != null,
+            )
+            .map<({int start, int end})>(
+              (e) => (
+                start: e.startTime!.hour * 60 + e.startTime!.minute,
+                end: e.endTime!.hour * 60 + e.endTime!.minute,
+              ),
+            )
+            .toList()
       : const <({int start, int end})>[];
 
   final unavailable = applyUnavailableSplit
       ? exceptions
-          .where(
-            (e) =>
-                e.type == AvailabilityExceptionType.unavailable &&
-                e.startTime != null &&
-                e.endTime != null,
-          )
-          .map<({int start, int end})>(
-            (e) => (
-              start: e.startTime!.hour * 60 + e.startTime!.minute,
-              end: e.endTime!.hour * 60 + e.endTime!.minute,
-            ),
-          )
-          .toList()
+            .where(
+              (e) =>
+                  e.type == AvailabilityExceptionType.unavailable &&
+                  e.startTime != null &&
+                  e.endTime != null,
+            )
+            .map<({int start, int end})>(
+              (e) => (
+                start: e.startTime!.hour * 60 + e.startTime!.minute,
+                end: e.endTime!.hour * 60 + e.endTime!.minute,
+              ),
+            )
+            .toList()
       : const <({int start, int end})>[];
 
   for (final r in baseRanges) {
     final baseStart = r.startHour * 60 + r.startMinute;
     final baseEnd = r.endHour * 60 + r.endMinute;
-    var segments = <({int start, int end})>[
-      (start: baseStart, end: baseEnd),
-    ];
+    var segments = <({int start, int end})>[(start: baseStart, end: baseEnd)];
 
     if (availableToSubtract.isNotEmpty) {
       for (final a in availableToSubtract) {
@@ -670,9 +662,9 @@ class _StaffWeekOverviewScreenState
     final weekLabel = buildWeekRangeLabel();
     final weekEnd = weekStart.add(const Duration(days: 6));
     final todayDate = DateUtils.dateOnly(DateTime.now());
-    final isTodayInWeek =
-        !todayDate.isBefore(weekStart) && !todayDate.isAfter(weekEnd);
-    final effectivePickerDate = isTodayInWeek ? todayDate : weekEnd;
+    //final isTodayInWeek =
+    !todayDate.isBefore(weekStart) && !todayDate.isAfter(weekEnd);
+    //final effectivePickerDate = isTodayInWeek ? todayDate : weekEnd;
 
     // Layout constants - responsive per mobile
     final isMobileLayout = formFactor == AppFormFactor.mobile;
@@ -828,9 +820,9 @@ class _StaffWeekOverviewScreenState
                 if (minutes > 0)
                   Text(
                     _formatTotalHM(context, minutes),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.black54,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: Colors.black54),
                   ),
               ],
             ),
@@ -1574,10 +1566,7 @@ class _StaffWeekOverviewScreenState
             child: CustomPaint(
               painter: hasAllDayAvailable
                   ? null
-                  : _DashedRoundedRectPainter(
-                      color: borderColor,
-                      radius: 6,
-                    ),
+                  : _DashedRoundedRectPainter(color: borderColor, radius: 6),
               child: Container(
                 height: chipHeight,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1876,7 +1865,8 @@ class _StaffWeekOverviewScreenState
                                         staffList[i].id,
                                       ),
                                       child: buildDayCell(
-                                        (availability[staffList[i].id]?[d.weekday]) ??
+                                        (availability[staffList[i].id]?[d
+                                                .weekday]) ??
                                             const <HourRange>[],
                                         ref.watch(
                                           exceptionsForStaffOnDateProvider((
@@ -1888,9 +1878,8 @@ class _StaffWeekOverviewScreenState
                                         d.weekday,
                                         d,
                                         hasException:
-                                            exceptionDays[staffList[i].id]?.contains(
-                                              d.weekday,
-                                            ) ??
+                                            exceptionDays[staffList[i].id]
+                                                ?.contains(d.weekday) ??
                                             false,
                                       ),
                                     ),
@@ -1904,9 +1893,7 @@ class _StaffWeekOverviewScreenState
                                   ],
                                   SizedBox(
                                     width: rightPadding,
-                                    height: rowHeightForStaff(
-                                      staffList[i].id,
-                                    ),
+                                    height: rowHeightForStaff(staffList[i].id),
                                   ),
                                 ],
                               ),
@@ -1937,7 +1924,7 @@ class _StaffWeekOverviewScreenState
           ],
         ),
       ),
-      bottomNavigationBar: formFactor != AppFormFactor.mobile
+      /*bottomNavigationBar: formFactor != AppFormFactor.mobile
           ? null
           : SafeArea(
               top: false,
@@ -1975,7 +1962,7 @@ class _StaffWeekOverviewScreenState
                   ),
                 ],
               ),
-            ),
+            ),*/
     );
   }
 }

@@ -91,9 +91,9 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
   }
 
   /// Cancella l'intera prenotazione e tutti i suoi appuntamenti.
-  void deleteBooking(int bookingId) {
-    // Aggiorna appuntamenti in cascata
-    ref.read(appointmentsProvider.notifier).deleteByBooking(bookingId);
+  Future<void> deleteBooking(int bookingId) async {
+    // Aggiorna appuntamenti in cascata (chiama API)
+    await ref.read(appointmentsProvider.notifier).deleteByBooking(bookingId);
     // Rimuovi metadati prenotazione
     final copy = Map<int, Booking>.from(state);
     copy.remove(bookingId);
@@ -102,7 +102,7 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
 
   /// Rimuove la prenotazione se non ha più appuntamenti.
   void removeIfEmpty(int bookingId) {
-    final appts = ref.read(appointmentsProvider);
+    final appts = ref.read(appointmentsProvider).value ?? [];
     if (appts.any((a) => a.bookingId == bookingId)) return;
     final copy = Map<int, Booking>.from(state);
     copy.remove(bookingId);
@@ -116,8 +116,7 @@ final bookingsProvider = NotifierProvider<BookingsNotifier, Map<int, Booking>>(
 
 /// Riepilogo calcolato su appointment per un booking.
 final bookingSummaryProvider = Provider.family<BookingSummary?, int>((ref, id) {
-  final appts = ref
-      .watch(appointmentsProvider)
+  final appts = (ref.watch(appointmentsProvider).value ?? [])
       .where((a) => a.bookingId == id)
       .toList();
   if (appts.isEmpty) return null;

@@ -117,7 +117,7 @@ class _BookingDetailsSheet extends ConsumerWidget {
                         ),
                       );
                       if (confirmed == true) {
-                        ref
+                        await ref
                             .read(bookingsProvider.notifier)
                             .deleteBooking(bookingId);
                         if (context.mounted) Navigator.of(context).pop();

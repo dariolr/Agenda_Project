@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
+import 'package:agenda_backend/core/models/service_variant.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/hover_slot.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/unavailable_slot_pattern.dart';
@@ -205,6 +206,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         if (draggedId != null) {
           final appt = ref
               .read(appointmentsProvider)
+              .requireValue
               .firstWhere((a) => a.id == draggedId);
           duration = appt.endTime.difference(appt.startTime);
           baseDate = DateTime(
@@ -602,14 +604,15 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     // 🔹 Watch fuori dal loop per evitare rebuild multipli
     final pendingDrop = ref.watch(pendingDropProvider);
     final variants = layoutConfig.useServiceColorsForAppointments
-        ? ref.watch(serviceVariantsProvider)
+        ? (ref.watch(serviceVariantsProvider).value ?? [])
         : <dynamic>[];
     // Pre-calcola la mappa dei colori dei servizi (da varianti)
     final serviceColorMap = <int, Color>{};
     for (final variant in variants) {
-      if (variant.colorHex != null) {
-        serviceColorMap[variant.serviceId] =
-            ColorUtils.fromHex(variant.colorHex!);
+      if (variant is ServiceVariant && variant.colorHex != null) {
+        serviceColorMap[variant.serviceId] = ColorUtils.fromHex(
+          variant.colorHex!,
+        );
       }
     }
 
@@ -758,7 +761,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     // (usa la variabile pendingDrop già calcolata all'inizio del metodo)
     if (pendingDrop != null && pendingDrop.newStaffId == widget.staff.id) {
       // Trova l'appuntamento originale nel provider globale
-      final allAppointments = ref.watch(appointmentsProvider);
+      final allAppointments = ref.watch(appointmentsProvider).value ?? [];
       final originalAppt = allAppointments.cast<Appointment?>().firstWhere(
         (a) => a?.id == pendingDrop.appointmentId,
         orElse: () => null,
