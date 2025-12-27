@@ -14,7 +14,7 @@ final staffByLocationProvider = Provider.family<List<Staff>, int>((
   ref,
   locationId,
 ) {
-  final staff = ref.watch(allStaffProvider);
+  final staff = ref.watch(allStaffProvider).value ?? [];
   final list = [
     for (final s in staff)
       if (s.worksAtLocation(locationId)) s,

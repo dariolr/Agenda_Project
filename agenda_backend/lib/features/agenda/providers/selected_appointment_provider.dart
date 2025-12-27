@@ -17,8 +17,7 @@ class SelectedAppointmentsState {
 }
 
 /// 🔹 Tiene traccia degli appuntamenti selezionati (tutti quelli della stessa prenotazione)
-class SelectedAppointmentNotifier
-    extends Notifier<SelectedAppointmentsState> {
+class SelectedAppointmentNotifier extends Notifier<SelectedAppointmentsState> {
   @override
   SelectedAppointmentsState build() => const SelectedAppointmentsState();
 
@@ -28,13 +27,13 @@ class SelectedAppointmentNotifier
     final current = state;
     final alreadySelected =
         current.bookingId == appointment.bookingId &&
-            current.contains(appointment.id);
+        current.contains(appointment.id);
     if (alreadySelected) {
       clear();
       return;
     }
 
-    final allAppointments = ref.read(appointmentsProvider);
+    final allAppointments = ref.read(appointmentsProvider).value ?? [];
     final bookingAppointments = allAppointments
         .where((a) => a.bookingId == appointment.bookingId)
         .map((a) => a.id)

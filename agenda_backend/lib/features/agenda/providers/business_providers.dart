@@ -1,27 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/business.dart';
+import '../../business/providers/business_providers.dart';
 
 ///
-/// 🔹 ELENCO BUSINESS (mock statico)
+/// 🔹 ELENCO BUSINESS (da API)
 ///
-final businessesProvider = Provider<List<Business>>((ref) {
-  return [
-    Business(
-      id: 1,
-      name: 'Centro Massaggi La Rosa',
-      createdAt: DateTime(2021, 3, 12),
-      currency: 'EUR',
-      defaultPhonePrefix: '+39',
-    ),
-    Business(
-      id: 2,
-      name: 'Wellness Global Spa',
-      createdAt: DateTime(2022, 1, 20),
-      currency: 'USD',
-      defaultPhonePrefix: '+1',
-    ),
-  ];
+final businessesProvider = FutureProvider<List<Business>>((ref) async {
+  final repository = ref.watch(businessRepositoryProvider);
+  return repository.getAll();
 });
 
 ///
@@ -30,9 +17,16 @@ final businessesProvider = Provider<List<Business>>((ref) {
 class CurrentBusinessId extends Notifier<int> {
   @override
   int build() {
-    final businesses = ref.read(businessesProvider);
     // ✅ Imposta come default il primo business disponibile
-    return businesses.first.id;
+    // Aspetta che businessesProvider carichi i dati
+    ref.listen(businessesProvider, (previous, next) {
+      next.whenData((businesses) {
+        if (businesses.isNotEmpty && state == 0) {
+          state = businesses.first.id;
+        }
+      });
+    });
+    return 1; // Default temporaneo
   }
 
   void set(int id) => state = id;
@@ -46,7 +40,17 @@ final currentBusinessIdProvider = NotifierProvider<CurrentBusinessId, int>(
 /// 🔹 BUSINESS CORRENTE (oggetto)
 ///
 final currentBusinessProvider = Provider<Business>((ref) {
-  final businesses = ref.watch(businessesProvider);
+  final businessesAsync = ref.watch(businessesProvider);
   final currentId = ref.watch(currentBusinessIdProvider);
-  return businesses.firstWhere((b) => b.id == currentId);
+
+  return businessesAsync.when(
+    data: (businesses) => businesses.firstWhere(
+      (b) => b.id == currentId,
+      orElse: () => businesses.first,
+    ),
+    loading: () =>
+        Business(id: currentId, name: 'Loading...', createdAt: DateTime.now()),
+    error: (_, __) =>
+        Business(id: currentId, name: 'Error', createdAt: DateTime.now()),
+  );
 });

@@ -37,7 +37,7 @@ class ServicesReorderNotifier extends Notifier<bool> {
   void reorderNonEmptyCategories(int oldIndex, int newIndex) {
     final catsNotifier = ref.read(serviceCategoriesProvider.notifier);
     final allCats = [...ref.read(serviceCategoriesProvider)];
-    final services = ref.read(servicesProvider);
+    final services = ref.read(servicesProvider).value ?? [];
 
     final nonEmpty = <ServiceCategory>[];
     final empty = <ServiceCategory>[];
@@ -66,7 +66,7 @@ class ServicesReorderNotifier extends Notifier<bool> {
   /// Riordina i servizi all'interno della stessa categoria
   void reorderServices(int categoryId, int oldIndex, int newIndex) {
     final servicesNotifier = ref.read(servicesProvider.notifier);
-    final all = [...ref.read(servicesProvider)];
+    final all = [...(ref.read(servicesProvider).value ?? [])];
 
     final byCat = all.where((s) => s.categoryId == categoryId).toList();
     final item = byCat.removeAt(oldIndex);
@@ -77,7 +77,7 @@ class ServicesReorderNotifier extends Notifier<bool> {
       updatedByCat.add(byCat[i].copyWith(sortOrder: i));
     }
 
-    final updatedAll = [
+    final updatedAll = <Service>[
       for (final s in all)
         if (s.categoryId == categoryId)
           updatedByCat.firstWhere((x) => x.id == s.id)
@@ -85,7 +85,7 @@ class ServicesReorderNotifier extends Notifier<bool> {
           s,
     ];
 
-    servicesNotifier.state = updatedAll;
+    servicesNotifier.setServices(updatedAll);
   }
 
   /// 🔄 Sposta un servizio da una categoria all'altra (drag cross-categoria)
@@ -96,7 +96,7 @@ class ServicesReorderNotifier extends Notifier<bool> {
     int newIndex,
   ) {
     final servicesNotifier = ref.read(servicesProvider.notifier);
-    final all = [...ref.read(servicesProvider)];
+    final all = [...(ref.read(servicesProvider).value ?? [])];
 
     // servizio selezionato
     final movedService = all.firstWhere(
@@ -118,7 +118,7 @@ class ServicesReorderNotifier extends Notifier<bool> {
     );
 
     // ricalcola sortOrder in entrambe le categorie
-    final updated = [
+    final updated = <Service>[
       ...all.where(
         (s) => s.categoryId != oldCategoryId && s.categoryId != newCategoryId,
       ),
@@ -128,7 +128,7 @@ class ServicesReorderNotifier extends Notifier<bool> {
         targetCat[i].copyWith(sortOrder: i),
     ];
 
-    servicesNotifier.state = updated;
+    servicesNotifier.setServices(updated);
     // Aggiorna posizionamento categorie vuote vs piene
     ref.read(serviceCategoriesProvider.notifier).bumpEmptyCategoriesToEnd();
   }
@@ -149,5 +149,5 @@ class ServicesReorderPanelNotifier extends Notifier<bool> {
 
 final servicesReorderPanelProvider =
     NotifierProvider<ServicesReorderPanelNotifier, bool>(
-  ServicesReorderPanelNotifier.new,
-);
+      ServicesReorderPanelNotifier.new,
+    );

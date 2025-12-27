@@ -213,10 +213,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final isDialog = widget.presentation == _BookingPresentation.dialog;
 
     final formFactor = ref.watch(formFactorProvider);
-    final services = ref.watch(servicesProvider);
+    final services = ref.watch(servicesProvider).value ?? [];
     final serviceCategories = ref.watch(serviceCategoriesProvider);
-    final variants = ref.watch(serviceVariantsProvider);
-    final clients = ref.watch(clientsProvider);
+    final variants = ref.watch(serviceVariantsProvider).value ?? [];
+    final asyncClients = ref.watch(clientsProvider);
+    final clients = asyncClients.value ?? [];
     final clientsById = ref.watch(clientsByIdProvider);
     final allStaff = ref.watch(staffForCurrentLocationProvider);
 
@@ -503,12 +504,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           : (defaultProcessing > 0 ? ExtraMinutesType.processing : null);
       final hasBlockedExtra = item.blockedExtraMinutes > 0;
       final hasProcessingExtra = item.processingExtraMinutes > 0;
-      final canAddDefaultExtra =
-          defaultExtraType == ExtraMinutesType.blocked
-              ? !hasBlockedExtra
-              : (defaultExtraType == ExtraMinutesType.processing
-                    ? !hasProcessingExtra
-                    : false);
+      final canAddDefaultExtra = defaultExtraType == ExtraMinutesType.blocked
+          ? !hasBlockedExtra
+          : (defaultExtraType == ExtraMinutesType.processing
+                ? !hasProcessingExtra
+                : false);
       final showWarning =
           showServiceWarnings &&
           _isWarningEligible(item) &&
@@ -594,8 +594,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     AppOutlinedActionButton(
                       onPressed: () {
                         setState(() {
-                          _serviceItems[i] = defaultExtraType ==
-                                  ExtraMinutesType.blocked
+                          _serviceItems[i] =
+                              defaultExtraType == ExtraMinutesType.blocked
                               ? _serviceItems[i].copyWith(
                                   blockedExtraMinutes: defaultBlocked,
                                 )
@@ -634,8 +634,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                   child: AppOutlinedActionButton(
                     onPressed: () {
                       setState(() {
-                        _serviceItems[i] = defaultExtraType ==
-                                ExtraMinutesType.blocked
+                        _serviceItems[i] =
+                            defaultExtraType == ExtraMinutesType.blocked
                             ? _serviceItems[i].copyWith(
                                 blockedExtraMinutes: defaultBlocked,
                               )
@@ -712,8 +712,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
               ),
               const SizedBox(height: 8),
             ],
-            if (isLast && item.serviceId != null &&
-                !canAddDefaultExtra) ...[
+            if (isLast && item.serviceId != null && !canAddDefaultExtra) ...[
               Align(
                 alignment: Alignment.centerRight,
                 child: AppOutlinedActionButton(
@@ -872,7 +871,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
     while (mounted) {
       if (!mounted) return;
-      final clients = ref.read(clientsProvider);
+      final asyncClients = ref.read(clientsProvider);
+      final clients = asyncClients.value ?? [];
       _ClientItem? result;
       if (isDesktop) {
         result = await showDialog<_ClientItem?>(
@@ -975,7 +975,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   }
 
   void _addService() {
-    final variants = ref.read(serviceVariantsProvider);
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
     // Calcola l'orario di inizio per il nuovo servizio
     TimeOfDay nextStart;
     if (_serviceItems.isEmpty) {
@@ -1007,7 +1007,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   void _removeServiceItem(int index) {
     if (_serviceItems.length <= 1) return;
 
-    final variants = ref.read(serviceVariantsProvider);
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
 
     setState(() {
       _serviceItems.removeAt(index);
@@ -1018,7 +1018,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   }
 
   void _updateServiceItem(int index, ServiceItemData updated) {
-    final variants = ref.read(serviceVariantsProvider);
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
 
     setState(() {
       _serviceItems[index] = updated;
@@ -1036,7 +1036,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   }
 
   void _updateServiceStartTime(int index, TimeOfDay newTime) {
-    final variants = ref.read(serviceVariantsProvider);
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
 
     setState(() {
       final updated = _serviceItems[index].copyWith(startTime: newTime);
@@ -1064,7 +1064,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       _serviceItems[index] = item.copyWith(durationMinutes: newDuration);
 
       // Ricalcola gli orari per i servizi successivi
-      final variants = ref.read(serviceVariantsProvider);
+      final variants = ref.read(serviceVariantsProvider).value ?? [];
       _serviceItems[index] = _applyAutoExtraStart(
         _serviceItems[index],
         variants,
@@ -1080,7 +1080,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       );
 
       // Ricalcola gli orari per i servizi successivi
-      final variants = ref.read(serviceVariantsProvider);
+      final variants = ref.read(serviceVariantsProvider).value ?? [];
       _serviceItems[index] = _applyAutoExtraStart(
         _serviceItems[index],
         variants,
@@ -1188,7 +1188,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     );
   }
 
-  void _onSave() {
+  Future<void> _onSave() async {
+    if (!mounted) return;
     final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
 
@@ -1204,8 +1205,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       return;
     }
 
-    final variants = ref.read(serviceVariantsProvider);
-    final services = ref.read(servicesProvider);
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
+    final services = ref.read(servicesProvider).value ?? [];
     final clientsById = ref.read(clientsByIdProvider);
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
     final bookingsNotifier = ref.read(bookingsProvider.notifier);
@@ -1235,9 +1236,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       final processingExtraMinutes = item.processingExtraMinutes;
       final extraMinutesType = blockedExtraMinutes > 0
           ? ExtraMinutesType.blocked
-          : (processingExtraMinutes > 0
-                ? ExtraMinutesType.processing
-                : null);
+          : (processingExtraMinutes > 0 ? ExtraMinutesType.processing : null);
       final extraMinutes = extraMinutesType == ExtraMinutesType.blocked
           ? blockedExtraMinutes
           : (extraMinutesType == ExtraMinutesType.processing
@@ -1260,7 +1259,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
               .toInt();
       final end = start.add(Duration(minutes: durationMinutes));
 
-      final created = appointmentsNotifier.addAppointment(
+      final created = await appointmentsNotifier.addAppointment(
         bookingId: bookingId,
         staffId: item.staffId!,
         serviceId: service.id,
@@ -1282,6 +1281,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     if (scrollTarget != null) {
       ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
     }
+
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 }
@@ -1454,8 +1455,8 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
   }
 
   List<Client> get _filteredClients {
-    final clients = ref
-        .watch(clientsProvider)
+    final asyncClients = ref.watch(clientsProvider);
+    final clients = (asyncClients.value ?? [])
         .where((c) => !c.isArchived)
         .toList();
     if (_searchQuery.isEmpty) return clients;

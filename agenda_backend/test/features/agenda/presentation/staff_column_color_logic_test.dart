@@ -48,17 +48,18 @@ void main() {
       final serviceColorMap = <int, Color>{};
       for (final variant in variants) {
         if (variant.colorHex != null) {
-          serviceColorMap[variant.serviceId] =
-              ColorUtils.fromHex(variant.colorHex!);
+          serviceColorMap[variant.serviceId] = ColorUtils.fromHex(
+            variant.colorHex!,
+          );
         }
       }
 
       // Verifica che la mappa contenga solo i servizi con colore
       expect(serviceColorMap.length, 3);
-      expect(serviceColorMap[1], Colors.red);
-      expect(serviceColorMap[2], Colors.blue);
+      expect(serviceColorMap[1]?.value, Colors.red.value);
+      expect(serviceColorMap[2]?.value, Colors.blue.value);
       expect(serviceColorMap[3], isNull); // Non presente perché color è null
-      expect(serviceColorMap[4], Colors.green);
+      expect(serviceColorMap[4]?.value, Colors.green.value);
     });
 
     test('serviceColorMap lookup returns correct color', () {
@@ -84,8 +85,9 @@ void main() {
       final serviceColorMap = <int, Color>{};
       for (final variant in variants) {
         if (variant.colorHex != null) {
-          serviceColorMap[variant.serviceId] =
-              ColorUtils.fromHex(variant.colorHex!);
+          serviceColorMap[variant.serviceId] = ColorUtils.fromHex(
+            variant.colorHex!,
+          );
         }
       }
 
@@ -99,7 +101,7 @@ void main() {
         cardColor = serviceColor;
       }
 
-      expect(cardColor, Colors.orange);
+      expect(cardColor.value, Colors.orange.value);
     });
 
     test('serviceColorMap lookup returns default when service not found', () {
@@ -117,8 +119,9 @@ void main() {
       final serviceColorMap = <int, Color>{};
       for (final variant in variants) {
         if (variant.colorHex != null) {
-          serviceColorMap[variant.serviceId] =
-              ColorUtils.fromHex(variant.colorHex!);
+          serviceColorMap[variant.serviceId] = ColorUtils.fromHex(
+            variant.colorHex!,
+          );
         }
       }
 
@@ -142,8 +145,9 @@ void main() {
       final serviceColorMap = <int, Color>{};
       for (final variant in variants) {
         if (variant.colorHex != null) {
-          serviceColorMap[variant.serviceId] =
-              ColorUtils.fromHex(variant.colorHex!);
+          serviceColorMap[variant.serviceId] = ColorUtils.fromHex(
+            variant.colorHex!,
+          );
         }
       }
 

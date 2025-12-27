@@ -72,7 +72,7 @@ class ServiceCategoriesNotifier extends Notifier<List<ServiceCategory>> {
   /// si può passare la lista servizi già aggiornata tramite [servicesOverride].
   void bumpEmptyCategoriesToEnd({List<Service>? servicesOverride}) {
     final List<Service> services =
-        servicesOverride ?? ref.read(servicesProvider);
+        servicesOverride ?? (ref.read(servicesProvider).value ?? []);
     final nonEmptyCatIds = <int>{for (final s in services) s.categoryId};
 
     int maxNonEmptySort = -1;

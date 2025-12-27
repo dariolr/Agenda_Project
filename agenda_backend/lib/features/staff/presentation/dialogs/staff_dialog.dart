@@ -193,7 +193,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final formFactor = ref.read(formFactorProvider);
     final isSingleColumn = formFactor != AppFormFactor.desktop;
     final locations = ref.watch(locationsProvider);
-    final totalServicesCount = ref.watch(servicesProvider).length;
+    final totalServicesCount = (ref.watch(servicesProvider).value ?? []).length;
     final totalLocationsCount = locations.length;
     final selectedLocationName =
         !kAllowStaffMultiLocationSelection && _selectedLocationIds.isNotEmpty
@@ -532,8 +532,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       top: false,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isKeyboardOpen =
-              MediaQuery.of(context).viewInsets.bottom > 0;
+          final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
           return SizedBox(
             height: constraints.maxHeight,
             child: Column(
@@ -615,7 +614,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final staffId = isEditing ? widget.initial!.id : notifier.nextId();
 
     if (isEditing) {
-      notifier.update(
+      notifier.updateStaff(
         widget.initial!.copyWith(
           name: name,
           surname: surname,
@@ -652,7 +651,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     if (_isSelectingServices) return;
     setState(() => _isSelectingServices = true);
     final l10n = context.l10n;
-    final services = ref.read(servicesProvider);
+    final services = ref.read(servicesProvider).value ?? [];
     final categories = ref.read(serviceCategoriesProvider);
     final formFactor = ref.read(formFactorProvider);
     Set<int> current = {..._selectedServiceIds};
@@ -1011,10 +1010,7 @@ class _SwitchTile extends StatelessWidget {
           child: Row(
             children: [
               Expanded(child: Text(title, style: titleStyle)),
-              AppSwitch(
-                value: value,
-                onChanged: onChanged,
-              ),
+              AppSwitch(value: value, onChanged: onChanged),
             ],
           ),
         ),

@@ -1,12 +1,15 @@
+import '../../../core/network/api_client.dart';
 import '../domain/clients.dart';
 import 'clients_api.dart';
 
 class ClientsRepository {
-  ClientsRepository({ClientsApi? api}) : _api = api ?? ClientsApi();
+  ClientsRepository({required ApiClient apiClient})
+    : _api = ClientsApi(apiClient: apiClient);
 
   final ClientsApi _api;
 
-  Future<List<Client>> getAll() => _api.fetchClients();
+  Future<List<Client>> getAll(int businessId) => _api.fetchClients(businessId);
   Future<Client> add(Client client) => _api.createClient(client);
   Future<Client> save(Client client) => _api.updateClient(client);
+  Future<void> delete(int clientId) => _api.deleteClient(clientId);
 }

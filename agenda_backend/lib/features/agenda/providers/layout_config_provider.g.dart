@@ -45,7 +45,7 @@ final class LayoutConfigNotifierProvider
 }
 
 String _$layoutConfigNotifierHash() =>
-    r'30d9d7d00aa145e8a8d9750ddce9a06dfc207ecd';
+    r'a50c2234a17993d2106f79a9dcb393e753f97c9b';
 
 /// Mantiene aggiornata la configurazione del layout agenda (slot/header/hour column).
 

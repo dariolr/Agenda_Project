@@ -5,13 +5,14 @@ import 'package:go_router/go_router.dart';
 void main() {
   test('appRouter exposes four main navigation branches', () {
     final routes = appRouter.configuration.routes;
-    expect(routes.length, 1);
+    expect(routes.length, 2);
 
     final shellRoute = routes.first;
     expect(shellRoute, isA<StatefulShellRoute>());
 
-    final branches =
-        (shellRoute as StatefulShellRoute).branches.map((b) => b.routes).toList();
+    final branches = (shellRoute as StatefulShellRoute).branches
+        .map((b) => b.routes)
+        .toList();
     expect(branches.length, 4);
 
     final branchPaths = branches
