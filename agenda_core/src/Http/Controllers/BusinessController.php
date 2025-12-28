@@ -50,7 +50,7 @@ final class BusinessController
      */
     public function showBySlug(Request $request): Response
     {
-        $slug = $request->getRouteParam('slug');
+        $slug = $request->getAttribute('slug');
 
         if (!$slug || !preg_match('/^[a-z0-9-]+$/', $slug)) {
             return Response::error('Invalid slug format', 'validation_error', 400, $request->traceId);

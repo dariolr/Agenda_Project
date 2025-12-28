@@ -19,8 +19,15 @@ class ApiException implements Exception {
   });
 
   bool get isUnauthorized => statusCode == 401;
+  bool get isNotFound => statusCode == 404;
   bool get isConflict => statusCode == 409;
   bool get isSlotConflict => code == 'slot_conflict';
+  bool get isServiceUnavailable =>
+      statusCode == 503 || code == 'database_error';
+  bool get isLocationNotFound =>
+      isNotFound && message.toLowerCase().contains('location');
+  bool get isBusinessNotFound =>
+      isNotFound && message.toLowerCase().contains('business');
 
   @override
   String toString() => 'ApiException($code): $message';

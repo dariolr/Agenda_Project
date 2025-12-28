@@ -9,9 +9,9 @@ class ApiConfig {
   /// Location ID di default (per MVP single-location)
   static const int defaultLocationId = 1;
 
-  /// Timeout per le richieste
-  static const Duration connectTimeout = Duration(seconds: 10);
-  static const Duration receiveTimeout = Duration(seconds: 15);
+  /// Timeout per le richieste (ridotti per risposta rapida)
+  static const Duration connectTimeout = Duration(seconds: 5);
+  static const Duration receiveTimeout = Duration(seconds: 5);
 
   // ========== AUTH ENDPOINTS ==========
   static const String authLogin = '/v1/auth/login';

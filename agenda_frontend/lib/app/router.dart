@@ -11,13 +11,15 @@ import '../features/booking/presentation/screens/booking_screen.dart';
 import '../features/booking/presentation/screens/my_bookings_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  // Usa select per evitare rebuild su ogni cambio di stato auth
+  final isAuthenticated = ref.watch(
+    authProvider.select((state) => state.isAuthenticated),
+  );
 
   return GoRouter(
     initialLocation: '/booking',
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: false, // Disabilita log in produzione
     redirect: (context, state) {
-      final isLoggedIn = authState.isAuthenticated;
       final isLoggingIn = state.matchedLocation == '/login';
       final isRegistering = state.matchedLocation == '/register';
       final isResettingPassword = state.matchedLocation.startsWith(
@@ -25,7 +27,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       );
 
       // Se non è autenticato e non sta cercando di loggarsi o registrarsi
-      if (!isLoggedIn &&
+      if (!isAuthenticated &&
           !isLoggingIn &&
           !isRegistering &&
           !isResettingPassword) {
@@ -33,7 +35,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // Se è autenticato e sta cercando di accedere a login/register
-      if (isLoggedIn && (isLoggingIn || isRegistering)) {
+      if (isAuthenticated && (isLoggingIn || isRegistering)) {
         return '/booking';
       }
 

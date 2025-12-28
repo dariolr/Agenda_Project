@@ -19,7 +19,10 @@ class BookingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bookingState = ref.watch(bookingFlowProvider);
     final config = ref.watch(bookingConfigProvider);
-    final authState = ref.watch(authProvider);
+    // Usa select per evitare rebuild su ogni cambio di auth state
+    final isAuthenticated = ref.watch(
+      authProvider.select((state) => state.isAuthenticated),
+    );
     final l10n = context.l10n;
 
     return Scaffold(
@@ -33,7 +36,7 @@ class BookingScreen extends ConsumerWidget {
               )
             : null,
         actions: [
-          if (authState.isAuthenticated)
+          if (isAuthenticated)
             IconButton(
               icon: const Icon(Icons.event_note),
               tooltip: l10n.myBookings,
