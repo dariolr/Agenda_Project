@@ -220,6 +220,7 @@ class ServicesData {
 
 /// Provider unico per categorie e servizi (UNA sola chiamata API)
 final servicesDataProvider = FutureProvider<ServicesData>((ref) async {
+  debugPrint('CHIAMATA API servicesDataProvider');
   final repository = ref.read(bookingRepositoryProvider);
   final config = ref.read(bookingConfigProvider);
 

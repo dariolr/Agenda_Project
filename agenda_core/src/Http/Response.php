@@ -86,7 +86,12 @@ final class Response
     {
         http_response_code($this->status);
         header('Content-Type: application/json; charset=utf-8');
-        header('Access-Control-Allow-Origin: ' . ($_ENV['CORS_ORIGIN'] ?? '*'));
+        
+        // Determina l'origin consentito dinamicamente
+        $allowedOrigins = array_map('trim', explode(',', $_ENV['CORS_ORIGIN'] ?? '*'));
+        $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        $corsOrigin = in_array($requestOrigin, $allowedOrigins, true) ? $requestOrigin : ($allowedOrigins[0] ?? '*');
+        header('Access-Control-Allow-Origin: ' . $corsOrigin);
         header('Access-Control-Allow-Credentials: true');
         
         if ($this->traceId !== null) {

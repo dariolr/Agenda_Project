@@ -27,6 +27,12 @@
   "servicesEmptySubtitle": "Non ci sono servizi prenotabili online per questa attività",
   "staffEmpty": "Nessun operatore disponibile al momento",
   "errorConnectionTimeout": "La connessione sta impiegando troppo tempo. Riprova.",
+  "errorBusinessNotFound": "Attività non trovata",
+  "errorBusinessNotFoundSubtitle": "L'attività richiesta non esiste o non è ancora configurata per le prenotazioni online.",
+  "errorLocationNotFound": "Sede non disponibile",
+  "errorLocationNotFoundSubtitle": "La sede selezionata non è attiva. Contatta l'attività per maggiori informazioni.",
+  "errorServiceUnavailable": "Servizio temporaneamente non disponibile",
+  "errorServiceUnavailableSubtitle": "Stiamo lavorando per risolvere il problema. Riprova tra qualche minuto.",
   
   "authWelcome": "Benvenuto",
   "authLoginTitle": "Accedi al tuo account",

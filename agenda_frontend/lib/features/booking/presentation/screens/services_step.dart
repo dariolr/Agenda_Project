@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
+import '../../../../core/network/api_client.dart';
 import '../../providers/booking_provider.dart';
 
 class ServicesStep extends ConsumerWidget {
@@ -11,6 +12,7 @@ class ServicesStep extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    debugPrint('BUILD ServicesStep');
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final servicesDataAsync = ref.watch(servicesDataProvider);
@@ -46,10 +48,7 @@ class ServicesStep extends ConsumerWidget {
         Expanded(
           child: servicesDataAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => _ErrorView(
-              message: l10n.errorLoadingServices,
-              onRetry: () => ref.invalidate(servicesDataProvider),
-            ),
+            error: (e, _) => _buildErrorWidget(context, ref, e),
             data: (data) {
               if (data.isEmpty) {
                 return _EmptyView(
@@ -72,6 +71,53 @@ class ServicesStep extends ConsumerWidget {
         // Footer con selezione e bottone
         _buildFooter(context, ref, selectedServices),
       ],
+    );
+  }
+
+  /// Costruisce il widget di errore appropriato in base al tipo di errore
+  Widget _buildErrorWidget(BuildContext context, WidgetRef ref, Object error) {
+    final l10n = context.l10n;
+
+    // Determina titolo e sottotitolo in base al tipo di errore
+    String title;
+    String subtitle;
+    IconData icon;
+    bool showRetry;
+
+    if (error is ApiException) {
+      if (error.isLocationNotFound) {
+        title = l10n.errorLocationNotFound;
+        subtitle = l10n.errorLocationNotFoundSubtitle;
+        icon = Icons.location_off_outlined;
+        showRetry = false;
+      } else if (error.isBusinessNotFound) {
+        title = l10n.errorBusinessNotFound;
+        subtitle = l10n.errorBusinessNotFoundSubtitle;
+        icon = Icons.store_outlined;
+        showRetry = false;
+      } else if (error.isServiceUnavailable) {
+        title = l10n.errorServiceUnavailable;
+        subtitle = l10n.errorServiceUnavailableSubtitle;
+        icon = Icons.cloud_off_outlined;
+        showRetry = true;
+      } else {
+        title = l10n.errorLoadingServices;
+        subtitle = error.message;
+        icon = Icons.error_outline;
+        showRetry = true;
+      }
+    } else {
+      title = l10n.errorLoadingServices;
+      subtitle = '';
+      icon = Icons.cloud_off_outlined;
+      showRetry = true;
+    }
+
+    return _ErrorView(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      onRetry: showRetry ? () => ref.invalidate(servicesDataProvider) : null,
     );
   }
 
@@ -301,10 +347,17 @@ class _ServiceTile extends StatelessWidget {
 
 /// Widget per mostrare errori con bottone retry
 class _ErrorView extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback? onRetry;
 
-  const _ErrorView({required this.message, required this.onRetry});
+  const _ErrorView({
+    required this.title,
+    this.subtitle = '',
+    this.icon = Icons.cloud_off_outlined,
+    this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -318,22 +371,36 @@ class _ErrorView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.cloud_off_outlined,
+              icon,
               size: 64,
               color: theme.colorScheme.error.withOpacity(0.5),
             ),
             const SizedBox(height: 16),
             Text(
-              message,
-              style: theme.textTheme.bodyLarge,
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: Text(l10n.actionRetry),
-            ),
+            if (subtitle.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            if (onRetry != null) ...[
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: Text(l10n.actionRetry),
+              ),
+            ],
           ],
         ),
       ),
