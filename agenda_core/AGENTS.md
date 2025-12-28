@@ -1,0 +1,67 @@
+# AGENTS.md — agenda_core (Agenda Engine / Core Backend Services)
+
+Questo file è la fonte di verità per qualsiasi agent AI che lavori su agenda_core.
+DEVE essere letto prima di scrivere codice.
+
+Compatibilità obbligatoria:
+- Agenda Frontend (Flutter – prenotazione online)
+- Agenda Backend (Flutter – gestionale)
+
+JSON snake_case.
+I modelli e i campi già usati dai client NON devono essere rinominati.
+
+Prenotazione pubblica, login obbligatorio solo per conferma.
+
+Autenticazione:
+- JWT access token breve (10–15 min)
+- Refresh token lungo (30–90 gg) con rotazione
+- Web: refresh in cookie httpOnly
+- Mobile: refresh in secure storage
+
+Architettura obbligatoria:
+- Http layer (routing, middleware)
+- Use cases (CreateBooking, ComputeAvailability…)
+- Domain (regole pure)
+- Infrastructure (DB, log, provider)
+
+Endpoint minimi:
+- POST /v1/auth/login
+- POST /v1/auth/refresh
+- POST /v1/auth/logout
+- GET  /v1/me
+- GET  /v1/services
+- GET  /v1/staff
+- GET  /v1/availability
+- POST /v1/bookings (protetto, idempotente)
+
+Booking payload (VINCOLANTE):
+- service_ids
+- staff_id?
+- start_time (ISO8601)
+- notes?
+
+Se uno slot è occupato:
+- HTTP 409
+- error.code = slot_conflict
+
+Test (PHPUnit):
+- 98 test, 195 asserzioni
+- Eseguire: `./vendor/bin/phpunit --testdox`
+- Classi repository sono `final` → NO mock, test logica pura
+- JWT_SECRET richiesto in setUp()
+
+Notifiche Email (M10):
+- Provider configurabile via `.env`: MAIL_PROVIDER=smtp|brevo|mailgun
+- Coda asincrona: notifiche NON bloccano booking flow
+- Worker cron: `bin/notification-worker.php` (ogni minuto)
+- Reminder cron: `bin/queue-reminders.php` (ogni ora)
+- Template: bookingConfirmed, bookingCancelled, bookingReminder, bookingRescheduled
+
+File .env:
+- `.env` → configurazione REALE (non committato, in .gitignore)
+- `.env.example` → TEMPLATE con placeholder (committato)
+- I due file DEVONO avere le STESSE variabili, sempre allineati
+- Quando si aggiunge una variabile a `.env.example`, aggiungerla anche a `.env`
+- `.env.example` usa valori placeholder, `.env` usa valori reali
+
+

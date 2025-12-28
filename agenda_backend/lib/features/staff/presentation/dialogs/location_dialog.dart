@@ -50,6 +50,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
+  final _emailController = TextEditingController();
 
   @override
   void initState() {
@@ -57,6 +58,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     if (widget.initial != null) {
       _nameController.text = widget.initial!.name;
       _addressController.text = widget.initial!.address ?? '';
+      _emailController.text = widget.initial!.email ?? '';
     }
   }
 
@@ -64,6 +66,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   void dispose() {
     _nameController.dispose();
     _addressController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -117,6 +120,27 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       ),
     );
 
+    final emailField = LabeledFormField(
+      label: l10n.teamLocationEmailLabel,
+      child: TextFormField(
+        controller: _emailController,
+        keyboardType: TextInputType.emailAddress,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          isDense: true,
+          hintText: l10n.teamLocationEmailHint,
+        ),
+        validator: (v) {
+          if (v == null || v.trim().isEmpty) return null; // Optional
+          final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+          if (!emailRegex.hasMatch(v.trim())) {
+            return l10n.validationInvalidEmail;
+          }
+          return null;
+        },
+      ),
+    );
+
     final content = Form(
       key: _formKey,
       child: Column(
@@ -126,6 +150,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           nameField,
           const SizedBox(height: AppSpacing.formRowSpacing),
           addressField,
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          emailField,
         ],
       ),
     );
@@ -232,12 +258,14 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     final business = ref.read(currentBusinessProvider);
     final name = _nameController.text.trim();
     final address = _addressController.text.trim();
+    final email = _emailController.text.trim();
 
     if (widget.initial != null) {
       notifier.updateItem(
         widget.initial!.copyWith(
           name: name,
           address: address.isEmpty ? null : address,
+          email: email.isEmpty ? null : email,
         ),
       );
     } else {
@@ -247,6 +275,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           businessId: business.id,
           name: name,
           address: address.isEmpty ? null : address,
+          email: email.isEmpty ? null : email,
         ),
       );
     }

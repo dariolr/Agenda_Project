@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../widgets/booking_step_indicator.dart';
 import 'confirmation_step.dart';
@@ -17,6 +19,7 @@ class BookingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bookingState = ref.watch(bookingFlowProvider);
     final config = ref.watch(bookingConfigProvider);
+    final authState = ref.watch(authProvider);
     final l10n = context.l10n;
 
     return Scaffold(
@@ -29,6 +32,14 @@ class BookingScreen extends ConsumerWidget {
                     ref.read(bookingFlowProvider.notifier).previousStep(),
               )
             : null,
+        actions: [
+          if (authState.isAuthenticated)
+            IconButton(
+              icon: const Icon(Icons.event_note),
+              tooltip: l10n.myBookings,
+              onPressed: () => context.go('/my-bookings'),
+            ),
+        ],
       ),
       body: Column(
         children: [

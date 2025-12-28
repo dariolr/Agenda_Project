@@ -20,9 +20,13 @@
     }
   },
   "errorNoAvailability": "Nessuna disponibilità per la data selezionata",
-  "errorLoadingServices": "Errore nel caricamento dei servizi",
-  "errorLoadingStaff": "Errore nel caricamento degli operatori",
-  "errorLoadingAvailability": "Errore nel caricamento delle disponibilità",
+  "errorLoadingServices": "Impossibile caricare i servizi. Verifica la connessione e riprova.",
+  "errorLoadingStaff": "Impossibile caricare gli operatori. Verifica la connessione e riprova.",
+  "errorLoadingAvailability": "Impossibile caricare le disponibilità. Verifica la connessione e riprova.",
+  "servicesEmpty": "Nessun servizio disponibile al momento",
+  "servicesEmptySubtitle": "Non ci sono servizi prenotabili online per questa attività",
+  "staffEmpty": "Nessun operatore disponibile al momento",
+  "errorConnectionTimeout": "La connessione sta impiegando troppo tempo. Riprova.",
   
   "authWelcome": "Benvenuto",
   "authLoginTitle": "Accedi al tuo account",
@@ -50,6 +54,17 @@
   "authResetPasswordSend": "Invia",
   "authResetPasswordSuccess": "Email inviata! Controlla la tua casella di posta.",
   "authResetPasswordError": "Errore durante l'invio. Riprova.",
+  "authResetPasswordConfirmTitle": "Reimposta password",
+  "authResetPasswordConfirmMessage": "Inserisci la nuova password",
+  "authNewPassword": "Nuova password",
+  "authResetPasswordConfirmSuccess": "Password reimpostata con successo!",
+  "authResetPasswordConfirmError": "Token non valido o scaduto",
+  "authChangePasswordTitle": "Cambia password",
+  "authCurrentPassword": "Password attuale",
+  "authChangePasswordSuccess": "Password modificata con successo",
+  "authChangePasswordError": "Password attuale non corretta",
+  "authPasswordTooShort": "Password troppo corta (min. 8 caratteri)",
+  "authPasswordRequirements": "La password deve contenere: maiuscola, minuscola, numero",
   
   "bookingTitle": "Prenota appuntamento",
   "bookingStepServices": "Servizi",
@@ -177,6 +192,49 @@
   "weekdayFri": "Ven",
   "weekdaySat": "Sab",
   "weekdaySun": "Dom",
+  
+  "myBookings": "Le mie prenotazioni",
+  "upcomingBookings": "Prossime",
+  "pastBookings": "Passate",
+  "noUpcomingBookings": "Non hai prenotazioni in programma",
+  "noPastBookings": "Non hai prenotazioni passate",
+  "errorLoadingBookings": "Errore nel caricamento delle prenotazioni",
+  "modifiable": "Modificabile",
+  "notModifiable": "Non modificabile",
+  "modifiableUntilDays": "{days, plural, =1{Modificabile fino a domani} other{Modificabile fino a {days} giorni}}",
+  "@modifiableUntilDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "modifiableUntilHours": "{hours, plural, =1{Modificabile fino a 1 ora} other{Modificabile fino a {hours} ore}}",
+  "@modifiableUntilHours": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "modifiableUntilMinutes": "{minutes, plural, =1{Modificabile fino a 1 minuto} other{Modificabile fino a {minutes} minuti}}",
+  "@modifiableUntilMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "modify": "Modifica",
+  "cancel": "Annulla",
+  "yes": "Sì",
+  "no": "No",
+  "cancelBookingTitle": "Annulla prenotazione",
+  "cancelBookingConfirm": "Sei sicuro di voler annullare questa prenotazione?",
+  "bookingCancelled": "Prenotazione annullata con successo",
+  "bookingCancelFailed": "Errore durante l'annullamento",
+  "modifyNotImplemented": "Funzione di modifica in sviluppo",
+  "rescheduleBookingTitle": "Riprogramma prenotazione",
+  "currentBooking": "Prenotazione attuale",
+  "selectNewDate": "Seleziona nuova data",
+  "selectDate": "Seleziona data",
+  "selectNewTime": "Seleziona nuovo orario",
+  "confirmReschedule": "Conferma modifica",
+  "bookingRescheduled": "Prenotazione riprogrammata con successo",
   
   "validationRequired": "Campo obbligatorio",
   "validationInvalidEmail": "Email non valida",

@@ -143,6 +143,8 @@
   "teamEditLocationTitle": "Modifica sede",
   "teamLocationNameLabel": "Nome sede",
   "teamLocationAddressLabel": "Indirizzo",
+  "teamLocationEmailLabel": "Email",
+  "teamLocationEmailHint": "Email per notifiche ai clienti",
   "teamNewStaffTitle": "Nuovo membro del team",
   "teamEditStaffTitle": "Modifica membro del team",
   "teamStaffNameLabel": "Nome",
@@ -445,6 +447,75 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+
+  "operatorsTitle": "Operatori",
+  "operatorsSubtitle": "Gestisci chi può accedere al gestionale",
+  "operatorsEmpty": "Nessun operatore configurato",
+  "operatorsInviteTitle": "Invita operatore",
+  "operatorsInviteSubtitle": "Invia un invito via email",
+  "operatorsInviteEmail": "Email",
+  "operatorsInviteRole": "Ruolo",
+  "operatorsInviteSend": "Invia invito",
+  "operatorsInviteSuccess": "Invito inviato a {email}",
+  "@operatorsInviteSuccess": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsInviteCopied": "Link di invito copiato",
+  "operatorsPendingInvites": "Inviti in attesa",
+  "operatorsPendingInvitesCount": "{count} inviti in attesa",
+  "@operatorsPendingInvitesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "operatorsRevokeInvite": "Revoca invito",
+  "operatorsRevokeInviteConfirm": "Vuoi revocare l'invito per {email}?",
+  "@operatorsRevokeInviteConfirm": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsEditRole": "Modifica ruolo",
+  "operatorsRemove": "Rimuovi operatore",
+  "operatorsRemoveConfirm": "Vuoi rimuovere {name} dal team?",
+  "@operatorsRemoveConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsRemoveSuccess": "Operatore rimosso",
+  "operatorsRoleOwner": "Proprietario",
+  "operatorsRoleAdmin": "Amministratore",
+  "operatorsRoleManager": "Manager",
+  "operatorsRoleStaff": "Staff",
+  "operatorsRoleDescription": "Seleziona il livello di accesso",
+  "operatorsYou": "Tu",
+  "operatorsInvitedBy": "Invitato da {name}",
+  "@operatorsInvitedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsExpires": "Scade il {date}",
+  "@operatorsExpires": {
+    "placeholders": {
+      "date": {
+        "type": "String"
       }
     }
   }

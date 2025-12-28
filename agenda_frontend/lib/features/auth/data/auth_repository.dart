@@ -1,67 +1,85 @@
 import '../../../core/models/user.dart';
+import '../../../core/network/api_client.dart';
 
-/// Repository per l'autenticazione (Mock API)
+/// Repository per l'autenticazione - API reale
 class AuthRepository {
-  // Simula utente salvato
-  User? _currentUser;
+  final ApiClient _apiClient;
 
-  Future<User?> getCurrentUser() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return _currentUser;
+  AuthRepository(this._apiClient);
+
+  /// Login utente
+  /// POST /v1/auth/login
+  Future<User> login({required String email, required String password}) async {
+    final data = await _apiClient.login(email, password);
+    return User.fromJson(data['user'] as Map<String, dynamic>);
   }
 
-  Future<User> login({
-    required String email,
-    required String password,
-  }) async {
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Mock: accetta qualsiasi email/password valida
-    if (email.isEmpty || password.length < 6) {
-      throw Exception('Credenziali non valide');
+  /// Logout utente
+  /// POST /v1/auth/logout
+  Future<void> logout() async {
+    await _apiClient.logout();
+  }
+
+  /// Recupera profilo utente corrente
+  /// GET /v1/me
+  Future<User> getCurrentUser() async {
+    final data = await _apiClient.getMe();
+    return User.fromJson(data);
+  }
+
+  /// Tenta di ripristinare sessione da refresh token
+  Future<User?> tryRestoreSession() async {
+    final data = await _apiClient.tryRestoreSession();
+    if (data != null) {
+      return User.fromJson(data);
     }
-
-    _currentUser = User(
-      id: 1,
-      email: email,
-      firstName: 'Mario',
-      lastName: 'Rossi',
-      phone: '+39 333 1234567',
-      createdAt: DateTime.now(),
-    );
-
-    return _currentUser!;
+    return null;
   }
 
+  /// Registrazione nuovo utente
+  /// POST /v1/auth/register
   Future<User> register({
     required String email,
     required String password,
-    required String firstName,
-    required String lastName,
+    required String name,
     String? phone,
   }) async {
-    await Future.delayed(const Duration(seconds: 1));
-
-    // Mock: crea utente
-    _currentUser = User(
-      id: DateTime.now().millisecondsSinceEpoch,
+    final data = await _apiClient.register(
       email: email,
-      firstName: firstName,
-      lastName: lastName,
+      password: password,
+      name: name,
       phone: phone,
-      createdAt: DateTime.now(),
     );
-
-    return _currentUser!;
+    return User.fromJson(data['user'] as Map<String, dynamic>);
   }
 
-  Future<void> logout() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    _currentUser = null;
+  /// Reset password (invia email con link)
+  /// POST /v1/auth/forgot-password
+  Future<void> resetPassword({required String email}) async {
+    await _apiClient.forgotPassword(email: email);
   }
 
-  Future<void> resetPassword(String email) async {
-    await Future.delayed(const Duration(seconds: 1));
-    // Mock: simula invio email
+  /// Conferma reset password con token
+  /// POST /v1/auth/reset-password
+  Future<void> confirmResetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    await _apiClient.resetPasswordWithToken(
+      token: token,
+      password: newPassword,
+    );
+  }
+
+  /// Cambia password (utente loggato)
+  /// POST /v1/me/change-password
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _apiClient.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
   }
 }

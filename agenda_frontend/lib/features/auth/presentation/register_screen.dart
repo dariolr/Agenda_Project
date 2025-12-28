@@ -37,13 +37,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final fullName = lastName.isNotEmpty ? '$firstName $lastName' : firstName;
+
     final success = await ref
         .read(authProvider.notifier)
         .register(
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          firstName: _firstNameController.text.trim(),
-          lastName: _lastNameController.text.trim(),
+          name: fullName,
           phone: _phoneController.text.trim().isNotEmpty
               ? _phoneController.text.trim()
               : null,
