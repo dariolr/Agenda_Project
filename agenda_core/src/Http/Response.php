@@ -32,7 +32,7 @@ final class Response
         return self::success($data, 201);
     }
 
-    public static function error(string $message, string $code, int $status = 400): self
+    public static function error(string $message, string $code, int $status = 400, ?string $traceId = null): self
     {
         return new self($status, [
             'success' => false,
@@ -40,7 +40,7 @@ final class Response
                 'code' => $code,
                 'message' => $message,
             ],
-        ]);
+        ], $traceId);
     }
 
     public static function unauthorized(string $message, ?string $traceId = null): self

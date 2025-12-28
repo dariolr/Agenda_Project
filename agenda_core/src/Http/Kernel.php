@@ -257,6 +257,21 @@ final class Kernel
 
             return $response;
 
+        } catch (\PDOException $e) {
+            $this->logger->error('Database error', [
+                'message' => $e->getMessage(),
+                'trace_id' => $request->traceId,
+                'code' => $e->getCode(),
+            ]);
+
+            // Return user-friendly message for database errors
+            return Response::error(
+                'Service temporarily unavailable. Please try again later.',
+                'database_error',
+                503,
+                $request->traceId
+            );
+
         } catch (Throwable $e) {
             $this->logger->error('Exception', [
                 'message' => $e->getMessage(),
