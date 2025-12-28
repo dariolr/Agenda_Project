@@ -48,7 +48,7 @@ final class CurrentBusinessProvider
   CurrentBusiness create() => CurrentBusiness();
 }
 
-String _$currentBusinessHash() => r'43a82523150d6604c1c5c8c90b46b8ff81a3222a';
+String _$currentBusinessHash() => r'9bab89caeb9c8b34f935723daf71f1beefef513a';
 
 /// Provider per il business corrente (caricato da slug)
 ///
@@ -111,7 +111,7 @@ final class CurrentBusinessIdProvider
   }
 }
 
-String _$currentBusinessIdHash() => r'13bd93bbe2522e3fbf31255711881e7d96ec05d9';
+String _$currentBusinessIdHash() => r'dbb21b4e931947e9e1f0a0e7d3927a478d463ae0';
 
 /// Provider per l'ID del business corrente (sincrono, utility)
 
@@ -170,7 +170,7 @@ final class IsBusinessValidProvider
   }
 }
 
-String _$isBusinessValidHash() => r'0fcb07b9c546e15d95cf961424c7eb74f7e86bfd';
+String _$isBusinessValidHash() => r'7d49c025f2b52cad0a233621496bfe00434482c5';
 
 /// Provider per verificare se il business slug è valido
 

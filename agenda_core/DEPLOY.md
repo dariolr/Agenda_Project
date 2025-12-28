@@ -310,18 +310,78 @@ curl https://api.tuodominio.com/v1/services?location_id=1
 
 ---
 
+## 12. Deploy SiteGround (Effettivo - 28/12/2025)
+
+### Infrastruttura Produzione
+
+| Componente | URL | Note |
+|------------|-----|------|
+| API Backend | https://api.romeolab.it | PHP 8.2 su SiteGround |
+| Frontend Booking | https://prenota.romeolab.it | Flutter Web |
+| Gestionale | https://gestionale.romeolab.it | Flutter Web (da deployare) |
+
+### SSH Configuration (~/.ssh/config)
+
+```
+Host siteground
+    HostName ssh.romeolab.it
+    User u123-xxxxx
+    Port 18765
+    IdentityFile ~/.ssh/id_ed25519_siteground
+```
+
+### CORS (.env)
+
+```
+CORS_ALLOWED_ORIGINS=https://prenota.romeolab.it,https://gestionale.romeolab.it,http://localhost:8080
+```
+
+### Comandi Deploy
+
+```bash
+# API Backend (agenda_core)
+rsync -avz --delete \
+  --exclude='.env' \
+  --exclude='logs/' \
+  --exclude='.git/' \
+  --exclude='tests/' \
+  /path/to/agenda_core/ \
+  siteground:www/api.romeolab.it/
+
+# Frontend Booking (agenda_frontend)
+cd agenda_frontend
+flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it
+rsync -avz --delete build/web/ siteground:www/prenota.romeolab.it/public_html/
+
+# Gestionale (agenda_backend)
+cd agenda_backend
+flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it
+rsync -avz --delete build/web/ siteground:www/gestionale.romeolab.it/public_html/
+```
+
+### Verifica Deploy
+
+```bash
+# Test API
+curl https://api.romeolab.it/v1/services?location_id=1
+
+# Test CORS
+curl -I -X OPTIONS https://api.romeolab.it/v1/services \
+  -H "Origin: https://prenota.romeolab.it"
+```
+
+---
+
 ## Checklist Pre-Launch
 
-- [ ] Database migrations applicate
-- [ ] .env configurato con valori produzione
-- [ ] JWT secret generato e configurato
-- [ ] CORS limitato ai domini reali
-- [ ] HTTPS obbligatorio
-- [ ] Certificato SSL valido
+- [x] Database migrations applicate (0001-0014)
+- [x] .env configurato con valori produzione
+- [x] JWT secret generato e configurato
+- [x] CORS limitato ai domini reali
+- [x] HTTPS obbligatorio (SiteGround SSL)
+- [x] Certificato SSL valido (Let's Encrypt)
 - [ ] Backup database configurato
 - [ ] Log monitoring attivo
-- [ ] Health check funzionante
-- [ ] Firewall configurato
-- [ ] Permessi file corretti (600 per .env)
-- [ ] PHP-FPM tuned
-- [ ] Nginx configurato con security headers
+- [x] Health check funzionante
+- [x] Permessi file corretti (600 per .env)
+- [x] Frontend deployato e funzionante

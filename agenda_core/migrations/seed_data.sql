@@ -1,10 +1,16 @@
 -- Seed data for development/testing
--- Run after migrations: 0001-0007
+-- Run after migrations: 0001-0014
+--
+-- ⚠️ NON ESEGUIRE IN PRODUZIONE SENZA AUTORIZZAZIONE ESPLICITA
+--    Questo file sovrascrive dati esistenti!
 --
 -- ⚠️ PASSWORD UTENTI TEST: 'Password123!'
 --    Hash generato con: password_hash('Password123!', PASSWORD_BCRYPT)
 --    Se il login fallisce, rigenerare hash con PHP CLI:
 --    php -r "echo password_hash('Password123!', PASSWORD_BCRYPT) . PHP_EOL;"
+--
+-- Esecuzione:
+--    mysql -u user -p database < seed_data.sql
 --
 -- ============================================================================
 -- BUSINESSES & LOCATIONS

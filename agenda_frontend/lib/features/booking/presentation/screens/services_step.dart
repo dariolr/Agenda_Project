@@ -12,7 +12,6 @@ class ServicesStep extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    debugPrint('BUILD ServicesStep');
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final servicesDataAsync = ref.watch(servicesDataProvider);
@@ -117,7 +116,9 @@ class ServicesStep extends ConsumerWidget {
       title: title,
       subtitle: subtitle,
       icon: icon,
-      onRetry: showRetry ? () => ref.invalidate(servicesDataProvider) : null,
+      onRetry: showRetry
+          ? () => ref.read(servicesDataProvider.notifier).refresh()
+          : null,
     );
   }
 

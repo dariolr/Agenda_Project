@@ -87,10 +87,48 @@ Aggiungere chiavi in `lib/core/l10n/intl_it.arb` e `intl_en.arb`.
 
 ---
 
+## ⚡ Provider API (IMPORTANTE - evitare loop infiniti)
+
+I provider che fanno chiamate API **devono** usare `StateNotifier` con flag `_hasFetched`:
+
+```dart
+class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
+  final Ref _ref;
+  bool _hasFetched = false;
+
+  ServicesDataNotifier(this._ref) : super(const AsyncValue.loading()) {
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    if (_hasFetched) return;  // ⚠️ PROTEZIONE DA LOOP
+    _hasFetched = true;
+    
+    try {
+      final result = await _ref.read(repositoryProvider).getData();
+      state = AsyncValue.data(result);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> refresh() async {
+    _hasFetched = false;
+    state = const AsyncValue.loading();
+    await _loadData();
+  }
+}
+```
+
+**NON usare** `FutureProvider` o `AsyncNotifierProvider` per chiamate API che possono fallire!
+
+---
+
 ## ✅ Checklist prima di modificare
 
 1. [ ] Tutti i testi usano `context.l10n`?
 2. [ ] I provider usano `ref.watch()` per UI, `ref.read()` per azioni?
+3. [ ] Provider API usano `StateNotifier` con `_hasFetched`?
 
 ---
 
@@ -101,14 +139,15 @@ Aggiungere chiavi in `lib/core/l10n/intl_it.arb` e `intl_en.arb`.
 - Produrre snippet parziali invece di file completi
 - Usare `ref.watch()` in loop pesanti o callback
 - Introdurre animazioni/effetti non richiesti
+- Usare `FutureProvider` per API calls (causa loop su errore)
 
 ---
 
-## 🚫 L'agente  deve
+## ✅ L'agente DEVE
 
-- Non utilizzare StateProvider per i provider riverpod ma solo NotifierProvider 
-- favorire il riutilizzo del codice
-- favorire l'uso di costruttori const
+- Usare `StateNotifier` con `_hasFetched` per provider API
+- Favorire il riutilizzo del codice
+- Favorire l'uso di costruttori const
 - Estrarre widget privati da `build()` lunghi
 
 ---

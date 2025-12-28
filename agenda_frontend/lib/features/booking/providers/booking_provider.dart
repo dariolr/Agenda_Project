@@ -218,46 +218,105 @@ class ServicesData {
   bool get isEmpty => bookableServices.isEmpty;
 }
 
+/// Notifier per gestire il caricamento dei servizi con controllo TOTALE sullo stato
+class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
+  final Ref _ref;
+  bool _hasFetched = false;
+
+  ServicesDataNotifier(this._ref) : super(const AsyncValue.loading()) {
+    // Carica automaticamente al primo accesso
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    if (_hasFetched) return;
+
+    _hasFetched = true;
+
+    try {
+      final repository = _ref.read(bookingRepositoryProvider);
+      final config = _ref.read(bookingConfigProvider);
+
+      final result = await repository.getCategoriesWithServices(
+        config.locationId,
+      );
+
+      final sortedCategories = List<ServiceCategory>.from(result.categories)
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      final sortedServices = List<Service>.from(result.services)
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+      state = AsyncValue.data(
+        ServicesData(categories: sortedCategories, services: sortedServices),
+      );
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Forza il refresh dei dati (per retry manuale)
+  Future<void> refresh() async {
+    _hasFetched = false;
+    state = const AsyncValue.loading();
+    await _loadData();
+  }
+}
+
 /// Provider unico per categorie e servizi (UNA sola chiamata API)
-final servicesDataProvider = FutureProvider<ServicesData>((ref) async {
-  debugPrint('CHIAMATA API servicesDataProvider');
-  final repository = ref.read(bookingRepositoryProvider);
-  final config = ref.read(bookingConfigProvider);
-
-  // Singola chiamata API
-  final result = await repository.getCategoriesWithServices(config.locationId);
-
-  // Ordina
-  final sortedCategories = List<ServiceCategory>.from(result.categories)
-    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-  final sortedServices = List<Service>.from(result.services)
-    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-  return ServicesData(categories: sortedCategories, services: sortedServices);
-});
+final servicesDataProvider =
+    StateNotifierProvider<ServicesDataNotifier, AsyncValue<ServicesData>>(
+      (ref) => ServicesDataNotifier(ref),
+    );
 
 /// Provider per le categorie (legacy - usa servicesDataProvider)
 final categoriesProvider = FutureProvider<List<ServiceCategory>>((ref) async {
-  final data = await ref.watch(servicesDataProvider.future);
-  return data.categories;
+  final asyncData = ref.watch(servicesDataProvider);
+  return asyncData.whenData((data) => data.categories).value ?? [];
 });
 
 /// Provider per i servizi (legacy - usa servicesDataProvider)
 final servicesProvider = FutureProvider<List<Service>>((ref) async {
-  final data = await ref.watch(servicesDataProvider.future);
-  return data.services;
+  final asyncData = ref.watch(servicesDataProvider);
+  return asyncData.whenData((data) => data.services).value ?? [];
 });
 
+/// Notifier per lo staff con protezione da loop
+class StaffDataNotifier extends StateNotifier<AsyncValue<List<Staff>>> {
+  final Ref _ref;
+  bool _hasFetched = false;
+
+  StaffDataNotifier(this._ref) : super(const AsyncValue.loading()) {
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    if (_hasFetched) return;
+    _hasFetched = true;
+
+    try {
+      final repository = _ref.read(bookingRepositoryProvider);
+      final config = _ref.read(bookingConfigProvider);
+      final staff = await repository.getStaff(config.locationId);
+      final sortedStaff = List<Staff>.from(staff)
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      state = AsyncValue.data(sortedStaff);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> refresh() async {
+    _hasFetched = false;
+    state = const AsyncValue.loading();
+    await _loadData();
+  }
+}
+
 /// Provider per lo staff
-final staffProvider = FutureProvider<List<Staff>>((ref) async {
-  final repository = ref.read(bookingRepositoryProvider);
-  final config = ref.read(bookingConfigProvider);
-  final staff = await repository.getStaff(config.locationId);
-  // Ordina per sortOrder (crea una nuova lista per evitare modificare const)
-  final sortedStaff = List<Staff>.from(staff);
-  sortedStaff.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-  return sortedStaff;
-});
+final staffProvider =
+    StateNotifierProvider<StaffDataNotifier, AsyncValue<List<Staff>>>(
+      (ref) => StaffDataNotifier(ref),
+    );
 
 /// Provider per la data selezionata nel calendario
 final selectedDateProvider = StateProvider<DateTime?>((ref) => null);
