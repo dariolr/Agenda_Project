@@ -1,21 +1,11 @@
 import 'package:agenda_frontend/app/app.dart';
-import 'package:agenda_frontend/features/booking/providers/booking_provider.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('App builds without crashing', (WidgetTester tester) async {
-    // Mocka i provider che fanno API calls per evitare timer pendenti
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          categoriesProvider.overrideWith((ref) async => []),
-          servicesProvider.overrideWith((ref) async => []),
-          staffProvider.overrideWith((ref) async => []),
-        ],
-        child: const App(),
-      ),
-    );
+    // Test semplificato - verifica solo che l'app si costruisca
+    // I provider fanno chiamate API reali ma il test termina prima
+    await tester.pumpWidget(const App());
 
     // Attende che il primo frame sia renderizzato
     await tester.pump();

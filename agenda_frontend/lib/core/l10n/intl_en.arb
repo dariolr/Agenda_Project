@@ -1,0 +1,248 @@
+{
+  "@@locale": "en",
+  "appTitle": "Book Online",
+  "actionBack": "Back",
+  "actionNext": "Next",
+  "actionConfirm": "Confirm",
+  "actionCancel": "Cancel",
+  "actionClose": "Close",
+  "actionRetry": "Retry",
+  "actionLogin": "Login",
+  "actionRegister": "Register",
+  "actionLogout": "Logout",
+  
+  "errorTitle": "Error",
+  "errorGeneric": "An error occurred",
+  "errorNotFound": "Page not found: {path}",
+  "@errorNotFound": {
+    "placeholders": {
+      "path": { "type": "String" }
+    }
+  },
+  "errorNoAvailability": "No availability for the selected date",
+  "errorLoadingServices": "Unable to load services. Check your connection and try again.",
+  "errorLoadingStaff": "Unable to load staff. Check your connection and try again.",
+  "errorLoadingAvailability": "Unable to load availability. Check your connection and try again.",
+  "servicesEmpty": "No services available at the moment",
+  "servicesEmptySubtitle": "There are no services available for online booking at this business",
+  "staffEmpty": "No staff available at the moment",
+  "errorConnectionTimeout": "The connection is taking too long. Please try again.",
+  "errorBusinessNotFound": "Business not found",
+  "errorBusinessNotFoundSubtitle": "The requested business does not exist or is not yet configured for online bookings.",
+  "errorLocationNotFound": "Location not available",
+  "errorLocationNotFoundSubtitle": "The selected location is not active. Contact the business for more information.",
+  "errorServiceUnavailable": "Service temporarily unavailable",
+  "errorServiceUnavailableSubtitle": "We are working to fix the issue. Please try again in a few minutes.",
+  
+  "authWelcome": "Welcome",
+  "authLoginTitle": "Login to your account",
+  "authRegisterTitle": "Create a new account",
+  "authEmail": "Email",
+  "authPassword": "Password",
+  "authConfirmPassword": "Confirm password",
+  "authFirstName": "First name",
+  "authLastName": "Last name",
+  "authPhone": "Phone",
+  "authForgotPassword": "Forgot password?",
+  "authNoAccount": "Don't have an account?",
+  "authHaveAccount": "Already have an account?",
+  "authInvalidEmail": "Invalid email",
+  "authInvalidPassword": "Password too short (min. 6 characters)",
+  "authPasswordMismatch": "Passwords don't match",
+  "authRequiredField": "Required field",
+  "authInvalidPhone": "Invalid phone number",
+  "authLoginSuccess": "Login successful",
+  "authRegisterSuccess": "Registration completed",
+  "authLoginFailed": "Invalid credentials",
+  "authRegisterFailed": "Registration failed",
+  "authResetPasswordTitle": "Reset password",
+  "authResetPasswordMessage": "Enter your email and we'll send you instructions to reset your password.",
+  "authResetPasswordSend": "Send",
+  "authResetPasswordSuccess": "Email sent! Check your inbox.",
+  "authResetPasswordError": "Error sending email. Please try again.",
+  "authResetPasswordConfirmTitle": "Reset password",
+  "authResetPasswordConfirmMessage": "Enter your new password",
+  "authNewPassword": "New password",
+  "authResetPasswordConfirmSuccess": "Password reset successful!",
+  "authResetPasswordConfirmError": "Invalid or expired token",
+  "authChangePasswordTitle": "Change password",
+  "authCurrentPassword": "Current password",
+  "authChangePasswordSuccess": "Password changed successfully",
+  "authChangePasswordError": "Current password is incorrect",
+  "authPasswordTooShort": "Password too short (min. 8 characters)",
+  "authPasswordRequirements": "Password must contain: uppercase, lowercase, number",
+  
+  "bookingTitle": "Book appointment",
+  "bookingStepServices": "Services",
+  "bookingStepStaff": "Staff",
+  "bookingStepDateTime": "Date & Time",
+  "bookingStepSummary": "Summary",
+  
+  "servicesTitle": "Choose services",
+  "servicesSubtitle": "You can select one or more services",
+  "servicesSelected": "{count, plural, =0{No service selected} =1{1 service selected} other{{count} services selected}}",
+  "@servicesSelected": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "servicesTotal": "Total: {total}",
+  "@servicesTotal": {
+    "placeholders": {
+      "total": { "type": "String" }
+    }
+  },
+  "servicesDuration": "{duration} min",
+  "@servicesDuration": {
+    "placeholders": {
+      "duration": { "type": "int" }
+    }
+  },
+  "servicesFree": "Free",
+  "servicesPriceFrom": "from {price}",
+  "@servicesPriceFrom": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  
+  "staffTitle": "Choose staff member",
+  "staffSubtitle": "Select who you want to be served by",
+  "staffAnyOperator": "Any available staff",
+  "staffAnyOperatorSubtitle": "We'll assign you the first available staff member",
+  
+  "dateTimeTitle": "Choose date and time",
+  "dateTimeSubtitle": "Select when you want to book",
+  "dateTimeFirstAvailable": "First available: {date}",
+  "@dateTimeFirstAvailable": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "dateTimeNoSlots": "No time slots available for this date",
+  "dateTimeSelectDate": "Select a date",
+  "dateTimeMorning": "Morning",
+  "dateTimeAfternoon": "Afternoon",
+  "dateTimeEvening": "Evening",
+  
+  "summaryTitle": "Booking summary",
+  "summarySubtitle": "Review the details before confirming",
+  "summaryServices": "Selected services",
+  "summaryOperator": "Staff member",
+  "summaryDateTime": "Date and time",
+  "summaryDuration": "Total duration",
+  "summaryPrice": "Total price",
+  "summaryNotes": "Notes (optional)",
+  "summaryNotesHint": "Add any notes for the appointment...",
+  
+  "confirmationTitle": "Booking confirmed!",
+  "confirmationSubtitle": "We've sent you a confirmation email",
+  "confirmationBookingId": "Booking code: {id}",
+  "@confirmationBookingId": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "confirmationNewBooking": "New booking",
+  "confirmationGoHome": "Go to home",
+  
+  "durationMinutes": "{minutes} min",
+  "@durationMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "durationMinute": "{minutes} min",
+  "@durationMinute": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "durationHour": "{hours} hour",
+  "@durationHour": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "durationHourMinute": "{hours} hour {minutes} min",
+  "@durationHourMinute": {
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  },
+  "priceFormat": "€{price}",
+  "@priceFormat": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  
+  "monthJanuary": "January",
+  "monthFebruary": "February",
+  "monthMarch": "March",
+  "monthApril": "April",
+  "monthMay": "May",
+  "monthJune": "June",
+  "monthJuly": "July",
+  "monthAugust": "August",
+  "monthSeptember": "September",
+  "monthOctober": "October",
+  "monthNovember": "November",
+  "monthDecember": "December",
+  
+  "weekdayMon": "Mon",
+  "weekdayTue": "Tue",
+  "weekdayWed": "Wed",
+  "weekdayThu": "Thu",
+  "weekdayFri": "Fri",
+  "weekdaySat": "Sat",
+  "weekdaySun": "Sun",
+  
+  "myBookings": "My bookings",
+  "upcomingBookings": "Upcoming",
+  "pastBookings": "Past",
+  "noUpcomingBookings": "You have no upcoming bookings",
+  "noPastBookings": "You have no past bookings",
+  "errorLoadingBookings": "Error loading bookings",
+  "modifiable": "Modifiable",
+  "notModifiable": "Not modifiable",
+  "modifiableUntilDays": "{days, plural, =1{Modifiable until tomorrow} other{Modifiable for {days} days}}",
+  "@modifiableUntilDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "modifiableUntilHours": "{hours, plural, =1{Modifiable for 1 hour} other{Modifiable for {hours} hours}}",
+  "@modifiableUntilHours": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "modifiableUntilMinutes": "{minutes, plural, =1{Modifiable for 1 minute} other{Modifiable for {minutes} minutes}}",
+  "@modifiableUntilMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "modify": "Modify",
+  "cancel": "Cancel",
+  "yes": "Yes",
+  "no": "No",
+  "cancelBookingTitle": "Cancel booking",
+  "cancelBookingConfirm": "Are you sure you want to cancel this booking?",
+  "bookingCancelled": "Booking cancelled successfully",
+  "bookingCancelFailed": "Error cancelling booking",
+  "modifyNotImplemented": "Modify feature under development",
+  "rescheduleBookingTitle": "Reschedule booking",
+  "currentBooking": "Current booking",
+  "selectNewDate": "Select new date",
+  "selectDate": "Select date",
+  "selectNewTime": "Select new time",
+  "confirmReschedule": "Confirm reschedule",
+  "bookingRescheduled": "Booking rescheduled successfully",
+  
+  "validationRequired": "Required field",
+  "validationInvalidEmail": "Invalid email",
+  "validationInvalidPhone": "Invalid phone"
+}

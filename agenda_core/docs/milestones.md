@@ -14,7 +14,7 @@
 | **M3.3** | API Gestionali (appointments, clients CRUD) | ✅ Completato |
 | **M4** | Frontend integration | ✅ Completato |
 | **M4.1** | Token web hardening (cookie httpOnly) | ✅ Documentato |
-| **M5** | Deploy produzione | ✅ Documentato |
+| **M5** | Deploy produzione | ✅ **LIVE** |
 | **M6** | Webhook infrastructure | ✅ Completato |
 | **M7** | Compatibilità gestionale (agenda_backend) | ✅ Completato |
 | **M7.1** | Mock elimination | ✅ Completato |
@@ -23,6 +23,43 @@
 | **M10** | Notification system (Email + Webhook lifecycle) | ✅ Completato |
 | **M11** | Permessi operatori gestionale (business_users) | ✅ Completato |
 | **M11.1** | Sistema inviti via email (business_invitations) | ✅ Completato |
+| **D1** | Deploy effettivo produzione SiteGround | ✅ **LIVE** |
+
+---
+
+## Deploy Produzione (D1) ✅ LIVE 28/12/2025
+
+### URL Produzione
+- **API**: https://api.romeolab.it
+- **Frontend Prenotazioni**: https://prenota.romeolab.it
+- **Gestionale**: https://gestionale.romeolab.it (da deployare)
+
+### Infrastruttura SiteGround
+- **Hosting**: SiteGround condiviso
+- **PHP**: 8.2
+- **MySQL**: MariaDB (pannello SiteGround)
+- **SSH**: Porta 18765, chiave ed25519
+
+### CORS Configurato
+```
+CORS_ALLOWED_ORIGINS=https://prenota.romeolab.it,https://gestionale.romeolab.it,http://localhost:8080
+```
+
+### Fix Implementati
+1. **Loop infinito API** - Convertito `FutureProvider` a `StateNotifier` con flag `_hasFetched`
+2. **CORS duplicate headers** - Rimosso da `.htaccess`, gestito solo in PHP
+3. **Auth state rebuild** - Usato `ref.watch(authProvider.select(...))` per evitare rebuild
+
+### Comandi Deploy
+```bash
+# API (agenda_core)
+rsync -avz --delete --exclude='.env' --exclude='logs/' \
+  agenda_core/ siteground:www/api.romeolab.it/
+
+# Frontend (agenda_frontend)
+flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it
+rsync -avz --delete build/web/ siteground:www/prenota.romeolab.it/public_html/
+```
 
 ---
 

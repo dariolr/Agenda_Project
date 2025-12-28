@@ -14,12 +14,24 @@ part 'business_provider.g.dart';
 /// Altrimenti ritorna null (l'app mostrerà una selezione manuale).
 @riverpod
 class CurrentBusiness extends _$CurrentBusiness {
+  bool _hasFetched = false;
+  Business? _cachedBusiness;
+  Object? _cachedError;
+
   @override
   Future<Business?> build() async {
+    // Protezione da loop: se già caricato, ritorna cache
+    if (_hasFetched) {
+      if (_cachedError != null) throw _cachedError!;
+      return _cachedBusiness;
+    }
+    _hasFetched = true;
+
     final slug = SubdomainResolver.getBusinessSlug();
 
     if (slug == null) {
       // Non siamo su un sottodominio business
+      _cachedBusiness = null;
       return null;
     }
 
@@ -27,18 +39,27 @@ class CurrentBusiness extends _$CurrentBusiness {
 
     try {
       final data = await apiClient.getBusinessBySlug(slug);
-      return Business.fromJson(data);
+      _cachedBusiness = Business.fromJson(data);
+      return _cachedBusiness;
     } on ApiException catch (e) {
       if (e.statusCode == 404) {
         // Business non trovato - slug non valido
+        _cachedBusiness = null;
         return null;
       }
+      _cachedError = e;
+      rethrow;
+    } catch (e) {
+      _cachedError = e;
       rethrow;
     }
   }
 
   /// Ricarica il business corrente
   Future<void> refresh() async {
+    _hasFetched = false;
+    _cachedBusiness = null;
+    _cachedError = null;
     ref.invalidateSelf();
   }
 }

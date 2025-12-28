@@ -1413,7 +1413,10 @@ class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {
   const AppLocalizationDelegate();
 
   List<Locale> get supportedLocales {
-    return const <Locale>[Locale.fromSubtags(languageCode: 'it')];
+    return const <Locale>[
+      Locale.fromSubtags(languageCode: 'it'),
+      Locale.fromSubtags(languageCode: 'en'),
+    ];
   }
 
   @override
