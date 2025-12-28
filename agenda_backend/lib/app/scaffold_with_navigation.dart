@@ -9,14 +9,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../core/models/location.dart';
 import '../core/l10n/l10_extension.dart';
-import '../core/widgets/app_bottom_sheet.dart';
+import '../core/models/location.dart';
 import '../core/widgets/adaptive_dropdown.dart';
+import '../core/widgets/app_bottom_sheet.dart';
 import '../core/widgets/app_buttons.dart';
 import '../features/agenda/presentation/dialogs/add_block_dialog.dart';
 import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
 import '../features/agenda/presentation/widgets/booking_dialog.dart';
+import '../features/agenda/providers/business_providers.dart';
 import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/agenda/providers/location_providers.dart';
@@ -26,8 +27,8 @@ import '../features/services/presentation/dialogs/service_dialog.dart';
 import '../features/services/providers/services_reorder_provider.dart';
 import '../features/staff/presentation/dialogs/location_dialog.dart';
 import '../features/staff/presentation/dialogs/staff_dialog.dart';
-import '../features/staff/providers/staff_reorder_provider.dart';
 import '../features/staff/providers/staff_providers.dart';
+import '../features/staff/providers/staff_reorder_provider.dart';
 
 Widget _buildAddButtonContent({
   required bool showLabelEffective,
@@ -591,6 +592,32 @@ class _TeamAddAction extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Pulsante Operatori
+          Tooltip(
+            message: l10n.operatorsTitle,
+            child: SizedBox(
+              height: _actionButtonHeight,
+              width: isIconOnly ? iconOnlyWidth : null,
+              child: AppOutlinedActionButton(
+                onPressed: () {
+                  final businessId = ref.read(currentBusinessIdProvider);
+                  context.push('/operatori/$businessId');
+                },
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                borderColor: scheme.primary,
+                foregroundColor: scheme.primary,
+                child: buildActionLabel(
+                  Icons.supervisor_account_outlined,
+                  l10n.operatorsTitle,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           Tooltip(
             message: l10n.staffHubAvailabilityTitle,
             child: SizedBox(

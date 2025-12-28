@@ -52,4 +52,31 @@ class ApiConfig {
   /// Singolo booking endpoint
   static String booking(int locationId, int bookingId) =>
       '/v1/locations/$locationId/bookings/$bookingId';
+
+  // ========== BUSINESS USERS (OPERATORS) ENDPOINTS ==========
+
+  /// Lista operatori di un business
+  static String businessUsers(int businessId) =>
+      '/v1/businesses/$businessId/users';
+
+  /// Singolo operatore
+  static String businessUser(int businessId, int userId) =>
+      '/v1/businesses/$businessId/users/$userId';
+
+  // ========== BUSINESS INVITATIONS ENDPOINTS ==========
+
+  /// Lista inviti pendenti di un business
+  static String businessInvitations(int businessId) =>
+      '/v1/businesses/$businessId/invitations';
+
+  /// Singolo invito
+  static String businessInvitation(int businessId, int invitationId) =>
+      '/v1/businesses/$businessId/invitations/$invitationId';
+
+  /// Dettagli invito pubblico (tramite token)
+  static String invitationByToken(String token) => '/v1/invitations/$token';
+
+  /// Accetta invito
+  static String acceptInvitation(String token) =>
+      '/v1/invitations/$token/accept';
 }

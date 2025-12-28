@@ -211,6 +211,19 @@ class ApiClient {
     }
   }
 
+  /// Esegue richiesta PATCH
+  Future<Map<String, dynamic>> patch(
+    String path, {
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final response = await _dio.patch(path, data: data);
+      return _handleResponse(response);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// Esegue richiesta DELETE
   Future<Map<String, dynamic>> delete(String path) async {
     try {
@@ -496,5 +509,100 @@ class ApiClient {
   Future<List<Map<String, dynamic>>> getLocations(int businessId) async {
     final response = await get('/v1/businesses/$businessId/locations');
     return (response['data'] as List).cast<Map<String, dynamic>>();
+  }
+
+  // ========== BUSINESS USERS (OPERATORS) ==========
+
+  /// GET /v1/businesses/{business_id}/users
+  /// Lista operatori di un business.
+  Future<List<Map<String, dynamic>>> getBusinessUsers(int businessId) async {
+    final response = await get(ApiConfig.businessUsers(businessId));
+    return (response['data']['users'] as List).cast<Map<String, dynamic>>();
+  }
+
+  /// POST /v1/businesses/{business_id}/users
+  /// Aggiunge un utente esistente al business.
+  Future<Map<String, dynamic>> addBusinessUser({
+    required int businessId,
+    required int userId,
+    required String role,
+  }) async {
+    final response = await post(
+      ApiConfig.businessUsers(businessId),
+      data: {'user_id': userId, 'role': role},
+    );
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  /// PATCH /v1/businesses/{business_id}/users/{user_id}
+  /// Aggiorna il ruolo di un operatore.
+  Future<Map<String, dynamic>> updateBusinessUser({
+    required int businessId,
+    required int userId,
+    required String role,
+  }) async {
+    final response = await patch(
+      ApiConfig.businessUser(businessId, userId),
+      data: {'role': role},
+    );
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  /// DELETE /v1/businesses/{business_id}/users/{user_id}
+  /// Rimuove un operatore dal business.
+  Future<void> removeBusinessUser({
+    required int businessId,
+    required int userId,
+  }) async {
+    await delete(ApiConfig.businessUser(businessId, userId));
+  }
+
+  // ========== BUSINESS INVITATIONS ==========
+
+  /// GET /v1/businesses/{business_id}/invitations
+  /// Lista inviti pendenti.
+  Future<List<Map<String, dynamic>>> getBusinessInvitations(
+    int businessId,
+  ) async {
+    final response = await get(ApiConfig.businessInvitations(businessId));
+    return (response['data']['invitations'] as List)
+        .cast<Map<String, dynamic>>();
+  }
+
+  /// POST /v1/businesses/{business_id}/invitations
+  /// Crea un nuovo invito via email.
+  Future<Map<String, dynamic>> createBusinessInvitation({
+    required int businessId,
+    required String email,
+    required String role,
+  }) async {
+    final response = await post(
+      ApiConfig.businessInvitations(businessId),
+      data: {'email': email, 'role': role},
+    );
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  /// DELETE /v1/businesses/{business_id}/invitations/{invitation_id}
+  /// Revoca un invito pendente.
+  Future<void> revokeBusinessInvitation({
+    required int businessId,
+    required int invitationId,
+  }) async {
+    await delete(ApiConfig.businessInvitation(businessId, invitationId));
+  }
+
+  /// GET /v1/invitations/{token}
+  /// Dettagli di un invito (endpoint pubblico).
+  Future<Map<String, dynamic>> getInvitationByToken(String token) async {
+    final response = await get(ApiConfig.invitationByToken(token));
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  /// POST /v1/invitations/{token}/accept
+  /// Accetta un invito (richiede autenticazione).
+  Future<Map<String, dynamic>> acceptInvitation(String token) async {
+    final response = await post(ApiConfig.acceptInvitation(token));
+    return response['data'] as Map<String, dynamic>;
   }
 }

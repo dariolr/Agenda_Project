@@ -143,6 +143,8 @@
   "teamEditLocationTitle": "Edit location",
   "teamLocationNameLabel": "Location name",
   "teamLocationAddressLabel": "Address",
+  "teamLocationEmailLabel": "Email",
+  "teamLocationEmailHint": "Email for customer notifications",
   "teamNewStaffTitle": "New team member",
   "teamEditStaffTitle": "Edit team member",
   "teamStaffNameLabel": "First name",
@@ -445,6 +447,75 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+
+  "operatorsTitle": "Operators",
+  "operatorsSubtitle": "Manage who can access the platform",
+  "operatorsEmpty": "No operators configured",
+  "operatorsInviteTitle": "Invite operator",
+  "operatorsInviteSubtitle": "Send an invite via email",
+  "operatorsInviteEmail": "Email",
+  "operatorsInviteRole": "Role",
+  "operatorsInviteSend": "Send invite",
+  "operatorsInviteSuccess": "Invite sent to {email}",
+  "@operatorsInviteSuccess": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsInviteCopied": "Invite link copied",
+  "operatorsPendingInvites": "Pending invites",
+  "operatorsPendingInvitesCount": "{count} pending invites",
+  "@operatorsPendingInvitesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "operatorsRevokeInvite": "Revoke invite",
+  "operatorsRevokeInviteConfirm": "Do you want to revoke the invite for {email}?",
+  "@operatorsRevokeInviteConfirm": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsEditRole": "Edit role",
+  "operatorsRemove": "Remove operator",
+  "operatorsRemoveConfirm": "Do you want to remove {name} from the team?",
+  "@operatorsRemoveConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsRemoveSuccess": "Operator removed",
+  "operatorsRoleOwner": "Owner",
+  "operatorsRoleAdmin": "Administrator",
+  "operatorsRoleManager": "Manager",
+  "operatorsRoleStaff": "Staff",
+  "operatorsRoleDescription": "Select access level",
+  "operatorsYou": "You",
+  "operatorsInvitedBy": "Invited by {name}",
+  "@operatorsInvitedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsExpires": "Expires on {date}",
+  "@operatorsExpires": {
+    "placeholders": {
+      "date": {
+        "type": "String"
       }
     }
   }

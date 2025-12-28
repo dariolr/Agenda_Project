@@ -6,12 +6,14 @@ import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/staff.dart';
 import '../../../core/models/time_slot.dart';
+import '../../../core/network/network_providers.dart';
 import '../data/booking_repository.dart';
 import '../domain/booking_config.dart';
 
 /// Provider per il repository
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
-  return BookingRepository();
+  final apiClient = ref.watch(apiClientProvider);
+  return BookingRepository(apiClient);
 });
 
 /// Provider per la configurazione del booking
@@ -175,14 +177,19 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final bookingId = await _repository.confirmBooking(
-        businessId: _config.businessId,
+      final result = await _repository.confirmBooking(
         locationId: _config.locationId,
         serviceIds: state.request.services.map((s) => s.id).toList(),
         startTime: state.request.selectedSlot!.startTime,
         staffId: state.request.selectedStaff?.id,
         notes: state.request.notes,
       );
+
+      // Estrai booking ID dalla risposta
+      final bookingId =
+          result['id']?.toString() ??
+          result['booking_id']?.toString() ??
+          'confirmed';
 
       state = state.copyWith(
         isLoading: false,
@@ -197,33 +204,54 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
   }
 }
 
-/// Provider per le categorie
-final categoriesProvider = FutureProvider<List<ServiceCategory>>((ref) async {
+/// Dati servizi (categories + services in un'unica chiamata API)
+class ServicesData {
+  final List<ServiceCategory> categories;
+  final List<Service> services;
+
+  const ServicesData({required this.categories, required this.services});
+
+  /// Servizi prenotabili online
+  List<Service> get bookableServices =>
+      services.where((s) => s.isBookableOnline).toList();
+
+  bool get isEmpty => bookableServices.isEmpty;
+}
+
+/// Provider unico per categorie e servizi (UNA sola chiamata API)
+final servicesDataProvider = FutureProvider<ServicesData>((ref) async {
   final repository = ref.read(bookingRepositoryProvider);
   final config = ref.read(bookingConfigProvider);
-  final categories = await repository.getCategories(config.businessId);
-  // Ordina per sortOrder (crea una nuova lista per evitare modificare const)
-  final sortedCategories = List<ServiceCategory>.from(categories);
-  sortedCategories.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-  return sortedCategories;
+
+  // Singola chiamata API
+  final result = await repository.getCategoriesWithServices(config.locationId);
+
+  // Ordina
+  final sortedCategories = List<ServiceCategory>.from(result.categories)
+    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  final sortedServices = List<Service>.from(result.services)
+    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+  return ServicesData(categories: sortedCategories, services: sortedServices);
 });
 
-/// Provider per i servizi
+/// Provider per le categorie (legacy - usa servicesDataProvider)
+final categoriesProvider = FutureProvider<List<ServiceCategory>>((ref) async {
+  final data = await ref.watch(servicesDataProvider.future);
+  return data.categories;
+});
+
+/// Provider per i servizi (legacy - usa servicesDataProvider)
 final servicesProvider = FutureProvider<List<Service>>((ref) async {
-  final repository = ref.read(bookingRepositoryProvider);
-  final config = ref.read(bookingConfigProvider);
-  final services = await repository.getServices(config.businessId);
-  // Ordina per sortOrder (crea una nuova lista per evitare modificare const)
-  final sortedServices = List<Service>.from(services);
-  sortedServices.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-  return sortedServices;
+  final data = await ref.watch(servicesDataProvider.future);
+  return data.services;
 });
 
 /// Provider per lo staff
 final staffProvider = FutureProvider<List<Staff>>((ref) async {
   final repository = ref.read(bookingRepositoryProvider);
   final config = ref.read(bookingConfigProvider);
-  final staff = await repository.getStaff(config.businessId);
+  final staff = await repository.getStaff(config.locationId);
   // Ordina per sortOrder (crea una nuova lista per evitare modificare const)
   final sortedStaff = List<Staff>.from(staff);
   sortedStaff.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
@@ -245,10 +273,9 @@ final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
   }
 
   return repository.getAvailableSlots(
-    businessId: config.businessId,
     locationId: config.locationId,
     date: selectedDate,
-    totalDurationMinutes: bookingState.request.totalDurationMinutes,
+    serviceIds: bookingState.request.services.map((s) => s.id).toList(),
     staffId: bookingState.request.selectedStaff?.id,
   );
 });
@@ -260,9 +287,8 @@ final firstAvailableDateProvider = FutureProvider<DateTime>((ref) async {
   final bookingState = ref.watch(bookingFlowProvider);
 
   return repository.getFirstAvailableDate(
-    businessId: config.businessId,
     locationId: config.locationId,
-    totalDurationMinutes: bookingState.request.totalDurationMinutes,
+    serviceIds: bookingState.request.services.map((s) => s.id).toList(),
     staffId: bookingState.request.selectedStaff?.id,
   );
 });

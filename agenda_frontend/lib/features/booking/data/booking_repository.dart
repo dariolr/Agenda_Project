@@ -1,164 +1,184 @@
+import 'package:uuid/uuid.dart';
+
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/staff.dart';
 import '../../../core/models/time_slot.dart';
+import '../../../core/network/api_client.dart';
 
-/// Repository per le prenotazioni (Mock API)
+/// Repository per le prenotazioni - API reale
 class BookingRepository {
-  /// Recupera le categorie di servizi ordinate
-  Future<List<ServiceCategory>> getCategories(int businessId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    return [
-      const ServiceCategory(id: 1, businessId: 1, name: 'Taglio', sortOrder: 1),
-      const ServiceCategory(id: 2, businessId: 1, name: 'Colore', sortOrder: 2),
-      const ServiceCategory(id: 3, businessId: 1, name: 'Trattamenti', sortOrder: 3),
-      const ServiceCategory(id: 4, businessId: 1, name: 'Styling', sortOrder: 4),
-    ];
+  final ApiClient _apiClient;
+  final Uuid _uuid = const Uuid();
+
+  BookingRepository(this._apiClient);
+
+  /// GET /v1/services?location_id=X
+  /// Recupera categorie e servizi in un'unica chiamata
+  Future<({List<ServiceCategory> categories, List<Service> services})>
+  getCategoriesWithServices(int locationId) async {
+    final data = await _apiClient.getServices(locationId);
+    final categoriesJson = data['categories'] as List<dynamic>? ?? [];
+
+    final categories = <ServiceCategory>[];
+    final services = <Service>[];
+
+    for (final json in categoriesJson) {
+      final catJson = json as Map<String, dynamic>;
+      categories.add(ServiceCategory.fromJson(catJson));
+
+      final catId = catJson['id'] as int;
+      final servicesJson = catJson['services'] as List<dynamic>? ?? [];
+
+      for (final svcJson in servicesJson) {
+        final svc = svcJson as Map<String, dynamic>;
+        if (!svc.containsKey('category_id')) {
+          svc['category_id'] = catId;
+        }
+        services.add(Service.fromJson(svc));
+      }
+    }
+
+    return (categories: categories, services: services);
   }
 
-  /// Recupera i servizi prenotabili online ordinati
-  Future<List<Service>> getServices(int businessId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    return [
-      // Categoria Taglio
-      const Service(
-        id: 1, businessId: 1, categoryId: 1,
-        name: 'Taglio Uomo', durationMinutes: 30, price: 20.0, sortOrder: 1,
-      ),
-      const Service(
-        id: 2, businessId: 1, categoryId: 1,
-        name: 'Taglio Donna', durationMinutes: 45, price: 35.0, sortOrder: 2,
-      ),
-      const Service(
-        id: 3, businessId: 1, categoryId: 1,
-        name: 'Taglio Bambino', durationMinutes: 20, price: 15.0, sortOrder: 3,
-      ),
-      // Categoria Colore
-      const Service(
-        id: 4, businessId: 1, categoryId: 2,
-        name: 'Colore Base', durationMinutes: 60, price: 45.0, sortOrder: 1,
-      ),
-      const Service(
-        id: 5, businessId: 1, categoryId: 2,
-        name: 'Meches', durationMinutes: 90, price: 65.0, sortOrder: 2,
-      ),
-      const Service(
-        id: 6, businessId: 1, categoryId: 2,
-        name: 'Balayage', durationMinutes: 120, price: 85.0, isPriceStartingFrom: true, sortOrder: 3,
-      ),
-      // Categoria Trattamenti
-      const Service(
-        id: 7, businessId: 1, categoryId: 3,
-        name: 'Trattamento Ristrutturante', durationMinutes: 30, price: 25.0, sortOrder: 1,
-      ),
-      const Service(
-        id: 8, businessId: 1, categoryId: 3,
-        name: 'Maschera Nutriente', durationMinutes: 20, price: 15.0, sortOrder: 2,
-      ),
-      // Categoria Styling
-      const Service(
-        id: 9, businessId: 1, categoryId: 4,
-        name: 'Piega', durationMinutes: 30, price: 20.0, sortOrder: 1,
-      ),
-      const Service(
-        id: 10, businessId: 1, categoryId: 4,
-        name: 'Acconciatura Sposa', durationMinutes: 90, price: 120.0, isPriceStartingFrom: true, sortOrder: 2,
-      ),
-    ];
+  /// GET /v1/services?location_id=X
+  /// Recupera categorie con servizi annidati (legacy)
+  Future<List<ServiceCategory>> getCategories(int locationId) async {
+    final result = await getCategoriesWithServices(locationId);
+    return result.categories;
   }
 
-  /// Recupera gli staff prenotabili online
-  Future<List<Staff>> getStaff(int businessId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    return const [
-      Staff(id: 1, businessId: 1, name: 'Marco', surname: 'Rossi', sortOrder: 1),
-      Staff(id: 2, businessId: 1, name: 'Laura', surname: 'Bianchi', sortOrder: 2),
-      Staff(id: 3, businessId: 1, name: 'Giuseppe', surname: 'Verdi', sortOrder: 3),
-    ];
+  /// GET /v1/services?location_id=X
+  /// Recupera tutti i servizi (flat list) (legacy)
+  Future<List<Service>> getServices(int locationId) async {
+    final result = await getCategoriesWithServices(locationId);
+    return result.services;
   }
 
-  /// Recupera gli slot disponibili per una data e durata
+  /// GET /v1/staff?location_id=X
+  /// Recupera staff prenotabili online
+  Future<List<Staff>> getStaff(int locationId) async {
+    final data = await _apiClient.getStaff(locationId);
+
+    // Formato atteso: { "staff": [...] }
+    final staffJson = data['staff'] as List<dynamic>? ?? [];
+
+    return staffJson.map((json) {
+      final staffData = json as Map<String, dynamic>;
+      // Mappa display_name se presente
+      if (staffData.containsKey('display_name') &&
+          !staffData.containsKey('name')) {
+        final displayName = staffData['display_name'] as String;
+        final parts = displayName.split(' ');
+        staffData['name'] = parts.isNotEmpty ? parts.first : displayName;
+        staffData['surname'] = parts.length > 1
+            ? parts.sublist(1).join(' ')
+            : '';
+      }
+      // Default business_id se non presente
+      if (!staffData.containsKey('business_id')) {
+        staffData['business_id'] = 1;
+      }
+      return Staff.fromJson(staffData);
+    }).toList();
+  }
+
+  /// GET /v1/availability?location_id=X&date=YYYY-MM-DD&service_ids=1,2&staff_id=N
+  /// Recupera slot disponibili
   Future<List<TimeSlot>> getAvailableSlots({
-    required int businessId,
     required int locationId,
     required DateTime date,
-    required int totalDurationMinutes,
+    required List<int> serviceIds,
     int? staffId,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    
-    final slots = <TimeSlot>[];
-    final baseDate = DateTime(date.year, date.month, date.day);
-    
-    // Simula slot mattina (9:00 - 13:00)
-    for (var hour = 9; hour < 13; hour++) {
-      for (var minute = 0; minute < 60; minute += 30) {
-        final start = baseDate.add(Duration(hours: hour, minutes: minute));
-        final end = start.add(Duration(minutes: totalDurationMinutes));
-        
-        // Salta alcuni slot per simulare indisponibilità
-        if (hour == 10 && minute == 30) continue;
-        if (hour == 11 && minute == 0) continue;
-        
-        slots.add(TimeSlot(
-          startTime: start,
-          endTime: end,
-          staffId: staffId,
-        ));
-      }
-    }
-    
-    // Simula slot pomeriggio (14:00 - 19:00)
-    for (var hour = 14; hour < 19; hour++) {
-      for (var minute = 0; minute < 60; minute += 30) {
-        final start = baseDate.add(Duration(hours: hour, minutes: minute));
-        final end = start.add(Duration(minutes: totalDurationMinutes));
-        
-        // Salta alcuni slot per simulare indisponibilità
-        if (hour == 15 && minute == 0) continue;
-        if (hour == 16 && minute == 30) continue;
-        
-        slots.add(TimeSlot(
-          startTime: start,
-          endTime: end,
-          staffId: staffId,
-        ));
-      }
-    }
-    
-    return slots;
+    if (serviceIds.isEmpty) return [];
+
+    final dateStr =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+    final data = await _apiClient.getAvailability(
+      locationId: locationId,
+      date: dateStr,
+      serviceIds: serviceIds,
+      staffId: staffId,
+    );
+
+    final slotsJson = data['slots'] as List<dynamic>? ?? [];
+
+    return slotsJson.map((json) {
+      return TimeSlot.fromJson(json as Map<String, dynamic>);
+    }).toList();
   }
 
-  /// Trova la prima data disponibile
+  /// Trova la prima data con disponibilità
+  /// Cerca nei prossimi 30 giorni
   Future<DateTime> getFirstAvailableDate({
-    required int businessId,
     required int locationId,
-    required int totalDurationMinutes,
+    required List<int> serviceIds,
     int? staffId,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    // Simula: prima disponibilità domani
+    if (serviceIds.isEmpty) {
+      return DateTime.now().add(const Duration(days: 1));
+    }
+
     final now = DateTime.now();
+    var checkDate = DateTime(now.year, now.month, now.day);
+
+    // Se oggi è già tardi, inizia da domani
+    if (now.hour >= 18) {
+      checkDate = checkDate.add(const Duration(days: 1));
+    }
+
+    // Cerca nei prossimi 30 giorni
+    for (var i = 0; i < 30; i++) {
+      try {
+        final slots = await getAvailableSlots(
+          locationId: locationId,
+          date: checkDate,
+          serviceIds: serviceIds,
+          staffId: staffId,
+        );
+
+        if (slots.isNotEmpty) {
+          return checkDate;
+        }
+      } catch (_) {
+        // Ignora errori e prova il giorno successivo
+      }
+      checkDate = checkDate.add(const Duration(days: 1));
+    }
+
+    // Fallback: domani
     return DateTime(now.year, now.month, now.day + 1);
   }
 
-  /// Conferma la prenotazione
-  Future<String> confirmBooking({
-    required int businessId,
+  /// POST /v1/locations/{location_id}/bookings
+  /// Conferma prenotazione
+  ///
+  /// Ritorna i dati del booking creato
+  /// Throws ApiException con code='slot_conflict' se slot occupato
+  Future<Map<String, dynamic>> confirmBooking({
     required int locationId,
     required List<int> serviceIds,
     required DateTime startTime,
     int? staffId,
     String? notes,
+    String? idempotencyKey,
   }) async {
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Genera un ID prenotazione mock
-    final bookingId = 'BK${DateTime.now().millisecondsSinceEpoch}';
-    return bookingId;
+    // Genera idempotency key se non fornita
+    final key = idempotencyKey ?? _uuid.v4();
+
+    return _apiClient.createBooking(
+      locationId: locationId,
+      idempotencyKey: key,
+      serviceIds: serviceIds,
+      startTime: startTime.toUtc().toIso8601String(),
+      staffId: staffId,
+      notes: notes,
+    );
   }
+
+  /// Genera un nuovo idempotency key (UUID v4)
+  String generateIdempotencyKey() => _uuid.v4();
 }

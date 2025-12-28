@@ -964,6 +964,26 @@ class L10n {
     );
   }
 
+  /// `Email`
+  String get teamLocationEmailLabel {
+    return Intl.message(
+      'Email',
+      name: 'teamLocationEmailLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email per notifiche ai clienti`
+  String get teamLocationEmailHint {
+    return Intl.message(
+      'Email per notifiche ai clienti',
+      name: 'teamLocationEmailHint',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Nuovo membro del team`
   String get teamNewStaffTitle {
     return Intl.message(
@@ -2868,6 +2888,261 @@ class L10n {
       name: 'applyClientToAllAppointmentsMessage',
       desc: '',
       args: [count],
+    );
+  }
+
+  /// `Operatori`
+  String get operatorsTitle {
+    return Intl.message(
+      'Operatori',
+      name: 'operatorsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Gestisci chi può accedere al gestionale`
+  String get operatorsSubtitle {
+    return Intl.message(
+      'Gestisci chi può accedere al gestionale',
+      name: 'operatorsSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun operatore configurato`
+  String get operatorsEmpty {
+    return Intl.message(
+      'Nessun operatore configurato',
+      name: 'operatorsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invita operatore`
+  String get operatorsInviteTitle {
+    return Intl.message(
+      'Invita operatore',
+      name: 'operatorsInviteTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invia un invito via email`
+  String get operatorsInviteSubtitle {
+    return Intl.message(
+      'Invia un invito via email',
+      name: 'operatorsInviteSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email`
+  String get operatorsInviteEmail {
+    return Intl.message(
+      'Email',
+      name: 'operatorsInviteEmail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ruolo`
+  String get operatorsInviteRole {
+    return Intl.message(
+      'Ruolo',
+      name: 'operatorsInviteRole',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invia invito`
+  String get operatorsInviteSend {
+    return Intl.message(
+      'Invia invito',
+      name: 'operatorsInviteSend',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invito inviato a {email}`
+  String operatorsInviteSuccess(String email) {
+    return Intl.message(
+      'Invito inviato a $email',
+      name: 'operatorsInviteSuccess',
+      desc: '',
+      args: [email],
+    );
+  }
+
+  /// `Link di invito copiato`
+  String get operatorsInviteCopied {
+    return Intl.message(
+      'Link di invito copiato',
+      name: 'operatorsInviteCopied',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inviti in attesa`
+  String get operatorsPendingInvites {
+    return Intl.message(
+      'Inviti in attesa',
+      name: 'operatorsPendingInvites',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} inviti in attesa`
+  String operatorsPendingInvitesCount(int count) {
+    return Intl.message(
+      '$count inviti in attesa',
+      name: 'operatorsPendingInvitesCount',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Revoca invito`
+  String get operatorsRevokeInvite {
+    return Intl.message(
+      'Revoca invito',
+      name: 'operatorsRevokeInvite',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Vuoi revocare l'invito per {email}?`
+  String operatorsRevokeInviteConfirm(String email) {
+    return Intl.message(
+      'Vuoi revocare l\'invito per $email?',
+      name: 'operatorsRevokeInviteConfirm',
+      desc: '',
+      args: [email],
+    );
+  }
+
+  /// `Modifica ruolo`
+  String get operatorsEditRole {
+    return Intl.message(
+      'Modifica ruolo',
+      name: 'operatorsEditRole',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rimuovi operatore`
+  String get operatorsRemove {
+    return Intl.message(
+      'Rimuovi operatore',
+      name: 'operatorsRemove',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Vuoi rimuovere {name} dal team?`
+  String operatorsRemoveConfirm(String name) {
+    return Intl.message(
+      'Vuoi rimuovere $name dal team?',
+      name: 'operatorsRemoveConfirm',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `Operatore rimosso`
+  String get operatorsRemoveSuccess {
+    return Intl.message(
+      'Operatore rimosso',
+      name: 'operatorsRemoveSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Proprietario`
+  String get operatorsRoleOwner {
+    return Intl.message(
+      'Proprietario',
+      name: 'operatorsRoleOwner',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Amministratore`
+  String get operatorsRoleAdmin {
+    return Intl.message(
+      'Amministratore',
+      name: 'operatorsRoleAdmin',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manager`
+  String get operatorsRoleManager {
+    return Intl.message(
+      'Manager',
+      name: 'operatorsRoleManager',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Staff`
+  String get operatorsRoleStaff {
+    return Intl.message(
+      'Staff',
+      name: 'operatorsRoleStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona il livello di accesso`
+  String get operatorsRoleDescription {
+    return Intl.message(
+      'Seleziona il livello di accesso',
+      name: 'operatorsRoleDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tu`
+  String get operatorsYou {
+    return Intl.message('Tu', name: 'operatorsYou', desc: '', args: []);
+  }
+
+  /// `Invitato da {name}`
+  String operatorsInvitedBy(String name) {
+    return Intl.message(
+      'Invitato da $name',
+      name: 'operatorsInvitedBy',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `Scade il {date}`
+  String operatorsExpires(String date) {
+    return Intl.message(
+      'Scade il $date',
+      name: 'operatorsExpires',
+      desc: '',
+      args: [date],
     );
   }
 }

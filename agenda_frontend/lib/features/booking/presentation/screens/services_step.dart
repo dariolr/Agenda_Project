@@ -13,8 +13,7 @@ class ServicesStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final categoriesAsync = ref.watch(categoriesProvider);
-    final servicesAsync = ref.watch(servicesProvider);
+    final servicesDataAsync = ref.watch(servicesDataProvider);
     final bookingState = ref.watch(bookingFlowProvider);
     final selectedServices = bookingState.request.services;
 
@@ -43,22 +42,30 @@ class ServicesStep extends ConsumerWidget {
           ),
         ),
 
-        // Lista servizi per categoria
+        // Lista servizi per categoria (singola chiamata API)
         Expanded(
-          child: categoriesAsync.when(
+          child: servicesDataAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text(l10n.errorLoadingServices)),
-            data: (categories) => servicesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text(l10n.errorLoadingServices)),
-              data: (services) => _buildServicesList(
+            error: (e, _) => _ErrorView(
+              message: l10n.errorLoadingServices,
+              onRetry: () => ref.invalidate(servicesDataProvider),
+            ),
+            data: (data) {
+              if (data.isEmpty) {
+                return _EmptyView(
+                  title: l10n.servicesEmpty,
+                  subtitle: l10n.servicesEmptySubtitle,
+                );
+              }
+
+              return _buildServicesList(
                 context,
                 ref,
-                categories,
-                services,
+                data.categories,
+                data.bookableServices,
                 selectedServices,
-              ),
-            ),
+              );
+            },
           ),
         ),
 
@@ -286,6 +293,93 @@ class _ServiceTile extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget per mostrare errori con bottone retry
+class _ErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorView({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.cloud_off_outlined,
+              size: 64,
+              color: theme.colorScheme.error.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: theme.textTheme.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: Text(l10n.actionRetry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget per mostrare stato vuoto
+class _EmptyView extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _EmptyView({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.event_busy_outlined,
+              size: 64,
+              color: theme.colorScheme.onSurface.withOpacity(0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
