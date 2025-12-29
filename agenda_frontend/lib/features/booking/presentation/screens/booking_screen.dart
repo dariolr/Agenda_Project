@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/business_provider.dart';
 import '../widgets/booking_step_indicator.dart';
 import 'confirmation_step.dart';
 import 'date_time_step.dart';
@@ -17,13 +18,84 @@ class BookingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bookingState = ref.watch(bookingFlowProvider);
+    final businessAsync = ref.watch(currentBusinessProvider);
     final config = ref.watch(bookingConfigProvider);
-    // Usa select per evitare rebuild su ogni cambio di auth state
+    final l10n = context.l10n;
+
+    // Se il business è in caricamento, mostra loading
+    if (businessAsync.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.bookingTitle)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Se c'è un errore nel caricamento del business
+    if (businessAsync.hasError) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.bookingTitle)),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                l10n.errorGeneric,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () =>
+                    ref.read(currentBusinessProvider.notifier).refresh(),
+                icon: const Icon(Icons.refresh),
+                label: Text(l10n.actionRetry),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Se la config non è valida (business o location mancanti)
+    if (!config.isValid) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.bookingTitle)),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.storefront_outlined, size: 64),
+              const SizedBox(height: 16),
+              Text(
+                l10n.errorBusinessNotFound,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  l10n.errorBusinessNotFoundSubtitle,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withAlpha((0.6 * 255).round()),
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Normal booking flow
+    final bookingState = ref.watch(bookingFlowProvider);
     final isAuthenticated = ref.watch(
       authProvider.select((state) => state.isAuthenticated),
     );
-    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(

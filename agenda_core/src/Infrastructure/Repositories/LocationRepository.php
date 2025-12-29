@@ -77,6 +77,44 @@ final class LocationRepository
         return $result !== false ? $result : null;
     }
 
+    /**
+     * Find the default location for a business.
+     * Returns the location with is_default=1, or the first active location if none is marked default.
+     */
+    public function findDefaultByBusinessId(int $businessId): ?array
+    {
+        // First try to find the explicitly marked default location
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, name, address, city, region, country,
+                    phone, email, latitude, longitude, currency, timezone,
+                    is_default, is_active, created_at, updated_at
+             FROM locations
+             WHERE business_id = ? AND is_default = 1 AND is_active = 1
+             LIMIT 1'
+        );
+        $stmt->execute([$businessId]);
+        $result = $stmt->fetch();
+
+        if ($result) {
+            return $result;
+        }
+
+        // Fallback: return the first active location
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, name, address, city, region, country,
+                    phone, email, latitude, longitude, currency, timezone,
+                    is_default, is_active, created_at, updated_at
+             FROM locations
+             WHERE business_id = ? AND is_active = 1
+             ORDER BY id ASC
+             LIMIT 1'
+        );
+        $stmt->execute([$businessId]);
+        $result = $stmt->fetch();
+
+        return $result ?: null;
+    }
+
     public function create(int $businessId, string $name, array $data = []): int
     {
         $stmt = $this->db->getPdo()->prepare(

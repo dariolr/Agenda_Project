@@ -9,6 +9,7 @@ import '../../../core/models/time_slot.dart';
 import '../../../core/network/network_providers.dart';
 import '../data/booking_repository.dart';
 import '../domain/booking_config.dart';
+import 'business_provider.dart';
 
 /// Provider per il repository
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
@@ -16,9 +17,31 @@ final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
   return BookingRepository(apiClient);
 });
 
-/// Provider per la configurazione del booking
+/// Provider per la configurazione del booking (dinamico basato sul business corrente)
 final bookingConfigProvider = Provider<BookingConfig>((ref) {
-  return defaultBookingConfig;
+  final businessAsync = ref.watch(currentBusinessProvider);
+
+  // Se il business è ancora in caricamento o ha errori, ritorna placeholder
+  if (businessAsync.isLoading || businessAsync.hasError) {
+    return placeholderBookingConfig;
+  }
+
+  final business = businessAsync.value;
+  if (business == null) {
+    return placeholderBookingConfig;
+  }
+
+  // Se il business non ha una location di default, ritorna placeholder
+  final locationId = business.defaultLocationId;
+  if (locationId == null) {
+    return placeholderBookingConfig;
+  }
+
+  return BookingConfig(
+    allowStaffSelection: true,
+    businessId: business.id,
+    locationId: locationId,
+  );
 });
 
 /// Step del flow di prenotazione

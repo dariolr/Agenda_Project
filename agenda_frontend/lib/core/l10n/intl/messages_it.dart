@@ -177,6 +177,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingTitle": MessageLookupByLibrary.simpleMessage(
       "Prenota appuntamento",
     ),
+    "businessNotFound": MessageLookupByLibrary.simpleMessage(
+      "Attività non trovata",
+    ),
+    "businessNotFoundHint": MessageLookupByLibrary.simpleMessage(
+      "Verifica l\'indirizzo o contatta direttamente l\'attività.",
+    ),
     "cancel": MessageLookupByLibrary.simpleMessage("Annulla"),
     "cancelBookingConfirm": MessageLookupByLibrary.simpleMessage(
       "Sei sicuro di voler annullare questa prenotazione?",

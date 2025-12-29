@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/l10n/l10_extension.dart';
 import '../features/auth/presentation/change_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
@@ -9,6 +10,7 @@ import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/booking/presentation/screens/booking_screen.dart';
 import '../features/booking/presentation/screens/my_bookings_screen.dart';
+import '../features/booking/providers/business_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Usa select per evitare rebuild su ogni cambio di stato auth
@@ -16,21 +18,33 @@ final routerProvider = Provider<GoRouter>((ref) {
     authProvider.select((state) => state.isAuthenticated),
   );
 
+  // Ottiene lo slug del business corrente dall'URL
+  final businessSlug = ref.watch(businessSlugProvider);
+
   return GoRouter(
-    initialLocation: '/booking',
+    // Se c'è uno slug, vai al booking; altrimenti mostra landing
+    initialLocation: businessSlug != null ? '/booking' : '/',
     debugLogDiagnostics: false, // Disabilita log in produzione
     redirect: (context, state) {
-      final isLoggingIn = state.matchedLocation == '/login';
-      final isRegistering = state.matchedLocation == '/register';
-      final isResettingPassword = state.matchedLocation.startsWith(
-        '/reset-password',
-      );
+      final path = state.matchedLocation;
+
+      // Se non c'è slug e non siamo sulla landing, mostra landing
+      if (businessSlug == null && path != '/') {
+        return '/';
+      }
+
+      // Auth redirect logic
+      final isLoggingIn = path == '/login';
+      final isRegistering = path == '/register';
+      final isResettingPassword = path.startsWith('/reset-password');
 
       // Se non è autenticato e non sta cercando di loggarsi o registrarsi
       if (!isAuthenticated &&
           !isLoggingIn &&
           !isRegistering &&
-          !isResettingPassword) {
+          !isResettingPassword &&
+          path != '/' &&
+          path != '/booking') {
         return '/booking';
       }
 
@@ -42,7 +56,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/', redirect: (context, state) => '/booking'),
+      // Landing page - business non specificato
+      GoRoute(
+        path: '/',
+        name: 'landing',
+        builder: (context, state) => const _BusinessNotFoundScreen(),
+      ),
       GoRoute(
         path: '/login',
         name: 'login',
@@ -82,3 +101,63 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
   );
 });
+
+/// Schermata per business non trovato o URL senza slug
+class _BusinessNotFoundScreen extends ConsumerWidget {
+  const _BusinessNotFoundScreen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final businessAsync = ref.watch(currentBusinessProvider);
+
+    return Scaffold(
+      body: Center(
+        child: businessAsync.when(
+          loading: () => const CircularProgressIndicator(),
+          error: (error, _) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                l10n.errorGeneric,
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          data: (business) {
+            // Se il business è null, mostra il messaggio
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.storefront_outlined, size: 64),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.businessNotFound,
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    l10n.businessNotFoundHint,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withAlpha((0.6 * 255).round()),
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}

@@ -244,5 +244,8 @@
   
   "validationRequired": "Required field",
   "validationInvalidEmail": "Invalid email",
-  "validationInvalidPhone": "Invalid phone"
+  "validationInvalidPhone": "Invalid phone",
+
+  "businessNotFound": "Business not found",
+  "businessNotFoundHint": "Please check the URL or contact the business directly."
 }

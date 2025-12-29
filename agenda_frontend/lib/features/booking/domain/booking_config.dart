@@ -2,10 +2,10 @@
 class BookingConfig {
   /// Consente all'utente di scegliere l'operatore
   final bool allowStaffSelection;
-  
+
   /// ID del business
   final int businessId;
-  
+
   /// ID della location (sede)
   final int locationId;
 
@@ -14,11 +14,15 @@ class BookingConfig {
     required this.businessId,
     required this.locationId,
   });
+
+  /// Crea una config valida solo se businessId e locationId sono noti
+  bool get isValid => businessId > 0 && locationId > 0;
 }
 
-/// Provider per la configurazione (può essere configurato dall'esterno)
-const defaultBookingConfig = BookingConfig(
+/// Config placeholder usata quando il business non è ancora caricato.
+/// NON usare direttamente - serve solo come fallback temporaneo.
+const placeholderBookingConfig = BookingConfig(
   allowStaffSelection: true,
-  businessId: 1,
-  locationId: 1,
+  businessId: 0,
+  locationId: 0,
 );

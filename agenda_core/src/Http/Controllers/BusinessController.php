@@ -7,11 +7,13 @@ namespace Agenda\Http\Controllers;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
+use Agenda\Infrastructure\Repositories\LocationRepository;
 
 final class BusinessController
 {
     public function __construct(
         private readonly BusinessRepository $businessRepo,
+        private readonly LocationRepository $locationRepo,
     ) {}
 
     /**
@@ -65,13 +67,17 @@ final class BusinessController
             return Response::notFound('Business not found', $request->traceId);
         }
 
-        return Response::success($this->formatBusinessPublic($business));
+        // Get default location for this business
+        $defaultLocation = $this->locationRepo->findDefaultByBusinessId((int) $business['id']);
+        $defaultLocationId = $defaultLocation ? (int) $defaultLocation['id'] : null;
+
+        return Response::success($this->formatBusinessPublic($business, $defaultLocationId));
     }
 
     /**
      * Format business for public display (limited fields)
      */
-    private function formatBusinessPublic(array $row): array
+    private function formatBusinessPublic(array $row, ?int $defaultLocationId = null): array
     {
         return [
             'id' => (int) $row['id'],
@@ -81,6 +87,7 @@ final class BusinessController
             'phone' => $row['phone'],
             'timezone' => $row['timezone'],
             'currency' => $row['currency'],
+            'default_location_id' => $defaultLocationId,
         ];
     }
 
