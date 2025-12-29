@@ -244,5 +244,8 @@
   
   "validationRequired": "Campo obbligatorio",
   "validationInvalidEmail": "Email non valida",
-  "validationInvalidPhone": "Telefono non valido"
+  "validationInvalidPhone": "Telefono non valido",
+
+  "businessNotFound": "Attività non trovata",
+  "businessNotFoundHint": "Verifica l'indirizzo o contatta direttamente l'attività."
 }

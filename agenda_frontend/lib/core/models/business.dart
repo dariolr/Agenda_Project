@@ -10,6 +10,7 @@ class Business {
   final String? phone;
   final String timezone;
   final String currency;
+  final int? defaultLocationId;
 
   const Business({
     required this.id,
@@ -19,6 +20,7 @@ class Business {
     this.phone,
     this.timezone = 'Europe/Rome',
     this.currency = 'EUR',
+    this.defaultLocationId,
   });
 
   factory Business.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,7 @@ class Business {
       phone: json['phone'] as String?,
       timezone: json['timezone'] as String? ?? 'Europe/Rome',
       currency: json['currency'] as String? ?? 'EUR',
+      defaultLocationId: json['default_location_id'] as int?,
     );
   }
 
@@ -42,6 +45,7 @@ class Business {
       'phone': phone,
       'timezone': timezone,
       'currency': currency,
+      'default_location_id': defaultLocationId,
     };
   }
 

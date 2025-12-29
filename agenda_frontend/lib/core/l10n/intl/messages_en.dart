@@ -171,6 +171,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingStepStaff": MessageLookupByLibrary.simpleMessage("Staff"),
     "bookingStepSummary": MessageLookupByLibrary.simpleMessage("Summary"),
     "bookingTitle": MessageLookupByLibrary.simpleMessage("Book appointment"),
+    "businessNotFound": MessageLookupByLibrary.simpleMessage(
+      "Business not found",
+    ),
+    "businessNotFoundHint": MessageLookupByLibrary.simpleMessage(
+      "Please check the URL or contact the business directly.",
+    ),
     "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
     "cancelBookingConfirm": MessageLookupByLibrary.simpleMessage(
       "Are you sure you want to cancel this booking?",

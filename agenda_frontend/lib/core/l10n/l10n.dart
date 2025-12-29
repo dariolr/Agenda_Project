@@ -1407,6 +1407,26 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Attività non trovata`
+  String get businessNotFound {
+    return Intl.message(
+      'Attività non trovata',
+      name: 'businessNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verifica l'indirizzo o contatta direttamente l'attività.`
+  String get businessNotFoundHint {
+    return Intl.message(
+      'Verifica l\'indirizzo o contatta direttamente l\'attività.',
+      name: 'businessNotFoundHint',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {
