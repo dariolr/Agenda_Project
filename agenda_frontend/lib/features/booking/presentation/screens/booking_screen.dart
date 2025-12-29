@@ -78,11 +78,10 @@ class BookingScreen extends ConsumerWidget {
                   l10n.errorBusinessNotFoundSubtitle,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withAlpha((0.6 * 255).round()),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withAlpha((0.6 * 255).round()),
+                  ),
                 ),
               ),
             ],

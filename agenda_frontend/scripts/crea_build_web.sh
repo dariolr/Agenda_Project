@@ -79,4 +79,18 @@ cd "$ROOT_DIR"
 echo "Eseguo: $FLUTTER_BIN build web --release --no-tree-shake-icons --pwa-strategy=none"
 "$FLUTTER_BIN" build web --release --no-tree-shake-icons --pwa-strategy=none
 
+###############################################################################
+# 3) Copia .htaccess nel build (necessario per SPA routing)
+###############################################################################
+
+HTACCESS_SRC="$ROOT_DIR/web/.htaccess"
+HTACCESS_DST="$ROOT_DIR/build/web/.htaccess"
+
+if [[ -f "$HTACCESS_SRC" ]]; then
+  cp "$HTACCESS_SRC" "$HTACCESS_DST"
+  echo "OK: copiato .htaccess in build/web/"
+else
+  echo "WARN: .htaccess non trovato in web/, SPA routing potrebbe non funzionare"
+fi
+
 # Use the VSCode task named dart-analyze instead of running dart analyze directly.

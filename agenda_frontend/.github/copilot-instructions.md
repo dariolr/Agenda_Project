@@ -151,3 +151,34 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
 - Estrarre widget privati da `build()` lunghi
 
 ---
+
+## 🔗 Multi-Business Path-Based URL (29/12/2025)
+
+### Struttura URL
+```
+/                      → Landing page (business non specificato)
+/:slug                 → Redirect a /:slug/booking
+/:slug/booking         → Schermata prenotazione
+/:slug/login           → Login
+/:slug/register        → Registrazione
+/:slug/my-bookings     → Le mie prenotazioni
+/reset-password/:token → Reset password (globale, no slug)
+```
+
+### Provider chiave
+- `routeSlugProvider` — StateProvider aggiornato dal router con lo slug corrente
+- `currentBusinessProvider` — Legge slug da `routeSlugProvider` e carica business da API
+
+### Path riservati (NON sono slug di business)
+`reset-password`, `login`, `register`, `booking`, `my-bookings`, `change-password`, `privacy`, `terms`
+
+### ⚠️ NON usare SubdomainResolver per lo slug
+`SubdomainResolver.getBusinessSlug()` legge `Uri.base` che è **statico** al caricamento JS.
+Usare sempre `ref.watch(routeSlugProvider)` per ottenere lo slug corrente.
+
+### File di riferimento
+| Concetto | File |
+|----------|------|
+| Route slug | `lib/app/providers/route_slug_provider.dart` |
+| Router | `lib/app/router.dart` |
+| Business provider | `lib/features/booking/providers/business_provider.dart` |

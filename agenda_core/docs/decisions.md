@@ -252,6 +252,36 @@ class Locations extends _$Locations {
 }
 ```
 
+### 17. Multi-Business Path-Based URL (2025-12-29)
+**Contesto**: SiteGround shared hosting non supporta wildcard DNS né subdomain dinamici. Serve routing multi-business.
+
+**Problema**: `SubdomainResolver.getBusinessSlug()` usava `Uri.base.pathSegments` che è **statico** al caricamento JavaScript. Quando go_router cambiava il path, `Uri.base` non si aggiornava → loop infiniti o loading bloccato.
+
+**Decisione**: Routing path-based con StateProvider dinamico:
+- `routeSlugProvider` — StateProvider aggiornato dal router nel redirect
+- `currentBusinessProvider` — Legge slug da `routeSlugProvider`, non più da `SubdomainResolver`
+- Router estrae `:slug` dal path e aggiorna provider via `Future.microtask()`
+
+**Struttura URL**:
+```
+/                      → Landing (no business)
+/:slug                 → Redirect a /:slug/booking  
+/:slug/booking         → Prenotazione
+/:slug/login           → Login
+/:slug/register        → Registrazione
+/:slug/my-bookings     → Le mie prenotazioni
+/reset-password/:token → Reset password (globale)
+```
+
+**Path riservati** (non sono slug): `reset-password`, `login`, `register`, `booking`, `my-bookings`, `change-password`, `privacy`, `terms`
+
+**File modificati**:
+- `lib/app/providers/route_slug_provider.dart` (NUOVO)
+- `lib/app/router.dart` (REFACTORED)
+- `lib/features/booking/providers/business_provider.dart` (usa routeSlugProvider)
+
+**⚠️ ATTENZIONE**: NON usare `SubdomainResolver.getBusinessSlug()` per ottenere lo slug corrente. Usare sempre `ref.watch(routeSlugProvider)`.
+
 ---
 
 ## Regole di Dominio (2025-12-26)
