@@ -70,3 +70,11 @@ Deploy Produzione (28/12/2025):
 - Hosting: SiteGround condiviso
 - CORS: `CORS_ALLOWED_ORIGINS=https://prenota.romeolab.it,https://gestionale.romeolab.it,http://localhost:8080`
 - SSH: porta 18765, chiave ed25519
+
+Multi-Business Path-Based (29/12/2025):
+- Struttura URL: `/{slug}/booking`, `/{slug}/login`, ecc.
+- SiteGround shared hosting: NO wildcard DNS, NO subdomain routing
+- Router Flutter estrae slug dal path e aggiorna `routeSlugProvider`
+- Landing page (`/`) mostra "Business non specificato"
+- Slug inesistente → mostra "Business non trovato" (404 API gestito gracefully)
+- Reset password globale: `/reset-password/:token` (senza business context)

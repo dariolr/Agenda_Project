@@ -26,11 +26,34 @@ dart run intl_utils:generate
 dart run build_runner build --delete-conflicting-outputs
 
 # Build web produzione
-flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it
+flutter build web --release --no-tree-shake-icons
 
-# Deploy su SiteGround
-rsync -avz --delete build/web/ siteground:www/prenota.romeolab.it/public_html/
+# Deploy su SiteGround (copia .htaccess poi rsync)
+cp web/.htaccess build/web/
+rsync -avz --delete -e "ssh -p 18765" build/web/ siteground:~/www/prenota.romeolab.it/public_html/
 ```
+
+## Multi-Business Path-Based URL (29/12/2025)
+
+L'app supporta più business tramite URL path-based:
+
+| URL | Comportamento |
+|-----|---------------|
+| `/` | Landing page "Business non specificato" |
+| `/:slug` | Redirect a `/:slug/booking` |
+| `/:slug/booking` | Schermata prenotazione |
+| `/:slug/login` | Login |
+| `/:slug/register` | Registrazione |
+| `/:slug/my-bookings` | Le mie prenotazioni |
+| `/reset-password/:token` | Reset password (globale) |
+
+### File chiave
+- `lib/app/providers/route_slug_provider.dart` — StateProvider aggiornato dal router
+- `lib/app/router.dart` — Estrae slug dal path e aggiorna provider
+- `lib/features/booking/providers/business_provider.dart` — Carica business da API
+
+### ⚠️ NON usare SubdomainResolver
+`SubdomainResolver.getBusinessSlug()` legge `Uri.base` (statico). Usare sempre `routeSlugProvider`.
 
 ## Architettura
 
@@ -79,6 +102,7 @@ Dopo modifiche: `dart run intl_utils:generate`
 
 ## Features
 
+- ✅ Multi-business path-based URL (`/:slug/booking`)
 - ✅ Selezione servizi (multi-service)
 - ✅ Selezione staff (opzionale)
 - ✅ Calendario disponibilità

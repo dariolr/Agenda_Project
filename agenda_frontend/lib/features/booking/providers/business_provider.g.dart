@@ -8,27 +8,27 @@ part of 'business_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provider per il business corrente (caricato da slug)
+/// Provider per il business corrente (caricato da slug nel path URL)
 ///
-/// Se l'URL è un sottodominio business (es. salonemario.prenota.romeolab.it),
-/// carica automaticamente i dati del business.
-/// Altrimenti ritorna null (l'app mostrerà una selezione manuale).
+/// L'URL segue il pattern: /{slug}/booking, /{slug}/login, ecc.
+/// Il router estrae lo slug e lo aggiorna in routeSlugProvider.
+/// Questo provider reagisce ai cambi di slug e carica il business.
 
 @ProviderFor(CurrentBusiness)
 const currentBusinessProvider = CurrentBusinessProvider._();
 
-/// Provider per il business corrente (caricato da slug)
+/// Provider per il business corrente (caricato da slug nel path URL)
 ///
-/// Se l'URL è un sottodominio business (es. salonemario.prenota.romeolab.it),
-/// carica automaticamente i dati del business.
-/// Altrimenti ritorna null (l'app mostrerà una selezione manuale).
+/// L'URL segue il pattern: /{slug}/booking, /{slug}/login, ecc.
+/// Il router estrae lo slug e lo aggiorna in routeSlugProvider.
+/// Questo provider reagisce ai cambi di slug e carica il business.
 final class CurrentBusinessProvider
     extends $AsyncNotifierProvider<CurrentBusiness, Business?> {
-  /// Provider per il business corrente (caricato da slug)
+  /// Provider per il business corrente (caricato da slug nel path URL)
   ///
-  /// Se l'URL è un sottodominio business (es. salonemario.prenota.romeolab.it),
-  /// carica automaticamente i dati del business.
-  /// Altrimenti ritorna null (l'app mostrerà una selezione manuale).
+  /// L'URL segue il pattern: /{slug}/booking, /{slug}/login, ecc.
+  /// Il router estrae lo slug e lo aggiorna in routeSlugProvider.
+  /// Questo provider reagisce ai cambi di slug e carica il business.
   const CurrentBusinessProvider._()
     : super(
         from: null,
@@ -48,13 +48,13 @@ final class CurrentBusinessProvider
   CurrentBusiness create() => CurrentBusiness();
 }
 
-String _$currentBusinessHash() => r'9bab89caeb9c8b34f935723daf71f1beefef513a';
+String _$currentBusinessHash() => r'2f00cc58e347ca0a27ea6647bd55565535f95823';
 
-/// Provider per il business corrente (caricato da slug)
+/// Provider per il business corrente (caricato da slug nel path URL)
 ///
-/// Se l'URL è un sottodominio business (es. salonemario.prenota.romeolab.it),
-/// carica automaticamente i dati del business.
-/// Altrimenti ritorna null (l'app mostrerà una selezione manuale).
+/// L'URL segue il pattern: /{slug}/booking, /{slug}/login, ecc.
+/// Il router estrae lo slug e lo aggiorna in routeSlugProvider.
+/// Questo provider reagisce ai cambi di slug e carica il business.
 
 abstract class _$CurrentBusiness extends $AsyncNotifier<Business?> {
   FutureOr<Business?> build();
@@ -135,14 +135,17 @@ abstract class _$CurrentBusinessId extends $Notifier<int?> {
 }
 
 /// Provider per verificare se il business slug è valido
+/// (slug presente e business trovato nel database)
 
 @ProviderFor(IsBusinessValid)
 const isBusinessValidProvider = IsBusinessValidProvider._();
 
 /// Provider per verificare se il business slug è valido
+/// (slug presente e business trovato nel database)
 final class IsBusinessValidProvider
     extends $NotifierProvider<IsBusinessValid, bool> {
   /// Provider per verificare se il business slug è valido
+  /// (slug presente e business trovato nel database)
   const IsBusinessValidProvider._()
     : super(
         from: null,
@@ -170,9 +173,10 @@ final class IsBusinessValidProvider
   }
 }
 
-String _$isBusinessValidHash() => r'7d49c025f2b52cad0a233621496bfe00434482c5';
+String _$isBusinessValidHash() => r'4d0814c4ad8b342b9ca7225311cb5e49a929041e';
 
 /// Provider per verificare se il business slug è valido
+/// (slug presente e business trovato nel database)
 
 abstract class _$IsBusinessValid extends $Notifier<bool> {
   bool build();
@@ -193,17 +197,17 @@ abstract class _$IsBusinessValid extends $Notifier<bool> {
   }
 }
 
-/// Provider semplice per lo slug corrente
+/// Provider semplice per lo slug corrente (letto dal path URL)
 
 @ProviderFor(businessSlug)
 const businessSlugProvider = BusinessSlugProvider._();
 
-/// Provider semplice per lo slug corrente
+/// Provider semplice per lo slug corrente (letto dal path URL)
 
 final class BusinessSlugProvider
     extends $FunctionalProvider<String?, String?, String?>
     with $Provider<String?> {
-  /// Provider semplice per lo slug corrente
+  /// Provider semplice per lo slug corrente (letto dal path URL)
   const BusinessSlugProvider._()
     : super(
         from: null,
@@ -237,7 +241,7 @@ final class BusinessSlugProvider
   }
 }
 
-String _$businessSlugHash() => r'd8e29a503c13fbfeb8e7353bfa60cc519c6a4d0c';
+String _$businessSlugHash() => r'2b426e8d5b02f0bf413dc03053031703750be5df';
 
 /// Provider per verificare se siamo su un sottodominio business
 

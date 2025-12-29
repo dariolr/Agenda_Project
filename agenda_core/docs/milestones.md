@@ -1,6 +1,6 @@
 # Milestones — agenda_core
 
-## Stato al 28/12/2025
+## Stato al 29/12/2025
 
 | Milestone | Descrizione | Stato |
 |-----------|-------------|-------|
@@ -24,6 +24,48 @@
 | **M11** | Permessi operatori gestionale (business_users) | ✅ Completato |
 | **M11.1** | Sistema inviti via email (business_invitations) | ✅ Completato |
 | **D1** | Deploy effettivo produzione SiteGround | ✅ **LIVE** |
+| **D2** | Multi-Business Path-Based URL | ✅ **LIVE** |
+
+---
+
+## Multi-Business Path-Based (D2) ✅ LIVE 29/12/2025
+
+### Problema risolto
+L'URL originale usava `SubdomainResolver.getBusinessSlug()` che leggeva `Uri.base.pathSegments` - 
+valore **statico** al caricamento della pagina JavaScript. Quando go_router cambiava il path,
+`Uri.base` non si aggiornava, causando loop infiniti o loading bloccato.
+
+### Soluzione implementata
+1. **Nuovo provider**: `routeSlugProvider` (StateProvider) aggiornato dinamicamente dal router
+2. **Router refactored**: Estrae `:slug` dal path e aggiorna `routeSlugProvider` nel redirect
+3. **business_provider.dart**: Ora legge slug da `routeSlugProvider` invece di `SubdomainResolver`
+
+### Struttura URL
+```
+/                      → Landing page (business non specificato)
+/:slug                 → Redirect a /:slug/booking
+/:slug/booking         → Schermata prenotazione
+/:slug/login           → Login
+/:slug/register        → Registrazione
+/:slug/my-bookings     → Le mie prenotazioni
+/reset-password/:token → Reset password (globale, no slug)
+```
+
+### Path riservati (non slug)
+`reset-password`, `login`, `register`, `booking`, `my-bookings`, `change-password`, `privacy`, `terms`
+
+### File modificati
+- `lib/app/providers/route_slug_provider.dart` (NUOVO)
+- `lib/app/router.dart` (REFACTORED)
+- `lib/features/booking/providers/business_provider.dart` (MODIFIED)
+
+### Test comportamento
+| URL | Comportamento |
+|-----|---------------|
+| `https://prenota.romeolab.it/` | Landing: "Business non specificato" |
+| `https://prenota.romeolab.it/salone-mario` | Redirect a `/salone-mario/booking` |
+| `https://prenota.romeolab.it/salone-mario/booking` | Carica business da API |
+| `https://prenota.romeolab.it/slug-inesistente` | API 404 → mostra "Business non trovato" |
 
 ---
 

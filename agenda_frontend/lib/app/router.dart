@@ -10,68 +10,82 @@ import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/booking/presentation/screens/booking_screen.dart';
 import '../features/booking/presentation/screens/my_bookings_screen.dart';
-import '../features/booking/providers/business_provider.dart';
+import 'providers/route_slug_provider.dart';
 
+/// Router provider con supporto path-based multi-business
+///
+/// Struttura URL:
+/// - /                      → Landing page (business non specificato)
+/// - /:slug                 → Redirect a /:slug/booking
+/// - /:slug/booking         → Schermata prenotazione
+/// - /:slug/login           → Login
+/// - /:slug/register        → Registrazione
+/// - /:slug/my-bookings     → Le mie prenotazioni
+/// - /reset-password/:token → Reset password (globale, no slug)
 final routerProvider = Provider<GoRouter>((ref) {
-  // Usa select per evitare rebuild su ogni cambio di stato auth
   final isAuthenticated = ref.watch(
     authProvider.select((state) => state.isAuthenticated),
   );
 
-  // Ottiene lo slug del business corrente dall'URL
-  final businessSlug = ref.watch(businessSlugProvider);
-
   return GoRouter(
-    // Se c'è uno slug, vai al booking; altrimenti mostra landing
-    initialLocation: businessSlug != null ? '/booking' : '/',
-    debugLogDiagnostics: false, // Disabilita log in produzione
+    initialLocation: '/',
+    debugLogDiagnostics: false,
+
+    // Aggiorna routeSlugProvider quando la route cambia
     redirect: (context, state) {
-      final path = state.matchedLocation;
+      final pathSegments = state.uri.pathSegments;
 
-      // Se non c'è slug e non siamo sulla landing, mostra landing
-      if (businessSlug == null && path != '/') {
-        return '/';
+      // Estrae lo slug dal path (primo segmento se non è una route riservata)
+      String? slug;
+      if (pathSegments.isNotEmpty) {
+        final firstSegment = pathSegments.first;
+        if (!_reservedPaths.contains(firstSegment)) {
+          slug = firstSegment;
+        }
       }
 
-      // Auth redirect logic
-      final isLoggingIn = path == '/login';
-      final isRegistering = path == '/register';
-      final isResettingPassword = path.startsWith('/reset-password');
+      // Aggiorna il provider con lo slug corrente
+      // Usiamo Future.microtask per evitare modifiche durante il build
+      Future.microtask(() {
+        ref.read(routeSlugProvider.notifier).state = slug;
+      });
 
-      // Se non è autenticato e non sta cercando di loggarsi o registrarsi
-      if (!isAuthenticated &&
-          !isLoggingIn &&
-          !isRegistering &&
-          !isResettingPassword &&
-          path != '/' &&
-          path != '/booking') {
-        return '/booking';
+      // Se siamo su /:slug senza sotto-path, redirect a /:slug/booking
+      if (slug != null && pathSegments.length == 1) {
+        return '/$slug/booking';
       }
 
-      // Se è autenticato e sta cercando di accedere a login/register
-      if (isAuthenticated && (isLoggingIn || isRegistering)) {
-        return '/booking';
+      // Auth redirect logic per route con slug
+      if (slug != null) {
+        final subPath = pathSegments.length > 1 ? pathSegments[1] : '';
+
+        // Se non autenticato e cerca di accedere a my-bookings, redirect a login
+        if (!isAuthenticated && subPath == 'my-bookings') {
+          return '/$slug/login';
+        }
+
+        // Se autenticato e cerca di accedere a login/register, redirect a booking
+        if (isAuthenticated && (subPath == 'login' || subPath == 'register')) {
+          return '/$slug/booking';
+        }
       }
 
       return null;
     },
+
     routes: [
-      // Landing page - business non specificato
+      // ============================================
+      // ROUTE GLOBALI (senza business context)
+      // ============================================
+
+      /// Landing page - nessun business specificato
       GoRoute(
         path: '/',
         name: 'landing',
-        builder: (context, state) => const _BusinessNotFoundScreen(),
+        builder: (context, state) => const _LandingScreen(),
       ),
-      GoRoute(
-        path: '/login',
-        name: 'login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/register',
-        name: 'register',
-        builder: (context, state) => const RegisterScreen(),
-      ),
+
+      /// Reset password (globale, il link viene da email)
       GoRoute(
         path: '/reset-password/:token',
         name: 'reset-password',
@@ -80,82 +94,140 @@ final routerProvider = Provider<GoRouter>((ref) {
           return ResetPasswordScreen(token: token);
         },
       ),
+
+      // ============================================
+      // ROUTE CON BUSINESS CONTEXT (/:slug/*)
+      // ============================================
+
+      /// Prenotazione - route principale del business
       GoRoute(
-        path: '/change-password',
-        name: 'change-password',
-        builder: (context, state) => const ChangePasswordScreen(),
-      ),
-      GoRoute(
-        path: '/booking',
-        name: 'booking',
+        path: '/:slug/booking',
+        name: 'business-booking',
         builder: (context, state) => const BookingScreen(),
       ),
+
+      /// Login con context business
       GoRoute(
-        path: '/my-bookings',
-        name: 'my-bookings',
+        path: '/:slug/login',
+        name: 'business-login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+
+      /// Registrazione con context business
+      GoRoute(
+        path: '/:slug/register',
+        name: 'business-register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
+
+      /// Le mie prenotazioni (richiede auth)
+      GoRoute(
+        path: '/:slug/my-bookings',
+        name: 'business-my-bookings',
         builder: (context, state) => const MyBookingsScreen(),
       ),
+
+      /// Cambio password (richiede auth)
+      GoRoute(
+        path: '/:slug/change-password',
+        name: 'business-change-password',
+        builder: (context, state) => const ChangePasswordScreen(),
+      ),
+
+      /// Catch-all per /:slug → redirect a /:slug/booking
+      /// Gestito nel redirect, ma serve come fallback
+      GoRoute(
+        path: '/:slug',
+        redirect: (context, state) {
+          final slug = state.pathParameters['slug'];
+          return '/$slug/booking';
+        },
+      ),
     ],
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(child: Text('Pagina non trovata: ${state.uri.path}')),
-    ),
+
+    errorBuilder: (context, state) => _ErrorScreen(path: state.uri.path),
   );
 });
 
-/// Schermata per business non trovato o URL senza slug
-class _BusinessNotFoundScreen extends ConsumerWidget {
-  const _BusinessNotFoundScreen();
+/// Path riservati che NON sono slug di business
+const _reservedPaths = {
+  'reset-password',
+  'login',
+  'register',
+  'booking',
+  'my-bookings',
+  'change-password',
+  'privacy',
+  'terms',
+};
+
+/// Schermata landing - nessun business specificato
+class _LandingScreen extends ConsumerWidget {
+  const _LandingScreen();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final businessAsync = ref.watch(currentBusinessProvider);
 
     return Scaffold(
       body: Center(
-        child: businessAsync.when(
-          loading: () => const CircularProgressIndicator(),
-          error: (error, _) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(
-                l10n.errorGeneric,
-                style: Theme.of(context).textTheme.titleLarge,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.storefront_outlined, size: 64),
+            const SizedBox(height: 16),
+            Text(
+              l10n.businessNotFound,
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                l10n.businessNotFoundHint,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withAlpha((0.6 * 255).round()),
+                ),
                 textAlign: TextAlign.center,
               ),
-            ],
-          ),
-          data: (business) {
-            // Se il business è null, mostra il messaggio
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.storefront_outlined, size: 64),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.businessNotFound,
-                  style: Theme.of(context).textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Text(
-                    l10n.businessNotFoundHint,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withAlpha((0.6 * 255).round()),
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            );
-          },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Schermata errore 404
+class _ErrorScreen extends StatelessWidget {
+  final String path;
+
+  const _ErrorScreen({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              'Pagina non trovata',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              path,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+              ),
+            ),
+          ],
         ),
       ),
     );
