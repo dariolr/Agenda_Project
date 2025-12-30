@@ -167,6 +167,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Booking rescheduled successfully",
     ),
     "bookingStepDateTime": MessageLookupByLibrary.simpleMessage("Date & Time"),
+    "bookingStepLocation": MessageLookupByLibrary.simpleMessage("Location"),
     "bookingStepServices": MessageLookupByLibrary.simpleMessage("Services"),
     "bookingStepStaff": MessageLookupByLibrary.simpleMessage("Staff"),
     "bookingStepSummary": MessageLookupByLibrary.simpleMessage("Summary"),
@@ -217,11 +218,17 @@ class MessageLookup extends MessageLookupByLibrary {
     "durationHourMinute": m3,
     "durationMinute": m4,
     "durationMinutes": m5,
+    "errorBusinessNotActive": MessageLookupByLibrary.simpleMessage(
+      "Business not active",
+    ),
+    "errorBusinessNotActiveSubtitle": MessageLookupByLibrary.simpleMessage(
+      "This business is not yet configured for online bookings. Please contact the business directly.",
+    ),
     "errorBusinessNotFound": MessageLookupByLibrary.simpleMessage(
       "Business not found",
     ),
     "errorBusinessNotFoundSubtitle": MessageLookupByLibrary.simpleMessage(
-      "The requested business does not exist or is not yet configured for online bookings.",
+      "The requested business does not exist. Please check the URL or contact the business directly.",
     ),
     "errorConnectionTimeout": MessageLookupByLibrary.simpleMessage(
       "The connection is taking too long. Please try again.",
@@ -256,6 +263,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "We are working to fix the issue. Please try again in a few minutes.",
     ),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Error"),
+    "locationEmpty": MessageLookupByLibrary.simpleMessage(
+      "No location available",
+    ),
+    "locationSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Select where you want to book",
+    ),
+    "locationTitle": MessageLookupByLibrary.simpleMessage("Choose location"),
     "modifiable": MessageLookupByLibrary.simpleMessage("Modifiable"),
     "modifiableUntilDays": m7,
     "modifiableUntilHours": m8,

@@ -1,13 +1,42 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/business.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../business/providers/business_providers.dart';
+
+/// Notifier per forzare il refresh della lista business
+class BusinessesRefreshNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void refresh() => state++;
+}
+
+final businessesRefreshProvider =
+    NotifierProvider<BusinessesRefreshNotifier, int>(
+      BusinessesRefreshNotifier.new,
+    );
 
 ///
 /// 🔹 ELENCO BUSINESS (da API)
+/// Se l'utente è superadmin, usa endpoint admin.
 ///
 final businessesProvider = FutureProvider<List<Business>>((ref) async {
+  // Watch del refresh provider per forzare il ricaricamento
+  ref.watch(businessesRefreshProvider);
+
+  final authState = ref.watch(authProvider);
+
+  // ⚠️ Non fare chiamate API se l'utente non è autenticato
+  if (!authState.isAuthenticated) {
+    return [];
+  }
+
   final repository = ref.watch(businessRepositoryProvider);
+
+  if (authState.user?.isSuperadmin ?? false) {
+    return repository.getAllAdmin();
+  }
   return repository.getAll();
 });
 

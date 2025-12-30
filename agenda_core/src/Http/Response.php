@@ -88,11 +88,13 @@ final class Response
         header('Content-Type: application/json; charset=utf-8');
         
         // Determina l'origin consentito dinamicamente
-        $allowedOrigins = array_map('trim', explode(',', $_ENV['CORS_ORIGIN'] ?? '*'));
+        $allowedOrigins = array_map('trim', explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? '*'));
         $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
         $corsOrigin = in_array($requestOrigin, $allowedOrigins, true) ? $requestOrigin : ($allowedOrigins[0] ?? '*');
         header('Access-Control-Allow-Origin: ' . $corsOrigin);
         header('Access-Control-Allow-Credentials: true');
+        header('Vary: Origin');
+        header('Cache-Control: no-store, no-cache, must-revalidate');  // Disabilita cache proxy
         
         if ($this->traceId !== null) {
             header('X-Trace-Id: ' . $this->traceId);

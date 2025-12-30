@@ -9,8 +9,22 @@ class StaffNotifier extends AsyncNotifier<List<Staff>> {
   @override
   Future<List<Staff>> build() async {
     final repository = ref.watch(staffRepositoryProvider);
+    final locations = ref.watch(locationsProvider);
+
+    // ⚠️ Non fare chiamate API se le locations non sono ancora caricate
+    if (locations.isEmpty) {
+      return [];
+    }
+
     final location = ref.watch(currentLocationProvider);
-    return repository.getByLocation(location.id);
+
+    try {
+      return await repository.getByLocation(location.id);
+    } catch (e) {
+      // In caso di errore (es. 404), ritorna lista vuota senza riprovare
+      debugPrint('⚠️ StaffNotifier: errore caricamento staff: $e');
+      return [];
+    }
   }
 
   void add(Staff staff) {

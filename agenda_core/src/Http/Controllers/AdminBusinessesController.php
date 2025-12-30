@@ -6,8 +6,11 @@ namespace Agenda\Http\Controllers;
 
 use Agenda\Http\Request;
 use Agenda\Http\Response;
+use Agenda\Infrastructure\Database\Connection;
+use Agenda\UseCases\Business\CreateBusiness;
 use Agenda\UseCases\Business\GetAllBusinesses;
 use Agenda\UseCases\Business\GetUserBusinesses;
+use Agenda\UseCases\Business\UpdateBusiness;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
@@ -20,6 +23,7 @@ use Agenda\Domain\Exceptions\ValidationException;
  * Endpoints:
  * - GET  /v1/admin/businesses       - Superadmin: list all businesses
  * - POST /v1/admin/businesses       - Superadmin: create new business + owner
+ * - PUT  /v1/admin/businesses/{id}  - Superadmin: update business
  * - DELETE /v1/admin/businesses/{id} - Superadmin: soft-delete business
  * 
  * - GET /v1/me/businesses           - User: list own businesses with roles
@@ -27,6 +31,7 @@ use Agenda\Domain\Exceptions\ValidationException;
 final class AdminBusinessesController
 {
     public function __construct(
+        private readonly Connection $db,
         private readonly BusinessRepository $businessRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
@@ -65,6 +70,7 @@ final class AdminBusinessesController
     /**
      * POST /v1/admin/businesses
      * Superadmin only: create a new business and assign owner.
+     * Uses transaction for atomicity - rollback on any failure.
      * 
      * Body:
      * {
@@ -84,11 +90,6 @@ final class AdminBusinessesController
             return Response::unauthorized('Authentication required', $request->traceId);
         }
 
-        $user = $this->userRepo->findById($userId);
-        if ($user === null || empty($user['is_superadmin'])) {
-            return Response::forbidden('Superadmin access required', $request->traceId);
-        }
-
         $body = $request->getBody();
 
         // Validate required fields
@@ -96,62 +97,78 @@ final class AdminBusinessesController
         foreach ($required as $field) {
             if (empty($body[$field])) {
                 return Response::validationError(
-                    ["$field is required"],
+                    "$field is required",
                     $request->traceId
                 );
             }
         }
 
-        // Check slug uniqueness
-        $existingBusiness = $this->businessRepo->findBySlug($body['slug']);
-        if ($existingBusiness !== null) {
-            return Response::validationError(
-                ['slug' => 'Business slug already exists'],
-                $request->traceId
-            );
-        }
-
-        // Check owner user exists
-        $ownerUserId = (int) $body['owner_user_id'];
-        $ownerUser = $this->userRepo->findById($ownerUserId);
-        if ($ownerUser === null) {
-            return Response::validationError(
-                ['owner_user_id' => 'User not found'],
-                $request->traceId
-            );
-        }
-
-        // Create business
-        $businessId = $this->businessRepo->create(
-            $body['name'],
-            $body['slug'],
-            [
-                'email' => $body['email'] ?? null,
-                'phone' => $body['phone'] ?? null,
-                'timezone' => $body['timezone'] ?? 'Europe/Rome',
-                'currency' => $body['currency'] ?? 'EUR',
-            ]
+        $useCase = new CreateBusiness(
+            $this->db,
+            $this->businessRepo,
+            $this->businessUserRepo,
+            $this->userRepo
         );
 
-        // Assign owner
-        $this->businessUserRepo->createOwner($ownerUserId, $businessId);
+        try {
+            $result = $useCase->execute(
+                $userId,
+                $body['name'],
+                $body['slug'],
+                (int) $body['owner_user_id'],
+                [
+                    'email' => $body['email'] ?? null,
+                    'phone' => $body['phone'] ?? null,
+                    'timezone' => $body['timezone'] ?? 'Europe/Rome',
+                    'currency' => $body['currency'] ?? 'EUR',
+                ]
+            );
 
-        $business = $this->businessRepo->findById($businessId);
+            return Response::created($result);
+        } catch (AuthException $e) {
+            return Response::forbidden($e->getMessage(), $request->traceId);
+        } catch (ValidationException $e) {
+            return Response::validationError($e->getMessage(), $request->traceId);
+        }
+    }
 
-        return Response::created([
-            'id' => $businessId,
-            'name' => $business['name'],
-            'slug' => $business['slug'],
-            'email' => $business['email'],
-            'phone' => $business['phone'],
-            'timezone' => $business['timezone'],
-            'currency' => $business['currency'],
-            'owner' => [
-                'id' => $ownerUserId,
-                'email' => $ownerUser['email'],
-                'name' => ($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? ''),
-            ],
-        ]);
+    /**
+     * PUT /v1/admin/businesses/{id}
+     * Superadmin only: update a business.
+     * 
+     * Body (all optional):
+     * {
+     *   "name": "New Business Name",
+     *   "slug": "new-business-slug",
+     *   "email": "contact@business.com",
+     *   "phone": "+39123456789",
+     *   "timezone": "Europe/Rome",
+     *   "currency": "EUR"
+     * }
+     */
+    public function update(Request $request): Response
+    {
+        $userId = $request->userId();
+        if ($userId === null) {
+            return Response::unauthorized('Authentication required', $request->traceId);
+        }
+
+        $businessId = (int) $request->getAttribute('id');
+        $body = $request->getBody();
+
+        $useCase = new UpdateBusiness(
+            $this->businessRepo,
+            $this->userRepo
+        );
+
+        try {
+            $result = $useCase->execute($userId, $businessId, $body);
+            return Response::success($result);
+        } catch (AuthException $e) {
+            return Response::forbidden($e->getMessage(), $request->traceId);
+        } catch (ValidationException $e) {
+            return Response::validationError($e->getMessage(), $request->traceId);
+        }
     }
 
     /**

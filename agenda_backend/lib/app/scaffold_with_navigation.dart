@@ -3,6 +3,7 @@ import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_backend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_backend/app/widgets/top_controls.dart';
+import 'package:agenda_backend/app/widgets/user_menu_button.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +22,8 @@ import '../features/agenda/providers/business_providers.dart';
 import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/agenda/providers/location_providers.dart';
+import '../features/auth/providers/auth_provider.dart';
+import '../features/business/presentation/business_list_screen.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/services/presentation/dialogs/category_dialog.dart';
 import '../features/services/presentation/dialogs/service_dialog.dart';
@@ -77,21 +80,23 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       agendaDate,
       DateUtils.dateOnly(DateTime.now()),
     );
+    final user = ref.watch(authProvider).user;
+    final isSuperadmin = user?.isSuperadmin ?? false;
 
     final destinations = _ScaffoldWithNavigationHelpers.getDestinations(
       context,
+      isSuperadmin: isSuperadmin,
     );
-    final resolvedDestinations =
-        isAgenda && !isToday
-            ? [
-                NavigationDestination(
-                  iconData: Icons.today_outlined,
-                  selectedIconData: Icons.today,
-                  label: context.l10n.agendaToday,
-                ),
-                ...destinations.skip(1),
-              ]
-            : destinations;
+    final resolvedDestinations = isAgenda && !isToday
+        ? [
+            NavigationDestination(
+              iconData: Icons.today_outlined,
+              selectedIconData: Icons.today,
+              label: context.l10n.agendaToday,
+            ),
+            ...destinations.skip(1),
+          ]
+        : destinations;
 
     if (formFactor == AppFormFactor.desktop) {
       final layoutConfig = ref.watch(layoutConfigProvider);
@@ -104,6 +109,21 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
       final isTablet = formFactor == AppFormFactor.tablet;
 
+      // Azioni specifiche per tab (profilo è nella rail)
+      List<Widget> buildActions() {
+        final List<Widget> actions = [];
+        if (isAgenda) {
+          actions.add(const _AgendaAddAction());
+        } else if (isServices) {
+          actions.add(const _ServicesAddAction());
+        } else if (isClients) {
+          actions.add(const _ClientsAddAction());
+        } else if (isStaff) {
+          actions.add(const _TeamAddAction());
+        }
+        return actions;
+      }
+
       return Scaffold(
         appBar: AppBar(
           titleSpacing: isTablet && isAgenda
@@ -113,13 +133,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           centerTitle: false,
           toolbarHeight: 76,
           actionsPadding: const EdgeInsets.only(right: 6),
-          actions: isAgenda
-              ? [const _AgendaAddAction()]
-              : (isServices
-                    ? [const _ServicesAddAction()]
-                    : (isClients
-                          ? [const _ClientsAddAction()]
-                          : (isStaff ? [const _TeamAddAction()] : null))),
+          actions: buildActions(),
         ),
         body: Row(
           children: [
@@ -131,9 +145,11 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               ),
               child: NavigationRail(
                 selectedIndex: navigationShell.currentIndex,
-                onDestinationSelected: (index) => _goBranch(index, ref),
+                onDestinationSelected: (index) =>
+                    _handleNavTap(context, index, ref),
                 labelType: NavigationRailLabelType.none,
                 useIndicator: false, // disattiva highlight di sistema su tap
+                // BusinessSelector rimosso - superadmin usa /businesses
                 destinations: railDestinations,
               ),
             ),
@@ -154,6 +170,27 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final bottomNavColor =
         Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
         Theme.of(context).colorScheme.surface;
+
+    // Azioni specifiche per tab (profilo è nella BNB)
+    List<Widget> buildMobileActions() {
+      final List<Widget> actions = [];
+      if (isAgenda) {
+        if (formFactor == AppFormFactor.mobile) {
+          actions.add(
+            const _AgendaFilterActions(padding: EdgeInsets.only(left: 8)),
+          );
+        }
+        actions.add(const _AgendaAddAction(compact: true));
+      } else if (isServices) {
+        actions.add(const _ServicesAddAction(compact: true));
+      } else if (isClients) {
+        actions.add(const _ClientsAddAction(compact: true));
+      } else if (isStaff) {
+        actions.add(const _TeamAddAction(compact: true));
+      }
+      return actions;
+    }
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: isTablet ? 76 : 64,
@@ -163,22 +200,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
             : const SizedBox.shrink(),
         centerTitle: false,
         actionsPadding: const EdgeInsets.only(right: 6),
-        actions: isAgenda
-            ? (formFactor == AppFormFactor.mobile
-                ? const [
-                    _AgendaFilterActions(
-                      padding: EdgeInsets.only(left: 8),
-                    ),
-                    _AgendaAddAction(compact: true),
-                  ]
-                : const [_AgendaAddAction(compact: true)])
-            : (isServices
-                  ? const [_ServicesAddAction(compact: true)]
-                  : (isClients
-                        ? const [_ClientsAddAction(compact: true)]
-                        : (isStaff
-                              ? const [_TeamAddAction(compact: true)]
-                              : null))),
+        actions: buildMobileActions(),
       ),
       body: navigationShell,
       bottomNavigationBar: Column(
@@ -200,7 +222,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               minimum: const EdgeInsets.only(bottom: 15),
               child: BottomNavigationBar(
                 currentIndex: navigationShell.currentIndex,
-                onTap: (index) => _goBranch(index, ref),
+                onTap: (index) => _handleNavTap(context, index, ref),
                 type: BottomNavigationBarType.fixed,
                 items: resolvedDestinations
                     .map(
@@ -231,6 +253,22 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       index,
       initialLocation: index == navigationShell.currentIndex,
     );
+  }
+
+  /// Gestisce tap su navigation: se è index 4, esegue Cambia Business (superadmin) o logout
+  void _handleNavTap(BuildContext context, int index, WidgetRef ref) {
+    if (index == 4) {
+      final user = ref.read(authProvider).user;
+      if (user?.isSuperadmin ?? false) {
+        // Superadmin: torna alla lista business
+        ref.read(superadminSelectedBusinessProvider.notifier).clear();
+        context.go('/businesses');
+      } else {
+        UserMenuButton.handleLogout(context, ref);
+      }
+    } else {
+      _goBranch(index, ref);
+    }
   }
 }
 
@@ -838,9 +876,11 @@ class _MobileAgendaDateSwitcher extends ConsumerWidget {
   }
 }
 
-
 class _ScaffoldWithNavigationHelpers {
-  static List<NavigationDestination> getDestinations(BuildContext context) {
+  static List<NavigationDestination> getDestinations(
+    BuildContext context, {
+    bool isSuperadmin = false,
+  }) {
     final l10n = context.l10n;
     return [
       NavigationDestination(
@@ -862,6 +902,11 @@ class _ScaffoldWithNavigationHelpers {
         iconData: Icons.badge_outlined,
         selectedIconData: Icons.badge,
         label: l10n.navStaff,
+      ),
+      NavigationDestination(
+        iconData: isSuperadmin ? Icons.business : Icons.logout,
+        selectedIconData: isSuperadmin ? Icons.business : Icons.logout,
+        label: isSuperadmin ? l10n.switchBusiness : l10n.authLogout,
       ),
     ];
   }

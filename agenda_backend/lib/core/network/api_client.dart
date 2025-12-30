@@ -42,15 +42,24 @@ class ApiClient {
     : _tokenStorage = tokenStorage,
       _dio = dio ?? Dio() {
     _dio.options.baseUrl = ApiConfig.baseUrl;
+    debugPrint('🔗 API baseUrl: ${ApiConfig.baseUrl}');
     _dio.options.connectTimeout = ApiConfig.connectTimeout;
     _dio.options.receiveTimeout = ApiConfig.receiveTimeout;
     _dio.options.headers['Content-Type'] = 'application/json';
     _dio.options.headers['Accept'] = 'application/json';
 
-    // Interceptor per logging in debug
+    // Interceptor per logging SOLO errori in debug
     if (kDebugMode) {
       _dio.interceptors.add(
-        LogInterceptor(requestBody: true, responseBody: true),
+        InterceptorsWrapper(
+          onError: (error, handler) {
+            debugPrint('*** DioException ***');
+            debugPrint('uri: ${error.requestOptions.uri}');
+            debugPrint('statusCode: ${error.response?.statusCode}');
+            debugPrint('Response: ${error.response?.data}');
+            handler.next(error);
+          },
+        ),
       );
     }
 
@@ -502,7 +511,88 @@ class ApiClient {
   /// GET /v1/businesses
   Future<List<Map<String, dynamic>>> getBusinesses() async {
     final response = await get('/v1/businesses');
-    return (response['data'] as List).cast<Map<String, dynamic>>();
+    // API ritorna { data: { data: [...] } } per lista business
+    final data = response['data'];
+    if (data is List) {
+      return data.cast<Map<String, dynamic>>();
+    }
+    // Se è un oggetto con chiave 'data' o 'businesses'
+    if (data is Map) {
+      final list = data['data'] ?? data['businesses'] ?? [];
+      return (list as List).cast<Map<String, dynamic>>();
+    }
+    return [];
+  }
+
+  /// GET /v1/admin/businesses
+  /// Superadmin only: lista tutti i business.
+  Future<List<Map<String, dynamic>>> getAdminBusinesses({
+    String? search,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final queryParameters = <String, dynamic>{'limit': limit, 'offset': offset};
+    if (search != null && search.isNotEmpty) {
+      queryParameters['search'] = search;
+    }
+    final response = await get(
+      '/v1/admin/businesses',
+      queryParameters: queryParameters,
+    );
+    // _handleResponse ritorna body['data'], quindi response = { businesses: [...], pagination: {...} }
+    return (response['businesses'] as List).cast<Map<String, dynamic>>();
+  }
+
+  /// POST /v1/admin/businesses
+  /// Superadmin only: crea un nuovo business.
+  Future<Map<String, dynamic>> createAdminBusiness({
+    required String name,
+    required String slug,
+    required int ownerUserId,
+    String? email,
+    String? phone,
+    String timezone = 'Europe/Rome',
+    String currency = 'EUR',
+  }) async {
+    final response = await post(
+      '/v1/admin/businesses',
+      data: {
+        'name': name,
+        'slug': slug,
+        'owner_user_id': ownerUserId,
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
+        'timezone': timezone,
+        'currency': currency,
+      },
+    );
+    // _handleResponse già ritorna body['data'], quindi response È il business
+    return response;
+  }
+
+  /// PUT /v1/admin/businesses/{id}
+  /// Superadmin only: aggiorna un business esistente.
+  Future<Map<String, dynamic>> updateAdminBusiness({
+    required int businessId,
+    String? name,
+    String? slug,
+    String? email,
+    String? phone,
+    String? timezone,
+    String? currency,
+  }) async {
+    final response = await put(
+      '/v1/admin/businesses/$businessId',
+      data: {
+        if (name != null) 'name': name,
+        if (slug != null) 'slug': slug,
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
+        if (timezone != null) 'timezone': timezone,
+        if (currency != null) 'currency': currency,
+      },
+    );
+    return response;
   }
 
   /// GET /v1/businesses/{business_id}/locations

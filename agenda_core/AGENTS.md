@@ -71,6 +71,13 @@ Deploy Produzione (28/12/2025):
 - CORS: `CORS_ALLOWED_ORIGINS=https://prenota.romeolab.it,https://gestionale.romeolab.it,http://localhost:8080`
 - SSH: porta 18765, chiave ed25519
 
+CORS e Cache Headers (30/12/2025):
+- Variabile env: `CORS_ALLOWED_ORIGINS` (NON `CORS_ORIGIN`)
+- Response.php aggiunge: `Vary: Origin` per proxy caching corretto
+- Response.php aggiunge: `Cache-Control: no-store, no-cache, must-revalidate`
+- SiteGround proxy può cachare risposte → header Vary evita CORS errors
+- Se CORS fallisce dopo deploy: purgare cache da SiteGround Site Tools
+
 Multi-Business Path-Based (29/12/2025):
 - Struttura URL: `/{slug}/booking`, `/{slug}/login`, ecc.
 - SiteGround shared hosting: NO wildcard DNS, NO subdomain routing
@@ -78,3 +85,13 @@ Multi-Business Path-Based (29/12/2025):
 - Landing page (`/`) mostra "Business non specificato"
 - Slug inesistente → mostra "Business non trovato" (404 API gestito gracefully)
 - Reset password globale: `/reset-password/:token` (senza business context)
+
+Superadmin Business Management (30/12/2025):
+- Endpoint CRUD: GET/POST/PUT/DELETE `/v1/admin/businesses`
+- PUT `/v1/admin/businesses/{id}` per modifica business
+- UseCase `CreateBusiness` con transazione atomica (rollback su errore)
+- UseCase `UpdateBusiness` per aggiornamento campi
+- Frontend: `BusinessListScreen`, dialogs create/edit
+- Flow: superadmin → /businesses → seleziona/crea/modifica → /agenda
+- Pulsante "Cambia" in navigation per tornare alla lista business
+- **MAI usare StateProvider** → sempre Notifier + NotifierProvider

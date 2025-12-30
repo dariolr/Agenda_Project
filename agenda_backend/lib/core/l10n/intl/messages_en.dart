@@ -162,6 +162,31 @@ class MessageLookup extends MessageLookupByLibrary {
     "atLeastOneServiceRequired": MessageLookupByLibrary.simpleMessage(
       "Add at least one service",
     ),
+    "authEmail": MessageLookupByLibrary.simpleMessage("Email"),
+    "authForgotPassword": MessageLookupByLibrary.simpleMessage(
+      "Forgot password?",
+    ),
+    "authForgotPasswordInfo": MessageLookupByLibrary.simpleMessage(
+      "Contact the system administrator to reset your password.",
+    ),
+    "authInvalidEmail": MessageLookupByLibrary.simpleMessage("Invalid email"),
+    "authLogin": MessageLookupByLibrary.simpleMessage("Sign In"),
+    "authLoginFailed": MessageLookupByLibrary.simpleMessage(
+      "Invalid credentials. Please try again.",
+    ),
+    "authLoginFooter": MessageLookupByLibrary.simpleMessage(
+      "Access reserved for authorized operators",
+    ),
+    "authLoginSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Sign in to the management system",
+    ),
+    "authLogout": MessageLookupByLibrary.simpleMessage("Sign Out"),
+    "authPassword": MessageLookupByLibrary.simpleMessage("Password"),
+    "authPasswordTooShort": MessageLookupByLibrary.simpleMessage(
+      "Password too short",
+    ),
+    "authRememberMe": MessageLookupByLibrary.simpleMessage("Remember me"),
+    "authRequiredField": MessageLookupByLibrary.simpleMessage("Required field"),
     "availabilitySave": MessageLookupByLibrary.simpleMessage("Save changes"),
     "availabilityTitle": MessageLookupByLibrary.simpleMessage(
       "Weekly availability",
@@ -425,6 +450,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "navAgenda": MessageLookupByLibrary.simpleMessage("Agenda"),
     "navClients": MessageLookupByLibrary.simpleMessage("Clients"),
+    "navProfile": MessageLookupByLibrary.simpleMessage("Profile"),
     "navServices": MessageLookupByLibrary.simpleMessage("Services"),
     "navStaff": MessageLookupByLibrary.simpleMessage("Team"),
     "newCategoryTitle": MessageLookupByLibrary.simpleMessage("New category"),
@@ -643,6 +669,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "staffScreenPlaceholder": MessageLookupByLibrary.simpleMessage(
       "Team Screen",
     ),
+    "switchBusiness": MessageLookupByLibrary.simpleMessage("Switch"),
     "teamAddStaff": MessageLookupByLibrary.simpleMessage("Add team member"),
     "teamChooseLocationSingleButton": MessageLookupByLibrary.simpleMessage(
       "Select location",

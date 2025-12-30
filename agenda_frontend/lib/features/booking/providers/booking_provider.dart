@@ -10,6 +10,7 @@ import '../../../core/network/network_providers.dart';
 import '../data/booking_repository.dart';
 import '../domain/booking_config.dart';
 import 'business_provider.dart';
+import 'locations_provider.dart';
 
 /// Provider per il repository
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
@@ -28,13 +29,19 @@ final bookingConfigProvider = Provider<BookingConfig>((ref) {
 
   final business = businessAsync.value;
   if (business == null) {
+    // Business non trovato (slug non valido)
     return placeholderBookingConfig;
   }
 
-  // Se il business non ha una location di default, ritorna placeholder
+  // Se il business non ha una location di default, segnala che esiste ma non è attivo
   final locationId = business.defaultLocationId;
   if (locationId == null) {
-    return placeholderBookingConfig;
+    return BookingConfig(
+      allowStaffSelection: true,
+      businessId: business.id,
+      locationId: 0,
+      businessExistsButNotActive: true,
+    );
   }
 
   return BookingConfig(
@@ -44,8 +51,18 @@ final bookingConfigProvider = Provider<BookingConfig>((ref) {
   );
 });
 
+/// Provider per la location ID effettiva (da location selezionata o default)
+final effectiveLocationIdProvider = Provider<int>((ref) {
+  final effectiveLocation = ref.watch(effectiveLocationProvider);
+  if (effectiveLocation != null) {
+    return effectiveLocation.id;
+  }
+  // Fallback alla config
+  return ref.watch(bookingConfigProvider).locationId;
+});
+
 /// Step del flow di prenotazione
-enum BookingStep { services, staff, dateTime, summary, confirmation }
+enum BookingStep { location, services, staff, dateTime, summary, confirmation }
 
 /// Stato del flow di prenotazione
 class BookingFlowState {
@@ -56,7 +73,7 @@ class BookingFlowState {
   final String? confirmedBookingId;
 
   const BookingFlowState({
-    this.currentStep = BookingStep.services,
+    this.currentStep = BookingStep.location,
     this.request = const BookingRequest(),
     this.isLoading = false,
     this.errorMessage,
@@ -68,6 +85,8 @@ class BookingFlowState {
 
   bool get canGoNext {
     switch (currentStep) {
+      case BookingStep.location:
+        return true; // Gestito dal provider
       case BookingStep.services:
         return request.services.isNotEmpty;
       case BookingStep.staff:
@@ -105,14 +124,27 @@ final bookingFlowProvider =
 
 class BookingFlowNotifier extends Notifier<BookingFlowState> {
   @override
-  BookingFlowState build() => const BookingFlowState();
+  BookingFlowState build() {
+    // Determina lo step iniziale in base al numero di locations
+    final hasMultipleLocations = ref.watch(hasMultipleLocationsProvider);
+    final initialStep = hasMultipleLocations
+        ? BookingStep.location
+        : BookingStep.services;
+    return BookingFlowState(currentStep: initialStep);
+  }
 
   BookingRepository get _repository => ref.read(bookingRepositoryProvider);
   BookingConfig get _config => ref.read(bookingConfigProvider);
+  bool get _hasMultipleLocations => ref.read(hasMultipleLocationsProvider);
 
   /// Reset del flow
   void reset() {
-    state = const BookingFlowState();
+    final initialStep = _hasMultipleLocations
+        ? BookingStep.location
+        : BookingStep.services;
+    state = BookingFlowState(currentStep: initialStep);
+    // Reset anche la location selezionata
+    ref.read(selectedLocationProvider.notifier).clear();
   }
 
   /// Vai allo step successivo
@@ -121,8 +153,14 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
 
     final nextIndex = state.currentStep.index + 1;
     if (nextIndex < BookingStep.values.length) {
-      // Se staff selection è disabilitata, salta lo step staff
       var nextStep = BookingStep.values[nextIndex];
+
+      // Se c'è una sola location, salta lo step location
+      if (nextStep == BookingStep.location && !_hasMultipleLocations) {
+        nextStep = BookingStep.services;
+      }
+
+      // Se staff selection è disabilitata, salta lo step staff
       if (nextStep == BookingStep.staff && !_config.allowStaffSelection) {
         nextStep = BookingStep.dateTime;
       }
@@ -143,11 +181,21 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       prevStep = BookingStep.values[prevIndex];
     }
 
+    // Se c'è una sola location, salta lo step location
+    if (prevStep == BookingStep.location && !_hasMultipleLocations) {
+      // Non andare oltre, siamo già al primo step
+      return;
+    }
+
     state = state.copyWith(currentStep: prevStep);
   }
 
   /// Vai a uno step specifico
   void goToStep(BookingStep step) {
+    // Non permettere di tornare allo step location se c'è una sola location
+    if (step == BookingStep.location && !_hasMultipleLocations) {
+      return;
+    }
     if (step.index < state.currentStep.index) {
       state = state.copyWith(currentStep: step);
     }
@@ -200,8 +248,11 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
+      // Usa la location effettiva (selezionata o default)
+      final locationId = ref.read(effectiveLocationIdProvider);
+
       final result = await _repository.confirmBooking(
-        locationId: _config.locationId,
+        locationId: locationId,
         serviceIds: state.request.services.map((s) => s.id).toList(),
         startTime: state.request.selectedSlot!.startTime,
         staffId: state.request.selectedStaff?.id,
@@ -245,24 +296,31 @@ class ServicesData {
 class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
   final Ref _ref;
   bool _hasFetched = false;
+  int? _lastLocationId;
 
   ServicesDataNotifier(this._ref) : super(const AsyncValue.loading()) {
-    // Carica automaticamente al primo accesso
-    _loadData();
+    // Ascolta cambiamenti della location effettiva
+    _ref.listen(effectiveLocationIdProvider, (previous, next) {
+      if (next > 0 && next != _lastLocationId) {
+        _hasFetched = false;
+        _lastLocationId = next;
+        _loadData();
+      }
+    }, fireImmediately: true);
   }
 
   Future<void> _loadData() async {
     if (_hasFetched) return;
 
+    final locationId = _ref.read(effectiveLocationIdProvider);
+    if (locationId <= 0) return;
+
     _hasFetched = true;
 
     try {
       final repository = _ref.read(bookingRepositoryProvider);
-      final config = _ref.read(bookingConfigProvider);
 
-      final result = await repository.getCategoriesWithServices(
-        config.locationId,
-      );
+      final result = await repository.getCategoriesWithServices(locationId);
 
       final sortedCategories = List<ServiceCategory>.from(result.categories)
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
@@ -307,19 +365,30 @@ final servicesProvider = FutureProvider<List<Service>>((ref) async {
 class StaffDataNotifier extends StateNotifier<AsyncValue<List<Staff>>> {
   final Ref _ref;
   bool _hasFetched = false;
+  int? _lastLocationId;
 
   StaffDataNotifier(this._ref) : super(const AsyncValue.loading()) {
-    _loadData();
+    // Ascolta cambiamenti della location effettiva
+    _ref.listen(effectiveLocationIdProvider, (previous, next) {
+      if (next > 0 && next != _lastLocationId) {
+        _hasFetched = false;
+        _lastLocationId = next;
+        _loadData();
+      }
+    }, fireImmediately: true);
   }
 
   Future<void> _loadData() async {
     if (_hasFetched) return;
+
+    final locationId = _ref.read(effectiveLocationIdProvider);
+    if (locationId <= 0) return;
+
     _hasFetched = true;
 
     try {
       final repository = _ref.read(bookingRepositoryProvider);
-      final config = _ref.read(bookingConfigProvider);
-      final staff = await repository.getStaff(config.locationId);
+      final staff = await repository.getStaff(locationId);
       final sortedStaff = List<Staff>.from(staff)
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       state = AsyncValue.data(sortedStaff);
@@ -347,16 +416,18 @@ final selectedDateProvider = StateProvider<DateTime?>((ref) => null);
 /// Provider per gli slot disponibili
 final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
   final repository = ref.read(bookingRepositoryProvider);
-  final config = ref.read(bookingConfigProvider);
+  final locationId = ref.watch(effectiveLocationIdProvider);
   final bookingState = ref.watch(bookingFlowProvider);
   final selectedDate = ref.watch(selectedDateProvider);
 
-  if (selectedDate == null || bookingState.request.services.isEmpty) {
+  if (locationId <= 0 ||
+      selectedDate == null ||
+      bookingState.request.services.isEmpty) {
     return [];
   }
 
   return repository.getAvailableSlots(
-    locationId: config.locationId,
+    locationId: locationId,
     date: selectedDate,
     serviceIds: bookingState.request.services.map((s) => s.id).toList(),
     staffId: bookingState.request.selectedStaff?.id,
@@ -366,11 +437,15 @@ final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
 /// Provider per la prima data disponibile
 final firstAvailableDateProvider = FutureProvider<DateTime>((ref) async {
   final repository = ref.read(bookingRepositoryProvider);
-  final config = ref.read(bookingConfigProvider);
+  final locationId = ref.watch(effectiveLocationIdProvider);
   final bookingState = ref.watch(bookingFlowProvider);
 
+  if (locationId <= 0) {
+    return DateTime.now().add(const Duration(days: 1));
+  }
+
   return repository.getFirstAvailableDate(
-    locationId: config.locationId,
+    locationId: locationId,
     serviceIds: bookingState.request.services.map((s) => s.id).toList(),
     staffId: bookingState.request.selectedStaff?.id,
   );

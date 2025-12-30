@@ -1,9 +1,11 @@
 /// Configurazione API
 class ApiConfig {
   /// Base URL dell'API - configurabile via environment
+  /// Default: produzione (https://api.romeolab.it)
+  /// Dev locale: --dart-define=API_BASE_URL=http://localhost:8888/agenda_core/public
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8888/agenda_core/public',
+    defaultValue: 'https://api.romeolab.it',
   );
 
   /// Location ID di default (per MVP single-location)
@@ -32,6 +34,10 @@ class ApiConfig {
   // ========== BUSINESS ENDPOINTS ==========
   /// Get business by slug (public, no auth required)
   static String businessBySlug(String slug) => '/v1/businesses/by-slug/$slug';
+
+  /// Get locations for a business (public, no auth required)
+  static String businessLocations(int businessId) =>
+      '/v1/businesses/$businessId/locations/public';
 
   // ========== BOOKINGS ENDPOINTS ==========
   static String bookings(int locationId) =>

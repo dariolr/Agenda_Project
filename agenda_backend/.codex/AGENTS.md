@@ -140,6 +140,67 @@ Aggiungere chiavi in `lib/core/l10n/intl_it.arb` e `intl_en.arb`.
 - Produrre snippet parziali invece di file completi
 - Usare `ref.watch()` in loop pesanti o callback
 - Introdurre animazioni/effetti non richiesti
+- **Usare `StateProvider`** — usare sempre `Notifier` + `NotifierProvider` per stato mutabile
+
+---
+
+## ⚠️ Provider: regole obbligatorie (30/12/2025)
+
+**MAI usare `StateProvider`**. Usare sempre `Notifier` con `NotifierProvider`:
+
+```dart
+// ❌ VIETATO
+final myProvider = StateProvider<int>((ref) => 0);
+
+// ✅ CORRETTO
+class MyNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+  
+  void increment() => state++;
+  void set(int value) => state = value;
+}
+final myProvider = NotifierProvider<MyNotifier, int>(MyNotifier.new);
+```
+
+Motivazioni:
+- `StateProvider` è deprecato in Riverpod 3.x
+- `Notifier` offre migliore testabilità e controllo
+- Metodi espliciti rendono il codice più leggibile
+
+---
+
+## 🏢 Superadmin Business Flow (30/12/2025)
+
+Il superadmin (`users.is_superadmin = 1`) ha un flow diverso dall'utente normale:
+
+```
+Login → is_superadmin?
+  ├─ YES → /businesses (lista business)
+  │        ├─ Crea nuovo business (FAB)
+  │        ├─ Modifica business (icona edit su card)
+  │        └─ Seleziona business → /agenda
+  │            └─ "Cambia" in navigation (index 4) → /businesses
+  └─ NO  → /agenda (flow normale)
+```
+
+### Provider chiave
+- `superadminSelectedBusinessProvider` — NotifierProvider<int?> per tracciare selezione
+- `businessesRefreshProvider` — NotifierProvider<int> per forzare refresh lista
+
+### File business feature
+```
+features/business/
+├── data/
+│   └── business_repository.dart      # getAll, getAllAdmin, create, update
+├── providers/
+│   └── business_providers.dart       # businessRepositoryProvider
+└── presentation/
+    ├── business_list_screen.dart     # Lista + provider selezione
+    └── dialogs/
+        ├── create_business_dialog.dart
+        └── edit_business_dialog.dart
+```
 
 ---
 

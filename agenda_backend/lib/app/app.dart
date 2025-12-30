@@ -4,10 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/l10n/l10_extension.dart';
 import '/core/l10n/l10n.dart';
-// 1. Importa il listener dalla sua nuova posizione (se non l'hai già spostato)
-// Assicurati che il percorso sia corretto.
 import '../core/widgets/layout_config_auto_listener.dart';
-import 'router.dart';
+import 'router_provider.dart';
 import 'theme/theme.dart';
 import 'theme/theme_provider.dart';
 
@@ -17,10 +15,11 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeConfig = ref.watch(themeNotifierProvider);
+    final router = ref.watch(routerProvider);
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Agenda Platform',
-      routerConfig: appRouter,
+      routerConfig: router,
       themeMode: ThemeMode.light,
       theme: buildTheme(themeConfig, Brightness.light),
       localizationsDelegates: const [

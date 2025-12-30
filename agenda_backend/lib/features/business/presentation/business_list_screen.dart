@@ -1,0 +1,312 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/l10n/l10_extension.dart';
+import '../../../core/models/business.dart';
+import '../../agenda/providers/business_providers.dart';
+import '../../auth/providers/auth_provider.dart';
+import 'dialogs/create_business_dialog.dart';
+import 'dialogs/edit_business_dialog.dart';
+
+/// Notifier per tracciare se il superadmin ha selezionato un business.
+/// Quando è null, mostra la lista business.
+class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
+  @override
+  int? build() => null;
+
+  void select(int businessId) => state = businessId;
+  void clear() => state = null;
+}
+
+final superadminSelectedBusinessProvider =
+    NotifierProvider<SuperadminSelectedBusinessNotifier, int?>(
+      SuperadminSelectedBusinessNotifier.new,
+    );
+
+/// Schermata lista business per superadmin.
+/// Mostra tutti i business con possibilità di selezionarne uno o crearne uno nuovo.
+class BusinessListScreen extends ConsumerWidget {
+  const BusinessListScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final businessesAsync = ref.watch(businessesProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Seleziona Business'),
+        centerTitle: true,
+        actions: [
+          // Logout
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: l10n.authLogout,
+            onPressed: () => _showLogoutDialog(context, ref),
+          ),
+        ],
+      ),
+      body: businessesAsync.when(
+        data: (businesses) => _BusinessList(
+          businesses: businesses,
+          onSelect: (business) => _selectBusiness(context, ref, business),
+          onEdit: (business) => _showEditBusinessDialog(context, ref, business),
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: colorScheme.error),
+              const SizedBox(height: 16),
+              Text(
+                'Errore nel caricamento',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error.toString(),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton.tonal(
+                onPressed: () => ref.invalidate(businessesProvider),
+                child: const Text('Riprova'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showCreateBusinessDialog(context, ref),
+        icon: const Icon(Icons.add),
+        label: const Text('Aggiungi'),
+      ),
+    );
+  }
+
+  void _selectBusiness(BuildContext context, WidgetRef ref, Business business) {
+    // Imposta il business corrente
+    ref.read(currentBusinessIdProvider.notifier).set(business.id);
+    // Segna che il superadmin ha selezionato un business
+    ref.read(superadminSelectedBusinessProvider.notifier).select(business.id);
+    // Naviga all'agenda
+    context.go('/agenda');
+  }
+
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.authLogout),
+        content: const Text('Vuoi uscire dal gestionale?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ref.read(authProvider.notifier).logout();
+            },
+            child: Text(l10n.authLogout),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showCreateBusinessDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final created = await showCreateBusinessDialog(context);
+    if (created == true) {
+      // Forza il refresh della lista
+      ref.read(businessesRefreshProvider.notifier).refresh();
+    }
+  }
+
+  Future<void> _showEditBusinessDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Business business,
+  ) async {
+    final updated = await showEditBusinessDialog(context, business);
+    if (updated == true) {
+      // Forza il refresh della lista
+      ref.read(businessesRefreshProvider.notifier).refresh();
+    }
+  }
+}
+
+class _BusinessList extends StatelessWidget {
+  const _BusinessList({
+    required this.businesses,
+    required this.onSelect,
+    required this.onEdit,
+  });
+
+  final List<Business> businesses;
+  final void Function(Business) onSelect;
+  final void Function(Business) onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    if (businesses.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.business_outlined,
+              size: 64,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nessun business',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Crea il tuo primo business per iniziare',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Responsive grid
+        final crossAxisCount = constraints.maxWidth > 900
+            ? 3
+            : constraints.maxWidth > 600
+            ? 2
+            : 1;
+
+        return GridView.builder(
+          padding: const EdgeInsets.all(24),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: 2.5,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: businesses.length,
+          itemBuilder: (context, index) {
+            final business = businesses[index];
+            return _BusinessCard(
+              business: business,
+              onTap: () => onSelect(business),
+              onEdit: () => onEdit(business),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _BusinessCard extends StatelessWidget {
+  const _BusinessCard({
+    required this.business,
+    required this.onTap,
+    required this.onEdit,
+  });
+
+  final Business business;
+  final VoidCallback onTap;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              // Avatar con iniziale
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: colorScheme.primaryContainer,
+                child: Text(
+                  business.name.isNotEmpty
+                      ? business.name[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Info business
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      business.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    if (business.slug != null)
+                      Text(
+                        business.slug!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              // Pulsante modifica
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: onEdit,
+                tooltip: 'Modifica',
+              ),
+              const SizedBox(width: 4),
+              // Freccia per entrare
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

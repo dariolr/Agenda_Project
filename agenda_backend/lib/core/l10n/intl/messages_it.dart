@@ -171,6 +171,35 @@ class MessageLookup extends MessageLookupByLibrary {
     "atLeastOneServiceRequired": MessageLookupByLibrary.simpleMessage(
       "Aggiungi almeno un servizio",
     ),
+    "authEmail": MessageLookupByLibrary.simpleMessage("Email"),
+    "authForgotPassword": MessageLookupByLibrary.simpleMessage(
+      "Password dimenticata?",
+    ),
+    "authForgotPasswordInfo": MessageLookupByLibrary.simpleMessage(
+      "Contatta l\'amministratore di sistema per reimpostare la password.",
+    ),
+    "authInvalidEmail": MessageLookupByLibrary.simpleMessage(
+      "Email non valida",
+    ),
+    "authLogin": MessageLookupByLibrary.simpleMessage("Accedi"),
+    "authLoginFailed": MessageLookupByLibrary.simpleMessage(
+      "Credenziali non valide. Riprova.",
+    ),
+    "authLoginFooter": MessageLookupByLibrary.simpleMessage(
+      "Accesso riservato agli operatori autorizzati",
+    ),
+    "authLoginSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Accedi al gestionale",
+    ),
+    "authLogout": MessageLookupByLibrary.simpleMessage("Esci"),
+    "authPassword": MessageLookupByLibrary.simpleMessage("Password"),
+    "authPasswordTooShort": MessageLookupByLibrary.simpleMessage(
+      "Password troppo corta",
+    ),
+    "authRememberMe": MessageLookupByLibrary.simpleMessage("Ricordami"),
+    "authRequiredField": MessageLookupByLibrary.simpleMessage(
+      "Campo obbligatorio",
+    ),
     "availabilitySave": MessageLookupByLibrary.simpleMessage("Salva modifiche"),
     "availabilityTitle": MessageLookupByLibrary.simpleMessage(
       "Disponibilità settimanale",
@@ -452,6 +481,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "navAgenda": MessageLookupByLibrary.simpleMessage("Agenda"),
     "navClients": MessageLookupByLibrary.simpleMessage("Clienti"),
+    "navProfile": MessageLookupByLibrary.simpleMessage("Profilo"),
     "navServices": MessageLookupByLibrary.simpleMessage("Servizi"),
     "navStaff": MessageLookupByLibrary.simpleMessage("Team"),
     "newCategoryTitle": MessageLookupByLibrary.simpleMessage("Nuova categoria"),
@@ -676,6 +706,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "staffScreenPlaceholder": MessageLookupByLibrary.simpleMessage(
       "Schermata Team",
     ),
+    "switchBusiness": MessageLookupByLibrary.simpleMessage("Cambia"),
     "teamAddStaff": MessageLookupByLibrary.simpleMessage("Aggiungi membro"),
     "teamChooseLocationSingleButton": MessageLookupByLibrary.simpleMessage(
       "Seleziona la sede",

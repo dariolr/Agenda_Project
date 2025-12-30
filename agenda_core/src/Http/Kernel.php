@@ -89,10 +89,13 @@ final class Kernel
         // Admin/Superadmin endpoints
         $this->router->get('/v1/admin/businesses', AdminBusinessesController::class, 'index', ['auth']);
         $this->router->post('/v1/admin/businesses', AdminBusinessesController::class, 'store', ['auth']);
+        $this->router->put('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'update', ['auth']);
         $this->router->delete('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'destroy', ['auth']);
 
         // Businesses - Public endpoint for subdomain resolution
         $this->router->get('/v1/businesses/by-slug/{slug}', BusinessController::class, 'showBySlug');
+        // Public locations for a business (for booking flow)
+        $this->router->get('/v1/businesses/{business_id}/locations/public', LocationsController::class, 'indexPublic');
 
         // Businesses and Locations (auth required)
         $this->router->get('/v1/businesses', BusinessController::class, 'index', ['auth']);
@@ -193,7 +196,7 @@ final class Kernel
         $this->controllers = [
             HealthController::class => new HealthController(),
             AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $changePassword),
-            BusinessController::class => new BusinessController($businessRepo),
+            BusinessController::class => new BusinessController($businessRepo, $locationRepo),
             LocationsController::class => new LocationsController($locationRepo),
             ServicesController::class => new ServicesController($serviceRepo),
             StaffController::class => new StaffController($staffRepo),
@@ -201,7 +204,7 @@ final class Kernel
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking),
             ClientsController::class => new ClientsController($clientRepo),
             AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking),
-            AdminBusinessesController::class => new AdminBusinessesController($businessRepo, $businessUserRepo, $userRepo),
+            AdminBusinessesController::class => new AdminBusinessesController($this->db, $businessRepo, $businessUserRepo, $userRepo),
             BusinessUsersController::class => new BusinessUsersController($businessRepo, $businessUserRepo, $userRepo),
             BusinessInvitationsController::class => new BusinessInvitationsController($businessRepo, $businessUserRepo, $businessInvitationRepo, $userRepo),
         ];

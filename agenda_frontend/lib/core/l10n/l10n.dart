@@ -224,11 +224,31 @@ class L10n {
     );
   }
 
-  /// `L'attività richiesta non esiste o non è ancora configurata per le prenotazioni online.`
+  /// `L'attività richiesta non esiste. Verifica l'indirizzo o contatta direttamente l'attività.`
   String get errorBusinessNotFoundSubtitle {
     return Intl.message(
-      'L\'attività richiesta non esiste o non è ancora configurata per le prenotazioni online.',
+      'L\'attività richiesta non esiste. Verifica l\'indirizzo o contatta direttamente l\'attività.',
       name: 'errorBusinessNotFoundSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Attività non attiva`
+  String get errorBusinessNotActive {
+    return Intl.message(
+      'Attività non attiva',
+      name: 'errorBusinessNotActive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questa attività non è ancora configurata per le prenotazioni online. Contatta direttamente l'attività.`
+  String get errorBusinessNotActiveSubtitle {
+    return Intl.message(
+      'Questa attività non è ancora configurata per le prenotazioni online. Contatta direttamente l\'attività.',
+      name: 'errorBusinessNotActiveSubtitle',
       desc: '',
       args: [],
     );
@@ -624,6 +644,16 @@ class L10n {
     );
   }
 
+  /// `Sede`
+  String get bookingStepLocation {
+    return Intl.message(
+      'Sede',
+      name: 'bookingStepLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Servizi`
   String get bookingStepServices {
     return Intl.message(
@@ -659,6 +689,36 @@ class L10n {
     return Intl.message(
       'Riepilogo',
       name: 'bookingStepSummary',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Scegli la sede`
+  String get locationTitle {
+    return Intl.message(
+      'Scegli la sede',
+      name: 'locationTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona dove vuoi effettuare la prenotazione`
+  String get locationSubtitle {
+    return Intl.message(
+      'Seleziona dove vuoi effettuare la prenotazione',
+      name: 'locationSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna sede disponibile`
+  String get locationEmpty {
+    return Intl.message(
+      'Nessuna sede disponibile',
+      name: 'locationEmpty',
       desc: '',
       args: [],
     );

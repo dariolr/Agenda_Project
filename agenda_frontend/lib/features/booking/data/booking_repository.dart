@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import '../../../core/models/location.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/staff.dart';
@@ -12,6 +13,17 @@ class BookingRepository {
   final Uuid _uuid = const Uuid();
 
   BookingRepository(this._apiClient);
+
+  /// GET /v1/businesses/{business_id}/locations/public
+  /// Recupera le locations attive di un business
+  Future<List<Location>> getLocations(int businessId) async {
+    final data = await _apiClient.getBusinessLocations(businessId);
+    final locationsJson = data['data'] as List<dynamic>? ?? [];
+
+    return locationsJson
+        .map((json) => Location.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
 
   /// GET /v1/services?location_id=X
   /// Recupera categorie e servizi in un'unica chiamata

@@ -28,7 +28,9 @@
   "staffEmpty": "No staff available at the moment",
   "errorConnectionTimeout": "The connection is taking too long. Please try again.",
   "errorBusinessNotFound": "Business not found",
-  "errorBusinessNotFoundSubtitle": "The requested business does not exist or is not yet configured for online bookings.",
+  "errorBusinessNotFoundSubtitle": "The requested business does not exist. Please check the URL or contact the business directly.",
+  "errorBusinessNotActive": "Business not active",
+  "errorBusinessNotActiveSubtitle": "This business is not yet configured for online bookings. Please contact the business directly.",
   "errorLocationNotFound": "Location not available",
   "errorLocationNotFoundSubtitle": "The selected location is not active. Contact the business for more information.",
   "errorServiceUnavailable": "Service temporarily unavailable",
@@ -73,10 +75,15 @@
   "authPasswordRequirements": "Password must contain: uppercase, lowercase, number",
   
   "bookingTitle": "Book appointment",
+  "bookingStepLocation": "Location",
   "bookingStepServices": "Services",
   "bookingStepStaff": "Staff",
   "bookingStepDateTime": "Date & Time",
   "bookingStepSummary": "Summary",
+  
+  "locationTitle": "Choose location",
+  "locationSubtitle": "Select where you want to book",
+  "locationEmpty": "No location available",
   
   "servicesTitle": "Choose services",
   "servicesSubtitle": "You can select one or more services",

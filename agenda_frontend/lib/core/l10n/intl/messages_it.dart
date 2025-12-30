@@ -171,6 +171,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Prenotazione riprogrammata con successo",
     ),
     "bookingStepDateTime": MessageLookupByLibrary.simpleMessage("Data e ora"),
+    "bookingStepLocation": MessageLookupByLibrary.simpleMessage("Sede"),
     "bookingStepServices": MessageLookupByLibrary.simpleMessage("Servizi"),
     "bookingStepStaff": MessageLookupByLibrary.simpleMessage("Operatore"),
     "bookingStepSummary": MessageLookupByLibrary.simpleMessage("Riepilogo"),
@@ -227,11 +228,17 @@ class MessageLookup extends MessageLookupByLibrary {
     "durationHourMinute": m3,
     "durationMinute": m4,
     "durationMinutes": m5,
+    "errorBusinessNotActive": MessageLookupByLibrary.simpleMessage(
+      "Attività non attiva",
+    ),
+    "errorBusinessNotActiveSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Questa attività non è ancora configurata per le prenotazioni online. Contatta direttamente l\'attività.",
+    ),
     "errorBusinessNotFound": MessageLookupByLibrary.simpleMessage(
       "Attività non trovata",
     ),
     "errorBusinessNotFoundSubtitle": MessageLookupByLibrary.simpleMessage(
-      "L\'attività richiesta non esiste o non è ancora configurata per le prenotazioni online.",
+      "L\'attività richiesta non esiste. Verifica l\'indirizzo o contatta direttamente l\'attività.",
     ),
     "errorConnectionTimeout": MessageLookupByLibrary.simpleMessage(
       "La connessione sta impiegando troppo tempo. Riprova.",
@@ -268,6 +275,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "Stiamo lavorando per risolvere il problema. Riprova tra qualche minuto.",
     ),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Errore"),
+    "locationEmpty": MessageLookupByLibrary.simpleMessage(
+      "Nessuna sede disponibile",
+    ),
+    "locationSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Seleziona dove vuoi effettuare la prenotazione",
+    ),
+    "locationTitle": MessageLookupByLibrary.simpleMessage("Scegli la sede"),
     "modifiable": MessageLookupByLibrary.simpleMessage("Modificabile"),
     "modifiableUntilDays": m7,
     "modifiableUntilHours": m8,
