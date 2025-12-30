@@ -55,6 +55,24 @@ L'app supporta più business tramite URL path-based:
 ### ⚠️ NON usare SubdomainResolver
 `SubdomainResolver.getBusinessSlug()` legge `Uri.base` (statico). Usare sempre `routeSlugProvider`.
 
+## Multi-Location Support (30/12/2025)
+
+Se un business ha più sedi attive, l'utente può scegliere dove prenotare.
+Se il business ha una sola sede, lo step "Sede" viene saltato automaticamente.
+
+### Provider chiave
+- `locationsProvider` — Carica lista sedi dal backend
+- `selectedLocationProvider` — NotifierProvider per selezione utente
+- `hasMultipleLocationsProvider` — Bool, determina se mostrare step Sede
+- `effectiveLocationIdProvider` — Int ID per chiamate API
+
+### File di riferimento
+| Concetto | File |
+|----------|------|
+| Location model | `lib/core/models/location.dart` |
+| Locations provider | `lib/features/booking/providers/locations_provider.dart` |
+| Location step UI | `lib/features/booking/presentation/screens/location_step.dart` |
+
 ## Architettura
 
 ```
@@ -103,6 +121,7 @@ Dopo modifiche: `dart run intl_utils:generate`
 ## Features
 
 - ✅ Multi-business path-based URL (`/:slug/booking`)
+- ✅ Multi-location support (selezione sede)
 - ✅ Selezione servizi (multi-service)
 - ✅ Selezione staff (opzionale)
 - ✅ Calendario disponibilità

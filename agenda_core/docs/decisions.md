@@ -1155,4 +1155,96 @@ Campi aggiunti: `slug`, `email`, `phone`, `timezone`
 | Create Dialog | `features/business/presentation/dialogs/create_business_dialog.dart` |
 | Edit Dialog | `features/business/presentation/dialogs/edit_business_dialog.dart` |
 
+---
+
+## 24. Multi-Location Support Frontend (30/12/2025)
+
+**Contesto**: Un business può avere più sedi (locations). L'utente deve poter scegliere dove prenotare.
+
+**Decisione**: Implementato step location nel booking flow.
+
+### Comportamento
+| Sedi | Flow di prenotazione |
+|------|----------------------|
+| 0    | "Attività non attiva" (business senza sedi configurate) |
+| 1    | Servizi → Staff → Data/Ora → Riepilogo (skip location) |
+| 2+   | **Sede** → Servizi → Staff → Data/Ora → Riepilogo |
+
+### API Endpoint (pubblico, no auth)
+```
+GET /v1/businesses/{business_id}/locations/public
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": 1,
+        "business_id": 4,
+        "name": "Sede Centrale",
+        "address": "Via Roma 1",
+        "city": "Milano",
+        "phone": "+39 02 1234567",
+        "timezone": "Europe/Rome",
+        "is_default": true
+      }
+    ]
+  }
+}
+```
+
+### Frontend (agenda_frontend)
+
+**Nuovo modello**:
+```dart
+// lib/core/models/location.dart
+class Location {
+  final int id;
+  final int businessId;
+  final String name;
+  final String? address;
+  final String? city;
+  final String? phone;
+  final String timezone;
+  final bool isDefault;
+  // ...
+}
+```
+
+**Provider**:
+```dart
+// lib/features/booking/providers/locations_provider.dart
+final locationsProvider = NotifierProvider<LocationsNotifier, AsyncValue<List<Location>>>(...);
+final selectedLocationProvider = NotifierProvider<SelectedLocationNotifier, Location?>(...);
+final hasMultipleLocationsProvider = Provider<bool>(...);
+final effectiveLocationProvider = Provider<Location?>(...);
+final effectiveLocationIdProvider = Provider<int>(...);
+```
+
+**Step**:
+- `LocationStep` widget per selezione sede
+- `BookingStepIndicator` con parametro `showLocationStep`
+
+### Booking flow aggiornato
+```dart
+enum BookingStep { location, services, staff, dateTime, summary, confirmation }
+```
+
+Il `BookingFlowNotifier`:
+- Determina step iniziale basato su `hasMultipleLocationsProvider`
+- Salta automaticamente `BookingStep.location` se c'è una sola sede
+- Usa `effectiveLocationIdProvider` per determinare la location da usare
+
+### File chiave
+| Concetto | File |
+|----------|------|
+| Modello Location | `lib/core/models/location.dart` |
+| Provider | `lib/features/booking/providers/locations_provider.dart` |
+| Step UI | `lib/features/booking/presentation/screens/location_step.dart` |
+| Controller PHP | `src/Http/Controllers/LocationsController.php` |
+| Endpoint route | `src/Http/Kernel.php` (line ~97) |
+
 

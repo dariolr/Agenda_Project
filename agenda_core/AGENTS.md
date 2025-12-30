@@ -95,3 +95,15 @@ Superadmin Business Management (30/12/2025):
 - Flow: superadmin → /businesses → seleziona/crea/modifica → /agenda
 - Pulsante "Cambia" in navigation per tornare alla lista business
 - **MAI usare StateProvider** → sempre Notifier + NotifierProvider
+
+Multi-Location Support (30/12/2025):
+- Endpoint pubblico: `GET /v1/businesses/{business_id}/locations/public`
+- Ritorna locations attive con campi limitati (id, name, address, city, phone, timezone, is_default)
+- Controller: `LocationsController::indexPublic()` usa `$request->getAttribute('business_id')`
+- **NON** usare `getRouteParam()` per route pubbliche senza middleware auth
+- Frontend: step "Sede" nel booking flow se business ha >1 location
+
+⚠️ REGOLA CRITICA DATABASE:
+- **MAI** inserire, modificare o eliminare dati nel database senza richiesta esplicita dell'utente
+- Le operazioni di seed/migration vanno eseguite solo se l'utente lo richiede
+- In caso di dubbio, chiedere conferma prima di modificare dati in produzione

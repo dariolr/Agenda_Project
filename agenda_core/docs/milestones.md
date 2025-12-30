@@ -1,6 +1,6 @@
 # Milestones — agenda_core
 
-## Stato al 29/12/2025
+## Stato al 30/12/2025
 
 | Milestone | Descrizione | Stato |
 |-----------|-------------|-------|
@@ -25,6 +25,69 @@
 | **M11.1** | Sistema inviti via email (business_invitations) | ✅ Completato |
 | **D1** | Deploy effettivo produzione SiteGround | ✅ **LIVE** |
 | **D2** | Multi-Business Path-Based URL | ✅ **LIVE** |
+| **D3** | Multi-Location Support Frontend | ✅ **LIVE** |
+
+---
+
+## Multi-Location Support Frontend (D3) ✅ LIVE 30/12/2025
+
+### Funzionalità
+Se un business ha più sedi attive, l'utente può scegliere dove prenotare.
+Se il business ha una sola sede, lo step "Sede" viene saltato automaticamente.
+
+### Implementazione Backend (agenda_core)
+
+**Nuovo endpoint pubblico:**
+```
+GET /v1/businesses/{business_id}/locations/public
+```
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "business_id": 1,
+      "name": "Sede Centrale",
+      "address": "Via Roma 1",
+      "city": "Milano",
+      "phone": "+39 02 1234567",
+      "timezone": "Europe/Rome",
+      "is_default": true
+    }
+  ]
+}
+```
+
+**File modificati:**
+- `src/Http/Kernel.php` - Aggiunta route pubblica
+- `src/Http/Controllers/LocationsController.php` - Aggiunto `indexPublic()` method
+
+### Implementazione Frontend (agenda_frontend)
+
+**Nuovi file:**
+- `lib/core/models/location.dart` - Modello Location
+- `lib/features/booking/providers/locations_provider.dart` - Provider per locations
+- `lib/features/booking/presentation/screens/location_step.dart` - UI step selezione sede
+
+**Provider chiave:**
+- `locationsProvider` — Carica lista sedi dal backend
+- `selectedLocationProvider` — NotifierProvider per selezione utente
+- `hasMultipleLocationsProvider` — Bool, determina se mostrare step Sede
+- `effectiveLocationProvider` — Location effettiva (scelta o default)
+- `effectiveLocationIdProvider` — Int ID per chiamate API
+
+**Booking flow modificato:**
+```dart
+enum BookingStep { location, services, staff, dateTime, summary }
+// location step mostrato solo se hasMultipleLocations == true
+```
+
+### Note tecniche
+- `LocationsController.indexPublic()` usa `$request->getAttribute('business_id')` (NON `getRouteParam()`)
+- Le route pubbliche non hanno middleware auth, quindi `getRouteParam()` non funziona
+- L'endpoint ritorna solo sedi con `is_active = 1`
 
 ---
 
