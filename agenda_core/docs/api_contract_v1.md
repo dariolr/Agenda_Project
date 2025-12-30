@@ -601,14 +601,14 @@ Response (200):
 {
   "success": true,
   "data": {
-    "locations": [
+    "data": [
       {
         "id": 1,
         "business_id": 1,
         "name": "Sede Centrale",
         "address": "Via Roma 123, Roma",
         "city": "Roma",
-        "postal_code": "00100",
+        "region": "Lazio",
         "country": "IT",
         "timezone": "Europe/Rome",
         "latitude": 41.9028,
@@ -616,12 +616,46 @@ Response (200):
         "phone": "+39 06 12345678",
         "email": "roma@bellavita.it",
         "currency": "EUR",
-        "is_active": true
+        "is_default": true,
+        "is_active": true,
+        "created_at": "2025-01-15T10:00:00Z",
+        "updated_at": "2025-01-15T10:00:00Z"
       }
     ]
   }
 }
 ```
+
+---
+
+### GET /v1/businesses/{business_id}/locations/public
+
+**No authentication required** (pubblico, per booking flow).
+
+Ritorna le locations attive di un business con campi limitati per il frontend di prenotazione.
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": 1,
+        "business_id": 1,
+        "name": "Sede Centrale",
+        "address": "Via Roma 123",
+        "city": "Roma",
+        "phone": "+39 06 12345678",
+        "timezone": "Europe/Rome",
+        "is_default": true
+      }
+    ]
+  }
+}
+```
+
+Nota: Endpoint usato dal frontend di prenotazione per mostrare le sedi disponibili. Se il business ha più di una location, l'utente può scegliere dove prenotare.
 
 ---
 

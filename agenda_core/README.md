@@ -83,6 +83,7 @@ php -S localhost:8080 -t public
 | GET | `/v1/services?location_id=X` | Lista servizi |
 | GET | `/v1/staff?location_id=X` | Lista staff |
 | GET | `/v1/availability?location_id=X&date=YYYY-MM-DD&service_ids=1,2` | Slot disponibili |
+| GET | `/v1/businesses/{business_id}/locations/public` | Lista sedi attive (30/12/2025) |
 
 ### Gestionale - Clients (protetti)
 

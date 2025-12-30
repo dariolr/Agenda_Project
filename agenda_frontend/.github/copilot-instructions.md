@@ -140,6 +140,7 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
 - Usare `ref.watch()` in loop pesanti o callback
 - Introdurre animazioni/effetti non richiesti
 - Usare `FutureProvider` per API calls (causa loop su errore)
+- **Inserire/modificare/eliminare dati nel database** senza richiesta esplicita dell'utente
 
 ---
 
@@ -221,3 +222,37 @@ RewriteRule ^ index.html [L]
 - Default in `api_config.dart`: `https://api.romeolab.it`
 - Override locale via `--dart-define=API_BASE_URL=http://localhost:8000`
 - Due configurazioni in `.vscode/launch.json`: produzione e locale
+
+---
+
+## 📍 Multi-Location Support (30/12/2025)
+
+### Funzionalità
+Se un business ha più sedi attive, l'utente può scegliere dove prenotare.
+Se il business ha una sola sede, lo step "Sede" viene saltato automaticamente.
+
+### Provider chiave
+- `locationsProvider` — Carica lista sedi dal backend via API
+- `selectedLocationProvider` — NotifierProvider per selezione utente
+- `hasMultipleLocationsProvider` — Bool, determina se mostrare step Sede
+- `effectiveLocationProvider` — Location effettiva (scelta o default)
+- `effectiveLocationIdProvider` — Int ID per chiamate API
+
+### Booking Flow con location
+```dart
+enum BookingStep { location, services, staff, dateTime, summary }
+// location step mostrato solo se hasMultipleLocations == true
+```
+
+### Endpoint API
+`GET /v1/businesses/{business_id}/locations/public`
+- Ritorna solo sedi attive (`is_active = 1`)
+- Campi limitati: id, business_id, name, address, city, phone, timezone, is_default
+
+### File di riferimento
+| Concetto | File |
+|----------|------|
+| Location model | `lib/core/models/location.dart` |
+| Locations provider | `lib/features/booking/providers/locations_provider.dart` |
+| Location step UI | `lib/features/booking/presentation/screens/location_step.dart` |
+| Booking flow | `lib/features/booking/providers/booking_provider.dart` |

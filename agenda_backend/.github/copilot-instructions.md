@@ -142,6 +142,7 @@ Aggiungere chiavi in `lib/core/l10n/intl_it.arb` e `intl_en.arb`.
 - Usare `ref.watch()` in loop pesanti o callback
 - Introdurre animazioni/effetti non richiesti
 - **Usare `StateProvider`** — usare sempre `Notifier` + `NotifierProvider` per stato mutabile
+- **Inserire/modificare/eliminare dati nel database** senza richiesta esplicita dell'utente
 
 ---
 
