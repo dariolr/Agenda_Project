@@ -42,6 +42,7 @@ final class GetMe
             'last_name' => $user['last_name'],
             'phone' => $user['phone'],
             'is_active' => (bool) $user['is_active'],
+            'is_superadmin' => !empty($user['is_superadmin']),
             'email_verified_at' => $user['email_verified_at'],
             'created_at' => $user['created_at'],
             'client_memberships' => array_map(fn($client) => [

@@ -321,6 +321,12 @@ class ApiClient {
     return get(ApiConfig.businessBySlug(slug));
   }
 
+  /// GET /v1/businesses/{business_id}/locations/public
+  /// Recupera le locations di un business (pubblico, per booking flow)
+  Future<Map<String, dynamic>> getBusinessLocations(int businessId) async {
+    return get(ApiConfig.businessLocations(businessId));
+  }
+
   /// GET /v1/services?location_id=X
   Future<Map<String, dynamic>> getServices(int locationId) async {
     return get(

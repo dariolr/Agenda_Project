@@ -182,3 +182,42 @@ Usare sempre `ref.watch(routeSlugProvider)` per ottenere lo slug corrente.
 | Route slug | `lib/app/providers/route_slug_provider.dart` |
 | Router | `lib/app/router.dart` |
 | Business provider | `lib/features/booking/providers/business_provider.dart` |
+
+---
+
+## 🌐 Flutter Web URL Strategy (30/12/2025)
+
+### usePathUrlStrategy() OBBLIGATORIO
+Per usare URL path-based (senza `#`) su Flutter Web:
+
+```dart
+// main.dart
+import 'package:flutter_web_plugins/url_strategy.dart';
+
+void main() {
+  usePathUrlStrategy(); // PRIMA di runApp!
+  runApp(const ProviderScope(child: MyApp()));
+}
+```
+
+### Dipendenza richiesta
+```yaml
+# pubspec.yaml
+dependencies:
+  flutter_web_plugins:
+    sdk: flutter
+```
+
+### .htaccess per SPA routing
+```apache
+# web/.htaccess (copiare in build/web prima del deploy)
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+```
+
+### API_BASE_URL
+- Default in `api_config.dart`: `https://api.romeolab.it`
+- Override locale via `--dart-define=API_BASE_URL=http://localhost:8000`
+- Due configurazioni in `.vscode/launch.json`: produzione e locale

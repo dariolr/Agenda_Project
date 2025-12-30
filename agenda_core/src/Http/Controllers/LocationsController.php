@@ -16,7 +16,7 @@ final class LocationsController
 
     /**
      * GET /v1/businesses/{business_id}/locations
-     * List all locations for a business
+     * List all locations for a business (authenticated)
      */
     public function index(Request $request): Response
     {
@@ -26,6 +26,25 @@ final class LocationsController
 
         return Response::success([
             'data' => array_map(fn($l) => $this->formatLocation($l), $locations),
+        ]);
+    }
+
+    /**
+     * GET /v1/businesses/{business_id}/locations/public
+     * List all locations for a business (public - for booking flow)
+     */
+    public function indexPublic(Request $request): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+
+        if ($businessId <= 0) {
+            return Response::error('Invalid business_id', 'validation_error', 400, $request->traceId);
+        }
+
+        $locations = $this->locationRepo->findByBusinessId($businessId);
+
+        return Response::success([
+            'data' => array_map(fn($l) => $this->formatLocationPublic($l), $locations),
         ]);
     }
 
@@ -65,6 +84,23 @@ final class LocationsController
             'is_active' => (bool) $row['is_active'],
             'created_at' => $row['created_at'],
             'updated_at' => $row['updated_at'],
+        ];
+    }
+
+    /**
+     * Format location for public display (limited fields for booking)
+     */
+    private function formatLocationPublic(array $row): array
+    {
+        return [
+            'id' => (int) $row['id'],
+            'business_id' => (int) $row['business_id'],
+            'name' => $row['name'],
+            'address' => $row['address'],
+            'city' => $row['city'],
+            'phone' => $row['phone'],
+            'timezone' => $row['timezone'] ?? 'Europe/Rome',
+            'is_default' => (bool) $row['is_default'],
         ];
     }
 }

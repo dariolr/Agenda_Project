@@ -9,6 +9,13 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
 
-    # Rewrite everything else to index.html
-    RewriteRule ^ index.html [L]
+    # Rewrite everything else to index.html while preserving the URL
+    # The [QSA,L] flags preserve query string and stop processing
+    RewriteRule ^(.*)$ index.html [QSA,L]
+</IfModule>
+
+# Ensure proper MIME types
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddType application/json .json
 </IfModule>

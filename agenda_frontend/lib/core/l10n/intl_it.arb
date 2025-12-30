@@ -28,7 +28,9 @@
   "staffEmpty": "Nessun operatore disponibile al momento",
   "errorConnectionTimeout": "La connessione sta impiegando troppo tempo. Riprova.",
   "errorBusinessNotFound": "Attività non trovata",
-  "errorBusinessNotFoundSubtitle": "L'attività richiesta non esiste o non è ancora configurata per le prenotazioni online.",
+  "errorBusinessNotFoundSubtitle": "L'attività richiesta non esiste. Verifica l'indirizzo o contatta direttamente l'attività.",
+  "errorBusinessNotActive": "Attività non attiva",
+  "errorBusinessNotActiveSubtitle": "Questa attività non è ancora configurata per le prenotazioni online. Contatta direttamente l'attività.",
   "errorLocationNotFound": "Sede non disponibile",
   "errorLocationNotFoundSubtitle": "La sede selezionata non è attiva. Contatta l'attività per maggiori informazioni.",
   "errorServiceUnavailable": "Servizio temporaneamente non disponibile",
@@ -73,10 +75,15 @@
   "authPasswordRequirements": "La password deve contenere: maiuscola, minuscola, numero",
   
   "bookingTitle": "Prenota appuntamento",
+  "bookingStepLocation": "Sede",
   "bookingStepServices": "Servizi",
   "bookingStepStaff": "Operatore",
   "bookingStepDateTime": "Data e ora",
   "bookingStepSummary": "Riepilogo",
+  
+  "locationTitle": "Scegli la sede",
+  "locationSubtitle": "Seleziona dove vuoi effettuare la prenotazione",
+  "locationEmpty": "Nessuna sede disponibile",
   
   "servicesTitle": "Scegli i servizi",
   "servicesSubtitle": "Puoi selezionare uno o più servizi",

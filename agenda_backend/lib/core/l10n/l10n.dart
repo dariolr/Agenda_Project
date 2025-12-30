@@ -84,6 +84,11 @@ class L10n {
     return Intl.message('Team', name: 'navStaff', desc: '', args: []);
   }
 
+  /// `Profilo`
+  String get navProfile {
+    return Intl.message('Profilo', name: 'navProfile', desc: '', args: []);
+  }
+
   /// `Elenco Clienti`
   String get clientsTitle {
     return Intl.message(
@@ -3144,6 +3149,121 @@ class L10n {
       desc: '',
       args: [date],
     );
+  }
+
+  /// `Accedi al gestionale`
+  String get authLoginSubtitle {
+    return Intl.message(
+      'Accedi al gestionale',
+      name: 'authLoginSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email`
+  String get authEmail {
+    return Intl.message('Email', name: 'authEmail', desc: '', args: []);
+  }
+
+  /// `Password`
+  String get authPassword {
+    return Intl.message('Password', name: 'authPassword', desc: '', args: []);
+  }
+
+  /// `Accedi`
+  String get authLogin {
+    return Intl.message('Accedi', name: 'authLogin', desc: '', args: []);
+  }
+
+  /// `Esci`
+  String get authLogout {
+    return Intl.message('Esci', name: 'authLogout', desc: '', args: []);
+  }
+
+  /// `Ricordami`
+  String get authRememberMe {
+    return Intl.message(
+      'Ricordami',
+      name: 'authRememberMe',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password dimenticata?`
+  String get authForgotPassword {
+    return Intl.message(
+      'Password dimenticata?',
+      name: 'authForgotPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Contatta l'amministratore di sistema per reimpostare la password.`
+  String get authForgotPasswordInfo {
+    return Intl.message(
+      'Contatta l\'amministratore di sistema per reimpostare la password.',
+      name: 'authForgotPasswordInfo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Campo obbligatorio`
+  String get authRequiredField {
+    return Intl.message(
+      'Campo obbligatorio',
+      name: 'authRequiredField',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email non valida`
+  String get authInvalidEmail {
+    return Intl.message(
+      'Email non valida',
+      name: 'authInvalidEmail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password troppo corta`
+  String get authPasswordTooShort {
+    return Intl.message(
+      'Password troppo corta',
+      name: 'authPasswordTooShort',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Credenziali non valide. Riprova.`
+  String get authLoginFailed {
+    return Intl.message(
+      'Credenziali non valide. Riprova.',
+      name: 'authLoginFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accesso riservato agli operatori autorizzati`
+  String get authLoginFooter {
+    return Intl.message(
+      'Accesso riservato agli operatori autorizzati',
+      name: 'authLoginFooter',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cambia`
+  String get switchBusiness {
+    return Intl.message('Cambia', name: 'switchBusiness', desc: '', args: []);
   }
 }
 

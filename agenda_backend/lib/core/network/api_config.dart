@@ -3,7 +3,7 @@ class ApiConfig {
   /// Base URL dell'API - configurabile via environment
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8888/agenda_core/public',
+    defaultValue: 'https://api.romeolab.it',
   );
 
   /// Location ID di default (per MVP single-location)

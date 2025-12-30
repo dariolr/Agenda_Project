@@ -5,6 +5,7 @@
   "navClients": "Clients",
   "navServices": "Services",
   "navStaff": "Team",
+  "navProfile": "Profile",
   "clientsTitle": "Clients List",
   "errorFormFactorBuilderRequired": "Specify at least one builder for form factor",
   "errorFormFactorBuilderMissing": "No builder available for {factor}",
@@ -518,5 +519,20 @@
         "type": "String"
       }
     }
-  }
+  },
+  
+  "authLoginSubtitle": "Sign in to the management system",
+  "authEmail": "Email",
+  "authPassword": "Password",
+  "authLogin": "Sign In",
+  "authLogout": "Sign Out",
+  "authRememberMe": "Remember me",
+  "authForgotPassword": "Forgot password?",
+  "authForgotPasswordInfo": "Contact the system administrator to reset your password.",
+  "authRequiredField": "Required field",
+  "authInvalidEmail": "Invalid email",
+  "authPasswordTooShort": "Password too short",
+  "authLoginFailed": "Invalid credentials. Please try again.",
+  "authLoginFooter": "Access reserved for authorized operators",
+  "switchBusiness": "Switch"
 }

@@ -6,9 +6,11 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/business_provider.dart';
+import '../../providers/locations_provider.dart';
 import '../widgets/booking_step_indicator.dart';
 import 'confirmation_step.dart';
 import 'date_time_step.dart';
+import 'location_step.dart';
 import 'services_step.dart';
 import 'staff_step.dart';
 import 'summary_step.dart';
@@ -59,23 +61,30 @@ class BookingScreen extends ConsumerWidget {
 
     // Se la config non è valida (business o location mancanti)
     if (!config.isValid) {
+      // Distingui tra "business non trovato" e "business non attivo"
+      final isNotActive = config.businessExistsButNotActive;
+      final title = isNotActive
+          ? l10n.errorBusinessNotActive
+          : l10n.errorBusinessNotFound;
+      final subtitle = isNotActive
+          ? l10n.errorBusinessNotActiveSubtitle
+          : l10n.errorBusinessNotFoundSubtitle;
+      final icon = isNotActive ? Icons.schedule : Icons.storefront_outlined;
+
       return Scaffold(
         appBar: AppBar(title: Text(l10n.bookingTitle)),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.storefront_outlined, size: 64),
+              Icon(icon, size: 64),
               const SizedBox(height: 16),
-              Text(
-                l10n.errorBusinessNotFound,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Text(
-                  l10n.errorBusinessNotFoundSubtitle,
+                  subtitle,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(
@@ -92,6 +101,7 @@ class BookingScreen extends ConsumerWidget {
 
     // Normal booking flow
     final bookingState = ref.watch(bookingFlowProvider);
+    final hasMultipleLocations = ref.watch(hasMultipleLocationsProvider);
     final isAuthenticated = ref.watch(
       authProvider.select((state) => state.isAuthenticated),
     );
@@ -122,6 +132,7 @@ class BookingScreen extends ConsumerWidget {
             BookingStepIndicator(
               currentStep: bookingState.currentStep,
               allowStaffSelection: config.allowStaffSelection,
+              showLocationStep: hasMultipleLocations,
               onStepTap: (step) {
                 ref.read(bookingFlowProvider.notifier).goToStep(step);
               },
@@ -141,6 +152,8 @@ class BookingScreen extends ConsumerWidget {
 
   Widget _buildStepContent(BookingStep step) {
     switch (step) {
+      case BookingStep.location:
+        return const LocationStep();
       case BookingStep.services:
         return const ServicesStep();
       case BookingStep.staff:

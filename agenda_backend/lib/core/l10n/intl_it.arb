@@ -5,6 +5,7 @@
   "navClients": "Clienti",
   "navServices": "Servizi",
   "navStaff": "Team",
+  "navProfile": "Profilo",
   "clientsTitle": "Elenco Clienti",
   "errorFormFactorBuilderRequired": "Specificare almeno un builder per form factor",
   "errorFormFactorBuilderMissing": "Nessun builder disponibile per {factor}",
@@ -518,5 +519,20 @@
         "type": "String"
       }
     }
-  }
+  },
+  
+  "authLoginSubtitle": "Accedi al gestionale",
+  "authEmail": "Email",
+  "authPassword": "Password",
+  "authLogin": "Accedi",
+  "authLogout": "Esci",
+  "authRememberMe": "Ricordami",
+  "authForgotPassword": "Password dimenticata?",
+  "authForgotPasswordInfo": "Contatta l'amministratore di sistema per reimpostare la password.",
+  "authRequiredField": "Campo obbligatorio",
+  "authInvalidEmail": "Email non valida",
+  "authPasswordTooShort": "Password troppo corta",
+  "authLoginFailed": "Credenziali non valide. Riprova.",
+  "authLoginFooter": "Accesso riservato agli operatori autorizzati",
+  "switchBusiness": "Cambia"
 }

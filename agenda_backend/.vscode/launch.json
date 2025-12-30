@@ -6,7 +6,7 @@
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
-      "args": ["--web-port=8080"]
+      "args": ["--web-port=8080", "--dart-define=API_BASE_URL=https://api.romeolab.it"]
     },
     {
       "name": "Solo iPhone",

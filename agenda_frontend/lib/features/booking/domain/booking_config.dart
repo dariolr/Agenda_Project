@@ -9,10 +9,14 @@ class BookingConfig {
   /// ID della location (sede)
   final int locationId;
 
+  /// True se il business esiste ma non ha location configurata
+  final bool businessExistsButNotActive;
+
   const BookingConfig({
     this.allowStaffSelection = true,
     required this.businessId,
     required this.locationId,
+    this.businessExistsButNotActive = false,
   });
 
   /// Crea una config valida solo se businessId e locationId sono noti

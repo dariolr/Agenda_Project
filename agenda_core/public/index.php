@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-// SiteGround structure: vendor/src inside public_html, .env outside
-require_once __DIR__ . '/vendor/autoload.php';
+// SiteGround structure: public_html is web root, vendor/src are in parent directory
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use Agenda\Http\Kernel;
 use Agenda\Http\Request;
@@ -16,7 +16,7 @@ $dotenv->safeLoad();
 date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'UTC');
 
 // Determina l'origin consentito dinamicamente
-$allowedOrigins = array_map('trim', explode(',', $_ENV['CORS_ORIGIN'] ?? '*'));
+$allowedOrigins = array_map('trim', explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? '*'));
 $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
 $corsOrigin = in_array($requestOrigin, $allowedOrigins, true) ? $requestOrigin : ($allowedOrigins[0] ?? '*');
 

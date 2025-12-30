@@ -23,17 +23,19 @@ import 'providers/route_slug_provider.dart';
 /// - /:slug/my-bookings     → Le mie prenotazioni
 /// - /reset-password/:token → Reset password (globale, no slug)
 final routerProvider = Provider<GoRouter>((ref) {
-  final isAuthenticated = ref.watch(
-    authProvider.select((state) => state.isAuthenticated),
-  );
+  // NOTA: usa ref.read per evitare rebuild del router quando auth cambia
+  // Il redirect legge sempre lo stato auth corrente senza causare loop
 
   return GoRouter(
     initialLocation: '/',
-    debugLogDiagnostics: false,
-
-    // Aggiorna routeSlugProvider quando la route cambia
     redirect: (context, state) {
-      final pathSegments = state.uri.pathSegments;
+      // Legge auth con ref.read (non ref.watch) per evitare loop
+      final isAuthenticated = ref.read(authProvider).isAuthenticated;
+
+      // Filtra segmenti vuoti (trailing slash produce ['slug', ''])
+      final pathSegments = state.uri.pathSegments
+          .where((s) => s.isNotEmpty)
+          .toList();
 
       // Estrae lo slug dal path (primo segmento se non è una route riservata)
       String? slug;
@@ -44,14 +46,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
+      debugPrint('🔀 ROUTER: extracted slug=$slug');
+
       // Aggiorna il provider con lo slug corrente
       // Usiamo Future.microtask per evitare modifiche durante il build
       Future.microtask(() {
         ref.read(routeSlugProvider.notifier).state = slug;
+        debugPrint('🔀 ROUTER: routeSlugProvider updated to $slug');
       });
 
       // Se siamo su /:slug senza sotto-path, redirect a /:slug/booking
       if (slug != null && pathSegments.length == 1) {
+        debugPrint('🔀 ROUTER: redirecting to /$slug/booking');
         return '/$slug/booking';
       }
 

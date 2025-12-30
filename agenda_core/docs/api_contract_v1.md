@@ -358,6 +358,170 @@ Note:
 
 ---
 
+## Superadmin Endpoints (30/12/2025)
+
+Endpoint riservati ai superadmin (`users.is_superadmin = 1`).
+
+### GET /v1/admin/businesses
+
+Lista tutti i business della piattaforma.
+
+**Auth required**: Yes (superadmin only)
+
+Query params:
+- `search`: Filtra per nome (opzionale)
+- `limit`: Max risultati (default 50, max 100)
+- `offset`: Per paginazione
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "businesses": [
+      {
+        "id": 1,
+        "name": "Salone Bella Vita",
+        "slug": "salone-bella-vita",
+        "email": "info@bellavita.it",
+        "phone": "+39 06 12345678",
+        "timezone": "Europe/Rome",
+        "currency": "EUR",
+        "is_active": true,
+        "created_at": "2025-01-01T10:00:00+01:00"
+      }
+    ],
+    "total": 15,
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+Errors:
+- `forbidden` (403): Non superadmin
+
+---
+
+### POST /v1/admin/businesses
+
+Crea un nuovo business con owner.
+
+**Auth required**: Yes (superadmin only)
+
+Request:
+```json
+{
+  "name": "Nuovo Salone",
+  "slug": "nuovo-salone",
+  "owner_user_id": 123,
+  "email": "info@nuovosalone.it",
+  "phone": "+39 333 1234567",
+  "timezone": "Europe/Rome",
+  "currency": "EUR"
+}
+```
+
+Response (201):
+```json
+{
+  "success": true,
+  "data": {
+    "business": {
+      "id": 2,
+      "name": "Nuovo Salone",
+      "slug": "nuovo-salone",
+      "email": "info@nuovosalone.it",
+      "phone": "+39 333 1234567",
+      "timezone": "Europe/Rome",
+      "currency": "EUR",
+      "is_active": true,
+      "created_at": "2025-12-30T10:00:00+01:00"
+    },
+    "owner": {
+      "id": 1,
+      "user_id": 123,
+      "business_id": 2,
+      "role": "owner"
+    }
+  }
+}
+```
+
+Errors:
+- `forbidden` (403): Non superadmin
+- `validation_error` (400): Slug già esistente o campo mancante
+
+---
+
+### PUT /v1/admin/businesses/{id}
+
+Modifica un business esistente.
+
+**Auth required**: Yes (superadmin only)
+
+Request (tutti i campi opzionali):
+```json
+{
+  "name": "Nome Aggiornato",
+  "slug": "slug-aggiornato",
+  "email": "nuova@email.it",
+  "phone": "+39 333 9999999",
+  "timezone": "Europe/Rome",
+  "currency": "EUR"
+}
+```
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "business": {
+      "id": 2,
+      "name": "Nome Aggiornato",
+      "slug": "slug-aggiornato",
+      "email": "nuova@email.it",
+      "phone": "+39 333 9999999",
+      "timezone": "Europe/Rome",
+      "currency": "EUR",
+      "is_active": true,
+      "created_at": "2025-12-30T10:00:00+01:00"
+    }
+  }
+}
+```
+
+Errors:
+- `forbidden` (403): Non superadmin
+- `validation_error` (400): Slug già in uso da altro business
+- `not_found` (404): Business non trovato
+
+---
+
+### DELETE /v1/admin/businesses/{id}
+
+Soft-delete di un business (imposta `is_active = false`).
+
+**Auth required**: Yes (superadmin only)
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Business deleted successfully",
+    "id": 2
+  }
+}
+```
+
+Errors:
+- `forbidden` (403): Non superadmin
+- `not_found` (404): Business non trovato
+
+---
+
 ## Management Endpoints (admin/staff access)
 
 ### GET /v1/businesses

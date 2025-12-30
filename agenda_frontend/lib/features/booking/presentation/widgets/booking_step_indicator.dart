@@ -6,12 +6,14 @@ import '../../providers/booking_provider.dart';
 class BookingStepIndicator extends StatelessWidget {
   final BookingStep currentStep;
   final bool allowStaffSelection;
+  final bool showLocationStep;
   final void Function(BookingStep) onStepTap;
 
   const BookingStepIndicator({
     super.key,
     required this.currentStep,
     required this.allowStaffSelection,
+    this.showLocationStep = false,
     required this.onStepTap,
   });
 
@@ -21,6 +23,8 @@ class BookingStepIndicator extends StatelessWidget {
     final theme = Theme.of(context);
 
     final steps = [
+      if (showLocationStep)
+        (BookingStep.location, l10n.bookingStepLocation, Icons.location_on),
       (BookingStep.services, l10n.bookingStepServices, Icons.list_alt),
       if (allowStaffSelection)
         (BookingStep.staff, l10n.bookingStepStaff, Icons.person),

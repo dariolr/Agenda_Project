@@ -41,7 +41,7 @@ final class UserRepository
     public function findByEmail(string $email): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, email, password_hash, first_name, last_name, phone, email_verified_at, is_active, created_at 
+            'SELECT id, email, password_hash, first_name, last_name, phone, email_verified_at, is_active, is_superadmin, created_at 
              FROM users WHERE email = ?'
         );
         $stmt->execute([$email]);

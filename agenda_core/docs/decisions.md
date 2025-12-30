@@ -1086,4 +1086,73 @@ MAIL_FROM_NAME="Agenda"
 - Campo email aggiunto al dialog modifica location
 - Localizzazioni: `teamLocationEmailLabel`, `teamLocationEmailHint`
 
+---
+
+## 23. Superadmin Business Management (30/12/2025)
+
+**Contesto**: Il superadmin deve poter gestire i business dalla piattaforma.
+
+**Decisione**: Implementato flow completo:
+
+### API Endpoints
+- `GET /v1/admin/businesses` - Lista tutti i business (con search/pagination)
+- `POST /v1/admin/businesses` - Crea business + owner (transazione atomica)
+- `PUT /v1/admin/businesses/{id}` - Modifica business
+- `DELETE /v1/admin/businesses/{id}` - Soft-delete business
+
+### UseCase Pattern
+```
+src/UseCases/Business/
+├── CreateBusiness.php     # Transazione: crea business + owner, rollback su errore
+├── UpdateBusiness.php     # Aggiorna campi business (name, slug, email, phone, timezone, currency)
+├── GetAllBusinesses.php   # Lista paginata con ricerca
+└── GetUserBusinesses.php  # Lista business per utente normale
+```
+
+### Frontend (agenda_backend)
+- `BusinessListScreen` per superadmin su `/businesses`
+- Dialog creazione business con auto-generazione slug
+- Dialog modifica business
+- Pulsante "Cambia Business" nella navigation per tornare alla lista
+- Redirect automatico: superadmin → `/businesses`, utente normale → `/agenda`
+
+### Router Superadmin Flow
+```
+Login → is_superadmin? 
+  ├─ YES → /businesses (lista)
+  │        ├─ Crea nuovo business
+  │        ├─ Modifica business (icona edit)
+  │        └─ Seleziona business → /agenda
+  │            └─ "Cambia" in navigation → /businesses
+  └─ NO  → /agenda (normale)
+```
+
+### Provider Riverpod (NO StateProvider!)
+```dart
+// ❌ VIETATO - Deprecato in Riverpod 3.x
+final myProvider = StateProvider<int>((ref) => 0);
+
+// ✅ OBBLIGATORIO - Usare Notifier
+class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
+  @override
+  int? build() => null;
+  void select(int id) => state = id;
+  void clear() => state = null;
+}
+final superadminSelectedBusinessProvider = NotifierProvider<...>(...)
+```
+
+### Modello Business aggiornato
+Campi aggiunti: `slug`, `email`, `phone`, `timezone`
+
+### File chiave
+| Concetto | File |
+|----------|------|
+| UseCase Create | `src/UseCases/Business/CreateBusiness.php` |
+| UseCase Update | `src/UseCases/Business/UpdateBusiness.php` |
+| Controller | `src/Http/Controllers/AdminBusinessesController.php` |
+| Lista Screen | `features/business/presentation/business_list_screen.dart` |
+| Create Dialog | `features/business/presentation/dialogs/create_business_dialog.dart` |
+| Edit Dialog | `features/business/presentation/dialogs/edit_business_dialog.dart` |
+
 
