@@ -172,6 +172,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Aggiungi almeno un servizio",
     ),
     "authEmail": MessageLookupByLibrary.simpleMessage("Email"),
+    "authFirstName": MessageLookupByLibrary.simpleMessage("Nome"),
     "authForgotPassword": MessageLookupByLibrary.simpleMessage(
       "Password dimenticata?",
     ),
@@ -181,6 +182,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "authInvalidEmail": MessageLookupByLibrary.simpleMessage(
       "Email non valida",
     ),
+    "authLastName": MessageLookupByLibrary.simpleMessage("Cognome"),
     "authLogin": MessageLookupByLibrary.simpleMessage("Accedi"),
     "authLoginFailed": MessageLookupByLibrary.simpleMessage(
       "Credenziali non valide. Riprova.",
@@ -196,6 +198,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "authPasswordTooShort": MessageLookupByLibrary.simpleMessage(
       "Password troppo corta",
     ),
+    "authPhone": MessageLookupByLibrary.simpleMessage("Telefono"),
     "authRememberMe": MessageLookupByLibrary.simpleMessage("Ricordami"),
     "authRequiredField": MessageLookupByLibrary.simpleMessage(
       "Campo obbligatorio",
@@ -559,6 +562,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "priceStartingFromSwitch": MessageLookupByLibrary.simpleMessage(
       "Prezzo \"a partire da\"",
     ),
+    "profileTitle": MessageLookupByLibrary.simpleMessage("Profilo"),
     "removeClient": MessageLookupByLibrary.simpleMessage("Rimuovi cliente"),
     "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage("Categorie"),
     "reorderHelpDescription": MessageLookupByLibrary.simpleMessage(

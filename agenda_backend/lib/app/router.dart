@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/l10n/l10_extension.dart';
 // Importa le nuove schermate
 import '../features/agenda/presentation/agenda_screen.dart';
+import '../features/auth/presentation/profile_screen.dart';
 import '../features/business/presentation/operators_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
 import '../features/services/presentation/services_screen.dart';
@@ -109,6 +110,14 @@ final GoRouter appRouter = GoRouter(
         final businessId = int.parse(state.pathParameters['businessId']!);
         return OperatorsScreen(businessId: businessId);
       },
+    ),
+    // Route per profilo utente
+    GoRoute(
+      path: '/profilo',
+      name: 'profilo',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (BuildContext context, GoRouterState state) =>
+          const ProfileScreen(),
     ),
   ],
 );

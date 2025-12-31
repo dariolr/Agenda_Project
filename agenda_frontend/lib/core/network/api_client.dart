@@ -192,6 +192,19 @@ class ApiClient {
     }
   }
 
+  /// Esegue richiesta PUT
+  Future<Map<String, dynamic>> put(
+    String path, {
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final response = await _dio.put(path, data: data);
+      return _handleResponse(response);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// Gestisce risposta API
   Map<String, dynamic> _handleResponse(Response response) {
     final body = response.data as Map<String, dynamic>;
@@ -306,6 +319,22 @@ class ApiClient {
       ApiConfig.meChangePassword,
       data: {'current_password': currentPassword, 'new_password': newPassword},
     );
+  }
+
+  /// PUT /v1/me - Aggiorna profilo utente
+  Future<Map<String, dynamic>> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+  }) async {
+    final data = <String, dynamic>{};
+    if (firstName != null) data['first_name'] = firstName;
+    if (lastName != null) data['last_name'] = lastName;
+    if (email != null) data['email'] = email;
+    if (phone != null) data['phone'] = phone;
+
+    return put(ApiConfig.authMe, data: data);
   }
 
   /// GET /v1/me/bookings

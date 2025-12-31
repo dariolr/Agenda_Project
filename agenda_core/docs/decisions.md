@@ -1247,4 +1247,41 @@ Il `BookingFlowNotifier`:
 | Controller PHP | `src/Http/Controllers/LocationsController.php` |
 | Endpoint route | `src/Http/Kernel.php` (line ~97) |
 
+### 22. Profilo utente (2025-12-31)
+**Contesto**: Gli utenti devono poter modificare il proprio profilo (nome, cognome, email, telefono).
+
+**Decisione**: Endpoint `PUT /v1/me` per aggiornare profilo utente autenticato:
+- UseCase `UpdateProfile` in `src/UseCases/Auth/UpdateProfile.php`
+- Validazione email unica (errore se già esistente da altro utente)
+- Campi aggiornabili: `first_name`, `last_name`, `email`, `phone`
+- Frontend (entrambi): pagina `/profilo` o `/:slug/profile`
+
+### 23. Admin email invece di user_id (2025-12-31)
+**Contesto**: La creazione business richiedeva `owner_user_id` (utente già esistente). Necessità di creare admin anche per email non registrate.
+
+**Decisione**: Sostituire `owner_user_id` con `admin_email`:
+- `CreateBusiness`: accetta `admin_email`, crea utente se non esiste
+- Se utente nuovo: invia email benvenuto con link reset password (24h)
+- Se utente esistente: associato come owner senza email
+- Token reset in tabella `password_reset_tokens`
+
+### 24. Trasferimento ownership business (2025-12-31)
+**Contesto**: Quando si cambia `admin_email` in UpdateBusiness, la ownership deve essere trasferita.
+
+**Decisione**: 
+- `UpdateBusiness` rileva cambio admin_email
+- Vecchio admin: ruolo da "owner" a "admin"
+- Nuovo admin: creato se non esiste, ruolo "owner"
+- Email benvenuto inviata al nuovo admin
+- Metodo `BusinessUserRepository::transferOwnership()`
+
+### 25. Reinvio invito admin (2025-12-31)
+**Contesto**: Token reset scade dopo 24h. Se admin non ha impostato password in tempo, serve reinvio.
+
+**Decisione**: Endpoint `POST /v1/admin/businesses/{id}/resend-invite`:
+- UseCase `ResendAdminInvite`
+- Genera nuovo token reset (24h)
+- Invia stessa email benvenuto con nuovo link
+- Solo superadmin può invocare
+
 

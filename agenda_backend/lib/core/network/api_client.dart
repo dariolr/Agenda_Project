@@ -348,6 +348,22 @@ class ApiClient {
     return get(ApiConfig.authMe);
   }
 
+  /// PUT /v1/me - Aggiorna profilo utente
+  Future<Map<String, dynamic>> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+  }) async {
+    final data = <String, dynamic>{};
+    if (firstName != null) data['first_name'] = firstName;
+    if (lastName != null) data['last_name'] = lastName;
+    if (email != null) data['email'] = email;
+    if (phone != null) data['phone'] = phone;
+
+    return put(ApiConfig.authMe, data: data);
+  }
+
   // ========== PUBLIC BROWSE ENDPOINTS ==========
 
   /// GET /v1/services?location_id=X
@@ -545,25 +561,31 @@ class ApiClient {
 
   /// POST /v1/admin/businesses
   /// Superadmin only: crea un nuovo business.
+  /// Se adminEmail fornito, invia email di benvenuto all'admin con link per impostare password.
   Future<Map<String, dynamic>> createAdminBusiness({
     required String name,
     required String slug,
-    required int ownerUserId,
+    String? adminEmail,
     String? email,
     String? phone,
     String timezone = 'Europe/Rome',
     String currency = 'EUR',
+    String? adminFirstName,
+    String? adminLastName,
   }) async {
     final response = await post(
       '/v1/admin/businesses',
       data: {
         'name': name,
         'slug': slug,
-        'owner_user_id': ownerUserId,
+        if (adminEmail != null && adminEmail.isNotEmpty)
+          'admin_email': adminEmail,
         if (email != null) 'email': email,
         if (phone != null) 'phone': phone,
         'timezone': timezone,
         'currency': currency,
+        if (adminFirstName != null) 'admin_first_name': adminFirstName,
+        if (adminLastName != null) 'admin_last_name': adminLastName,
       },
     );
     // _handleResponse già ritorna body['data'], quindi response È il business
@@ -572,6 +594,7 @@ class ApiClient {
 
   /// PUT /v1/admin/businesses/{id}
   /// Superadmin only: aggiorna un business esistente.
+  /// Se adminEmail cambia, trasferisce ownership e invia email al nuovo admin.
   Future<Map<String, dynamic>> updateAdminBusiness({
     required int businessId,
     String? name,
@@ -580,6 +603,7 @@ class ApiClient {
     String? phone,
     String? timezone,
     String? currency,
+    String? adminEmail,
   }) async {
     final response = await put(
       '/v1/admin/businesses/$businessId',
@@ -590,9 +614,16 @@ class ApiClient {
         if (phone != null) 'phone': phone,
         if (timezone != null) 'timezone': timezone,
         if (currency != null) 'currency': currency,
+        if (adminEmail != null) 'admin_email': adminEmail,
       },
     );
     return response;
+  }
+
+  /// POST /v1/admin/businesses/{id}/resend-invite
+  /// Superadmin only: reinvia email di invito all'admin.
+  Future<void> resendAdminInvite(int businessId) async {
+    await post('/v1/admin/businesses/$businessId/resend-invite');
   }
 
   /// GET /v1/businesses/{business_id}/locations

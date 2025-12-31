@@ -49,11 +49,15 @@ final class BrevoProvider implements EmailProviderInterface
         $name = $fromName ?? $this->defaultFromName;
         $replyTo = $replyTo ?? $from;
 
-        // Prefer API if curl available, fallback to SMTP
-        if (function_exists('curl_init')) {
+        // Check if we have an API key (starts with 'xkeysib-') or SMTP key (starts with 'xsmtpsib-')
+        // SMTP keys should use SMTP transport, API keys should use API
+        $isSmtpKey = str_starts_with($this->apiKey, 'xsmtpsib-');
+        
+        if (!$isSmtpKey && function_exists('curl_init')) {
             return $this->sendViaApi($to, $subject, $htmlBody, $textBody, $from, $name, $replyTo);
         }
 
+        // Use SMTP for SMTP keys or when curl is not available
         return $this->sendViaSmtp($to, $subject, $htmlBody, $textBody, $from, $name, $replyTo);
     }
 
@@ -102,15 +106,16 @@ final class BrevoProvider implements EmailProviderInterface
         curl_close($ch);
 
         if ($error) {
-            error_log("Brevo API Error: {$error}");
+            error_log("[Brevo] curl error: {$error} (to: {$to})");
             return false;
         }
 
         if ($httpCode >= 200 && $httpCode < 300) {
+            error_log("[Brevo] SUCCESS: email sent to {$to} (HTTP {$httpCode})");
             return true;
         }
 
-        error_log("Brevo API Error ({$httpCode}): {$response}");
+        error_log("[Brevo] API error (HTTP {$httpCode}): {$response} (to: {$to})");
         return false;
     }
 

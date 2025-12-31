@@ -55,9 +55,7 @@ class TopControlsBuilder {
         break;
     }
     if (resolved == null) {
-      throw StateError(
-        L10n.current.errorFormFactorBuilderMissing(factor.name),
-      );
+      throw StateError(L10n.current.errorFormFactorBuilderMissing(factor.name));
     }
     return resolved;
   }
@@ -119,7 +117,7 @@ class TopControlsScaffold extends ConsumerWidget {
     final formFactor = ref.watch(formFactorProvider);
     final locations = ref.watch(locationsProvider);
     if (locations.isEmpty) {
-      return Text(l10n.agendaNoLocations);
+      return const SizedBox.shrink();
     }
 
     final agendaDate = ref.watch(agendaDateProvider);

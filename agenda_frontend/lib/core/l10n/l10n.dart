@@ -634,6 +634,21 @@ class L10n {
     );
   }
 
+  /// `Cambia password`
+  String get authChangePassword {
+    return Intl.message(
+      'Cambia password',
+      name: 'authChangePassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Profilo`
+  String get profileTitle {
+    return Intl.message('Profilo', name: 'profileTitle', desc: '', args: []);
+  }
+
   /// `Prenota appuntamento`
   String get bookingTitle {
     return Intl.message(

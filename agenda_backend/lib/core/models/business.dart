@@ -8,6 +8,7 @@ class Business {
   final DateTime createdAt;
   final String currency;
   final String defaultPhonePrefix;
+  final String? adminEmail; // Email dell'admin proprietario
 
   const Business({
     required this.id,
@@ -19,6 +20,7 @@ class Business {
     required this.createdAt,
     this.currency = 'EUR',
     this.defaultPhonePrefix = '+39',
+    this.adminEmail,
   });
 
   Business copyWith({
@@ -31,6 +33,7 @@ class Business {
     DateTime? createdAt,
     String? currency,
     String? defaultPhonePrefix,
+    String? adminEmail,
   }) {
     return Business(
       id: id ?? this.id,
@@ -42,6 +45,7 @@ class Business {
       createdAt: createdAt ?? this.createdAt,
       currency: currency ?? this.currency,
       defaultPhonePrefix: defaultPhonePrefix ?? this.defaultPhonePrefix,
+      adminEmail: adminEmail ?? this.adminEmail,
     );
   }
 
@@ -58,6 +62,7 @@ class Business {
           : DateTime.now(),
       currency: json['currency'] as String? ?? 'EUR',
       defaultPhonePrefix: json['default_phone_prefix'] as String? ?? '+39',
+      adminEmail: json['admin_email'] as String?,
     );
   }
 
@@ -72,6 +77,7 @@ class Business {
       'created_at': createdAt.toIso8601String(),
       'currency': currency,
       'default_phone_prefix': defaultPhonePrefix,
+      'admin_email': adminEmail,
     };
   }
 }

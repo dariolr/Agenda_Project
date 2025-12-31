@@ -253,6 +253,45 @@ Response (200):
 
 ---
 
+### PUT /v1/me
+
+Aggiorna il profilo dell'utente autenticato.
+
+Headers: `Authorization: Bearer <access_token>`
+
+Request (tutti i campi opzionali):
+```json
+{
+  "first_name": "Mario",
+  "last_name": "Rossi",
+  "email": "nuova@email.com",
+  "phone": "+39 333 1234567"
+}
+```
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 1,
+      "email": "nuova@email.com",
+      "first_name": "Mario",
+      "last_name": "Rossi",
+      "phone": "+39 333 1234567",
+      "is_active": true
+    }
+  }
+}
+```
+
+Errors:
+- `unauthorized` (401): Access token non valido o scaduto
+- `validation_error` (400): Email già in uso da altro utente
+
+---
+
 ### POST /v1/me/change-password
 
 Headers: `Authorization: Bearer <access_token>`
@@ -414,13 +453,20 @@ Request:
 {
   "name": "Nuovo Salone",
   "slug": "nuovo-salone",
-  "owner_user_id": 123,
+  "admin_email": "admin@nuovosalone.it",
   "email": "info@nuovosalone.it",
   "phone": "+39 333 1234567",
   "timezone": "Europe/Rome",
   "currency": "EUR"
 }
 ```
+
+Note: 
+- `name` e `slug` sono obbligatori
+- `admin_email` (opzionale): email dell'admin del business
+  - Se omesso, il business viene creato senza owner (assegnabile in seguito via PUT)
+  - Se l'email non esiste, viene creato un nuovo utente
+  - Viene inviata email di benvenuto con link reset password (24h)
 
 Response (201):
 ```json
@@ -465,12 +511,19 @@ Request (tutti i campi opzionali):
 {
   "name": "Nome Aggiornato",
   "slug": "slug-aggiornato",
+  "admin_email": "nuovo-admin@email.it",
   "email": "nuova@email.it",
   "phone": "+39 333 9999999",
   "timezone": "Europe/Rome",
   "currency": "EUR"
 }
 ```
+
+Note:
+- Se `admin_email` viene fornito su business senza owner, viene assegnato come owner
+- Se `admin_email` viene cambiato, la ownership viene trasferita
+- Il vecchio admin diventa "admin", il nuovo diventa "owner"
+- Viene inviata email di benvenuto al nuovo admin
 
 Response (200):
 ```json
@@ -496,6 +549,33 @@ Errors:
 - `forbidden` (403): Non superadmin
 - `validation_error` (400): Slug già in uso da altro business
 - `not_found` (404): Business non trovato
+
+---
+
+### POST /v1/admin/businesses/{id}/resend-invite
+
+Reinvia email di invito all'admin del business.
+
+**Auth required**: Yes (superadmin only)
+
+Genera un nuovo token reset password (validità 24h) e invia email di benvenuto.
+Utile se l'admin non ha impostato la password in tempo.
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Invite email sent successfully",
+    "admin_email": "admin@example.com"
+  }
+}
+```
+
+Errors:
+- `forbidden` (403): Non superadmin
+- `not_found` (404): Business non trovato
+- `not_found` (404): Business non ha un admin associato
 
 ---
 

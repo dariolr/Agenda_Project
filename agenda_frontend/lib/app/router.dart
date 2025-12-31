@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/l10n/l10_extension.dart';
 import '../features/auth/presentation/change_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
@@ -140,6 +141,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ChangePasswordScreen(),
       ),
 
+      /// Profilo utente (richiede auth)
+      GoRoute(
+        path: '/:slug/profile',
+        name: 'business-profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
+
       /// Catch-all per /:slug → redirect a /:slug/booking
       /// Gestito nel redirect, ma serve come fallback
       GoRoute(
@@ -163,6 +171,7 @@ const _reservedPaths = {
   'booking',
   'my-bookings',
   'change-password',
+  'profile',
   'privacy',
   'terms',
 };

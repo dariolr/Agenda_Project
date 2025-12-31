@@ -133,6 +133,22 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  /// Aggiorna il profilo utente
+  Future<void> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+  }) async {
+    final updatedUser = await _repository.updateProfile(
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      phone: phone,
+    );
+    state = AuthState.authenticated(updatedUser);
+  }
+
   /// Pulisce errore
   void clearError() {
     state = state.copyWith(clearError: true);

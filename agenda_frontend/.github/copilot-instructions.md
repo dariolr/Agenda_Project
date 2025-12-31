@@ -163,6 +163,7 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
 /:slug/login           → Login
 /:slug/register        → Registrazione
 /:slug/my-bookings     → Le mie prenotazioni
+/:slug/profile         → Profilo utente
 /reset-password/:token → Reset password (globale, no slug)
 ```
 
@@ -171,7 +172,7 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
 - `currentBusinessProvider` — Legge slug da `routeSlugProvider` e carica business da API
 
 ### Path riservati (NON sono slug di business)
-`reset-password`, `login`, `register`, `booking`, `my-bookings`, `change-password`, `privacy`, `terms`
+`reset-password`, `login`, `register`, `booking`, `my-bookings`, `profile`, `change-password`, `privacy`, `terms`
 
 ### ⚠️ NON usare SubdomainResolver per lo slug
 `SubdomainResolver.getBusinessSlug()` legge `Uri.base` che è **statico** al caricamento JS.
@@ -256,3 +257,29 @@ enum BookingStep { location, services, staff, dateTime, summary }
 | Locations provider | `lib/features/booking/providers/locations_provider.dart` |
 | Location step UI | `lib/features/booking/presentation/screens/location_step.dart` |
 | Booking flow | `lib/features/booking/providers/booking_provider.dart` |
+
+---
+
+## 👤 Profilo Utente (31/12/2025)
+
+Gli utenti autenticati possono modificare il proprio profilo dalla voce "Profilo" nel menu account.
+
+### Route
+- `/:slug/profile` → `ProfileScreen`
+
+### Campi modificabili
+- Nome (`first_name`)
+- Cognome (`last_name`)
+- Email (attenzione: cambia credenziali login)
+- Telefono (`phone`)
+
+### Endpoint API
+- `PUT /v1/me` → aggiorna profilo utente autenticato
+- Validazione email unica (errore se già esistente)
+
+### File di riferimento
+| Concetto | File |
+|----------|------|
+| Profile screen | `lib/features/auth/presentation/screens/profile_screen.dart` |
+| Auth provider | `lib/features/auth/providers/auth_provider.dart` |
+| API client | `lib/core/network/api_client.dart` → `updateProfile()` |

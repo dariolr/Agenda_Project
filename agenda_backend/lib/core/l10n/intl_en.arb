@@ -534,5 +534,9 @@
   "authPasswordTooShort": "Password too short",
   "authLoginFailed": "Invalid credentials. Please try again.",
   "authLoginFooter": "Access reserved for authorized operators",
-  "switchBusiness": "Switch"
+  "authFirstName": "First Name",
+  "authLastName": "Last Name",
+  "authPhone": "Phone",
+  "switchBusiness": "Switch",
+  "profileTitle": "Profile"
 }

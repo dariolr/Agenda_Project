@@ -73,6 +73,9 @@
   "authChangePasswordError": "Current password is incorrect",
   "authPasswordTooShort": "Password too short (min. 8 characters)",
   "authPasswordRequirements": "Password must contain: uppercase, lowercase, number",
+  "authChangePassword": "Change password",
+  
+  "profileTitle": "Profile",
   
   "bookingTitle": "Book appointment",
   "bookingStepLocation": "Location",

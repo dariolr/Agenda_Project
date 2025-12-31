@@ -66,6 +66,8 @@ class UserMenuButton extends ConsumerWidget {
       onSelected: (value) {
         if (value == 'logout') {
           handleLogout(context, ref);
+        } else if (value == 'profile') {
+          context.push('/profilo');
         } else if (value == 'switch_business') {
           // Reset selected business e torna alla lista
           ref.read(superadminSelectedBusinessProvider.notifier).clear();
@@ -122,6 +124,17 @@ class UserMenuButton extends ConsumerWidget {
         ),
       ),
       const PopupMenuDivider(),
+      // Profilo
+      PopupMenuItem<String>(
+        value: 'profile',
+        child: Row(
+          children: [
+            Icon(Icons.person_outline, size: 20, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Text(context.l10n.profileTitle),
+          ],
+        ),
+      ),
       // Cambia Business per superadmin
       if (user.isSuperadmin)
         PopupMenuItem<String>(

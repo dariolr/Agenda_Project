@@ -193,15 +193,57 @@ Login → is_superadmin?
 ```
 features/business/
 ├── data/
-│   └── business_repository.dart      # getAll, getAllAdmin, create, update
+│   └── business_repository.dart      # getAll, getAllAdmin, create, update, resendInvite
 ├── providers/
 │   └── business_providers.dart       # businessRepositoryProvider
 └── presentation/
-    ├── business_list_screen.dart     # Lista + provider selezione
+    ├── business_list_screen.dart     # Lista + provider selezione + reinvia invito
     └── dialogs/
-        ├── create_business_dialog.dart
-        └── edit_business_dialog.dart
+        ├── create_business_dialog.dart  # Con campo admin_email
+        └── edit_business_dialog.dart    # Con campo admin_email
 ```
+
+---
+
+## 👤 Profilo Utente (31/12/2025)
+
+Gli utenti possono modificare il proprio profilo dalla voce "Profilo" nel menu utente.
+
+### Route
+- `/profilo` → `ProfileScreen`
+
+### Campi modificabili
+- Nome (`first_name`)
+- Cognome (`last_name`)
+- Email (attenzione: cambia credenziali login)
+- Telefono (`phone`)
+
+### File
+- `features/auth/presentation/profile_screen.dart`
+- `features/auth/providers/auth_provider.dart` → `updateProfile()`
+- `core/network/api_client.dart` → `updateProfile()`
+
+---
+
+## ✉️ Admin Email e Inviti (31/12/2025)
+
+### Creazione Business
+- `admin_email` è **opzionale** nel dialog di creazione
+- Se omesso, il business viene creato senza owner
+- L'admin può essere assegnato in seguito tramite "Modifica"
+- Se l'email non esiste, viene creato un nuovo utente
+- Viene inviata email di benvenuto con link reset password (24h)
+
+### Modifica Business
+- Se si aggiunge `admin_email` a un business senza owner, viene assegnato come owner
+- Se si cambia `admin_email`, la ownership viene trasferita
+- Il vecchio admin diventa "admin", il nuovo diventa "owner"
+- Nuova email di benvenuto al nuovo admin
+
+### Reinvia Invito
+- Pulsante nel menu azioni della card business
+- Genera nuovo token reset (24h) e invia email
+- Utile se l'admin non ha impostato la password in tempo
 
 ---
 
@@ -216,3 +258,5 @@ features/business/
 | Booking | `features/agenda/providers/bookings_provider.dart` |
 | Repository pattern | `features/clients/data/clients_repository.dart` |
 | Form factor | `app/providers/form_factor_provider.dart` |
+| Profilo utente | `features/auth/presentation/profile_screen.dart` |
+| Business admin | `features/business/presentation/dialogs/edit_business_dialog.dart` |

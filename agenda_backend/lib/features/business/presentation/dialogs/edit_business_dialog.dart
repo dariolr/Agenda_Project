@@ -22,6 +22,7 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
   late final TextEditingController _slugController;
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
+  late final TextEditingController _adminEmailController;
 
   bool _isLoading = false;
   String? _error;
@@ -33,6 +34,9 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
     _slugController = TextEditingController(text: widget.business.slug ?? '');
     _emailController = TextEditingController(text: widget.business.email ?? '');
     _phoneController = TextEditingController(text: widget.business.phone ?? '');
+    _adminEmailController = TextEditingController(
+      text: widget.business.adminEmail ?? '',
+    );
   }
 
   @override
@@ -41,6 +45,7 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
     _slugController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _adminEmailController.dispose();
     super.dispose();
   }
 
@@ -55,6 +60,13 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
     try {
       final repository = ref.read(businessRepositoryProvider);
 
+      // Determina se admin email è cambiata
+      final newAdminEmail = _adminEmailController.text.trim();
+      final oldAdminEmail = widget.business.adminEmail ?? '';
+      final adminEmailChanged =
+          newAdminEmail.isNotEmpty &&
+          newAdminEmail.toLowerCase() != oldAdminEmail.toLowerCase();
+
       await repository.updateBusiness(
         businessId: widget.business.id,
         name: _nameController.text.trim(),
@@ -65,6 +77,7 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
         phone: _phoneController.text.trim().isEmpty
             ? null
             : _phoneController.text.trim(),
+        adminEmail: adminEmailChanged ? newAdminEmail : null,
       );
 
       if (mounted) {
@@ -205,6 +218,51 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
                     prefixIcon: Icon(Icons.phone_outlined),
                   ),
                   keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 24),
+
+                // Divider e sezione admin
+                const Divider(),
+                const SizedBox(height: 8),
+                Text(
+                  'Amministratore',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Cambiando l\'email admin, verrà inviato un invito al nuovo amministratore.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Email Admin (opzionale)
+                TextFormField(
+                  controller: _adminEmailController,
+                  decoration: InputDecoration(
+                    labelText: 'Email Admin',
+                    hintText: 'es. admin@salone.it',
+                    prefixIcon: const Icon(Icons.admin_panel_settings),
+                    helperText: widget.business.adminEmail != null
+                        ? 'Attuale: ${widget.business.adminEmail}'
+                        : 'Opzionale: riceverà email per configurare account',
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    // Solo valida se inserito
+                    if (value != null && value.trim().isNotEmpty) {
+                      final emailRegex = RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      );
+                      if (!emailRegex.hasMatch(value.trim())) {
+                        return l10n.authInvalidEmail;
+                      }
+                    }
+                    return null;
+                  },
                 ),
               ],
             ),

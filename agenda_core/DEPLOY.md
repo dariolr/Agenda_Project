@@ -310,7 +310,7 @@ curl https://api.tuodominio.com/v1/services?location_id=1
 
 ---
 
-## 12. Deploy SiteGround (Effettivo - 28/12/2025)
+## 12. Deploy SiteGround (Effettivo - 31/12/2025)
 
 ### Infrastruttura Produzione
 
@@ -318,7 +318,18 @@ curl https://api.tuodominio.com/v1/services?location_id=1
 |------------|-----|------|
 | API Backend | https://api.romeolab.it | PHP 8.2 su SiteGround |
 | Frontend Booking | https://prenota.romeolab.it | Flutter Web |
-| Gestionale | https://gestionale.romeolab.it | Flutter Web (da deployare) |
+| Gestionale | https://gestionale.romeolab.it | Flutter Web |
+
+### ⚠️ STRUTTURA PROGETTO vs DEPLOY SITEGROUND
+
+**Nel progetto locale:**
+- `index.php` e `.htaccess` sono in `public/`
+- I path usano `__DIR__ . '/../vendor/autoload.php'` (vendor nella parent)
+
+**Su SiteGround:**
+- La document root è SEMPRE `public_html` (obbligatorio)
+- `public/` viene mappata come `public_html/` con rsync
+- I path sono già corretti, nessuna modifica necessaria
 
 ### SSH Configuration (~/.ssh/config)
 
@@ -336,18 +347,26 @@ Host siteground
 CORS_ALLOWED_ORIGINS=https://prenota.romeolab.it,https://gestionale.romeolab.it,http://localhost:8080
 ```
 
-### Comandi Deploy
+### Comandi Deploy API (agenda_core)
 
 ```bash
-# API Backend (agenda_core)
+# 1. Sync public/ → public_html/ (entry point)
+rsync -avz public/ siteground:www/api.romeolab.it/public_html/
+
+# 2. Sync resto del progetto (src, vendor, ecc.)
 rsync -avz --delete \
   --exclude='.env' \
   --exclude='logs/' \
   --exclude='.git/' \
   --exclude='tests/' \
+  --exclude='public/' \
   /path/to/agenda_core/ \
   siteground:www/api.romeolab.it/
+```
 
+### Comandi Deploy Frontend
+
+```bash
 # Frontend Booking (agenda_frontend)
 cd agenda_frontend
 flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it

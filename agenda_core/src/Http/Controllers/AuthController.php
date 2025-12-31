@@ -14,7 +14,9 @@ use Agenda\UseCases\Auth\RegisterUser;
 use Agenda\UseCases\Auth\RequestPasswordReset;
 use Agenda\UseCases\Auth\ResetPassword;
 use Agenda\UseCases\Auth\ChangePassword;
+use Agenda\UseCases\Auth\UpdateProfile;
 use Agenda\Domain\Exceptions\AuthException;
+use Agenda\Domain\Exceptions\ValidationException;
 
 final class AuthController
 {
@@ -27,6 +29,7 @@ final class AuthController
         private readonly RequestPasswordReset $requestPasswordReset,
         private readonly ResetPassword $resetPassword,
         private readonly ChangePassword $changePassword,
+        private readonly UpdateProfile $updateProfile,
     ) {}
 
     /**
@@ -301,6 +304,27 @@ final class AuthController
             ], 200);
         } catch (AuthException $e) {
             return Response::error($e->getMessage(), $e->getErrorCode(), $e->getHttpStatus());
+        }
+    }
+
+    /**
+     * PUT /v1/me
+     */
+    public function updateMe(Request $request): Response
+    {
+        $userId = $request->getAttribute('user_id');
+
+        if ($userId === null) {
+            return Response::error('Unauthorized', 'unauthorized', 401);
+        }
+
+        $body = $request->getBody();
+
+        try {
+            $user = $this->updateProfile->execute((int) $userId, $body);
+            return Response::success($user, 200);
+        } catch (ValidationException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 422, $e->getErrors());
         }
     }
 }

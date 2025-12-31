@@ -534,5 +534,9 @@
   "authPasswordTooShort": "Password troppo corta",
   "authLoginFailed": "Credenziali non valide. Riprova.",
   "authLoginFooter": "Accesso riservato agli operatori autorizzati",
-  "switchBusiness": "Cambia"
+  "authFirstName": "Nome",
+  "authLastName": "Cognome",
+  "authPhone": "Telefono",
+  "switchBusiness": "Cambia",
+  "profileTitle": "Profilo"
 }

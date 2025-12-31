@@ -287,4 +287,52 @@ final class BusinessUserRepository
 
         return (int) $stmt->fetchColumn();
     }
+
+    /**
+     * Get the primary owner of a business (first owner).
+     */
+    public function getOwner(int $businessId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT bu.*, u.email, u.first_name, u.last_name
+             FROM business_users bu
+             JOIN users u ON bu.user_id = u.id
+             WHERE bu.business_id = ? AND bu.role = "owner" AND bu.is_active = 1
+             ORDER BY bu.created_at ASC
+             LIMIT 1'
+        );
+        $stmt->execute([$businessId]);
+        $result = $stmt->fetch();
+
+        return $result ?: null;
+    }
+
+    /**
+     * Transfer ownership to a new user.
+     * The old owner becomes an admin.
+     */
+    public function transferOwnership(int $businessId, int $oldOwnerId, int $newOwnerId): void
+    {
+        // Demote old owner to admin
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE business_users SET role = "admin", updated_at = NOW()
+             WHERE business_id = ? AND user_id = ? AND role = "owner"'
+        );
+        $stmt->execute([$businessId, $oldOwnerId]);
+
+        // Check if new owner already has a business_user record
+        $existing = $this->findByUserAndBusiness($newOwnerId, $businessId);
+
+        if ($existing !== null) {
+            // Promote to owner
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE business_users SET role = "owner", is_active = 1, updated_at = NOW()
+                 WHERE business_id = ? AND user_id = ?'
+            );
+            $stmt->execute([$businessId, $newOwnerId]);
+        } else {
+            // Create new owner record
+            $this->createOwner($businessId, $newOwnerId);
+        }
+    }
 }

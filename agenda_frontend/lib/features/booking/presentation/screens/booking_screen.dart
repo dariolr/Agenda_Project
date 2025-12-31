@@ -118,10 +118,37 @@ class BookingScreen extends ConsumerWidget {
             : null,
         actions: [
           if (isAuthenticated)
-            IconButton(
-              icon: const Icon(Icons.event_note),
-              tooltip: l10n.myBookings,
-              onPressed: () => context.go('/my-bookings'),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.account_circle_outlined),
+              tooltip: l10n.profileTitle,
+              onSelected: (value) {
+                switch (value) {
+                  case 'bookings':
+                    context.go('/my-bookings');
+                  case 'profile':
+                    context.push('/profile');
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'bookings',
+                  child: ListTile(
+                    leading: const Icon(Icons.event_note),
+                    title: Text(l10n.myBookings),
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'profile',
+                  child: ListTile(
+                    leading: const Icon(Icons.person_outline),
+                    title: Text(l10n.profileTitle),
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                ),
+              ],
             ),
         ],
       ),
