@@ -183,3 +183,24 @@ Motivazioni:
 | Booking | `features/agenda/providers/bookings_provider.dart` |
 | Repository pattern | `features/clients/data/clients_repository.dart` |
 | Form factor | `app/providers/form_factor_provider.dart` |
+
+---
+
+## ✉️ Admin Email e Inviti (31/12/2025)
+
+### Creazione Business
+- `admin_email` è **opzionale** nel dialog di creazione
+- Se omesso, il business viene creato senza owner
+- L'admin può essere assegnato in seguito tramite "Modifica"
+- Se l'email non esiste, viene creato un nuovo utente
+- Viene inviata email di benvenuto con link reset password (24h)
+
+### Modifica Business
+- Se si aggiunge `admin_email` a un business senza owner, viene assegnato come owner
+- Se si cambia `admin_email`, la ownership viene trasferita
+- Nuova email di benvenuto al nuovo admin
+
+### Reinvia Invito
+- Pulsante nel menu azioni della card business
+- Genera nuovo token reset (24h) e invia email
+- Utile se l'admin non ha impostato la password in tempo

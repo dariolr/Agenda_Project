@@ -1,6 +1,6 @@
 # Milestones — agenda_core
 
-## Stato al 30/12/2025
+## Stato al 31/12/2025
 
 | Milestone | Descrizione | Stato |
 |-----------|-------------|-------|
@@ -26,6 +26,56 @@
 | **D1** | Deploy effettivo produzione SiteGround | ✅ **LIVE** |
 | **D2** | Multi-Business Path-Based URL | ✅ **LIVE** |
 | **D3** | Multi-Location Support Frontend | ✅ **LIVE** |
+| **D4** | Profilo Utente e Admin Email | ✅ **LIVE** |
+
+---
+
+## Profilo Utente e Admin Email (D4) ✅ LIVE 31/12/2025
+
+### Funzionalità implementate
+
+**1. Profilo utente (`PUT /v1/me`):**
+- Gli utenti possono modificare nome, cognome, email, telefono
+- Validazione email unica (errore se già esistente)
+- Pagina profilo in entrambi i frontend
+
+**2. Admin email in CreateBusiness:**
+- Nuovo campo `admin_email` invece di `owner_user_id`
+- Se email non esiste, crea nuovo utente
+- Invia email benvenuto con link reset password (24h)
+
+**3. Trasferimento ownership in UpdateBusiness:**
+- Rileva cambio `admin_email`
+- Vecchio admin: ruolo da "owner" a "admin"
+- Nuovo admin: creato se necessario, ruolo "owner"
+- Email benvenuto al nuovo admin
+
+**4. Reinvio invito (`POST /v1/admin/businesses/{id}/resend-invite`):**
+- Genera nuovo token reset (24h)
+- Invia email benvenuto
+- Solo superadmin può invocare
+
+### File modificati Backend (agenda_core)
+- `src/UseCases/Auth/UpdateProfile.php` — Nuovo UseCase
+- `src/UseCases/Admin/UpdateBusiness.php` — Gestione admin_email
+- `src/UseCases/Admin/ResendAdminInvite.php` — Nuovo UseCase
+- `src/Http/Controllers/AuthController.php` — `updateMe()` method
+- `src/Http/Controllers/AdminBusinessesController.php` — `resendInvite()` action
+- `src/Infrastructure/Repository/BusinessRepository.php` — `findByIdWithAdmin()`, `findAllWithSearch()` con admin_email
+- `src/Http/Kernel.php` — Route PUT /v1/me e POST resend-invite
+
+### File modificati Frontend (agenda_backend)
+- `lib/features/auth/presentation/profile_screen.dart` — Nuova pagina profilo
+- `lib/features/business/presentation/dialogs/edit_business_dialog.dart` — Campo admin_email
+- `lib/features/business/presentation/dialogs/create_business_dialog.dart` — Campo admin_email
+- `lib/features/business/presentation/business_list_screen.dart` — Menu reinvia invito
+- `lib/features/business/data/business_repository.dart` — Metodo `resendAdminInvite()`
+- `lib/app/router.dart` — Route /profilo
+
+### File modificati Frontend (agenda_frontend)
+- `lib/features/auth/presentation/screens/profile_screen.dart` — Nuova pagina profilo
+- `lib/core/network/api_client.dart` — Metodo `put()` e `updateProfile()`
+- `lib/app/router.dart` — Route /:slug/profile
 
 ---
 

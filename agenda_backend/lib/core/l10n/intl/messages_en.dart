@@ -163,6 +163,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Add at least one service",
     ),
     "authEmail": MessageLookupByLibrary.simpleMessage("Email"),
+    "authFirstName": MessageLookupByLibrary.simpleMessage("First Name"),
     "authForgotPassword": MessageLookupByLibrary.simpleMessage(
       "Forgot password?",
     ),
@@ -170,6 +171,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Contact the system administrator to reset your password.",
     ),
     "authInvalidEmail": MessageLookupByLibrary.simpleMessage("Invalid email"),
+    "authLastName": MessageLookupByLibrary.simpleMessage("Last Name"),
     "authLogin": MessageLookupByLibrary.simpleMessage("Sign In"),
     "authLoginFailed": MessageLookupByLibrary.simpleMessage(
       "Invalid credentials. Please try again.",
@@ -185,6 +187,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "authPasswordTooShort": MessageLookupByLibrary.simpleMessage(
       "Password too short",
     ),
+    "authPhone": MessageLookupByLibrary.simpleMessage("Phone"),
     "authRememberMe": MessageLookupByLibrary.simpleMessage("Remember me"),
     "authRequiredField": MessageLookupByLibrary.simpleMessage("Required field"),
     "availabilitySave": MessageLookupByLibrary.simpleMessage("Save changes"),
@@ -524,6 +527,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "priceStartingFromSwitch": MessageLookupByLibrary.simpleMessage(
       "Price “starting from”",
     ),
+    "profileTitle": MessageLookupByLibrary.simpleMessage("Profile"),
     "removeClient": MessageLookupByLibrary.simpleMessage("Remove client"),
     "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage(
       "Categories",

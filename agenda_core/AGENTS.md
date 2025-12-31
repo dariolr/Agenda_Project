@@ -29,10 +29,12 @@ Endpoint minimi:
 - POST /v1/auth/refresh
 - POST /v1/auth/logout
 - GET  /v1/me
+- PUT  /v1/me (aggiorna profilo)
 - GET  /v1/services
 - GET  /v1/staff
 - GET  /v1/availability
 - POST /v1/bookings (protetto, idempotente)
+- POST /v1/admin/businesses/{id}/resend-invite (superadmin)
 
 Booking payload (VINCOLANTE):
 - service_ids
@@ -71,6 +73,24 @@ Deploy Produzione (28/12/2025):
 - CORS: `CORS_ALLOWED_ORIGINS=https://prenota.romeolab.it,https://gestionale.romeolab.it,http://localhost:8080`
 - SSH: porta 18765, chiave ed25519
 
+⚠️ STRUTTURA PROGETTO vs DEPLOY SITEGROUND (31/12/2025):
+
+Nel progetto locale:
+- `index.php` e `.htaccess` sono in `public/`
+- I path usano `__DIR__ . '/../vendor/autoload.php'` (vendor nella parent)
+
+Su SiteGround (deploy):
+- La document root è SEMPRE `public_html` (obbligatorio)
+- `public/` viene mappata come `public_html/` con rsync
+- I path sono già corretti, nessuna modifica necessaria
+
+Deploy:
+```bash
+rsync -avz public/ siteground:www/api.romeolab.it/public_html/
+```
+
+Vedi DEPLOY.md sezione 12 per comandi completi.
+
 CORS e Cache Headers (30/12/2025):
 - Variabile env: `CORS_ALLOWED_ORIGINS` (NON `CORS_ORIGIN`)
 - Response.php aggiunge: `Vary: Origin` per proxy caching corretto
@@ -102,6 +122,17 @@ Multi-Location Support (30/12/2025):
 - Controller: `LocationsController::indexPublic()` usa `$request->getAttribute('business_id')`
 - **NON** usare `getRouteParam()` per route pubbliche senza middleware auth
 - Frontend: step "Sede" nel booking flow se business ha >1 location
+
+Profilo Utente e Admin Email (31/12/2025):
+- `PUT /v1/me` → aggiorna profilo utente (first_name, last_name, email, phone)
+- UseCase `UpdateProfile` in `src/UseCases/Auth/UpdateProfile.php`
+- Validazione email unica (errore se già esistente)
+- CreateBusiness: `admin_email` è OPZIONALE (business può essere creato senza owner)
+- UpdateBusiness: può aggiungere admin a business senza owner, o trasferire ownership
+- `POST /v1/admin/businesses/{id}/resend-invite` → reinvia email benvenuto admin
+- UseCase `ResendAdminInvite` genera nuovo token reset (24h) e invia email
+- Template email: `businessAdminWelcome` con link reset password
+- BusinessRepository: `findByIdWithAdmin()` e `findAllWithSearch()` includono admin_email
 
 ⚠️ REGOLA CRITICA DATABASE:
 - **MAI** inserire, modificare o eliminare dati nel database senza richiesta esplicita dell'utente

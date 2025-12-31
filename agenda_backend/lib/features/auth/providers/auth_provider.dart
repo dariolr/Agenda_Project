@@ -80,4 +80,20 @@ class AuthNotifier extends Notifier<AuthState> {
 
   /// Ritorna l'utente corrente (se autenticato).
   User? get currentUser => state.user as User?;
+
+  /// Aggiorna il profilo dell'utente corrente.
+  Future<void> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+  }) async {
+    final updatedUser = await _repository.updateProfile(
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      phone: phone,
+    );
+    state = AuthState.authenticated(updatedUser);
+  }
 }

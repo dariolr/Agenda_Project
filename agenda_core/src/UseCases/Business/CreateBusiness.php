@@ -8,12 +8,22 @@ use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Notifications\EmailService;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Domain\Exceptions\AuthException;
 use Agenda\Domain\Exceptions\ValidationException;
+use DateTimeImmutable;
 
 /**
- * Create a new business with owner (superadmin only).
+ * Create a new business with admin (superadmin only).
  * Uses transaction to ensure atomicity.
+ * 
+ * Flow:
+ * 1. Create business
+ * 2. Create admin user (or use existing if email already registered)
+ * 3. Assign user as business owner
+ * 4. Generate password reset token (24h validity)
+ * 5. Send welcome email with setup link
  */
 final class CreateBusiness
 {
@@ -28,9 +38,9 @@ final class CreateBusiness
      * @param int $superadminId Must be superadmin
      * @param string $name Business name
      * @param string $slug Business slug (unique)
-     * @param int $ownerUserId Owner user ID
-     * @param array $options Optional: email, phone, timezone, currency
-     * @return array Created business data
+     * @param string|null $adminEmail Admin email address (optional, can be set later via update)
+     * @param array $options Optional: email (business), phone, timezone, currency, admin_first_name, admin_last_name
+     * @return array Created business data with admin info
      * @throws AuthException If user is not superadmin
      * @throws ValidationException If validation fails
      */
@@ -38,7 +48,7 @@ final class CreateBusiness
         int $superadminId,
         string $name,
         string $slug,
-        int $ownerUserId,
+        ?string $adminEmail = null,
         array $options = []
     ): array {
         // Verify superadmin
@@ -47,23 +57,22 @@ final class CreateBusiness
             throw AuthException::forbidden('Superadmin access required');
         }
 
+        // Validate admin email if provided
+        if ($adminEmail !== null && $adminEmail !== '' && !filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+            throw ValidationException::withErrors(['admin_email' => 'Invalid email address']);
+        }
+
         // Check slug uniqueness
         $existingBusiness = $this->businessRepo->findBySlug($slug);
         if ($existingBusiness !== null) {
             throw ValidationException::withErrors(['slug' => 'Business slug already exists']);
         }
 
-        // Check owner exists
-        $ownerUser = $this->userRepo->findById($ownerUserId);
-        if ($ownerUser === null) {
-            throw ValidationException::withErrors(['owner_user_id' => 'User not found']);
-        }
-
         // Start transaction
         $this->db->beginTransaction();
 
         try {
-            // Create business
+            // 1. Create business
             $businessId = $this->businessRepo->create(
                 $name,
                 $slug,
@@ -75,16 +84,63 @@ final class CreateBusiness
                 ]
             );
 
-            // Assign owner (businessId, userId)
-            $this->businessUserRepo->createOwner($businessId, $ownerUserId);
+            $adminUserId = null;
+            $isNewUser = false;
+            $resetToken = null;
 
-            // Commit transaction
+            // 2. Handle admin if email provided
+            if ($adminEmail !== null && $adminEmail !== '') {
+                // Check if user already exists or create new one
+                $existingUser = $this->userRepo->findByEmail($adminEmail);
+
+                if ($existingUser !== null) {
+                    $adminUserId = (int) $existingUser['id'];
+                } else {
+                    // Create new user with random temporary password
+                    $tempPassword = bin2hex(random_bytes(16));
+                    $adminUserId = $this->userRepo->create([
+                        'email' => $adminEmail,
+                        'password_hash' => password_hash($tempPassword, PASSWORD_BCRYPT),
+                        'first_name' => $options['admin_first_name'] ?? '',
+                        'last_name' => $options['admin_last_name'] ?? '',
+                        'phone' => null,
+                    ]);
+                    $isNewUser = true;
+                }
+
+                // 3. Assign admin as business owner
+                $this->businessUserRepo->createOwner($businessId, $adminUserId);
+
+                // 4. Generate password reset token (24h validity)
+                $resetToken = bin2hex(random_bytes(32));
+                $tokenHash = hash('sha256', $resetToken);
+                $expiresAt = (new DateTimeImmutable('+24 hours'))->format('Y-m-d H:i:s');
+
+                // Delete any existing tokens for this user
+                $stmt = $this->db->getPdo()->prepare(
+                    'DELETE FROM password_reset_tokens WHERE user_id = ?'
+                );
+                $stmt->execute([$adminUserId]);
+
+                // Insert new token
+                $stmt = $this->db->getPdo()->prepare(
+                    'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)'
+                );
+                $stmt->execute([$adminUserId, $tokenHash, $expiresAt]);
+            }
+
+            // Commit transaction before sending email
             $this->db->commit();
+
+            // 5. Send welcome email (outside transaction) if admin was assigned
+            if ($adminEmail !== null && $adminEmail !== '' && $resetToken !== null) {
+                $this->sendWelcomeEmail($adminEmail, $name, $slug, $resetToken);
+            }
 
             // Fetch created business
             $business = $this->businessRepo->findById($businessId);
 
-            return [
+            $result = [
                 'id' => $businessId,
                 'name' => $business['name'],
                 'slug' => $business['slug'],
@@ -92,16 +148,60 @@ final class CreateBusiness
                 'phone' => $business['phone'],
                 'timezone' => $business['timezone'],
                 'currency' => $business['currency'],
-                'owner' => [
-                    'id' => $ownerUserId,
-                    'email' => $ownerUser['email'],
-                    'name' => trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? '')),
-                ],
             ];
+
+            if ($adminUserId !== null) {
+                $result['admin'] = [
+                    'id' => $adminUserId,
+                    'email' => $adminEmail,
+                    'is_new_user' => $isNewUser,
+                ];
+            }
+
+            return $result;
         } catch (\Throwable $e) {
             // Rollback on any error
             $this->db->rollback();
             throw $e;
+        }
+    }
+
+    /**
+     * Send welcome email to new business admin.
+     */
+    private function sendWelcomeEmail(
+        string $adminEmail,
+        string $businessName,
+        string $businessSlug,
+        string $resetToken
+    ): void {
+        try {
+            $template = EmailTemplateRenderer::businessAdminWelcome();
+            $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it';
+            $resetUrl = $frontendUrl . '/reset-password/' . $resetToken;
+            $bookingUrl = $frontendUrl . '/' . $businessSlug;
+
+            $variables = [
+                'business_name' => $businessName,
+                'booking_url' => $bookingUrl,
+                'reset_url' => $resetUrl,
+            ];
+
+            $subject = EmailTemplateRenderer::render($template['subject'], $variables);
+            $htmlBody = EmailTemplateRenderer::render($template['html'], $variables);
+
+            error_log("[CreateBusiness] Sending welcome email to {$adminEmail} for {$businessName}");
+
+            $emailService = EmailService::create();
+            $result = $emailService->send($adminEmail, $subject, $htmlBody);
+
+            if ($result) {
+                error_log("[CreateBusiness] Welcome email sent successfully to {$adminEmail}");
+            } else {
+                error_log("[CreateBusiness] Welcome email FAILED for {$adminEmail}");
+            }
+        } catch (\Throwable $e) {
+            error_log("[CreateBusiness] Exception sending email to {$adminEmail}: " . $e->getMessage());
         }
     }
 }

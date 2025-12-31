@@ -40,6 +40,27 @@ final class BusinessRepository
         return $result ?: null;
     }
 
+    /**
+     * Find business by ID with admin email included.
+     * Joins with business_users and users to get the owner's email.
+     */
+    public function findByIdWithAdmin(int $businessId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency,
+                    b.is_active, b.created_at, b.updated_at,
+                    u.email as admin_email
+             FROM businesses b
+             LEFT JOIN business_users bu ON bu.business_id = b.id AND bu.role = "owner"
+             LEFT JOIN users u ON u.id = bu.user_id
+             WHERE b.id = ? AND b.is_active = 1'
+        );
+        $stmt->execute([$businessId]);
+        $result = $stmt->fetch();
+
+        return $result ?: null;
+    }
+
     public function exists(int $businessId): bool
     {
         $stmt = $this->db->getPdo()->prepare(
@@ -124,18 +145,22 @@ final class BusinessRepository
      */
     public function findAllWithSearch(?string $search, int $limit, int $offset): array
     {
-        $sql = 'SELECT id, name, slug, email, phone, timezone, currency, 
-                       is_active, created_at, updated_at
-                FROM businesses WHERE is_active = 1';
+        $sql = 'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency, 
+                       b.is_active, b.created_at, b.updated_at,
+                       u.email as admin_email
+                FROM businesses b
+                LEFT JOIN business_users bu ON bu.business_id = b.id AND bu.role = "owner"
+                LEFT JOIN users u ON u.id = bu.user_id
+                WHERE b.is_active = 1';
         $params = [];
 
         if ($search !== null && $search !== '') {
-            $sql .= ' AND (name LIKE ? OR slug LIKE ? OR email LIKE ?)';
+            $sql .= ' AND (b.name LIKE ? OR b.slug LIKE ? OR b.email LIKE ?)';
             $searchTerm = '%' . $search . '%';
             $params = [$searchTerm, $searchTerm, $searchTerm];
         }
 
-        $sql .= ' ORDER BY name ASC LIMIT ? OFFSET ?';
+        $sql .= ' ORDER BY b.name ASC LIMIT ? OFFSET ?';
         $params[] = $limit;
         $params[] = $offset;
 

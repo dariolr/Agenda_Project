@@ -66,6 +66,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionRegister": MessageLookupByLibrary.simpleMessage("Registrati"),
     "actionRetry": MessageLookupByLibrary.simpleMessage("Riprova"),
     "appTitle": MessageLookupByLibrary.simpleMessage("Prenota Online"),
+    "authChangePassword": MessageLookupByLibrary.simpleMessage(
+      "Cambia password",
+    ),
     "authChangePasswordError": MessageLookupByLibrary.simpleMessage(
       "Password attuale non corretta",
     ),
@@ -313,6 +316,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "notModifiable": MessageLookupByLibrary.simpleMessage("Non modificabile"),
     "pastBookings": MessageLookupByLibrary.simpleMessage("Passate"),
     "priceFormat": m10,
+    "profileTitle": MessageLookupByLibrary.simpleMessage("Profilo"),
     "rescheduleBookingTitle": MessageLookupByLibrary.simpleMessage(
       "Riprogramma prenotazione",
     ),

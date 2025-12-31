@@ -73,6 +73,9 @@
   "authChangePasswordError": "Password attuale non corretta",
   "authPasswordTooShort": "Password troppo corta (min. 8 caratteri)",
   "authPasswordRequirements": "La password deve contenere: maiuscola, minuscola, numero",
+  "authChangePassword": "Cambia password",
+  
+  "profileTitle": "Profilo",
   
   "bookingTitle": "Prenota appuntamento",
   "bookingStepLocation": "Sede",

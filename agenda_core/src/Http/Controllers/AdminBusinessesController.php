@@ -11,6 +11,7 @@ use Agenda\UseCases\Business\CreateBusiness;
 use Agenda\UseCases\Business\GetAllBusinesses;
 use Agenda\UseCases\Business\GetUserBusinesses;
 use Agenda\UseCases\Business\UpdateBusiness;
+use Agenda\UseCases\Business\ResendAdminInvite;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
@@ -69,18 +70,21 @@ final class AdminBusinessesController
 
     /**
      * POST /v1/admin/businesses
-     * Superadmin only: create a new business and assign owner.
+     * Superadmin only: create a new business and optionally assign admin.
+     * Creates admin user if not exists and sends welcome email.
      * Uses transaction for atomicity - rollback on any failure.
      * 
      * Body:
      * {
      *   "name": "Business Name",
      *   "slug": "business-slug",
-     *   "email": "contact@business.com",
+     *   "admin_email": "admin@business.com",  // Optional: admin receives welcome email
+     *   "email": "contact@business.com",      // Optional: business contact email
      *   "phone": "+39123456789",
      *   "timezone": "Europe/Rome",
      *   "currency": "EUR",
-     *   "owner_user_id": 123  // The user who becomes owner
+     *   "admin_first_name": "Mario",          // Optional
+     *   "admin_last_name": "Rossi"            // Optional
      * }
      */
     public function store(Request $request): Response
@@ -92,8 +96,8 @@ final class AdminBusinessesController
 
         $body = $request->getBody();
 
-        // Validate required fields
-        $required = ['name', 'slug', 'owner_user_id'];
+        // Validate required fields (admin_email is now optional)
+        $required = ['name', 'slug'];
         foreach ($required as $field) {
             if (empty($body[$field])) {
                 return Response::validationError(
@@ -115,12 +119,14 @@ final class AdminBusinessesController
                 $userId,
                 $body['name'],
                 $body['slug'],
-                (int) $body['owner_user_id'],
+                $body['admin_email'] ?? null,
                 [
                     'email' => $body['email'] ?? null,
                     'phone' => $body['phone'] ?? null,
                     'timezone' => $body['timezone'] ?? 'Europe/Rome',
                     'currency' => $body['currency'] ?? 'EUR',
+                    'admin_first_name' => $body['admin_first_name'] ?? null,
+                    'admin_last_name' => $body['admin_last_name'] ?? null,
                 ]
             );
 
@@ -140,6 +146,7 @@ final class AdminBusinessesController
      * {
      *   "name": "New Business Name",
      *   "slug": "new-business-slug",
+     *   "admin_email": "newadmin@business.com",  // Changes business owner
      *   "email": "contact@business.com",
      *   "phone": "+39123456789",
      *   "timezone": "Europe/Rome",
@@ -157,7 +164,9 @@ final class AdminBusinessesController
         $body = $request->getBody();
 
         $useCase = new UpdateBusiness(
+            $this->db,
             $this->businessRepo,
+            $this->businessUserRepo,
             $this->userRepo
         );
 
@@ -201,6 +210,38 @@ final class AdminBusinessesController
             'message' => 'Business deleted successfully',
             'id' => $businessId,
         ]);
+    }
+
+    /**
+     * POST /v1/admin/businesses/{id}/resend-invite
+     * Superadmin only: resend welcome email to business admin.
+     */
+    public function resendInvite(Request $request): Response
+    {
+        $userId = $request->userId();
+        if ($userId === null) {
+            return Response::unauthorized('Authentication required', $request->traceId);
+        }
+
+        $businessId = (int) $request->getAttribute('id');
+
+        $useCase = new ResendAdminInvite(
+            $this->db,
+            $this->businessRepo,
+            $this->businessUserRepo,
+            $this->userRepo
+        );
+
+        try {
+            $result = $useCase->execute($userId, $businessId);
+            return Response::success($result);
+        } catch (AuthException $e) {
+            return Response::forbidden($e->getMessage(), $request->traceId);
+        } catch (ValidationException $e) {
+            return Response::validationError($e->getMessage(), $request->traceId);
+        } catch (\RuntimeException $e) {
+            return Response::error($e->getMessage(), 500, $request->traceId);
+        }
     }
 
     /**

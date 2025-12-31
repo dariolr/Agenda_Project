@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../agenda/providers/business_providers.dart';
-import '../../../auth/providers/auth_provider.dart';
 import '../../providers/business_providers.dart';
 
 /// Dialog per creare un nuovo business (solo superadmin).
+/// Richiede l'email dell'admin che riceverà una mail di benvenuto.
 class CreateBusinessDialog extends ConsumerStatefulWidget {
   const CreateBusinessDialog({super.key});
 
@@ -20,6 +20,7 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _slugController = TextEditingController();
+  final _adminEmailController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
 
@@ -38,6 +39,7 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
     _nameController.removeListener(_onNameChanged);
     _nameController.dispose();
     _slugController.dispose();
+    _adminEmailController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -73,16 +75,13 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
 
     try {
       final repository = ref.read(businessRepositoryProvider);
-      final currentUser = ref.read(authProvider).user;
-
-      if (currentUser == null) {
-        throw Exception('Utente non autenticato');
-      }
 
       await repository.createBusiness(
         name: _nameController.text.trim(),
         slug: _slugController.text.trim(),
-        ownerUserId: currentUser.id,
+        adminEmail: _adminEmailController.text.trim().isEmpty
+            ? null
+            : _adminEmailController.text.trim(),
         email: _emailController.text.trim().isEmpty
             ? null
             : _emailController.text.trim(),
@@ -229,13 +228,38 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
                   },
                 ),
                 const SizedBox(height: 16),
-                // Email
+                // Email Admin (opzionale - può essere assegnato dopo)
+                TextFormField(
+                  controller: _adminEmailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email Amministratore',
+                    hintText: 'es. mario.rossi@email.it',
+                    prefixIcon: Icon(Icons.admin_panel_settings),
+                    helperText:
+                        'Opzionale: riceverà email per configurare account',
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    // Solo valida se inserito
+                    if (value != null && value.trim().isNotEmpty) {
+                      if (!RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value)) {
+                        return 'Email non valida';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Email Business (opzionale)
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(
-                    labelText: 'Email',
+                    labelText: 'Email Business',
                     hintText: 'es. info@salone.it',
                     prefixIcon: Icon(Icons.email_outlined),
+                    helperText: 'Contatto pubblico del business',
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {

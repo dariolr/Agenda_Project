@@ -18,23 +18,28 @@ class BusinessRepository {
   }
 
   /// Superadmin: crea un nuovo business.
+  /// Se adminEmail fornito, invia email di benvenuto all'admin.
   Future<Business> createBusiness({
     required String name,
     required String slug,
-    required int ownerUserId,
+    String? adminEmail,
     String? email,
     String? phone,
     String timezone = 'Europe/Rome',
     String currency = 'EUR',
+    String? adminFirstName,
+    String? adminLastName,
   }) async {
     final data = await _apiClient.createAdminBusiness(
       name: name,
       slug: slug,
-      ownerUserId: ownerUserId,
+      adminEmail: adminEmail,
       email: email,
       phone: phone,
       timezone: timezone,
       currency: currency,
+      adminFirstName: adminFirstName,
+      adminLastName: adminLastName,
     );
     // API ritorna { business: {...}, ... }
     final businessJson = data['business'] as Map<String, dynamic>? ?? data;
@@ -42,6 +47,7 @@ class BusinessRepository {
   }
 
   /// Superadmin: aggiorna un business esistente.
+  /// Se adminEmail cambia, trasferisce ownership e invia email al nuovo admin.
   Future<Business> updateBusiness({
     required int businessId,
     String? name,
@@ -50,6 +56,7 @@ class BusinessRepository {
     String? phone,
     String? timezone,
     String? currency,
+    String? adminEmail,
   }) async {
     final data = await _apiClient.updateAdminBusiness(
       businessId: businessId,
@@ -59,9 +66,15 @@ class BusinessRepository {
       phone: phone,
       timezone: timezone,
       currency: currency,
+      adminEmail: adminEmail,
     );
     // API ritorna { business: {...} }
     final businessJson = data['business'] as Map<String, dynamic>? ?? data;
     return Business.fromJson(businessJson);
+  }
+
+  /// Superadmin: reinvia email di invito all'admin.
+  Future<void> resendAdminInvite(int businessId) async {
+    await _apiClient.resendAdminInvite(businessId);
   }
 }

@@ -43,6 +43,7 @@ use Agenda\UseCases\Auth\RegisterUser;
 use Agenda\UseCases\Auth\RequestPasswordReset;
 use Agenda\UseCases\Auth\ResetPassword;
 use Agenda\UseCases\Auth\ChangePassword;
+use Agenda\UseCases\Auth\UpdateProfile;
 use Agenda\UseCases\Booking\ComputeAvailability;
 use Agenda\UseCases\Booking\CreateBooking;
 use Agenda\UseCases\Booking\UpdateBooking;
@@ -82,6 +83,7 @@ final class Kernel
         $this->router->post('/v1/auth/forgot-password', AuthController::class, 'forgotPassword');
         $this->router->post('/v1/auth/reset-password', AuthController::class, 'resetPasswordAction');
         $this->router->get('/v1/me', AuthController::class, 'me', ['auth']);
+        $this->router->put('/v1/me', AuthController::class, 'updateMe', ['auth']);
         $this->router->post('/v1/me/change-password', AuthController::class, 'changePassword', ['auth']);
         $this->router->get('/v1/me/bookings', BookingsController::class, 'myBookings', ['auth']);
         $this->router->get('/v1/me/businesses', AdminBusinessesController::class, 'myBusinesses', ['auth']);
@@ -91,6 +93,7 @@ final class Kernel
         $this->router->post('/v1/admin/businesses', AdminBusinessesController::class, 'store', ['auth']);
         $this->router->put('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'update', ['auth']);
         $this->router->delete('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'destroy', ['auth']);
+        $this->router->post('/v1/admin/businesses/{id}/resend-invite', AdminBusinessesController::class, 'resendInvite', ['auth']);
 
         // Businesses - Public endpoint for subdomain resolution
         $this->router->get('/v1/businesses/by-slug/{slug}', BusinessController::class, 'showBySlug');
@@ -186,6 +189,7 @@ final class Kernel
         $requestPasswordReset = new RequestPasswordReset($this->db, $userRepo);
         $resetPassword = new ResetPassword($this->db, $userRepo, $passwordHasher);
         $changePassword = new ChangePassword($userRepo, $passwordHasher);
+        $updateProfile = new UpdateProfile($this->db, $userRepo);
         $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo);
         $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo);
         $updateBooking = new UpdateBooking($bookingRepo, $this->db);
@@ -195,7 +199,7 @@ final class Kernel
         // Controllers
         $this->controllers = [
             HealthController::class => new HealthController(),
-            AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $changePassword),
+            AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $changePassword, $updateProfile),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo),
             LocationsController::class => new LocationsController($locationRepo),
             ServicesController::class => new ServicesController($serviceRepo),

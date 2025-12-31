@@ -430,4 +430,105 @@ Vedi dettagli: {{manage_url}}
 TEXT,
         ];
     }
+
+    /**
+     * Get business admin welcome template.
+     * Sent when a superadmin creates a new business and assigns an admin.
+     */
+    public static function businessAdminWelcome(): array
+    {
+        return [
+            'subject' => 'Benvenuto su Agenda - Configura il tuo account',
+            'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benvenuto su Agenda</title>
+</head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+        <tr>
+            <td style="padding:40px 30px;text-align:center;background-color:#6366f1;">
+                <h1 style="margin:0;color:#ffffff;font-size:24px;">🎉 Benvenuto su Agenda</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:30px;">
+                <p style="margin:0 0 20px;font-size:16px;color:#333;">
+                    Ciao,
+                </p>
+                <p style="margin:0 0 25px;font-size:16px;color:#333;">
+                    Sei stato assegnato come amministratore di <strong>{{business_name}}</strong> sulla piattaforma Agenda.
+                </p>
+                
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+                    <tr>
+                        <td style="padding:20px;">
+                            <p style="margin:0 0 10px;color:#333;"><strong>Il tuo business:</strong></p>
+                            <p style="margin:0;color:#666;">
+                                📌 Nome: {{business_name}}<br>
+                                🔗 URL prenotazioni: <a href="{{booking_url}}" style="color:#6366f1;">{{booking_url}}</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p style="margin:0 0 25px;font-size:16px;color:#333;">
+                    Per iniziare, clicca sul pulsante qui sotto per impostare la tua password:
+                </p>
+                
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="text-align:center;">
+                            <a href="{{reset_url}}" style="display:inline-block;padding:14px 30px;background-color:#6366f1;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">
+                                Imposta Password
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p style="margin:25px 0 0;font-size:14px;color:#666;">
+                    ⏰ Questo link scade tra <strong>24 ore</strong>.
+                </p>
+                <p style="margin:10px 0 0;font-size:14px;color:#666;">
+                    Se non hai richiesto questo account, ignora questa email.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+                <p style="margin:0;font-size:12px;color:#999;">
+                    Agenda Platform - Gestione prenotazioni semplice e veloce
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+HTML,
+            'text' => <<<TEXT
+Benvenuto su Agenda
+
+Ciao,
+
+Sei stato assegnato come amministratore di {{business_name}} sulla piattaforma Agenda.
+
+Il tuo business:
+📌 Nome: {{business_name}}
+🔗 URL prenotazioni: {{booking_url}}
+
+Per iniziare, visita il seguente link per impostare la tua password:
+{{reset_url}}
+
+⏰ Questo link scade tra 24 ore.
+
+Se non hai richiesto questo account, ignora questa email.
+
+---
+Agenda Platform - Gestione prenotazioni semplice e veloce
+TEXT,
+        ];
+    }
 }

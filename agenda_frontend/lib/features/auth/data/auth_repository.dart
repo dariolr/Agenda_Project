@@ -82,4 +82,21 @@ class AuthRepository {
       newPassword: newPassword,
     );
   }
+
+  /// Aggiorna profilo utente
+  /// PUT /v1/me
+  Future<User> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+  }) async {
+    final data = await _apiClient.updateProfile(
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      phone: phone,
+    );
+    return User.fromJson(data);
+  }
 }

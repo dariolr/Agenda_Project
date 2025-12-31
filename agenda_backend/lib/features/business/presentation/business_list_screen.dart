@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
+import '../../../core/network/api_client.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../providers/business_providers.dart';
 import 'dialogs/create_business_dialog.dart';
 import 'dialogs/edit_business_dialog.dart';
 
@@ -54,6 +56,8 @@ class BusinessListScreen extends ConsumerWidget {
           businesses: businesses,
           onSelect: (business) => _selectBusiness(context, ref, business),
           onEdit: (business) => _showEditBusinessDialog(context, ref, business),
+          onResendInvite: (business) =>
+              _showResendInviteDialog(context, ref, business),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -146,6 +150,70 @@ class BusinessListScreen extends ConsumerWidget {
       ref.read(businessesRefreshProvider.notifier).refresh();
     }
   }
+
+  Future<void> _showResendInviteDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Business business,
+  ) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reinvia invito'),
+        content: Text(
+          business.adminEmail != null
+              ? 'Vuoi reinviare l\'email di invito a ${business.adminEmail}?'
+              : 'Questo business non ha un admin email configurato.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          if (business.adminEmail != null)
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Invia'),
+            ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final repository = ref.read(businessRepositoryProvider);
+        await repository.resendAdminInvite(business.id);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Invito inviato a ${business.adminEmail}'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+          );
+        }
+      } on ApiException catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Errore: ${e.message}'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Errore: $e'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    }
+  }
 }
 
 class _BusinessList extends StatelessWidget {
@@ -153,11 +221,13 @@ class _BusinessList extends StatelessWidget {
     required this.businesses,
     required this.onSelect,
     required this.onEdit,
+    required this.onResendInvite,
   });
 
   final List<Business> businesses;
   final void Function(Business) onSelect;
   final void Function(Business) onEdit;
+  final void Function(Business) onResendInvite;
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +287,7 @@ class _BusinessList extends StatelessWidget {
               business: business,
               onTap: () => onSelect(business),
               onEdit: () => onEdit(business),
+              onResendInvite: () => onResendInvite(business),
             );
           },
         );
@@ -230,11 +301,13 @@ class _BusinessCard extends StatelessWidget {
     required this.business,
     required this.onTap,
     required this.onEdit,
+    required this.onResendInvite,
   });
 
   final Business business;
   final VoidCallback onTap;
   final VoidCallback onEdit;
+  final VoidCallback onResendInvite;
 
   @override
   Widget build(BuildContext context) {
@@ -287,14 +360,51 @@ class _BusinessCard extends StatelessWidget {
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
+                    if (business.adminEmail != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Admin: ${business.adminEmail}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
-              // Pulsante modifica
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: onEdit,
-                tooltip: 'Modifica',
+              // Menu azioni
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      onEdit();
+                    case 'resend':
+                      onResendInvite();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                      leading: Icon(Icons.edit_outlined),
+                      title: Text('Modifica'),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'resend',
+                    child: ListTile(
+                      leading: Icon(Icons.email_outlined),
+                      title: Text('Reinvia invito'),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                ],
+                icon: const Icon(Icons.more_vert),
               ),
               const SizedBox(width: 4),
               // Freccia per entrare

@@ -3261,9 +3261,29 @@ class L10n {
     );
   }
 
+  /// `Nome`
+  String get authFirstName {
+    return Intl.message('Nome', name: 'authFirstName', desc: '', args: []);
+  }
+
+  /// `Cognome`
+  String get authLastName {
+    return Intl.message('Cognome', name: 'authLastName', desc: '', args: []);
+  }
+
+  /// `Telefono`
+  String get authPhone {
+    return Intl.message('Telefono', name: 'authPhone', desc: '', args: []);
+  }
+
   /// `Cambia`
   String get switchBusiness {
     return Intl.message('Cambia', name: 'switchBusiness', desc: '', args: []);
+  }
+
+  /// `Profilo`
+  String get profileTitle {
+    return Intl.message('Profilo', name: 'profileTitle', desc: '', args: []);
   }
 }
 
