@@ -20,6 +20,11 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     final repository = ref.watch(servicesRepositoryProvider);
     final location = ref.watch(currentLocationProvider);
 
+    // Non caricare se location non è ancora valida
+    if (location.id <= 0) {
+      return [];
+    }
+
     // Carica servizi E categorie dall'API
     final result = await repository.getServicesWithCategories(
       locationId: location.id,

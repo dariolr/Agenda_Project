@@ -55,7 +55,7 @@ class CurrentBusinessId extends Notifier<int> {
         }
       });
     });
-    return 1; // Default temporaneo
+    return 0; // Inizializza a 0 per triggare il listen
   }
 
   void set(int id) => state = id;

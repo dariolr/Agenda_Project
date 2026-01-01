@@ -18,6 +18,11 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     final apiClient = ref.watch(apiClientProvider);
     final location = ref.watch(currentLocationProvider);
 
+    // Non caricare se location non è ancora valida
+    if (location.id <= 0) {
+      return [];
+    }
+
     // Carica blocchi per il mese corrente ± 1 mese
     final now = DateTime.now();
     final fromDate = DateTime(now.year, now.month - 1, 1);
@@ -145,8 +150,8 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
 
 final timeBlocksProvider =
     AsyncNotifierProvider<TimeBlocksNotifier, List<TimeBlock>>(
-  TimeBlocksNotifier.new,
-);
+      TimeBlocksNotifier.new,
+    );
 
 /// Blocchi filtrati per la sede corrente e la data corrente dell'agenda.
 final timeBlocksForCurrentLocationProvider = Provider<List<TimeBlock>>((ref) {

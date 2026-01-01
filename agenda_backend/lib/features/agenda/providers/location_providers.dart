@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/location.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../business/presentation/business_list_screen.dart';
 import '../../business/providers/locations_providers.dart';
 
 ///
@@ -15,10 +16,29 @@ class LocationsNotifier extends Notifier<List<Location>> {
     // Ascolta i cambiamenti dell'auth state
     final authState = ref.watch(authProvider);
 
-    // Carica locations solo se autenticato
-    if (authState.isAuthenticated) {
-      _loadLocations();
+    // Non caricare se non autenticato
+    if (!authState.isAuthenticated) {
+      return [];
     }
+
+    // Per superadmin: carica solo se ha selezionato un business
+    if (authState.user?.isSuperadmin ?? false) {
+      final selectedBusiness = ref.watch(superadminSelectedBusinessProvider);
+      if (selectedBusiness == null) {
+        // Superadmin nella lista business, non caricare locations
+        return [];
+      }
+    }
+
+    // Verifica che ci sia un business ID valido (> 0) prima di caricare
+    final businessId = ref.watch(currentBusinessIdProvider);
+    if (businessId <= 0) {
+      // Business non ancora caricato, aspetta
+      return [];
+    }
+
+    // Carica locations per utente normale o superadmin con business selezionato
+    _loadLocations();
     return []; // Stato iniziale vuoto
   }
 
@@ -166,7 +186,7 @@ class CurrentLocationId extends Notifier<int> {
         state = defaultLocation.id;
       }
     });
-    return 1; // Default temporaneo
+    return 0; // Inizializza a 0 per triggare il listen
   }
 
   void set(int id) => state = id;
@@ -180,8 +200,15 @@ final currentLocationProvider = Provider<Location>((ref) {
   final locations = ref.watch(locationsProvider);
   final currentId = ref.watch(currentLocationIdProvider);
 
-  if (locations.isEmpty) {
-    return Location(id: currentId, businessId: 1, name: 'Loading...');
+  if (locations.isEmpty || currentId == 0) {
+    // Ritorna location placeholder mentre carica
+    return Location(
+      id: 0,
+      businessId: 0,
+      name: 'Loading...',
+      isDefault: false,
+      isActive: true,
+    );
   }
 
   return locations.firstWhere(

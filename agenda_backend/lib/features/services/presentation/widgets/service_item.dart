@@ -46,15 +46,17 @@ class ServiceItem extends ConsumerWidget {
       context,
     ).extension<AppInteractionColors>();
     final variant = ref.watch(serviceVariantByServiceIdProvider(service.id));
-    final eligibleStaffIds =
-        ref.watch(eligibleStaffForServiceProvider(service.id));
+    final eligibleStaffIds = ref.watch(
+      eligibleStaffForServiceProvider(service.id),
+    );
     final eligibleStaffCount = eligibleStaffIds.length;
     final baseColor = isEvenRow
         ? (interactionColors?.alternatingRowFill ??
               colorScheme.onSurface.withOpacity(0.04))
         : Colors.transparent;
 
-    final hoverFill = interactionColors?.hoverFill ??
+    final hoverFill =
+        interactionColors?.hoverFill ??
         colorScheme.primaryContainer.withOpacity(0.1);
     final bgColor = (isHovered || isSelected) ? hoverFill : baseColor;
 
@@ -121,9 +123,7 @@ class ServiceItem extends ConsumerWidget {
                             const SizedBox(height: 2),
                             Text(
                               context.l10n.serviceEligibleStaffNone,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
+                              style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Theme.of(context).colorScheme.error,
                                     fontStyle: FontStyle.italic,
@@ -162,11 +162,13 @@ class ServiceItem extends ConsumerWidget {
                                     )
                                   else if (variant?.price != null)
                                     Text(
-                                      PriceFormatter.formatVariant(
-                                        context: context,
-                                        ref: ref,
-                                        variant: variant!,
-                                      ),
+                                      service.isPriceStartingFrom
+                                          ? '${context.l10n.priceStartingFromPrefix} ${PriceFormatter.formatVariant(context: context, ref: ref, variant: variant!)}'
+                                          : PriceFormatter.formatVariant(
+                                              context: context,
+                                              ref: ref,
+                                              variant: variant!,
+                                            ),
                                       style: const TextStyle(
                                         fontSize: 11,
                                         color: Colors.black54,
