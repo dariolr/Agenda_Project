@@ -23,7 +23,7 @@ final class TimeBlockRepository
         string $fromDate,
         string $toDate
     ): array {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             SELECT tb.id, tb.business_id, tb.location_id, tb.start_time, tb.end_time,
                    tb.is_all_day, tb.reason, tb.created_at, tb.updated_at
             FROM time_blocks tb
@@ -56,7 +56,7 @@ final class TimeBlockRepository
         string $fromDate,
         string $toDate
     ): array {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             SELECT tb.id, tb.business_id, tb.location_id, tb.start_time, tb.end_time,
                    tb.is_all_day, tb.reason, tb.created_at, tb.updated_at
             FROM time_blocks tb
@@ -86,7 +86,7 @@ final class TimeBlockRepository
      */
     public function findById(int $id): ?array
     {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             SELECT id, business_id, location_id, start_time, end_time,
                    is_all_day, reason, created_at, updated_at
             FROM time_blocks
@@ -108,7 +108,7 @@ final class TimeBlockRepository
      */
     private function getStaffIdsForBlock(int $blockId): array
     {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             SELECT staff_id FROM time_block_staff WHERE time_block_id = :block_id
         ');
         $stmt->execute(['block_id' => $blockId]);
@@ -120,7 +120,7 @@ final class TimeBlockRepository
      */
     public function create(array $data): int
     {
-        $pdo = $this->db->pdo();
+        $pdo = $this->db->getPdo();
         
         $stmt = $pdo->prepare('
             INSERT INTO time_blocks (business_id, location_id, start_time, end_time, is_all_day, reason)
@@ -162,7 +162,7 @@ final class TimeBlockRepository
 
         if (!empty($fields)) {
             $sql = 'UPDATE time_blocks SET ' . implode(', ', $fields) . ' WHERE id = :id';
-            $stmt = $this->db->pdo()->prepare($sql);
+            $stmt = $this->db->getPdo()->prepare($sql);
             $stmt->execute($params);
         }
         
@@ -179,7 +179,7 @@ final class TimeBlockRepository
      */
     private function setStaffForBlock(int $blockId, array $staffIds): void
     {
-        $pdo = $this->db->pdo();
+        $pdo = $this->db->getPdo();
         
         // Delete existing
         $stmt = $pdo->prepare('DELETE FROM time_block_staff WHERE time_block_id = :block_id');
@@ -202,7 +202,7 @@ final class TimeBlockRepository
     public function delete(int $id): bool
     {
         // Staff associations deleted by CASCADE
-        $stmt = $this->db->pdo()->prepare('DELETE FROM time_blocks WHERE id = :id');
+        $stmt = $this->db->getPdo()->prepare('DELETE FROM time_blocks WHERE id = :id');
         return $stmt->execute(['id' => $id]);
     }
 
@@ -211,7 +211,7 @@ final class TimeBlockRepository
      */
     public function getBusinessIdForBlock(int $blockId): ?int
     {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             SELECT business_id FROM time_blocks WHERE id = :id
         ');
         $stmt->execute(['id' => $blockId]);

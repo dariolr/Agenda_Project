@@ -25,6 +25,11 @@ class ResourcesNotifier extends AsyncNotifier<List<Resource>> {
     final apiClient = ref.watch(apiClientProvider);
     final business = ref.watch(currentBusinessProvider);
 
+    // Non caricare se business non è ancora valido
+    if (business.id <= 0) {
+      return [];
+    }
+
     try {
       final data = await apiClient.getResourcesByBusiness(business.id);
       return data.map(_parseResource).toList();

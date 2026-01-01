@@ -8,6 +8,7 @@ class Service {
   final int? durationMinutes; // da API
   final double? price; // da API
   final String? color; // da API
+  final bool isPriceStartingFrom; // "a partire da" flag
   final int? serviceVariantId; // ID della variante per location (da API)
 
   const Service({
@@ -20,6 +21,7 @@ class Service {
     this.durationMinutes,
     this.price,
     this.color,
+    this.isPriceStartingFrom = false,
     this.serviceVariantId,
   });
 
@@ -33,6 +35,7 @@ class Service {
     int? durationMinutes,
     double? price,
     String? color,
+    bool? isPriceStartingFrom,
     int? serviceVariantId,
   }) => Service(
     id: id ?? this.id,
@@ -44,6 +47,7 @@ class Service {
     durationMinutes: durationMinutes ?? this.durationMinutes,
     price: price ?? this.price,
     color: color ?? this.color,
+    isPriceStartingFrom: isPriceStartingFrom ?? this.isPriceStartingFrom,
     serviceVariantId: serviceVariantId ?? this.serviceVariantId,
   );
 
@@ -57,6 +61,7 @@ class Service {
     durationMinutes: json['duration_minutes'] as int?,
     price: (json['price'] as num?)?.toDouble(),
     color: json['color'] as String?,
+    isPriceStartingFrom: json['is_price_starting_from'] as bool? ?? false,
     serviceVariantId: json['service_variant_id'] as int?,
   );
 
@@ -70,6 +75,7 @@ class Service {
     if (durationMinutes != null) 'duration_minutes': durationMinutes,
     if (price != null) 'price': price,
     if (color != null) 'color': color,
+    'is_price_starting_from': isPriceStartingFrom,
     if (serviceVariantId != null) 'service_variant_id': serviceVariantId,
   };
 }

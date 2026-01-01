@@ -25,7 +25,7 @@ final class ServiceRepository
             'SELECT s.id, s.business_id, s.category_id, s.name, s.description, 
                     s.is_active, s.sort_order,
                     sv.duration_minutes, sv.price, sv.color_hex AS color,
-                    sv.is_bookable_online
+                    sv.is_bookable_online, sv.is_price_starting_from AS is_price_from
              FROM services s
              LEFT JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
              WHERE s.id = ? AND s.is_active = 1'
@@ -43,7 +43,7 @@ final class ServiceRepository
                     s.is_active, s.sort_order,
                     sv.id AS service_variant_id,
                     sv.duration_minutes, sv.price, sv.color_hex AS color,
-                    sv.is_bookable_online,
+                    sv.is_bookable_online, sv.is_price_starting_from AS is_price_from,
                     sc.name AS category_name
              FROM services s
              JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
@@ -67,7 +67,8 @@ final class ServiceRepository
 
         $stmt = $this->db->getPdo()->prepare(
             "SELECT s.id, s.business_id, s.category_id, s.name, s.description,
-                    sv.id AS service_variant_id, sv.duration_minutes, sv.price, sv.color_hex AS color
+                    sv.id AS service_variant_id, sv.duration_minutes, sv.price, sv.color_hex AS color,
+                    sv.is_price_starting_from AS is_price_from
              FROM services s
              JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
              WHERE s.id IN ({$placeholders}) AND s.business_id = ? AND s.is_active = 1"

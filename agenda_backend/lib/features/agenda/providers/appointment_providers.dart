@@ -33,6 +33,11 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     final business = ref.watch(currentBusinessProvider);
     final date = ref.watch(agendaDateProvider);
 
+    // Non caricare se location non è ancora valida
+    if (location.id <= 0) {
+      return [];
+    }
+
     return repository.getAppointments(
       locationId: location.id,
       businessId: business.id,
