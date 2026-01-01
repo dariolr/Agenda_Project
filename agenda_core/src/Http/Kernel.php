@@ -32,6 +32,7 @@ use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
+use Agenda\Infrastructure\Repositories\StaffScheduleRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
@@ -42,6 +43,7 @@ use Agenda\UseCases\Auth\RefreshToken;
 use Agenda\UseCases\Auth\RegisterUser;
 use Agenda\UseCases\Auth\RequestPasswordReset;
 use Agenda\UseCases\Auth\ResetPassword;
+use Agenda\UseCases\Auth\VerifyResetToken;
 use Agenda\UseCases\Auth\ChangePassword;
 use Agenda\UseCases\Auth\UpdateProfile;
 use Agenda\UseCases\Booking\ComputeAvailability;
@@ -81,6 +83,7 @@ final class Kernel
         $this->router->post('/v1/auth/refresh', AuthController::class, 'refresh');
         $this->router->post('/v1/auth/logout', AuthController::class, 'logout', ['auth']);
         $this->router->post('/v1/auth/forgot-password', AuthController::class, 'forgotPassword');
+        $this->router->get('/v1/auth/verify-reset-token/{token}', AuthController::class, 'verifyResetTokenAction');
         $this->router->post('/v1/auth/reset-password', AuthController::class, 'resetPasswordAction');
         $this->router->get('/v1/me', AuthController::class, 'me', ['auth']);
         $this->router->put('/v1/me', AuthController::class, 'updateMe', ['auth']);
@@ -114,6 +117,11 @@ final class Kernel
         $this->router->post('/v1/businesses/{business_id}/staff', StaffController::class, 'store', ['auth']);
         $this->router->put('/v1/staff/{id}', StaffController::class, 'update', ['auth']);
         $this->router->delete('/v1/staff/{id}', StaffController::class, 'destroy', ['auth']);
+
+        // Staff schedules (auth required)
+        $this->router->get('/v1/businesses/{business_id}/staff/schedules', StaffController::class, 'indexSchedules', ['auth']);
+        $this->router->get('/v1/staff/{id}/schedules', StaffController::class, 'showSchedule', ['auth']);
+        $this->router->put('/v1/staff/{id}/schedules', StaffController::class, 'updateSchedule', ['auth']);
 
         // Business Users (operators management)
         $this->router->get('/v1/businesses/{business_id}/users', BusinessUsersController::class, 'index', ['auth']);
@@ -182,6 +190,7 @@ final class Kernel
         $locationRepo = new LocationRepository($this->db);
         $serviceRepo = new ServiceRepository($this->db);
         $staffRepo = new StaffRepository($this->db);
+        $staffScheduleRepo = new StaffScheduleRepository($this->db);
         $bookingRepo = new BookingRepository($this->db);
         $clientRepo = new ClientRepository($this->db);
 
@@ -197,6 +206,7 @@ final class Kernel
         $registerUser = new RegisterUser($userRepo, $sessionRepo, $jwtService, $passwordHasher);
         $requestPasswordReset = new RequestPasswordReset($this->db, $userRepo);
         $resetPassword = new ResetPassword($this->db, $userRepo, $passwordHasher);
+        $verifyResetToken = new VerifyResetToken($this->db);
         $changePassword = new ChangePassword($userRepo, $passwordHasher);
         $updateProfile = new UpdateProfile($this->db, $userRepo);
         $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo);
@@ -208,11 +218,11 @@ final class Kernel
         // Controllers
         $this->controllers = [
             HealthController::class => new HealthController(),
-            AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $changePassword, $updateProfile),
+            AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $verifyResetToken, $changePassword, $updateProfile),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo),
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
             ServicesController::class => new ServicesController($serviceRepo),
-            StaffController::class => new StaffController($staffRepo, $businessUserRepo, $locationRepo, $userRepo),
+            StaffController::class => new StaffController($staffRepo, $staffScheduleRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking),
             ClientsController::class => new ClientsController($clientRepo),

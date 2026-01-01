@@ -33,14 +33,18 @@ class ApiException implements Exception {
 class ApiClient {
   final Dio _dio;
   final TokenStorage _tokenStorage;
+  final void Function()? onSessionExpired;
 
   String? _accessToken;
   bool _isRefreshing = false;
   final List<void Function()> _pendingRequests = [];
 
-  ApiClient({required TokenStorage tokenStorage, Dio? dio})
-    : _tokenStorage = tokenStorage,
-      _dio = dio ?? Dio() {
+  ApiClient({
+    required TokenStorage tokenStorage,
+    Dio? dio,
+    this.onSessionExpired,
+  }) : _tokenStorage = tokenStorage,
+       _dio = dio ?? Dio() {
     _dio.options.baseUrl = ApiConfig.baseUrl;
     debugPrint('🔗 API baseUrl: ${ApiConfig.baseUrl}');
     _dio.options.connectTimeout = ApiConfig.connectTimeout;
@@ -84,15 +88,32 @@ class ApiClient {
                 opts.headers['Authorization'] = 'Bearer $_accessToken';
                 final response = await _dio.fetch(opts);
                 return handler.resolve(response);
+              } else {
+                // Refresh fallito, sessione scaduta
+                _triggerSessionExpired();
               }
             } catch (_) {
-              // Refresh fallito, propaga errore originale
+              // Refresh fallito, sessione scaduta
+              _triggerSessionExpired();
             }
+          }
+          // Gestione 401 generico (token invalid, unauthorized)
+          else if (error.response?.statusCode == 401) {
+            _triggerSessionExpired();
           }
           handler.next(error);
         },
       ),
     );
+  }
+
+  /// Notifica che la sessione è scaduta
+  void _triggerSessionExpired() {
+    _accessToken = null;
+    _tokenStorage.clearRefreshToken();
+    if (onSessionExpired != null) {
+      onSessionExpired!();
+    }
   }
 
   /// Imposta access token in memoria
@@ -321,6 +342,12 @@ class ApiClient {
     await post(ApiConfig.authForgotPassword, data: {'email': email});
   }
 
+  /// GET /v1/auth/verify-reset-token/{token}
+  /// Verifica se un token di reset è valido prima di mostrare il form.
+  Future<void> verifyResetToken(String token) async {
+    await get('${ApiConfig.authVerifyResetToken}/$token');
+  }
+
   /// POST /v1/auth/reset-password
   Future<void> resetPassword({
     required String token,
@@ -329,6 +356,17 @@ class ApiClient {
     await post(
       ApiConfig.authResetPassword,
       data: {'token': token, 'password': password},
+    );
+  }
+
+  /// POST /v1/me/change-password - Cambia password utente autenticato
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await post(
+      ApiConfig.authChangePassword,
+      data: {'current_password': currentPassword, 'new_password': newPassword},
     );
   }
 
@@ -844,5 +882,97 @@ class ApiClient {
   Future<Map<String, dynamic>> acceptInvitation(String token) async {
     final response = await post(ApiConfig.acceptInvitation(token));
     return response['data'] as Map<String, dynamic>;
+  }
+
+  // ========== STAFF SCHEDULES ==========
+
+  /// GET /v1/businesses/{business_id}/staff/schedules
+  /// Ottiene gli schedules di tutti gli staff di un business.
+  /// Ritorna Map<int, Map<int, List<Map>>> (staffId -> day -> shifts)
+  Future<Map<int, Map<int, List<Map<String, String>>>>> getStaffSchedulesAll(
+    int businessId,
+  ) async {
+    final response = await get(ApiConfig.staffSchedulesAll(businessId));
+    final data = response['data']['schedules'] as Map<String, dynamic>;
+
+    final Map<int, Map<int, List<Map<String, String>>>> result = {};
+    for (final entry in data.entries) {
+      final staffId = int.parse(entry.key);
+      final weekData = entry.value as Map<String, dynamic>;
+
+      result[staffId] = {};
+      for (final dayEntry in weekData.entries) {
+        final day = int.parse(dayEntry.key);
+        final shifts = (dayEntry.value as List)
+            .map(
+              (s) => {
+                'start_time': s['start_time'] as String,
+                'end_time': s['end_time'] as String,
+              },
+            )
+            .toList();
+        result[staffId]![day] = shifts;
+      }
+    }
+    return result;
+  }
+
+  /// GET /v1/staff/{id}/schedules
+  /// Ottiene lo schedule settimanale di uno staff.
+  /// Ritorna Map<int, List<Map>> (day -> shifts)
+  Future<Map<int, List<Map<String, String>>>> getStaffSchedule(
+    int staffId,
+  ) async {
+    final response = await get(ApiConfig.staffSchedule(staffId));
+    final data = response['data']['schedule'] as Map<String, dynamic>;
+
+    final Map<int, List<Map<String, String>>> result = {};
+    for (final entry in data.entries) {
+      final day = int.parse(entry.key);
+      final shifts = (entry.value as List)
+          .map(
+            (s) => {
+              'start_time': s['start_time'] as String,
+              'end_time': s['end_time'] as String,
+            },
+          )
+          .toList();
+      result[day] = shifts;
+    }
+    return result;
+  }
+
+  /// PUT /v1/staff/{id}/schedules
+  /// Salva lo schedule settimanale di uno staff (sostituisce l'esistente).
+  Future<Map<int, List<Map<String, String>>>> saveStaffSchedule({
+    required int staffId,
+    required Map<int, List<Map<String, String>>> schedule,
+  }) async {
+    // Converti keys da int a String per JSON
+    final scheduleJson = <String, dynamic>{};
+    for (final entry in schedule.entries) {
+      scheduleJson[entry.key.toString()] = entry.value;
+    }
+
+    final response = await put(
+      ApiConfig.staffSchedule(staffId),
+      data: {'schedule': scheduleJson},
+    );
+
+    final data = response['data']['schedule'] as Map<String, dynamic>;
+    final Map<int, List<Map<String, String>>> result = {};
+    for (final entry in data.entries) {
+      final day = int.parse(entry.key);
+      final shifts = (entry.value as List)
+          .map(
+            (s) => {
+              'start_time': s['start_time'] as String,
+              'end_time': s['end_time'] as String,
+            },
+          )
+          .toList();
+      result[day] = shifts;
+    }
+    return result;
   }
 }

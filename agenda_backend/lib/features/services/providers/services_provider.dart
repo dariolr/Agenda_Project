@@ -19,7 +19,13 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     final repository = ref.watch(servicesRepositoryProvider);
     final location = ref.watch(currentLocationProvider);
 
-    return repository.getServices(locationId: location.id);
+    // Carica servizi E categorie dall'API
+    final result = await repository.getServicesWithCategories(locationId: location.id);
+    
+    // Popola le categorie nel provider dedicato
+    ref.read(serviceCategoriesProvider.notifier).setCategories(result.categories);
+    
+    return result.services;
   }
 
   void setServices(List<Service> services) {

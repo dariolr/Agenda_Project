@@ -22,7 +22,9 @@ class ApiConfig {
   static const String authRefresh = '/v1/auth/refresh';
   static const String authLogout = '/v1/auth/logout';
   static const String authForgotPassword = '/v1/auth/forgot-password';
+  static const String authVerifyResetToken = '/v1/auth/verify-reset-token';
   static const String authResetPassword = '/v1/auth/reset-password';
+  static const String authChangePassword = '/v1/me/change-password';
   static const String authMe = '/v1/me';
 
   // ========== PUBLIC BROWSE ENDPOINTS ==========
@@ -79,4 +81,13 @@ class ApiConfig {
   /// Accetta invito
   static String acceptInvitation(String token) =>
       '/v1/invitations/$token/accept';
+
+  // ========== STAFF SCHEDULES ENDPOINTS ==========
+
+  /// Lista tutti gli schedules degli staff di un business
+  static String staffSchedulesAll(int businessId) =>
+      '/v1/businesses/$businessId/staff/schedules';
+
+  /// Schedule di uno staff specifico
+  static String staffSchedule(int staffId) => '/v1/staff/$staffId/schedules';
 }

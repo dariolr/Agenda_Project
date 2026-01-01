@@ -15,7 +15,7 @@ final class UserRepository
     public function findById(int $id): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, email, first_name, last_name, phone, email_verified_at, is_active, is_superadmin, created_at 
+            'SELECT id, email, first_name, last_name, phone, password_hash, email_verified_at, is_active, is_superadmin, created_at 
              FROM users WHERE id = ? AND is_active = 1'
         );
         $stmt->execute([$id]);

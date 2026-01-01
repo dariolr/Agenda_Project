@@ -108,7 +108,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
       final isTablet = formFactor == AppFormFactor.tablet;
 
-      // Azioni specifiche per tab (profilo è nella rail)
+      // Azioni specifiche per tab (menu utente è nella rail)
       List<Widget> buildActions() {
         final List<Widget> actions = [];
         if (isAgenda) {
@@ -170,7 +170,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
         Theme.of(context).colorScheme.surface;
 
-    // Azioni specifiche per tab (profilo è nella BNB)
+    // Azioni specifiche per tab (menu utente è nella BNB)
     List<Widget> buildMobileActions() {
       final List<Widget> actions = [];
       if (isAgenda) {
@@ -254,20 +254,52 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     );
   }
 
-  /// Gestisce tap su navigation: se è index 4, esegue Cambia Business (superadmin) o logout
+  /// Gestisce tap su navigation: se è index 4, mostra menu utente
   void _handleNavTap(BuildContext context, int index, WidgetRef ref) {
     if (index == 4) {
-      final user = ref.read(authProvider).user;
-      if (user?.isSuperadmin ?? false) {
-        // Superadmin: torna alla lista business
-        ref.read(superadminSelectedBusinessProvider.notifier).clear();
-        context.go('/businesses');
-      } else {
-        UserMenuButton.handleLogout(context, ref);
-      }
+      _showUserMenu(context, ref);
     } else {
       _goBranch(index, ref);
     }
+  }
+
+  /// Mostra il menu utente (profilo, cambia password, logout)
+  void _showUserMenu(BuildContext context, WidgetRef ref) {
+    final user = ref.read(authProvider).user;
+    if (user == null) return;
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final menuItems = UserMenuButton.buildMenuItems(
+      context,
+      theme,
+      colorScheme,
+      user,
+    );
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        MediaQuery.of(context).size.width - 200,
+        MediaQuery.of(context).size.height - 250,
+        16,
+        16,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      items: menuItems,
+    ).then((value) {
+      if (value == null) return;
+      if (value == 'logout') {
+        UserMenuButton.handleLogout(context, ref);
+      } else if (value == 'profile') {
+        context.push('/profilo');
+      } else if (value == 'change_password') {
+        context.push('/change-password');
+      } else if (value == 'switch_business') {
+        ref.read(superadminSelectedBusinessProvider.notifier).clear();
+        context.go('/businesses');
+      }
+    });
   }
 }
 
@@ -890,9 +922,9 @@ class _ScaffoldWithNavigationHelpers {
         label: l10n.navStaff,
       ),
       NavigationDestination(
-        iconData: isSuperadmin ? Icons.business : Icons.logout,
-        selectedIconData: isSuperadmin ? Icons.business : Icons.logout,
-        label: isSuperadmin ? l10n.switchBusiness : l10n.authLogout,
+        iconData: Icons.account_circle_outlined,
+        selectedIconData: Icons.account_circle,
+        label: l10n.navProfile,
       ),
     ];
   }

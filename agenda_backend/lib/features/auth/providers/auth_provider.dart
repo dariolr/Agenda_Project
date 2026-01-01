@@ -20,11 +20,35 @@ final authProvider = NotifierProvider<AuthNotifier, AuthState>(
 
 /// Notifier per la gestione dell'autenticazione.
 class AuthNotifier extends Notifier<AuthState> {
+  static bool _sessionRestored = false;
+  static AuthState? _lastState;
+
   @override
   AuthState build() {
-    // Tenta ripristino sessione all'avvio
-    _tryRestoreSession();
+    // Se abbiamo già uno stato salvato (es. errore), mantienilo
+    if (_lastState != null && _lastState!.status == AuthStatus.error) {
+      final savedState = _lastState!;
+      _lastState = null; // Consuma lo stato salvato
+      return savedState;
+    }
+
+    // Tenta ripristino sessione solo al primo avvio dell'app
+    if (!_sessionRestored) {
+      _sessionRestored = true;
+      _tryRestoreSession();
+    }
     return AuthState.initial();
+  }
+
+  /// Reset per testing o logout completo
+  static void resetSessionFlag() {
+    _sessionRestored = false;
+    _lastState = null;
+  }
+
+  /// Salva lo stato prima che venga perso
+  void _preserveState() {
+    _lastState = state;
   }
 
   AuthRepository get _repository => ref.read(authRepositoryProvider);
@@ -62,12 +86,16 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   /// Logout dell'utente corrente.
-  Future<void> logout() async {
-    try {
-      await _repository.logout();
-    } finally {
-      state = AuthState.unauthenticated();
+  /// Se silent=true, non fa chiamata API (per sessione già scaduta)
+  Future<void> logout({bool silent = false}) async {
+    if (!silent) {
+      try {
+        await _repository.logout();
+      } catch (_) {
+        // Ignora errori durante logout (es. token già invalido)
+      }
     }
+    state = AuthState.unauthenticated();
   }
 
   /// Pulisce l'errore corrente.
@@ -95,5 +123,39 @@ class AuthNotifier extends Notifier<AuthState> {
       phone: phone,
     );
     state = AuthState.authenticated(updatedUser);
+  }
+
+  /// Verifica se un token di reset è valido.
+  /// Lancia eccezione se il token è invalido o scaduto.
+  Future<void> verifyResetToken(String token) async {
+    await _repository.verifyResetToken(token);
+  }
+
+  /// Reset password con token (da email di invito/reset).
+  Future<void> resetPasswordWithToken({
+    required String token,
+    required String newPassword,
+  }) async {
+    await _repository.resetPasswordWithToken(
+      token: token,
+      newPassword: newPassword,
+    );
+  }
+
+  /// Cambia password utente autenticato.
+  /// Ritorna true se successo, false se errore.
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _repository.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }

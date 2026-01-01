@@ -68,6 +68,8 @@ class UserMenuButton extends ConsumerWidget {
           handleLogout(context, ref);
         } else if (value == 'profile') {
           context.push('/profilo');
+        } else if (value == 'change_password') {
+          context.push('/change-password');
         } else if (value == 'switch_business') {
           // Reset selected business e torna alla lista
           ref.read(superadminSelectedBusinessProvider.notifier).clear();
@@ -124,14 +126,14 @@ class UserMenuButton extends ConsumerWidget {
         ),
       ),
       const PopupMenuDivider(),
-      // Profilo
+      // Cambia password
       PopupMenuItem<String>(
-        value: 'profile',
+        value: 'change_password',
         child: Row(
           children: [
-            Icon(Icons.person_outline, size: 20, color: colorScheme.primary),
+            Icon(Icons.lock_outline, size: 20, color: colorScheme.primary),
             const SizedBox(width: 12),
-            Text(context.l10n.profileTitle),
+            const Text('Cambia password'),
           ],
         ),
       ),

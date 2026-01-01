@@ -30,6 +30,9 @@ Endpoint minimi:
 - POST /v1/auth/logout
 - GET  /v1/me
 - PUT  /v1/me (aggiorna profilo)
+- POST /v1/me/change-password (cambio password utente autenticato)
+- GET  /v1/auth/verify-reset-token/{token} (verifica token reset)
+- POST /v1/auth/reset-password (reset password con token)
 - GET  /v1/services
 - GET  /v1/staff
 - GET  /v1/availability
@@ -69,9 +72,35 @@ File .env:
 Deploy Produzione (28/12/2025):
 - API: https://api.romeolab.it
 - Frontend: https://prenota.romeolab.it
+- Gestionale: https://gestionale.romeolab.it
 - Hosting: SiteGround condiviso
 - CORS: `CORS_ALLOWED_ORIGINS=https://prenota.romeolab.it,https://gestionale.romeolab.it,http://localhost:8080`
 - SSH: porta 18765, chiave ed25519
+
+⚠️ DEPLOY agenda_core — SOLO QUESTE CARTELLE:
+- `public_html/` → entry point (index.php, .htaccess)
+- `src/` → codice sorgente PHP
+- `vendor/` → dipendenze Composer
+- `bin/` → worker notifiche (opzionale, se cron attivo)
+
+MAI deployare: `docs/`, `tests/`, `scripts/`, `migrations/`, `lib/`, `.git/`, `*.md`, `phpunit.xml`, `composer.json`
+
+Comando deploy corretto:
+```bash
+rsync -avz public/ siteground:www/api.romeolab.it/public_html/
+rsync -avz --delete src/ siteground:www/api.romeolab.it/src/
+rsync -avz --delete vendor/ siteground:www/api.romeolab.it/vendor/
+```
+
+⚠️ VERSIONE CACHE BUSTING (01/01/2026):
+
+**Prima di ogni deploy Flutter (frontend o backend)**, incrementare la versione in `web/index.html`:
+```html
+<script src="flutter_bootstrap.js?v=YYYYMMDD-N" async></script>
+```
+- Formato: `?v=YYYYMMDD-N` dove N è un contatore giornaliero
+- Esempio: `?v=20260101-1`, `?v=20260101-2`, ecc.
+- Questo forza il browser a ricaricare il JavaScript aggiornato
 
 ⚠️ STRUTTURA PROGETTO vs DEPLOY SITEGROUND (31/12/2025):
 
@@ -141,7 +170,40 @@ Email Benvenuto Admin (01/01/2026):
 - Da riattivare quando frontend booking pronto per il business
 - File: `src/Infrastructure/Notifications/EmailTemplateRenderer.php`
 
+Cambio Password e Verifica Token (01/01/2026):
+- `GET /v1/auth/verify-reset-token/{token}` → verifica validità token PRIMA di mostrare form
+- UseCase `VerifyResetToken` controlla token non usato e non scaduto
+- Errori: `invalid_reset_token` (400) o `reset_token_expired` (400)
+- `POST /v1/me/change-password` → cambio password utente autenticato
+- Payload: `{"current_password": "...", "new_password": "..."}`
+- Validazione: password attuale corretta, nuova password rispetta policy (8+ char, maiuscole, minuscole, numeri)
+- Errore password errata: `invalid_credentials` (401)
+
+Gestionale UI/UX (01/01/2026):
+- **User Menu**: Icona profilo (index 4) nella navigation apre popup menu
+- Menu contiene: header nome/email, Cambia password, Cambia Business (superadmin), Esci
+- Superadmin: stesso menu sia in `/businesses` che dopo selezione business
+- **Login error persistence**: Errore gestito in stato locale widget, non dal provider globale
+- **Router rebuild**: Provider derivato `_routerAuthStateProvider` evita rebuild su cambio errorMessage
+
+Logout e Session Expired (01/01/2026):
+- `logout(silent: true)` → NON fa chiamata API (per sessione già scaduta)
+- `SessionExpiredListener` usa `silent: true` per evitare loop infinito
+- Flow: sessione scaduta → logout silenzioso → redirect a login
+
+Categorie Servizi (01/01/2026):
+- **NO dati hardcoded** in `ServiceCategoriesNotifier`
+- Categorie caricate dall'API insieme ai servizi (`GET /v1/services`)
+- `ServicesApi.fetchServicesWithCategories()` estrae categorie dalla risposta
+- `ServicesNotifier` popola `serviceCategoriesProvider` con dati API
+
 ⚠️ REGOLA CRITICA DATABASE:
 - **MAI** inserire, modificare o eliminare dati nel database senza richiesta esplicita dell'utente
 - Le operazioni di seed/migration vanno eseguite solo se l'utente lo richiede
 - In caso di dubbio, chiedere conferma prima di modificare dati in produzione
+
+⚠️ REGOLA CRITICA DEPLOY:
+- **MAI** deployare l'intero progetto con un singolo rsync
+- Deployare SOLO: `public_html/`, `src/`, `vendor/`, `bin/` (se necessario)
+- **MAI** deployare: `docs/`, `tests/`, `scripts/`, `migrations/`, `lib/`, `.git/`, `*.md`, `phpunit.xml`
+- Usare sempre i comandi specifici documentati in DEPLOY.md sezione 12

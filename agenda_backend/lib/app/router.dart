@@ -6,6 +6,7 @@ import '../core/l10n/l10_extension.dart';
 // Importa le nuove schermate
 import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/auth/presentation/profile_screen.dart';
+import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
 import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_week_overview_screen.dart';
@@ -107,6 +108,16 @@ final GoRouter appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (BuildContext context, GoRouterState state) =>
           const ProfileScreen(),
+    ),
+    // Route per reset password (da email invito)
+    GoRoute(
+      path: '/reset-password/:token',
+      name: 'reset-password',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (BuildContext context, GoRouterState state) {
+        final token = state.pathParameters['token']!;
+        return ResetPasswordScreen(token: token);
+      },
     ),
   ],
 );

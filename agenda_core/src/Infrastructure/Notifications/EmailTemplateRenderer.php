@@ -438,20 +438,20 @@ TEXT,
     public static function businessAdminWelcome(): array
     {
         return [
-            'subject' => 'Benvenuto su Agenda - Configura il tuo account',
+            'subject' => 'Benvenuto sul tuo nuovo gestionale - Configura il tuo account',
             'html' => <<<HTML
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Benvenuto su Agenda</title>
+    <title>Benvenuto sul tuo nuovo gestionale</title>
 </head>
 <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
         <tr>
             <td style="padding:40px 30px;text-align:center;background-color:#6366f1;">
-                <h1 style="margin:0;color:#ffffff;font-size:24px;">🎉 Benvenuto su Agenda</h1>
+                <h1 style="margin:0;color:#ffffff;font-size:24px;">🎉 Benvenuto sul tuo nuovo gestionale</h1>
             </td>
         </tr>
         <tr>
@@ -466,11 +466,11 @@ TEXT,
                 <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
                     <tr>
                         <td style="padding:20px;">
+                            <!-- TODO: Riattivare info business quando pronto
                             <p style="margin:0 0 10px;color:#333;"><strong>Il tuo business:</strong></p>
                             <p style="margin:0;color:#666;">
                                 📌 Nome: {{business_name}}
                             </p>
-                            <!-- TODO: Riattivare URL prenotazioni quando pronto
                             <p style="margin:0;color:#666;">
                                 🔗 URL prenotazioni: <a href="{{booking_url}}" style="color:#6366f1;">{{booking_url}}</a>
                             </p>
@@ -478,6 +478,9 @@ TEXT,
                                 📅 Condividi questo link con i tuoi clienti per permettere loro di prenotare direttamente un appuntamento con la tua attività.
                             </p>
                             -->
+                            <p style="margin:0;color:#666;">
+                                Sei stato assegnato come amministratore del business <strong>{{business_name}}</strong>.
+                            </p>
                         </td>
                     </tr>
                 </table>
@@ -516,14 +519,11 @@ TEXT,
 </html>
 HTML,
             'text' => <<<TEXT
-Benvenuto su Agenda
+Benvenuto sul tuo nuovo gestionale
 
 Ciao,
 
 Sei stato assegnato come amministratore di {{business_name}} sulla piattaforma Agenda.
-
-Il tuo business:
-📌 Nome: {{business_name}}
 
 Per iniziare, visita il seguente link per impostare la tua password:
 {{reset_url}}

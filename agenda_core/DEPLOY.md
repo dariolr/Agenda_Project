@@ -347,19 +347,70 @@ Host siteground
 CORS_ALLOWED_ORIGINS=https://prenota.romeolab.it,https://gestionale.romeolab.it,http://localhost:8080
 ```
 
+### ⚠️ CARTELLE DA DEPLOYARE (SOLO QUESTE)
+
+In produzione devono esserci **SOLO** queste cartelle:
+
+| Cartella | Descrizione | Obbligatoria |
+|----------|-------------|---------------|
+| `public_html/` | Entry point (index.php, .htaccess) | ✅ Sì |
+| `src/` | Codice sorgente PHP | ✅ Sì |
+| `vendor/` | Dipendenze Composer | ✅ Sì |
+| `bin/` | Worker notifiche (cron) | ⚠️ Se usi notifiche |
+| `logs/` | Log applicazione (vuota) | ⚠️ Opzionale |
+
+**MAI deployare:**
+- `docs/` — documentazione
+- `tests/` — test PHPUnit
+- `scripts/` — script di sviluppo
+- `migrations/` — file SQL (usare solo per setup iniziale)
+- `lib/` — cartella vuota legacy
+- `.git/` — repository git
+- `*.md` — file markdown (README, AGENTS, DEPLOY)
+- `phpunit.xml` — configurazione test
+- `composer.json` / `composer.lock` — già in vendor
+- `.env.example` — template configurazione
+
 ### Comandi Deploy API (agenda_core)
 
 ```bash
 # 1. Sync public/ → public_html/ (entry point)
 rsync -avz public/ siteground:www/api.romeolab.it/public_html/
 
-# 2. Sync resto del progetto (src, vendor, ecc.)
+# 2. Sync SOLO cartelle necessarie (src, vendor, bin)
+rsync -avz --delete \
+  src/ \
+  siteground:www/api.romeolab.it/src/
+
+rsync -avz --delete \
+  vendor/ \
+  siteground:www/api.romeolab.it/vendor/
+
+# 3. (Opzionale) Sync bin/ per worker notifiche
+rsync -avz --delete \
+  bin/ \
+  siteground:www/api.romeolab.it/bin/
+```
+
+### Comando alternativo (tutto in uno con esclusioni)
+
+```bash
 rsync -avz --delete \
   --exclude='.env' \
-  --exclude='logs/' \
+  --exclude='.env.example' \
   --exclude='.git/' \
+  --exclude='docs/' \
   --exclude='tests/' \
+  --exclude='scripts/' \
+  --exclude='migrations/' \
+  --exclude='lib/' \
+  --exclude='logs/*.log' \
   --exclude='public/' \
+  --exclude='*.md' \
+  --exclude='phpunit.xml' \
+  --exclude='composer.json' \
+  --exclude='composer.lock' \
+  --exclude='agenda_all_bundle.txt' \
   /path/to/agenda_core/ \
   siteground:www/api.romeolab.it/
 ```

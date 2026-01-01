@@ -21,10 +21,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     text: kDebugMode ? 'dariolarosa@hotmail.com' : null,
   );
   final _passwordController = TextEditingController(
-    text: kDebugMode ? 'TuaPasswordSicura123!' : null,
+    text: kDebugMode ? 'Abc123@@' : null,
   );
   bool _obscurePassword = true;
   bool _rememberMe = true;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -36,21 +38,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await ref
-        .read(authProvider.notifier)
-        .login(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-    if (success && mounted) {
-      context.go('/agenda');
+    try {
+      final success = await ref
+          .read(authProvider.notifier)
+          .login(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+
+      if (!mounted) return;
+
+      if (success) {
+        context.go('/agenda');
+      } else {
+        setState(() {
+          _errorMessage = context.l10n.authLoginFailed;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = context.l10n.authLoginFailed;
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
+    // Osserva solo per redirect se autenticato
+    ref.listen(authProvider, (prev, next) {
+      if (next.isAuthenticated && mounted) {
+        context.go('/agenda');
+      }
+    });
+
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -177,7 +205,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 24),
 
                   // Errore
-                  if (authState.errorMessage != null) ...[
+                  if (_errorMessage != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -197,7 +225,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              l10n.authLoginFailed,
+                              _errorMessage!,
                               style: TextStyle(color: colorScheme.error),
                             ),
                           ),
@@ -209,11 +237,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   // Bottone Login
                   FilledButton(
-                    onPressed: authState.isLoading ? null : _handleLogin,
+                    onPressed: _isLoading ? null : _handleLogin,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: authState.isLoading
+                    child: _isLoading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
