@@ -73,6 +73,8 @@ final class StaffRepository
             $result['display_name'] = trim($result['name'] . ' ' . substr($result['surname'], 0, 1) . '.');
             // Carica location_ids per ogni staff
             $result['location_ids'] = $this->getLocationIds((int) $result['id']);
+            // Carica service_ids per ogni staff
+            $result['service_ids'] = $this->getServiceIds((int) $result['id']);
         }
 
         return $results;
@@ -361,6 +363,40 @@ final class StaffRepository
             );
             foreach ($locationIds as $locId) {
                 $insertStmt->execute([$staffId, $locId]);
+            }
+        }
+    }
+
+    /**
+     * Get service IDs for a staff member.
+     */
+    public function getServiceIds(int $staffId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT service_id FROM staff_services WHERE staff_id = ?'
+        );
+        $stmt->execute([$staffId]);
+        return array_map('intval', array_column($stmt->fetchAll(), 'service_id'));
+    }
+
+    /**
+     * Set services for a staff member (replace existing).
+     */
+    public function setServices(int $staffId, array $serviceIds): void
+    {
+        // Remove all existing
+        $deleteStmt = $this->db->getPdo()->prepare(
+            'DELETE FROM staff_services WHERE staff_id = ?'
+        );
+        $deleteStmt->execute([$staffId]);
+
+        // Add new ones
+        if (!empty($serviceIds)) {
+            $insertStmt = $this->db->getPdo()->prepare(
+                'INSERT INTO staff_services (staff_id, service_id) VALUES (?, ?)'
+            );
+            foreach ($serviceIds as $serviceId) {
+                $insertStmt->execute([$staffId, (int) $serviceId]);
             }
         }
     }

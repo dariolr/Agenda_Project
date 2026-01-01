@@ -742,6 +742,7 @@ class ApiClient {
     String? avatarUrl,
     bool? isBookableOnline,
     List<int>? locationIds,
+    List<int>? serviceIds,
   }) async {
     final response = await post(
       '/v1/businesses/$businessId/staff',
@@ -753,6 +754,7 @@ class ApiClient {
         if (isBookableOnline != null) 'is_bookable_online': isBookableOnline,
         if (locationIds != null && locationIds.isNotEmpty)
           'location_ids': locationIds,
+        if (serviceIds != null) 'service_ids': serviceIds,
       },
     );
     return response['staff'] as Map<String, dynamic>;
@@ -768,6 +770,7 @@ class ApiClient {
     bool? isBookableOnline,
     int? sortOrder,
     List<int>? locationIds,
+    List<int>? serviceIds,
   }) async {
     final response = await put(
       '/v1/staff/$staffId',
@@ -779,6 +782,7 @@ class ApiClient {
         if (isBookableOnline != null) 'is_bookable_online': isBookableOnline,
         if (sortOrder != null) 'sort_order': sortOrder,
         if (locationIds != null) 'location_ids': locationIds,
+        if (serviceIds != null) 'service_ids': serviceIds,
       },
     );
     return response['staff'] as Map<String, dynamic>;

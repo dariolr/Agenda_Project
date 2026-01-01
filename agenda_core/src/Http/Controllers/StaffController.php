@@ -141,8 +141,14 @@ final class StaffController
             }
         }
 
+        // Assign to services if provided
+        if (isset($body['service_ids']) && is_array($body['service_ids'])) {
+            $this->staffRepository->setServices($staffId, array_map('intval', $body['service_ids']));
+        }
+
         $staff = $this->staffRepository->findById($staffId);
         $staff['location_ids'] = $this->staffRepository->getLocationIds($staffId);
+        $staff['service_ids'] = $this->staffRepository->getServiceIds($staffId);
 
         return Response::created([
             'staff' => $this->formatStaff($staff),
@@ -188,8 +194,14 @@ final class StaffController
             $this->staffRepository->setLocations($staffId, array_map('intval', $body['location_ids']));
         }
 
+        // Update services if provided
+        if (isset($body['service_ids']) && is_array($body['service_ids'])) {
+            $this->staffRepository->setServices($staffId, array_map('intval', $body['service_ids']));
+        }
+
         $updated = $this->staffRepository->findById($staffId);
         $updated['location_ids'] = $this->staffRepository->getLocationIds($staffId);
+        $updated['service_ids'] = $this->staffRepository->getServiceIds($staffId);
 
         return Response::success([
             'staff' => $this->formatStaff($updated),
@@ -394,6 +406,7 @@ final class StaffController
             'is_bookable_online' => (bool) ($s['is_bookable_online'] ?? true),
             'sort_order' => (int) ($s['sort_order'] ?? 0),
             'location_ids' => $s['location_ids'] ?? [],
+            'service_ids' => $s['service_ids'] ?? [],
         ];
     }
 }

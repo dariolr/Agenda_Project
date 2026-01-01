@@ -9,6 +9,7 @@ class Staff {
   final String surname;
   final Color color;
   final List<int> locationIds;
+  final List<int> serviceIds;
   final int sortOrder; // 🔹 ordine in agenda
   final bool isDefault; // 🔹 staff predefinito
   final bool isBookableOnline; // 🔹 abilitato alle prenotazioni online
@@ -20,6 +21,7 @@ class Staff {
     required this.surname,
     required this.color,
     required this.locationIds,
+    this.serviceIds = const [],
     this.sortOrder = 0,
     this.isDefault = false,
     this.isBookableOnline = true,
@@ -32,6 +34,7 @@ class Staff {
     String? surname,
     Color? color,
     List<int>? locationIds,
+    List<int>? serviceIds,
     int? sortOrder,
     bool? isDefault,
     bool? isBookableOnline,
@@ -42,6 +45,7 @@ class Staff {
     surname: surname ?? this.surname,
     color: color ?? this.color,
     locationIds: locationIds ?? this.locationIds,
+    serviceIds: serviceIds ?? this.serviceIds,
     sortOrder: sortOrder ?? this.sortOrder,
     isDefault: isDefault ?? this.isDefault,
     isBookableOnline: isBookableOnline ?? this.isBookableOnline,
@@ -58,6 +62,9 @@ class Staff {
     locationIds: (json['location_ids'] as List<dynamic>? ?? [])
         .map((id) => id as int)
         .toList(),
+    serviceIds: (json['service_ids'] as List<dynamic>? ?? [])
+        .map((id) => id as int)
+        .toList(),
     sortOrder: json['sort_order'] as int? ?? 0,
     isDefault: json['is_default'] as bool? ?? false,
     isBookableOnline: json['is_bookable_online'] as bool? ?? true,
@@ -70,6 +77,7 @@ class Staff {
     'surname': surname,
     'color_hex': ColorUtils.toHex(color),
     'location_ids': locationIds,
+    'service_ids': serviceIds,
     'sort_order': sortOrder,
     'is_default': isDefault,
     'is_bookable_online': isBookableOnline,

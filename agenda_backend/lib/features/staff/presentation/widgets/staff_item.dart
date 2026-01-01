@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/extensions.dart';
@@ -38,14 +38,16 @@ class _StaffItemState extends ConsumerState<StaffItem> {
 
   @override
   Widget build(BuildContext context) {
-    final interactionColors =
-        Theme.of(context).extension<AppInteractionColors>();
+    final interactionColors = Theme.of(
+      context,
+    ).extension<AppInteractionColors>();
     final colorScheme = Theme.of(context).colorScheme;
     final baseColor = widget.isEvenRow
         ? (interactionColors?.alternatingRowFill ??
-            colorScheme.onSurface.withOpacity(0.04))
+              colorScheme.onSurface.withOpacity(0.04))
         : Colors.transparent;
-    final hoverFill = interactionColors?.hoverFill ??
+    final hoverFill =
+        interactionColors?.hoverFill ??
         colorScheme.primaryContainer.withOpacity(0.1);
     final bgColor = _isHovered ? hoverFill : baseColor;
 
@@ -63,8 +65,9 @@ class _StaffItemState extends ConsumerState<StaffItem> {
           color: bgColor,
           borderRadius: BorderRadius.only(
             bottomLeft: widget.isLast ? const Radius.circular(16) : Radius.zero,
-            bottomRight:
-                widget.isLast ? const Radius.circular(16) : Radius.zero,
+            bottomRight: widget.isLast
+                ? const Radius.circular(16)
+                : Radius.zero,
           ),
         ),
         child: ListTile(
@@ -82,21 +85,44 @@ class _StaffItemState extends ConsumerState<StaffItem> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.staff.displayName,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w500),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.staff.displayName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'ID: ${widget.staff.id}',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                ],
               ),
               if (eligibleServicesCount == 0) ...[
                 const SizedBox(height: 2),
                 Text(
                   context.l10n.teamEligibleServicesNone,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                        fontStyle: FontStyle.italic,
-                      ),
+                    color: Theme.of(context).colorScheme.error,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ],
               if (!widget.staff.isBookableOnline) ...[
@@ -104,16 +130,17 @@ class _StaffItemState extends ConsumerState<StaffItem> {
                 Text(
                   context.l10n.staffNotBookableOnlineTooltip,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                        fontStyle: FontStyle.italic,
-                      ),
+                    color: Theme.of(context).colorScheme.error,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ],
             ],
           ),
           onTap: widget.onEdit,
           mouseCursor: SystemMouseCursors.click,
-          trailing: widget.trailingOverride ??
+          trailing:
+              widget.trailingOverride ??
               (widget.isWide
                   ? Row(
                       mainAxisSize: MainAxisSize.min,

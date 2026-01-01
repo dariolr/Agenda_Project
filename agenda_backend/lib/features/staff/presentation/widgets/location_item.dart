@@ -72,14 +72,42 @@ class LocationItem extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        location.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.onPrimaryContainer,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              location.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.onPrimaryContainer,
+                                  ),
                             ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.onPrimaryContainer.withOpacity(
+                                0.15,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'ID: ${location.id}',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: colorScheme.onPrimaryContainer,
+                                    fontFamily: 'monospace',
+                                  ),
+                            ),
+                          ),
+                        ],
                       ),
                       if (location.address != null &&
                           location.address!.isNotEmpty)
@@ -89,9 +117,7 @@ class LocationItem extends StatelessWidget {
                             location.address!,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: colorScheme.onPrimaryContainer
                                       .withOpacity(0.8),
@@ -140,7 +166,8 @@ class LocationItem extends StatelessWidget {
             borderRadius: const BorderRadius.vertical(
               bottom: Radius.circular(16),
             ),
-            child: staffListOverride ??
+            child:
+                staffListOverride ??
                 (isEmptyLocation
                     ? ServicesEmptyState(
                         message: context.l10n.teamNoStaffInLocation,

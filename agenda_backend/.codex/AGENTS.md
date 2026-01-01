@@ -203,6 +203,48 @@ features/business/
         └── edit_business_dialog.dart    # Con campo admin_email
 ```
 
+### ⚠️ Provider invalidation su cambio business (01/01/2026)
+
+Quando il superadmin esce da un business (tornando a `/businesses`), **TUTTI** i provider contenenti dati o stato legato al business **devono** essere invalidati.
+
+**Metodo responsabile:** `SuperadminSelectedBusinessNotifier._invalidateBusinessProviders()` in [business_list_screen.dart](lib/features/business/presentation/business_list_screen.dart)
+
+**Provider attualmente invalidati (25 totali):**
+
+| Categoria | Provider |
+|-----------|----------|
+| **Staff** | `allStaffProvider` |
+| **Locations** | `locationsProvider`, `currentLocationProvider` |
+| **Services** | `servicesProvider`, `serviceCategoriesProvider`, `serviceStaffEligibilityProvider` |
+| **Clients** | `clientsProvider` |
+| **Appointments** | `appointmentsProvider` |
+| **Bookings** | `bookingsProvider` |
+| **Resources** | `resourcesProvider` |
+| **Time Blocks** | `timeBlocksProvider` |
+| **Availability** | `availabilityExceptionsProvider` |
+| **UI State** | `selectedStaffIdsProvider`, `staffFilterModeProvider`, `selectedAppointmentProvider` |
+| **Drag & Drop** | `dragSessionProvider`, `draggedAppointmentIdProvider`, `draggedBaseRangeProvider`, `tempDragTimeProvider`, `resizingProvider`, `pendingDropProvider` |
+| **Business Context** | `currentBusinessIdProvider` |
+| **Layout/Date** | `layoutConfigProvider`, `agendaDateProvider`, `agendaScrollProvider` |
+
+**REGOLA CRITICA:**
+Quando si crea un **nuovo provider** che contiene:
+- Dati caricati da API che dipendono da `business_id`
+- ID di entità business-specific (staff, location, appointment, service, client, ecc.)
+- Stato UI che referenzia entità del business
+
+→ **Il provider DEVE essere aggiunto** a `_invalidateBusinessProviders()`.
+
+**Esempio - nuovo provider da aggiungere:**
+```dart
+void _invalidateBusinessProviders() {
+  // ... provider esistenti ...
+  
+  // Nuovo provider
+  ref.invalidate(mioNuovoProviderProvider);
+}
+```
+
 ---
 
 ## 👤 Profilo Utente (31/12/2025)
@@ -408,6 +450,19 @@ Il bottone "+" per aggiungere eccezioni occupava spazio nella griglia settimanal
 
 Tutti i seguenti provider sono stati convertiti da mock a chiamate API reali.
 
+### Staff Services (Servizi abilitati per Staff)
+Relazione N:M tra staff e servizi che può erogare.
+
+**Gestione tramite endpoint Staff esistenti:**
+- `GET /v1/businesses/{business_id}/staff` - ritorna `service_ids` per ogni staff
+- `POST /v1/businesses/{business_id}/staff` - accetta `service_ids` nel body
+- `PUT /v1/staff/{id}` - accetta `service_ids` nel body
+
+**File Flutter:**
+- `lib/core/models/staff.dart` → campo `serviceIds`
+- `lib/features/services/providers/services_provider.dart` → `eligibleServicesForStaffProvider` legge da Staff.serviceIds
+- `lib/features/staff/presentation/dialogs/staff_dialog.dart` → salvataggio via API
+
 ### Staff Availability Exceptions (Eccezioni Turni)
 Eccezioni ai turni base dello staff (ferie, malattia, straordinari).
 
@@ -453,6 +508,7 @@ Periodi di non disponibilità per uno o più staff.
 I seguenti mock sono stati rimossi perché non più utilizzati:
 - `MockAvailabilityExceptionsRepository` - rimosso da `availability_exceptions_repository.dart`
 - `weeklyStaffAvailabilityMockProvider` - rimosso da `staff_week_overview_screen.dart`
+- `ServiceStaffEligibilityNotifier` mock data - ora legge da `allStaffProvider` e `staff.serviceIds`
 
 ---
 
