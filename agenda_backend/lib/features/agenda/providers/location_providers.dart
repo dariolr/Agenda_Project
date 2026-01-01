@@ -27,7 +27,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
       final business = ref.read(currentBusinessProvider);
       final repository = ref.read(locationsRepositoryProvider);
       final locations = await repository.getByBusinessId(business.id);
-      state = locations;
+      // Filtra solo le location attive
+      state = locations.where((l) => l.isActive).toList();
     } catch (e) {
       // In caso di errore, mantieni lo stato vuoto
       debugPrint('❌ LocationsNotifier._loadLocations error: $e');
@@ -92,15 +93,17 @@ class LocationsNotifier extends Notifier<List<Location>> {
   }
 
   /// Elimina una location tramite API
-  Future<void> deleteLocation(int id) async {
+  /// [currentLocationId] deve essere passato dal chiamante per evitare dipendenza circolare
+  Future<void> deleteLocation(int id, {required int currentLocationId}) async {
     final repository = ref.read(locationsRepositoryProvider);
+
     await repository.delete(id);
 
-    final currentId = ref.read(currentLocationIdProvider);
     final filtered = state.where((l) => l.id != id).toList();
     state = filtered;
-    if (filtered.isEmpty) return;
-    if (currentId == id) {
+
+    // Se era la location corrente, passa alla prima disponibile
+    if (filtered.isNotEmpty && currentLocationId == id) {
       ref.read(currentLocationIdProvider.notifier).set(filtered.first.id);
     }
   }
@@ -118,12 +121,12 @@ class LocationsNotifier extends Notifier<List<Location>> {
     ];
   }
 
-  void delete(int id) {
-    final currentId = ref.read(currentLocationIdProvider);
+  void delete(int id, {int? currentLocationId}) {
     final filtered = state.where((l) => l.id != id).toList();
     state = filtered;
     if (filtered.isEmpty) return;
-    if (currentId == id) {
+    // Se era la location corrente, passa alla prima disponibile
+    if (currentLocationId != null && currentLocationId == id) {
       ref.read(currentLocationIdProvider.notifier).set(filtered.first.id);
     }
   }

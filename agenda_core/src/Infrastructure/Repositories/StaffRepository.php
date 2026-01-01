@@ -71,6 +71,8 @@ final class StaffRepository
         $results = $stmt->fetchAll();
         foreach ($results as &$result) {
             $result['display_name'] = trim($result['name'] . ' ' . substr($result['surname'], 0, 1) . '.');
+            // Carica location_ids per ogni staff
+            $result['location_ids'] = $this->getLocationIds((int) $result['id']);
         }
 
         return $results;

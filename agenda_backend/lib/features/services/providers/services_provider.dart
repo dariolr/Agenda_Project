@@ -20,12 +20,22 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     final location = ref.watch(currentLocationProvider);
 
     // Carica servizi E categorie dall'API
-    final result = await repository.getServicesWithCategories(locationId: location.id);
-    
+    final result = await repository.getServicesWithCategories(
+      locationId: location.id,
+    );
+
     // Popola le categorie nel provider dedicato
-    ref.read(serviceCategoriesProvider.notifier).setCategories(result.categories);
-    
+    ref
+        .read(serviceCategoriesProvider.notifier)
+        .setCategories(result.categories);
+
     return result.services;
+  }
+
+  /// Ricarica servizi e categorie dall'API
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
   }
 
   void setServices(List<Service> services) {
@@ -167,7 +177,7 @@ final servicesProvider = AsyncNotifierProvider<ServicesNotifier, List<Service>>(
 );
 
 ///
-/// VARIANTI SERVIZI (mock, filtrate per location)
+/// VARIANTI SERVIZI (da API, filtrate per location)
 ///
 class ServiceVariantsNotifier extends AsyncNotifier<List<ServiceVariant>> {
   @override
@@ -176,11 +186,12 @@ class ServiceVariantsNotifier extends AsyncNotifier<List<ServiceVariant>> {
     final location = ref.watch(currentLocationProvider);
     final currency = ref.watch(effectiveCurrencyProvider);
 
-    // Map services to variants
+    // Map services to variants usando ID reale da API
     return services
         .map(
           (s) => ServiceVariant(
-            id: 900000 + s.id, // Mock ID generation for variant
+            // Usa serviceVariantId da API se disponibile, altrimenti fallback
+            id: s.serviceVariantId ?? s.id,
             serviceId: s.id,
             locationId: location.id,
             durationMinutes: s.durationMinutes ?? 30,

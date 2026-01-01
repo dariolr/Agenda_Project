@@ -197,6 +197,87 @@ Categorie Servizi (01/01/2026):
 - `ServicesApi.fetchServicesWithCategories()` estrae categorie dalla risposta
 - `ServicesNotifier` popola `serviceCategoriesProvider` con dati API
 
+---
+
+## 🗄️ API Gestionale - Entità Persistite (01/01/2026)
+
+### Staff Availability Exceptions
+Eccezioni ai turni base dello staff (ferie, malattia, straordinari).
+
+**Endpoint:**
+- `GET /v1/staff/{id}/availability-exceptions` - lista eccezioni per staff
+- `POST /v1/staff/{id}/availability-exceptions` - crea eccezione
+- `PUT /v1/staff/availability-exceptions/{id}` - modifica eccezione
+- `DELETE /v1/staff/availability-exceptions/{id}` - elimina eccezione
+
+**Tabella:** `staff_availability_exceptions`
+- `id`, `staff_id`, `date`, `start_time`, `end_time`, `is_available`, `note`
+
+**File PHP:**
+- `src/Infrastructure/Repositories/StaffAvailabilityExceptionRepository.php`
+- `src/Http/Controllers/StaffAvailabilityExceptionController.php`
+
+### Resources (Risorse)
+Risorse fisiche assegnabili ai servizi (es. cabine, lettini).
+
+**Endpoint:**
+- `GET /v1/locations/{id}/resources` - lista risorse per sede
+- `POST /v1/locations/{id}/resources` - crea risorsa
+- `PUT /v1/resources/{id}` - modifica risorsa
+- `DELETE /v1/resources/{id}` - soft delete risorsa
+
+**Tabelle:**
+- `resources` - id, location_id, name, description, is_active, deleted_at
+- `service_variant_resource_requirements` - variante_servizio ↔ risorsa (M:N)
+
+**File PHP:**
+- `src/Infrastructure/Repositories/ResourceRepository.php`
+- `src/Http/Controllers/ResourcesController.php`
+
+### Time Blocks (Blocchi Non Disponibilità)
+Periodi di non disponibilità per uno o più staff (riunioni, pause, ferie).
+
+**Endpoint:**
+- `GET /v1/locations/{id}/time-blocks` - lista blocchi per sede (con filtro date)
+- `POST /v1/locations/{id}/time-blocks` - crea blocco
+- `PUT /v1/time-blocks/{id}` - modifica blocco
+- `DELETE /v1/time-blocks/{id}` - elimina blocco
+
+**Tabelle:**
+- `time_blocks` - id, business_id, location_id, start_time, end_time, reason, is_all_day
+- `time_block_staff` - blocco ↔ staff (M:N)
+
+**File PHP:**
+- `src/Infrastructure/Repositories/TimeBlockRepository.php`
+- `src/Http/Controllers/TimeBlocksController.php`
+
+---
+
+## 🔄 Refresh e Polling Dati (01/01/2026)
+
+### Refresh all'entrata nelle sezioni
+Ogni sezione del gestionale ricarica i dati dal DB quando l'utente vi accede.
+
+| Sezione | Provider ricaricati |
+|---------|--------------------|
+| Agenda | staff, locations, servizi, clienti |
+| Clienti | clienti |
+| Team | staff, locations, servizi |
+| Servizi | servizi, staff |
+
+### Polling automatico in Agenda
+Gli appuntamenti vengono ricaricati automaticamente:
+- **Debug**: ogni 10 secondi
+- **Produzione**: ogni 5 minuti
+
+Questo permette di vedere nuove prenotazioni fatte online o da altri dispositivi.
+
+### Filtro Location Attive
+Il provider `LocationsNotifier` filtra automaticamente le location non attive (`is_active = 0`).
+Questo impatta filtri agenda, sezione team e dialog staff.
+
+---
+
 ⚠️ REGOLA CRITICA DATABASE:
 - **MAI** inserire, modificare o eliminare dati nel database senza richiesta esplicita dell'utente
 - Le operazioni di seed/migration vanno eseguite solo se l'utente lo richiede

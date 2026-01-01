@@ -46,11 +46,6 @@ class AuthNotifier extends Notifier<AuthState> {
     _lastState = null;
   }
 
-  /// Salva lo stato prima che venga perso
-  void _preserveState() {
-    _lastState = state;
-  }
-
   AuthRepository get _repository => ref.read(authRepositoryProvider);
 
   /// Tenta di ripristinare la sessione da refresh token salvato.

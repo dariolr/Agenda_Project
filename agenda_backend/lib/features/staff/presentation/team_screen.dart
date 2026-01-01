@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../agenda/providers/location_providers.dart';
+import '../../services/providers/services_provider.dart';
 import '../providers/staff_providers.dart';
 import '../providers/staff_reorder_provider.dart';
 import '../providers/staff_sorted_providers.dart';
@@ -27,6 +28,17 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   final ScrollController _scrollController = ScrollController();
   bool isReorderLocations = false;
   bool isReorderStaff = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Ricarica staff, locations e servizi dal DB quando si entra nella schermata
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(allStaffProvider.notifier).refresh();
+      ref.read(locationsProvider.notifier).refresh();
+      ref.read(servicesProvider.notifier).refresh();
+    });
+  }
 
   void _toggleLocationReorder() {
     setState(() {
@@ -57,6 +69,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   @override
   Widget build(BuildContext context) {
     final locations = ref.watch(sortedLocationsProvider);
+    final staffAsync = ref.watch(allStaffProvider);
     final isWide = ref.watch(formFactorProvider) != AppFormFactor.mobile;
     final showReorderPanel = ref.watch(teamReorderPanelProvider);
 
@@ -68,6 +81,11 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
         });
       }
     });
+
+    // Mostra loading mentre carica staff
+    if (staffAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     if (locations.isEmpty) {
       return const SizedBox.shrink();
@@ -83,7 +101,6 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
             Builder(
               builder: (context) {
                 // Conta lo staff totale
-                final staffAsync = ref.watch(allStaffProvider);
                 final totalStaffCount = staffAsync.value?.length ?? 0;
                 final showLocationReorder = locations.length >= 2;
                 final showStaffReorder = totalStaffCount >= 2;
@@ -336,7 +353,10 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
               cancelLabel: context.l10n.actionCancel,
             );
             if (confirmed == true) {
-              ref.read(locationsProvider.notifier).delete(loc.id);
+              final currentId = ref.read(currentLocationIdProvider);
+              await ref
+                  .read(locationsProvider.notifier)
+                  .deleteLocation(loc.id, currentLocationId: currentId);
             }
           },
           onEditStaff: (staff) => showStaffDialog(context, ref, initial: staff),

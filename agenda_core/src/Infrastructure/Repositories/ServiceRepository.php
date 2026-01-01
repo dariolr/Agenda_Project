@@ -41,6 +41,7 @@ final class ServiceRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT s.id, s.business_id, s.category_id, s.name, s.description, 
                     s.is_active, s.sort_order,
+                    sv.id AS service_variant_id,
                     sv.duration_minutes, sv.price, sv.color_hex AS color,
                     sv.is_bookable_online,
                     sc.name AS category_name

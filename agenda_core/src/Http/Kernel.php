@@ -16,6 +16,9 @@ use Agenda\Http\Controllers\HealthController;
 use Agenda\Http\Controllers\LocationsController;
 use Agenda\Http\Controllers\ServicesController;
 use Agenda\Http\Controllers\StaffController;
+use Agenda\Http\Controllers\StaffAvailabilityExceptionController;
+use Agenda\Http\Controllers\ResourcesController;
+use Agenda\Http\Controllers\TimeBlocksController;
 use Agenda\Http\Controllers\AppointmentsController;
 use Agenda\Http\Middleware\AuthMiddleware;
 use Agenda\Http\Middleware\BusinessAccessMiddleware;
@@ -33,6 +36,9 @@ use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\StaffScheduleRepository;
+use Agenda\Infrastructure\Repositories\StaffAvailabilityExceptionRepository;
+use Agenda\Infrastructure\Repositories\ResourceRepository;
+use Agenda\Infrastructure\Repositories\TimeBlockRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
@@ -123,6 +129,20 @@ final class Kernel
         $this->router->get('/v1/staff/{id}/schedules', StaffController::class, 'showSchedule', ['auth']);
         $this->router->put('/v1/staff/{id}/schedules', StaffController::class, 'updateSchedule', ['auth']);
 
+        // Staff availability exceptions (auth required)
+        $this->router->get('/v1/businesses/{business_id}/staff/availability-exceptions', StaffAvailabilityExceptionController::class, 'indexForBusiness', ['auth']);
+        $this->router->get('/v1/staff/{id}/availability-exceptions', StaffAvailabilityExceptionController::class, 'indexForStaff', ['auth']);
+        $this->router->post('/v1/staff/{id}/availability-exceptions', StaffAvailabilityExceptionController::class, 'store', ['auth']);
+        $this->router->put('/v1/staff/availability-exceptions/{id}', StaffAvailabilityExceptionController::class, 'update', ['auth']);
+        $this->router->delete('/v1/staff/availability-exceptions/{id}', StaffAvailabilityExceptionController::class, 'destroy', ['auth']);
+
+        // Resources (auth required)
+        $this->router->get('/v1/businesses/{business_id}/resources', ResourcesController::class, 'indexByBusiness', ['auth']);
+        $this->router->get('/v1/locations/{location_id}/resources', ResourcesController::class, 'indexByLocation', ['auth']);
+        $this->router->post('/v1/locations/{location_id}/resources', ResourcesController::class, 'store', ['auth']);
+        $this->router->put('/v1/resources/{id}', ResourcesController::class, 'update', ['auth']);
+        $this->router->delete('/v1/resources/{id}', ResourcesController::class, 'destroy', ['auth']);
+
         // Business Users (operators management)
         $this->router->get('/v1/businesses/{business_id}/users', BusinessUsersController::class, 'index', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/users', BusinessUsersController::class, 'store', ['auth']);
@@ -154,6 +174,12 @@ final class Kernel
         $this->router->post('/v1/locations/{location_id}/bookings', BookingsController::class, 'store', ['auth', 'location_path', 'idempotency']);
         $this->router->put('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'update', ['auth', 'location_path']);
         $this->router->delete('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'destroy', ['auth', 'location_path']);
+
+        // Time blocks (auth required)
+        $this->router->get('/v1/locations/{location_id}/time-blocks', TimeBlocksController::class, 'index', ['auth']);
+        $this->router->post('/v1/locations/{location_id}/time-blocks', TimeBlocksController::class, 'store', ['auth']);
+        $this->router->put('/v1/time-blocks/{id}', TimeBlocksController::class, 'update', ['auth']);
+        $this->router->delete('/v1/time-blocks/{id}', TimeBlocksController::class, 'destroy', ['auth']);
 
         // Appointments (protected, business-scoped via path)
         $this->router->get('/v1/locations/{location_id}/appointments', AppointmentsController::class, 'index', ['auth', 'location_path']);
@@ -191,6 +217,9 @@ final class Kernel
         $serviceRepo = new ServiceRepository($this->db);
         $staffRepo = new StaffRepository($this->db);
         $staffScheduleRepo = new StaffScheduleRepository($this->db);
+        $staffExceptionRepo = new StaffAvailabilityExceptionRepository($this->db);
+        $resourceRepo = new ResourceRepository($this->db);
+        $timeBlockRepo = new TimeBlockRepository($this->db);
         $bookingRepo = new BookingRepository($this->db);
         $clientRepo = new ClientRepository($this->db);
 
@@ -230,6 +259,9 @@ final class Kernel
             AdminBusinessesController::class => new AdminBusinessesController($this->db, $businessRepo, $businessUserRepo, $userRepo),
             BusinessUsersController::class => new BusinessUsersController($businessRepo, $businessUserRepo, $userRepo),
             BusinessInvitationsController::class => new BusinessInvitationsController($businessRepo, $businessUserRepo, $businessInvitationRepo, $userRepo),
+            StaffAvailabilityExceptionController::class => new StaffAvailabilityExceptionController($staffExceptionRepo, $staffRepo, $businessUserRepo, $userRepo),
+            ResourcesController::class => new ResourcesController($resourceRepo, $locationRepo, $businessUserRepo, $userRepo),
+            TimeBlocksController::class => new TimeBlocksController($timeBlockRepo, $locationRepo, $businessUserRepo, $userRepo),
         ];
     }
 
