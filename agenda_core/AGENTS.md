@@ -133,6 +133,13 @@ Profilo Utente e Admin Email (31/12/2025):
 - UseCase `ResendAdminInvite` genera nuovo token reset (24h) e invia email
 - Template email: `businessAdminWelcome` con link reset password
 - BusinessRepository: `findByIdWithAdmin()` e `findAllWithSearch()` includono admin_email
+- **GET /v1/admin/businesses** ritorna `admin_email` per ogni business (fix 01/01/2026)
+
+Email Benvenuto Admin (01/01/2026):
+- Template `businessAdminWelcome` temporaneamente senza URL prenotazioni
+- URL prenotazioni commentato in HTML, rimosso da versione text
+- Da riattivare quando frontend booking pronto per il business
+- File: `src/Infrastructure/Notifications/EmailTemplateRenderer.php`
 
 ⚠️ REGOLA CRITICA DATABASE:
 - **MAI** inserire, modificare o eliminare dati nel database senza richiesta esplicita dell'utente

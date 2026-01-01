@@ -989,6 +989,26 @@ class L10n {
     );
   }
 
+  /// `Sede attiva`
+  String get teamLocationIsActiveLabel {
+    return Intl.message(
+      'Sede attiva',
+      name: 'teamLocationIsActiveLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Se disattivata, la sede non sarà visibile ai clienti`
+  String get teamLocationIsActiveHint {
+    return Intl.message(
+      'Se disattivata, la sede non sarà visibile ai clienti',
+      name: 'teamLocationIsActiveHint',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Nuovo membro del team`
   String get teamNewStaffTitle {
     return Intl.message(

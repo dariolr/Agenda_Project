@@ -11,8 +11,8 @@ class Location {
   final double? latitude;
   final double? longitude;
   final String? currency;
-  final bool
-  isDefault; // 🔹 nuova proprietà: indica se la sede è quella predefinita
+  final bool isDefault;
+  final bool isActive;
 
   const Location({
     required this.id,
@@ -27,7 +27,8 @@ class Location {
     this.latitude,
     this.longitude,
     this.currency,
-    this.isDefault = false, // 🔹 di default false
+    this.isDefault = false,
+    this.isActive = true,
   });
 
   Location copyWith({
@@ -44,6 +45,7 @@ class Location {
     double? longitude,
     String? currency,
     bool? isDefault,
+    bool? isActive,
   }) {
     return Location(
       id: id ?? this.id,
@@ -59,6 +61,7 @@ class Location {
       longitude: longitude ?? this.longitude,
       currency: currency ?? this.currency,
       isDefault: isDefault ?? this.isDefault,
+      isActive: isActive ?? this.isActive,
     );
   }
 
@@ -76,7 +79,8 @@ class Location {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       currency: json['currency'] as String?,
-      isDefault: json['is_default'] as bool? ?? false, // 🔹 compatibilità JSON
+      isDefault: json['is_default'] as bool? ?? false,
+      isActive: json['is_active'] as bool? ?? true,
     );
   }
 
@@ -94,7 +98,8 @@ class Location {
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (currency != null) 'currency': currency,
-      'is_default': isDefault, // 🔹 incluso sempre per chiarezza
+      'is_default': isDefault,
+      'is_active': isActive,
     };
   }
 }

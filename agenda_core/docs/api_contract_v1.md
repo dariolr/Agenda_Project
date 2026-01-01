@@ -427,7 +427,8 @@ Response (200):
         "timezone": "Europe/Rome",
         "currency": "EUR",
         "is_active": true,
-        "created_at": "2025-01-01T10:00:00+01:00"
+        "created_at": "2025-01-01T10:00:00+01:00",
+        "admin_email": "admin@bellavita.it"
       }
     ],
     "total": 15,
@@ -436,6 +437,9 @@ Response (200):
   }
 }
 ```
+
+Note:
+- `admin_email` è l'email dell'owner del business (può essere null se non assegnato)
 
 Errors:
 - `forbidden` (403): Non superadmin

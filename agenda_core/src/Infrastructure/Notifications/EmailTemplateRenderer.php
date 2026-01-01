@@ -468,9 +468,16 @@ TEXT,
                         <td style="padding:20px;">
                             <p style="margin:0 0 10px;color:#333;"><strong>Il tuo business:</strong></p>
                             <p style="margin:0;color:#666;">
-                                📌 Nome: {{business_name}}<br>
+                                📌 Nome: {{business_name}}
+                            </p>
+                            <!-- TODO: Riattivare URL prenotazioni quando pronto
+                            <p style="margin:0;color:#666;">
                                 🔗 URL prenotazioni: <a href="{{booking_url}}" style="color:#6366f1;">{{booking_url}}</a>
                             </p>
+                            <p style="margin:15px 0 0;font-size:14px;color:#666;">
+                                📅 Condividi questo link con i tuoi clienti per permettere loro di prenotare direttamente un appuntamento con la tua attività.
+                            </p>
+                            -->
                         </td>
                     </tr>
                 </table>
@@ -517,7 +524,6 @@ Sei stato assegnato come amministratore di {{business_name}} sulla piattaforma A
 
 Il tuo business:
 📌 Nome: {{business_name}}
-🔗 URL prenotazioni: {{booking_url}}
 
 Per iniziare, visita il seguente link per impostare la tua password:
 {{reset_url}}

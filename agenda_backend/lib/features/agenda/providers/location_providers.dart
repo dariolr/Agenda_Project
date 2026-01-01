@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/location.dart';
 import '../../agenda/providers/business_providers.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../business/providers/locations_providers.dart';
 
 ///
@@ -10,7 +12,13 @@ import '../../business/providers/locations_providers.dart';
 class LocationsNotifier extends Notifier<List<Location>> {
   @override
   List<Location> build() {
-    _loadLocations();
+    // Ascolta i cambiamenti dell'auth state
+    final authState = ref.watch(authProvider);
+
+    // Carica locations solo se autenticato
+    if (authState.isAuthenticated) {
+      _loadLocations();
+    }
     return []; // Stato iniziale vuoto
   }
 
@@ -22,9 +30,82 @@ class LocationsNotifier extends Notifier<List<Location>> {
       state = locations;
     } catch (e) {
       // In caso di errore, mantieni lo stato vuoto
+      debugPrint('❌ LocationsNotifier._loadLocations error: $e');
       state = [];
     }
   }
+
+  /// Ricarica le locations dall'API
+  Future<void> refresh() async {
+    await _loadLocations();
+  }
+
+  /// Crea una nuova location tramite API
+  Future<Location> create({
+    required String name,
+    String? address,
+    String? phone,
+    String? email,
+    String? timezone,
+    bool? isActive,
+  }) async {
+    final business = ref.read(currentBusinessProvider);
+    final repository = ref.read(locationsRepositoryProvider);
+    final location = await repository.create(
+      businessId: business.id,
+      name: name,
+      address: address,
+      phone: phone,
+      email: email,
+      timezone: timezone,
+      isActive: isActive,
+    );
+    state = [...state, location];
+    return location;
+  }
+
+  /// Aggiorna una location esistente tramite API
+  Future<Location> updateLocation({
+    required int locationId,
+    String? name,
+    String? address,
+    String? phone,
+    String? email,
+    String? timezone,
+    bool? isActive,
+  }) async {
+    final repository = ref.read(locationsRepositoryProvider);
+    final updated = await repository.update(
+      locationId: locationId,
+      name: name,
+      address: address,
+      phone: phone,
+      email: email,
+      timezone: timezone,
+      isActive: isActive,
+    );
+    state = [
+      for (final l in state)
+        if (l.id == updated.id) updated else l,
+    ];
+    return updated;
+  }
+
+  /// Elimina una location tramite API
+  Future<void> deleteLocation(int id) async {
+    final repository = ref.read(locationsRepositoryProvider);
+    await repository.delete(id);
+
+    final currentId = ref.read(currentLocationIdProvider);
+    final filtered = state.where((l) => l.id != id).toList();
+    state = filtered;
+    if (filtered.isEmpty) return;
+    if (currentId == id) {
+      ref.read(currentLocationIdProvider.notifier).set(filtered.first.id);
+    }
+  }
+
+  // === Metodi locali per UI (senza API) ===
 
   void add(Location location) {
     state = [...state, location];

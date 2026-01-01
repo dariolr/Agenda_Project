@@ -30,16 +30,25 @@ final class LocationRepository
         return $result ?: null;
     }
 
-    public function findByBusinessId(int $businessId): array
+    /**
+     * Find locations by business ID
+     * @param bool $includeInactive If true, include inactive locations (for admin/gestionale)
+     */
+    public function findByBusinessId(int $businessId, bool $includeInactive = false): array
     {
-        $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, business_id, name, address, city, region, country, 
+        $sql = 'SELECT id, business_id, name, address, city, region, country, 
                     phone, email, latitude, longitude, currency, timezone,
                     is_default, is_active, created_at, updated_at
              FROM locations
-             WHERE business_id = ? AND is_active = 1
-             ORDER BY name ASC'
-        );
+             WHERE business_id = ?';
+        
+        if (!$includeInactive) {
+            $sql .= ' AND is_active = 1';
+        }
+        
+        $sql .= ' ORDER BY name ASC';
+        
+        $stmt = $this->db->getPdo()->prepare($sql);
         $stmt->execute([$businessId]);
 
         return $stmt->fetchAll();
@@ -117,8 +126,9 @@ final class LocationRepository
 
     public function create(int $businessId, string $name, array $data = []): int
     {
+        $isActive = $data['is_active'] ?? 1;
         $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO locations (business_id, name, address, phone, email, timezone, settings) 
+            'INSERT INTO locations (business_id, name, address, phone, email, timezone, is_active) 
              VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
@@ -128,7 +138,7 @@ final class LocationRepository
             $data['phone'] ?? null,
             $data['email'] ?? null,
             $data['timezone'] ?? 'Europe/Rome',
-            isset($data['settings']) ? json_encode($data['settings']) : null,
+            $isActive ? 1 : 0,
         ]);
 
         return (int) $this->db->getPdo()->lastInsertId();
@@ -146,9 +156,9 @@ final class LocationRepository
             }
         }
 
-        if (array_key_exists('settings', $data)) {
-            $fields[] = 'settings = ?';
-            $values[] = json_encode($data['settings']);
+        if (array_key_exists('is_active', $data)) {
+            $fields[] = 'is_active = ?';
+            $values[] = $data['is_active'] ? 1 : 0;
         }
 
         if (empty($fields)) {
@@ -162,5 +172,28 @@ final class LocationRepository
         );
 
         return $stmt->execute($values);
+    }
+
+    /**
+     * Soft delete a location (set is_active = 0)
+     */
+    public function delete(int $locationId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE locations SET is_active = 0, updated_at = NOW() WHERE id = ?'
+        );
+        return $stmt->execute([$locationId]);
+    }
+
+    /**
+     * Check if location is the only active one for the business
+     */
+    public function isOnlyActiveLocation(int $locationId, int $businessId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) FROM locations WHERE business_id = ? AND is_active = 1'
+        );
+        $stmt->execute([$businessId]);
+        return (int) $stmt->fetchColumn() <= 1;
     }
 }

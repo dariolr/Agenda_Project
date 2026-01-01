@@ -18,7 +18,6 @@ import '../core/widgets/app_buttons.dart';
 import '../features/agenda/presentation/dialogs/add_block_dialog.dart';
 import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
 import '../features/agenda/presentation/widgets/booking_dialog.dart';
-import '../features/agenda/providers/business_providers.dart';
 import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/agenda/providers/location_providers.dart';
@@ -612,6 +611,13 @@ class _TeamAddAction extends ConsumerWidget {
     final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
     const iconOnlyWidth = 46.0;
     final bool isIconOnly = !showLabelEffective;
+
+    // Controlla se ci sono staff e locations per determinare visibilità pulsanti
+    final staffAsync = ref.watch(allStaffProvider);
+    final staffCount = staffAsync.value?.length ?? 0;
+    final locations = ref.watch(locationsProvider);
+    final locationCount = locations.length;
+
     Widget buildActionLabel(IconData icon, String label) {
       return showLabelEffective
           ? Row(
@@ -630,75 +636,55 @@ class _TeamAddAction extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Pulsante Operatori
-          Tooltip(
-            message: l10n.operatorsTitle,
-            child: SizedBox(
-              height: _actionButtonHeight,
-              width: isIconOnly ? iconOnlyWidth : null,
-              child: AppOutlinedActionButton(
-                onPressed: () {
-                  final businessId = ref.read(currentBusinessIdProvider);
-                  context.push('/operatori/$businessId');
-                },
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                borderRadius: BorderRadius.circular(8),
-                borderColor: scheme.primary,
-                foregroundColor: scheme.primary,
-                child: buildActionLabel(
-                  Icons.supervisor_account_outlined,
-                  l10n.operatorsTitle,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Tooltip(
-            message: l10n.staffHubAvailabilityTitle,
-            child: SizedBox(
-              height: _actionButtonHeight,
-              width: isIconOnly ? iconOnlyWidth : null,
-              child: AppOutlinedActionButton(
-                onPressed: () => context.pushNamed('staff-availability'),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                borderRadius: BorderRadius.circular(8),
-                borderColor: scheme.primary,
-                foregroundColor: scheme.primary,
-                child: buildActionLabel(
-                  Icons.schedule_outlined,
-                  l10n.staffHubAvailabilityTitle,
+          // Pulsante Disponibilità: visibile solo se almeno 1 staff
+          if (staffCount >= 1) ...[
+            Tooltip(
+              message: l10n.staffHubAvailabilityTitle,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: AppOutlinedActionButton(
+                  onPressed: () => context.pushNamed('staff-availability'),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  borderColor: scheme.primary,
+                  foregroundColor: scheme.primary,
+                  child: buildActionLabel(
+                    Icons.schedule_outlined,
+                    l10n.staffHubAvailabilityTitle,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Tooltip(
-            message: l10n.reorderTitle,
-            child: SizedBox(
-              height: _actionButtonHeight,
-              width: isIconOnly ? iconOnlyWidth : null,
-              child: AppOutlinedActionButton(
-                onPressed: () {
-                  ref.read(teamReorderPanelProvider.notifier).toggle();
-                },
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+            const SizedBox(width: 8),
+          ],
+          // Pulsante Modifica ordinamento: visibile solo se almeno 2 staff o 2 locations
+          if (staffCount >= 2 || locationCount >= 2) ...[
+            Tooltip(
+              message: l10n.reorderTitle,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: AppOutlinedActionButton(
+                  onPressed: () {
+                    ref.read(teamReorderPanelProvider.notifier).toggle();
+                  },
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  borderColor: scheme.primary,
+                  foregroundColor: scheme.primary,
+                  child: buildActionLabel(Icons.sort, l10n.reorderTitle),
                 ),
-                borderRadius: BorderRadius.circular(8),
-                borderColor: scheme.primary,
-                foregroundColor: scheme.primary,
-                child: buildActionLabel(Icons.sort, l10n.reorderTitle),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
+          ],
           AdaptiveDropdown<String>(
             modalTitle: l10n.agendaAdd,
             alignment: AdaptiveDropdownAlignment.right,

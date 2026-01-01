@@ -51,6 +51,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final _emailController = TextEditingController();
+  bool _isActive = true;
 
   @override
   void initState() {
@@ -59,6 +60,11 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       _nameController.text = widget.initial!.name;
       _addressController.text = widget.initial!.address ?? '';
       _emailController.text = widget.initial!.email ?? '';
+      _isActive = widget.initial!.isActive;
+    } else {
+      // Pre-popola con il nome del business per nuove sedi
+      final businessName = ref.read(currentBusinessProvider).name;
+      _nameController.text = businessName;
     }
   }
 
@@ -79,14 +85,20 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
 
     final actions = [
       AppOutlinedActionButton(
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
         padding: AppButtonStyles.dialogButtonPadding,
         child: Text(l10n.actionCancel),
       ),
       AppFilledButton(
-        onPressed: _onSave,
+        onPressed: _isLoading ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
-        child: Text(l10n.actionSave),
+        child: _isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(l10n.actionSave),
       ),
     ];
 
@@ -152,6 +164,26 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           addressField,
           const SizedBox(height: AppSpacing.formRowSpacing),
           emailField,
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          SwitchListTile(
+            title: Text(l10n.teamLocationIsActiveLabel),
+            subtitle: Text(
+              l10n.teamLocationIsActiveHint,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            value: _isActive,
+            onChanged: (v) => setState(() => _isActive = v),
+            contentPadding: EdgeInsets.zero,
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            Text(
+              _error!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -252,33 +284,47 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     );
   }
 
-  void _onSave() {
+  bool _isLoading = false;
+  String? _error;
+
+  Future<void> _onSave() async {
     if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
     final notifier = ref.read(locationsProvider.notifier);
-    final business = ref.read(currentBusinessProvider);
     final name = _nameController.text.trim();
     final address = _addressController.text.trim();
     final email = _emailController.text.trim();
 
-    if (widget.initial != null) {
-      notifier.updateItem(
-        widget.initial!.copyWith(
+    try {
+      if (widget.initial != null) {
+        // Aggiorna location esistente
+        await notifier.updateLocation(
+          locationId: widget.initial!.id,
           name: name,
           address: address.isEmpty ? null : address,
           email: email.isEmpty ? null : email,
-        ),
-      );
-    } else {
-      notifier.add(
-        Location(
-          id: notifier.nextId(),
-          businessId: business.id,
+          isActive: _isActive,
+        );
+      } else {
+        // Crea nuova location
+        await notifier.create(
           name: name,
           address: address.isEmpty ? null : address,
           email: email.isEmpty ? null : email,
-        ),
-      );
+          isActive: _isActive,
+        );
+      }
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
     }
-    Navigator.of(context).pop();
   }
 }

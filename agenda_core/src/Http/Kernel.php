@@ -104,7 +104,16 @@ final class Kernel
         $this->router->get('/v1/businesses', BusinessController::class, 'index', ['auth']);
         $this->router->get('/v1/businesses/{id}', BusinessController::class, 'show', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/locations', LocationsController::class, 'index', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/locations', LocationsController::class, 'store', ['auth']);
         $this->router->get('/v1/locations/{id}', LocationsController::class, 'show', ['auth']);
+        $this->router->put('/v1/locations/{id}', LocationsController::class, 'update', ['auth']);
+        $this->router->delete('/v1/locations/{id}', LocationsController::class, 'destroy', ['auth']);
+
+        // Staff management (auth required)
+        $this->router->get('/v1/businesses/{business_id}/staff', StaffController::class, 'indexByBusiness', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/staff', StaffController::class, 'store', ['auth']);
+        $this->router->put('/v1/staff/{id}', StaffController::class, 'update', ['auth']);
+        $this->router->delete('/v1/staff/{id}', StaffController::class, 'destroy', ['auth']);
 
         // Business Users (operators management)
         $this->router->get('/v1/businesses/{business_id}/users', BusinessUsersController::class, 'index', ['auth']);
@@ -201,9 +210,9 @@ final class Kernel
             HealthController::class => new HealthController(),
             AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $changePassword, $updateProfile),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo),
-            LocationsController::class => new LocationsController($locationRepo),
+            LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
             ServicesController::class => new ServicesController($serviceRepo),
-            StaffController::class => new StaffController($staffRepo),
+            StaffController::class => new StaffController($staffRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking),
             ClientsController::class => new ClientsController($clientRepo),

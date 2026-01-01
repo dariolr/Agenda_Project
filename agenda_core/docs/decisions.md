@@ -1284,4 +1284,14 @@ Il `BookingFlowNotifier`:
 - Invia stessa email benvenuto con nuovo link
 - Solo superadmin può invocare
 
+### 26. Email benvenuto admin senza URL prenotazioni (2026-01-01)
+**Contesto**: L'email di benvenuto admin includeva URL prenotazioni, ma il frontend booking non è ancora pronto per tutti i business.
+
+**Decisione**: Commentato temporaneamente nell'email `businessAdminWelcome`:
+- Rimosso `🔗 URL prenotazioni: {{booking_url}}`
+- Rimosso `📅 Condividi questo link con i tuoi clienti...`
+- HTML: Commentato con `<!-- TODO: Riattivare URL prenotazioni quando pronto -->`
+- Text: Righe rimosse (non supporta commenti)
+- Da riattivare quando il frontend booking sarà configurato per il business
+
 

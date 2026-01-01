@@ -228,4 +228,138 @@ final class StaffRepository
         }
         return $hours;
     }
+
+    /**
+     * Create a new staff member.
+     */
+    public function create(int $businessId, string $name, array $data = []): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO staff (business_id, name, surname, color_hex, avatar_url, is_bookable_online, sort_order) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+        
+        // Get next sort_order
+        $sortStmt = $this->db->getPdo()->prepare(
+            'SELECT COALESCE(MAX(sort_order), 0) + 1 FROM staff WHERE business_id = ?'
+        );
+        $sortStmt->execute([$businessId]);
+        $sortOrder = (int) $sortStmt->fetchColumn();
+        
+        $stmt->execute([
+            $businessId,
+            $name,
+            $data['surname'] ?? '',
+            $data['color_hex'] ?? '#3B82F6',
+            $data['avatar_url'] ?? null,
+            $data['is_bookable_online'] ?? 1,
+            $sortOrder,
+        ]);
+
+        return (int) $this->db->getPdo()->lastInsertId();
+    }
+
+    /**
+     * Update a staff member.
+     */
+    public function update(int $staffId, array $data): bool
+    {
+        $fields = [];
+        $values = [];
+
+        foreach (['name', 'surname', 'color_hex', 'avatar_url', 'is_bookable_online', 'sort_order'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $fields[] = "{$field} = ?";
+                $values[] = $data[$field];
+            }
+        }
+
+        if (empty($fields)) {
+            return false;
+        }
+
+        $values[] = $staffId;
+
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE staff SET ' . implode(', ', $fields) . ' WHERE id = ?'
+        );
+
+        return $stmt->execute($values);
+    }
+
+    /**
+     * Soft delete a staff member (set is_active = 0)
+     */
+    public function delete(int $staffId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE staff SET is_active = 0 WHERE id = ?'
+        );
+        return $stmt->execute([$staffId]);
+    }
+
+    /**
+     * Assign staff member to a location.
+     */
+    public function assignToLocation(int $staffId, int $locationId): bool
+    {
+        // Check if already assigned
+        $checkStmt = $this->db->getPdo()->prepare(
+            'SELECT 1 FROM staff_locations WHERE staff_id = ? AND location_id = ?'
+        );
+        $checkStmt->execute([$staffId, $locationId]);
+        if ($checkStmt->fetchColumn()) {
+            return true; // Already assigned
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO staff_locations (staff_id, location_id) VALUES (?, ?)'
+        );
+        return $stmt->execute([$staffId, $locationId]);
+    }
+
+    /**
+     * Remove staff member from a location.
+     */
+    public function removeFromLocation(int $staffId, int $locationId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'DELETE FROM staff_locations WHERE staff_id = ? AND location_id = ?'
+        );
+        return $stmt->execute([$staffId, $locationId]);
+    }
+
+    /**
+     * Get location IDs for a staff member.
+     */
+    public function getLocationIds(int $staffId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT location_id FROM staff_locations WHERE staff_id = ?'
+        );
+        $stmt->execute([$staffId]);
+        return array_column($stmt->fetchAll(), 'location_id');
+    }
+
+    /**
+     * Set locations for a staff member (replace existing).
+     */
+    public function setLocations(int $staffId, array $locationIds): void
+    {
+        // Remove all existing
+        $deleteStmt = $this->db->getPdo()->prepare(
+            'DELETE FROM staff_locations WHERE staff_id = ?'
+        );
+        $deleteStmt->execute([$staffId]);
+
+        // Add new ones
+        if (!empty($locationIds)) {
+            $insertStmt = $this->db->getPdo()->prepare(
+                'INSERT INTO staff_locations (staff_id, location_id) VALUES (?, ?)'
+            );
+            foreach ($locationIds as $locId) {
+                $insertStmt->execute([$staffId, $locId]);
+            }
+        }
+    }
 }

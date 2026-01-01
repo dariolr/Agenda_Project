@@ -23,10 +23,50 @@
 | **M10** | Notification system (Email + Webhook lifecycle) | ✅ Completato |
 | **M11** | Permessi operatori gestionale (business_users) | ✅ Completato |
 | **M11.1** | Sistema inviti via email (business_invitations) | ✅ Completato |
+| **M12** | Email multilingua (IT/EN) | ⬜ Su richiesta |
 | **D1** | Deploy effettivo produzione SiteGround | ✅ **LIVE** |
 | **D2** | Multi-Business Path-Based URL | ✅ **LIVE** |
 | **D3** | Multi-Location Support Frontend | ✅ **LIVE** |
 | **D4** | Profilo Utente e Admin Email | ✅ **LIVE** |
+
+---
+
+## Email Multilingua (M12) ⬜ Su richiesta
+
+### Descrizione
+Supporto multilingua per tutte le email di sistema (IT/EN inizialmente).
+
+> ⚠️ **Nota**: Questa funzionalità verrà implementata solo su specifica richiesta.
+> Attualmente tutte le email sono in italiano (target principale Italia).
+
+### Requisiti
+- Lingua determinata dalla preferenza utente (`users.locale`) o business (`businesses.locale`)
+- Fallback a IT se non specificata
+- Template separati per lingua o sistema placeholder con dizionario
+
+### Template da tradurre
+- `businessAdminWelcome` — Email benvenuto admin business
+- `bookingConfirmed` — Conferma prenotazione
+- `bookingCancelled` — Cancellazione prenotazione
+- `bookingReminder` — Reminder prenotazione
+- `bookingRescheduled` — Riprogrammazione prenotazione
+- `passwordReset` — Reset password
+
+### Implementazione proposta
+```php
+// Opzione 1: Metodi separati per lingua
+EmailTemplateRenderer::businessAdminWelcome('it')
+EmailTemplateRenderer::businessAdminWelcome('en')
+
+// Opzione 2: Dizionario + placeholder
+EmailTemplateRenderer::render('businessAdminWelcome', $data, 'it')
+```
+
+### Modifiche DB (se necessario)
+```sql
+ALTER TABLE users ADD COLUMN locale VARCHAR(5) DEFAULT 'it';
+ALTER TABLE businesses ADD COLUMN locale VARCHAR(5) DEFAULT 'it';
+```
 
 ---
 
@@ -54,6 +94,14 @@
 - Genera nuovo token reset (24h)
 - Invia email benvenuto
 - Solo superadmin può invocare
+
+**5. Fix admin_email in GET businesses (01/01/2026):**
+- `GetAllBusinesses` UseCase ora ritorna `admin_email` nella response
+- Permette visualizzazione admin nel dialog di modifica business
+
+**6. Email benvenuto senza URL prenotazioni (01/01/2026):**
+- Template `businessAdminWelcome` temporaneamente senza URL prenotazioni
+- URL e descrizione commentati (da riattivare quando frontend booking pronto)
 
 ### File modificati Backend (agenda_core)
 - `src/UseCases/Auth/UpdateProfile.php` — Nuovo UseCase

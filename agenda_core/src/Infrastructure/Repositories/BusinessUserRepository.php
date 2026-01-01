@@ -65,9 +65,15 @@ final class BusinessUserRepository
 
     /**
      * Check if user has access to a business.
+     * Superadmins have access to all businesses.
      */
-    public function hasAccess(int $userId, int $businessId): bool
+    public function hasAccess(int $userId, int $businessId, bool $isSuperadmin = false): bool
     {
+        // Superadmins have access to all businesses
+        if ($isSuperadmin) {
+            return true;
+        }
+
         $stmt = $this->db->getPdo()->prepare(
             'SELECT 1 FROM business_users 
              WHERE user_id = ? AND business_id = ? AND is_active = 1'

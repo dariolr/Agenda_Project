@@ -1,4 +1,6 @@
+import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
+import 'package:agenda_backend/features/auth/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,24 +10,101 @@ import 'staff_repository_provider.dart';
 class StaffNotifier extends AsyncNotifier<List<Staff>> {
   @override
   Future<List<Staff>> build() async {
-    final repository = ref.watch(staffRepositoryProvider);
-    final locations = ref.watch(locationsProvider);
+    // Ascolta i cambiamenti dell'auth state
+    final authState = ref.watch(authProvider);
 
-    // ⚠️ Non fare chiamate API se le locations non sono ancora caricate
-    if (locations.isEmpty) {
+    // Carica staff solo se autenticato
+    if (!authState.isAuthenticated) {
       return [];
     }
 
-    final location = ref.watch(currentLocationProvider);
+    final repository = ref.watch(staffRepositoryProvider);
+    final business = ref.watch(currentBusinessProvider);
 
     try {
-      return await repository.getByLocation(location.id);
+      // Carica tutti gli staff del business
+      return await repository.getByBusiness(business.id);
     } catch (e) {
-      // In caso di errore (es. 404), ritorna lista vuota senza riprovare
       debugPrint('⚠️ StaffNotifier: errore caricamento staff: $e');
       return [];
     }
   }
+
+  /// Ricarica gli staff dall'API
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+
+  /// Crea un nuovo staff tramite API
+  Future<Staff> createStaff({
+    required String name,
+    String? surname,
+    String? colorHex,
+    String? avatarUrl,
+    bool? isBookableOnline,
+    List<int>? locationIds,
+  }) async {
+    final repository = ref.read(staffRepositoryProvider);
+    final business = ref.read(currentBusinessProvider);
+
+    final staff = await repository.create(
+      businessId: business.id,
+      name: name,
+      surname: surname,
+      colorHex: colorHex,
+      avatarUrl: avatarUrl,
+      isBookableOnline: isBookableOnline,
+      locationIds: locationIds,
+    );
+
+    final current = state.value ?? [];
+    state = AsyncData([...current, staff]);
+    return staff;
+  }
+
+  /// Aggiorna uno staff esistente tramite API
+  Future<Staff> updateStaffApi({
+    required int staffId,
+    String? name,
+    String? surname,
+    String? colorHex,
+    String? avatarUrl,
+    bool? isBookableOnline,
+    int? sortOrder,
+    List<int>? locationIds,
+  }) async {
+    final repository = ref.read(staffRepositoryProvider);
+
+    final updated = await repository.update(
+      staffId: staffId,
+      name: name,
+      surname: surname,
+      colorHex: colorHex,
+      avatarUrl: avatarUrl,
+      isBookableOnline: isBookableOnline,
+      sortOrder: sortOrder,
+      locationIds: locationIds,
+    );
+
+    final current = state.value ?? [];
+    state = AsyncData([
+      for (final s in current)
+        if (s.id == updated.id) updated else s,
+    ]);
+    return updated;
+  }
+
+  /// Elimina uno staff tramite API
+  Future<void> deleteStaffApi(int id) async {
+    final repository = ref.read(staffRepositoryProvider);
+    await repository.delete(id);
+
+    final current = state.value ?? [];
+    state = AsyncData(current.where((s) => s.id != id).toList());
+  }
+
+  // === Metodi locali per UI (backward compatibility) ===
 
   void add(Staff staff) {
     final current = state.value ?? [];
