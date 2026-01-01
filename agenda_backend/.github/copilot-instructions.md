@@ -204,3 +204,117 @@ Motivazioni:
 - Pulsante nel menu azioni della card business
 - Genera nuovo token reset (24h) e invia email
 - Utile se l'admin non ha impostato la password in tempo
+
+---
+
+## 🔐 Cambio Password (01/01/2026)
+
+Tutti gli utenti autenticati (incluso superadmin) possono cambiare la propria password.
+
+### Route
+- `/change-password` → `ChangePasswordScreen`
+
+### Accesso
+- Menu utente (avatar) → "Cambia password"
+
+### Validazione
+- Password attuale richiesta
+- Nuova password: 8+ caratteri, maiuscole, minuscole, numeri
+
+### File
+- `features/auth/presentation/change_password_screen.dart`
+
+---
+
+## 🔗 Reset Password con Verifica Token (01/01/2026)
+
+La schermata di reset password verifica il token PRIMA di mostrare il form.
+
+### Flow
+1. Utente clicca link da email
+2. App mostra "Verifica link in corso..."
+3. Se token invalido/scaduto → dialog bloccante → redirect a login
+4. Se token valido → mostra form reset password
+
+### Endpoint API
+- `GET /v1/auth/verify-reset-token/{token}` → verifica validità token
+
+---
+
+## 🌐 Flutter Web URL Strategy (01/01/2026)
+
+Il gestionale usa `usePathUrlStrategy()` per URL path-based (senza `#`).
+
+```dart
+// main.dart
+import 'package:flutter_web_plugins/url_strategy.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy(); // PRIMA di runApp!
+  runApp(const ProviderScope(child: MyApp()));
+}
+```
+---
+
+## 🔒 Login Error Persistence (01/01/2026)
+
+Il messaggio "Credenziali non valide" è gestito in stato locale widget.
+
+### Problema risolto
+Router faceva rebuild su ogni cambio stato auth, perdendo l'errore.
+
+### Soluzione
+- Provider derivato `_routerAuthStateProvider` che cambia SOLO con autenticazione
+- `LoginScreen` gestisce `_errorMessage` con `setState()`
+
+---
+
+## 🔄 Logout Silenzioso (01/01/2026)
+
+### Problema risolto
+Loop infinito di chiamate logout quando sessione scaduta.
+
+### Soluzione
+- `logout(silent: true)` non fa chiamata API
+- `SessionExpiredListener` usa `silent: true`
+
+---
+
+## 📦 Categorie Servizi dall'API (01/01/2026)
+
+### Problema risolto
+Categorie hardcoded in `ServiceCategoriesNotifier`.
+
+### Soluzione
+- NO seed data, categorie caricate dall'API insieme ai servizi
+- `ServicesApi.fetchServicesWithCategories()` estrae categorie dalla risposta
+
+---
+
+## 👤 User Menu (01/01/2026)
+
+### Accesso
+- Icona profilo nella navigation (index 4) → popup menu
+
+### Voci
+- Header: nome, email (+ badge Superadmin)
+- Cambia password
+- Cambia Business (solo superadmin)
+- Esci
+
+---
+
+## 📅 Aggiungi Eccezione nel Menu Shift (01/01/2026)
+
+### Problema risolto
+Il bottone "+" per aggiungere eccezioni occupava spazio nella griglia settimanale staff.
+
+### Soluzione
+- Rimosso bottone "+" standalone dalla colonna giorni
+- Aggiunta voce "Aggiungi eccezione" nel menu contestuale dei turni
+- Disponibile sia cliccando su turni base che su eccezioni esistenti
+- Aggiornato `_countSegmentsForDay` per non contare +1 per il chip rimosso
+
+### File
+- `lib/features/staff/presentation/staff_week_overview_screen.dart`

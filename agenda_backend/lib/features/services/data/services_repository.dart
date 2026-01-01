@@ -8,6 +8,12 @@ class ServicesRepository {
 
   final ServicesApi _api;
 
+  /// Carica servizi e categorie dall'API
+  Future<ServicesApiResult> getServicesWithCategories({
+    required int locationId,
+  }) => _api.fetchServicesWithCategories(locationId);
+
+  /// Carica solo i servizi (legacy)
   Future<List<Service>> getServices({required int locationId}) =>
       _api.fetchServices(locationId);
 }

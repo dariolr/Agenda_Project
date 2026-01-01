@@ -52,4 +52,29 @@ class AuthRepository {
     );
     return User.fromJson(data);
   }
+
+  /// Verifica se un token di reset è valido.
+  /// Lancia eccezione se il token è invalido o scaduto.
+  Future<void> verifyResetToken(String token) async {
+    await _apiClient.verifyResetToken(token);
+  }
+
+  /// Reset password con token (da email di invito/reset).
+  Future<void> resetPasswordWithToken({
+    required String token,
+    required String newPassword,
+  }) async {
+    await _apiClient.resetPassword(token: token, password: newPassword);
+  }
+
+  /// Cambia password utente autenticato.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _apiClient.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+  }
 }

@@ -24,6 +24,8 @@
 | **M11** | Permessi operatori gestionale (business_users) | ✅ Completato |
 | **M11.1** | Sistema inviti via email (business_invitations) | ✅ Completato |
 | **M12** | Email multilingua (IT/EN) | ⬜ Su richiesta |
+| **F1** | Frontend responsive (form factor) | ⬜ Su richiesta |
+| **F2** | Auto-logout su token scaduto | ✅ Completato |
 | **D1** | Deploy effettivo produzione SiteGround | ✅ **LIVE** |
 | **D2** | Multi-Business Path-Based URL | ✅ **LIVE** |
 | **D3** | Multi-Location Support Frontend | ✅ **LIVE** |
@@ -67,6 +69,64 @@ EmailTemplateRenderer::render('businessAdminWelcome', $data, 'it')
 ALTER TABLE users ADD COLUMN locale VARCHAR(5) DEFAULT 'it';
 ALTER TABLE businesses ADD COLUMN locale VARCHAR(5) DEFAULT 'it';
 ```
+
+---
+
+## Frontend Responsive - Form Factor (F1) ⬜ Su richiesta
+
+### Descrizione
+Implementare il supporto form factor (responsive breakpoints) nel frontend di prenotazione (agenda_frontend), analogamente a quanto già implementato nel gestionale (agenda_backend).
+
+> ⚠️ **Nota**: Questa funzionalità verrà implementata solo su specifica richiesta.
+> Attualmente il frontend funziona ma non ha layout ottimizzati per desktop/tablet/mobile.
+
+### Stato attuale
+- **agenda_backend (gestionale)**: ✅ Form factor implementato
+  - `AppFormFactor.mobile / .tablet / .desktop`
+  - `formFactorProvider` per breakpoint responsive
+  - Dialog su desktop, bottom sheet su mobile/tablet
+- **agenda_frontend (prenotazione)**: ❌ Non implementato
+  - Layout unico per tutti i dispositivi
+
+### Implementazione richiesta
+1. Copiare `form_factor_provider.dart` da agenda_backend
+2. Aggiungere breakpoint responsive
+3. Adattare UI per:
+   - **Mobile**: Layout verticale, bottom sheet per dialogs
+   - **Tablet**: Layout misto
+   - **Desktop**: Layout orizzontale, dialog/popup
+
+### File di riferimento (agenda_backend)
+- `lib/app/providers/form_factor_provider.dart` — Provider breakpoint
+- `lib/core/widgets/app_bottom_sheet.dart` — Bottom sheet wrapper
+
+---
+
+## Auto-logout su Token Scaduto (F2) ✅ Completato 01/01/2026
+
+### Descrizione
+Quando il token JWT scade e il refresh fallisce, invece di mostrare "invalid or expired token", il sistema fa logout automatico e reindirizza alla pagina di login.
+
+### Implementazione
+1. **ApiClient**: Aggiunto callback `onSessionExpired` e metodo `_triggerSessionExpired()`
+2. **SessionExpiredNotifier**: Provider che emette eventi quando la sessione scade
+3. **SessionExpiredListener**: Widget che ascolta gli eventi e fa logout + redirect
+4. Snackbar "Sessione scaduta. Effettua nuovamente il login."
+
+### File modificati (agenda_backend)
+- `lib/core/network/api_client.dart` — Callback `onSessionExpired`, metodo `_triggerSessionExpired()`
+- `lib/core/network/network_providers.dart` — `SessionExpiredNotifier`, passa callback a ApiClient
+- `lib/core/widgets/session_expired_listener.dart` — **Nuovo**: Widget listener
+- `lib/app/app.dart` — Wrappa con `SessionExpiredListener`
+
+### Comportamento
+- Su qualsiasi 401 (token scaduto, token invalido, unauthorized)
+- ApiClient chiama `_triggerSessionExpired()`
+- `SessionExpiredNotifier` incrementa contatore
+- `SessionExpiredListener` rileva cambio e:
+  - Esegue `authProvider.logout()`
+  - Mostra snackbar arancione
+  - Redirect a `/login`
 
 ---
 

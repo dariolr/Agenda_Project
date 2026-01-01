@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/widgets/user_menu_button.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
 import '../../../core/network/api_client.dart';
 import '../../agenda/providers/business_providers.dart';
-import '../../auth/providers/auth_provider.dart';
 import '../providers/business_providers.dart';
 import 'dialogs/create_business_dialog.dart';
 import 'dialogs/edit_business_dialog.dart';
@@ -33,7 +33,6 @@ class BusinessListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final businessesAsync = ref.watch(businessesProvider);
@@ -43,12 +42,9 @@ class BusinessListScreen extends ConsumerWidget {
         title: const Text('Seleziona Business'),
         centerTitle: true,
         actions: [
-          // Logout
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: l10n.authLogout,
-            onPressed: () => _showLogoutDialog(context, ref),
-          ),
+          // Menu utente (profilo, cambia password, logout)
+          const UserMenuButton(),
+          const SizedBox(width: 8),
         ],
       ),
       body: businessesAsync.when(
@@ -102,30 +98,6 @@ class BusinessListScreen extends ConsumerWidget {
     ref.read(superadminSelectedBusinessProvider.notifier).select(business.id);
     // Naviga all'agenda
     context.go('/agenda');
-  }
-
-  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.authLogout),
-        content: const Text('Vuoi uscire dal gestionale?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.actionCancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ref.read(authProvider.notifier).logout();
-            },
-            child: Text(l10n.authLogout),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _showCreateBusinessDialog(

@@ -17,21 +17,24 @@ AGGIORNAMENTI RECENTI:
 - Copertura 24h (00:00–24:00)
 - Scroll verticale sincronizzato tra colonna orari e griglia giorni
 - Etichetta oraria centrata in ogni cella (HH:MM)
+- Persistenza su DB tramite API (01/01/2026)
 
 */
 
 import 'dart:async';
 
 import 'package:agenda_backend/app/theme/extensions.dart';
+import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff.dart';
+import 'package:agenda_backend/core/network/network_providers.dart';
 import 'package:agenda_backend/core/widgets/staff_picker_sheet.dart';
+import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/exception_calendar_view.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/weekly_schedule_editor.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ──────────────────────────────────────────────
@@ -54,70 +57,152 @@ class TimeRange {
 }
 
 // ──────────────────────────────────────────────
-// 🧠 PROVIDER MOCK: StaffAvailabilityNotifier
-// Stato: AsyncValue<Map<int, List<TimeRange>>>
+// 🧠 PROVIDER: StaffAvailabilityByStaffNotifier
+// Stato: AsyncValue<Map<int, Map<int, Set<int>>>>
+// Carica e salva disponibilità settimanale tramite API
 // ──────────────────────────────────────────────
 
 // Nuovo provider per persistenza per-staff: staffId -> day -> slots (Set<int>)
 class StaffAvailabilityByStaffNotifier
     extends AsyncNotifier<Map<int, Map<int, Set<int>>>> {
+  static const _minutesPerSlot = 15;
+
   @override
   FutureOr<Map<int, Map<int, Set<int>>>> build() async {
-    // Mock iniziale: per TUTTI gli staff (verrà sovrascritto quando si salva)
-    // Turni standard: 09:00–13:00 e 14:00–19:00 dal lunedì al sabato, domenica vuoto.
-    // Rappresentiamo gli slot attivi usando step di minutesPerSlot = 15 (assunto).
-    const minutesPerSlot = 15; // Assunzione coerente con layout corrente.
-    int slotIndexOf(int hour, int minute) =>
-        (hour * 60 + minute) ~/ minutesPerSlot;
+    // Carica schedules dall'API per il business corrente
+    final business = ref.watch(currentBusinessProvider);
+    final apiClient = ref.watch(apiClientProvider);
 
-    // Genera set di slot per un turno con semantica [start, end) - estremo finale ESCLUSIVO.
-    // Esempio: 09:00..13:00 => slot 36..51 (09:00, 09:15, ..., 12:45)
-    // Lo slot 52 (13:00) NON è incluso, quindi sarà marcato come non disponibile.
-    Set<int> rangeSlots(
-      int startHour,
-      int startMinute,
-      int endHour,
-      int endMinute,
-    ) {
-      final start = slotIndexOf(startHour, startMinute);
-      final end = slotIndexOf(endHour, endMinute); // esclusivo
-      return {for (int i = start; i < end; i++) i};
+    try {
+      final apiSchedules = await apiClient.getStaffSchedulesAll(business.id);
+      return _convertApiToSlots(apiSchedules);
+    } catch (e) {
+      debugPrint('[StaffAvailabilityByStaff] Error loading schedules: $e');
+      // In caso di errore, ritorna mappa vuota
+      return {};
+    }
+  }
+
+  /// Converte la risposta API (time strings) in slot indices.
+  Map<int, Map<int, Set<int>>> _convertApiToSlots(
+    Map<int, Map<int, List<Map<String, String>>>> apiSchedules,
+  ) {
+    final result = <int, Map<int, Set<int>>>{};
+
+    for (final staffEntry in apiSchedules.entries) {
+      final staffId = staffEntry.key;
+      final weekData = staffEntry.value;
+
+      result[staffId] = {};
+      for (int day = 1; day <= 7; day++) {
+        final shifts = weekData[day] ?? [];
+        final slots = <int>{};
+
+        for (final shift in shifts) {
+          final startTime = shift['start_time']!;
+          final endTime = shift['end_time']!;
+          slots.addAll(_timeRangeToSlots(startTime, endTime));
+        }
+
+        result[staffId]![day] = slots;
+      }
     }
 
-    final morning = rangeSlots(9, 0, 13, 0); // 9:00 -> 12:45 (13:00 escluso)
-    final afternoon = rangeSlots(
-      14,
-      0,
-      19,
-      0,
-    ); // 14:00 -> 18:45 (19:00 escluso)
-    final combined = {...morning, ...afternoon};
+    return result;
+  }
 
-    Map<int, Set<int>> weekTemplate() => {
-      // Days: 1 Mon .. 6 Sat -> combined, 7 Sun empty
-      for (int d = 1; d <= 6; d++) d: Set<int>.from(combined),
-      7: <int>{},
-    };
+  /// Converte HH:MM:SS -> slot index.
+  int _timeToSlotIndex(String time) {
+    final parts = time.split(':');
+    final hours = int.parse(parts[0]);
+    final minutes = int.parse(parts[1]);
+    return (hours * 60 + minutes) ~/ _minutesPerSlot;
+  }
 
-    // Recupera elenco staff per applicare il template a tutti
-    // (Se non disponibile nel build, creiamo un set minimo.)
-    // Nota: non abbiamo accesso diretto ai provider qui, quindi ipotizziamo id staff 1..4 come mock.
-    final staffIds = [for (int i = 1; i <= 4; i++) i];
-    return {for (final id in staffIds) id: weekTemplate()};
+  /// Converte un range orario in set di slot indices.
+  Set<int> _timeRangeToSlots(String startTime, String endTime) {
+    final startSlot = _timeToSlotIndex(startTime);
+    final endSlot = _timeToSlotIndex(endTime);
+    return {for (int i = startSlot; i < endSlot; i++) i};
+  }
+
+  /// Converte slot index -> HH:MM string.
+  String _slotToTime(int slot) {
+    final minutes = slot * _minutesPerSlot;
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+  }
+
+  /// Converte slots in ranges contigui e poi in formato API.
+  List<Map<String, String>> _slotsToApiShifts(Set<int> slots) {
+    if (slots.isEmpty) return [];
+
+    final sorted = slots.toList()..sort();
+    final ranges = <List<int>>[];
+    var current = <int>[sorted.first];
+
+    for (int i = 1; i < sorted.length; i++) {
+      if (sorted[i] == sorted[i - 1] + 1) {
+        current.add(sorted[i]);
+      } else {
+        ranges.add(current);
+        current = [sorted[i]];
+      }
+    }
+    ranges.add(current);
+
+    return ranges.map((range) {
+      final startSlot = range.first;
+      final endSlot = range.last + 1; // end è esclusivo
+      return {
+        'start_time': _slotToTime(startSlot),
+        'end_time': _slotToTime(endSlot),
+      };
+    }).toList();
   }
 
   Future<void> saveForStaff(int staffId, Map<int, Set<int>> weeklySlots) async {
+    final previousState = state;
     state = const AsyncLoading();
-    await Future.delayed(const Duration(milliseconds: 300));
-    final current = Map<int, Map<int, Set<int>>>.from(state.value ?? {});
-    current[staffId] = {
-      for (final e in weeklySlots.entries) e.key: Set<int>.from(e.value),
-    };
-    state = AsyncData(current);
-    // ignore: avoid_print
-    print(
-      '[StaffAvailabilityByStaff] Saved for staff $staffId: ${current[staffId]}',
-    );
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+
+      // Converti slots in formato API
+      final apiSchedule = <int, List<Map<String, String>>>{};
+      for (int day = 1; day <= 7; day++) {
+        final slots = weeklySlots[day] ?? {};
+        apiSchedule[day] = _slotsToApiShifts(slots);
+      }
+
+      // Salva su API
+      await apiClient.saveStaffSchedule(
+        staffId: staffId,
+        schedule: apiSchedule,
+      );
+
+      // Aggiorna stato locale
+      final current = Map<int, Map<int, Set<int>>>.from(
+        state.value ?? previousState.value ?? {},
+      );
+      current[staffId] = {
+        for (final e in weeklySlots.entries) e.key: Set<int>.from(e.value),
+      };
+      state = AsyncData(current);
+
+      debugPrint('[StaffAvailabilityByStaff] Saved for staff $staffId');
+    } catch (e) {
+      debugPrint('[StaffAvailabilityByStaff] Error saving: $e');
+      // Ripristina stato precedente
+      state = previousState;
+      rethrow;
+    }
+  }
+
+  /// Ricarica gli schedules dall'API.
+  Future<void> refresh() async {
+    ref.invalidateSelf();
   }
 }
 
@@ -193,10 +278,7 @@ class _StaffAvailabilityScreenState
     });
   }
 
-  void _switchStaff(
-    int newStaffId, {
-    bool updateWeeklyState = true,
-  }) {
+  void _switchStaff(int newStaffId, {bool updateWeeklyState = true}) {
     final currentId = _selectedStaffId;
     if (currentId == newStaffId) return;
     // Salva lo stato corrente nello staff precedente

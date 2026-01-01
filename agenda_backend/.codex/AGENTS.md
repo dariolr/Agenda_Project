@@ -225,6 +225,66 @@ Gli utenti possono modificare il proprio profilo dalla voce "Profilo" nel menu u
 
 ---
 
+## 🔐 Cambio Password (01/01/2026)
+
+Tutti gli utenti autenticati (incluso superadmin) possono cambiare la propria password.
+
+### Route
+- `/change-password` → `ChangePasswordScreen`
+
+### Accesso
+- Menu utente (avatar) → "Cambia password"
+
+### Validazione
+- Password attuale richiesta
+- Nuova password: 8+ caratteri, maiuscole, minuscole, numeri
+- Nuova password deve essere diversa dalla attuale
+
+### File
+- `features/auth/presentation/change_password_screen.dart`
+- `features/auth/providers/auth_provider.dart` → `changePassword()`
+- `core/network/api_client.dart` → `changePassword()`
+
+---
+
+## 🔗 Reset Password con Verifica Token (01/01/2026)
+
+La schermata di reset password verifica il token PRIMA di mostrare il form.
+
+### Flow
+1. Utente clicca link da email
+2. App mostra "Verifica link in corso..."
+3. Se token invalido/scaduto → dialog bloccante → redirect a login
+4. Se token valido → mostra form reset password
+
+### Route
+- `/reset-password/:token` → `ResetPasswordScreen`
+
+### Endpoint API
+- `GET /v1/auth/verify-reset-token/{token}` → verifica validità token
+
+### File
+- `features/auth/presentation/reset_password_screen.dart`
+
+---
+
+## 🌐 Flutter Web URL Strategy (01/01/2026)
+
+Il gestionale usa `usePathUrlStrategy()` per URL path-based (senza `#`).
+
+```dart
+// main.dart
+import 'package:flutter_web_plugins/url_strategy.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy(); // PRIMA di runApp!
+  runApp(const ProviderScope(child: MyApp()));
+}
+```
+
+---
+
 ## ✉️ Admin Email e Inviti (31/12/2025)
 
 ### Creazione Business
@@ -259,4 +319,80 @@ Gli utenti possono modificare il proprio profilo dalla voce "Profilo" nel menu u
 | Repository pattern | `features/clients/data/clients_repository.dart` |
 | Form factor | `app/providers/form_factor_provider.dart` |
 | Profilo utente | `features/auth/presentation/profile_screen.dart` |
-| Business admin | `features/business/presentation/dialogs/edit_business_dialog.dart` |
+| Cambio password | `features/auth/presentation/change_password_screen.dart` |
+| Reset password | `features/auth/presentation/reset_password_screen.dart` |
+| Business admin | `features/business/presentation/dialogs/edit_business_dialog.dart` || User menu | `app/widgets/user_menu_button.dart` |
+| Router auth | `app/router_provider.dart` |
+| Services API | `features/services/data/services_api.dart` |
+
+---
+
+## 🔒 Login Error Persistence (01/01/2026)
+
+### Problema risolto
+Il messaggio "Credenziali non valide" scompariva perché il router faceva rebuild su ogni cambio dello stato auth.
+
+### Soluzione
+- Provider derivato `_routerAuthStateProvider` che cambia SOLO quando `isAuthenticated` o `isSuperadmin` cambiano
+- `LoginScreen` gestisce errore in stato locale (`_errorMessage`) con `setState()`
+- File: `lib/app/router_provider.dart`
+
+---
+
+## 🔄 Logout Silenzioso (01/01/2026)
+
+### Problema risolto
+Chiamate infinite a `/v1/auth/logout` quando sessione scaduta.
+
+### Soluzione
+- `logout({bool silent = false})` - se `silent=true`, non fa chiamata API
+- `SessionExpiredListener` usa `logout(silent: true)`
+- File: `lib/features/auth/providers/auth_provider.dart`
+
+---
+
+## 📦 Categorie Servizi dall'API (01/01/2026)
+
+### Problema risolto
+La sezione Servizi mostrava categorie hardcoded anche con DB vuoto.
+
+### Soluzione
+- Rimossi seed data da `ServiceCategoriesNotifier`
+- `ServicesApi.fetchServicesWithCategories()` estrae categorie dalla risposta API
+- `ServicesNotifier.build()` popola `serviceCategoriesProvider` con dati API
+- File: `lib/features/services/providers/service_categories_provider.dart`
+
+---
+
+## 👤 User Menu (01/01/2026)
+
+### Accesso
+- Icona profilo nella navigation bar (index 4)
+- Click apre popup menu
+
+### Voci menu
+- Header: nome e email utente (+ badge Superadmin se applicabile)
+- Cambia password
+- Cambia Business (solo superadmin)
+- Esci
+
+### File
+- `lib/app/widgets/user_menu_button.dart` - widget riutilizzabile
+- `lib/app/scaffold_with_navigation.dart` - integrazione navigation
+- `lib/features/business/presentation/business_list_screen.dart` - menu per superadmin
+
+---
+
+## 📅 Aggiungi Eccezione nel Menu Shift (01/01/2026)
+
+### Problema risolto
+Il bottone "+" per aggiungere eccezioni occupava spazio nella griglia settimanale staff.
+
+### Soluzione
+- Rimosso bottone "+" standalone dalla colonna giorni
+- Aggiunta voce "Aggiungi eccezione" nel menu contestuale dei turni
+- Disponibile sia cliccando su turni base che su eccezioni esistenti
+- Aggiornato `_countSegmentsForDay` per non contare +1 per il chip rimosso
+
+### File
+- `lib/features/staff/presentation/staff_week_overview_screen.dart`

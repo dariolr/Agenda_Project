@@ -1294,4 +1294,59 @@ Il `BookingFlowNotifier`:
 - Text: Righe rimosse (non supporta commenti)
 - Da riattivare quando il frontend booking sarà configurato per il business
 
+### 27. Login error message persistence (2026-01-01)
+**Contesto**: Il messaggio di errore "Credenziali non valide" scompariva dopo pochi istanti.
 
+**Analisi**: Il router usava `ref.watch(authProvider)` che triggherava rebuild ogni volta che lo stato cambiava (incluso `loading → error`), ricreando `LoginScreen` e perdendo lo stato locale `_errorMessage`.
+
+**Decisione**: 
+- Creato provider derivato `_routerAuthStateProvider` che cambia SOLO quando `isAuthenticated` o `isSuperadmin` cambiano
+- Lo stato `error` non causa più rebuild del router
+- LoginScreen gestisce errore in stato locale (`setState`) invece che dal provider globale
+- File: `lib/app/router_provider.dart`
+
+### 28. Logout loop infinito (2026-01-01)
+**Contesto**: Chiamate infinite a `/v1/auth/logout` quando sessione scaduta.
+
+**Analisi**: 
+1. Sessione scaduta → `sessionExpiredProvider` triggerato
+2. `SessionExpiredListener` chiama `logout()`
+3. `logout()` fa chiamata API senza token valido → 401
+4. 401 triggera di nuovo `sessionExpiredProvider` → loop
+
+**Decisione**: 
+- Aggiunto parametro `silent` a `logout({bool silent = false})`
+- `SessionExpiredListener` chiama `logout(silent: true)` → nessuna chiamata API
+- File: `lib/features/auth/providers/auth_provider.dart`
+
+### 29. Categorie servizi hardcoded (2026-01-01)
+**Contesto**: La sezione Servizi mostrava categorie anche con DB vuoto.
+
+**Analisi**: `ServiceCategoriesNotifier` aveva dati seed hardcoded nel metodo `build()` invece di caricare dall'API.
+
+**Decisione**: 
+- Rimossi seed data da `ServiceCategoriesNotifier`
+- L'API `GET /v1/services` ritorna già `categories` nella risposta
+- `ServicesApi.fetchServicesWithCategories()` estrae categorie dalla risposta
+- `ServicesNotifier` popola `serviceCategoriesProvider` con categorie dall'API
+- File: `lib/features/services/providers/service_categories_provider.dart`
+
+### 30. User menu in navigation (2026-01-01)
+**Contesto**: Menu utente (profilo, cambio password, logout) doveva essere accessibile dalla navigation bar.
+
+**Decisione**: 
+- Icona "Profilo" (index 4) nella navigation bar apre popup menu
+- Menu contiene: header con nome/email, Cambia password, Cambia Business (solo superadmin), Esci
+- Rimossa voce "Profilo" dal menu (non necessaria)
+- Superadmin vede stesso menu sia in `/businesses` che dopo selezione business
+- File: `lib/app/scaffold_with_navigation.dart`, `lib/app/widgets/user_menu_button.dart`
+
+### 31. Aggiungi eccezione spostato nel menu shift (2026-01-01)
+**Contesto**: Il bottone "+" per aggiungere eccezioni alla disponibilità occupava spazio nella griglia settimanale.
+
+**Decisione**: 
+- Rimosso il bottone "+" standalone dalla griglia
+- Aggiunta voce "Aggiungi eccezione" nel menu che appare cliccando su un turno
+- La funzionalità è disponibile sia nel menu dei turni base che nel menu delle eccezioni esistenti
+- Aggiornato `_countSegmentsForDay` per non contare +1 per il chip rimosso
+- File: `lib/features/staff/presentation/staff_week_overview_screen.dart`

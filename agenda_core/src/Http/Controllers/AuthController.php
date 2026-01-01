@@ -13,6 +13,7 @@ use Agenda\UseCases\Auth\GetMe;
 use Agenda\UseCases\Auth\RegisterUser;
 use Agenda\UseCases\Auth\RequestPasswordReset;
 use Agenda\UseCases\Auth\ResetPassword;
+use Agenda\UseCases\Auth\VerifyResetToken;
 use Agenda\UseCases\Auth\ChangePassword;
 use Agenda\UseCases\Auth\UpdateProfile;
 use Agenda\Domain\Exceptions\AuthException;
@@ -28,6 +29,7 @@ final class AuthController
         private readonly RegisterUser $registerUser,
         private readonly RequestPasswordReset $requestPasswordReset,
         private readonly ResetPassword $resetPassword,
+        private readonly VerifyResetToken $verifyResetToken,
         private readonly ChangePassword $changePassword,
         private readonly UpdateProfile $updateProfile,
     ) {}
@@ -249,6 +251,29 @@ final class AuthController
         return Response::success([
             'message' => 'If the email exists, a password reset link has been sent',
         ], 200);
+    }
+
+    /**
+     * GET /v1/auth/verify-reset-token/{token}
+     * Verifies if a reset token is valid before showing the reset form.
+     */
+    public function verifyResetTokenAction(Request $request): Response
+    {
+        $token = $request->getRouteParam('token');
+
+        if ($token === null) {
+            return Response::error('Token is required', 'validation_error', 400);
+        }
+
+        try {
+            $this->verifyResetToken->execute($token);
+            return Response::success([
+                'valid' => true,
+                'message' => 'Token is valid',
+            ], 200);
+        } catch (AuthException $e) {
+            return Response::error($e->getMessage(), $e->getErrorCode(), $e->getHttpStatus());
+        }
     }
 
     /**

@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../core/l10n/l10_extension.dart';
 import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/auth/domain/auth_state.dart';
+import '../features/auth/presentation/change_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/business/presentation/business_list_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
@@ -17,9 +19,30 @@ import 'scaffold_with_navigation.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Provider derivato che cambia SOLO quando cambia l'autenticazione effettiva
+/// NON quando cambia solo l'errorMessage (evita rebuild inutili del router)
+final _routerAuthStateProvider =
+    Provider<
+      ({bool isAuthenticated, bool isSuperadmin, bool isInitialOrLoading})
+    >((ref) {
+      final authState = ref.watch(authProvider);
+      return (
+        isAuthenticated: authState.isAuthenticated,
+        isSuperadmin: authState.user?.isSuperadmin ?? false,
+        isInitialOrLoading:
+            authState.status == AuthStatus.initial ||
+            authState.status == AuthStatus.loading,
+      );
+    });
+
 /// Provider per il router con supporto autenticazione.
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  // Usa il provider derivato per evitare rebuild quando cambia solo errorMessage
+  final authInfo = ref.watch(_routerAuthStateProvider);
+  final isAuthenticated = authInfo.isAuthenticated;
+  final isSuperadmin = authInfo.isSuperadmin;
+  final isInitialOrLoading = authInfo.isInitialOrLoading;
+
   final superadminSelectedBusiness = ref.watch(
     superadminSelectedBusinessProvider,
   );
@@ -33,31 +56,31 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: _AuthNotifier(ref),
 
     redirect: (context, state) {
-      final isLoggedIn = authState.isAuthenticated;
       final isLoggingIn = state.matchedLocation == '/login';
       final isOnBusinessList = state.matchedLocation == '/businesses';
-      final isInitial = authState.status == AuthStatus.initial;
-      final isLoading = authState.status == AuthStatus.loading;
-      final isSuperadmin = authState.user?.isSuperadmin ?? false;
 
       debugPrint(
         '🔀 Router redirect: path=${state.matchedLocation}, '
-        'isLoggedIn=$isLoggedIn, isSuperadmin=$isSuperadmin, '
+        'isLoggedIn=$isAuthenticated, isSuperadmin=$isSuperadmin, '
         'selectedBusiness=$superadminSelectedBusiness',
       );
 
       // Durante il caricamento iniziale, non fare redirect
-      if (isInitial || isLoading) {
+      if (isInitialOrLoading) {
         return null;
       }
 
-      // Se non loggato e non sulla pagina login, vai al login
-      if (!isLoggedIn && !isLoggingIn) {
+      // Pagine pubbliche che non richiedono autenticazione
+      final isPublicPage =
+          isLoggingIn || state.matchedLocation.startsWith('/reset-password');
+
+      // Se non loggato e non su pagina pubblica, vai al login
+      if (!isAuthenticated && !isPublicPage) {
         return '/login';
       }
 
       // Se loggato e sulla pagina login
-      if (isLoggedIn && isLoggingIn) {
+      if (isAuthenticated && isLoggingIn) {
         // Se superadmin senza business selezionato, vai alla lista business
         if (isSuperadmin && superadminSelectedBusiness == null) {
           debugPrint('🔀 Superadmin → /businesses');
@@ -67,7 +90,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // Se superadmin tenta di accedere all'agenda senza aver selezionato un business
-      if (isLoggedIn &&
+      if (isAuthenticated &&
           isSuperadmin &&
           superadminSelectedBusiness == null &&
           !isOnBusinessList &&
@@ -95,6 +118,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginScreen(),
+      ),
+
+      // Route reset password (fuori dalla shell, pubblica)
+      GoRoute(
+        path: '/reset-password/:token',
+        name: 'reset-password',
+        builder: (context, state) {
+          final token = state.pathParameters['token']!;
+          return ResetPasswordScreen(token: token);
+        },
       ),
 
       // Route lista business per superadmin (fuori dalla shell)
@@ -170,6 +203,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) =>
             const StaffWeekOverviewScreen(),
+      ),
+
+      // Route cambio password
+      GoRoute(
+        path: '/change-password',
+        name: 'change-password',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) =>
+            const ChangePasswordScreen(),
       ),
     ],
   );

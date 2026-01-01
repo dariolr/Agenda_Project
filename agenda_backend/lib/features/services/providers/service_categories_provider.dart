@@ -2,40 +2,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
-import '../../agenda/providers/business_providers.dart';
-import '../utils/service_seed_texts.dart';
 import 'services_provider.dart';
 
 /// Notifier per la gestione delle categorie di servizi (CRUD in memoria)
+/// Le categorie vengono inizializzate vuote e popolate dal ServicesNotifier
+/// quando i dati vengono caricati dall'API.
 class ServiceCategoriesNotifier extends Notifier<List<ServiceCategory>> {
   @override
   List<ServiceCategory> build() {
-    final business = ref.watch(currentBusinessProvider);
-    // Seed iniziale (spostato qui dal vecchio services_provider)
-    final seed = <ServiceCategory>[
-      ServiceCategory(
-        id: 10,
-        businessId: business.id,
-        name: ServiceSeedTexts.categoryBodyName,
-        description: ServiceSeedTexts.categoryBodyDescription,
-        sortOrder: 0,
-      ),
-      ServiceCategory(
-        id: 11,
-        businessId: business.id,
-        name: ServiceSeedTexts.categorySportsName,
-        description: ServiceSeedTexts.categorySportsDescription,
-        sortOrder: 1,
-      ),
-      ServiceCategory(
-        id: 12,
-        businessId: business.id,
-        name: ServiceSeedTexts.categoryFaceName,
-        description: ServiceSeedTexts.categoryFaceDescription,
-        sortOrder: 2,
-      ),
-    ];
-    return _sorted(seed);
+    // Inizia vuoto - le categorie vengono caricate dall'API insieme ai servizi
+    return [];
+  }
+
+  /// Imposta le categorie caricate dall'API
+  void setCategories(List<ServiceCategory> categories) {
+    state = _sorted(categories);
   }
 
   List<ServiceCategory> _sorted(List<ServiceCategory> list) {

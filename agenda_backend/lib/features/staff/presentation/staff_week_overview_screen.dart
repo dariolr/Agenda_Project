@@ -283,8 +283,7 @@ int _countSegmentsForDay(
     applyUnavailableSplit: false,
     subtractAvailableFromBase: true,
   );
-  // +1 per il chip "aggiungi eccezione"
-  return displayRanges.length + 1;
+  return displayRanges.length;
 }
 
 /// Mock provider: staffId -> day(1..7) -> ranges
@@ -1356,6 +1355,21 @@ class _StaffWeekOverviewScreenState
                   await deleteException();
                 },
               ),
+              const Divider(height: 1),
+              // Aggiungi eccezione
+              ListTile(
+                leading: const Icon(Icons.add_circle_outline),
+                title: Text(l10n.exceptionsAdd),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showAddExceptionDialog(
+                    context,
+                    ref,
+                    staffId: staffId,
+                    date: date,
+                  );
+                },
+              ),
             ],
           );
         }
@@ -1389,6 +1403,21 @@ class _StaffWeekOverviewScreenState
               onTap: () {
                 Navigator.pop(ctx);
                 editAll();
+              },
+            ),
+            const Divider(height: 1),
+            // Aggiungi eccezione
+            ListTile(
+              leading: const Icon(Icons.add_circle_outline),
+              title: Text(l10n.exceptionsAdd),
+              onTap: () {
+                Navigator.pop(ctx);
+                showAddExceptionDialog(
+                  context,
+                  ref,
+                  staffId: staffId,
+                  date: date,
+                );
               },
             ),
             const Divider(height: 1),
@@ -1719,38 +1748,6 @@ class _StaffWeekOverviewScreenState
             buildChipForRange(displayRanges[i]),
             SizedBox(height: chipVGap),
           ],
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(6),
-              onTap: () {
-                showAddExceptionDialog(
-                  context,
-                  ref,
-                  staffId: staffId,
-                  date: date,
-                );
-              },
-              child: Container(
-                height: chipHeight,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: AgendaTheme.appointmentBorder.withOpacity(0.6),
-                    width: 0.6,
-                  ),
-                ),
-                child: Icon(
-                  Icons.add,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ),
         ],
       );
     }
