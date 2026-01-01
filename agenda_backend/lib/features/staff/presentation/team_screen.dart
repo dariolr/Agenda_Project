@@ -80,50 +80,64 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (showReorderPanel) ...[
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Center(
-                child: Column(
-                  children: [
-                    Text(
-                      context.l10n.reorderTitle,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
-                      child: Text(
-                        context.l10n.teamReorderHelpDescription,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    ReorderTogglePanel(
-                      isWide: isWide,
+            Builder(
+              builder: (context) {
+                // Conta lo staff totale
+                final staffAsync = ref.watch(allStaffProvider);
+                final totalStaffCount = staffAsync.value?.length ?? 0;
+                final showLocationReorder = locations.length >= 2;
+                final showStaffReorder = totalStaffCount >= 2;
+
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Center(
+                    child: Column(
                       children: [
-                        ReorderToggleButton(
-                          isActive: isReorderLocations,
-                          onPressed: _toggleLocationReorder,
-                          activeLabel: context.l10n.teamLocationsLabel,
-                          inactiveLabel: context.l10n.teamLocationsLabel,
-                          activeIcon: Icons.check,
-                          inactiveIcon: Icons.drag_indicator,
+                        Text(
+                          context.l10n.reorderTitle,
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                        ReorderToggleButton(
-                          isActive: isReorderStaff,
-                          onPressed: _toggleStaffReorder,
-                          activeLabel: context.l10n.teamStaffLabel,
-                          inactiveLabel: context.l10n.teamStaffLabel,
-                          activeIcon: Icons.check,
-                          inactiveIcon: Icons.drag_indicator,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+                          child: Text(
+                            context.l10n.teamReorderHelpDescription,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ),
+                        ReorderTogglePanel(
+                          isWide: isWide,
+                          children: [
+                            if (showLocationReorder)
+                              ReorderToggleButton(
+                                isActive: isReorderLocations,
+                                onPressed: _toggleLocationReorder,
+                                activeLabel: context.l10n.teamLocationsLabel,
+                                inactiveLabel: context.l10n.teamLocationsLabel,
+                                activeIcon: Icons.check,
+                                inactiveIcon: Icons.drag_indicator,
+                              ),
+                            if (showStaffReorder)
+                              ReorderToggleButton(
+                                isActive: isReorderStaff,
+                                onPressed: _toggleStaffReorder,
+                                activeLabel: context.l10n.teamStaffLabel,
+                                inactiveLabel: context.l10n.teamStaffLabel,
+                                activeIcon: Icons.check,
+                                inactiveIcon: Icons.drag_indicator,
+                              ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
           ],
           Expanded(

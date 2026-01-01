@@ -626,10 +626,129 @@ class ApiClient {
     await post('/v1/admin/businesses/$businessId/resend-invite');
   }
 
+  // ========== LOCATIONS CRUD ==========
+
   /// GET /v1/businesses/{business_id}/locations
   Future<List<Map<String, dynamic>>> getLocations(int businessId) async {
     final response = await get('/v1/businesses/$businessId/locations');
     return (response['data'] as List).cast<Map<String, dynamic>>();
+  }
+
+  /// POST /v1/businesses/{business_id}/locations
+  Future<Map<String, dynamic>> createLocation({
+    required int businessId,
+    required String name,
+    String? address,
+    String? phone,
+    String? email,
+    String? timezone,
+    bool? isActive,
+  }) async {
+    final response = await post(
+      '/v1/businesses/$businessId/locations',
+      data: {
+        'name': name,
+        if (address != null && address.isNotEmpty) 'address': address,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (email != null && email.isNotEmpty) 'email': email,
+        if (timezone != null && timezone.isNotEmpty) 'timezone': timezone,
+        if (isActive != null) 'is_active': isActive,
+      },
+    );
+    return response['location'] as Map<String, dynamic>;
+  }
+
+  /// PUT /v1/locations/{id}
+  Future<Map<String, dynamic>> updateLocation({
+    required int locationId,
+    String? name,
+    String? address,
+    String? phone,
+    String? email,
+    String? timezone,
+    bool? isActive,
+  }) async {
+    final response = await put(
+      '/v1/locations/$locationId',
+      data: {
+        if (name != null) 'name': name,
+        if (address != null) 'address': address,
+        if (phone != null) 'phone': phone,
+        if (email != null) 'email': email,
+        if (timezone != null) 'timezone': timezone,
+        if (isActive != null) 'is_active': isActive,
+      },
+    );
+    return response['location'] as Map<String, dynamic>;
+  }
+
+  /// DELETE /v1/locations/{id}
+  Future<void> deleteLocation(int locationId) async {
+    await delete('/v1/locations/$locationId');
+  }
+
+  // ========== STAFF CRUD ==========
+
+  /// GET /v1/businesses/{business_id}/staff
+  Future<List<Map<String, dynamic>>> getStaffByBusiness(int businessId) async {
+    final response = await get('/v1/businesses/$businessId/staff');
+    return (response['staff'] as List).cast<Map<String, dynamic>>();
+  }
+
+  /// POST /v1/businesses/{business_id}/staff
+  Future<Map<String, dynamic>> createStaff({
+    required int businessId,
+    required String name,
+    String? surname,
+    String? colorHex,
+    String? avatarUrl,
+    bool? isBookableOnline,
+    List<int>? locationIds,
+  }) async {
+    final response = await post(
+      '/v1/businesses/$businessId/staff',
+      data: {
+        'name': name,
+        if (surname != null && surname.isNotEmpty) 'surname': surname,
+        if (colorHex != null) 'color_hex': colorHex,
+        if (avatarUrl != null) 'avatar_url': avatarUrl,
+        if (isBookableOnline != null) 'is_bookable_online': isBookableOnline,
+        if (locationIds != null && locationIds.isNotEmpty)
+          'location_ids': locationIds,
+      },
+    );
+    return response['staff'] as Map<String, dynamic>;
+  }
+
+  /// PUT /v1/staff/{id}
+  Future<Map<String, dynamic>> updateStaff({
+    required int staffId,
+    String? name,
+    String? surname,
+    String? colorHex,
+    String? avatarUrl,
+    bool? isBookableOnline,
+    int? sortOrder,
+    List<int>? locationIds,
+  }) async {
+    final response = await put(
+      '/v1/staff/$staffId',
+      data: {
+        if (name != null) 'name': name,
+        if (surname != null) 'surname': surname,
+        if (colorHex != null) 'color_hex': colorHex,
+        if (avatarUrl != null) 'avatar_url': avatarUrl,
+        if (isBookableOnline != null) 'is_bookable_online': isBookableOnline,
+        if (sortOrder != null) 'sort_order': sortOrder,
+        if (locationIds != null) 'location_ids': locationIds,
+      },
+    );
+    return response['staff'] as Map<String, dynamic>;
+  }
+
+  /// DELETE /v1/staff/{id}
+  Future<void> deleteStaff(int staffId) async {
+    await delete('/v1/staff/$staffId');
   }
 
   // ========== BUSINESS USERS (OPERATORS) ==========

@@ -153,4 +153,13 @@ final class Request
     {
         return $this->getAttribute('location_id');
     }
+
+    /**
+     * Get a route parameter (alias for getAttribute).
+     * Route params are set as attributes by the Kernel after routing.
+     */
+    public function getRouteParam(string $name): mixed
+    {
+        return $this->getAttribute($name);
+    }
 }

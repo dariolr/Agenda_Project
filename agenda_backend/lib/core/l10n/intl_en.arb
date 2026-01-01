@@ -146,6 +146,8 @@
   "teamLocationAddressLabel": "Address",
   "teamLocationEmailLabel": "Email",
   "teamLocationEmailHint": "Email for customer notifications",
+  "teamLocationIsActiveLabel": "Location active",
+  "teamLocationIsActiveHint": "If disabled, the location will not be visible to customers",
   "teamNewStaffTitle": "New team member",
   "teamEditStaffTitle": "Edit team member",
   "teamStaffNameLabel": "First name",

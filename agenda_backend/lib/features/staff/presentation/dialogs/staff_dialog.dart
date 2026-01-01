@@ -13,7 +13,6 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
-import '../../../agenda/providers/business_providers.dart';
 import '../../../agenda/providers/location_providers.dart';
 import '../../../services/presentation/widgets/service_eligibility_selector.dart';
 import '../../../services/providers/service_categories_provider.dart';
@@ -238,14 +237,20 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
 
     final actions = [
       AppOutlinedActionButton(
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
         padding: AppButtonStyles.dialogButtonPadding,
         child: Text(l10n.actionCancel),
       ),
       AppFilledButton(
-        onPressed: _onSave,
+        onPressed: _isSaving ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
-        child: Text(l10n.actionSave),
+        child: _isSaving
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(l10n.actionSave),
       ),
     ];
 
@@ -481,6 +486,15 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
             value: _isBookableOnline,
             onChanged: (v) => setState(() => _isBookableOnline = v),
           ),
+          if (_saveError != null) ...[
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            Text(
+              _saveError!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.formRowSpacing),
           if (kAllowStaffMultiLocationSelection)
             Text(
@@ -594,7 +608,10 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     );
   }
 
-  void _onSave() {
+  bool _isSaving = false;
+  String? _saveError;
+
+  Future<void> _onSave() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedLocationIds.isEmpty) {
       setState(() => _locationsError = context.l10n.validationRequired);
@@ -606,45 +623,59 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         ..clear()
         ..add(firstId);
     }
+
+    setState(() {
+      _isSaving = true;
+      _saveError = null;
+    });
+
     final notifier = ref.read(allStaffProvider.notifier);
-    final business = ref.read(currentBusinessProvider);
     final name = _nameController.text.trim();
     final surname = _surnameController.text.trim();
     final isEditing = widget.isEditing;
-    final staffId = isEditing ? widget.initial!.id : notifier.nextId();
 
-    if (isEditing) {
-      notifier.updateStaff(
-        widget.initial!.copyWith(
+    try {
+      int staffId;
+      if (isEditing) {
+        // Aggiorna staff esistente tramite API
+        final updated = await notifier.updateStaffApi(
+          staffId: widget.initial!.id,
           name: name,
           surname: surname,
-          color: _selectedColor,
-          locationIds: _selectedLocationIds.toList(),
+          colorHex:
+              '#${_selectedColor.value.toRadixString(16).substring(2).toUpperCase()}',
           isBookableOnline: _isBookableOnline,
-        ),
-      );
-    } else {
-      notifier.add(
-        Staff(
-          id: staffId,
-          businessId: business.id,
-          name: name,
-          surname: surname,
-          color: _selectedColor,
           locationIds: _selectedLocationIds.toList(),
-          sortOrder: notifier.nextSortOrderForLocations(_selectedLocationIds),
-          isBookableOnline: _isBookableOnline,
-        ),
-      );
-    }
-    ref
-        .read(serviceStaffEligibilityProvider.notifier)
-        .setEligibleServicesForStaff(
-          staffId: staffId,
-          locationId: ref.read(currentLocationProvider).id,
-          serviceIds: _selectedServiceIds,
         );
-    Navigator.of(context).pop();
+        staffId = updated.id;
+      } else {
+        // Crea nuovo staff tramite API
+        final created = await notifier.createStaff(
+          name: name,
+          surname: surname,
+          colorHex:
+              '#${_selectedColor.value.toRadixString(16).substring(2).toUpperCase()}',
+          isBookableOnline: _isBookableOnline,
+          locationIds: _selectedLocationIds.toList(),
+        );
+        staffId = created.id;
+      }
+
+      ref
+          .read(serviceStaffEligibilityProvider.notifier)
+          .setEligibleServicesForStaff(
+            staffId: staffId,
+            locationId: ref.read(currentLocationProvider).id,
+            serviceIds: _selectedServiceIds,
+          );
+
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      setState(() {
+        _saveError = e.toString();
+        _isSaving = false;
+      });
+    }
   }
 
   Future<void> _openServicesSelector() async {

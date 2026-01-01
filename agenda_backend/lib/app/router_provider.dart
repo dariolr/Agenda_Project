@@ -9,7 +9,6 @@ import '../features/auth/domain/auth_state.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/business/presentation/business_list_screen.dart';
-import '../features/business/presentation/operators_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
 import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_week_overview_screen.dart';
@@ -171,15 +170,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) =>
             const StaffWeekOverviewScreen(),
-      ),
-      GoRoute(
-        path: '/operatori/:businessId',
-        name: 'operatori',
-        parentNavigatorKey: _rootNavigatorKey,
-        builder: (BuildContext context, GoRouterState state) {
-          final businessId = int.parse(state.pathParameters['businessId']!);
-          return OperatorsScreen(businessId: businessId);
-        },
       ),
     ],
   );

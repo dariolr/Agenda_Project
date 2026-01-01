@@ -54,6 +54,7 @@ final class GetAllBusinesses
                 'is_active' => (bool) $b['is_active'],
                 'created_at' => $b['created_at'],
                 'updated_at' => $b['updated_at'],
+                'admin_email' => $b['admin_email'] ?? null,
             ], $businesses),
             'pagination' => [
                 'total' => $total,

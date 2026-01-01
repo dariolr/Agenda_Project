@@ -720,6 +720,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Email for customer notifications",
     ),
     "teamLocationEmailLabel": MessageLookupByLibrary.simpleMessage("Email"),
+    "teamLocationIsActiveHint": MessageLookupByLibrary.simpleMessage(
+      "If disabled, the location will not be visible to customers",
+    ),
+    "teamLocationIsActiveLabel": MessageLookupByLibrary.simpleMessage(
+      "Location active",
+    ),
     "teamLocationLabel": MessageLookupByLibrary.simpleMessage("Location"),
     "teamLocationNameLabel": MessageLookupByLibrary.simpleMessage(
       "Location name",

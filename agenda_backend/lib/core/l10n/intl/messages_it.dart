@@ -759,6 +759,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Email per notifiche ai clienti",
     ),
     "teamLocationEmailLabel": MessageLookupByLibrary.simpleMessage("Email"),
+    "teamLocationIsActiveHint": MessageLookupByLibrary.simpleMessage(
+      "Se disattivata, la sede non sarà visibile ai clienti",
+    ),
+    "teamLocationIsActiveLabel": MessageLookupByLibrary.simpleMessage(
+      "Sede attiva",
+    ),
     "teamLocationLabel": MessageLookupByLibrary.simpleMessage("Sede"),
     "teamLocationNameLabel": MessageLookupByLibrary.simpleMessage("Nome sede"),
     "teamLocationsLabel": MessageLookupByLibrary.simpleMessage("Sedi"),
