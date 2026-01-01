@@ -44,6 +44,7 @@ class StaffNotifier extends AsyncNotifier<List<Staff>> {
     String? avatarUrl,
     bool? isBookableOnline,
     List<int>? locationIds,
+    List<int>? serviceIds,
   }) async {
     final repository = ref.read(staffRepositoryProvider);
     final business = ref.read(currentBusinessProvider);
@@ -56,6 +57,7 @@ class StaffNotifier extends AsyncNotifier<List<Staff>> {
       avatarUrl: avatarUrl,
       isBookableOnline: isBookableOnline,
       locationIds: locationIds,
+      serviceIds: serviceIds,
     );
 
     final current = state.value ?? [];
@@ -73,6 +75,7 @@ class StaffNotifier extends AsyncNotifier<List<Staff>> {
     bool? isBookableOnline,
     int? sortOrder,
     List<int>? locationIds,
+    List<int>? serviceIds,
   }) async {
     final repository = ref.read(staffRepositoryProvider);
 
@@ -85,6 +88,7 @@ class StaffNotifier extends AsyncNotifier<List<Staff>> {
       isBookableOnline: isBookableOnline,
       sortOrder: sortOrder,
       locationIds: locationIds,
+      serviceIds: serviceIds,
     );
 
     final current = state.value ?? [];

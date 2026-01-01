@@ -329,6 +329,17 @@ Il bottone "+" per aggiungere eccezioni occupava spazio nella griglia settimanal
 
 Tutti i seguenti provider sono stati convertiti da mock a chiamate API reali.
 
+### Staff Services (Servizi abilitati per Staff)
+**Gestione tramite endpoint Staff esistenti:**
+- `GET /v1/businesses/{business_id}/staff` - ritorna `service_ids` per ogni staff
+- `POST /v1/businesses/{business_id}/staff` - accetta `service_ids` nel body
+- `PUT /v1/staff/{id}` - accetta `service_ids` nel body
+
+**File Flutter:**
+- `lib/core/models/staff.dart` → campo `serviceIds`
+- `lib/features/services/providers/services_provider.dart` → `eligibleServicesForStaffProvider` legge da Staff
+- `lib/features/staff/presentation/dialogs/staff_dialog.dart` → salvataggio via API
+
 ### Staff Availability Exceptions (Eccezioni Turni)
 **Provider:** `availabilityExceptionsProvider` (AsyncNotifier)
 - Metodi: `addException()`, `updateException()`, `deleteException()`
@@ -347,6 +358,7 @@ Tutti i seguenti provider sono stati convertiti da mock a chiamate API reali.
 ### Mock Rimossi (01/01/2026)
 - `MockAvailabilityExceptionsRepository` - rimosso
 - `weeklyStaffAvailabilityMockProvider` - rimosso
+- `ServiceStaffEligibilityNotifier` mock data - ora legge da `allStaffProvider` e `staff.serviceIds`
 
 ---
 

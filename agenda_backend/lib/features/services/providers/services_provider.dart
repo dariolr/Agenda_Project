@@ -4,6 +4,7 @@ import '../../../core/models/service.dart';
 import '../../../core/models/service_staff_eligibility.dart';
 import '../../../core/models/service_variant.dart';
 import '../../agenda/providers/location_providers.dart';
+import '../../staff/providers/staff_providers.dart';
 import '../utils/service_seed_texts.dart';
 import 'service_categories_provider.dart';
 import 'services_repository_provider.dart';
@@ -261,24 +262,44 @@ final serviceVariantByServiceIdProvider = Provider.family<ServiceVariant?, int>(
 ///
 /// ELIGIBILITY STAFF
 ///
+/// Questo provider ora legge i service_ids direttamente dal modello Staff
+/// che è stato caricato dall'API. Non usa più dati mock.
+///
 class ServiceStaffEligibilityNotifier
     extends Notifier<List<ServiceStaffEligibility>> {
   @override
   List<ServiceStaffEligibility> build() {
-    return const [
-      ServiceStaffEligibility(serviceId: 1, staffId: 1, locationId: 101),
-      ServiceStaffEligibility(serviceId: 1, staffId: 3, locationId: 101),
-      ServiceStaffEligibility(serviceId: 1, staffId: 2, locationId: 102),
-      ServiceStaffEligibility(serviceId: 1, staffId: 3, locationId: 102),
-      ServiceStaffEligibility(serviceId: 2, staffId: 3),
-      ServiceStaffEligibility(serviceId: 2, staffId: 4, locationId: 101),
-      ServiceStaffEligibility(serviceId: 2, staffId: 2, locationId: 102),
-      ServiceStaffEligibility(serviceId: 3, staffId: 1, locationId: 101),
-      ServiceStaffEligibility(serviceId: 3, staffId: 2, locationId: 102),
-      ServiceStaffEligibility(serviceId: 3, staffId: 3, locationId: 102),
-    ];
+    // Legge da allStaffProvider per costruire l'eligibilità
+    final staffAsync = ref.watch(allStaffProvider);
+    final staffList = staffAsync.value ?? [];
+
+    final List<ServiceStaffEligibility> eligibilities = [];
+    for (final staff in staffList) {
+      for (final serviceId in staff.serviceIds) {
+        // Per ogni location dello staff, crea un'eligibilità
+        if (staff.locationIds.isEmpty) {
+          // Staff disponibile in tutte le location
+          eligibilities.add(
+            ServiceStaffEligibility(serviceId: serviceId, staffId: staff.id),
+          );
+        } else {
+          for (final locationId in staff.locationIds) {
+            eligibilities.add(
+              ServiceStaffEligibility(
+                serviceId: serviceId,
+                staffId: staff.id,
+                locationId: locationId,
+              ),
+            );
+          }
+        }
+      }
+    }
+    return eligibilities;
   }
 
+  /// Metodo per aggiornare lo stato locale (solo UI)
+  /// L'effettivo salvataggio avviene tramite StaffNotifier.updateStaffApi
   void setEligibleStaffForService({
     required int serviceId,
     required int locationId,
@@ -301,6 +322,8 @@ class ServiceStaffEligibilityNotifier
     state = [...retained, ...updated];
   }
 
+  /// Metodo per aggiornare lo stato locale (solo UI)
+  /// L'effettivo salvataggio avviene tramite StaffNotifier.updateStaffApi
   void setEligibleServicesForStaff({
     required int staffId,
     required int locationId,
@@ -349,14 +372,11 @@ final eligibleServicesForStaffProvider = Provider.family<List<int>, int>((
   ref,
   staffId,
 ) {
-  final location = ref.watch(currentLocationProvider);
-  final eligibilities = ref.watch(serviceStaffEligibilityProvider);
-  return [
-    for (final entry in eligibilities)
-      if (entry.staffId == staffId &&
-          (entry.locationId == null || entry.locationId == location.id))
-        entry.serviceId,
-  ];
+  // Legge direttamente dal modello Staff invece di usare serviceStaffEligibilityProvider
+  final staffAsync = ref.watch(allStaffProvider);
+  final staffList = staffAsync.value ?? [];
+  final staff = staffList.where((s) => s.id == staffId).firstOrNull;
+  return staff?.serviceIds ?? [];
 });
 
 ///

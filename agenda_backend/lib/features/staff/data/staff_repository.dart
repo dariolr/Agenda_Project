@@ -26,6 +26,7 @@ class StaffRepository {
     String? avatarUrl,
     bool? isBookableOnline,
     List<int>? locationIds,
+    List<int>? serviceIds,
   }) async {
     final data = await _apiClient.createStaff(
       businessId: businessId,
@@ -35,6 +36,7 @@ class StaffRepository {
       avatarUrl: avatarUrl,
       isBookableOnline: isBookableOnline,
       locationIds: locationIds,
+      serviceIds: serviceIds,
     );
     return Staff.fromJson(data);
   }
@@ -48,6 +50,7 @@ class StaffRepository {
     bool? isBookableOnline,
     int? sortOrder,
     List<int>? locationIds,
+    List<int>? serviceIds,
   }) async {
     final data = await _apiClient.updateStaff(
       staffId: staffId,
@@ -58,6 +61,7 @@ class StaffRepository {
       isBookableOnline: isBookableOnline,
       sortOrder: sortOrder,
       locationIds: locationIds,
+      serviceIds: serviceIds,
     );
     return Staff.fromJson(data);
   }

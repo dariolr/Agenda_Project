@@ -151,9 +151,8 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         _selectedLocationIds.add(initial.locationIds.first);
       }
       _isBookableOnline = initial.isBookableOnline;
-      _selectedServiceIds.addAll(
-        ref.read(eligibleServicesForStaffProvider(initial.id)),
-      );
+      // Legge serviceIds direttamente dal modello Staff (già caricato da API)
+      _selectedServiceIds.addAll(initial.serviceIds);
     } else if (widget.initialLocationId != null) {
       _selectedLocationIds.add(widget.initialLocationId!);
     }
@@ -635,10 +634,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final isEditing = widget.isEditing;
 
     try {
-      int staffId;
       if (isEditing) {
-        // Aggiorna staff esistente tramite API
-        final updated = await notifier.updateStaffApi(
+        // Aggiorna staff esistente tramite API (include service_ids)
+        await notifier.updateStaffApi(
           staffId: widget.initial!.id,
           name: name,
           surname: surname,
@@ -646,28 +644,20 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
               '#${_selectedColor.value.toRadixString(16).substring(2).toUpperCase()}',
           isBookableOnline: _isBookableOnline,
           locationIds: _selectedLocationIds.toList(),
+          serviceIds: _selectedServiceIds.toList(),
         );
-        staffId = updated.id;
       } else {
-        // Crea nuovo staff tramite API
-        final created = await notifier.createStaff(
+        // Crea nuovo staff tramite API (include service_ids)
+        await notifier.createStaff(
           name: name,
           surname: surname,
           colorHex:
               '#${_selectedColor.value.toRadixString(16).substring(2).toUpperCase()}',
           isBookableOnline: _isBookableOnline,
           locationIds: _selectedLocationIds.toList(),
+          serviceIds: _selectedServiceIds.toList(),
         );
-        staffId = created.id;
       }
-
-      ref
-          .read(serviceStaffEligibilityProvider.notifier)
-          .setEligibleServicesForStaff(
-            staffId: staffId,
-            locationId: ref.read(currentLocationProvider).id,
-            serviceIds: _selectedServiceIds,
-          );
 
       if (mounted) Navigator.of(context).pop();
     } catch (e) {

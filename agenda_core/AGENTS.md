@@ -201,6 +201,26 @@ Categorie Servizi (01/01/2026):
 
 ## 🗄️ API Gestionale - Entità Persistite (01/01/2026)
 
+### Staff Services (Servizi abilitati per Staff)
+Relazione N:M tra staff e servizi che può erogare.
+
+**Gestione tramite endpoint Staff esistenti:**
+- `GET /v1/businesses/{business_id}/staff` - ritorna `service_ids` per ogni staff
+- `POST /v1/businesses/{business_id}/staff` - accetta `service_ids` nel body
+- `PUT /v1/staff/{id}` - accetta `service_ids` nel body
+
+**Tabella:** `staff_services`
+- `staff_id`, `service_id` (chiave primaria composta)
+
+**File PHP:**
+- `src/Infrastructure/Repositories/StaffRepository.php` → `getServiceIds()`, `setServices()`
+- `src/Http/Controllers/StaffController.php` → gestione `service_ids` in store/update
+
+**File Flutter:**
+- `lib/core/models/staff.dart` → campo `serviceIds`
+- `lib/features/services/providers/services_provider.dart` → `eligibleServicesForStaffProvider` legge da Staff
+- `lib/features/staff/presentation/dialogs/staff_dialog.dart` → salvataggio via API
+
 ### Staff Availability Exceptions
 Eccezioni ai turni base dello staff (ferie, malattia, straordinari).
 
