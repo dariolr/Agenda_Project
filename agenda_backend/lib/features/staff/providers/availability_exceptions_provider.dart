@@ -2,13 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/availability_exception.dart';
+import '../../../core/network/network_providers.dart';
+import '../../agenda/providers/business_providers.dart';
+import '../data/api_availability_exceptions_repository.dart';
 import '../data/availability_exceptions_repository.dart';
 
 /// Provider per il repository delle eccezioni.
-/// Utilizza un'implementazione mock, sostituibile con API reale.
+/// Usa l'implementazione API reale.
 final availabilityExceptionsRepositoryProvider =
     Provider<AvailabilityExceptionsRepository>((ref) {
-      return MockAvailabilityExceptionsRepository();
+      final apiClient = ref.watch(apiClientProvider);
+      final business = ref.watch(currentBusinessProvider);
+      return ApiAvailabilityExceptionsRepository(
+        apiClient: apiClient,
+        businessId: business.id,
+      );
     });
 
 /// Provider per la gestione dello stato delle eccezioni.

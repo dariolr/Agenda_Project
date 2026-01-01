@@ -8,6 +8,7 @@ class Service {
   final int? durationMinutes; // da API
   final double? price; // da API
   final String? color; // da API
+  final int? serviceVariantId; // ID della variante per location (da API)
 
   const Service({
     required this.id,
@@ -19,6 +20,7 @@ class Service {
     this.durationMinutes,
     this.price,
     this.color,
+    this.serviceVariantId,
   });
 
   Service copyWith({
@@ -31,6 +33,7 @@ class Service {
     int? durationMinutes,
     double? price,
     String? color,
+    int? serviceVariantId,
   }) => Service(
     id: id ?? this.id,
     businessId: businessId ?? this.businessId,
@@ -41,6 +44,7 @@ class Service {
     durationMinutes: durationMinutes ?? this.durationMinutes,
     price: price ?? this.price,
     color: color ?? this.color,
+    serviceVariantId: serviceVariantId ?? this.serviceVariantId,
   );
 
   factory Service.fromJson(Map<String, dynamic> json) => Service(
@@ -53,6 +57,7 @@ class Service {
     durationMinutes: json['duration_minutes'] as int?,
     price: (json['price'] as num?)?.toDouble(),
     color: json['color'] as String?,
+    serviceVariantId: json['service_variant_id'] as int?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -65,5 +70,6 @@ class Service {
     if (durationMinutes != null) 'duration_minutes': durationMinutes,
     if (price != null) 'price': price,
     if (color != null) 'color': color,
+    if (serviceVariantId != null) 'service_variant_id': serviceVariantId,
   };
 }

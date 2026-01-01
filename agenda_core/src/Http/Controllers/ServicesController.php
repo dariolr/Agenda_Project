@@ -45,6 +45,7 @@ final class ServicesController
                 'color' => $service['color'],
                 'category_id' => $service['category_id'] ? (int) $service['category_id'] : null,
                 'category_name' => $service['category_name'] ?? null,
+                'service_variant_id' => isset($service['service_variant_id']) ? (int) $service['service_variant_id'] : null,
             ];
 
             if ($service['category_id'] !== null) {
@@ -91,6 +92,7 @@ final class ServicesController
                 'price' => (float) ($s['price'] ?? 0),
                 'color' => $s['color'],
                 'category_id' => $s['category_id'] ? (int) $s['category_id'] : null,
+                'service_variant_id' => isset($s['service_variant_id']) ? (int) $s['service_variant_id'] : null,
             ], $services),
         ], 200);
     }

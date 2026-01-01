@@ -321,9 +321,14 @@ void main() async {
 | Profilo utente | `features/auth/presentation/profile_screen.dart` |
 | Cambio password | `features/auth/presentation/change_password_screen.dart` |
 | Reset password | `features/auth/presentation/reset_password_screen.dart` |
-| Business admin | `features/business/presentation/dialogs/edit_business_dialog.dart` || User menu | `app/widgets/user_menu_button.dart` |
+| Business admin | `features/business/presentation/dialogs/edit_business_dialog.dart` |
+| User menu | `app/widgets/user_menu_button.dart` |
 | Router auth | `app/router_provider.dart` |
 | Services API | `features/services/data/services_api.dart` |
+| Time Blocks | `features/agenda/providers/time_blocks_provider.dart` |
+| Resources | `features/agenda/providers/resource_providers.dart` |
+| Availability Exceptions | `features/staff/providers/availability_exceptions_provider.dart` |
+| API Client | `core/network/api_client.dart` |
 
 ---
 
@@ -396,3 +401,99 @@ Il bottone "+" per aggiungere eccezioni occupava spazio nella griglia settimanal
 
 ### File
 - `lib/features/staff/presentation/staff_week_overview_screen.dart`
+
+---
+
+## 🗄️ API Gestionale - Provider con Persistenza (01/01/2026)
+
+Tutti i seguenti provider sono stati convertiti da mock a chiamate API reali.
+
+### Staff Availability Exceptions (Eccezioni Turni)
+Eccezioni ai turni base dello staff (ferie, malattia, straordinari).
+
+**Provider:** `availabilityExceptionsProvider` (AsyncNotifier)
+- Carica eccezioni da API per staff selezionato
+- Metodi: `addException()`, `updateException()`, `deleteException()`
+
+**File Flutter:**
+- `lib/features/staff/providers/availability_exceptions_provider.dart`
+- `lib/features/staff/data/api_availability_exceptions_repository.dart`
+- `lib/core/network/api_client.dart` → metodi `getStaffAvailabilityExceptions`, `createStaffAvailabilityException`, etc.
+
+### Resources (Risorse)
+Risorse fisiche assegnabili ai servizi (es. cabine, lettini).
+
+**Provider:** `resourcesProvider` (AsyncNotifier)
+- Carica risorse da API per location corrente
+- Metodi: `addResource()`, `updateResource()`, `deleteResource()`
+
+**Provider derivato:** `locationResourcesProvider` - filtra per location
+
+**File Flutter:**
+- `lib/features/agenda/providers/resource_providers.dart`
+- `lib/core/network/api_client.dart` → metodi `getResources`, `createResource`, `updateResource`, `deleteResource`
+
+### Time Blocks (Blocchi Non Disponibilità)
+Periodi di non disponibilità per uno o più staff.
+
+**Provider:** `timeBlocksProvider` (AsyncNotifier)
+- Carica blocchi da API per location corrente
+- Metodi: `addBlock()`, `updateBlock()`, `deleteBlock()`, `moveBlock()`, `updateBlockStaff()`
+
+**Provider derivati:**
+- `timeBlocksForCurrentLocationProvider` - blocchi per location e data corrente
+- `timeBlocksForStaffProvider(staffId)` - blocchi per staff specifico
+
+**File Flutter:**
+- `lib/features/agenda/providers/time_blocks_provider.dart`
+- `lib/features/agenda/presentation/dialogs/add_block_dialog.dart`
+- `lib/core/network/api_client.dart` → metodi `getTimeBlocks`, `createTimeBlock`, `updateTimeBlock`, `deleteTimeBlock`
+
+### Mock Rimossi (01/01/2026)
+I seguenti mock sono stati rimossi perché non più utilizzati:
+- `MockAvailabilityExceptionsRepository` - rimosso da `availability_exceptions_repository.dart`
+- `weeklyStaffAvailabilityMockProvider` - rimosso da `staff_week_overview_screen.dart`
+
+---
+
+## 🔄 Refresh e Polling Dati (01/01/2026)
+
+### Refresh all'entrata nelle sezioni
+Ogni sezione ricarica i dati dal DB quando l'utente vi accede (`initState`).
+
+| Sezione | Provider ricaricati |
+|---------|--------------------|
+| **Agenda** | `allStaffProvider`, `locationsProvider`, `servicesProvider`, `clientsProvider` |
+| **Clienti** | `clientsProvider` |
+| **Team** | `allStaffProvider`, `locationsProvider`, `servicesProvider` |
+| **Servizi** | `servicesProvider`, `allStaffProvider` |
+
+### Polling automatico in Agenda
+Gli appuntamenti vengono ricaricati automaticamente con `ref.invalidate(appointmentsProvider)`:
+- **Debug** (`kDebugMode`): ogni **10 secondi**
+- **Produzione**: ogni **5 minuti**
+
+Il timer parte in `initState` e si cancella in `dispose`.
+
+### File
+- `lib/features/agenda/presentation/agenda_screen.dart`
+- `lib/features/clients/presentation/clients_screen.dart`
+- `lib/features/staff/presentation/team_screen.dart`
+- `lib/features/services/presentation/services_screen.dart`
+
+---
+
+## 🏢 Filtro Location Attive (01/01/2026)
+
+Il provider `LocationsNotifier._loadLocations()` filtra automaticamente le location non attive:
+```dart
+state = locations.where((l) => l.isActive).toList();
+```
+
+Questo impatta:
+- Filtri location nell'agenda
+- Sezione Team (lista sedi)
+- Dialog staff (assegnazione sedi)
+
+### File
+- `lib/features/agenda/providers/location_providers.dart`

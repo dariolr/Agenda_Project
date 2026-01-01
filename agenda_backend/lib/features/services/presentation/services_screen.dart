@@ -12,6 +12,7 @@ import '../../../core/utils/color_utils.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/reorder_toggle_button.dart';
 import '../../../core/widgets/reorder_toggle_panel.dart';
+import '../../staff/providers/staff_providers.dart';
 import '../providers/service_categories_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/services_reorder_provider.dart';
@@ -38,6 +39,16 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   /// Modalità di riordino (mutuamente esclusive)
   bool isReorderCategories = false;
   bool isReorderServices = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Ricarica servizi e staff dal DB quando si entra nella schermata
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(servicesProvider.notifier).refresh();
+      ref.read(allStaffProvider.notifier).refresh();
+    });
+  }
 
   // ---------- Auto-scroll mentre si trascina ----------
   void _startAutoScroll(Offset pointerInGlobal) {
@@ -97,6 +108,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final servicesAsync = ref.watch(servicesProvider);
     final allCategories = ref.watch(sortedCategoriesProvider);
 
     // Mostriamo sempre tutte le categorie; i provider di sort sposteranno le vuote in coda.
@@ -114,6 +126,11 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         });
       }
     });
+
+    // Mostra loading mentre carica servizi
+    if (servicesAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     if (categories.isEmpty) {
       return const SizedBox.shrink();

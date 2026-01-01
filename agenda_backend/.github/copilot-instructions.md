@@ -183,6 +183,10 @@ Motivazioni:
 | Booking | `features/agenda/providers/bookings_provider.dart` |
 | Repository pattern | `features/clients/data/clients_repository.dart` |
 | Form factor | `app/providers/form_factor_provider.dart` |
+| Time Blocks | `features/agenda/providers/time_blocks_provider.dart` |
+| Resources | `features/agenda/providers/resource_providers.dart` |
+| Availability Exceptions | `features/staff/providers/availability_exceptions_provider.dart` |
+| API Client | `core/network/api_client.dart` |
 
 ---
 
@@ -318,3 +322,49 @@ Il bottone "+" per aggiungere eccezioni occupava spazio nella griglia settimanal
 
 ### File
 - `lib/features/staff/presentation/staff_week_overview_screen.dart`
+
+---
+
+## 🗄️ API Gestionale - Provider con Persistenza (01/01/2026)
+
+Tutti i seguenti provider sono stati convertiti da mock a chiamate API reali.
+
+### Staff Availability Exceptions (Eccezioni Turni)
+**Provider:** `availabilityExceptionsProvider` (AsyncNotifier)
+- Metodi: `addException()`, `updateException()`, `deleteException()`
+- File: `lib/features/staff/providers/availability_exceptions_provider.dart`
+
+### Resources (Risorse)
+**Provider:** `resourcesProvider` (AsyncNotifier)
+- Metodi: `addResource()`, `updateResource()`, `deleteResource()`
+- File: `lib/features/agenda/providers/resource_providers.dart`
+
+### Time Blocks (Blocchi Non Disponibilità)
+**Provider:** `timeBlocksProvider` (AsyncNotifier)
+- Metodi: `addBlock()`, `updateBlock()`, `deleteBlock()`, `moveBlock()`, `updateBlockStaff()`
+- File: `lib/features/agenda/providers/time_blocks_provider.dart`
+
+### Mock Rimossi (01/01/2026)
+- `MockAvailabilityExceptionsRepository` - rimosso
+- `weeklyStaffAvailabilityMockProvider` - rimosso
+
+---
+
+## 🔄 Refresh e Polling Dati (01/01/2026)
+
+### Refresh all'entrata nelle sezioni
+| Sezione | Provider ricaricati |
+|---------|--------------------|
+| Agenda | staff, locations, servizi, clienti |
+| Clienti | clienti |
+| Team | staff, locations, servizi |
+| Servizi | servizi, staff |
+
+### Polling automatico in Agenda
+- **Debug**: ogni 10 secondi
+- **Produzione**: ogni 5 minuti
+- Usa `ref.invalidate(appointmentsProvider)`
+
+### Filtro Location Attive
+`LocationsNotifier` filtra automaticamente `is_active = 0`.
+File: `lib/features/agenda/providers/location_providers.dart`

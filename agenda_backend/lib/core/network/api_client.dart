@@ -888,12 +888,13 @@ class ApiClient {
 
   /// GET /v1/businesses/{business_id}/staff/schedules
   /// Ottiene gli schedules di tutti gli staff di un business.
-  /// Ritorna Map<int, Map<int, List<Map>>> (staffId -> day -> shifts)
+  /// Ritorna `Map<int, Map<int, List<Map>>>` (staffId -> day -> shifts)
   Future<Map<int, Map<int, List<Map<String, String>>>>> getStaffSchedulesAll(
     int businessId,
   ) async {
     final response = await get(ApiConfig.staffSchedulesAll(businessId));
-    final data = response['data']['schedules'] as Map<String, dynamic>;
+    // _handleResponse già ritorna body['data'], quindi response = { schedules: {...} }
+    final data = response['schedules'] as Map<String, dynamic>;
 
     final Map<int, Map<int, List<Map<String, String>>>> result = {};
     for (final entry in data.entries) {
@@ -919,12 +920,13 @@ class ApiClient {
 
   /// GET /v1/staff/{id}/schedules
   /// Ottiene lo schedule settimanale di uno staff.
-  /// Ritorna Map<int, List<Map>> (day -> shifts)
+  /// Ritorna `Map<int, List<Map>>` (day -> shifts)
   Future<Map<int, List<Map<String, String>>>> getStaffSchedule(
     int staffId,
   ) async {
     final response = await get(ApiConfig.staffSchedule(staffId));
-    final data = response['data']['schedule'] as Map<String, dynamic>;
+    // _handleResponse già ritorna body['data'], quindi response = { staff_id: X, schedule: {...} }
+    final data = response['schedule'] as Map<String, dynamic>;
 
     final Map<int, List<Map<String, String>>> result = {};
     for (final entry in data.entries) {
@@ -959,7 +961,8 @@ class ApiClient {
       data: {'schedule': scheduleJson},
     );
 
-    final data = response['data']['schedule'] as Map<String, dynamic>;
+    // _handleResponse già ritorna body['data'], quindi response = { staff_id: X, schedule: {...} }
+    final data = response['schedule'] as Map<String, dynamic>;
     final Map<int, List<Map<String, String>>> result = {};
     for (final entry in data.entries) {
       final day = int.parse(entry.key);
@@ -974,5 +977,274 @@ class ApiClient {
       result[day] = shifts;
     }
     return result;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Staff Availability Exceptions
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// Get all availability exceptions for all staff in a business
+  /// GET /v1/businesses/{businessId}/staff/availability-exceptions
+  Future<Map<int, List<Map<String, dynamic>>>>
+  getStaffAvailabilityExceptionsAll(
+    int businessId, {
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final queryParams = <String, String>{};
+    if (fromDate != null) queryParams['from_date'] = fromDate;
+    if (toDate != null) queryParams['to_date'] = toDate;
+
+    final response = await get(
+      '/v1/businesses/$businessId/staff/availability-exceptions',
+      queryParameters: queryParams,
+    );
+
+    // response = { exceptions: { staffId: [...], ... } }
+    final exceptionsMap = response['exceptions'] as Map<String, dynamic>;
+    final Map<int, List<Map<String, dynamic>>> result = {};
+
+    for (final entry in exceptionsMap.entries) {
+      final staffId = int.parse(entry.key);
+      final exceptionsList = (entry.value as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      result[staffId] = exceptionsList;
+    }
+
+    return result;
+  }
+
+  /// Get availability exceptions for a single staff member
+  /// GET /v1/staff/{staffId}/availability-exceptions
+  Future<List<Map<String, dynamic>>> getStaffAvailabilityExceptions(
+    int staffId, {
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final queryParams = <String, String>{};
+    if (fromDate != null) queryParams['from_date'] = fromDate;
+    if (toDate != null) queryParams['to_date'] = toDate;
+
+    final response = await get(
+      '/v1/staff/$staffId/availability-exceptions',
+      queryParameters: queryParams,
+    );
+
+    // response = { staff_id: X, exceptions: [...] }
+    final exceptions = (response['exceptions'] as List)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    return exceptions;
+  }
+
+  /// Create a new availability exception for a staff member
+  /// POST /v1/staff/{staffId}/availability-exceptions
+  Future<Map<String, dynamic>> createStaffAvailabilityException({
+    required int staffId,
+    required String date,
+    String? startTime,
+    String? endTime,
+    String type = 'unavailable',
+    String? reasonCode,
+    String? reason,
+  }) async {
+    final data = <String, dynamic>{'date': date, 'type': type};
+    if (startTime != null) data['start_time'] = startTime;
+    if (endTime != null) data['end_time'] = endTime;
+    if (reasonCode != null) data['reason_code'] = reasonCode;
+    if (reason != null) data['reason'] = reason;
+
+    final response = await post(
+      '/v1/staff/$staffId/availability-exceptions',
+      data: data,
+    );
+
+    // response = { exception: {...} }
+    return Map<String, dynamic>.from(response['exception'] as Map);
+  }
+
+  /// Update an existing availability exception
+  /// PUT /v1/staff/availability-exceptions/{exceptionId}
+  Future<Map<String, dynamic>> updateStaffAvailabilityException({
+    required int exceptionId,
+    String? date,
+    String? startTime,
+    String? endTime,
+    String? type,
+    String? reasonCode,
+    String? reason,
+  }) async {
+    final data = <String, dynamic>{};
+    if (date != null) data['date'] = date;
+    if (startTime != null) data['start_time'] = startTime;
+    if (endTime != null) data['end_time'] = endTime;
+    if (type != null) data['type'] = type;
+    if (reasonCode != null) data['reason_code'] = reasonCode;
+    if (reason != null) data['reason'] = reason;
+
+    final response = await put(
+      '/v1/staff/availability-exceptions/$exceptionId',
+      data: data,
+    );
+
+    // response = { exception: {...} }
+    return Map<String, dynamic>.from(response['exception'] as Map);
+  }
+
+  /// Delete an availability exception
+  /// DELETE /v1/staff/availability-exceptions/{exceptionId}
+  Future<void> deleteStaffAvailabilityException(int exceptionId) async {
+    await delete('/v1/staff/availability-exceptions/$exceptionId');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Resources
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// Get all resources for a business
+  /// GET /v1/businesses/{businessId}/resources
+  Future<List<Map<String, dynamic>>> getResourcesByBusiness(
+    int businessId,
+  ) async {
+    final response = await get('/v1/businesses/$businessId/resources');
+    return (response['resources'] as List)
+        .map((r) => Map<String, dynamic>.from(r as Map))
+        .toList();
+  }
+
+  /// Get resources for a location
+  /// GET /v1/locations/{locationId}/resources
+  Future<List<Map<String, dynamic>>> getResourcesByLocation(
+    int locationId,
+  ) async {
+    final response = await get('/v1/locations/$locationId/resources');
+    return (response['resources'] as List)
+        .map((r) => Map<String, dynamic>.from(r as Map))
+        .toList();
+  }
+
+  /// Create a new resource
+  /// POST /v1/locations/{locationId}/resources
+  Future<Map<String, dynamic>> createResource({
+    required int locationId,
+    required String name,
+    String? type,
+    int quantity = 1,
+    String? note,
+    int sortOrder = 0,
+  }) async {
+    final response = await post(
+      '/v1/locations/$locationId/resources',
+      data: {
+        'name': name,
+        if (type != null) 'type': type,
+        'quantity': quantity,
+        if (note != null) 'note': note,
+        'sort_order': sortOrder,
+      },
+    );
+    return Map<String, dynamic>.from(response['resource'] as Map);
+  }
+
+  /// Update a resource
+  /// PUT /v1/resources/{resourceId}
+  Future<Map<String, dynamic>> updateResource({
+    required int resourceId,
+    String? name,
+    String? type,
+    int? quantity,
+    String? note,
+    int? sortOrder,
+  }) async {
+    final data = <String, dynamic>{};
+    if (name != null) data['name'] = name;
+    if (type != null) data['type'] = type;
+    if (quantity != null) data['quantity'] = quantity;
+    if (note != null) data['note'] = note;
+    if (sortOrder != null) data['sort_order'] = sortOrder;
+
+    final response = await put('/v1/resources/$resourceId', data: data);
+    return Map<String, dynamic>.from(response['resource'] as Map);
+  }
+
+  /// Delete a resource
+  /// DELETE /v1/resources/{resourceId}
+  Future<void> deleteResource(int resourceId) async {
+    await delete('/v1/resources/$resourceId');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Time Blocks
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// Get time blocks for a location in a date range
+  /// GET /v1/locations/{locationId}/time-blocks
+  Future<List<Map<String, dynamic>>> getTimeBlocks(
+    int locationId, {
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final queryParams = <String, String>{};
+    if (fromDate != null) queryParams['from_date'] = fromDate;
+    if (toDate != null) queryParams['to_date'] = toDate;
+
+    final response = await get(
+      '/v1/locations/$locationId/time-blocks',
+      queryParameters: queryParams,
+    );
+    return (response['time_blocks'] as List)
+        .map((b) => Map<String, dynamic>.from(b as Map))
+        .toList();
+  }
+
+  /// Create a new time block
+  /// POST /v1/locations/{locationId}/time-blocks
+  Future<Map<String, dynamic>> createTimeBlock({
+    required int locationId,
+    required String startTime,
+    required String endTime,
+    required List<int> staffIds,
+    bool isAllDay = false,
+    String? reason,
+  }) async {
+    final response = await post(
+      '/v1/locations/$locationId/time-blocks',
+      data: {
+        'start_time': startTime,
+        'end_time': endTime,
+        'staff_ids': staffIds,
+        'is_all_day': isAllDay,
+        if (reason != null) 'reason': reason,
+      },
+    );
+    return Map<String, dynamic>.from(response['time_block'] as Map);
+  }
+
+  /// Update a time block
+  /// PUT /v1/time-blocks/{blockId}
+  Future<Map<String, dynamic>> updateTimeBlock({
+    required int blockId,
+    String? startTime,
+    String? endTime,
+    List<int>? staffIds,
+    bool? isAllDay,
+    String? reason,
+  }) async {
+    final data = <String, dynamic>{};
+    if (startTime != null) data['start_time'] = startTime;
+    if (endTime != null) data['end_time'] = endTime;
+    if (staffIds != null) data['staff_ids'] = staffIds;
+    if (isAllDay != null) data['is_all_day'] = isAllDay;
+    if (reason != null) data['reason'] = reason;
+
+    final response = await put('/v1/time-blocks/$blockId', data: data);
+    return Map<String, dynamic>.from(response['time_block'] as Map);
+  }
+
+  /// Delete a time block
+  /// DELETE /v1/time-blocks/{blockId}
+  Future<void> deleteTimeBlock(int blockId) async {
+    await delete('/v1/time-blocks/$blockId');
   }
 }

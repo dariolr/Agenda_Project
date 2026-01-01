@@ -288,7 +288,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       items: menuItems,
     ).then((value) {
-      if (value == null) return;
+      if (value == null || !context.mounted) return;
       if (value == 'logout') {
         UserMenuButton.handleLogout(context, ref);
       } else if (value == 'profile') {

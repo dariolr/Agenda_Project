@@ -1,10 +1,10 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
+import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/labeled_form_field.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/date_time_formats.dart';
@@ -407,8 +407,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
       top: false,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isKeyboardOpen =
-              MediaQuery.of(context).viewInsets.bottom > 0;
+          final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
           return SizedBox(
             height: constraints.maxHeight,
             child: Column(
@@ -416,9 +415,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      bottom: 0,
-                    ),
+                    padding: EdgeInsets.only(bottom: 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -515,7 +512,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
     }
   }
 
-  void _onSave() {
+  Future<void> _onSave() async {
     final l10n = context.l10n;
     bool hasError = false;
 
@@ -572,7 +569,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
     if (widget.initial == null) {
       // Nuovo blocco
-      ref
+      await ref
           .read(timeBlocksProvider.notifier)
           .addBlock(
             staffIds: _selectedStaffIds.toList(),
@@ -583,22 +580,28 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
           );
     } else {
       // Aggiorna blocco esistente
-      final updated = widget.initial!.copyWith(
-        staffIds: _selectedStaffIds.toList(),
-        startTime: startDateTime,
-        endTime: endDateTime,
-        reason: reason,
-        isAllDay: _isAllDay,
-      );
-      ref.read(timeBlocksProvider.notifier).updateBlock(updated);
+      await ref
+          .read(timeBlocksProvider.notifier)
+          .updateBlock(
+            blockId: widget.initial!.id,
+            staffIds: _selectedStaffIds.toList(),
+            startTime: startDateTime,
+            endTime: endDateTime,
+            reason: reason,
+            isAllDay: _isAllDay,
+          );
     }
 
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 
-  void _onDelete() {
+  Future<void> _onDelete() async {
     if (widget.initial != null) {
-      ref.read(timeBlocksProvider.notifier).deleteBlock(widget.initial!.id);
+      await ref
+          .read(timeBlocksProvider.notifier)
+          .deleteBlock(widget.initial!.id);
+      if (!mounted) return;
       Navigator.of(context).pop();
     }
   }

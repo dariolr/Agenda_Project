@@ -1,103 +1,115 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/appointment.dart';
 import '../../../core/models/resource.dart';
 import '../../../core/models/service_variant.dart';
 import '../../../core/models/service_variant_resource_requirement.dart';
+import '../../../core/network/network_providers.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../services/providers/services_provider.dart';
 import 'appointment_providers.dart';
-import 'location_providers.dart';
+import 'business_providers.dart';
 
 ///
-/// RISORSE (mock + CRUD in memoria)
+/// RISORSE (caricamento da API)
 ///
-class ResourcesNotifier extends Notifier<List<Resource>> {
+class ResourcesNotifier extends AsyncNotifier<List<Resource>> {
   @override
-  List<Resource> build() {
-    final locations = ref.read(locationsProvider);
-    if (locations.isEmpty) return const [];
+  Future<List<Resource>> build() async {
+    final authState = ref.watch(authProvider);
+    if (!authState.isAuthenticated) {
+      return [];
+    }
 
-    final firstLocationId = locations.first.id;
-    final secondLocationId = locations.length > 1
-        ? locations[1].id
-        : firstLocationId;
+    final apiClient = ref.watch(apiClientProvider);
+    final business = ref.watch(currentBusinessProvider);
 
-    return [
-      // Risorse per sede principale
-      Resource(
-        id: 1,
-        locationId: firstLocationId,
-        name: 'Cabina Relax 1',
-        quantity: 1,
-        type: 'room',
-        note: null,
-      ),
-      Resource(
-        id: 2,
-        locationId: firstLocationId,
-        name: 'Cabina Relax 2',
-        quantity: 1,
-        type: 'room',
-        note: null,
-      ),
-      Resource(
-        id: 3,
-        locationId: firstLocationId,
-        name: 'Postazione Viso 1',
-        quantity: 2,
-        type: 'station',
-        note: null,
-      ),
-      // Risorse per seconda sede
-      Resource(
-        id: 4,
-        locationId: secondLocationId,
-        name: 'Cabina Relax A',
-        quantity: 1,
-        type: 'room',
-        note: null,
-      ),
-      Resource(
-        id: 5,
-        locationId: secondLocationId,
-        name: 'Cabina Relax B',
-        quantity: 1,
-        type: 'room',
-        note: null,
-      ),
-      Resource(
-        id: 6,
-        locationId: secondLocationId,
-        name: 'Postazione Viso 2',
-        quantity: 2,
-        type: 'station',
-        note: null,
-      ),
-    ];
+    try {
+      final data = await apiClient.getResourcesByBusiness(business.id);
+      return data.map(_parseResource).toList();
+    } catch (e) {
+      debugPrint('⚠️ ResourcesNotifier: errore caricamento risorse: $e');
+      return [];
+    }
   }
 
-  void add(Resource resource) {
-    state = [...state, resource];
+  Resource _parseResource(Map<String, dynamic> json) {
+    return Resource(
+      id: json['id'] as int,
+      locationId: json['location_id'] as int,
+      name: json['name'] as String,
+      quantity: json['quantity'] as int? ?? 1,
+      type: json['type'] as String?,
+      note: json['note'] as String?,
+    );
   }
 
-  void update(Resource updated) {
-    state = [
-      for (final r in state)
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+
+  Future<Resource> addResource({
+    required int locationId,
+    required String name,
+    String? type,
+    int quantity = 1,
+    String? note,
+  }) async {
+    final apiClient = ref.read(apiClientProvider);
+    final data = await apiClient.createResource(
+      locationId: locationId,
+      name: name,
+      type: type,
+      quantity: quantity,
+      note: note,
+    );
+    final resource = _parseResource(data);
+    final current = state.value ?? [];
+    state = AsyncData([...current, resource]);
+    return resource;
+  }
+
+  Future<Resource> updateResource({
+    required int resourceId,
+    String? name,
+    String? type,
+    int? quantity,
+    String? note,
+  }) async {
+    final apiClient = ref.read(apiClientProvider);
+    final data = await apiClient.updateResource(
+      resourceId: resourceId,
+      name: name,
+      type: type,
+      quantity: quantity,
+      note: note,
+    );
+    final updated = _parseResource(data);
+    final current = state.value ?? [];
+    state = AsyncData([
+      for (final r in current)
         if (r.id == updated.id) updated else r,
-    ];
+    ]);
+    return updated;
   }
 
-  void delete(int id) {
-    state = [
-      for (final r in state)
+  Future<void> deleteResource(int id) async {
+    final apiClient = ref.read(apiClientProvider);
+    await apiClient.deleteResource(id);
+    final current = state.value ?? [];
+    state = AsyncData([
+      for (final r in current)
         if (r.id != id) r,
-    ];
+    ]);
   }
 }
 
-final resourcesProvider = NotifierProvider<ResourcesNotifier, List<Resource>>(
-  ResourcesNotifier.new,
-);
+final resourcesProvider =
+    AsyncNotifierProvider<ResourcesNotifier, List<Resource>>(
+      ResourcesNotifier.new,
+    );
 
 ///
 /// RISORSE PER LOCATION
@@ -106,7 +118,8 @@ final locationResourcesProvider = Provider.family<List<Resource>, int>((
   ref,
   locationId,
 ) {
-  final resources = ref.watch(resourcesProvider);
+  final resourcesAsync = ref.watch(resourcesProvider);
+  final resources = resourcesAsync.value ?? [];
   return [
     for (final r in resources)
       if (r.locationId == locationId) r,
@@ -191,7 +204,8 @@ final resourceAvailabilityProvider =
       final requirements = currentVariant?.resourceRequirements ?? const [];
       if (requirements.isEmpty) return true;
 
-      final allResources = ref.watch(resourcesProvider);
+      final allResourcesAsync = ref.watch(resourcesProvider);
+      final allResources = allResourcesAsync.value ?? [];
       final resourceById = <int, Resource>{
         for (final r in allResources) r.id: r,
       };

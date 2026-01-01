@@ -286,23 +286,6 @@ int _countSegmentsForDay(
   return displayRanges.length;
 }
 
-/// Mock provider: staffId -> day(1..7) -> ranges
-final weeklyStaffAvailabilityMockProvider =
-    Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
-      // Simple sample data
-      return {
-        1: {
-          1: const [HourRange(9, 30, 13, 30), HourRange(14, 0, 19, 30)],
-          2: const [HourRange(9, 30, 13, 30), HourRange(14, 0, 19, 30)],
-          3: const [HourRange(10, 30, 13, 30), HourRange(14, 0, 19, 30)],
-          4: const [HourRange(9, 30, 13, 30), HourRange(14, 0, 19, 30)],
-          5: const [HourRange(10, 30, 13, 30), HourRange(14, 0, 19, 30)],
-          6: const [HourRange(9, 30, 13, 30)],
-          7: const [],
-        },
-      };
-    });
-
 /// Real data bridge: maps the editor's weekly availability (per day) to
 /// the overview shape, including exceptions for the specific week being displayed.
 ///
