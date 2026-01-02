@@ -59,12 +59,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggingIn = state.matchedLocation == '/login';
       final isOnBusinessList = state.matchedLocation == '/businesses';
 
-      debugPrint(
-        '🔀 Router redirect: path=${state.matchedLocation}, '
-        'isLoggedIn=$isAuthenticated, isSuperadmin=$isSuperadmin, '
-        'selectedBusiness=$superadminSelectedBusiness',
-      );
-
       // Durante il caricamento iniziale, non fare redirect
       if (isInitialOrLoading) {
         return null;
@@ -83,7 +77,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isAuthenticated && isLoggingIn) {
         // Se superadmin senza business selezionato, vai alla lista business
         if (isSuperadmin && superadminSelectedBusiness == null) {
-          debugPrint('🔀 Superadmin → /businesses');
           return '/businesses';
         }
         return '/agenda';
@@ -95,7 +88,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           superadminSelectedBusiness == null &&
           !isOnBusinessList &&
           !isLoggingIn) {
-        debugPrint('🔀 Superadmin senza business → /businesses');
         return '/businesses';
       }
 

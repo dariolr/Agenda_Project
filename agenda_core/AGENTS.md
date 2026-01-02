@@ -254,6 +254,28 @@ Categorie Servizi (01/01/2026):
 - `ServicesApi.fetchServicesWithCategories()` estrae categorie dalla risposta
 - `ServicesNotifier` popola `serviceCategoriesProvider` con dati API
 
+Services e Categories CRUD (02/01/2026):
+- **Endpoint Services:**
+  - `POST /v1/locations/{location_id}/services` → crea servizio (auth required)
+  - `PUT /v1/services/{id}` → aggiorna servizio (auth required, `location_id` nel body)
+  - `DELETE /v1/services/{id}` → soft delete servizio (auth required)
+- **Endpoint Categories:**
+  - `GET /v1/businesses/{business_id}/categories` → lista categorie
+  - `POST /v1/businesses/{business_id}/categories` → crea categoria
+  - `PUT /v1/categories/{id}` → aggiorna categoria
+  - `DELETE /v1/categories/{id}` → elimina categoria (servizi diventano senza categoria)
+- **File PHP:**
+  - `src/Infrastructure/Repositories/ServiceRepository.php` → CRUD methods
+  - `src/Http/Controllers/ServicesController.php` → endpoint handlers
+  - `src/Http/Kernel.php` → route registration
+- **File Flutter (agenda_backend):**
+  - `lib/core/network/api_client.dart` → metodi HTTP CRUD
+  - `lib/features/services/data/services_api.dart` → metodi API
+  - `lib/features/services/providers/services_provider.dart` → `*Api` methods
+  - `lib/features/services/providers/service_categories_provider.dart` → `*Api` methods
+- **Metodi deprecati:** `add()`, `updateService()`, `delete()`, `duplicate()` locali
+- **Usare:** `createServiceApi()`, `updateServiceApi()`, `deleteServiceApi()`, `duplicateServiceApi()`
+
 ---
 
 ## 🗄️ API Gestionale - Entità Persistite (01/01/2026)

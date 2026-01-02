@@ -375,7 +375,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
               cancelLabel: context.l10n.actionCancel,
             );
             if (confirmed == true) {
-              ref.read(allStaffProvider.notifier).delete(staff.id);
+              await ref
+                  .read(allStaffProvider.notifier)
+                  .deleteStaffApi(staff.id);
             }
           },
         );

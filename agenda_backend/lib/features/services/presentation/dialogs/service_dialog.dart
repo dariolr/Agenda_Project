@@ -1,6 +1,5 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
-import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -375,22 +374,51 @@ Future<void> showServiceDialog(
           additionalMinutes > 0) {
         blockedToSave = additionalMinutes;
       }
-      final newService = Service(
-        id: isEditing ? service.id : DateTime.now().millisecondsSinceEpoch,
-        businessId: ref.read(currentBusinessProvider).id,
-        categoryId: selectedCategory!,
-        name: normalizedName,
-        description: descController.text.trim().isEmpty
-            ? null
-            : descController.text.trim(),
-        sortOrder: service?.sortOrder ?? 0,
-      );
 
+      Service? savedService;
+
+      if (!isEditing) {
+        // Create new service via API
+        savedService = await notifier.createServiceApi(
+          name: normalizedName,
+          categoryId: selectedCategory!,
+          description: descController.text.trim().isEmpty
+              ? null
+              : descController.text.trim(),
+          durationMinutes: selectedDuration!,
+          price: finalPrice ?? 0,
+          colorHex: ColorUtils.toHex(selectedColor),
+          isBookableOnline: isBookableOnline,
+          isPriceStartingFrom: finalIsPriceStartingFrom,
+        );
+      } else {
+        // Update existing service via API
+        savedService = await notifier.updateServiceApi(
+          serviceId: service.id,
+          name: normalizedName,
+          categoryId: selectedCategory!,
+          description: descController.text.trim().isEmpty
+              ? null
+              : descController.text.trim(),
+          durationMinutes: selectedDuration!,
+          price: finalPrice ?? 0,
+          colorHex: ColorUtils.toHex(selectedColor),
+          isBookableOnline: isBookableOnline,
+          isPriceStartingFrom: finalIsPriceStartingFrom,
+        );
+      }
+
+      if (savedService == null) {
+        // API call failed, don't close dialog
+        return;
+      }
+
+      // Update local variant for immediate UI feedback (variant is derived from service)
       final newVariant = ServiceVariant(
         id: isEditing
-            ? (existingVariant?.id ?? (900000 + newService.id))
-            : (900000 + newService.id),
-        serviceId: newService.id,
+            ? (existingVariant?.id ?? (900000 + savedService.id))
+            : (900000 + savedService.id),
+        serviceId: savedService.id,
         locationId: ref.read(currentLocationProvider).id,
         durationMinutes: selectedDuration!,
         processingTime: processingToSave,
@@ -404,19 +432,16 @@ Future<void> showServiceDialog(
         resourceRequirements: existingVariant?.resourceRequirements ?? const [],
       );
 
-      if (!isEditing) {
-        notifier.add(newService);
-      } else {
-        notifier.updateService(newService);
-      }
       ref.read(serviceVariantsProvider.notifier).upsert(newVariant);
       eligibilityNotifier.setEligibleStaffForService(
-        serviceId: newService.id,
+        serviceId: savedService.id,
         locationId: locationId,
         staffIds: selectedStaffIds,
       );
 
-      Navigator.of(context, rootNavigator: true).pop();
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
     }
 
     if (isDuplicate) {

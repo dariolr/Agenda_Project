@@ -31,7 +31,8 @@ class CategoryTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(category.name, style: theme.textTheme.titleMedium),
-                  if (category.description != null && category.description!.isNotEmpty)
+                  if (category.description != null &&
+                      category.description!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
@@ -71,9 +72,11 @@ class CategoryTile extends ConsumerWidget {
             child: Text(context.l10n.actionCancel),
           ),
           FilledButton(
-            onPressed: () {
-              ref.read(serviceCategoriesProvider.notifier).deleteCategory(category.id);
-              Navigator.of(context).pop();
+            onPressed: () async {
+              await ref
+                  .read(serviceCategoriesProvider.notifier)
+                  .deleteCategoryApi(category.id);
+              if (context.mounted) Navigator.of(context).pop();
             },
             child: Text(context.l10n.actionDelete),
           ),

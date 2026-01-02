@@ -60,8 +60,35 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
   }
 
   Future<void> refresh() async {
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) {
+      state = const AsyncData([]);
+      return;
+    }
+
+    final location = ref.read(currentLocationProvider);
+    if (location.id <= 0) {
+      return;
+    }
+
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
+
+    // Carica blocchi per il mese corrente ± 1 mese
+    final now = DateTime.now();
+    final fromDate = DateTime(now.year, now.month - 1, 1);
+    final toDate = DateTime(now.year, now.month + 2, 0);
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final data = await apiClient.getTimeBlocks(
+        location.id,
+        fromDate: _formatDateTime(fromDate),
+        toDate: _formatDateTime(toDate),
+      );
+      state = AsyncData(data.map(_parseTimeBlock).toList());
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
   }
 
   /// Aggiunge un nuovo blocco di non disponibilità.

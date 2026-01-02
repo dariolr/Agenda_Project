@@ -1,4 +1,5 @@
 import '../../../core/models/service.dart';
+import '../../../core/models/service_category.dart';
 import '../../../core/network/api_client.dart';
 import 'services_api.dart';
 
@@ -16,4 +17,95 @@ class ServicesRepository {
   /// Carica solo i servizi (legacy)
   Future<List<Service>> getServices({required int locationId}) =>
       _api.fetchServices(locationId);
+
+  // ===== Services CRUD =====
+
+  /// Creates a new service
+  Future<Service> createService({
+    required int locationId,
+    required String name,
+    int? categoryId,
+    String? description,
+    int durationMinutes = 30,
+    double price = 0,
+    String? colorHex,
+    bool isBookableOnline = true,
+    bool isPriceStartingFrom = false,
+  }) => _api.createService(
+    locationId: locationId,
+    name: name,
+    categoryId: categoryId,
+    description: description,
+    durationMinutes: durationMinutes,
+    price: price,
+    colorHex: colorHex,
+    isBookableOnline: isBookableOnline,
+    isPriceStartingFrom: isPriceStartingFrom,
+  );
+
+  /// Updates an existing service
+  Future<Service> updateService({
+    required int serviceId,
+    required int locationId,
+    String? name,
+    int? categoryId,
+    bool setCategoryIdNull = false,
+    String? description,
+    int? durationMinutes,
+    double? price,
+    String? colorHex,
+    bool? isBookableOnline,
+    bool? isPriceStartingFrom,
+    int? sortOrder,
+  }) => _api.updateService(
+    serviceId: serviceId,
+    locationId: locationId,
+    name: name,
+    categoryId: categoryId,
+    setCategoryIdNull: setCategoryIdNull,
+    description: description,
+    durationMinutes: durationMinutes,
+    price: price,
+    colorHex: colorHex,
+    isBookableOnline: isBookableOnline,
+    isPriceStartingFrom: isPriceStartingFrom,
+    sortOrder: sortOrder,
+  );
+
+  /// Deletes a service
+  Future<void> deleteService(int serviceId) => _api.deleteService(serviceId);
+
+  // ===== Categories CRUD =====
+
+  /// Gets all categories for a business
+  Future<List<ServiceCategory>> getCategories(int businessId) =>
+      _api.fetchCategories(businessId);
+
+  /// Creates a new category
+  Future<ServiceCategory> createCategory({
+    required int businessId,
+    required String name,
+    String? description,
+  }) => _api.createCategory(
+    businessId: businessId,
+    name: name,
+    description: description,
+  );
+
+  /// Updates an existing category
+  Future<ServiceCategory> updateCategory({
+    required int categoryId,
+    String? name,
+    String? description,
+    int? sortOrder,
+  }) => _api.updateCategory(
+    categoryId: categoryId,
+    name: name,
+    description: description,
+    sortOrder: sortOrder,
+  );
+
+  /// Deletes a category
+  Future<void> deleteCategory(int categoryId) =>
+      _api.deleteCategory(categoryId);
 }

@@ -161,6 +161,17 @@ final class Kernel
         $this->router->get('/v1/staff', StaffController::class, 'index', ['location_query']);
         $this->router->get('/v1/availability', AvailabilityController::class, 'index', ['location_query']);
 
+        // Services CRUD (auth required)
+        $this->router->post('/v1/locations/{location_id}/services', ServicesController::class, 'store', ['auth', 'location_path']);
+        $this->router->put('/v1/services/{id}', ServicesController::class, 'update', ['auth']);
+        $this->router->delete('/v1/services/{id}', ServicesController::class, 'destroy', ['auth']);
+
+        // Service Categories CRUD (auth required)
+        $this->router->get('/v1/businesses/{business_id}/categories', ServicesController::class, 'indexCategories', ['auth', 'business_access_route']);
+        $this->router->post('/v1/businesses/{business_id}/categories', ServicesController::class, 'storeCategory', ['auth', 'business_access_route']);
+        $this->router->put('/v1/categories/{id}', ServicesController::class, 'updateCategory', ['auth']);
+        $this->router->delete('/v1/categories/{id}', ServicesController::class, 'destroyCategory', ['auth']);
+
         // Clients (auth required)
         $this->router->get('/v1/clients', ClientsController::class, 'index', ['auth']);
         $this->router->get('/v1/clients/{id}', ClientsController::class, 'show', ['auth']);
