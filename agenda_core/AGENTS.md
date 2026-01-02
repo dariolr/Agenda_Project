@@ -308,3 +308,87 @@ Questo impatta filtri agenda, sezione team e dialog staff.
 - Deployare SOLO: `public_html/`, `src/`, `vendor/`, `bin/` (se necessario)
 - **MAI** deployare: `docs/`, `tests/`, `scripts/`, `migrations/`, `lib/`, `.git/`, `*.md`, `phpunit.xml`
 - Usare sempre i comandi specifici documentati in DEPLOY.md sezione 12
+
+---
+
+## 💰 Prezzo "A partire da" (01/01/2026)
+
+### Schema Database
+`service_variants.is_price_starting_from` (TINYINT, default 0)
+
+### Backend PHP
+Tutti gli endpoint che ritornano service_variants includono il campo:
+- `ServiceRepository::findById()` → include `is_price_starting_from AS is_price_from`
+- `ServiceRepository::findByLocationId()` → include `is_price_starting_from AS is_price_from`
+- `ServiceRepository::findByIds()` → include `is_price_starting_from AS is_price_from`
+- `ServicesController::index()` → ritorna `is_price_starting_from` nella response JSON
+
+### Gestionale Flutter
+- `Service.isPriceStartingFrom` (bool) → campo flat dal service
+- `ServiceVariant.isPriceStartingFrom` (bool) → campo dal variant
+- `ServiceItem` widget usa `service.isPriceStartingFrom` per visualizzare "a partire da €X"
+- Chiave localizzazione: `priceStartingFromPrefix` = "a partire da"
+
+### Frontend Prenotazioni
+Se necessario, seguire stessa logica del gestionale.
+
+---
+
+## 🔧 Repository Method Names (01/01/2026)
+
+### IMPORTANTE
+Il metodo per ottenere PDO connection è:
+```php
+$this->db->getPdo()  // ✅ CORRETTO
+$this->db->pdo()     // ❌ ERRORE - metodo non esistente
+```
+
+### Fix Applicati
+- `TimeBlockRepository` → tutti i `pdo()` sostituiti con `getPdo()`
+
+### Verifica
+Prima di usare un repository, verificare che usi `getPdo()` e non `pdo()`.
+
+---
+
+---
+
+## 💰 Prezzo "A partire da" (01/01/2026)
+
+### Schema Database
+`service_variants.is_price_starting_from` (TINYINT, default 0)
+
+### Backend PHP
+Tutti gli endpoint che ritornano service_variants includono il campo:
+- `ServiceRepository::findById()` → include `is_price_starting_from AS is_price_from`
+- `ServiceRepository::findByLocationId()` → include `is_price_starting_from AS is_price_from`
+- `ServiceRepository::findByIds()` → include `is_price_starting_from AS is_price_from`
+- `ServicesController::index()` → ritorna `is_price_starting_from` nella response JSON
+
+### Gestionale Flutter
+- `Service.isPriceStartingFrom` (bool) → campo flat dal service
+- `ServiceVariant.isPriceStartingFrom` (bool) → campo dal variant
+- `ServiceItem` widget usa `service.isPriceStartingFrom` per visualizzare "a partire da €X"
+- Chiave localizzazione: `priceStartingFromPrefix` = "a partire da"
+
+### Frontend Prenotazioni
+Se necessario, seguire stessa logica del gestionale.
+
+---
+
+## 🔧 Repository Method Names (01/01/2026)
+
+### IMPORTANTE
+Il metodo per ottenere PDO connection è:
+```php
+$this->db->getPdo()  // ✅ CORRETTO
+$this->db->pdo()     // ❌ ERRORE - metodo non esistente
+```
+
+### Fix Applicati
+- `TimeBlockRepository` → tutti i `pdo()` sostituiti con `getPdo()`
+
+### Verifica
+Prima di usare un repository, verificare che usi `getPdo()` e non `pdo()`.
+
+---
