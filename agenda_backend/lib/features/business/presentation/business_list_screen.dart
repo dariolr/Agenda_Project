@@ -364,54 +364,59 @@ class _BusinessCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 400;
 
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(isCompact ? 10 : 16),
           child: Row(
             children: [
               // Avatar con iniziale
               CircleAvatar(
-                radius: 28,
+                radius: isCompact ? 18 : 24,
                 backgroundColor: colorScheme.primaryContainer,
                 child: Text(
                   business.name.isNotEmpty
                       ? business.name[0].toUpperCase()
                       : '?',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: isCompact ? 14 : 20,
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onPrimaryContainer,
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: isCompact ? 10 : 14),
               // Info business
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       children: [
                         Expanded(
                           child: Text(
                             business.name,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style:
+                                (isCompact
+                                        ? theme.textTheme.bodyMedium
+                                        : theme.textTheme.titleMedium)
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isCompact ? 4 : 6,
+                            vertical: 1,
                           ),
                           decoration: BoxDecoration(
                             color: colorScheme.surfaceContainerHighest,
@@ -422,30 +427,31 @@ class _BusinessCard extends StatelessWidget {
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                               fontFamily: 'monospace',
+                              fontSize: isCompact ? 9 : 11,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    if (business.slug != null)
+                    // Slug (sempre) e admin email (solo desktop)
+                    if (business.slug != null ||
+                        (!isCompact && business.adminEmail != null))
+                      SizedBox(height: isCompact ? 2 : 4),
+                    if (business.slug != null ||
+                        (!isCompact && business.adminEmail != null))
                       Text(
-                        business.slug!,
+                        [
+                          if (business.slug != null) business.slug!,
+                          if (!isCompact && business.adminEmail != null)
+                            business.adminEmail!,
+                        ].join(' • '),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    if (business.adminEmail != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        'Admin: ${business.adminEmail}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                          fontSize: isCompact ? 11 : null,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -481,13 +487,15 @@ class _BusinessCard extends StatelessWidget {
                 ],
                 icon: const Icon(Icons.more_vert),
               ),
-              const SizedBox(width: 4),
-              // Freccia per entrare
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: colorScheme.onSurfaceVariant,
-              ),
+              // Freccia per entrare (solo su schermi non compatti)
+              if (!isCompact) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
             ],
           ),
         ),

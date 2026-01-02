@@ -24,8 +24,8 @@ final class JwtService
     }
 
     /**
-     * Generate access token containing ONLY user_id.
-     * NEVER include business_id or location_id.
+     * Generate access token for OPERATORS (users table).
+     * Contains user_id in 'sub', role='operator'.
      */
     public function generateAccessToken(int $userId): string
     {
@@ -37,6 +37,28 @@ final class JwtService
             'iat' => $now,
             'exp' => $now + $this->accessTtl,
             'type' => 'access',
+            'role' => 'operator', // Distinguishes from customer tokens
+        ];
+
+        return JWT::encode($payload, $this->secret, $this->algorithm);
+    }
+
+    /**
+     * Generate access token for CUSTOMERS (clients table).
+     * Contains client_id in 'sub', role='customer', business_id.
+     */
+    public function generateCustomerAccessToken(int $clientId, int $businessId): string
+    {
+        $now = time();
+        
+        $payload = [
+            'iss' => 'agenda_core',
+            'sub' => (string) $clientId,
+            'iat' => $now,
+            'exp' => $now + $this->accessTtl,
+            'type' => 'access',
+            'role' => 'customer',
+            'business_id' => $businessId,
         ];
 
         return JWT::encode($payload, $this->secret, $this->algorithm);

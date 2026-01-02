@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/appointment.dart';
@@ -39,18 +40,23 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
     // Verifica autenticazione prima di chiamare API
     final authState = ref.read(authProvider);
     if (!authState.isAuthenticated) {
+      debugPrint('[ClientsNotifier] refresh: not authenticated, skipping');
       return;
     }
 
     final business = ref.read(currentBusinessProvider);
+    debugPrint('[ClientsNotifier] refresh: businessId=${business.id}');
     if (business.id <= 0) {
+      debugPrint('[ClientsNotifier] refresh: businessId <= 0, skipping');
       return;
     }
 
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repository = ref.read(clientsRepositoryProvider);
-      return repository.getAll(business.id);
+      final clients = await repository.getAll(business.id);
+      debugPrint('[ClientsNotifier] refresh: loaded ${clients.length} clients');
+      return clients;
     });
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/user.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/network_providers.dart';
+import '../../../core/services/preferences_service.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_state.dart';
 
@@ -82,7 +83,11 @@ class AuthNotifier extends Notifier<AuthState> {
 
   /// Logout dell'utente corrente.
   /// Se silent=true, non fa chiamata API (per sessione già scaduta)
-  Future<void> logout({bool silent = false}) async {
+  /// Se clearPreferences=true, pulisce tutte le preferenze salvate
+  Future<void> logout({
+    bool silent = false,
+    bool clearPreferences = false,
+  }) async {
     if (!silent) {
       try {
         await _repository.logout();
@@ -90,6 +95,16 @@ class AuthNotifier extends Notifier<AuthState> {
         // Ignora errori durante logout (es. token già invalido)
       }
     }
+
+    // Pulisce le preferenze se richiesto
+    if (clearPreferences) {
+      try {
+        await ref.read(preferencesServiceProvider).clearAll();
+      } catch (_) {
+        // Ignora errori durante pulizia preferenze
+      }
+    }
+
     state = AuthState.unauthenticated();
   }
 

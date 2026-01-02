@@ -622,3 +622,43 @@ Questo impatta:
 
 ### File
 - `lib/features/agenda/providers/location_providers.dart`
+
+---
+
+## 🔐 Autenticazione Operator (02/01/2026)
+
+### ⚠️ IMPORTANTE: Il gestionale usa SOLO autenticazione Operator
+
+Il gestionale (agenda_backend) usa **esclusivamente** endpoint di autenticazione per operatori:
+- `/v1/auth/login`
+- `/v1/auth/refresh`
+- `/v1/auth/logout`
+- `/v1/me`
+
+**NON** usare endpoint `/v1/customer/` nel gestionale — quelli sono riservati ai clienti che prenotano online (agenda_frontend).
+
+### JWT Token Operator
+
+```json
+{
+  "sub": 6,              // user_id (dalla tabella users)
+  "role": "operator",    // identifica tipo token
+  "exp": 1735830000,
+  "iat": 1735829100
+}
+```
+
+### Tabella Database
+Gli operatori (staff, admin, owner, superadmin) sono nella tabella `users`.
+I permessi sono gestiti dalla tabella `business_users`:
+- `is_owner = 1` → Owner del business
+- `can_manage_users = 1` → Può gestire staff
+- `is_superadmin = 1` (su users) → Accesso a tutti i business
+
+### File di Riferimento
+| Concetto | File |
+|----------|------|
+| Auth provider | `lib/features/auth/providers/auth_provider.dart` |
+| Login screen | `lib/features/auth/presentation/login_screen.dart` |
+| API client | `lib/core/network/api_client.dart` |
+| Session listener | `lib/app/session_expired_listener.dart` |

@@ -9,11 +9,11 @@ use Agenda\Http\Response;
 use Agenda\Infrastructure\Security\JwtService;
 
 /**
- * Middleware for operator/admin authentication (gestionale).
- * Validates JWT tokens with role='operator' (or legacy tokens without role).
- * Sets user_id attribute on request.
+ * Middleware for customer authentication (self-service booking).
+ * Validates JWT tokens with role='customer'.
+ * Sets client_id and business_id attributes on request.
  */
-final class AuthMiddleware implements MiddlewareInterface
+final class CustomerAuthMiddleware implements MiddlewareInterface
 {
     public function __construct(
         private readonly JwtService $jwtService,
@@ -33,20 +33,20 @@ final class AuthMiddleware implements MiddlewareInterface
             return Response::unauthorized('Invalid token', $request->traceId);
         }
 
-        // Token scaduto ma valido - il client può fare refresh
+        // Token expired but valid - client can refresh
         if (isset($payload['expired']) && $payload['expired'] === true) {
             return Response::error('Token has expired', 'token_expired', 401);
         }
 
-        // Verify this is an operator token (or legacy token without role)
+        // Verify this is a customer token
         $role = $payload['role'] ?? 'operator';
-        if ($role !== 'operator') {
+        if ($role !== 'customer') {
             return Response::unauthorized('Invalid token type', $request->traceId);
         }
 
-        // Inject ONLY user_id into request context
-        // NEVER extract business_id from JWT
-        $request->setAttribute('user_id', (int) $payload['sub']);
+        // Set client_id and business_id from token
+        $request->setAttribute('client_id', (int) $payload['sub']);
+        $request->setAttribute('business_id', (int) $payload['business_id']);
 
         return null;
     }

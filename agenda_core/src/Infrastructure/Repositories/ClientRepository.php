@@ -151,35 +151,48 @@ final class ClientRepository
         return $stmt->execute([$userId, $clientId]);
     }
 
-    public function findByBusinessId(int $businessId, int $limit = 100, int $offset = 0): array
+    public function findByBusinessId(int $businessId, ?int $limit = null, int $offset = 0): array
     {
-        $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
+        $sql = 'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
                     notes, is_archived, created_at, updated_at
              FROM clients
              WHERE business_id = ? AND is_archived = 0
-             ORDER BY last_name ASC, first_name ASC
-             LIMIT ? OFFSET ?'
-        );
-        $stmt->execute([$businessId, $limit, $offset]);
+             ORDER BY first_name ASC, last_name ASC';
+        
+        $params = [$businessId];
+        
+        if ($limit !== null) {
+            $sql .= ' LIMIT ? OFFSET ?';
+            $params[] = $limit;
+            $params[] = $offset;
+        }
+        
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
 
         return $stmt->fetchAll();
     }
 
-    public function searchByName(int $businessId, string $query, int $limit = 20): array
+    public function searchByName(int $businessId, string $query, ?int $limit = null): array
     {
         $searchTerm = '%' . $query . '%';
         
-        $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
+        $sql = 'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
                     notes, is_archived, created_at, updated_at
              FROM clients
              WHERE business_id = ? AND is_archived = 0
                AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ?)
-             ORDER BY last_name ASC, first_name ASC
-             LIMIT ?'
-        );
-        $stmt->execute([$businessId, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $limit]);
+             ORDER BY first_name ASC, last_name ASC';
+        
+        $params = [$businessId, $searchTerm, $searchTerm, $searchTerm, $searchTerm];
+        
+        if ($limit !== null) {
+            $sql .= ' LIMIT ?';
+            $params[] = $limit;
+        }
+        
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
 
         return $stmt->fetchAll();
     }

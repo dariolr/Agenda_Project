@@ -24,8 +24,10 @@ import '../features/agenda/providers/location_providers.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/business/presentation/business_list_screen.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
+import '../features/clients/providers/clients_providers.dart';
 import '../features/services/presentation/dialogs/category_dialog.dart';
 import '../features/services/presentation/dialogs/service_dialog.dart';
+import '../features/services/providers/services_provider.dart';
 import '../features/services/providers/services_reorder_provider.dart';
 import '../features/staff/presentation/dialogs/location_dialog.dart';
 import '../features/staff/presentation/dialogs/staff_dialog.dart';
@@ -248,10 +250,32 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         ref.read(agendaDateProvider.notifier).setToday();
       }
     }
+
+    // Invalida i provider quando si cambia tab per forzare il refresh
+    if (index != navigationShell.currentIndex) {
+      _invalidateProvidersForTab(index, ref);
+    }
+
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,
     );
+  }
+
+  /// Invalida i provider relativi alla tab selezionata
+  void _invalidateProvidersForTab(int index, WidgetRef ref) {
+    switch (index) {
+      case 1: // Clienti
+        ref.invalidate(clientsProvider);
+        break;
+      case 2: // Servizi
+        ref.invalidate(servicesProvider);
+        break;
+      case 3: // Staff
+        ref.invalidate(allStaffProvider);
+        ref.invalidate(locationsProvider);
+        break;
+    }
   }
 
   /// Gestisce tap su navigation: se è index 4, mostra menu utente

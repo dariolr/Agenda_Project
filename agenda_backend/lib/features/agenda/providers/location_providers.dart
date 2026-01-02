@@ -1,3 +1,4 @@
+import 'package:agenda_backend/core/services/preferences_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -182,20 +183,49 @@ final locationsProvider = NotifierProvider<LocationsNotifier, List<Location>>(
 class CurrentLocationId extends Notifier<int> {
   @override
   int build() {
+    final businessId = ref.watch(currentBusinessIdProvider);
+
     // Aspetta che locationsProvider carichi i dati
     ref.listen(locationsProvider, (previous, next) {
       if (next.isNotEmpty && state == 0) {
-        final defaultLocation = next.firstWhere(
-          (l) => l.isDefault,
-          orElse: () => next.first,
-        );
-        state = defaultLocation.id;
+        // Carica da preferenze salvate (solo quando abbiamo businessId valido)
+        int? savedId;
+        if (businessId > 0) {
+          final prefs = ref.read(preferencesServiceProvider);
+          savedId = prefs.getCurrentLocationId(businessId);
+        }
+
+        // Se c'è una preferenza salvata e la location esiste ancora, usala
+        if (savedId != null && next.any((l) => l.id == savedId)) {
+          state = savedId;
+        } else {
+          // Altrimenti usa la location di default
+          final defaultLocation = next.firstWhere(
+            (l) => l.isDefault,
+            orElse: () => next.first,
+          );
+          state = defaultLocation.id;
+
+          // Se c'era un savedId non valido, aggiorna le preferenze
+          if (savedId != null && businessId > 0) {
+            ref
+                .read(preferencesServiceProvider)
+                .setCurrentLocationId(businessId, state);
+          }
+        }
       }
     });
     return 0; // Inizializza a 0 per triggare il listen
   }
 
-  void set(int id) => state = id;
+  void set(int id) {
+    state = id;
+    // Salva in preferenze
+    final businessId = ref.read(currentBusinessIdProvider);
+    if (businessId > 0) {
+      ref.read(preferencesServiceProvider).setCurrentLocationId(businessId, id);
+    }
+  }
 }
 
 final currentLocationIdProvider = NotifierProvider<CurrentLocationId, int>(
