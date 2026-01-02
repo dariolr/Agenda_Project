@@ -26,6 +26,24 @@ final class BusinessRepository
         return $stmt->fetchAll();
     }
 
+    /**
+     * Find businesses that a user has access to (via business_users).
+     */
+    public function findByUserId(int $userId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency, 
+                    b.is_active, b.created_at, b.updated_at
+             FROM businesses b
+             JOIN business_users bu ON bu.business_id = b.id
+             WHERE bu.user_id = ? AND b.is_active = 1
+             ORDER BY b.name ASC'
+        );
+        $stmt->execute([$userId]);
+
+        return $stmt->fetchAll();
+    }
+
     public function findById(int $businessId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(

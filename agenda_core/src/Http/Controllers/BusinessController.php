@@ -8,21 +8,56 @@ use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
+use Agenda\Infrastructure\Repositories\BusinessUserRepository;
+use Agenda\Infrastructure\Repositories\UserRepository;
 
 final class BusinessController
 {
     public function __construct(
         private readonly BusinessRepository $businessRepo,
         private readonly LocationRepository $locationRepo,
+        private readonly BusinessUserRepository $businessUserRepo,
+        private readonly UserRepository $userRepo,
     ) {}
 
     /**
+     * Check if authenticated user has access to the given business.
+     */
+    private function hasBusinessAccess(Request $request, int $businessId): bool
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null) {
+            return false;
+        }
+
+        // Superadmin has access to all businesses
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+
+        // Normal user: check business_users table
+        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+    }
+
+    /**
      * GET /v1/businesses
-     * List all active businesses
+     * List businesses the authenticated user has access to.
+     * Superadmin sees all businesses.
      */
     public function index(Request $request): Response
     {
-        $businesses = $this->businessRepo->findAll();
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null) {
+            return Response::unauthorized('Authentication required', $request->traceId);
+        }
+
+        // Superadmin can see all businesses
+        if ($this->userRepo->isSuperadmin($userId)) {
+            $businesses = $this->businessRepo->findAll();
+        } else {
+            // Normal user: only businesses they have access to
+            $businesses = $this->businessRepo->findByUserId($userId);
+        }
 
         return Response::success([
             'data' => array_map(fn($b) => $this->formatBusiness($b), $businesses),
@@ -31,7 +66,7 @@ final class BusinessController
 
     /**
      * GET /v1/businesses/{id}
-     * Get a single business by ID
+     * Get a single business by ID (only if user has access)
      */
     public function show(Request $request): Response
     {
@@ -39,6 +74,11 @@ final class BusinessController
 
         $business = $this->businessRepo->findById($businessId);
         if (!$business) {
+            return Response::notFound('Business not found', $request->traceId);
+        }
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::notFound('Business not found', $request->traceId);
         }
 

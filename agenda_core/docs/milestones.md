@@ -30,6 +30,72 @@
 | **D2** | Multi-Business Path-Based URL | ✅ **LIVE** |
 | **D3** | Multi-Location Support Frontend | ✅ **LIVE** |
 | **D4** | Profilo Utente e Admin Email | ✅ **LIVE** |
+| **S1** | Audit Log (tracciamento accessi dati sensibili) | ⬜ Su richiesta |
+
+---
+
+## Audit Log - Tracciamento Accessi (S1) ⬜ Su richiesta
+
+### Descrizione
+Sistema di logging per tracciare tutte le operazioni sui dati sensibili (clienti, appuntamenti).
+Utile per compliance GDPR, debug e rilevamento accessi anomali.
+
+> ⚠️ **Nota**: Questa funzionalità verrà implementata solo su specifica richiesta.
+> La protezione attuale (autorizzazione API) è già sufficiente per la sicurezza base.
+
+### Cosa traccia
+| Campo | Descrizione |
+|-------|-------------|
+| `user_id` | Chi ha fatto l'operazione |
+| `action` | VIEW, LIST, CREATE, UPDATE, DELETE |
+| `resource_type` | client, appointment, booking, ecc. |
+| `resource_id` | ID della risorsa |
+| `business_id` | Business di appartenenza |
+| `ip_address` | IP dell'utente |
+| `created_at` | Timestamp operazione |
+
+### Schema DB
+```sql
+CREATE TABLE audit_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    action ENUM('VIEW', 'LIST', 'CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT'),
+    resource_type VARCHAR(50),
+    resource_id INT NULL,
+    business_id INT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_user (user_id),
+    INDEX idx_resource (resource_type, resource_id),
+    INDEX idx_business (business_id),
+    INDEX idx_created (created_at)
+);
+```
+
+### Risorse da loggare
+- **Clients**: VIEW, LIST, CREATE, UPDATE, DELETE
+- **Appointments**: VIEW, LIST, CREATE, UPDATE, CANCEL
+- **Users**: LOGIN, LOGOUT, PASSWORD_CHANGE
+
+### Query utili
+```sql
+-- Chi ha visto il cliente X?
+SELECT * FROM audit_logs WHERE resource_type = 'client' AND resource_id = X;
+
+-- Attività di un utente
+SELECT * FROM audit_logs WHERE user_id = Y ORDER BY created_at DESC;
+
+-- Rilevamento accessi anomali (troppi LIST)
+SELECT user_id, COUNT(*) as views FROM audit_logs 
+WHERE action = 'LIST' GROUP BY user_id HAVING views > 100;
+```
+
+### Implementazione
+1. Creare classe `AuditLogger` in `src/Infrastructure/Logging/`
+2. Iniettare nei controller che gestiscono dati sensibili
+3. Chiamare `$this->auditLog->log(...)` dopo ogni operazione
 
 ---
 

@@ -7,6 +7,9 @@ namespace Agenda\Http\Controllers;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\BookingRepository;
+use Agenda\Infrastructure\Repositories\LocationRepository;
+use Agenda\Infrastructure\Repositories\BusinessUserRepository;
+use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\UseCases\Booking\CreateBooking;
 use Agenda\UseCases\Booking\UpdateBooking;
 use Agenda\UseCases\Booking\DeleteBooking;
@@ -18,7 +21,29 @@ final class AppointmentsController
         private readonly CreateBooking $createBooking,
         private readonly UpdateBooking $updateBooking,
         private readonly DeleteBooking $deleteBooking,
+        private readonly LocationRepository $locationRepo,
+        private readonly BusinessUserRepository $businessUserRepo,
+        private readonly UserRepository $userRepo,
     ) {}
+
+    /**
+     * Check if authenticated user has access to the given business.
+     */
+    private function hasBusinessAccess(Request $request, int $businessId): bool
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null) {
+            return false;
+        }
+
+        // Superadmin has access to all businesses
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+
+        // Normal user: check business_users table
+        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+    }
 
     /**
      * GET /v1/locations/{location_id}/appointments?date=YYYY-MM-DD
@@ -27,10 +52,16 @@ final class AppointmentsController
     public function index(Request $request): Response
     {
         $locationId = (int) $request->getAttribute('location_id');
+        $businessId = $request->getAttribute('business_id');
         $date = $request->queryParam('date');
 
         if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return Response::badRequest('date parameter required (YYYY-MM-DD format)', $request->traceId);
+        }
+
+        // Authorization check (middleware should set business_id)
+        if ($businessId && !$this->hasBusinessAccess($request, (int) $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
         // Get all bookings for this location and date
@@ -55,12 +86,24 @@ final class AppointmentsController
             return Response::notFound('Appointment not found');
         }
 
+        // Get location to verify business access
+        $locationId = (int) $appointment['location_id'];
+        $location = $this->locationRepo->findById($locationId);
+        
+        if ($location) {
+            $businessId = (int) $location['business_id'];
+            if (!$this->hasBusinessAccess($request, $businessId)) {
+                return Response::notFound('Appointment not found');
+            }
+        }
+
         return Response::success($this->formatAppointment($appointment));
     }
 
     /**
      * PATCH /v1/locations/{location_id}/appointments/{id}
      * Reschedule an appointment (update start_time/end_time)
+     * Operators with business access can modify any appointment.
      */
     public function update(Request $request): Response
     {
@@ -72,12 +115,24 @@ final class AppointmentsController
             return Response::notFound('Appointment not found');
         }
 
-        // Validate permissions (only owner can modify)
+        // Get location to verify business access
+        $locationId = (int) $appointment['location_id'];
+        $location = $this->locationRepo->findById($locationId);
+        
+        if (!$location) {
+            return Response::notFound('Appointment not found');
+        }
+
+        $businessId = (int) $location['business_id'];
         $userId = $request->getAttribute('user_id');
         $booking = $this->bookingRepo->findById((int) $appointment['booking_id']);
-        
-        if ($booking && (int) $booking['user_id'] !== (int) $userId) {
-            return Response::forbidden('You can only modify your own appointments');
+
+        // Allow if: user is owner of booking OR has business access (operator)
+        $isOwner = $booking && (int) $booking['user_id'] === (int) $userId;
+        $hasAccess = $this->hasBusinessAccess($request, $businessId);
+
+        if (!$isOwner && !$hasAccess) {
+            return Response::forbidden('You do not have permission to modify this appointment');
         }
 
         // Update appointment fields
@@ -107,6 +162,7 @@ final class AppointmentsController
     /**
      * POST /v1/locations/{location_id}/appointments/{id}/cancel
      * Cancel an appointment (soft delete or status update)
+     * Operators with business access can cancel any appointment.
      */
     public function cancel(Request $request): Response
     {
@@ -117,17 +173,27 @@ final class AppointmentsController
             return Response::notFound('Appointment not found');
         }
 
-        // Validate permissions
-        $userId = $request->getAttribute('user_id');
-        $booking = $this->bookingRepo->findById((int) $appointment['booking_id']);
+        // Get location to verify business access
+        $locationId = (int) $appointment['location_id'];
+        $location = $this->locationRepo->findById($locationId);
         
-        if ($booking && (int) $booking['user_id'] !== (int) $userId) {
-            return Response::forbidden('You can only cancel your own appointments');
+        if (!$location) {
+            return Response::notFound('Appointment not found');
         }
 
-        // Option 1: Delete the booking_item
-        // Option 2: Update booking status to 'cancelled'
-        // Using Option 2 to preserve history
+        $businessId = (int) $location['business_id'];
+        $userId = $request->getAttribute('user_id');
+        $booking = $this->bookingRepo->findById((int) $appointment['booking_id']);
+
+        // Allow if: user is owner of booking OR has business access (operator)
+        $isOwner = $booking && (int) $booking['user_id'] === (int) $userId;
+        $hasAccess = $this->hasBusinessAccess($request, $businessId);
+
+        if (!$isOwner && !$hasAccess) {
+            return Response::forbidden('You do not have permission to cancel this appointment');
+        }
+
+        // Update booking status to 'cancelled' to preserve history
         $this->bookingRepo->updateBooking((int) $appointment['booking_id'], [
             'status' => 'cancelled',
         ]);

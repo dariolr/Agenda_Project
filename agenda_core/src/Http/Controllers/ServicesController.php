@@ -7,12 +7,37 @@ namespace Agenda\Http\Controllers;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
+use Agenda\Infrastructure\Repositories\LocationRepository;
+use Agenda\Infrastructure\Repositories\BusinessUserRepository;
+use Agenda\Infrastructure\Repositories\UserRepository;
 
 final class ServicesController
 {
     public function __construct(
         private readonly ServiceRepository $serviceRepository,
+        private readonly LocationRepository $locationRepo,
+        private readonly BusinessUserRepository $businessUserRepo,
+        private readonly UserRepository $userRepo,
     ) {}
+
+    /**
+     * Check if authenticated user has access to the given business.
+     */
+    private function hasBusinessAccess(Request $request, int $businessId): bool
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null) {
+            return false;
+        }
+
+        // Superadmin has access to all businesses
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+
+        // Normal user: check business_users table
+        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+    }
 
     /**
      * GET /v1/services?location_id=X
@@ -105,11 +130,19 @@ final class ServicesController
      */
     public function store(Request $request): Response
     {
-        $locationId = $request->getRouteParam('location_id');
-        $businessId = $request->getAttribute('business_id');
+        $locationId = (int) $request->getRouteParam('location_id');
 
-        if (!$locationId || !$businessId) {
-            return Response::error('Location context required', 'missing_location', 400);
+        // Get location to verify business access
+        $location = $this->locationRepo->findById($locationId);
+        if (!$location) {
+            return Response::notFound('Location not found', $request->traceId);
+        }
+
+        $businessId = (int) $location['business_id'];
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
         $body = $request->getParsedBody();
@@ -119,8 +152,8 @@ final class ServicesController
         }
 
         $service = $this->serviceRepository->create(
-            businessId: (int) $businessId,
-            locationId: (int) $locationId,
+            businessId: $businessId,
+            locationId: $locationId,
             name: $name,
             categoryId: isset($body['category_id']) ? (int) $body['category_id'] : null,
             description: $body['description'] ?? null,
@@ -142,12 +175,30 @@ final class ServicesController
     {
         $serviceId = (int) $request->getRouteParam('id');
         
-        // Get location_id from body for authorization check
+        // Get service to verify ownership
+        $existingService = $this->serviceRepository->findServiceById($serviceId);
+        if (!$existingService) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
+
+        $businessId = (int) $existingService['business_id'];
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
+
         $body = $request->getParsedBody();
         $locationId = isset($body['location_id']) ? (int) $body['location_id'] : null;
 
         if (!$locationId) {
             return Response::error('location_id is required', 'missing_location', 400);
+        }
+
+        // Verify location belongs to same business
+        $location = $this->locationRepo->findById($locationId);
+        if (!$location || (int) $location['business_id'] !== $businessId) {
+            return Response::error('Invalid location_id', 'validation_error', 400);
         }
 
         $service = $this->serviceRepository->update(
@@ -168,7 +219,7 @@ final class ServicesController
             return Response::error('Service not found or unauthorized', 'not_found', 404);
         }
 
-        return Response::success(['service' => $this->formatService($service, $service['business_id'])]);
+        return Response::success(['service' => $this->formatService($service, $businessId)]);
     }
 
     /**
@@ -178,6 +229,19 @@ final class ServicesController
     public function destroy(Request $request): Response
     {
         $serviceId = (int) $request->getRouteParam('id');
+
+        // Get service to verify ownership
+        $existingService = $this->serviceRepository->findServiceById($serviceId);
+        if (!$existingService) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
+
+        $businessId = (int) $existingService['business_id'];
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
 
         $this->serviceRepository->delete($serviceId);
 
@@ -193,6 +257,11 @@ final class ServicesController
     public function indexCategories(Request $request): Response
     {
         $businessId = (int) $request->getRouteParam('business_id');
+
+        // Authorization check (middleware should handle this, but double-check)
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
 
         $categories = $this->serviceRepository->getCategories($businessId);
 
@@ -214,6 +283,11 @@ final class ServicesController
     public function storeCategory(Request $request): Response
     {
         $businessId = (int) $request->getRouteParam('business_id');
+
+        // Authorization check (middleware should handle this, but double-check)
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
 
         $body = $request->getParsedBody();
         $name = trim($body['name'] ?? '');
@@ -237,6 +311,19 @@ final class ServicesController
     public function updateCategory(Request $request): Response
     {
         $categoryId = (int) $request->getRouteParam('id');
+
+        // Get category to verify ownership
+        $existingCategory = $this->serviceRepository->getCategoryById($categoryId);
+        if (!$existingCategory) {
+            return Response::notFound('Category not found', $request->traceId);
+        }
+
+        $businessId = (int) $existingCategory['business_id'];
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Category not found', $request->traceId);
+        }
 
         $body = $request->getParsedBody();
 
@@ -267,6 +354,19 @@ final class ServicesController
     public function destroyCategory(Request $request): Response
     {
         $categoryId = (int) $request->getRouteParam('id');
+
+        // Get category to verify ownership
+        $existingCategory = $this->serviceRepository->getCategoryById($categoryId);
+        if (!$existingCategory) {
+            return Response::notFound('Category not found', $request->traceId);
+        }
+
+        $businessId = (int) $existingCategory['business_id'];
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Category not found', $request->traceId);
+        }
 
         $this->serviceRepository->deleteCategory($categoryId);
 

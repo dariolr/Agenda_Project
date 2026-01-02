@@ -4,15 +4,39 @@ declare(strict_types=1);
 
 namespace Agenda\Http\Controllers;
 
+use Agenda\Domain\Helpers\DataMasker;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\ClientRepository;
+use Agenda\Infrastructure\Repositories\BusinessUserRepository;
+use Agenda\Infrastructure\Repositories\UserRepository;
 
 final class ClientsController
 {
     public function __construct(
         private readonly ClientRepository $clientRepo,
+        private readonly BusinessUserRepository $businessUserRepo,
+        private readonly UserRepository $userRepo,
     ) {}
+
+    /**
+     * Check if authenticated user has access to the given business.
+     */
+    private function hasBusinessAccess(Request $request, int $businessId): bool
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null) {
+            return false;
+        }
+
+        // Superadmin has access to all businesses
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+
+        // Normal user: check business_users table
+        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+    }
 
     /**
      * GET /v1/clients?business_id=X[&search=term]
@@ -24,9 +48,15 @@ final class ClientsController
             return Response::badRequest('business_id is required', $request->traceId);
         }
 
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+
         $search = $request->queryParam('search');
         $limit = (int) $request->queryParam('limit', '100');
         $offset = (int) $request->queryParam('offset', '0');
+        $masked = $request->queryParam('masked', 'false') === 'true';
 
         if ($search !== null && $search !== '') {
             $clients = $this->clientRepo->searchByName($businessId, $search, min($limit, 100));
@@ -34,8 +64,11 @@ final class ClientsController
             $clients = $this->clientRepo->findByBusinessId($businessId, min($limit, 100), $offset);
         }
 
-        // Format response
-        $formatted = array_map(fn(array $c) => $this->formatClient($c), $clients);
+        // Format response (masked for list view, full for detail)
+        $formatted = array_map(
+            fn(array $c) => $masked ? $this->formatClientMasked($c) : $this->formatClient($c),
+            $clients
+        );
 
         return Response::success([
             'clients' => $formatted,
@@ -55,6 +88,12 @@ final class ClientsController
             return Response::notFound('Client not found');
         }
 
+        // Authorization check: verify user has access to the client's business
+        $businessId = (int) $client['business_id'];
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Client not found'); // Return 404 to avoid leaking existence
+        }
+
         return Response::success($this->formatClient($client));
     }
 
@@ -68,6 +107,11 @@ final class ClientsController
         $businessId = (int) ($body['business_id'] ?? 0);
         if ($businessId <= 0) {
             return Response::error('business_id is required', 'validation_error', 400);
+        }
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
         // Create client
@@ -102,6 +146,12 @@ final class ClientsController
         $client = $this->clientRepo->findById($clientId);
         if ($client === null) {
             return Response::notFound('Client not found');
+        }
+
+        // Authorization check: verify user has access to the client's business
+        $businessId = (int) $client['business_id'];
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Client not found'); // Return 404 to avoid leaking existence
         }
 
         // Update allowed fields
@@ -141,6 +191,12 @@ final class ClientsController
             return Response::notFound('Client not found');
         }
 
+        // Authorization check: verify user has access to the client's business
+        $businessId = (int) $client['business_id'];
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Client not found'); // Return 404 to avoid leaking existence
+        }
+
         // Soft delete
         $stmt = $this->clientRepo->db()->getPdo()->prepare(
             'UPDATE clients SET is_archived = 1, updated_at = NOW() WHERE id = ?'
@@ -161,6 +217,28 @@ final class ClientsController
             'email' => $client['email'],
             'phone' => $client['phone'],
             'notes' => $client['notes'],
+            'is_archived' => (bool) ($client['is_archived'] ?? false),
+            'created_at' => $client['created_at'],
+            'updated_at' => $client['updated_at'],
+        ];
+    }
+
+    /**
+     * Format client with masked personal data (for list views).
+     */
+    private function formatClientMasked(array $client): array
+    {
+        return [
+            'id' => (int) $client['id'],
+            'business_id' => (int) $client['business_id'],
+            'user_id' => $client['user_id'] ? (int) $client['user_id'] : null,
+            'first_name' => $client['first_name'],
+            'last_name' => $client['last_name'],
+            'email' => null, // Hidden in masked mode
+            'email_masked' => DataMasker::maskEmail($client['email']),
+            'phone' => null, // Hidden in masked mode
+            'phone_masked' => DataMasker::maskPhone($client['phone']),
+            'notes' => null, // Hidden in masked mode
             'is_archived' => (bool) ($client['is_archived'] ?? false),
             'created_at' => $client['created_at'],
             'updated_at' => $client['updated_at'],
