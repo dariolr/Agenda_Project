@@ -31,13 +31,14 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   Widget build(BuildContext context) {
     final sortOption = ref.watch(clientSortOptionProvider);
     final clientsAsync = ref.watch(clientsProvider);
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       body: clientsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Errore: $e')),
-        data: (_) => Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+        data: (clients) => Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + bottomPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -46,10 +47,24 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 onChanged: (v) => setState(() => _query = v),
               ),
               const SizedBox(height: 8),
-              ClientsSortDropdown(
-                value: sortOption,
-                onChanged: (v) =>
-                    ref.read(clientSortOptionProvider.notifier).set(v),
+              Row(
+                children: [
+                  ClientsSortDropdown(
+                    value: sortOption,
+                    onChanged: (v) =>
+                        ref.read(clientSortOptionProvider.notifier).set(v),
+                  ),
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(
+                      '${clients.length} clienti',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               Expanded(child: ClientList(query: _query)),

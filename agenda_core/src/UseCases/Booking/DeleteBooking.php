@@ -27,11 +27,12 @@ final class DeleteBooking
     /**
      * @param int $bookingId ID del booking da cancellare
      * @param int $userId ID dell'utente che richiede la cancellazione
+     * @param bool $isOperator Se true, bypassa controlli permessi/policy
      * 
      * @throws BookingException
      * @return void
      */
-    public function execute(int $bookingId, int $userId): void
+    public function execute(int $bookingId, int $userId, bool $isOperator = false): void
     {
         // Verifica che il booking esista
         $booking = $this->bookingRepo->findById($bookingId);
@@ -40,14 +41,15 @@ final class DeleteBooking
             throw BookingException::notFound('Booking not found');
         }
 
-        // Verifica permessi: solo chi ha creato il booking può cancellarlo
-        // (in futuro si potrebbe estendere con sistema di permessi più sofisticato)
-        if ($booking['user_id'] !== $userId) {
+        // Verifica permessi: operatori possono cancellare qualsiasi booking del business
+        if (!$isOperator && $booking['user_id'] !== $userId) {
             throw BookingException::unauthorized('You do not have permission to delete this booking');
         }
 
-        // Verifica cancellation policy
-        $this->validateCancellationPolicy($booking);
+        // Verifica cancellation policy (skip per operatori)
+        if (!$isOperator) {
+            $this->validateCancellationPolicy($booking);
+        }
         
         // Prepara i dati per la notifica prima di cancellare
         $notificationData = $this->prepareNotificationData($booking);

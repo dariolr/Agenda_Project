@@ -12,6 +12,7 @@ use Agenda\Http\Controllers\AdminBusinessesController;
 use Agenda\Http\Controllers\BusinessUsersController;
 use Agenda\Http\Controllers\BusinessInvitationsController;
 use Agenda\Http\Controllers\ClientsController;
+use Agenda\Http\Controllers\CustomerAuthController;
 use Agenda\Http\Controllers\HealthController;
 use Agenda\Http\Controllers\LocationsController;
 use Agenda\Http\Controllers\ServicesController;
@@ -22,6 +23,7 @@ use Agenda\Http\Controllers\TimeBlocksController;
 use Agenda\Http\Controllers\AppointmentsController;
 use Agenda\Http\Middleware\AuthMiddleware;
 use Agenda\Http\Middleware\BusinessAccessMiddleware;
+use Agenda\Http\Middleware\CustomerAuthMiddleware;
 use Agenda\Http\Middleware\IdempotencyMiddleware;
 use Agenda\Http\Middleware\LocationContextMiddleware;
 use Agenda\Infrastructure\Database\Connection;
@@ -31,6 +33,7 @@ use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\BusinessInvitationRepository;
+use Agenda\Infrastructure\Repositories\ClientAuthRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
@@ -57,6 +60,11 @@ use Agenda\UseCases\Booking\CreateBooking;
 use Agenda\UseCases\Booking\UpdateBooking;
 use Agenda\UseCases\Booking\DeleteBooking;
 use Agenda\UseCases\Booking\GetMyBookings;
+use Agenda\UseCases\CustomerAuth\LoginCustomer;
+use Agenda\UseCases\CustomerAuth\RegisterCustomer;
+use Agenda\UseCases\CustomerAuth\RefreshCustomerToken;
+use Agenda\UseCases\CustomerAuth\LogoutCustomer;
+use Agenda\UseCases\CustomerAuth\GetCustomerMe;
 use Throwable;
 
 final class Kernel
@@ -197,6 +205,20 @@ final class Kernel
         $this->router->get('/v1/locations/{location_id}/appointments/{id}', AppointmentsController::class, 'show', ['auth', 'location_path']);
         $this->router->patch('/v1/locations/{location_id}/appointments/{id}', AppointmentsController::class, 'update', ['auth', 'location_path']);
         $this->router->post('/v1/locations/{location_id}/appointments/{id}/cancel', AppointmentsController::class, 'cancel', ['auth', 'location_path']);
+
+        // =========================================================================
+        // CUSTOMER AUTH (self-service booking)
+        // Separate from operator auth - uses clients table, not users table
+        // =========================================================================
+        $this->router->post('/v1/customer/{business_id}/auth/login', CustomerAuthController::class, 'login');
+        $this->router->post('/v1/customer/{business_id}/auth/register', CustomerAuthController::class, 'register');
+        $this->router->post('/v1/customer/{business_id}/auth/refresh', CustomerAuthController::class, 'refresh');
+        $this->router->post('/v1/customer/{business_id}/auth/logout', CustomerAuthController::class, 'logout');
+        $this->router->get('/v1/customer/me', CustomerAuthController::class, 'me', ['customer_auth']);
+        
+        // Customer bookings (protected, uses client_id from customer JWT)
+        $this->router->post('/v1/customer/{business_id}/bookings', BookingsController::class, 'storeCustomer', ['customer_auth', 'idempotency']);
+        $this->router->get('/v1/customer/bookings', BookingsController::class, 'myCustomerBookings', ['customer_auth']);
     }
 
     private function registerMiddleware(): void
@@ -208,6 +230,7 @@ final class Kernel
 
         $this->middleware = [
             'auth' => new AuthMiddleware($jwtService),
+            'customer_auth' => new CustomerAuthMiddleware($jwtService),
             'location_path' => new LocationContextMiddleware($locationRepo, 'path'),
             'location_query' => new LocationContextMiddleware($locationRepo, 'query'),
             'idempotency' => new IdempotencyMiddleware(),
@@ -233,12 +256,13 @@ final class Kernel
         $timeBlockRepo = new TimeBlockRepository($this->db);
         $bookingRepo = new BookingRepository($this->db);
         $clientRepo = new ClientRepository($this->db);
+        $clientAuthRepo = new ClientAuthRepository($this->db);
 
         // Services
         $jwtService = new JwtService();
         $passwordHasher = new PasswordHasher();
 
-        // Use Cases
+        // Operator Auth Use Cases
         $loginUser = new LoginUser($userRepo, $sessionRepo, $jwtService, $passwordHasher);
         $refreshToken = new RefreshToken($userRepo, $sessionRepo, $jwtService);
         $logoutUser = new LogoutUser($sessionRepo);
@@ -249,6 +273,15 @@ final class Kernel
         $verifyResetToken = new VerifyResetToken($this->db);
         $changePassword = new ChangePassword($userRepo, $passwordHasher);
         $updateProfile = new UpdateProfile($this->db, $userRepo);
+
+        // Customer Auth Use Cases
+        $loginCustomer = new LoginCustomer($clientAuthRepo, $jwtService, $passwordHasher);
+        $registerCustomer = new RegisterCustomer($clientAuthRepo, $clientRepo, $jwtService, $passwordHasher);
+        $refreshCustomerToken = new RefreshCustomerToken($clientAuthRepo, $jwtService);
+        $logoutCustomer = new LogoutCustomer($clientAuthRepo);
+        $getCustomerMe = new GetCustomerMe($clientAuthRepo);
+
+        // Booking Use Cases
         $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo);
         $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo);
         $updateBooking = new UpdateBooking($bookingRepo, $this->db);
@@ -259,6 +292,7 @@ final class Kernel
         $this->controllers = [
             HealthController::class => new HealthController(),
             AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $verifyResetToken, $changePassword, $updateProfile),
+            CustomerAuthController::class => new CustomerAuthController($loginCustomer, $refreshCustomerToken, $logoutCustomer, $getCustomerMe, $registerCustomer, $businessRepo),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo, $businessUserRepo, $userRepo),
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
             ServicesController::class => new ServicesController($serviceRepo, $locationRepo, $businessUserRepo, $userRepo),

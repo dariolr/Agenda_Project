@@ -12,6 +12,7 @@ final class BookingException extends Exception
     public const INVALID_SERVICE = 'invalid_service';
     public const INVALID_STAFF = 'invalid_staff';
     public const INVALID_LOCATION = 'invalid_location';
+    public const INVALID_CLIENT = 'invalid_client';
     public const INVALID_TIME = 'invalid_time';
     public const STAFF_UNAVAILABLE = 'staff_unavailable';
     public const OUTSIDE_WORKING_HOURS = 'outside_working_hours';
@@ -67,6 +68,16 @@ final class BookingException extends Exception
             self::INVALID_LOCATION,
             400,
             ['location_id' => $locationId]
+        );
+    }
+
+    public static function invalidClient(int $clientId): self
+    {
+        return new self(
+            'The specified client does not exist or does not belong to this business',
+            self::INVALID_CLIENT,
+            400,
+            ['client_id' => $clientId]
         );
     }
 

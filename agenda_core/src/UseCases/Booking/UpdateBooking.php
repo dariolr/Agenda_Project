@@ -29,10 +29,11 @@ final class UpdateBooking
      *   - 'notes' => string|null
      *   - 'start_time' => string|null (ISO8601 per reschedule)
      * 
+     * @param bool $isOperator Se true, bypassa controlli permessi/policy/conflitti
      * @throws BookingException
      * @return array Booking aggiornato
      */
-    public function execute(int $bookingId, int $userId, array $data): array
+    public function execute(int $bookingId, int $userId, array $data, bool $isOperator = false): array
     {
         // Verifica che il booking esista
         $booking = $this->bookingRepo->findById($bookingId);
@@ -41,13 +42,15 @@ final class UpdateBooking
             throw BookingException::notFound('Booking not found');
         }
 
-        // Verifica permessi: solo chi ha creato il booking può modificarlo
-        if ($booking['user_id'] !== $userId) {
+        // Verifica permessi: operatori possono modificare qualsiasi booking del business
+        if (!$isOperator && $booking['user_id'] !== $userId) {
             throw BookingException::unauthorized('You do not have permission to update this booking');
         }
 
-        // Verifica cancellation policy
-        $this->validateCancellationPolicy($booking);
+        // Verifica cancellation policy (skip per operatori)
+        if (!$isOperator) {
+            $this->validateCancellationPolicy($booking);
+        }
 
         // Se reschedule (start_time presente)
         if (isset($data['start_time'])) {
@@ -61,8 +64,10 @@ final class UpdateBooking
             $this->db->beginTransaction();
             
             try {
-                // Verifica availability con FOR UPDATE (dentro transazione)
-                $this->validateAvailabilityForReschedule($booking, $newStartTime);
+                // Verifica availability con FOR UPDATE (skip per operatori)
+                if (!$isOperator) {
+                    $this->validateAvailabilityForReschedule($booking, $newStartTime);
+                }
 
                 // Esegui reschedule
                 $updated = $this->bookingRepo->rescheduleBooking(
@@ -87,8 +92,8 @@ final class UpdateBooking
         }
 
         // Altrimenti update normale (status/notes)
-        // Valida status se presente
-        if (isset($data['status'])) {
+        // Valida status se presente (operatori possono usare qualsiasi status)
+        if (isset($data['status']) && !$isOperator) {
             $allowedStatuses = ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'];
             if (!in_array($data['status'], $allowedStatuses, true)) {
                 throw BookingException::validationError(

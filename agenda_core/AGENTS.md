@@ -18,6 +18,14 @@ Autenticazione:
 - Web: refresh in cookie httpOnly
 - Mobile: refresh in secure storage
 
+**Due tipi di autenticazione separati:**
+1. **Operatore (users table)**: `POST /v1/auth/login` → token con `role: operator`
+2. **Customer (clients table)**: `POST /v1/customer/{business_id}/auth/login` → token con `role: customer`
+
+I token non sono intercambiabili:
+- Customer token non può accedere a endpoint gestionale
+- Operator token non può accedere a endpoint customer
+
 Architettura obbligatoria:
 - Http layer (routing, middleware)
 - Use cases (CreateBooking, ComputeAvailability…)
@@ -38,6 +46,15 @@ Endpoint minimi:
 - GET  /v1/availability
 - POST /v1/bookings (protetto, idempotente)
 - POST /v1/admin/businesses/{id}/resend-invite (superadmin)
+
+**Customer Auth Endpoints (self-service booking):**
+- POST /v1/customer/{business_id}/auth/login
+- POST /v1/customer/{business_id}/auth/register
+- POST /v1/customer/{business_id}/auth/refresh
+- POST /v1/customer/{business_id}/auth/logout
+- GET  /v1/customer/me (customer_auth)
+- POST /v1/customer/{business_id}/bookings (customer_auth, idempotent)
+- GET  /v1/customer/bookings (customer_auth)
 
 Booking payload (VINCOLANTE):
 - service_ids
@@ -542,5 +559,178 @@ Quando un utente prenota online e nel DB esiste già un client con stessa email/
 - `ClientRepository::findUnlinkedByEmailOrPhone()` cerca client senza `user_id`
 - `ClientRepository::linkUserToClient()` associa `user_id` al client esistente
 - Priorità: email > telefono
+
+---
+
+## 🔐 Separazione Autenticazione Operator/Customer (02/01/2026)
+
+### Architettura a Due Sistemi Auth
+
+Il sistema usa **due tabelle separate** per l'autenticazione:
+
+| Sistema | Tabella | Endpoint Base | JWT Role | Scopo |
+|---------|---------|---------------|----------|-------|
+| **Operator** | `users` | `/v1/auth/` | `role: operator` | Gestionale (agenda_backend) |
+| **Customer** | `clients` | `/v1/customer/{business_id}/auth/` | `role: customer` | Prenotazioni online (agenda_frontend) |
+
+### ⚠️ REGOLA CRITICA
+- I token **NON sono intercambiabili**
+- Un token `role: customer` **NON può** accedere a endpoint gestionale (`/v1/me`, `/v1/businesses`, ecc.)
+- Un token `role: operator` **NON può** accedere a endpoint customer (`/v1/customer/bookings`)
+
+### Schema Database Customer Auth
+
+```sql
+-- Nuovi campi su clients
+ALTER TABLE clients ADD password_hash VARCHAR(255) NULL;
+ALTER TABLE clients ADD email_verified_at TIMESTAMP NULL;
+
+-- Sessioni customer (refresh token)
+CREATE TABLE client_sessions (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    client_id INT NOT NULL,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+);
+
+-- Reset password customer
+CREATE TABLE client_password_reset_tokens (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    client_id INT NOT NULL,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+);
+```
+
+### Endpoint Customer Auth
+
+| Metodo | Endpoint | Descrizione |
+|--------|----------|-------------|
+| POST | `/v1/customer/{business_id}/auth/register` | Registrazione nuovo cliente |
+| POST | `/v1/customer/{business_id}/auth/login` | Login cliente |
+| POST | `/v1/customer/{business_id}/auth/refresh` | Rinnovo access token |
+| POST | `/v1/customer/{business_id}/auth/logout` | Logout (revoca refresh token) |
+| GET | `/v1/customer/me` | Profilo cliente autenticato |
+| POST | `/v1/customer/{business_id}/bookings` | Crea prenotazione (customer) |
+| GET | `/v1/customer/bookings` | Lista prenotazioni del cliente |
+
+### JWT Token Structure
+
+**Operator Token:**
+```json
+{
+  "sub": 6,              // user_id
+  "role": "operator",
+  "exp": 1735830000,
+  "iat": 1735829100
+}
+```
+
+**Customer Token:**
+```json
+{
+  "sub": 42,             // client_id
+  "role": "customer",
+  "business_id": 1,
+  "exp": 1735830000,
+  "iat": 1735829100
+}
+```
+
+### File PHP Creati
+
+| File | Descrizione |
+|------|-------------|
+| `src/Infrastructure/Repositories/ClientAuthRepository.php` | CRUD client auth, sessioni, password reset |
+| `src/Http/Controllers/CustomerAuthController.php` | Endpoint auth customer |
+| `src/Http/Middleware/CustomerAuthMiddleware.php` | Valida JWT con `role: customer` |
+| `src/UseCases/CustomerAuth/LoginCustomer.php` | UseCase login |
+| `src/UseCases/CustomerAuth/RegisterCustomer.php` | UseCase registrazione |
+| `src/UseCases/CustomerAuth/RefreshCustomerToken.php` | UseCase refresh token |
+| `src/UseCases/CustomerAuth/LogoutCustomer.php` | UseCase logout |
+| `src/UseCases/CustomerAuth/GetCustomerMe.php` | UseCase profilo |
+
+### File PHP Modificati
+
+| File | Modifiche |
+|------|-----------|
+| `src/Infrastructure/Auth/JwtService.php` | Aggiunto `generateCustomerAccessToken()` con `role: customer` |
+| `src/Http/Middleware/AuthMiddleware.php` | Verifica `role: operator` (backwards compatible) |
+| `src/Http/Kernel.php` | Route customer auth, middleware `customer_auth` |
+| `src/Http/Controllers/BookingsController.php` | `storeCustomer()`, `myCustomerBookings()` |
+| `src/UseCases/Booking/CreateBooking.php` | `executeForCustomer()` per booking da customer |
+| `src/Domain/Booking/BookingException.php` | Aggiunto `invalidClient()` error |
+| `src/Infrastructure/Repositories/BookingRepository.php` | Rimosso metodo duplicato `findByClientId()` |
+
+### Migrazione Database
+
+**File:** `migrations/0020_separate_customer_auth.sql`
+
+**⚠️ PRIMA di eseguire la migrazione:**
+1. Fare backup del database
+2. Verificare che non ci siano utenti "puri clienti" da migrare (se non ce ne sono, la query INSERT non farà nulla)
+
+**Eseguire migrazione (se necessario):**
+```bash
+# Copia file su server
+rsync -avz migrations/0020_separate_customer_auth.sql siteground:www/api.romeolab.it/migrations/
+
+# Esegui migrazione
+ssh siteground "cd www/api.romeolab.it && mysql -u \$DB_USERNAME -p\$DB_PASSWORD \$DB_DATABASE < migrations/0020_separate_customer_auth.sql"
+```
+
+### Middleware Registration (Kernel.php)
+
+```php
+// Middleware customer auth
+$customerAuthMiddleware = new CustomerAuthMiddleware($jwtService);
+
+// Route customer auth (pubbliche)
+$router->post('/v1/customer/{business_id}/auth/register', ...);
+$router->post('/v1/customer/{business_id}/auth/login', ...);
+$router->post('/v1/customer/{business_id}/auth/refresh', ...);
+$router->post('/v1/customer/{business_id}/auth/logout', ...);
+
+// Route customer protette
+$router->group(['middleware' => [$customerAuthMiddleware]], function ($router) {
+    $router->get('/v1/customer/me', ...);
+    $router->post('/v1/customer/{business_id}/bookings', ...);
+    $router->get('/v1/customer/bookings', ...);
+});
+```
+
+### Migrazione Dati (ATTENZIONE)
+
+La migrazione `0020_separate_customer_auth.sql`:
+- Copia dati da `users` a `clients` solo per utenti **NON** in `business_users`
+- Gli operatori/admin rimangono **solo** in `users`
+- I clienti puri vengono copiati in `clients` con `password_hash`
+
+```sql
+-- Solo utenti NON operatori/admin
+INSERT INTO clients (business_id, email, password_hash, first_name, last_name, phone, ...)
+SELECT bu2.business_id, u.email, u.password_hash, u.first_name, u.last_name, u.phone, ...
+FROM users u
+JOIN bookings b ON b.user_id = u.id
+JOIN appointments a ON a.booking_id = b.id
+JOIN staff s ON s.id = a.staff_id
+JOIN locations l ON l.id = s.location_id
+JOIN business_users bu2 ON bu2.business_id = l.business_id AND bu2.is_owner = 1
+WHERE u.password_hash IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM business_users bu WHERE bu.user_id = u.id)
+GROUP BY u.id, bu2.business_id;
+```
+
+### Compatibilità Backward
+
+L'`AuthMiddleware` per operatori è **backward compatible**:
+- Token senza campo `role` → accettato (legacy)
+- Token con `role: operator` → accettato
+- Token con `role: customer` → rifiutato (401)
 
 ---

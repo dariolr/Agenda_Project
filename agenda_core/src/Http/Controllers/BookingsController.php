@@ -151,6 +151,9 @@ final class BookingsController
         }
 
         try {
+            // Operatori del business possono creare appuntamenti nel passato e sovrapposti
+            $isOperator = $this->hasBusinessAccess($request, $businessId);
+            
             $booking = $this->createBooking->execute(
                 $userId,
                 $locationId,
@@ -160,6 +163,8 @@ final class BookingsController
                     'staff_id' => isset($body['staff_id']) ? (int) $body['staff_id'] : null,
                     'start_time' => $body['start_time'],
                     'notes' => $body['notes'] ?? null,
+                    'allow_past' => $isOperator,
+                    'skip_conflict_check' => $isOperator,
                 ],
                 $idempotencyKey
             );
@@ -213,7 +218,11 @@ final class BookingsController
         }
 
         try {
-            $booking = $this->updateBooking->execute($bookingId, $userId, $body);
+            // Operatori possono modificare qualsiasi booking senza vincoli
+            $businessId = $request->getAttribute('business_id');
+            $isOperator = $businessId !== null && $this->hasBusinessAccess($request, $businessId);
+            
+            $booking = $this->updateBooking->execute($bookingId, $userId, $body, $isOperator);
             return Response::success($this->formatBooking($booking));
 
         } catch (BookingException $e) {
@@ -246,7 +255,11 @@ final class BookingsController
         }
 
         try {
-            $this->deleteBooking->execute($bookingId, $userId);
+            // Operatori possono cancellare qualsiasi booking senza vincoli
+            $businessId = $request->getAttribute('business_id');
+            $isOperator = $businessId !== null && $this->hasBusinessAccess($request, $businessId);
+            
+            $this->deleteBooking->execute($bookingId, $userId, $isOperator);
             return Response::success(['message' => 'Booking deleted successfully']);
 
         } catch (BookingException $e) {
@@ -280,6 +293,144 @@ final class BookingsController
             return Response::success([
                 'upcoming' => $result['upcoming'],
                 'past' => $result['past'],
+            ]);
+
+        } catch (\Exception $e) {
+            return Response::serverError($e->getMessage());
+        }
+    }
+
+    // =========================================================================
+    // CUSTOMER ENDPOINTS (self-service booking)
+    // Uses client_id from CustomerAuthMiddleware instead of user_id
+    // =========================================================================
+
+    /**
+     * POST /v1/customer/{business_id}/bookings
+     * Create a booking as an authenticated customer.
+     * 
+     * Payload:
+     * {
+     *   "location_id": int,
+     *   "service_ids": [int],
+     *   "staff_id": int|null,
+     *   "start_time": "ISO8601",
+     *   "notes": "string|null"
+     * }
+     */
+    public function storeCustomer(Request $request): Response
+    {
+        $clientId = $request->getAttribute('client_id');
+        $customerBusinessId = $request->getAttribute('business_id'); // from JWT
+        $routeBusinessId = (int) $request->getRouteParam('business_id');
+        $idempotencyKey = $request->getAttribute('idempotency_key');
+
+        if ($clientId === null) {
+            return Response::error('Customer authentication required', 'unauthorized', 401);
+        }
+
+        // Verify business matches
+        if ($customerBusinessId !== $routeBusinessId) {
+            return Response::error('Invalid token for this business', 'unauthorized', 401);
+        }
+
+        $body = $request->getBody();
+
+        // Validate required fields
+        if (!isset($body['location_id'])) {
+            return Response::error('location_id is required', 'validation_error', 400);
+        }
+
+        if (!isset($body['service_ids']) || !is_array($body['service_ids'])) {
+            return Response::error('service_ids is required and must be an array', 'validation_error', 400);
+        }
+
+        if (!isset($body['start_time'])) {
+            return Response::error('start_time is required', 'validation_error', 400);
+        }
+
+        $locationId = (int) $body['location_id'];
+
+        // Verify location belongs to business
+        if ($this->locationRepo !== null) {
+            $location = $this->locationRepo->findById($locationId);
+            if ($location === null || (int) $location['business_id'] !== $routeBusinessId) {
+                return Response::error('Invalid location for this business', 'validation_error', 400);
+            }
+        }
+
+        try {
+            // Customer bookings: no past dates, no conflict override
+            $booking = $this->createBooking->executeForCustomer(
+                (int) $clientId,
+                $locationId,
+                $routeBusinessId,
+                [
+                    'service_ids' => array_map('intval', $body['service_ids']),
+                    'staff_id' => isset($body['staff_id']) ? (int) $body['staff_id'] : null,
+                    'start_time' => $body['start_time'],
+                    'notes' => $body['notes'] ?? null,
+                ],
+                $idempotencyKey
+            );
+
+            return Response::success($booking, 201);
+
+        } catch (BookingException $e) {
+            return Response::json([
+                'success' => false,
+                'error' => [
+                    'message' => $e->getMessage(),
+                    'code' => $e->getErrorCode(),
+                    'details' => $e->getDetails(),
+                ],
+            ], $e->getHttpStatus());
+        }
+    }
+
+    /**
+     * GET /v1/customer/bookings
+     * Get all bookings for the authenticated customer.
+     */
+    public function myCustomerBookings(Request $request): Response
+    {
+        $clientId = $request->getAttribute('client_id');
+
+        if ($clientId === null) {
+            return Response::error('Customer authentication required', 'unauthorized', 401);
+        }
+
+        try {
+            // Get bookings for this client
+            $bookings = $this->bookingRepo->findByClientId((int) $clientId);
+
+            $now = new \DateTimeImmutable();
+            $upcoming = [];
+            $past = [];
+
+            foreach ($bookings as $booking) {
+                $formatted = $this->formatBooking($booking);
+                
+                // Determine if booking is upcoming or past based on first item start_time
+                $startTime = null;
+                if (!empty($booking['items'])) {
+                    $startTime = new \DateTimeImmutable($booking['items'][0]['start_time']);
+                }
+                
+                if ($startTime !== null && $startTime > $now) {
+                    $upcoming[] = $formatted;
+                } else {
+                    $past[] = $formatted;
+                }
+            }
+
+            // Sort upcoming by start_time ascending, past by start_time descending
+            usort($upcoming, fn($a, $b) => ($a['items'][0]['start_time'] ?? '') <=> ($b['items'][0]['start_time'] ?? ''));
+            usort($past, fn($a, $b) => ($b['items'][0]['start_time'] ?? '') <=> ($a['items'][0]['start_time'] ?? ''));
+
+            return Response::success([
+                'upcoming' => $upcoming,
+                'past' => $past,
             ]);
 
         } catch (\Exception $e) {

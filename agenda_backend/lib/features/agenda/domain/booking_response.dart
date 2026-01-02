@@ -58,7 +58,7 @@ class BookingResponse {
 /// Singolo item di un booking (un servizio prenotato)
 class BookingItemResponse {
   final int id;
-  final int bookingId;
+  final int? bookingId;
   final int serviceId;
   final int? serviceVariantId;
   final int staffId;
@@ -71,7 +71,7 @@ class BookingItemResponse {
 
   const BookingItemResponse({
     required this.id,
-    required this.bookingId,
+    this.bookingId,
     required this.serviceId,
     this.serviceVariantId,
     required this.staffId,
@@ -86,7 +86,7 @@ class BookingItemResponse {
   factory BookingItemResponse.fromJson(Map<String, dynamic> json) {
     return BookingItemResponse(
       id: json['id'] as int,
-      bookingId: json['booking_id'] as int,
+      bookingId: json['booking_id'] as int?,
       serviceId: json['service_id'] as int,
       serviceVariantId: json['service_variant_id'] as int?,
       staffId: json['staff_id'] as int,
@@ -95,7 +95,8 @@ class BookingItemResponse {
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       durationMinutes: json['duration_minutes'] as int? ?? 0,
       serviceName: json['service_name'] as String?,
-      staffDisplayName: json['staff_display_name'] as String?,
+      staffDisplayName:
+          (json['staff_display_name'] ?? json['staff_name']) as String?,
     );
   }
 

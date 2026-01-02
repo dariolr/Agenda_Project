@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -37,82 +37,70 @@ class ClientCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: theme.dividerColor.withOpacity(0.4)),
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                StaffCircleAvatar(
-                  height: 36,
-                  color: scheme.primary,
-                  isHighlighted: false,
-                  initials: client.name.isNotEmpty
-                      ? initialsFromName(client.name, maxChars: 2)
-                      : '?',
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(client.name, style: theme.textTheme.titleMedium),
-                ),
-                _DeleteButton(client: client),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (email != null)
-              _LinkText(
-                text: email,
-                onTap: emailTap,
-                style: theme.textTheme.bodySmall,
-                linkColor: scheme.primary,
-              ),
-            if (client.email != null && client.phone != null)
-              const SizedBox(height: 12),
-            if (phone != null)
-              _LinkText(
-                text: phone,
-                onTap: phoneTap,
-                style: theme.textTheme.bodySmall,
-                linkColor: scheme.primary,
-              ),
-            // Riga con ultima visita e icona appuntamenti
-            Row(
-              children: [
-                if (client.lastVisit != null)
-                  Expanded(
-                    child: Padding(
+            // Colonna sinistra: contenuto principale
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      StaffCircleAvatar(
+                        height: 36,
+                        color: scheme.primary,
+                        isHighlighted: false,
+                        initials: client.name.isNotEmpty
+                            ? initialsFromName(client.name, maxChars: 2)
+                            : '?',
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          client.name,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (email != null)
+                    _LinkText(
+                      text: email,
+                      onTap: emailTap,
+                      style: theme.textTheme.bodySmall,
+                      linkColor: scheme.primary,
+                    ),
+                  if (client.email != null && client.phone != null)
+                    const SizedBox(height: 12),
+                  if (phone != null)
+                    _LinkText(
+                      text: phone,
+                      onTap: phoneTap,
+                      style: theme.textTheme.bodySmall,
+                      linkColor: scheme.primary,
+                    ),
+                  if (client.lastVisit != null)
+                    Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
                         _buildLastVisitLabel(context, client.lastVisit!),
                         style: theme.textTheme.labelSmall,
                       ),
                     ),
-                  )
-                else
-                  const Spacer(),
+                ],
+              ),
+            ),
+            // Colonna destra: icone allineate verticalmente
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _DeleteButton(client: client),
+                const SizedBox(height: 8),
                 _AppointmentsButton(client: client),
               ],
             ),
-            /*
-            if (tags.isNotEmpty)
-              Wrap(
-                spacing: 4,
-                runSpacing: -4,
-                children: [
-                  for (final t in tags)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.secondary.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(t, style: theme.textTheme.labelSmall),
-                    ),
-                ],
-              ),
-            */
           ],
         ),
       ),

@@ -326,3 +326,111 @@ Gli utenti autenticati possono modificare il proprio profilo dalla voce "Profilo
 | Auth provider | `lib/features/auth/providers/auth_provider.dart` |
 | API client | `lib/core/network/api_client.dart` |
 | API config | `lib/core/network/api_config.dart` |
+
+---
+
+## 🔐 Autenticazione Customer (02/01/2026)
+
+### ⚠️ IMPORTANTE: Endpoint diversi da Operator
+
+I **clienti** (utenti che prenotano online) usano endpoint **diversi** dagli operatori (gestionale).
+**NON usare** `/v1/auth/` per i clienti!
+
+| Operazione | Endpoint Customer | Endpoint Operator (NON usare) |
+|------------|-------------------|-------------------------------|
+| Login | `POST /v1/customer/{business_id}/auth/login` | ~~POST /v1/auth/login~~ |
+| Registrazione | `POST /v1/customer/{business_id}/auth/register` | N/A |
+| Refresh | `POST /v1/customer/{business_id}/auth/refresh` | ~~POST /v1/auth/refresh~~ |
+| Logout | `POST /v1/customer/{business_id}/auth/logout` | ~~POST /v1/auth/logout~~ |
+| Profilo | `GET /v1/customer/me` | ~~GET /v1/me~~ |
+| Mie prenotazioni | `GET /v1/customer/bookings` | N/A |
+| Crea prenotazione | `POST /v1/customer/{business_id}/bookings` | ~~POST /v1/bookings~~ |
+
+### JWT Token Customer
+
+Il token JWT per customer ha struttura diversa:
+```json
+{
+  "sub": 42,              // client_id (NON user_id)
+  "role": "customer",     // identifica tipo token
+  "business_id": 1,       // business di appartenenza
+  "exp": 1735830000,
+  "iat": 1735829100
+}
+```
+
+### Payload Login
+
+```json
+POST /v1/customer/{business_id}/auth/login
+{
+  "email": "cliente@email.com",
+  "password": "password123"
+}
+```
+
+Response:
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "abc123...",  // Solo in cookie httpOnly su web
+  "client": {
+    "id": 42,
+    "email": "cliente@email.com",
+    "first_name": "Mario",
+    "last_name": "Rossi",
+    "phone": "+39123456789"
+  }
+}
+```
+
+### Payload Registrazione
+
+```json
+POST /v1/customer/{business_id}/auth/register
+{
+  "email": "nuovo@email.com",
+  "password": "Password123",
+  "first_name": "Mario",
+  "last_name": "Rossi",
+  "phone": "+39123456789"  // opzionale
+}
+```
+
+### Crea Prenotazione (Customer Auth)
+
+```json
+POST /v1/customer/{business_id}/bookings
+Authorization: Bearer {access_token}
+{
+  "service_ids": [1, 2],
+  "staff_id": 3,           // opzionale
+  "start_time": "2026-01-15T10:00:00",
+  "notes": "Prima visita"  // opzionale
+}
+```
+
+### File da Modificare per Integrazione
+
+| File | Modifiche necessarie |
+|------|---------------------|
+| `lib/features/auth/data/auth_api.dart` | Usare endpoint `/v1/customer/{business_id}/auth/*` |
+| `lib/features/auth/providers/auth_provider.dart` | Passare `businessId` agli endpoint |
+| `lib/features/booking/data/booking_api.dart` | Usare `POST /v1/customer/{business_id}/bookings` |
+| `lib/core/network/api_client.dart` | Aggiungere metodi per customer auth |
+
+### Errori Comuni
+
+| Errore | Causa | Soluzione |
+|--------|-------|-----------|
+| 401 "Token type not allowed" | Usando token operator su endpoint customer | Usare endpoint `/v1/customer/` |
+| 401 "Invalid credentials" | Email/password errati O utente non registrato come customer | Verificare credenziali o registrare |
+| 404 "Business not found" | business_id errato | Verificare slug → business_id |
+| 409 "Email already registered" | Email già usata da altro cliente | Effettuare login |
+
+### Storage Token
+
+- **Web**: refresh token in cookie `httpOnly`, access token in memoria
+- **Mobile**: entrambi in secure storage (flutter_secure_storage)
+
+Vedi [TOKEN_STORAGE_WEB.md](TOKEN_STORAGE_WEB.md) per dettagli implementazione web.

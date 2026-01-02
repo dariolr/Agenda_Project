@@ -54,14 +54,14 @@ final class ClientsController
         }
 
         $search = $request->queryParam('search');
-        $limit = (int) $request->queryParam('limit', '100');
+        $limit = (int) $request->queryParam('limit', '0'); // 0 = no limit
         $offset = (int) $request->queryParam('offset', '0');
         $masked = $request->queryParam('masked', 'false') === 'true';
 
         if ($search !== null && $search !== '') {
-            $clients = $this->clientRepo->searchByName($businessId, $search, min($limit, 100));
+            $clients = $this->clientRepo->searchByName($businessId, $search, $limit > 0 ? $limit : null);
         } else {
-            $clients = $this->clientRepo->findByBusinessId($businessId, min($limit, 100), $offset);
+            $clients = $this->clientRepo->findByBusinessId($businessId, $limit > 0 ? $limit : null, $offset);
         }
 
         // Format response (masked for list view, full for detail)
