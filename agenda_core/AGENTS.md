@@ -78,6 +78,19 @@ Notifiche Email (M10):
 - Worker cron: `bin/notification-worker.php` (ogni minuto)
 - Reminder cron: `bin/queue-reminders.php` (ogni ora)
 - Template: bookingConfirmed, bookingCancelled, bookingReminder, bookingRescheduled
+- **Test mode**: `NOTIFICATION_TEST_MODE=true` → email inviate a `nome.cognome@romeolab.it`
+
+Cron Jobs (02/01/2026):
+| Job | Comando | Intervallo | Scopo |
+|-----|---------|------------|-------|
+| notification-worker | `php bin/notification-worker.php` | `* * * * *` | Invia email dalla coda |
+| queue-reminders | `php bin/queue-reminders.php` | `0 * * * *` | Accoda reminder appuntamenti |
+| cleanup-sessions | `php bin/cleanup-sessions.php` | `0 3 1 * *` | Pulisce sessioni e log vecchi |
+
+Formato comando cron SiteGround:
+```
+cd /home/u1251-kkefwq4fumer/www/api.romeolab.it && php bin/[worker].php >> logs/[worker].log 2>&1
+```
 
 File .env:
 - `.env` → configurazione REALE (non committato, in .gitignore)
@@ -85,6 +98,14 @@ File .env:
 - I due file DEVONO avere le STESSE variabili, sempre allineati
 - Quando si aggiunge una variabile a `.env.example`, aggiungerla anche a `.env`
 - `.env.example` usa valori placeholder, `.env` usa valori reali
+
+Cleanup Worker (02/01/2026):
+- File: `bin/cleanup-sessions.php`
+- Elimina sessioni scadute/revocate da >30 giorni (`auth_sessions`, `client_sessions`)
+- Elimina token reset usati/scaduti (`password_reset_tokens`, `client_password_reset_tokens`)
+- Tronca log >10MB mantenendo ultime 1000 righe
+- Elimina file `.log.*` più vecchi di 30 giorni
+- Eseguire: primo del mese alle 03:00 (`0 3 1 * *`)
 
 ---
 

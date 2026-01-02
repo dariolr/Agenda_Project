@@ -20,6 +20,14 @@ final class NotificationRepository
      */
     public function queue(array $data): int
     {
+        // TEST MODE: Override recipient email with nome.cognome@romeolab.it
+        if (($_ENV['NOTIFICATION_TEST_MODE'] ?? 'false') === 'true') {
+            $recipientName = $data['recipient_name'] ?? '';
+            if (!empty($recipientName)) {
+                $data['recipient_email'] = $this->buildTestEmail($recipientName);
+            }
+        }
+
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO notification_queue 
              (type, channel, recipient_type, recipient_id, recipient_email, recipient_name, 
@@ -156,5 +164,25 @@ final class NotificationRepository
         $stmt->execute(['days' => $daysToKeep]);
         
         return $stmt->rowCount();
+    }
+
+    /**
+     * Build test email from recipient name.
+     * Converts "Mario Rossi" to "mario.rossi@romeolab.it"
+     */
+    private function buildTestEmail(string $name): string
+    {
+        // Normalize: lowercase, replace spaces with dots, remove special chars
+        $email = strtolower(trim($name));
+        $email = preg_replace('/\s+/', '.', $email);
+        $email = preg_replace('/[^a-z0-9.]/', '', $email);
+        $email = preg_replace('/\.+/', '.', $email); // Remove consecutive dots
+        $email = trim($email, '.');
+        
+        if (empty($email)) {
+            $email = 'test';
+        }
+        
+        return $email . '@romeolab.it';
     }
 }
