@@ -69,6 +69,63 @@ File .env:
 - Quando si aggiunge una variabile a `.env.example`, aggiungerla anche a `.env`
 - `.env.example` usa valori placeholder, `.env` usa valori reali
 
+---
+
+## 🚨 REGOLE DEPLOY CRITICHE — LEGGERE PRIMA DI OGNI DEPLOY
+
+### Mapping ESATTO Progetto → URL → Cartella SiteGround
+
+| Progetto | Descrizione | URL Produzione | Cartella SiteGround |
+|----------|-------------|----------------|---------------------|
+| **agenda_core** | API PHP Backend | api.romeolab.it | `www/api.romeolab.it/` |
+| **agenda_frontend** | Prenotazioni CLIENTI | **prenota**.romeolab.it | `www/prenota.romeolab.it/public_html/` |
+| **agenda_backend** | Gestionale OPERATORI | **gestionale**.romeolab.it | `www/gestionale.romeolab.it/public_html/` |
+
+### ⚠️ ERRORI COMUNI DA EVITARE
+
+❌ **MAI** deployare `agenda_backend` su `prenota.romeolab.it`  
+❌ **MAI** deployare `agenda_frontend` su `gestionale.romeolab.it`  
+❌ **MAI** confondere i due progetti Flutter
+
+### Come distinguere i progetti Flutter:
+
+| Caratteristica | agenda_frontend (PRENOTA) | agenda_backend (GESTIONALE) |
+|----------------|---------------------------|-----------------------------|
+| **Scopo** | Clienti prenotano online | Operatori gestiscono agenda |
+| **Route principale** | `/:slug/booking` | `/agenda` |
+| **Features** | `booking/` | `agenda/`, `clients/`, `staff/` |
+| **Ha drag & drop** | ❌ No | ✅ Sì |
+| **Ha StatefulShellRoute** | ❌ No | ✅ Sì |
+| **Usa routeSlugProvider** | ✅ Sì | ❌ No |
+
+### Comandi Deploy CORRETTI
+
+```bash
+# 1️⃣ FRONTEND PRENOTAZIONI (agenda_frontend → prenota.romeolab.it)
+cd /path/to/agenda_frontend
+flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it
+rsync -avz --delete build/web/ siteground:www/prenota.romeolab.it/public_html/
+
+# 2️⃣ GESTIONALE (agenda_backend → gestionale.romeolab.it)  
+cd /path/to/agenda_backend
+flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it
+rsync -avz --delete build/web/ siteground:www/gestionale.romeolab.it/public_html/
+
+# 3️⃣ API (agenda_core → api.romeolab.it)
+rsync -avz public/ siteground:www/api.romeolab.it/public_html/
+rsync -avz --delete src/ siteground:www/api.romeolab.it/src/
+rsync -avz --delete vendor/ siteground:www/api.romeolab.it/vendor/
+```
+
+### Checklist PRE-DEPLOY
+
+- [ ] Sono nella cartella CORRETTA del progetto?
+- [ ] Il nome cartella corrisponde al progetto giusto?
+- [ ] L'URL di destinazione è quello CORRETTO?
+- [ ] Ho incrementato `?v=YYYYMMDD-N` in `web/index.html`?
+
+---
+
 Deploy Produzione (28/12/2025):
 - API: https://api.romeolab.it
 - Frontend: https://prenota.romeolab.it
