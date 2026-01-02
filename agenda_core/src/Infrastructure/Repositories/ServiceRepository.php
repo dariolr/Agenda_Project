@@ -19,6 +19,24 @@ final class ServiceRepository
         private readonly Connection $db,
     ) {}
 
+    /**
+     * Find service by ID only (for authorization checks).
+     * Returns base service info without location-specific variant.
+     */
+    public function findServiceById(int $serviceId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT s.id, s.business_id, s.category_id, s.name, s.description, 
+                    s.is_active, s.sort_order
+             FROM services s
+             WHERE s.id = ? AND s.is_active = 1'
+        );
+        $stmt->execute([$serviceId]);
+        $result = $stmt->fetch();
+
+        return $result ?: null;
+    }
+
     public function findById(int $serviceId, int $locationId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(

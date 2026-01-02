@@ -47,6 +47,7 @@ final class ClientRepository
 
     public function findOrCreateForUser(int $userId, int $businessId, array $userData = []): array
     {
+        // 1. Cerca client già associato a questo user
         $client = $this->findByUserIdAndBusiness($userId, $businessId);
 
         if ($client !== null) {
@@ -62,6 +63,20 @@ final class ClientRepository
             $userData = $stmt->fetch() ?: [];
         }
 
+        // 2. Cerca client esistente per email o telefono (senza user_id)
+        $existingClient = $this->findUnlinkedByEmailOrPhone(
+            $businessId,
+            $userData['email'] ?? null,
+            $userData['phone'] ?? null
+        );
+
+        if ($existingClient !== null) {
+            // Associa user_id al client esistente
+            $this->linkUserToClient($existingClient['id'], $userId);
+            return $this->findById($existingClient['id']);
+        }
+
+        // 3. Crea nuovo client
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO clients (business_id, user_id, first_name, last_name, email, phone) 
              VALUES (?, ?, ?, ?, ?, ?)'
@@ -78,6 +93,62 @@ final class ClientRepository
         $clientId = (int) $this->db->getPdo()->lastInsertId();
 
         return $this->findById($clientId);
+    }
+
+    /**
+     * Find client without user_id by email or phone.
+     * Priority: email match first, then phone.
+     */
+    public function findUnlinkedByEmailOrPhone(int $businessId, ?string $email, ?string $phone): ?array
+    {
+        // Prima cerca per email (più affidabile)
+        if (!empty($email)) {
+            $stmt = $this->db->getPdo()->prepare(
+                'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
+                        notes, is_archived, created_at, updated_at
+                 FROM clients
+                 WHERE business_id = ? AND email = ? AND user_id IS NULL AND is_archived = 0
+                 LIMIT 1'
+            );
+            $stmt->execute([$businessId, $email]);
+            $result = $stmt->fetch();
+            if ($result) {
+                return $result;
+            }
+        }
+
+        // Poi cerca per telefono
+        if (!empty($phone)) {
+            // Normalizza il telefono per il confronto
+            $normalizedPhone = preg_replace('/[^\d+]/', '', $phone);
+            
+            $stmt = $this->db->getPdo()->prepare(
+                'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
+                        notes, is_archived, created_at, updated_at
+                 FROM clients
+                 WHERE business_id = ? AND REPLACE(REPLACE(phone, " ", ""), "-", "") = ? 
+                   AND user_id IS NULL AND is_archived = 0
+                 LIMIT 1'
+            );
+            $stmt->execute([$businessId, $normalizedPhone]);
+            $result = $stmt->fetch();
+            if ($result) {
+                return $result;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Link an existing client to a user account.
+     */
+    public function linkUserToClient(int $clientId, int $userId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE clients SET user_id = ?, updated_at = NOW() WHERE id = ? AND user_id IS NULL'
+        );
+        return $stmt->execute([$userId, $clientId]);
     }
 
     public function findByBusinessId(int $businessId, int $limit = 100, int $offset = 0): array

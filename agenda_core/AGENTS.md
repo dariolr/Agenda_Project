@@ -71,6 +71,46 @@ File .env:
 
 ---
 
+## 🔑 BACKUP CREDENZIALI PRODUZIONE (02/01/2026)
+
+### Posizione backup
+- **iCloud Drive**: `Backup_Credenziali_Agenda/`
+- **Password Manager**: voce "Agenda RomeoLab - Produzione"
+
+### File di backup
+| File | Contenuto |
+|------|-----------|
+| `BACKUP_ENV_PRODUZIONE_YYYYMMDD.txt` | Intero `.env` produzione |
+| `BACKUP_SSH_KEY_SITEGROUND_YYYYMMDD` | Chiave privata SSH |
+| `BACKUP_SSH_KEY_SITEGROUND_YYYYMMDD.pub` | Chiave pubblica SSH |
+
+### ⚠️ QUANDO AGGIORNARE I BACKUP
+
+Aggiornare backup su iCloud + Password Manager quando si modifica:
+- `JWT_SECRET` → tutti gli utenti devono riloggarsi
+- `DB_PASSWORD` → credenziali database
+- `BREVO_API_KEY` → chiave API email
+- Chiave SSH SiteGround
+
+### Comando per rigenerare backup
+
+```bash
+# Backup .env produzione
+ssh siteground "cat www/api.romeolab.it/.env" > ~/Library/Mobile\ Documents/com~apple~CloudDocs/Backup_Credenziali_Agenda/BACKUP_ENV_PRODUZIONE_$(date +%Y%m%d).txt
+
+# Backup chiave SSH (se cambiata)
+cp ~/.ssh/siteground_ed25519 ~/Library/Mobile\ Documents/com~apple~CloudDocs/Backup_Credenziali_Agenda/BACKUP_SSH_KEY_SITEGROUND_$(date +%Y%m%d)
+cp ~/.ssh/siteground_ed25519.pub ~/Library/Mobile\ Documents/com~apple~CloudDocs/Backup_Credenziali_Agenda/BACKUP_SSH_KEY_SITEGROUND_$(date +%Y%m%d).pub
+```
+
+### Credenziali da tenere nel Password Manager
+- DB: host, database, username, password
+- JWT_SECRET (intero)
+- BREVO_API_KEY (intero)
+- SSH: user (`u1251-kkefwq4fumer`), porta (`18765`)
+
+---
+
 ## 🚨 REGOLE DEPLOY CRITICHE — LEGGERE PRIMA DI OGNI DEPLOY
 
 ### Mapping ESATTO Progetto → URL → Cartella SiteGround
@@ -430,44 +470,77 @@ Prima di usare un repository, verificare che usi `getPdo()` e non `pdo()`.
 
 ---
 
----
+## 🔐 Sicurezza API - Autorizzazione Business (02/01/2026)
 
-## 💰 Prezzo "A partire da" (01/01/2026)
+### Pattern Autorizzazione
+Tutti i controller che gestiscono dati business-specific implementano il metodo `hasBusinessAccess()`:
 
-### Schema Database
-`service_variants.is_price_starting_from` (TINYINT, default 0)
-
-### Backend PHP
-Tutti gli endpoint che ritornano service_variants includono il campo:
-- `ServiceRepository::findById()` → include `is_price_starting_from AS is_price_from`
-- `ServiceRepository::findByLocationId()` → include `is_price_starting_from AS is_price_from`
-- `ServiceRepository::findByIds()` → include `is_price_starting_from AS is_price_from`
-- `ServicesController::index()` → ritorna `is_price_starting_from` nella response JSON
-
-### Gestionale Flutter
-- `Service.isPriceStartingFrom` (bool) → campo flat dal service
-- `ServiceVariant.isPriceStartingFrom` (bool) → campo dal variant
-- `ServiceItem` widget usa `service.isPriceStartingFrom` per visualizzare "a partire da €X"
-- Chiave localizzazione: `priceStartingFromPrefix` = "a partire da"
-
-### Frontend Prenotazioni
-Se necessario, seguire stessa logica del gestionale.
-
----
-
-## 🔧 Repository Method Names (01/01/2026)
-
-### IMPORTANTE
-Il metodo per ottenere PDO connection è:
 ```php
-$this->db->getPdo()  // ✅ CORRETTO
-$this->db->pdo()     // ❌ ERRORE - metodo non esistente
+private function hasBusinessAccess(Request $request, int $businessId): bool
+{
+    $userId = $request->getAttribute('user_id');
+    if ($userId === null) return false;
+    
+    // Superadmin ha accesso a tutti i business
+    if ($this->userRepo->isSuperadmin($userId)) return true;
+    
+    // Utente normale: verifica entry in business_users
+    return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+}
 ```
 
-### Fix Applicati
-- `TimeBlockRepository` → tutti i `pdo()` sostituiti con `getPdo()`
+### Controller Protetti
 
-### Verifica
-Prima di usare un repository, verificare che usi `getPdo()` e non `pdo()`.
+| Controller | Endpoint Protetti | Note |
+|------------|-------------------|------|
+| **ClientsController** | GET/POST/PUT/DELETE `/v1/clients` | Verifica business_id |
+| **ServicesController** | POST/PUT/DELETE services e categories | Verifica ownership |
+| **BusinessController** | GET `/v1/businesses`, GET `/v1/businesses/{id}` | Solo business accessibili |
+| **LocationsController** | GET `/v1/businesses/{id}/locations`, GET `/v1/locations/{id}` | Verifica accesso |
+| **AppointmentsController** | GET/PATCH/POST cancel | Owner booking O operatore business |
+| **BookingsController** | GET index/show | Verifica business_id |
+
+### Security Best Practice
+- `show/update/delete` ritornano **404** (non 403) per non rivelare esistenza risorse
+- Operatori con accesso al business possono gestire TUTTI gli appuntamenti
+- Utenti normali possono gestire solo i PROPRI booking
+
+### Controller già protetti (pre-esistenti)
+- `StaffController` → verifica `hasAccess()`
+- `TimeBlocksController` → verifica `hasAccess()`
+- `ResourcesController` → verifica `hasAccess()`
+- `BusinessUsersController` → verifica `checkManageAccess()`
+- `AdminBusinessesController` → verifica `is_superadmin`
+
+### Dipendenze Controller
+Tutti i controller protetti richiedono:
+- `BusinessUserRepository` - per verificare accesso
+- `UserRepository` - per verificare superadmin
+
+Aggiornare `Kernel.php` quando si aggiungono dipendenze ai controller.
+
+### Nuovi Metodi Repository (02/01/2026)
+- `BusinessRepository::findByUserId(int $userId)` - business accessibili all'utente
+- `ServiceRepository::findServiceById(int $serviceId)` - trova servizio senza location
+
+---
+
+## 📊 Import Dati da Fresha (02/01/2026)
+
+### Istruzioni Migrazione
+File in `migrations/fromfresha/`:
+- `migra_servizi.md` - import servizi e categorie
+- `migra_staff.md` - import staff
+- `import_clients.sql` - import clienti (216 record)
+
+### Regola Critica
+**NON creare associazioni tra tabelle** (es. `staff_services`) durante import.
+Le associazioni devono essere configurate manualmente dall'operatore nel gestionale.
+
+### Match Automatico Clienti
+Quando un utente prenota online e nel DB esiste già un client con stessa email/telefono:
+- `ClientRepository::findUnlinkedByEmailOrPhone()` cerca client senza `user_id`
+- `ClientRepository::linkUserToClient()` associa `user_id` al client esistente
+- Priorità: email > telefono
 
 ---

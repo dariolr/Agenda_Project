@@ -19,12 +19,36 @@ final class LocationsController
     ) {}
 
     /**
+     * Check if authenticated user has access to the given business.
+     */
+    private function hasBusinessAccess(Request $request, int $businessId): bool
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null) {
+            return false;
+        }
+
+        // Superadmin has access to all businesses
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+
+        // Normal user: check business_users table
+        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+    }
+
+    /**
      * GET /v1/businesses/{business_id}/locations
      * List all locations for a business (authenticated - includes inactive)
      */
     public function index(Request $request): Response
     {
         $businessId = (int) $request->getRouteParam('business_id');
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
 
         // For authenticated users (gestionale), show ALL locations including inactive
         $locations = $this->locationRepo->findByBusinessId($businessId, includeInactive: true);
@@ -67,7 +91,13 @@ final class LocationsController
             return Response::notFound('Location not found', $request->traceId);
         }
 
-        return Response::success($this->formatLocation($location));
+        // Authorization check
+        $businessId = (int) $location['business_id'];
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Location not found', $request->traceId);
+        }
+
+        return Response::success($this->formatLocation($location));;
     }
 
     private function formatLocation(array $row): array

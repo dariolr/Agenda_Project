@@ -10,6 +10,9 @@ use Agenda\UseCases\Booking\CreateBooking;
 use Agenda\UseCases\Booking\GetMyBookings;
 use Agenda\Domain\Exceptions\BookingException;
 use Agenda\Infrastructure\Repositories\BookingRepository;
+use Agenda\Infrastructure\Repositories\LocationRepository;
+use Agenda\Infrastructure\Repositories\BusinessUserRepository;
+use Agenda\Infrastructure\Repositories\UserRepository;
 
 final class BookingsController
 {
@@ -19,7 +22,29 @@ final class BookingsController
         private readonly GetMyBookings $getMyBookings,
         private readonly ?\Agenda\UseCases\Booking\UpdateBooking $updateBooking = null,
         private readonly ?\Agenda\UseCases\Booking\DeleteBooking $deleteBooking = null,
+        private readonly ?LocationRepository $locationRepo = null,
+        private readonly ?BusinessUserRepository $businessUserRepo = null,
+        private readonly ?UserRepository $userRepo = null,
     ) {}
+
+    /**
+     * Check if authenticated user has access to the given business.
+     */
+    private function hasBusinessAccess(Request $request, int $businessId): bool
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null || $this->userRepo === null || $this->businessUserRepo === null) {
+            return false;
+        }
+
+        // Superadmin has access to all businesses
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+
+        // Normal user: check business_users table
+        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+    }
 
     /**
      * GET /v1/locations/{location_id}/bookings?date=YYYY-MM-DD[&staff_id=X]
@@ -28,6 +53,7 @@ final class BookingsController
     public function index(Request $request): Response
     {
         $locationId = $request->getAttribute('location_id');
+        $businessId = $request->getAttribute('business_id');
         $date = $request->queryParam('date');
         $staffId = $request->queryParam('staff_id');
 
@@ -42,6 +68,11 @@ final class BookingsController
         // Validate date format
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return Response::error('Invalid date format. Use YYYY-MM-DD', 'validation_error', 400);
+        }
+
+        // Authorization check (middleware should set business_id)
+        if ($businessId && !$this->hasBusinessAccess($request, (int) $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
         $bookings = $this->bookingRepo->findByLocationAndDate(
@@ -69,6 +100,12 @@ final class BookingsController
         $booking = $this->bookingRepo->findById($bookingId);
 
         if ($booking === null) {
+            return Response::notFound('Booking not found');
+        }
+
+        // Authorization check: verify user has access to the booking's business
+        $businessId = (int) $booking['business_id'];
+        if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::notFound('Booking not found');
         }
 
