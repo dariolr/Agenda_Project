@@ -1,5 +1,28 @@
 # Agenda Frontend (Prenotazioni Online) — AI Agent Instructions
 
+## 🚨 IDENTIFICAZIONE PROGETTO
+
+| Campo | Valore |
+|-------|--------|
+| **Nome progetto** | agenda_frontend |
+| **Scopo** | Prenotazioni online per CLIENTI |
+| **URL produzione** | **prenota**.romeolab.it |
+| **Cartella SiteGround** | `www/prenota.romeolab.it/public_html/` |
+| **NON confondere con** | agenda_backend (gestionale.romeolab.it) |
+
+### ⚠️ DEPLOY CORRETTO
+
+```bash
+# QUESTO PROGETTO VA SU prenota.romeolab.it
+cd agenda_frontend
+flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it
+rsync -avz --delete build/web/ siteground:www/prenota.romeolab.it/public_html/
+```
+
+❌ **MAI** deployare su `gestionale.romeolab.it` — quello è per agenda_backend!
+
+---
+
 Piattaforma di **prenotazione online** in Flutter (web primary, mobile/desktop).
 L'agente deve produrre **file completi** e **non rompere le funzionalità esistenti**.
 L'agente deve centralizzare il codice a favore del riutilizzo. Deve sempre verificare se esiste già un'implementazione utile prima di creare nuovo codice. Eventualmente deve estendere il codice esistente.

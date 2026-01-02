@@ -1,4 +1,27 @@
-# Agenda Platform — AI Agent Instructions
+# Agenda Backend (Gestionale Operatori) — AI Agent Instructions
+
+## 🚨 IDENTIFICAZIONE PROGETTO
+
+| Campo | Valore |
+|-------|--------|
+| **Nome progetto** | agenda_backend |
+| **Scopo** | Gestionale per OPERATORI/STAFF |
+| **URL produzione** | **gestionale**.romeolab.it |
+| **Cartella SiteGround** | `www/gestionale.romeolab.it/public_html/` |
+| **NON confondere con** | agenda_frontend (prenota.romeolab.it) |
+
+### ⚠️ DEPLOY CORRETTO
+
+```bash
+# QUESTO PROGETTO VA SU gestionale.romeolab.it
+cd agenda_backend
+flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it
+rsync -avz --delete build/web/ siteground:www/gestionale.romeolab.it/public_html/
+```
+
+❌ **MAI** deployare su `prenota.romeolab.it` — quello è per agenda_frontend!
+
+---
 
 Piattaforma **Agenda elettronica multi-staff** in Flutter (web primary, mobile/desktop).
 L'agente deve produrre **file completi** e **non rompere le funzionalità esistenti**.
