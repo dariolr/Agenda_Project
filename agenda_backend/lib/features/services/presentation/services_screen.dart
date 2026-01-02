@@ -574,8 +574,10 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         service: service,
         duplicateFrom: true,
       ),
-      onServiceDelete: (id) =>
-          _confirmDelete(context, onConfirm: () => servicesNotifier.delete(id)),
+      onServiceDelete: (id) => _confirmDelete(
+        context,
+        onConfirm: () async => servicesNotifier.deleteServiceApi(id),
+      ),
     );
   }
 
@@ -590,8 +592,10 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       confirmLabel: context.l10n.actionDelete,
       cancelLabel: context.l10n.actionCancel,
       danger: true,
-      onConfirm: () {
-        ref.read(serviceCategoriesProvider.notifier).deleteCategory(categoryId);
+      onConfirm: () async {
+        await ref
+            .read(serviceCategoriesProvider.notifier)
+            .deleteCategoryApi(categoryId);
       },
     );
   }

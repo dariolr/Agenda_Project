@@ -43,6 +43,12 @@ class LocationsNotifier extends Notifier<List<Location>> {
   }
 
   Future<void> _loadLocations() async {
+    // Verifica autenticazione prima di chiamare API
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) {
+      return;
+    }
+
     try {
       final business = ref.read(currentBusinessProvider);
       final repository = ref.read(locationsRepositoryProvider);

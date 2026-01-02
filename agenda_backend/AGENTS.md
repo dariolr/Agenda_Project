@@ -434,7 +434,53 @@ La sezione Servizi mostrava categorie hardcoded anche con DB vuoto.
 
 ---
 
-## 👤 User Menu (01/01/2026)
+## �️ Services e Categories CRUD via API (02/01/2026)
+
+### Problema risolto
+CRUD di servizi e categorie funzionavano solo in memoria locale, i dati venivano persi al refresh.
+
+### Soluzione
+Implementati endpoint API completi per CRUD + aggiornato Flutter per chiamarli.
+
+### Endpoint API
+| Metodo | Endpoint | Descrizione |
+|--------|----------|-------------|
+| POST | `/v1/locations/{location_id}/services` | Crea servizio |
+| PUT | `/v1/services/{id}` | Aggiorna servizio |
+| DELETE | `/v1/services/{id}` | Elimina servizio (soft delete) |
+| GET | `/v1/businesses/{business_id}/categories` | Lista categorie |
+| POST | `/v1/businesses/{business_id}/categories` | Crea categoria |
+| PUT | `/v1/categories/{id}` | Aggiorna categoria |
+| DELETE | `/v1/categories/{id}` | Elimina categoria |
+
+### Metodi Provider (USARE QUESTI)
+```dart
+// ServicesNotifier
+await notifier.createServiceApi(name: 'Taglio', durationMinutes: 30, ...);
+await notifier.updateServiceApi(serviceId: 1, name: 'Taglio uomo', ...);
+await notifier.deleteServiceApi(serviceId);
+await notifier.duplicateServiceApi(originalService);
+
+// ServiceCategoriesNotifier
+await notifier.createCategoryApi(name: 'Capelli');
+await notifier.updateCategoryApi(categoryId: 1, name: 'Capelli uomo');
+await notifier.deleteCategoryApi(categoryId);
+```
+
+### Metodi DEPRECATI (NON usare)
+I seguenti metodi aggiornano solo lo stato locale:
+- `add()`, `updateService()`, `delete()`, `duplicate()` su ServicesNotifier
+- `addCategory()`, `updateCategory()`, `deleteCategory()` su ServiceCategoriesNotifier
+
+### File
+- `lib/features/services/providers/services_provider.dart`
+- `lib/features/services/providers/service_categories_provider.dart`
+- `lib/features/services/data/services_api.dart`
+- `lib/core/network/api_client.dart`
+
+---
+
+## �👤 User Menu (01/01/2026)
 
 ### Accesso
 - Icona profilo nella navigation bar (index 4)

@@ -10,30 +10,49 @@ import 'staff_repository_provider.dart';
 class StaffNotifier extends AsyncNotifier<List<Staff>> {
   @override
   Future<List<Staff>> build() async {
-    // Ascolta i cambiamenti dell'auth state
+    // Verifica autenticazione
     final authState = ref.watch(authProvider);
-
-    // Carica staff solo se autenticato
     if (!authState.isAuthenticated) {
       return [];
     }
 
-    final repository = ref.watch(staffRepositoryProvider);
     final business = ref.watch(currentBusinessProvider);
+    if (business.id <= 0) {
+      return [];
+    }
+
+    final repository = ref.watch(staffRepositoryProvider);
 
     try {
-      // Carica tutti gli staff del business
       return await repository.getByBusiness(business.id);
     } catch (e) {
-      debugPrint('⚠️ StaffNotifier: errore caricamento staff: $e');
       return [];
     }
   }
 
   /// Ricarica gli staff dall'API
   Future<void> refresh() async {
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) {
+      state = const AsyncData([]);
+      return;
+    }
+
+    final business = ref.read(currentBusinessProvider);
+    if (business.id <= 0) {
+      state = const AsyncData([]);
+      return;
+    }
+
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
+
+    try {
+      final repository = ref.read(staffRepositoryProvider);
+      final staff = await repository.getByBusiness(business.id);
+      state = AsyncData(staff);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
   }
 
   /// Crea un nuovo staff tramite API

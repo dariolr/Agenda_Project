@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
+import '../../agenda/providers/business_providers.dart';
 import 'services_provider.dart';
+import 'services_repository_provider.dart';
 
-/// Notifier per la gestione delle categorie di servizi (CRUD in memoria)
+/// Notifier per la gestione delle categorie di servizi (CRUD via API)
 /// Le categorie vengono inizializzate vuote e popolate dal ServicesNotifier
 /// quando i dati vengono caricati dall'API.
 class ServiceCategoriesNotifier extends Notifier<List<ServiceCategory>> {
@@ -25,16 +27,98 @@ class ServiceCategoriesNotifier extends Notifier<List<ServiceCategory>> {
     return copy;
   }
 
+  // ===== API METHODS =====
+
+  /// Creates a new category via API and updates local state
+  Future<ServiceCategory?> createCategoryApi({
+    required String name,
+    String? description,
+  }) async {
+    final repository = ref.read(servicesRepositoryProvider);
+    final businessId = ref.read(currentBusinessIdProvider);
+
+    if (businessId <= 0) return null;
+
+    try {
+      final newCategory = await repository.createCategory(
+        businessId: businessId,
+        name: name,
+        description: description,
+      );
+
+      // Add to local state with high sort order (will be bumped if empty)
+      final nextSort = state.isEmpty
+          ? 0
+          : (state.map((c) => c.sortOrder).reduce((a, b) => a > b ? a : b) + 1);
+      final withOrder = newCategory.copyWith(sortOrder: nextSort);
+      state = _sorted([...state, withOrder]);
+
+      bumpEmptyCategoriesToEnd();
+
+      return newCategory;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Updates a category via API and updates local state
+  Future<ServiceCategory?> updateCategoryApi({
+    required int categoryId,
+    String? name,
+    String? description,
+    int? sortOrder,
+  }) async {
+    final repository = ref.read(servicesRepositoryProvider);
+
+    try {
+      final updatedCategory = await repository.updateCategory(
+        categoryId: categoryId,
+        name: name,
+        description: description,
+        sortOrder: sortOrder,
+      );
+
+      // Update local state
+      state = _sorted([
+        for (final c in state)
+          if (c.id == updatedCategory.id) updatedCategory else c,
+      ]);
+
+      return updatedCategory;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Deletes a category via API and updates local state
+  Future<bool> deleteCategoryApi(int categoryId) async {
+    final repository = ref.read(servicesRepositoryProvider);
+
+    try {
+      await repository.deleteCategory(categoryId);
+
+      // Remove from local state
+      state = _sorted(state.where((c) => c.id != categoryId).toList());
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ===== LOCAL METHODS (legacy, for backward compatibility) =====
+
+  @Deprecated('Use createCategoryApi instead for persistence')
   void addCategory(ServiceCategory newCategory) {
     final nextSort = state.isEmpty
         ? 0
         : (state.map((c) => c.sortOrder).reduce((a, b) => a > b ? a : b) + 1);
     final withOrder = newCategory.copyWith(sortOrder: nextSort);
     state = _sorted([...state, withOrder]);
-    // Se la nuova categoria è vuota, deve andare in coda per sortOrder alto
     bumpEmptyCategoriesToEnd();
   }
 
+  @Deprecated('Use updateCategoryApi instead for persistence')
   void updateCategory(ServiceCategory updatedCategory) {
     state = _sorted([
       for (final c in state)
@@ -42,6 +126,7 @@ class ServiceCategoriesNotifier extends Notifier<List<ServiceCategory>> {
     ]);
   }
 
+  @Deprecated('Use deleteCategoryApi instead for persistence')
   void deleteCategory(int id) {
     state = _sorted(state.where((c) => c.id != id).toList());
   }

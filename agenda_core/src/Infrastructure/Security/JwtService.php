@@ -6,6 +6,7 @@ namespace Agenda\Infrastructure\Security;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Firebase\JWT\ExpiredException;
 use Throwable;
 
 final class JwtService
@@ -19,7 +20,7 @@ final class JwtService
     {
         $this->secret = $_ENV['JWT_SECRET'] ?? throw new \RuntimeException('JWT_SECRET not configured');
         $this->accessTtl = (int) ($_ENV['JWT_ACCESS_TTL'] ?? 900); // 15 minutes
-        $this->refreshTtl = (int) ($_ENV['JWT_REFRESH_TTL'] ?? 7776000); // 90 days
+        $this->refreshTtl = (int) ($_ENV['JWT_REFRESH_TTL'] ?? 864000); // 10 days
     }
 
     /**
@@ -59,6 +60,9 @@ final class JwtService
 
     /**
      * Validate access token and return payload if valid.
+     * Returns array with payload on success.
+     * Returns ['expired' => true] if token is expired (for refresh flow).
+     * Returns null if token is invalid.
      */
     public function validateAccessToken(string $token): ?array
     {
@@ -71,6 +75,9 @@ final class JwtService
             }
 
             return $payload;
+        } catch (ExpiredException) {
+            // Token scaduto ma valido - permette refresh
+            return ['expired' => true];
         } catch (Throwable) {
             return null;
         }

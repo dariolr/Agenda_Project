@@ -25,7 +25,12 @@ final class AuthMiddleware implements MiddlewareInterface
         $payload = $this->jwtService->validateAccessToken($token);
         
         if ($payload === null) {
-            return Response::unauthorized('Invalid or expired token', $request->traceId);
+            return Response::unauthorized('Invalid token', $request->traceId);
+        }
+
+        // Token scaduto ma valido - il client può fare refresh
+        if (isset($payload['expired']) && $payload['expired'] === true) {
+            return Response::error('Token has expired', 'token_expired', 401);
         }
 
         // Inject ONLY user_id into request context

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/models/appointment.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../clients/providers/clients_providers.dart';
 import '../../services/providers/services_provider.dart';
 import 'bookings_provider.dart';
@@ -28,12 +29,17 @@ DateTime _roundToNearestFiveMinutes(DateTime dt) {
 class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
   @override
   Future<List<Appointment>> build() async {
+    // Verifica autenticazione
+    final authState = ref.watch(authProvider);
+    if (!authState.isAuthenticated) {
+      return [];
+    }
+
     final repository = ref.watch(bookingsRepositoryProvider);
     final location = ref.watch(currentLocationProvider);
     final business = ref.watch(currentBusinessProvider);
     final date = ref.watch(agendaDateProvider);
 
-    // Non caricare se location non è ancora valida
     if (location.id <= 0) {
       return [];
     }

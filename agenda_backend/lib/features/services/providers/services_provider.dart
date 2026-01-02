@@ -4,6 +4,7 @@ import '../../../core/models/service.dart';
 import '../../../core/models/service_staff_eligibility.dart';
 import '../../../core/models/service_variant.dart';
 import '../../agenda/providers/location_providers.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../staff/providers/staff_providers.dart';
 import '../utils/service_seed_texts.dart';
 import 'service_categories_provider.dart';
@@ -12,18 +13,23 @@ import 'services_repository_provider.dart';
 // Le categorie sono ora gestite in providers/service_categories_provider.dart
 
 ///
-/// SERVICES NOTIFIER (CRUD in memoria)
+/// SERVICES NOTIFIER (CRUD via API)
 ///
 class ServicesNotifier extends AsyncNotifier<List<Service>> {
   @override
   Future<List<Service>> build() async {
-    final repository = ref.watch(servicesRepositoryProvider);
-    final location = ref.watch(currentLocationProvider);
+    // Verifica autenticazione
+    final authState = ref.watch(authProvider);
+    if (!authState.isAuthenticated) {
+      return [];
+    }
 
-    // Non caricare se location non è ancora valida
+    final location = ref.watch(currentLocationProvider);
     if (location.id <= 0) {
       return [];
     }
+
+    final repository = ref.watch(servicesRepositoryProvider);
 
     // Carica servizi E categorie dall'API
     final result = await repository.getServicesWithCategories(
@@ -40,135 +46,274 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
 
   /// Ricarica servizi e categorie dall'API
   Future<void> refresh() async {
+    // Verifica autenticazione
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) {
+      return;
+    }
+
+    final location = ref.read(currentLocationProvider);
+    if (location.id <= 0) {
+      return;
+    }
+
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
+
+    try {
+      final repository = ref.read(servicesRepositoryProvider);
+      final result = await repository.getServicesWithCategories(
+        locationId: location.id,
+      );
+
+      // Popola le categorie nel provider dedicato
+      ref
+          .read(serviceCategoriesProvider.notifier)
+          .setCategories(result.categories);
+
+      state = AsyncData(result.services);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
   }
 
   void setServices(List<Service> services) {
     state = AsyncData(services);
   }
 
+  // ===== API METHODS =====
+
+  /// Creates a new service via API and updates local state
+  Future<Service?> createServiceApi({
+    required String name,
+    int? categoryId,
+    String? description,
+    int durationMinutes = 30,
+    double price = 0,
+    String? colorHex,
+    bool isBookableOnline = true,
+    bool isPriceStartingFrom = false,
+  }) async {
+    final repository = ref.read(servicesRepositoryProvider);
+    final location = ref.read(currentLocationProvider);
+
+    if (location.id <= 0) return null;
+
+    try {
+      final newService = await repository.createService(
+        locationId: location.id,
+        name: name,
+        categoryId: categoryId,
+        description: description,
+        durationMinutes: durationMinutes,
+        price: price,
+        colorHex: colorHex,
+        isBookableOnline: isBookableOnline,
+        isPriceStartingFrom: isPriceStartingFrom,
+      );
+
+      // Add to local state
+      final current = state.value ?? [];
+      state = AsyncData([...current, newService]);
+
+      ref
+          .read(serviceCategoriesProvider.notifier)
+          .bumpEmptyCategoriesToEnd(servicesOverride: state.value);
+
+      return newService;
+    } catch (e) {
+      // Keep old state on error
+      return null;
+    }
+  }
+
+  /// Updates a service via API and updates local state
+  Future<Service?> updateServiceApi({
+    required int serviceId,
+    String? name,
+    int? categoryId,
+    bool setCategoryIdNull = false,
+    String? description,
+    int? durationMinutes,
+    double? price,
+    String? colorHex,
+    bool? isBookableOnline,
+    bool? isPriceStartingFrom,
+    int? sortOrder,
+  }) async {
+    final repository = ref.read(servicesRepositoryProvider);
+    final location = ref.read(currentLocationProvider);
+
+    if (location.id <= 0) return null;
+
+    try {
+      final updatedService = await repository.updateService(
+        serviceId: serviceId,
+        locationId: location.id,
+        name: name,
+        categoryId: categoryId,
+        setCategoryIdNull: setCategoryIdNull,
+        description: description,
+        durationMinutes: durationMinutes,
+        price: price,
+        colorHex: colorHex,
+        isBookableOnline: isBookableOnline,
+        isPriceStartingFrom: isPriceStartingFrom,
+        sortOrder: sortOrder,
+      );
+
+      // Update local state
+      final current = state.value ?? [];
+      state = AsyncData([
+        for (final s in current)
+          if (s.id == updatedService.id) updatedService else s,
+      ]);
+
+      ref
+          .read(serviceCategoriesProvider.notifier)
+          .bumpEmptyCategoriesToEnd(servicesOverride: state.value);
+
+      return updatedService;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Deletes a service via API and updates local state
+  Future<bool> deleteServiceApi(int serviceId) async {
+    final repository = ref.read(servicesRepositoryProvider);
+
+    try {
+      await repository.deleteService(serviceId);
+
+      // Remove from local state
+      final current = state.value ?? [];
+      final newList = current.where((s) => s.id != serviceId).toList();
+      state = AsyncData(newList);
+
+      ref.read(serviceVariantsProvider.notifier).removeByServiceId(serviceId);
+
+      ref
+          .read(serviceCategoriesProvider.notifier)
+          .bumpEmptyCategoriesToEnd(servicesOverride: newList);
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Duplicates a service via API (creates new with modified name)
+  Future<Service?> duplicateServiceApi(Service original) async {
+    final current = state.value ?? [];
+    final existingNames = current.map((s) => s.name).toSet();
+    final duplicateName = _makeDuplicateName(original.name, existingNames);
+
+    return createServiceApi(
+      name: duplicateName,
+      categoryId: original.categoryId,
+      description: original.description,
+      durationMinutes: original.durationMinutes ?? 30,
+      price: original.price ?? 0,
+      colorHex: original.color,
+      isPriceStartingFrom: original.isPriceStartingFrom,
+    );
+  }
+
+  // ===== LOCAL METHODS (legacy, for backward compatibility) =====
+
+  @Deprecated('Use createServiceApi instead for persistence')
   void add(Service service) {
     final current = state.value ?? [];
     state = AsyncData([...current, service]);
-    // Aggiunta di un servizio potrebbe rendere non vuota una categoria
     ref
         .read(serviceCategoriesProvider.notifier)
         .bumpEmptyCategoriesToEnd(servicesOverride: state.value);
   }
 
+  @Deprecated('Use updateServiceApi instead for persistence')
   void updateService(Service updated) {
     final current = state.value ?? [];
     state = AsyncData([
       for (final s in current)
         if (s.id == updated.id) updated else s,
     ]);
-    // Aggiorna posizionamento categorie vuote vs piene
     ref
         .read(serviceCategoriesProvider.notifier)
         .bumpEmptyCategoriesToEnd(servicesOverride: state.value);
   }
 
+  @Deprecated('Use deleteServiceApi instead for persistence')
   void delete(int id) {
     final current = state.value ?? [];
-    // int? removedCat;
-    // for (final s in current) {
-    //   if (s.id == id) {
-    //     removedCat = s.categoryId;
-    //     break;
-    //   }
-    // }
     final newList = current.where((s) => s.id != id).toList();
     state = AsyncData(newList);
-
     ref.read(serviceVariantsProvider.notifier).removeByServiceId(id);
-
-    // Aggiorna posizionamento categorie vuote vs piene
     ref
         .read(serviceCategoriesProvider.notifier)
         .bumpEmptyCategoriesToEnd(servicesOverride: newList);
   }
 
+  @Deprecated('Use duplicateServiceApi instead for persistence')
   void duplicate(Service original) {
     final current = state.value ?? [];
     final newId = _nextId(current);
     final existingNames = current.map((s) => s.name).toSet();
 
-    String makeDuplicateName(String originalName) {
-      final copyWord = ServiceSeedTexts.duplicateCopyWord;
-      final copyWordEscaped = RegExp.escape(copyWord);
-      // Supporta varianti precedenti come " (copyWord)" e la nuova " copyWord"/" copyWord N"
-      String base = originalName;
-      int? startFrom;
-
-      final reNew = RegExp(
-        '^(.*?)(?:\\s$copyWordEscaped(?:\\s(\\d+))?)\$',
-        caseSensitive: false,
-      );
-      final reOld = RegExp(
-        '^(.*?)(?:\\s\\((?:$copyWordEscaped)(?:\\s(\\d+))?\\))\$',
-        caseSensitive: false,
-      );
-
-      RegExpMatch? m =
-          reNew.firstMatch(originalName) ?? reOld.firstMatch(originalName);
-      if (m != null) {
-        base = (m.group(1) ?? '').trim();
-        final n = m.group(2);
-        if (n != null) {
-          final parsed = int.tryParse(n);
-          if (parsed != null) startFrom = parsed + 1;
-        } else {
-          startFrom = 1;
-        }
-      }
-
-      // Primo tentativo: "<base> <copyWord>"
-      String candidate = '$base $copyWord';
-      if (!existingNames.contains(candidate)) return candidate;
-
-      // Altrimenti prova con numeri incrementali
-      int i = startFrom ?? 1;
-      while (true) {
-        candidate = '$base $copyWord $i';
-        if (!existingNames.contains(candidate)) return candidate;
-        i++;
-        if (i > 9999) break; // guardia
-      }
-      // Fallback improbabile
-      return '$base $copyWord';
-    }
-
     final copy = Service(
       id: newId,
       businessId: original.businessId,
       categoryId: original.categoryId,
-      name: makeDuplicateName(original.name),
+      name: _makeDuplicateName(original.name, existingNames),
       description: original.description,
     );
     add(copy);
 
-    // Note: serviceVariantByServiceIdProvider needs to handle async now
-    // But here we are inside notifier, we can't easily read async provider synchronously
-    // So we skip variant duplication for now or handle it differently
-    // Or we can read serviceVariantsProvider.future
-
-    // final originalVariant = ref.read(
-    //   serviceVariantByServiceIdProvider(original.id),
-    // );
-    // if (originalVariant != null) {
-    //   ref.read(serviceVariantsProvider.notifier).upsert(
-    //         originalVariant.copyWith(
-    //           id: 900000 + newId,
-    //           serviceId: newId,
-    //         ),
-    //       );
-    // }
-
-    // Un duplicato potrebbe rendere non vuota una categoria
     ref
         .read(serviceCategoriesProvider.notifier)
         .bumpEmptyCategoriesToEnd(servicesOverride: state.value);
+  }
+
+  // ===== HELPER METHODS =====
+
+  String _makeDuplicateName(String originalName, Set<String> existingNames) {
+    final copyWord = ServiceSeedTexts.duplicateCopyWord;
+    final copyWordEscaped = RegExp.escape(copyWord);
+    String base = originalName;
+    int? startFrom;
+
+    final reNew = RegExp(
+      '^(.*?)(?:\\s$copyWordEscaped(?:\\s(\\d+))?)\$',
+      caseSensitive: false,
+    );
+    final reOld = RegExp(
+      '^(.*?)(?:\\s\\((?:$copyWordEscaped)(?:\\s(\\d+))?\\))\$',
+      caseSensitive: false,
+    );
+
+    RegExpMatch? m =
+        reNew.firstMatch(originalName) ?? reOld.firstMatch(originalName);
+    if (m != null) {
+      base = (m.group(1) ?? '').trim();
+      final n = m.group(2);
+      if (n != null) {
+        final parsed = int.tryParse(n);
+        if (parsed != null) startFrom = parsed + 1;
+      } else {
+        startFrom = 1;
+      }
+    }
+
+    String candidate = '$base $copyWord';
+    if (!existingNames.contains(candidate)) return candidate;
+
+    int i = startFrom ?? 1;
+    while (true) {
+      candidate = '$base $copyWord $i';
+      if (!existingNames.contains(candidate)) return candidate;
+      i++;
+      if (i > 9999) break;
+    }
+    return '$base $copyWord';
   }
 
   int _nextId(List<Service> current) {

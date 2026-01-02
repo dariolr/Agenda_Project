@@ -4,6 +4,7 @@ import '../../../core/models/appointment.dart';
 import '../../../core/network/network_providers.dart';
 import '../../agenda/providers/appointment_providers.dart';
 import '../../agenda/providers/business_providers.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../data/clients_repository.dart';
 import '../domain/client_sort_option.dart';
 import '../domain/clients.dart';
@@ -18,17 +19,37 @@ final clientsRepositoryProvider = Provider<ClientsRepository>((ref) {
 class ClientsNotifier extends AsyncNotifier<List<Client>> {
   @override
   Future<List<Client>> build() async {
-    final repository = ref.watch(clientsRepositoryProvider);
+    // Verifica autenticazione
+    final authState = ref.watch(authProvider);
+    if (!authState.isAuthenticated) {
+      return [];
+    }
+
     final business = ref.watch(currentBusinessProvider);
+    if (business.id <= 0) {
+      return [];
+    }
+
+    final repository = ref.watch(clientsRepositoryProvider);
     return repository.getAll(business.id);
   }
 
   /// Ricarica i clienti dall'API
   Future<void> refresh() async {
+    // Verifica autenticazione prima di chiamare API
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) {
+      return;
+    }
+
+    final business = ref.read(currentBusinessProvider);
+    if (business.id <= 0) {
+      return;
+    }
+
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repository = ref.read(clientsRepositoryProvider);
-      final business = ref.read(currentBusinessProvider);
       return repository.getAll(business.id);
     });
   }

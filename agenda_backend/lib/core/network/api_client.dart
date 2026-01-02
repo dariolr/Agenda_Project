@@ -46,7 +46,6 @@ class ApiClient {
   }) : _tokenStorage = tokenStorage,
        _dio = dio ?? Dio() {
     _dio.options.baseUrl = ApiConfig.baseUrl;
-    debugPrint('🔗 API baseUrl: ${ApiConfig.baseUrl}');
     _dio.options.connectTimeout = ApiConfig.connectTimeout;
     _dio.options.receiveTimeout = ApiConfig.receiveTimeout;
     _dio.options.headers['Content-Type'] = 'application/json';
@@ -191,7 +190,7 @@ class ApiClient {
         // Fetch user profile
         return await getMe();
       }
-    } catch (_) {
+    } catch (e) {
       await _tokenStorage.clearRefreshToken();
     }
     return null;
@@ -723,6 +722,124 @@ class ApiClient {
   /// DELETE /v1/locations/{id}
   Future<void> deleteLocation(int locationId) async {
     await delete('/v1/locations/$locationId');
+  }
+
+  // ========== SERVICES CRUD ==========
+
+  /// POST /v1/locations/{location_id}/services
+  Future<Map<String, dynamic>> createService({
+    required int locationId,
+    required String name,
+    int? categoryId,
+    String? description,
+    int durationMinutes = 30,
+    double price = 0,
+    String? colorHex,
+    bool isBookableOnline = true,
+    bool isPriceStartingFrom = false,
+  }) async {
+    final response = await post(
+      '/v1/locations/$locationId/services',
+      data: {
+        'name': name,
+        if (categoryId != null) 'category_id': categoryId,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+        'duration_minutes': durationMinutes,
+        'price': price,
+        if (colorHex != null && colorHex.isNotEmpty) 'color': colorHex,
+        'is_bookable_online': isBookableOnline,
+        'is_price_starting_from': isPriceStartingFrom,
+      },
+    );
+    return response;
+  }
+
+  /// PUT /v1/services/{id}
+  Future<Map<String, dynamic>> updateService({
+    required int serviceId,
+    required int locationId,
+    String? name,
+    int? categoryId,
+    bool setCategoryIdNull = false,
+    String? description,
+    int? durationMinutes,
+    double? price,
+    String? colorHex,
+    bool? isBookableOnline,
+    bool? isPriceStartingFrom,
+    int? sortOrder,
+  }) async {
+    final response = await put(
+      '/v1/services/$serviceId',
+      data: {
+        'location_id': locationId,
+        if (name != null) 'name': name,
+        if (setCategoryIdNull)
+          'category_id': null
+        else if (categoryId != null)
+          'category_id': categoryId,
+        if (description != null) 'description': description,
+        if (durationMinutes != null) 'duration_minutes': durationMinutes,
+        if (price != null) 'price': price,
+        if (colorHex != null) 'color': colorHex,
+        if (isBookableOnline != null) 'is_bookable_online': isBookableOnline,
+        if (isPriceStartingFrom != null)
+          'is_price_starting_from': isPriceStartingFrom,
+        if (sortOrder != null) 'sort_order': sortOrder,
+      },
+    );
+    return response;
+  }
+
+  /// DELETE /v1/services/{id}
+  Future<void> deleteService(int serviceId) async {
+    await delete('/v1/services/$serviceId');
+  }
+
+  // ========== SERVICE CATEGORIES CRUD ==========
+
+  /// GET /v1/businesses/{business_id}/categories
+  Future<Map<String, dynamic>> getServiceCategories(int businessId) async {
+    return get('/v1/businesses/$businessId/categories');
+  }
+
+  /// POST /v1/businesses/{business_id}/categories
+  Future<Map<String, dynamic>> createServiceCategory({
+    required int businessId,
+    required String name,
+    String? description,
+  }) async {
+    return post(
+      '/v1/businesses/$businessId/categories',
+      data: {
+        'name': name,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+      },
+    );
+  }
+
+  /// PUT /v1/categories/{id}
+  Future<Map<String, dynamic>> updateServiceCategory({
+    required int categoryId,
+    String? name,
+    String? description,
+    int? sortOrder,
+  }) async {
+    return put(
+      '/v1/categories/$categoryId',
+      data: {
+        if (name != null) 'name': name,
+        if (description != null) 'description': description,
+        if (sortOrder != null) 'sort_order': sortOrder,
+      },
+    );
+  }
+
+  /// DELETE /v1/categories/{id}
+  Future<void> deleteServiceCategory(int categoryId) async {
+    await delete('/v1/categories/$categoryId');
   }
 
   // ========== STAFF CRUD ==========

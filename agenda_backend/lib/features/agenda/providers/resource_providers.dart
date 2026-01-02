@@ -51,8 +51,26 @@ class ResourcesNotifier extends AsyncNotifier<List<Resource>> {
   }
 
   Future<void> refresh() async {
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) {
+      state = const AsyncData([]);
+      return;
+    }
+
+    final business = ref.read(currentBusinessProvider);
+    if (business.id <= 0) {
+      return;
+    }
+
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final data = await apiClient.getResourcesByBusiness(business.id);
+      state = AsyncData(data.map(_parseResource).toList());
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
   }
 
   Future<Resource> addResource({

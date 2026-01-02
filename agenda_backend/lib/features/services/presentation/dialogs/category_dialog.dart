@@ -11,7 +11,6 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
-import '../../../agenda/providers/business_providers.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../utils/service_validators.dart';
 
@@ -86,23 +85,26 @@ Future<void> showCategoryDialog(
       return false;
     }
 
-    final newCategory = ServiceCategory(
-      id: category?.id ?? DateTime.now().millisecondsSinceEpoch,
-      businessId: ref.read(currentBusinessProvider).id,
-      name: formattedName,
-      description: descController.text.trim().isEmpty
-          ? null
-          : descController.text.trim(),
-      sortOrder: category?.sortOrder ?? allCategories.length,
-    );
+    final description = descController.text.trim().isEmpty
+        ? null
+        : descController.text.trim();
 
     if (category == null) {
-      notifier.addCategory(newCategory);
+      // Create new category via API
+      final result = await notifier.createCategoryApi(
+        name: formattedName,
+        description: description,
+      );
+      return result != null;
     } else {
-      notifier.updateCategory(newCategory);
+      // Update existing category via API
+      final result = await notifier.updateCategoryApi(
+        categoryId: category.id,
+        name: formattedName,
+        description: description,
+      );
+      return result != null;
     }
-
-    return true;
   }
 
   final title = category == null
@@ -179,62 +181,61 @@ Future<void> showCategoryDialog(
         top: false,
         child: LayoutBuilder(
           builder: (ctx, constraints) {
-            final isKeyboardOpen =
-                MediaQuery.of(ctx).viewInsets.bottom > 0;
+            final isKeyboardOpen = MediaQuery.of(ctx).viewInsets.bottom > 0;
             return SizedBox(
               height: constraints.maxHeight,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      bottom: 0,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Text(
-                                  title,
-                                  style: Theme.of(ctx).textTheme.titleLarge,
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.only(bottom: 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Text(
+                                    title,
+                                    style: Theme.of(ctx).textTheme.titleLarge,
+                                  ),
                                 ),
-                              ),
-                              content,
-                              const SizedBox(height: 24),
-                              const SizedBox(height: AppSpacing.formRowSpacing),
-                            ],
+                                content,
+                                const SizedBox(height: 24),
+                                const SizedBox(
+                                  height: AppSpacing.formRowSpacing,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (!isKeyboardOpen) ...[
-                  const AppBottomSheetDivider(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Align(
-                      alignment: 2 == 3
-                          ? Alignment.center
-                          : Alignment.centerRight,
-                      child: Wrap(
-                        alignment: 2 == 3
-                            ? WrapAlignment.center
-                            : WrapAlignment.end,
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [cancelButton, saveButton],
+                        ],
                       ),
                     ),
+                  ),
+                  if (!isKeyboardOpen) ...[
+                    const AppBottomSheetDivider(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Align(
+                        alignment: 2 == 3
+                            ? Alignment.center
+                            : Alignment.centerRight,
+                        child: Wrap(
+                          alignment: 2 == 3
+                              ? WrapAlignment.center
+                              : WrapAlignment.end,
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [cancelButton, saveButton],
+                        ),
+                      ),
                     ),
                   ],
                   SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),

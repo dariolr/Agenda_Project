@@ -242,7 +242,6 @@ Vedere file INTEGRATION_COMPLETE.md per dettagli integrazione API.
 |------|-------------|
 | [AGENTS.md](AGENTS.md) | Istruzioni per AI agents |
 | [INTEGRATION_COMPLETE.md](INTEGRATION_COMPLETE.md) | Storia integrazione API |
-| [.github/copilot-instructions.md](.github/copilot-instructions.md) | Guidelines sviluppo |
 
 **Documentazione backend:**
 - [agenda_core/docs/decisions.md](../agenda_core/docs/decisions.md) — Decisioni architetturali
