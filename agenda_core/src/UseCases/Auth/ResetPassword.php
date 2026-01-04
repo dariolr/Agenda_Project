@@ -28,7 +28,7 @@ final class ResetPassword
 
         // Find valid token
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT user_id, expires_at FROM password_reset_tokens 
+            'SELECT user_id, expires_at FROM password_reset_token_users 
              WHERE token_hash = ? AND used_at IS NULL'
         );
         $stmt->execute([$tokenHash]);
@@ -58,7 +58,7 @@ final class ResetPassword
 
         // Mark token as used
         $stmt = $this->db->getPdo()->prepare(
-            'UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = ?'
+            'UPDATE password_reset_token_users SET used_at = NOW() WHERE token_hash = ?'
         );
         $stmt->execute([$tokenHash]);
 

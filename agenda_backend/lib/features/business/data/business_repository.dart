@@ -77,4 +77,25 @@ class BusinessRepository {
   Future<void> resendAdminInvite(int businessId) async {
     await _apiClient.resendAdminInvite(businessId);
   }
+
+  /// Superadmin: sospende/riattiva un business.
+  /// Se isSuspended = true, il business mostra un messaggio agli operatori e ai clienti.
+  Future<Business> suspendBusiness({
+    required int businessId,
+    required bool isSuspended,
+    String? suspensionMessage,
+  }) async {
+    final data = await _apiClient.suspendBusiness(
+      businessId: businessId,
+      isSuspended: isSuspended,
+      suspensionMessage: suspensionMessage,
+    );
+    final businessJson = data['business'] as Map<String, dynamic>? ?? data;
+    return Business.fromJson(businessJson);
+  }
+
+  /// Superadmin: elimina (soft delete) un business.
+  Future<void> deleteBusiness(int businessId) async {
+    await _apiClient.deleteAdminBusiness(businessId);
+  }
 }

@@ -35,8 +35,7 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
         toDate: _formatDateTime(toDate),
       );
       return data.map(_parseTimeBlock).toList();
-    } catch (e) {
-      debugPrint('⚠️ TimeBlocksNotifier: errore caricamento blocchi: $e');
+    } catch (_) {
       return [];
     }
   }

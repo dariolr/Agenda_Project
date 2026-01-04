@@ -16,7 +16,7 @@ final class BusinessRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, name, slug, email, phone, timezone, currency, 
-                    is_active, created_at, updated_at
+                    is_active, is_suspended, suspension_message, created_at, updated_at
              FROM businesses
              WHERE is_active = 1
              ORDER BY name ASC'
@@ -33,7 +33,7 @@ final class BusinessRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency, 
-                    b.is_active, b.created_at, b.updated_at
+                    b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at
              FROM businesses b
              JOIN business_users bu ON bu.business_id = b.id
              WHERE bu.user_id = ? AND b.is_active = 1
@@ -48,7 +48,7 @@ final class BusinessRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, name, slug, email, phone, timezone, currency,
-                    is_active, created_at, updated_at
+                    is_active, is_suspended, suspension_message, created_at, updated_at
              FROM businesses
              WHERE id = ? AND is_active = 1'
         );
@@ -66,7 +66,7 @@ final class BusinessRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency,
-                    b.is_active, b.created_at, b.updated_at,
+                    b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at,
                     u.email as admin_email
              FROM businesses b
              LEFT JOIN business_users bu ON bu.business_id = b.id AND bu.role = "owner"
@@ -136,6 +136,14 @@ final class BusinessRepository
             $fields[] = 'currency = ?';
             $params[] = $data['currency'];
         }
+        if (array_key_exists('is_suspended', $data)) {
+            $fields[] = 'is_suspended = ?';
+            $params[] = $data['is_suspended'] ? 1 : 0;
+        }
+        if (array_key_exists('suspension_message', $data)) {
+            $fields[] = 'suspension_message = ?';
+            $params[] = $data['suspension_message'];
+        }
 
         if (empty($fields)) {
             return false;
@@ -161,10 +169,10 @@ final class BusinessRepository
      * Find all businesses with search and pagination.
      * Used by superadmin listing.
      */
-    public function findAllWithSearch(?string $search, int $limit, int $offset): array
+    public function findAllWithSearch(?string $search, ?int $limit, int $offset): array
     {
         $sql = 'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency, 
-                       b.is_active, b.created_at, b.updated_at,
+                       b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at,
                        u.email as admin_email
                 FROM businesses b
                 LEFT JOIN business_users bu ON bu.business_id = b.id AND bu.role = "owner"
@@ -178,9 +186,14 @@ final class BusinessRepository
             $params = [$searchTerm, $searchTerm, $searchTerm];
         }
 
-        $sql .= ' ORDER BY b.name ASC LIMIT ? OFFSET ?';
-        $params[] = $limit;
-        $params[] = $offset;
+        $sql .= ' ORDER BY b.name ASC';
+        
+        // Add pagination only if limit is specified
+        if ($limit !== null) {
+            $sql .= ' LIMIT ? OFFSET ?';
+            $params[] = $limit;
+            $params[] = $offset;
+        }
 
         $stmt = $this->db->getPdo()->prepare($sql);
         $stmt->execute($params);
@@ -212,7 +225,7 @@ final class BusinessRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, name, slug, email, phone, timezone, currency,
-                    is_active, created_at, updated_at
+                    is_active, is_suspended, suspension_message, created_at, updated_at
              FROM businesses
              WHERE slug = ?'
         );

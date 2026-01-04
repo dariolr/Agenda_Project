@@ -115,7 +115,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             businessId: appt.businessId,
             locationId: appt.locationId,
             clientId: appt.clientId,
-            customerName: appt.clientName,
+            clientName: appt.clientName,
           );
     });
     // Leggi le note dalla Booking associata
@@ -129,12 +129,19 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     _bookingHasSingleAppointment = bookingAppointments.length <= 1;
 
     for (final appointment in bookingAppointments) {
+      // Skip appuntamenti con serviceId corrotto (0 o nullo)
+      // Questi verranno eliminati quando si salva
+      if (appointment.serviceId == 0) {
+        continue;
+      }
+
       final baseDuration = _baseDurationFromAppointment(appointment);
       final blockedExtraMinutes = appointment.blockedExtraMinutes;
       final processingExtraMinutes = appointment.processingExtraMinutes;
       _serviceItems.add(
         ServiceItemData(
           key: _nextItemKey(),
+          appointmentId: appointment.id, // Traccia l'ID originale
           startTime: TimeOfDay.fromDateTime(appointment.startTime),
           staffId: appointment.staffId,
           serviceId: appointment.serviceId,
@@ -168,6 +175,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         .map(
           (s) => ServiceItemData(
             key: s.key,
+            appointmentId: s.appointmentId,
             startTime: s.startTime,
             staffId: s.staffId,
             serviceId: s.serviceId,
@@ -1134,8 +1142,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     // Verifica che ci sia almeno un servizio selezionato
+    // Filtra anche serviceId == 0 (dati corrotti nel DB)
     final validItems = _serviceItems
-        .where((item) => item.serviceId != null && item.staffId != null)
+        .where(
+          (item) =>
+              item.serviceId != null &&
+              item.serviceId! > 0 &&
+              item.staffId != null,
+        )
         .toList();
 
     if (validItems.isEmpty) {
@@ -1163,45 +1177,57 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         .read(appointmentsProvider.notifier)
         .getByBookingId(bookingId);
 
-    // Verifica se il cliente è stato aggiunto (era null e ora non lo è)
+    // Verifica se il cliente è cambiato (aggiunto, rimosso, o sostituito)
     final initialClientId = widget.initial.clientId;
-    final clientWasAdded = initialClientId == null && clientId != null;
+    final clientChanged = initialClientId != clientId;
 
-    // Se il cliente è stato aggiunto e ci sono altri appuntamenti
-    if (clientWasAdded && existingAppointments.length > 1 && mounted) {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: Text(l10n.applyClientToAllAppointmentsTitle),
-          content: Text(
-            l10n.applyClientToAllAppointmentsMessage(
-              existingAppointments.length - 1,
+    // Se il cliente è cambiato, aggiorna il booking
+    if (clientChanged) {
+      // Se ci sono altri appuntamenti, chiedi conferma
+      if (existingAppointments.length > 1 && mounted) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text(l10n.applyClientToAllAppointmentsTitle),
+            content: Text(
+              l10n.applyClientToAllAppointmentsMessage(
+                existingAppointments.length - 1,
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(l10n.actionCancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(l10n.actionConfirm),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.actionCancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(l10n.actionConfirm),
-            ),
-          ],
-        ),
-      );
+        );
 
-      if (confirmed == true) {
-        // Aggiorna il cliente su tutti gli appuntamenti della prenotazione
-        ref
+        if (confirmed != true) {
+          // Utente ha annullato, non salvare
+          return;
+        }
+      }
+
+      // Aggiorna il cliente su tutti gli appuntamenti della prenotazione
+      try {
+        await ref
             .read(appointmentsProvider.notifier)
             .updateClientForBooking(
               bookingId: bookingId,
               clientId: clientId,
               clientName: clientName,
             );
-      } else {
-        // Utente ha annullato, non salvare
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.errorTitle)));
+        }
         return;
       }
     }
@@ -1213,11 +1239,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
     for (int i = 0; i < validItems.length; i++) {
       final item = validItems[i];
+
       final selectedVariant = variants.firstWhere(
         (v) => v.serviceId == item.serviceId,
-        orElse: () => variants.first,
       );
       final service = services.firstWhere((s) => s.id == item.serviceId);
+      final serviceName = service.name;
+      final serviceId = service.id;
+
       final blockedExtraMinutes = item.blockedExtraMinutes;
       final processingExtraMinutes = item.processingExtraMinutes;
       final extraMinutesType = blockedExtraMinutes > 0
@@ -1247,18 +1276,21 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           baseDuration + (blockedExtraMinutes > 0 ? blockedExtraMinutes : 0);
       final end = start.add(Duration(minutes: duration));
 
-      if (i < existingAppointments.length) {
-        // Aggiorna appuntamento esistente
-        final existing = existingAppointments[i];
+      // Usa appointmentId per determinare se aggiornare o creare
+      if (item.appointmentId != null) {
+        // Aggiorna appuntamento esistente usando l'ID memorizzato
+        final existing = existingAppointments.firstWhere(
+          (a) => a.id == item.appointmentId,
+        );
         processedIds.add(existing.id);
 
         final updated = existing.copyWith(
           staffId: item.staffId!,
-          serviceId: service.id,
+          serviceId: serviceId,
           serviceVariantId: selectedVariant.id,
           clientId: clientId,
           clientName: clientName,
-          serviceName: service.name,
+          serviceName: serviceName,
           startTime: start,
           endTime: end,
           price: effectivePrice,
@@ -1276,11 +1308,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             .addAppointment(
               bookingId: bookingId,
               staffId: item.staffId!,
-              serviceId: service.id,
+              serviceId: serviceId,
               serviceVariantId: selectedVariant.id,
               clientId: clientId,
               clientName: clientName,
-              serviceName: service.name,
+              serviceName: serviceName,
               start: start,
               end: end,
               price: effectivePrice,
@@ -1293,7 +1325,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       }
     }
 
-    // Elimina appuntamenti rimossi
+    // Elimina appuntamenti rimossi (quelli in existingIds ma non in processedIds)
     for (final id in existingIds.difference(processedIds)) {
       ref.read(appointmentsProvider.notifier).deleteAppointment(id);
     }

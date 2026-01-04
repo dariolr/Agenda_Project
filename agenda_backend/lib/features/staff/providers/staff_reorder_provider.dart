@@ -11,16 +11,18 @@ class TeamReorderNotifier extends Notifier<bool> {
 
   void setReordering(bool value) => state = value;
 
-  void reorderLocations(int oldIndex, int newIndex) {
-    ref.read(locationsProvider.notifier).reorder(oldIndex, newIndex);
+  Future<void> reorderLocations(int oldIndex, int newIndex) async {
+    await ref.read(locationsProvider.notifier).reorder(oldIndex, newIndex);
   }
 
-  void reorderStaffForLocation(int locationId, int oldIndex, int newIndex) {
-    ref.read(allStaffProvider.notifier).reorderForLocation(
-          locationId,
-          oldIndex,
-          newIndex,
-        );
+  Future<void> reorderStaffForLocation(
+    int locationId,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    await ref
+        .read(allStaffProvider.notifier)
+        .reorderForLocation(locationId, oldIndex, newIndex);
   }
 }
 

@@ -9,6 +9,7 @@ import 'token_storage_interface.dart';
 /// NOTA: In produzione si dovrebbe preferire cookie httpOnly server-side
 class WebTokenStorage implements TokenStorage {
   static const _refreshTokenKey = 'agenda_refresh_token';
+  static const _businessIdKey = 'agenda_business_id';
 
   @override
   Future<String?> getRefreshToken() async {
@@ -35,6 +36,39 @@ class WebTokenStorage implements TokenStorage {
       html.window.localStorage.remove(_refreshTokenKey);
     } catch (e) {
       debugPrint('TokenStorage: Error clearing token from localStorage: $e');
+    }
+  }
+
+  @override
+  Future<int?> getBusinessId() async {
+    try {
+      final value = html.window.localStorage[_businessIdKey];
+      return value != null ? int.tryParse(value) : null;
+    } catch (e) {
+      debugPrint(
+        'TokenStorage: Error reading businessId from localStorage: $e',
+      );
+      return null;
+    }
+  }
+
+  @override
+  Future<void> saveBusinessId(int businessId) async {
+    try {
+      html.window.localStorage[_businessIdKey] = businessId.toString();
+    } catch (e) {
+      debugPrint('TokenStorage: Error saving businessId to localStorage: $e');
+    }
+  }
+
+  @override
+  Future<void> clearBusinessId() async {
+    try {
+      html.window.localStorage.remove(_businessIdKey);
+    } catch (e) {
+      debugPrint(
+        'TokenStorage: Error clearing businessId from localStorage: $e',
+      );
     }
   }
 }

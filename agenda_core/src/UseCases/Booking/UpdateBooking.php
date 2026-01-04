@@ -91,7 +91,7 @@ final class UpdateBooking
             return $this->bookingRepo->findById($bookingId);
         }
 
-        // Altrimenti update normale (status/notes)
+        // Altrimenti update normale (status/notes/client_id)
         // Valida status se presente (operatori possono usare qualsiasi status)
         if (isset($data['status']) && !$isOperator) {
             $allowedStatuses = ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'];
@@ -102,11 +102,26 @@ final class UpdateBooking
             }
         }
 
+        // Gestione client_id: key_exists permette di distinguere "non inviato" da "inviato null"
+        // Se client_id è presente nella request (anche se null), aggiorna il campo
+        $clientId = null;
+        $clearClient = false;
+        if (array_key_exists('client_id', $data)) {
+            if ($data['client_id'] === null) {
+                $clearClient = true; // Rimuovi cliente
+            } else {
+                $clientId = (int) $data['client_id'];
+            }
+        }
+
         // Aggiorna il booking
         $updated = $this->bookingRepo->updateBooking(
             $bookingId,
             $data['status'] ?? null,
-            $data['notes'] ?? null
+            $data['notes'] ?? null,
+            $clientId,
+            null, // customerName
+            $clearClient
         );
 
         if (!$updated) {

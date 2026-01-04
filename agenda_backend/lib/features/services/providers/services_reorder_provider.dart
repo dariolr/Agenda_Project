@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/l10n.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
+import '../../../core/network/network_providers.dart';
 import 'service_categories_provider.dart';
 import 'services_provider.dart';
 
@@ -16,7 +17,7 @@ class ServicesReorderNotifier extends Notifier<bool> {
   void setReordering(bool value) => state = value;
 
   /// Riordina le categorie a livello top
-  void reorderCategories(int oldIndex, int newIndex) {
+  Future<void> reorderCategories(int oldIndex, int newIndex) async {
     final notifier = ref.read(serviceCategoriesProvider.notifier);
     final list = [...ref.read(serviceCategoriesProvider)];
 
@@ -31,10 +32,13 @@ class ServicesReorderNotifier extends Notifier<bool> {
     }
 
     notifier.state = reordered;
+
+    // Persist to API
+    await _persistCategoriesOrder(reordered);
   }
 
   /// Riordina solo le categorie NON vuote, mantenendo le vuote in coda e non spostabili.
-  void reorderNonEmptyCategories(int oldIndex, int newIndex) {
+  Future<void> reorderNonEmptyCategories(int oldIndex, int newIndex) async {
     final catsNotifier = ref.read(serviceCategoriesProvider.notifier);
     final allCats = [...ref.read(serviceCategoriesProvider)];
     final services = ref.read(servicesProvider).value ?? [];
@@ -61,10 +65,17 @@ class ServicesReorderNotifier extends Notifier<bool> {
     }
 
     catsNotifier.state = reordered;
+
+    // Persist to API
+    await _persistCategoriesOrder(reordered);
   }
 
   /// Riordina i servizi all'interno della stessa categoria
-  void reorderServices(int categoryId, int oldIndex, int newIndex) {
+  Future<void> reorderServices(
+    int categoryId,
+    int oldIndex,
+    int newIndex,
+  ) async {
     final servicesNotifier = ref.read(servicesProvider.notifier);
     final all = [...(ref.read(servicesProvider).value ?? [])];
 
@@ -86,15 +97,18 @@ class ServicesReorderNotifier extends Notifier<bool> {
     ];
 
     servicesNotifier.setServices(updatedAll);
+
+    // Persist to API - only services in this category
+    await _persistServicesOrder(updatedByCat);
   }
 
   /// 🔄 Sposta un servizio da una categoria all'altra (drag cross-categoria)
-  void moveServiceBetweenCategories(
+  Future<void> moveServiceBetweenCategories(
     int oldCategoryId,
     int newCategoryId,
     int serviceId,
     int newIndex,
-  ) {
+  ) async {
     final servicesNotifier = ref.read(servicesProvider.notifier);
     final all = [...(ref.read(servicesProvider).value ?? [])];
 
@@ -118,19 +132,67 @@ class ServicesReorderNotifier extends Notifier<bool> {
     );
 
     // ricalcola sortOrder in entrambe le categorie
+    final updatedOldCat = <Service>[
+      for (int i = 0; i < remainingOldCat.length; i++)
+        remainingOldCat[i].copyWith(sortOrder: i),
+    ];
+    final updatedNewCat = <Service>[
+      for (int i = 0; i < targetCat.length; i++)
+        targetCat[i].copyWith(sortOrder: i),
+    ];
+
     final updated = <Service>[
       ...all.where(
         (s) => s.categoryId != oldCategoryId && s.categoryId != newCategoryId,
       ),
-      for (int i = 0; i < remainingOldCat.length; i++)
-        remainingOldCat[i].copyWith(sortOrder: i),
-      for (int i = 0; i < targetCat.length; i++)
-        targetCat[i].copyWith(sortOrder: i),
+      ...updatedOldCat,
+      ...updatedNewCat,
     ];
 
     servicesNotifier.setServices(updated);
     // Aggiorna posizionamento categorie vuote vs piene
     ref.read(serviceCategoriesProvider.notifier).bumpEmptyCategoriesToEnd();
+
+    // Persist to API - both categories affected
+    await _persistServicesOrder([...updatedOldCat, ...updatedNewCat]);
+  }
+
+  /// Persiste l'ordine dei servizi via API
+  Future<void> _persistServicesOrder(List<Service> services) async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.reorderServices(
+        services: services
+            .map(
+              (s) => {
+                'id': s.id,
+                'category_id': s.categoryId,
+                'sort_order': s.sortOrder,
+              },
+            )
+            .toList(),
+      );
+    } catch (e) {
+      // Log error but don't revert UI - user can retry
+      // ignore: avoid_print
+      print('Error persisting services order: $e');
+    }
+  }
+
+  /// Persiste l'ordine delle categorie via API
+  Future<void> _persistCategoriesOrder(List<ServiceCategory> categories) async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.reorderCategories(
+        categories: categories
+            .map((c) => {'id': c.id, 'sort_order': c.sortOrder})
+            .toList(),
+      );
+    } catch (e) {
+      // Log error but don't revert UI - user can retry
+      // ignore: avoid_print
+      print('Error persisting categories order: $e');
+    }
   }
 }
 

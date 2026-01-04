@@ -7,6 +7,12 @@ Compatibilità obbligatoria:
 - Agenda Frontend (Flutter – prenotazione online)
 - Agenda Backend (Flutter – gestionale)
 
+⚠️ **TERMINOLOGIA OBBLIGATORIA:**
+- Il termine **"frontend"** si riferisce SOLO al progetto `agenda_frontend` (prenotazioni clienti)
+- Il termine **"backend"** si riferisce SOLO al progetto `agenda_backend` (gestionale operatori)
+- Il termine **"core"** o **"API"** si riferisce al progetto `agenda_core` (backend PHP)
+- NON usare "frontend" per indicare genericamente interfacce utente
+
 JSON snake_case.
 I modelli e i campi già usati dai client NON devono essere rinominati.
 
@@ -102,7 +108,7 @@ File .env:
 Cleanup Worker (02/01/2026):
 - File: `bin/cleanup-sessions.php`
 - Elimina sessioni scadute/revocate da >30 giorni (`auth_sessions`, `client_sessions`)
-- Elimina token reset usati/scaduti (`password_reset_tokens`, `client_password_reset_tokens`)
+- Elimina token reset usati/scaduti (`password_reset_token_users`, `password_reset_token_clients`)
 - Tronca log >10MB mantenendo ultime 1000 righe
 - Elimina file `.log.*` più vecchi di 30 giorni
 - Eseguire: primo del mese alle 03:00 (`0 3 1 * *`)
@@ -617,7 +623,7 @@ CREATE TABLE client_sessions (
 );
 
 -- Reset password customer
-CREATE TABLE client_password_reset_tokens (
+CREATE TABLE password_reset_token_clients (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     client_id INT NOT NULL,
     token_hash VARCHAR(64) NOT NULL UNIQUE,
@@ -753,5 +759,29 @@ L'`AuthMiddleware` per operatori è **backward compatible**:
 - Token senza campo `role` → accettato (legacy)
 - Token con `role: operator` → accettato
 - Token con `role: customer` → rifiutato (401)
+
+### ✅ Integrazione Flutter Frontend (03/01/2026)
+
+L'integrazione customer auth è **COMPLETATA** in `agenda_frontend`:
+
+| Componente | Stato | Note |
+|------------|-------|------|
+| `api_config.dart` | ✅ | Endpoint customer auth |
+| `api_client.dart` | ✅ | Metodi `customerLogin()`, `customerRegister()`, `customerLogout()`, `getCustomerMe()` |
+| `token_storage_*.dart` | ✅ | Salvataggio `businessId` per refresh token |
+| `auth_repository.dart` | ✅ | Usa endpoint customer con `businessId` |
+| `auth_provider.dart` | ✅ | `login()`, `logout()`, `register()` richiedono `businessId` |
+| `login_screen.dart` | ✅ | Passa `businessId` da `currentBusinessIdProvider` |
+| `register_screen.dart` | ✅ | Passa `businessId` da `currentBusinessIdProvider` |
+
+**Flow completo:**
+```
+1. Cliente accede a: prenota.romeolab.it/romeolab/login
+2. Router estrae slug "romeolab" → routeSlugProvider
+3. currentBusinessProvider carica business da API → id: 1
+4. Login chiama: POST /v1/customer/1/auth/login
+5. Token JWT con role: "customer" salvato in memoria
+6. businessId salvato in localStorage/secureStorage per refresh
+```
 
 ---

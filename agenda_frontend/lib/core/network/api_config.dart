@@ -15,7 +15,38 @@ class ApiConfig {
   static const Duration connectTimeout = Duration(seconds: 5);
   static const Duration receiveTimeout = Duration(seconds: 5);
 
-  // ========== AUTH ENDPOINTS ==========
+  // ========== CUSTOMER AUTH ENDPOINTS ==========
+  // Usati dal frontend prenotazioni (agenda_frontend)
+  // I clienti usano la tabella 'clients', non 'users'
+
+  /// POST /v1/customer/{business_id}/auth/login
+  static String customerLogin(int businessId) =>
+      '/v1/customer/$businessId/auth/login';
+
+  /// POST /v1/customer/{business_id}/auth/register
+  static String customerRegister(int businessId) =>
+      '/v1/customer/$businessId/auth/register';
+
+  /// POST /v1/customer/{business_id}/auth/refresh
+  static String customerRefresh(int businessId) =>
+      '/v1/customer/$businessId/auth/refresh';
+
+  /// POST /v1/customer/{business_id}/auth/logout
+  static String customerLogout(int businessId) =>
+      '/v1/customer/$businessId/auth/logout';
+
+  /// GET /v1/customer/me
+  static const String customerMe = '/v1/customer/me';
+
+  /// GET /v1/customer/bookings
+  static const String customerBookings = '/v1/customer/bookings';
+
+  /// POST /v1/customer/{business_id}/bookings
+  static String customerCreateBooking(int businessId) =>
+      '/v1/customer/$businessId/bookings';
+
+  // ========== LEGACY AUTH ENDPOINTS (DEPRECATI per frontend) ==========
+  // Questi sono per OPERATORI (gestionale), non per clienti
   static const String authLogin = '/v1/auth/login';
   static const String authRegister = '/v1/auth/register';
   static const String authRefresh = '/v1/auth/refresh';
@@ -39,7 +70,7 @@ class ApiConfig {
   static String businessLocations(int businessId) =>
       '/v1/businesses/$businessId/locations/public';
 
-  // ========== BOOKINGS ENDPOINTS ==========
+  // ========== BOOKINGS ENDPOINTS (legacy, per operatori) ==========
   static String bookings(int locationId) =>
       '/v1/locations/$locationId/bookings';
 }

@@ -169,12 +169,12 @@ final class UpdateBusiness
                 $expiresAt = (new DateTimeImmutable('+24 hours'))->format('Y-m-d H:i:s');
 
                 $stmt = $this->db->getPdo()->prepare(
-                    'DELETE FROM password_reset_tokens WHERE user_id = ?'
+                    'DELETE FROM password_reset_token_users WHERE user_id = ?'
                 );
                 $stmt->execute([$newAdminUserId]);
 
                 $stmt = $this->db->getPdo()->prepare(
-                    'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)'
+                    'INSERT INTO password_reset_token_users (user_id, token_hash, expires_at) VALUES (?, ?, ?)'
                 );
                 $stmt->execute([$newAdminUserId, $tokenHash, $expiresAt]);
             }

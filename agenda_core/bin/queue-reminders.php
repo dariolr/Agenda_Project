@@ -179,7 +179,7 @@ foreach ($bookings as $booking) {
         // Queue reminder to be sent immediately (booking is within 24h)
         $payload = [
             'booking_id' => $bookingId,
-            'customer_name' => trim($booking['customer_first_name'] . ' ' . ($booking['customer_last_name'] ?? '')),
+            'client_name' => trim($booking['customer_first_name'] . ' ' . ($booking['customer_last_name'] ?? '')),
             'customer_email' => $customerEmail,
             'service_name' => $booking['service_name'],
             'staff_name' => trim(($booking['staff_first_name'] ?? '') . ' ' . ($booking['staff_last_name'] ?? '')),

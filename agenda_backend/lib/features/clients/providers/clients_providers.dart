@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/appointment.dart';
@@ -32,7 +31,8 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
     }
 
     final repository = ref.watch(clientsRepositoryProvider);
-    return repository.getAll(business.id);
+    final clients = await repository.getAll(business.id);
+    return clients;
   }
 
   /// Ricarica i clienti dall'API
@@ -40,14 +40,11 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
     // Verifica autenticazione prima di chiamare API
     final authState = ref.read(authProvider);
     if (!authState.isAuthenticated) {
-      debugPrint('[ClientsNotifier] refresh: not authenticated, skipping');
       return;
     }
 
     final business = ref.read(currentBusinessProvider);
-    debugPrint('[ClientsNotifier] refresh: businessId=${business.id}');
     if (business.id <= 0) {
-      debugPrint('[ClientsNotifier] refresh: businessId <= 0, skipping');
       return;
     }
 
@@ -55,7 +52,6 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
     state = await AsyncValue.guard(() async {
       final repository = ref.read(clientsRepositoryProvider);
       final clients = await repository.getAll(business.id);
-      debugPrint('[ClientsNotifier] refresh: loaded ${clients.length} clients');
       return clients;
     });
   }
@@ -109,6 +105,21 @@ class ClientSortOptionNotifier extends Notifier<ClientSortOption> {
 final clientSortOptionProvider =
     NotifierProvider<ClientSortOptionNotifier, ClientSortOption>(
       ClientSortOptionNotifier.new,
+    );
+
+/// Provider per la query di ricerca clienti (persistente tra cambi tab)
+class ClientSearchQueryNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+
+  void set(String query) => state = query;
+
+  void clear() => state = '';
+}
+
+final clientSearchQueryProvider =
+    NotifierProvider<ClientSearchQueryNotifier, String>(
+      ClientSearchQueryNotifier.new,
     );
 
 /// Ordina una lista di clienti secondo il criterio specificato
@@ -198,6 +209,20 @@ final clientsSearchProvider = Provider.family<List<Client>, String>((ref, q) {
   }
 
   return _sortClients(result, sortOption);
+});
+
+/// Provider che restituisce i clienti filtrati usando clientSearchQueryProvider
+/// Questo è il provider principale da usare nella UI
+final filteredClientsProvider = Provider<List<Client>>((ref) {
+  final query = ref.watch(clientSearchQueryProvider);
+  return ref.watch(clientsSearchProvider(query));
+});
+
+/// Provider che restituisce il conteggio totale dei clienti (non archiviati)
+final totalClientsCountProvider = Provider<int>((ref) {
+  final asyncClients = ref.watch(clientsProvider);
+  final allClients = asyncClients.value ?? [];
+  return allClients.where((c) => !c.isArchived).length;
 });
 
 // Segmenti

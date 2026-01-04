@@ -118,6 +118,13 @@ final class BookingsController
      * 
      * Payload (VINCOLANTE):
      * {
+     *   "items": [{"service_id": int, "staff_id": int, "start_time": "ISO8601"}, ...],
+     *   "notes": "string|null",
+     *   "client_id": int|null
+     * }
+     * 
+     * Legacy format also supported:
+     * {
      *   "service_ids": [int],
      *   "staff_id": int|null,
      *   "start_time": "ISO8601",
@@ -141,31 +148,87 @@ final class BookingsController
 
         $body = $request->getBody();
 
-        // Validate required fields
-        if (!isset($body['service_ids']) || !is_array($body['service_ids'])) {
-            return Response::error('service_ids is required and must be an array', 'validation_error', 400);
-        }
-
-        if (!isset($body['start_time'])) {
-            return Response::error('start_time is required', 'validation_error', 400);
+        // Support both new "items" format and legacy "service_ids" format
+        $items = null;
+        if (isset($body['items']) && is_array($body['items'])) {
+            // New format: items with per-service staff and start_time, plus optional overrides
+            $items = [];
+            foreach ($body['items'] as $item) {
+                if (!isset($item['service_id']) || !isset($item['staff_id']) || !isset($item['start_time'])) {
+                    return Response::error(
+                        'Each item must have service_id, staff_id, and start_time',
+                        'validation_error',
+                        400
+                    );
+                }
+                $parsedItem = [
+                    'service_id' => (int) $item['service_id'],
+                    'staff_id' => (int) $item['staff_id'],
+                    'start_time' => $item['start_time'],
+                ];
+                // Optional overrides (operator can modify from service defaults)
+                if (isset($item['service_variant_id'])) {
+                    $parsedItem['service_variant_id'] = (int) $item['service_variant_id'];
+                }
+                if (isset($item['duration_minutes'])) {
+                    $parsedItem['duration_minutes'] = (int) $item['duration_minutes'];
+                }
+                if (isset($item['blocked_extra_minutes'])) {
+                    $parsedItem['blocked_extra_minutes'] = (int) $item['blocked_extra_minutes'];
+                }
+                if (isset($item['processing_extra_minutes'])) {
+                    $parsedItem['processing_extra_minutes'] = (int) $item['processing_extra_minutes'];
+                }
+                if (isset($item['price'])) {
+                    $parsedItem['price'] = (float) $item['price'];
+                }
+                $items[] = $parsedItem;
+            }
+            if (empty($items)) {
+                return Response::error('items array cannot be empty', 'validation_error', 400);
+            }
+        } elseif (isset($body['service_ids']) && is_array($body['service_ids'])) {
+            // Legacy format: convert to items
+            if (!isset($body['start_time'])) {
+                return Response::error('start_time is required', 'validation_error', 400);
+            }
+            $staffId = isset($body['staff_id']) ? (int) $body['staff_id'] : null;
+            // Will be handled in CreateBooking as sequential services
+            $items = null; // Let CreateBooking handle legacy format
+        } else {
+            return Response::error(
+                'Either items array or service_ids array is required',
+                'validation_error',
+                400
+            );
         }
 
         try {
             // Operatori del business possono creare appuntamenti nel passato e sovrapposti
             $isOperator = $this->hasBusinessAccess($request, $businessId);
             
+            $bookingData = [
+                'notes' => $body['notes'] ?? null,
+                'client_id' => isset($body['client_id']) ? (int) $body['client_id'] : null,
+                'allow_past' => $isOperator,
+                'skip_conflict_check' => $isOperator,
+            ];
+            
+            if ($items !== null) {
+                // New format with items
+                $bookingData['items'] = $items;
+            } else {
+                // Legacy format
+                $bookingData['service_ids'] = array_map('intval', $body['service_ids']);
+                $bookingData['staff_id'] = isset($body['staff_id']) ? (int) $body['staff_id'] : null;
+                $bookingData['start_time'] = $body['start_time'];
+            }
+            
             $booking = $this->createBooking->execute(
                 $userId,
                 $locationId,
                 $businessId,
-                [
-                    'service_ids' => array_map('intval', $body['service_ids']),
-                    'staff_id' => isset($body['staff_id']) ? (int) $body['staff_id'] : null,
-                    'start_time' => $body['start_time'],
-                    'notes' => $body['notes'] ?? null,
-                    'allow_past' => $isOperator,
-                    'skip_conflict_check' => $isOperator,
-                ],
+                $bookingData,
                 $idempotencyKey
             );
 
@@ -209,9 +272,10 @@ final class BookingsController
         $body = $request->getBody();
 
         // Valida che ci sia almeno un campo da aggiornare
-        if (!isset($body['status']) && !isset($body['notes']) && !isset($body['start_time'])) {
+        // Nota: array_key_exists per client_id perché può essere null (rimuovi cliente)
+        if (!isset($body['status']) && !isset($body['notes']) && !isset($body['start_time']) && !array_key_exists('client_id', $body)) {
             return Response::error(
-                'At least one field required: status, notes, or start_time',
+                'At least one field required: status, notes, start_time, or client_id',
                 'validation_error',
                 400
             );
@@ -446,7 +510,7 @@ final class BookingsController
             'location_id' => (int) $booking['location_id'],
             'client_id' => $booking['client_id'] ? (int) $booking['client_id'] : null,
             'user_id' => $booking['user_id'] ? (int) $booking['user_id'] : null,
-            'customer_name' => $booking['customer_name'],
+            'client_name' => $booking['client_name'],
             'notes' => $booking['notes'],
             'status' => $booking['status'],
             'source' => $booking['source'],

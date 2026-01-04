@@ -205,7 +205,7 @@ exit($sent === 0 && $failed > 0 ? 1 : 0);
 function renderTemplate(string $type, array $payload): array
 {
     $businessName = $payload['business_name'] ?? 'Agenda';
-    $customerName = $payload['customer_name'] ?? '';
+    $clientName = $payload['client_name'] ?? '';
     $serviceName = $payload['service_name'] ?? '';
     $staffName = $payload['staff_name'] ?? '';
     $dateTime = $payload['date_time'] ?? '';
@@ -216,7 +216,7 @@ function renderTemplate(string $type, array $payload): array
     
     $variables = [
         'business_name' => $businessName,
-        'customer_name' => $customerName,
+        'client_name' => $clientName,
         'service_name' => $serviceName,
         'staff_name' => $staffName,
         'date_time' => $dateTime,

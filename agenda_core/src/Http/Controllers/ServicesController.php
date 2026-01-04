@@ -72,6 +72,7 @@ final class ServicesController
                 'category_id' => $service['category_id'] ? (int) $service['category_id'] : null,
                 'category_name' => $service['category_name'] ?? null,
                 'service_variant_id' => isset($service['service_variant_id']) ? (int) $service['service_variant_id'] : null,
+                'sort_order' => (int) ($service['sort_order'] ?? 0),
             ];
 
             if ($service['category_id'] !== null) {
@@ -120,6 +121,7 @@ final class ServicesController
                 'is_price_starting_from' => (bool) ($s['is_price_from'] ?? false),
                 'category_id' => $s['category_id'] ? (int) $s['category_id'] : null,
                 'service_variant_id' => isset($s['service_variant_id']) ? (int) $s['service_variant_id'] : null,
+                'sort_order' => (int) ($s['sort_order'] ?? 0),
             ], $services),
         ], 200);
     }
@@ -145,7 +147,7 @@ final class ServicesController
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
-        $body = $request->getParsedBody();
+        $body = $request->getBody();
         $name = trim($body['name'] ?? '');
         if (empty($name)) {
             return Response::error('Name is required', 'validation_error', 400);
@@ -188,7 +190,7 @@ final class ServicesController
             return Response::notFound('Service not found', $request->traceId);
         }
 
-        $body = $request->getParsedBody();
+        $body = $request->getBody();
         $locationId = isset($body['location_id']) ? (int) $body['location_id'] : null;
 
         if (!$locationId) {
@@ -289,7 +291,7 @@ final class ServicesController
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
-        $body = $request->getParsedBody();
+        $body = $request->getBody();
         $name = trim($body['name'] ?? '');
         if (empty($name)) {
             return Response::error('Name is required', 'validation_error', 400);
@@ -325,7 +327,7 @@ final class ServicesController
             return Response::notFound('Category not found', $request->traceId);
         }
 
-        $body = $request->getParsedBody();
+        $body = $request->getBody();
 
         $category = $this->serviceRepository->updateCategory(
             categoryId: $categoryId,
@@ -371,6 +373,101 @@ final class ServicesController
         $this->serviceRepository->deleteCategory($categoryId);
 
         return Response::success(['message' => 'Category deleted successfully']);
+    }
+
+    /**
+     * POST /v1/services/reorder
+     * Batch update sort_order and category_id for multiple services.
+     * Auth required.
+     * 
+     * Payload:
+     * {
+     *   "services": [{"id": 1, "category_id": 5, "sort_order": 0}, ...]
+     * }
+     */
+    public function reorderServices(Request $request): Response
+    {
+        $body = $request->getBody();
+        $services = $body['services'] ?? [];
+
+        if (empty($services) || !is_array($services)) {
+            return Response::error('services array is required', 'validation_error', 400);
+        }
+
+        // Get first service to determine business
+        $firstServiceId = (int) $services[0]['id'];
+        $existingService = $this->serviceRepository->findServiceById($firstServiceId);
+        if (!$existingService) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
+
+        $businessId = (int) $existingService['business_id'];
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+
+        // Validate all services belong to same business
+        $serviceIds = array_map(fn($s) => (int) $s['id'], $services);
+        if (!$this->serviceRepository->allBelongToSameBusiness($serviceIds, $businessId)) {
+            return Response::error('All services must belong to the same business', 'validation_error', 400);
+        }
+
+        // Update each service
+        foreach ($services as $svc) {
+            $this->serviceRepository->updateSortOrder(
+                (int) $svc['id'],
+                isset($svc['category_id']) ? (int) $svc['category_id'] : null,
+                (int) $svc['sort_order']
+            );
+        }
+
+        return Response::success(['message' => 'Services reordered successfully']);
+    }
+
+    /**
+     * POST /v1/categories/reorder
+     * Batch update sort_order for multiple categories.
+     * Auth required.
+     * 
+     * Payload:
+     * {
+     *   "categories": [{"id": 1, "sort_order": 0}, ...]
+     * }
+     */
+    public function reorderCategories(Request $request): Response
+    {
+        $body = $request->getBody();
+        $categories = $body['categories'] ?? [];
+
+        if (empty($categories) || !is_array($categories)) {
+            return Response::error('categories array is required', 'validation_error', 400);
+        }
+
+        // Get first category to determine business
+        $firstCategoryId = (int) $categories[0]['id'];
+        $existingCategory = $this->serviceRepository->getCategoryById($firstCategoryId);
+        if (!$existingCategory) {
+            return Response::notFound('Category not found', $request->traceId);
+        }
+
+        $businessId = (int) $existingCategory['business_id'];
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+
+        // Update each category
+        foreach ($categories as $cat) {
+            $this->serviceRepository->updateCategorySortOrder(
+                (int) $cat['id'],
+                (int) $cat['sort_order']
+            );
+        }
+
+        return Response::success(['message' => 'Categories reordered successfully']);
     }
 
     private function formatService(array $service, int $businessId): array

@@ -12,7 +12,6 @@ import '../../../core/utils/color_utils.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/reorder_toggle_button.dart';
 import '../../../core/widgets/reorder_toggle_panel.dart';
-import '../../staff/providers/staff_providers.dart';
 import '../providers/service_categories_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/services_reorder_provider.dart';
@@ -40,15 +39,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   bool isReorderCategories = false;
   bool isReorderServices = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // Ricarica servizi e staff dal DB quando si entra nella schermata
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(servicesProvider.notifier).refresh();
-      ref.read(allStaffProvider.notifier).refresh();
-    });
-  }
+  // NOTE: Non serve initState con refresh() perché:
+  // 1. I provider AsyncNotifier caricano i dati automaticamente nel build()
+  // 2. Il refresh al cambio tab avviene in _refreshProvidersForTab()
 
   // ---------- Auto-scroll mentre si trascina ----------
   void _startAutoScroll(Offset pointerInGlobal) {
@@ -125,6 +118,13 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           isReorderServices = false;
         });
       }
+      // Se apro il pannello e c'è solo 1 categoria, attiva subito riordino servizi
+      if (next && previous == false && categories.length < 2) {
+        setState(() {
+          isReorderServices = true;
+          isReorderCategories = false;
+        });
+      }
     });
 
     // Mostra loading mentre carica servizi
@@ -166,14 +166,15 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                     ReorderTogglePanel(
                       isWide: isWide,
                       children: [
-                        ReorderToggleButton(
-                          isActive: isReorderCategories,
-                          onPressed: _toggleCategoryReorder,
-                          activeLabel: context.l10n.reorderCategoriesLabel,
-                          inactiveLabel: context.l10n.reorderCategoriesLabel,
-                          activeIcon: Icons.check,
-                          inactiveIcon: Icons.drag_indicator,
-                        ),
+                        if (categories.length >= 2)
+                          ReorderToggleButton(
+                            isActive: isReorderCategories,
+                            onPressed: _toggleCategoryReorder,
+                            activeLabel: context.l10n.reorderCategoriesLabel,
+                            inactiveLabel: context.l10n.reorderCategoriesLabel,
+                            activeIcon: Icons.check,
+                            inactiveIcon: Icons.drag_indicator,
+                          ),
                         ReorderToggleButton(
                           isActive: isReorderServices,
                           onPressed: _toggleServiceReorder,

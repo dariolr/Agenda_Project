@@ -13,6 +13,7 @@ class Location {
   final String? currency;
   final bool isDefault;
   final bool isActive;
+  final int sortOrder;
 
   const Location({
     required this.id,
@@ -29,6 +30,7 @@ class Location {
     this.currency,
     this.isDefault = false,
     this.isActive = true,
+    this.sortOrder = 0,
   });
 
   Location copyWith({
@@ -46,6 +48,7 @@ class Location {
     String? currency,
     bool? isDefault,
     bool? isActive,
+    int? sortOrder,
   }) {
     return Location(
       id: id ?? this.id,
@@ -62,6 +65,7 @@ class Location {
       currency: currency ?? this.currency,
       isDefault: isDefault ?? this.isDefault,
       isActive: isActive ?? this.isActive,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
 
@@ -81,6 +85,7 @@ class Location {
       currency: json['currency'] as String?,
       isDefault: json['is_default'] as bool? ?? false,
       isActive: json['is_active'] as bool? ?? true,
+      sortOrder: json['sort_order'] as int? ?? 0,
     );
   }
 

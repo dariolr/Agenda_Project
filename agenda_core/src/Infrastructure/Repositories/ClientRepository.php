@@ -31,6 +31,24 @@ final class ClientRepository
         return $result ?: null;
     }
 
+    /**
+     * Find client by ID including archived clients.
+     * Used by update/delete operations that need to return the client after archiving.
+     */
+    public function findByIdUnfiltered(int $clientId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
+                    notes, is_archived, created_at, updated_at
+             FROM clients
+             WHERE id = ?'
+        );
+        $stmt->execute([$clientId]);
+        $result = $stmt->fetch();
+
+        return $result ?: null;
+    }
+
     public function findByUserIdAndBusiness(int $userId, int $businessId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(

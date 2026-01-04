@@ -24,6 +24,9 @@ class PrefsKeys {
   static String currentLocationId(int businessId) =>
       'current_location_id_$businessId';
 
+  /// Chiave per ultimo business visitato dal superadmin
+  static const superadminLastBusinessId = 'superadmin_last_business_id';
+
   /// Chiave legacy (senza business_id) per migrazione
   static const legacyStaffFilterMode = 'staff_filter_mode';
   static const legacySelectedStaffIds = 'selected_staff_ids';
@@ -127,6 +130,25 @@ class PreferencesService {
 
   Future<void> setCurrentLocationId(int businessId, int id) async {
     await _prefs.setInt(PrefsKeys.currentLocationId(businessId), id);
+  }
+
+  // ============================================
+  // Superadmin Last Business ID
+  // ============================================
+
+  /// Ottiene l'ultimo business visitato dal superadmin.
+  int? getSuperadminLastBusinessId() {
+    return _prefs.getInt(PrefsKeys.superadminLastBusinessId);
+  }
+
+  /// Salva l'ultimo business visitato dal superadmin.
+  Future<void> setSuperadminLastBusinessId(int businessId) async {
+    await _prefs.setInt(PrefsKeys.superadminLastBusinessId, businessId);
+  }
+
+  /// Rimuove l'ultimo business salvato (es. se il business viene eliminato).
+  Future<void> clearSuperadminLastBusinessId() async {
+    await _prefs.remove(PrefsKeys.superadminLastBusinessId);
   }
 
   // ============================================

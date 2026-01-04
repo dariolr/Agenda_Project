@@ -179,6 +179,7 @@ class UserMenuButton extends ConsumerWidget {
           FilledButton(
             onPressed: () {
               Navigator.of(context).pop();
+              // NON pulisce le preferenze: l'ultimo business viene ricordato
               ref.read(authProvider.notifier).logout();
             },
             child: Text(context.l10n.authLogout),

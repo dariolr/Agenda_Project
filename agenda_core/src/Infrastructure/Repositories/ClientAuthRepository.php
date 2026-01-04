@@ -272,7 +272,7 @@ final class ClientAuthRepository
         $expiresAt = (new DateTimeImmutable())->modify("+{$expiresInSeconds} seconds");
         
         $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO client_password_reset_tokens (client_id, token_hash, expires_at) 
+            'INSERT INTO password_reset_token_clients (client_id, token_hash, expires_at) 
              VALUES (?, ?, ?)'
         );
         $stmt->execute([
@@ -290,7 +290,7 @@ final class ClientAuthRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT prt.id, prt.client_id, prt.token_hash, prt.expires_at, prt.used_at,
                     c.email, c.first_name, c.last_name, c.business_id
-             FROM client_password_reset_tokens prt
+             FROM password_reset_token_clients prt
              INNER JOIN clients c ON c.id = prt.client_id
              WHERE prt.token_hash = ?'
         );
@@ -306,7 +306,7 @@ final class ClientAuthRepository
     public function markPasswordResetTokenUsed(int $tokenId): void
     {
         $stmt = $this->db->getPdo()->prepare(
-            'UPDATE client_password_reset_tokens SET used_at = NOW() WHERE id = ?'
+            'UPDATE password_reset_token_clients SET used_at = NOW() WHERE id = ?'
         );
         $stmt->execute([$tokenId]);
     }
@@ -334,7 +334,7 @@ final class ClientAuthRepository
     public function deleteExpiredPasswordResetTokens(): int
     {
         $stmt = $this->db->getPdo()->prepare(
-            'DELETE FROM client_password_reset_tokens WHERE expires_at < NOW() - INTERVAL 1 DAY'
+            'DELETE FROM password_reset_token_clients WHERE expires_at < NOW() - INTERVAL 1 DAY'
         );
         $stmt->execute();
         

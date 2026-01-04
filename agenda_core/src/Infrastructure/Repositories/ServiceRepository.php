@@ -440,4 +440,49 @@ final class ServiceRepository
         $stmt->execute([$categoryId]);
         return $stmt->fetch() ?: null;
     }
+
+    /**
+     * Check if all services belong to the same business.
+     */
+    public function allBelongToSameBusiness(array $serviceIds, int $businessId): bool
+    {
+        if (empty($serviceIds)) {
+            return true;
+        }
+        $placeholders = implode(',', array_fill(0, count($serviceIds), '?'));
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT COUNT(*) FROM services WHERE id IN ($placeholders) AND business_id = ?"
+        );
+        $stmt->execute([...$serviceIds, $businessId]);
+        return (int) $stmt->fetchColumn() === count($serviceIds);
+    }
+
+    /**
+     * Update sort_order and optionally category_id for a service.
+     */
+    public function updateSortOrder(int $serviceId, ?int $categoryId, int $sortOrder): void
+    {
+        if ($categoryId !== null) {
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE services SET category_id = ?, sort_order = ?, updated_at = NOW() WHERE id = ?'
+            );
+            $stmt->execute([$categoryId, $sortOrder, $serviceId]);
+        } else {
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE services SET sort_order = ?, updated_at = NOW() WHERE id = ?'
+            );
+            $stmt->execute([$sortOrder, $serviceId]);
+        }
+    }
+
+    /**
+     * Update sort_order for a category.
+     */
+    public function updateCategorySortOrder(int $categoryId, int $sortOrder): void
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE service_categories SET sort_order = ?, updated_at = NOW() WHERE id = ?'
+        );
+        $stmt->execute([$sortOrder, $categoryId]);
+    }
 }

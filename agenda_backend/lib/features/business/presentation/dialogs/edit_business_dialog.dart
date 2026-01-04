@@ -84,14 +84,11 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
         Navigator.of(context).pop(true);
       }
     } on ApiException catch (e) {
-      debugPrint('❌ EditBusiness ApiException: ${e.code} - ${e.message}');
       setState(() {
         _error = e.message;
         _isLoading = false;
       });
-    } catch (e, st) {
-      debugPrint('❌ EditBusiness Error: $e');
-      debugPrint('$st');
+    } catch (e) {
       setState(() {
         _error = e.toString();
         _isLoading = false;

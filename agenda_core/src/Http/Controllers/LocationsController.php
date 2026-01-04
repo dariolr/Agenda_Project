@@ -117,6 +117,7 @@ final class LocationsController
             'currency' => $row['currency'],
             'timezone' => $row['timezone'] ?? 'Europe/Rome',
             'is_default' => (bool) $row['is_default'],
+            'sort_order' => (int) ($row['sort_order'] ?? 0),
             'is_active' => (bool) $row['is_active'],
             'created_at' => $row['created_at'],
             'updated_at' => $row['updated_at'],
@@ -245,5 +246,48 @@ final class LocationsController
         $this->locationRepo->delete($locationId);
 
         return Response::success(['deleted' => true]);
+    }
+
+    /**
+     * POST /v1/locations/reorder
+     * Batch update sort_order for multiple locations.
+     * Body: { "locations": [{ "id": 1, "sort_order": 0 }, { "id": 2, "sort_order": 1 }] }
+     */
+    public function reorder(Request $request): Response
+    {
+        $userId = $request->getAttribute('user_id');
+        $isSuperadmin = $this->userRepo->isSuperadmin($userId);
+
+        $body = $request->getBody();
+        $locationList = $body['locations'] ?? [];
+
+        if (empty($locationList) || !is_array($locationList)) {
+            return Response::error('locations array is required', 'validation_error', 400, $request->traceId);
+        }
+
+        // Validate structure
+        foreach ($locationList as $item) {
+            if (!isset($item['id']) || !isset($item['sort_order'])) {
+                return Response::error('Each item must have id and sort_order', 'validation_error', 400, $request->traceId);
+            }
+        }
+
+        // Check all locations belong to same business
+        $locationIds = array_map(fn($l) => (int) $l['id'], $locationList);
+        $businessId = $this->locationRepo->allBelongToSameBusiness($locationIds);
+
+        if ($businessId === null) {
+            return Response::error('Locations must belong to the same business', 'validation_error', 400, $request->traceId);
+        }
+
+        // Check user has access to this business
+        if (!$this->businessUserRepo->hasAccess($userId, $businessId, $isSuperadmin)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        // Perform batch update
+        $this->locationRepo->batchUpdateSortOrder($locationList);
+
+        return Response::success(['updated' => count($locationList)]);
     }
 }

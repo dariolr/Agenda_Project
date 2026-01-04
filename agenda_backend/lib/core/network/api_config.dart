@@ -47,6 +47,13 @@ class ApiConfig {
   static String appointmentCancel(int locationId, int appointmentId) =>
       '/v1/locations/$locationId/appointments/$appointmentId/cancel';
 
+  /// Add item to existing booking endpoint
+  static String bookingItems(int bookingId) => '/v1/bookings/$bookingId/items';
+
+  /// Delete item from booking endpoint
+  static String bookingItem(int bookingId, int itemId) =>
+      '/v1/bookings/$bookingId/items/$itemId';
+
   /// Bookings endpoint con location_id nel path
   static String bookings(int locationId) =>
       '/v1/locations/$locationId/bookings';
