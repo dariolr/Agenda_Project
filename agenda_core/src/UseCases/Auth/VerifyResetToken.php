@@ -27,7 +27,7 @@ final class VerifyResetToken
 
         // Find token
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT user_id, expires_at FROM password_reset_tokens 
+            'SELECT user_id, expires_at FROM password_reset_token_users 
              WHERE token_hash = ? AND used_at IS NULL'
         );
         $stmt->execute([$tokenHash]);

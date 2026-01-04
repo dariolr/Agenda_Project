@@ -338,7 +338,7 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
 -- ----------------------------------------------------------------------------
 -- password_reset_tokens: Token per reset password
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS password_reset_tokens (
+CREATE TABLE IF NOT EXISTS password_reset_token_users (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id INT UNSIGNED NOT NULL,
     token_hash VARCHAR(64) NOT NULL COMMENT 'SHA-256 hex of reset token',
@@ -438,7 +438,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     location_id INT UNSIGNED NOT NULL,
     client_id INT UNSIGNED DEFAULT NULL COMMENT 'Client from business anagrafica',
     user_id INT UNSIGNED DEFAULT NULL COMMENT 'User who booked online',
-    customer_name VARCHAR(255) DEFAULT NULL COMMENT 'Fallback if no client',
+    client_name VARCHAR(255) DEFAULT NULL COMMENT 'Fallback if no client',
     notes TEXT DEFAULT NULL,
     status ENUM('pending', 'confirmed', 'completed', 'cancelled', 'no_show') 
         NOT NULL DEFAULT 'confirmed',

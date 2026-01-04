@@ -23,6 +23,15 @@ rsync -avz --delete build/web/ siteground:www/gestionale.romeolab.it/public_html
 
 ---
 
+## ⚠️ TERMINOLOGIA OBBLIGATORIA
+
+- Il termine **"frontend"** si riferisce SOLO al progetto `agenda_frontend` (prenotazioni clienti)
+- Il termine **"backend"** si riferisce SOLO al progetto `agenda_backend` (gestionale operatori)
+- Il termine **"core"** o **"API"** si riferisce al progetto `agenda_core` (backend PHP)
+- NON usare "frontend" per indicare genericamente interfacce utente
+
+---
+
 Piattaforma **Agenda elettronica multi-staff** in Flutter (web primary, mobile/desktop).
 L'agente deve produrre **file completi** e **non rompere le funzionalità esistenti**.
 
@@ -330,6 +339,52 @@ La schermata di reset password verifica il token PRIMA di mostrare il form.
 
 ### File
 - `features/auth/presentation/reset_password_screen.dart`
+
+---
+
+## 🔑 Autofill e Salvataggio Credenziali (03/01/2026)
+
+Per far funzionare correttamente l'autofill su Safari e il salvataggio credenziali su tutti i browser, il form di login deve:
+
+### Requisiti
+1. **`AutofillGroup`** — wrappa il Form per raggruppare i campi
+2. **`autofillHints`** — specifica il tipo di campo
+3. **`TextInput.finishAutofillContext()`** — segnala login completato
+
+### Implementazione
+```dart
+import 'package:flutter/services.dart';
+
+// Nel widget build()
+AutofillGroup(
+  child: Form(
+    key: _formKey,
+    child: Column(
+      children: [
+        TextFormField(
+          controller: _emailController,
+          autofillHints: const [AutofillHints.username, AutofillHints.email],
+          // ...
+        ),
+        TextFormField(
+          controller: _passwordController,
+          autofillHints: const [AutofillHints.password],
+          // ...
+        ),
+      ],
+    ),
+  ),
+),
+
+// Dopo login success
+if (success) {
+  TextInput.finishAutofillContext(); // Triggera "Vuoi salvare le credenziali?"
+  context.go('/agenda');
+}
+```
+
+### File modificati
+- `lib/features/auth/presentation/login_screen.dart`
 
 ---
 

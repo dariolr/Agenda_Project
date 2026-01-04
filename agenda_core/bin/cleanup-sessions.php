@@ -72,27 +72,27 @@ $deletedClient = $stmt->rowCount();
 $totalDeleted += $deletedClient;
 echo "client_sessions: {$deletedClient} deleted" . PHP_EOL;
 
-// Cleanup client_password_reset_tokens (expired or used)
+// Cleanup password_reset_token_clients (expired or used)
 $stmt = $pdo->prepare("
-    DELETE FROM client_password_reset_tokens 
+    DELETE FROM password_reset_token_clients 
     WHERE expires_at < :cutoff 
        OR used_at IS NOT NULL
 ");
 $stmt->execute(['cutoff' => $cutoffDate]);
 $deletedTokens = $stmt->rowCount();
 $totalDeleted += $deletedTokens;
-echo "client_password_reset_tokens: {$deletedTokens} deleted" . PHP_EOL;
+echo "password_reset_token_clients: {$deletedTokens} deleted" . PHP_EOL;
 
-// Cleanup password_reset_tokens (operators - expired or used)
+// Cleanup password_reset_token_users (operators - expired or used)
 $stmt = $pdo->prepare("
-    DELETE FROM password_reset_tokens 
+    DELETE FROM password_reset_token_users 
     WHERE expires_at < :cutoff 
        OR used_at IS NOT NULL
 ");
 $stmt->execute(['cutoff' => $cutoffDate]);
 $deletedOpTokens = $stmt->rowCount();
 $totalDeleted += $deletedOpTokens;
-echo "password_reset_tokens: {$deletedOpTokens} deleted" . PHP_EOL;
+echo "password_reset_token_users: {$deletedOpTokens} deleted" . PHP_EOL;
 
 echo str_repeat('-', 60) . PHP_EOL;
 echo "Total deleted: {$totalDeleted}" . PHP_EOL;

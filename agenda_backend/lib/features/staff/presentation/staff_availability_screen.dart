@@ -76,8 +76,7 @@ class StaffAvailabilityByStaffNotifier
     try {
       final apiSchedules = await apiClient.getStaffSchedulesAll(business.id);
       return _convertApiToSlots(apiSchedules);
-    } catch (e) {
-      debugPrint('[StaffAvailabilityByStaff] Error loading schedules: $e');
+    } catch (_) {
       // In caso di errore, ritorna mappa vuota
       return {};
     }
@@ -190,10 +189,7 @@ class StaffAvailabilityByStaffNotifier
         for (final e in weeklySlots.entries) e.key: Set<int>.from(e.value),
       };
       state = AsyncData(current);
-
-      debugPrint('[StaffAvailabilityByStaff] Saved for staff $staffId');
     } catch (e) {
-      debugPrint('[StaffAvailabilityByStaff] Error saving: $e');
       // Ripristina stato precedente
       state = previousState;
       rethrow;

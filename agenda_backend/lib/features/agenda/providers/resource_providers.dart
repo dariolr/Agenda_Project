@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/appointment.dart';
@@ -33,8 +32,7 @@ class ResourcesNotifier extends AsyncNotifier<List<Resource>> {
     try {
       final data = await apiClient.getResourcesByBusiness(business.id);
       return data.map(_parseResource).toList();
-    } catch (e) {
-      debugPrint('⚠️ ResourcesNotifier: errore caricamento risorse: $e');
+    } catch (_) {
       return [];
     }
   }

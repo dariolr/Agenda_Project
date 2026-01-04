@@ -409,4 +409,47 @@ final class StaffController
             'service_ids' => $s['service_ids'] ?? [],
         ];
     }
+
+    /**
+     * POST /v1/staff/reorder
+     * Batch update sort_order for multiple staff members.
+     * Body: { "staff": [{ "id": 1, "sort_order": 0 }, { "id": 2, "sort_order": 1 }] }
+     */
+    public function reorder(Request $request): Response
+    {
+        $userId = $request->getAttribute('user_id');
+        $isSuperadmin = $this->userRepo->isSuperadmin($userId);
+
+        $body = $request->getBody();
+        $staffList = $body['staff'] ?? [];
+
+        if (empty($staffList) || !is_array($staffList)) {
+            return Response::error('staff array is required', 'validation_error', 400, $request->traceId);
+        }
+
+        // Validate structure
+        foreach ($staffList as $item) {
+            if (!isset($item['id']) || !isset($item['sort_order'])) {
+                return Response::error('Each item must have id and sort_order', 'validation_error', 400, $request->traceId);
+            }
+        }
+
+        // Check all staff belong to same business
+        $staffIds = array_map(fn($s) => (int) $s['id'], $staffList);
+        $businessId = $this->staffRepository->allBelongToSameBusiness($staffIds);
+
+        if ($businessId === null) {
+            return Response::error('Staff members must belong to the same business', 'validation_error', 400, $request->traceId);
+        }
+
+        // Check user has access to this business
+        if (!$this->businessUserRepo->hasAccess($userId, $businessId, $isSuperadmin)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        // Perform batch update
+        $this->staffRepository->batchUpdateSortOrder($staffList);
+
+        return Response::success(['updated' => count($staffList)]);
+    }
 }

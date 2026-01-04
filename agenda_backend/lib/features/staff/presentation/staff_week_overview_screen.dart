@@ -1737,17 +1737,13 @@ class _StaffWeekOverviewScreenState
 
     return Scaffold(
       appBar: AppBar(
-        centerTitle: true,
+        centerTitle: formFactor != AppFormFactor.mobile,
         leading: const BackButton(),
-        title: Padding(
-          padding: EdgeInsets.only(
-            left: formFactor == AppFormFactor.mobile ? staffColWidth - 64.0 : 0,
-          ),
-          child: StaffTopControls(
-            todayLabel: context.l10n.currentWeek,
-            labelOverride: weekLabel,
-            compact: formFactor != AppFormFactor.desktop,
-          ),
+        titleSpacing: formFactor == AppFormFactor.mobile ? 0 : null,
+        title: StaffTopControls(
+          todayLabel: context.l10n.currentWeek,
+          labelOverride: weekLabel,
+          compact: formFactor != AppFormFactor.desktop,
         ),
       ),
       body: ScrollConfiguration(

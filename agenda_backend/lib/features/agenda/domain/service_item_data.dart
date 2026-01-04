@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 /// Usato internamente nel form di creazione/modifica prenotazione.
 class ServiceItemData {
   final String key; // Chiave univoca per identificare l'item nella lista
+  final int? appointmentId; // ID dell'appuntamento originale (null se nuovo)
   final int? serviceId;
   final int? serviceVariantId;
   final int? staffId;
@@ -14,6 +15,7 @@ class ServiceItemData {
 
   const ServiceItemData({
     required this.key,
+    this.appointmentId,
     this.serviceId,
     this.serviceVariantId,
     this.staffId,
@@ -48,6 +50,7 @@ class ServiceItemData {
 
   ServiceItemData copyWith({
     String? key,
+    int? appointmentId,
     int? serviceId,
     int? serviceVariantId,
     int? staffId,
@@ -58,6 +61,7 @@ class ServiceItemData {
   }) {
     return ServiceItemData(
       key: key ?? this.key,
+      appointmentId: appointmentId ?? this.appointmentId,
       serviceId: serviceId ?? this.serviceId,
       serviceVariantId: serviceVariantId ?? this.serviceVariantId,
       staffId: staffId ?? this.staffId,
@@ -73,6 +77,7 @@ class ServiceItemData {
   ServiceItemData clearService() {
     return ServiceItemData(
       key: key,
+      appointmentId: appointmentId,
       serviceId: null,
       serviceVariantId: null,
       staffId: null,

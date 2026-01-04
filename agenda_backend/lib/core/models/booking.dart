@@ -3,7 +3,7 @@ class Booking {
   final int businessId;
   final int locationId;
   final int? clientId;
-  final String? customerName;
+  final String? clientName;
   final String? notes;
 
   const Booking({
@@ -11,7 +11,7 @@ class Booking {
     required this.businessId,
     required this.locationId,
     this.clientId,
-    this.customerName,
+    this.clientName,
     this.notes,
   });
 
@@ -20,7 +20,7 @@ class Booking {
     int? businessId,
     int? locationId,
     int? clientId,
-    String? customerName,
+    String? clientName,
     String? notes,
   }) {
     return Booking(
@@ -28,7 +28,7 @@ class Booking {
       businessId: businessId ?? this.businessId,
       locationId: locationId ?? this.locationId,
       clientId: clientId ?? this.clientId,
-      customerName: customerName ?? this.customerName,
+      clientName: clientName ?? this.clientName,
       notes: notes ?? this.notes,
     );
   }
@@ -38,7 +38,7 @@ class Booking {
     businessId: json['business_id'] as int,
     locationId: json['location_id'] as int,
     clientId: json['client_id'] as int?,
-    customerName: json['customer_name'] as String? ?? '',
+    clientName: json['client_name'] as String? ?? '',
     notes: json['notes'] as String?,
   );
 
@@ -47,7 +47,7 @@ class Booking {
     'business_id': businessId,
     'location_id': locationId,
     if (clientId != null) 'client_id': clientId,
-    'customer_name': customerName,
+    'client_name': clientName,
     if (notes != null) 'notes': notes,
   };
 }

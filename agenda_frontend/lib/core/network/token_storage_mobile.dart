@@ -6,6 +6,7 @@ import 'token_storage_interface.dart';
 /// Implementazione secure storage per mobile/desktop
 class SecureTokenStorage implements TokenStorage {
   static const _refreshTokenKey = 'agenda_refresh_token';
+  static const _businessIdKey = 'agenda_business_id';
 
   final FlutterSecureStorage _storage;
 
@@ -40,6 +41,35 @@ class SecureTokenStorage implements TokenStorage {
       await _storage.delete(key: _refreshTokenKey);
     } catch (e) {
       debugPrint('TokenStorage: Error clearing token: $e');
+    }
+  }
+
+  @override
+  Future<int?> getBusinessId() async {
+    try {
+      final value = await _storage.read(key: _businessIdKey);
+      return value != null ? int.tryParse(value) : null;
+    } catch (e) {
+      debugPrint('TokenStorage: Error reading businessId: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<void> saveBusinessId(int businessId) async {
+    try {
+      await _storage.write(key: _businessIdKey, value: businessId.toString());
+    } catch (e) {
+      debugPrint('TokenStorage: Error saving businessId: $e');
+    }
+  }
+
+  @override
+  Future<void> clearBusinessId() async {
+    try {
+      await _storage.delete(key: _businessIdKey);
+    } catch (e) {
+      debugPrint('TokenStorage: Error clearing businessId: $e');
     }
   }
 }

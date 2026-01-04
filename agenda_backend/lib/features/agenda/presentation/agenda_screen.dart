@@ -10,8 +10,6 @@ import 'package:agenda_backend/features/agenda/providers/appointment_providers.d
 import 'package:agenda_backend/features/agenda/providers/is_resizing_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
-import 'package:agenda_backend/features/clients/providers/clients_providers.dart';
-import 'package:agenda_backend/features/services/providers/services_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +45,9 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
   // 🔹 offset verticale "master" della giornata (usato anche dalla CurrentTimeLine)
   double _verticalOffset = 0;
+
+  // 🔹 Flag per distinguere polling automatico da altre operazioni
+  bool _isPolling = false;
 
   @override
   void dispose() {
@@ -117,15 +118,9 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   void initState() {
     super.initState();
 
-    // Ricarica tutti i dati principali dal DB quando si entra nell'agenda
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(allStaffProvider.notifier).refresh();
-      ref.read(locationsProvider.notifier).refresh();
-      ref.read(servicesProvider.notifier).refresh();
-      ref.read(clientsProvider.notifier).refresh();
-      // Gli appuntamenti vengono ricaricati automaticamente quando cambia la data
-      // grazie al watch su agendaDateProvider in AppointmentsNotifier.build()
-    });
+    // NOTE: Non chiamiamo refresh() qui perché:
+    // 1. I provider AsyncNotifier caricano i dati automaticamente nel build()
+    // 2. Il refresh al cambio tab avviene in _refreshProvidersForTab()
 
     // Polling automatico per aggiornare gli appuntamenti
     // Debug: ogni 10 secondi, Produzione: ogni 5 minuti
@@ -133,6 +128,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     _pollingTimer = Timer.periodic(interval, (_) {
       if (!mounted) return;
       // Ricarica solo gli appuntamenti (dati che cambiano più frequentemente)
+      _isPolling = true;
       ref.invalidate(appointmentsProvider);
     });
 
@@ -158,6 +154,34 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
+
+    // Controlla se i dati sono ancora in caricamento
+    final staffAsync = ref.watch(allStaffProvider);
+    final locations = ref.watch(locationsProvider);
+    final appointmentsAsync = ref.watch(appointmentsProvider);
+
+    // Ascolta cambi data per resettare il flag polling
+    // (se l'utente cambia data durante il polling, deve mostrare loading)
+    ref.listen(agendaDateProvider, (prev, next) {
+      if (prev != null && !DateUtils.isSameDay(prev, next)) {
+        _isPolling = false;
+      }
+    });
+
+    // Resetta il flag polling quando il caricamento finisce
+    if (!appointmentsAsync.isLoading) {
+      _isPolling = false;
+    }
+
+    // Mostra loading se:
+    // 1. Staff in caricamento iniziale (senza dati)
+    // 2. Locations vuote
+    // 3. Appuntamenti in caricamento E non è polling automatico
+    final isLoading =
+        (staffAsync.isLoading && !staffAsync.hasValue) ||
+        locations.isEmpty ||
+        (appointmentsAsync.isLoading && !_isPolling);
+
     final staffList = ref.watch(filteredStaffProvider);
     final staffFilterMode = ref.watch(staffFilterModeProvider);
     final hasStaff = staffList.isNotEmpty;
@@ -256,7 +280,10 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: hasStaff
+                child: isLoading
+                    // Mostra loading indicator durante il caricamento
+                    ? const Center(child: CircularProgressIndicator())
+                    : hasStaff
                     ? mainRow
                     : Center(
                         child: Column(

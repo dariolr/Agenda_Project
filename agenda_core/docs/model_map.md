@@ -149,7 +149,7 @@ Identico al frontend.
 | businessId | int | ✗ | `business_id` |
 | locationId | int | ✗ | `location_id` |
 | clientId | int | ✓ | `client_id` |
-| customerName | String | ✓ | `customer_name` |
+| clientName | String | ✓ | `client_name` |
 | notes | String | ✓ | `notes` |
 
 ### Appointment (booking item)
@@ -226,7 +226,7 @@ Questi campi sono usati attivamente nei client Flutter e **NON devono essere rin
 | Staff | `id`, `business_id`, `name`, `surname`, `is_bookable_online`, `sort_order` |
 | TimeSlot | `start_time`, `end_time`, `staff_id` |
 | BookingRequest | `service_ids`, `staff_id`, `start_time`, `notes` |
-| Booking | `id`, `business_id`, `location_id`, `client_id`, `customer_name`, `notes` |
+| Booking | `id`, `business_id`, `location_id`, `client_id`, `client_name`, `notes` |
 | Appointment | `id`, `booking_id`, `business_id`, `location_id`, `staff_id`, `service_id`, `start_time`, `end_time` |
 | User | `id`, `email`, `first_name`, `last_name`, `phone`, `created_at` |
 | Client | `id`, `business_id`, `first_name`, `last_name`, `email`, `phone`, `created_at` |

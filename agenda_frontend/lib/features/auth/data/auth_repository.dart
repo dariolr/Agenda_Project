@@ -1,60 +1,74 @@
 import '../../../core/models/user.dart';
 import '../../../core/network/api_client.dart';
 
-/// Repository per l'autenticazione - API reale
+/// Repository per l'autenticazione CUSTOMER - API reale
+/// Usa endpoint /v1/customer/{business_id}/auth/* per clienti (tabella clients)
 class AuthRepository {
   final ApiClient _apiClient;
 
   AuthRepository(this._apiClient);
 
-  /// Login utente
-  /// POST /v1/auth/login
-  Future<User> login({required String email, required String password}) async {
-    final data = await _apiClient.login(email, password);
-    return User.fromJson(data['user'] as Map<String, dynamic>);
+  /// Login cliente
+  /// POST /v1/customer/{business_id}/auth/login
+  Future<User> login({
+    required int businessId,
+    required String email,
+    required String password,
+  }) async {
+    final data = await _apiClient.customerLogin(
+      businessId: businessId,
+      email: email,
+      password: password,
+    );
+    return User.fromJson(data['client'] as Map<String, dynamic>);
   }
 
-  /// Logout utente
-  /// POST /v1/auth/logout
-  Future<void> logout() async {
-    await _apiClient.logout();
+  /// Logout cliente
+  /// POST /v1/customer/{business_id}/auth/logout
+  Future<void> logout({required int businessId}) async {
+    await _apiClient.customerLogout(businessId: businessId);
   }
 
-  /// Recupera profilo utente corrente
-  /// GET /v1/me
+  /// Recupera profilo cliente corrente
+  /// GET /v1/customer/me
   Future<User> getCurrentUser() async {
-    final data = await _apiClient.getMe();
+    final data = await _apiClient.getCustomerMe();
     return User.fromJson(data);
   }
 
   /// Tenta di ripristinare sessione da refresh token
-  Future<User?> tryRestoreSession() async {
-    final data = await _apiClient.tryRestoreSession();
+  Future<User?> tryRestoreSession({int? businessId}) async {
+    final data = await _apiClient.tryRestoreSession(businessId: businessId);
     if (data != null) {
       return User.fromJson(data);
     }
     return null;
   }
 
-  /// Registrazione nuovo utente
-  /// POST /v1/auth/register
+  /// Registrazione nuovo cliente
+  /// POST /v1/customer/{business_id}/auth/register
   Future<User> register({
+    required int businessId,
     required String email,
     required String password,
-    required String name,
+    required String firstName,
+    required String lastName,
     String? phone,
   }) async {
-    final data = await _apiClient.register(
+    final data = await _apiClient.customerRegister(
+      businessId: businessId,
       email: email,
       password: password,
-      name: name,
+      firstName: firstName,
+      lastName: lastName,
       phone: phone,
     );
-    return User.fromJson(data['user'] as Map<String, dynamic>);
+    return User.fromJson(data['client'] as Map<String, dynamic>);
   }
 
   /// Reset password (invia email con link)
   /// POST /v1/auth/forgot-password
+  /// NOTA: Usa ancora l'endpoint legacy, TODO: implementare customer password reset
   Future<void> resetPassword({required String email}) async {
     await _apiClient.forgotPassword(email: email);
   }
@@ -73,6 +87,7 @@ class AuthRepository {
 
   /// Cambia password (utente loggato)
   /// POST /v1/me/change-password
+  /// NOTA: TODO - implementare endpoint customer change-password
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -83,8 +98,8 @@ class AuthRepository {
     );
   }
 
-  /// Aggiorna profilo utente
-  /// PUT /v1/me
+  /// Aggiorna profilo cliente
+  /// PUT /v1/me (TODO: implementare /v1/customer/me PUT)
   Future<User> updateProfile({
     String? firstName,
     String? lastName,

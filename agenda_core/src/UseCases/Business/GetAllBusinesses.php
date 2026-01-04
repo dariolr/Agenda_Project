@@ -22,7 +22,7 @@ final class GetAllBusinesses
     /**
      * @param int $userId Must be superadmin
      * @param string|null $search Search term for name/slug/email
-     * @param int $limit Max results
+     * @param int|null $limit Max results (null = no limit)
      * @param int $offset Pagination offset
      * @return array List of all businesses
      * @throws AuthException If user is not superadmin
@@ -30,7 +30,7 @@ final class GetAllBusinesses
     public function execute(
         int $userId,
         ?string $search = null,
-        int $limit = 50,
+        ?int $limit = null,
         int $offset = 0
     ): array {
         $user = $this->userRepo->findById($userId);
@@ -52,6 +52,8 @@ final class GetAllBusinesses
                 'timezone' => $b['timezone'],
                 'currency' => $b['currency'],
                 'is_active' => (bool) $b['is_active'],
+                'is_suspended' => (bool) ($b['is_suspended'] ?? false),
+                'suspension_message' => $b['suspension_message'] ?? null,
                 'created_at' => $b['created_at'],
                 'updated_at' => $b['updated_at'],
                 'admin_email' => $b['admin_email'] ?? null,
@@ -60,7 +62,7 @@ final class GetAllBusinesses
                 'total' => $total,
                 'limit' => $limit,
                 'offset' => $offset,
-                'has_more' => ($offset + count($businesses)) < $total,
+                'has_more' => $limit !== null && ($offset + count($businesses)) < $total,
             ],
         ];
     }

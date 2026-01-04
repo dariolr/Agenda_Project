@@ -8,6 +8,7 @@ import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/booking.dart';
@@ -21,12 +22,16 @@ import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/services_provider.dart';
+import '../../data/bookings_api.dart';
 import '../../domain/service_item_data.dart';
 import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
+import '../../providers/bookings_repository_provider.dart';
+import '../../providers/business_providers.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
+import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
 import 'service_item_card.dart';
 
@@ -128,7 +133,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       _date = DateUtils.dateOnly(widget.initialDate ?? agendaDate);
       _notesController.text = widget.existing!.notes ?? '';
       _clientId = widget.existing!.clientId;
-      _customClientName = widget.existing!.customerName ?? '';
+      _customClientName = widget.existing!.clientName ?? '';
 
       // Load existing appointments into _serviceItems
       final bookingAppointments = ref
@@ -916,9 +921,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         Client? initialClient;
         if (selectedResult.name.isNotEmpty) {
           final nameParts = Client.splitFullName(selectedResult.name);
+          // NON passare businessId: lasciare che ClientForm usi currentBusinessProvider
           initialClient = Client(
             id: 0,
-            businessId: 0,
+            businessId: ref.read(currentBusinessProvider).id,
             firstName: nameParts.firstName,
             lastName: nameParts.lastName,
             createdAt: DateTime.now(),
@@ -1205,45 +1211,18 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       return;
     }
 
-    final variants = ref.read(serviceVariantsProvider).value ?? [];
-    final services = ref.read(servicesProvider).value ?? [];
     final clientsById = ref.read(clientsByIdProvider);
-    final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
     final bookingsNotifier = ref.read(bookingsProvider.notifier);
+    final location = ref.read(currentLocationProvider);
+    final repository = ref.read(bookingsRepositoryProvider);
 
     // Deriva il nome del cliente dal provider se _clientId è impostato
     final clientName = _clientId != null
         ? (clientsById[_clientId]?.name ?? _customClientName)
         : _customClientName;
 
-    // Create a new booking
-    final bookingId = bookingsNotifier.createBooking(
-      clientId: _clientId,
-      customerName: clientName.isNotEmpty ? clientName : null,
-      notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-    );
-
-    Appointment? scrollTarget;
-
-    // Add appointments for each service
-    for (final item in validItems) {
-      final variant = variants.firstWhere(
-        (v) => v.serviceId == item.serviceId,
-        orElse: () => variants.first,
-      );
-      final service = services.firstWhere((s) => s.id == item.serviceId);
-      final blockedExtraMinutes = item.blockedExtraMinutes;
-      final processingExtraMinutes = item.processingExtraMinutes;
-      final extraMinutesType = blockedExtraMinutes > 0
-          ? ExtraMinutesType.blocked
-          : (processingExtraMinutes > 0 ? ExtraMinutesType.processing : null);
-      final extraMinutes = extraMinutesType == ExtraMinutesType.blocked
-          ? blockedExtraMinutes
-          : (extraMinutesType == ExtraMinutesType.processing
-                ? processingExtraMinutes
-                : 0);
-      final effectivePrice = variant.isFree ? null : variant.price;
-
+    // Costruisci items per l'API (ogni servizio con il suo staff, start_time e override)
+    final items = validItems.map((item) {
       final start = DateTime(
         _date.year,
         _date.month,
@@ -1251,35 +1230,62 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         item.startTime.hour,
         item.startTime.minute,
       );
-      final baseDuration = item.durationMinutes > 0
-          ? item.durationMinutes
-          : variant.durationMinutes;
-      final durationMinutes =
-          (baseDuration + (blockedExtraMinutes > 0 ? blockedExtraMinutes : 0))
-              .toInt();
-      final end = start.add(Duration(minutes: durationMinutes));
-
-      final created = await appointmentsNotifier.addAppointment(
-        bookingId: bookingId,
+      return BookingItemRequest(
+        serviceId: item.serviceId!,
         staffId: item.staffId!,
-        serviceId: service.id,
-        serviceVariantId: variant.id,
-        clientId: _clientId,
-        clientName: clientName,
-        serviceName: service.name,
-        start: start,
-        end: end,
-        price: effectivePrice,
-        extraMinutes: extraMinutes,
-        extraMinutesType: extraMinutesType,
-        extraBlockedMinutes: blockedExtraMinutes,
-        extraProcessingMinutes: processingExtraMinutes,
+        startTime: start.toIso8601String(),
+        // Include override values from ServiceItemData
+        serviceVariantId: item.serviceVariantId,
+        durationMinutes: item.durationMinutes,
+        blockedExtraMinutes: item.blockedExtraMinutes > 0
+            ? item.blockedExtraMinutes
+            : null,
+        processingExtraMinutes: item.processingExtraMinutes > 0
+            ? item.processingExtraMinutes
+            : null,
+        // Note: price override not yet exposed in UI, could be added later
       );
-      scrollTarget ??= created;
-    }
+    }).toList();
 
-    if (scrollTarget != null) {
-      ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
+    try {
+      // UNA singola chiamata API per creare UN booking con tutti i servizi
+      final bookingResponse = await repository.createBookingWithItems(
+        locationId: location.id,
+        idempotencyKey: const Uuid().v4(),
+        items: items,
+        clientId: _clientId,
+        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+      );
+
+      // Aggiorna booking metadata locale
+      bookingsNotifier.ensureBooking(
+        bookingId: bookingResponse.id,
+        businessId: bookingResponse.businessId,
+        locationId: bookingResponse.locationId,
+        clientId: bookingResponse.clientId,
+        clientName: bookingResponse.clientName ?? clientName,
+      );
+
+      // Refresh appointments per caricare i nuovi
+      ref.invalidate(appointmentsProvider);
+      await ref.read(appointmentsProvider.future);
+
+      // Trova il primo appointment creato per lo scroll
+      final currentList = ref.read(appointmentsProvider).value ?? [];
+      final scrollTarget = currentList
+          .where((a) => a.bookingId == bookingResponse.id)
+          .firstOrNull;
+
+      if (scrollTarget != null) {
+        ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.errorTitle)));
+      }
+      return;
     }
 
     if (!mounted) return;

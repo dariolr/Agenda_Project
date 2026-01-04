@@ -38,7 +38,7 @@ final class LocationRepository
     {
         $sql = 'SELECT id, business_id, name, address, city, region, country, 
                     phone, email, latitude, longitude, currency, timezone,
-                    is_default, is_active, created_at, updated_at
+                    is_default, sort_order, is_active, created_at, updated_at
              FROM locations
              WHERE business_id = ?';
         
@@ -46,7 +46,7 @@ final class LocationRepository
             $sql .= ' AND is_active = 1';
         }
         
-        $sql .= ' ORDER BY name ASC';
+        $sql .= ' ORDER BY sort_order ASC, name ASC';
         
         $stmt = $this->db->getPdo()->prepare($sql);
         $stmt->execute([$businessId]);
@@ -195,5 +195,52 @@ final class LocationRepository
         );
         $stmt->execute([$businessId]);
         return (int) $stmt->fetchColumn() <= 1;
+    }
+
+    /**
+     * Batch update sort_order for multiple locations.
+     * Used for drag & drop reordering.
+     * 
+     * @param array $locationList Array of ['id' => int, 'sort_order' => int]
+     */
+    public function batchUpdateSortOrder(array $locationList): bool
+    {
+        if (empty($locationList)) {
+            return true;
+        }
+
+        $pdo = $this->db->getPdo();
+        $stmt = $pdo->prepare(
+            'UPDATE locations SET sort_order = ?, updated_at = NOW() WHERE id = ?'
+        );
+
+        foreach ($locationList as $item) {
+            $stmt->execute([(int) $item['sort_order'], (int) $item['id']]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if all location IDs belong to the same business.
+     */
+    public function allBelongToSameBusiness(array $locationIds): ?int
+    {
+        if (empty($locationIds)) {
+            return null;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($locationIds), '?'));
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT DISTINCT business_id FROM locations WHERE id IN ({$placeholders}) AND is_active = 1"
+        );
+        $stmt->execute(array_map('intval', $locationIds));
+        $businesses = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+        if (count($businesses) !== 1) {
+            return null;
+        }
+
+        return (int) $businesses[0];
     }
 }

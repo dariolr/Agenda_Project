@@ -142,18 +142,11 @@ final filteredStaffProvider = Provider<List<Staff>>((ref) {
       return allStaff;
 
     case StaffFilterMode.onDutyTeam:
-      // Filtra solo lo staff che ha disponibilità per il giorno corrente
+      // Restituisce solo lo staff di turno (anche lista vuota se nessuno è di turno)
       return allStaff.where((s) => onDutyIds.contains(s.id)).toList();
 
     case StaffFilterMode.custom:
-      final filtered = allStaff
-          .where((s) => selectedIds.contains(s.id))
-          .toList();
-      // Se non c'è nessuno staff selezionato valido, fallback a tutto il team
-      // per evitare un'agenda vuota
-      if (filtered.isEmpty && allStaff.isNotEmpty) {
-        return allStaff;
-      }
-      return filtered;
+      // Restituisce solo gli staff selezionati (anche lista vuota se nessuno selezionato)
+      return allStaff.where((s) => selectedIds.contains(s.id)).toList();
   }
 });

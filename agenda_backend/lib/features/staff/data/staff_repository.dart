@@ -69,4 +69,9 @@ class StaffRepository {
   Future<void> delete(int staffId) async {
     await _apiClient.deleteStaff(staffId);
   }
+
+  /// Batch update sort_order for multiple staff members
+  Future<void> reorderStaff(List<Map<String, dynamic>> staffList) async {
+    await _apiClient.reorderStaff(staff: staffList);
+  }
 }

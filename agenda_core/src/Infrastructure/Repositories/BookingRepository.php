@@ -24,7 +24,7 @@ final class BookingRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT b.id, b.business_id, b.location_id, b.client_id, b.user_id,
-                    b.customer_name, b.notes, b.status, b.source,
+                    b.client_name, b.notes, b.status, b.source,
                     b.idempotency_key, b.created_at, b.updated_at,
                     c.first_name AS client_first_name, c.last_name AS client_last_name
              FROM bookings b
@@ -154,7 +154,7 @@ final class BookingRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO bookings (business_id, location_id, client_id, user_id, 
-                                   customer_name, notes, status, source,
+                                   client_name, notes, status, source,
                                    idempotency_key, idempotency_expires_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
@@ -169,7 +169,7 @@ final class BookingRepository
             $data['location_id'],
             $data['client_id'] ?? null,
             $data['user_id'] ?? null,
-            $data['customer_name'] ?? null,
+            $data['client_name'] ?? null,
             $data['notes'] ?? null,
             $data['status'] ?? 'pending',
             $data['source'] ?? 'online',
@@ -207,6 +207,33 @@ final class BookingRepository
         return (int) $this->db->getPdo()->lastInsertId();
     }
 
+    /**
+     * Delete a single booking item (appointment) from a booking.
+     * Returns true if deleted, false if not found.
+     */
+    public function deleteBookingItem(int $itemId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'DELETE FROM booking_items WHERE id = ?'
+        );
+        $stmt->execute([$itemId]);
+
+        return $stmt->rowCount() > 0;
+    }
+
+    /**
+     * Count remaining items in a booking.
+     */
+    public function countBookingItems(int $bookingId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) FROM booking_items WHERE booking_id = ?'
+        );
+        $stmt->execute([$bookingId]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
     public function updateStatus(int $bookingId, string $status): bool
     {
         $stmt = $this->db->getPdo()->prepare(
@@ -216,8 +243,17 @@ final class BookingRepository
         return $stmt->execute([$status, $bookingId]);
     }
 
-    public function updateBooking(int $bookingId, ?string $status = null, ?string $notes = null): bool
-    {
+    /**
+     * @param bool $clearClient Se true, imposta client_id a NULL (rimuovi cliente)
+     */
+    public function updateBooking(
+        int $bookingId,
+        ?string $status = null,
+        ?string $notes = null,
+        ?int $clientId = null,
+        ?string $customerName = null,
+        bool $clearClient = false
+    ): bool {
         $fields = [];
         $params = [];
 
@@ -229,6 +265,21 @@ final class BookingRepository
         if ($notes !== null) {
             $fields[] = 'notes = ?';
             $params[] = $notes;
+        }
+
+        // clearClient ha priorità: se true, imposta NULL
+        // altrimenti se clientId è specificato, usa quello
+        if ($clearClient) {
+            $fields[] = 'client_id = NULL';
+            // Nessun parametro da aggiungere per NULL
+        } elseif ($clientId !== null) {
+            $fields[] = 'client_id = ?';
+            $params[] = $clientId;
+        }
+
+        if ($customerName !== null) {
+            $fields[] = 'client_name = ?';
+            $params[] = $customerName;
         }
 
         if (empty($fields)) {
@@ -409,13 +460,13 @@ final class BookingRepository
         $endOfDay = $date . ' 23:59:59';
 
         $stmt = $this->db->getPdo()->prepare(
-            "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_variant_id,
+            "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
                     bi.start_time, bi.end_time, bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.created_at, bi.updated_at,
-                    b.status AS booking_status, b.customer_name, b.notes AS booking_notes,
+                    b.status AS booking_status, b.client_name, b.notes AS booking_notes, b.client_id, b.business_id,
                     c.first_name AS client_first_name, c.last_name AS client_last_name,
-                    CONCAT(c.first_name, ' ', c.last_name) AS client_name,
-                    s.name AS service_name, s.id AS service_id,
+                    NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), '') AS client_full_name,
+                    s.name AS service_name,
                     st.name AS staff_name, st.surname AS staff_surname,
                     CONCAT(st.name, ' ', st.surname) AS staff_full_name
              FROM booking_items bi
@@ -440,12 +491,12 @@ final class BookingRepository
     public function getAppointmentById(int $appointmentId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_variant_id,
+            "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
                     bi.start_time, bi.end_time, bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.created_at, bi.updated_at,
-                    b.status AS booking_status, b.customer_name, b.notes AS booking_notes,
+                    b.status AS booking_status, b.client_name, b.notes AS booking_notes, b.client_id, b.business_id,
                     c.first_name AS client_first_name, c.last_name AS client_last_name,
-                    CONCAT(c.first_name, ' ', c.last_name) AS client_name,
+                    NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), '') AS client_full_name,
                     s.name AS service_name,
                     CONCAT(st.name, ' ', st.surname) AS staff_name
              FROM booking_items bi
@@ -470,7 +521,7 @@ final class BookingRepository
         $fields = [];
         $params = [];
 
-        foreach (['start_time', 'end_time', 'staff_id', 'extra_blocked_minutes', 'extra_processing_minutes'] as $field) {
+        foreach (['start_time', 'end_time', 'staff_id', 'service_id', 'service_variant_id', 'service_name_snapshot', 'client_name_snapshot', 'extra_blocked_minutes', 'extra_processing_minutes'] as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "$field = ?";
                 $params[] = $data[$field];

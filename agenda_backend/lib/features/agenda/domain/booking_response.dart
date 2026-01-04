@@ -5,7 +5,7 @@ class BookingResponse {
   final int locationId;
   final int? clientId;
   final int? userId;
-  final String? customerName;
+  final String? clientName;
   final String? notes;
   final String status;
   final String source;
@@ -21,7 +21,7 @@ class BookingResponse {
     required this.locationId,
     this.clientId,
     this.userId,
-    this.customerName,
+    this.clientName,
     this.notes,
     required this.status,
     required this.source,
@@ -40,7 +40,7 @@ class BookingResponse {
       locationId: json['location_id'] as int,
       clientId: json['client_id'] as int?,
       userId: json['user_id'] as int?,
-      customerName: json['customer_name'] as String?,
+      clientName: json['client_name'] as String?,
       notes: json['notes'] as String?,
       status: json['status'] as String? ?? 'pending',
       source: json['source'] as String? ?? 'online',

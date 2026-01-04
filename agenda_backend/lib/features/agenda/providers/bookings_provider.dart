@@ -21,7 +21,7 @@ class BookingSummary {
   });
 }
 
-/// Gestisce i metadati delle prenotazioni (note, customerName, ecc.) e
+/// Gestisce i metadati delle prenotazioni (note, clientName, ecc.) e
 /// coordina le operazioni di alto livello (cancellazione prenotazione intera).
 class BookingsNotifier extends Notifier<Map<int, Booking>> {
   int _nextId = 1;
@@ -30,7 +30,7 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
   Map<int, Booking> build() => <int, Booking>{};
 
   /// Crea una nuova prenotazione e restituisce il suo ID.
-  int createBooking({int? clientId, String? customerName, String? notes}) {
+  int createBooking({int? clientId, String? clientName, String? notes}) {
     final business = ref.read(currentBusinessProvider);
     final location = ref.read(currentLocationProvider);
 
@@ -42,7 +42,7 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
         businessId: business.id,
         locationId: location.id,
         clientId: clientId,
-        customerName: customerName,
+        clientName: clientName,
         notes: notes,
       ),
     };
@@ -55,7 +55,7 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
     required int businessId,
     required int locationId,
     int? clientId,
-    required String customerName,
+    required String clientName,
   }) {
     final current = state;
     if (current.containsKey(bookingId)) return;
@@ -66,7 +66,7 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
         businessId: businessId,
         locationId: locationId,
         clientId: clientId,
-        customerName: customerName,
+        clientName: clientName,
         notes: null,
       ),
     };
@@ -83,7 +83,7 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
                 businessId: bk.businessId,
                 locationId: bk.locationId,
                 clientId: bk.clientId,
-                customerName: bk.customerName,
+                clientName: bk.clientName,
                 notes: notes,
               )
             : e.value,
@@ -107,6 +107,29 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
     final copy = Map<int, Booking>.from(state);
     copy.remove(bookingId);
     state = copy;
+  }
+
+  /// Aggiorna il cliente di un booking locale.
+  void updateClientForBooking({
+    required int bookingId,
+    int? clientId,
+    String? clientName,
+  }) {
+    final bk = state[bookingId];
+    if (bk == null) return;
+    state = {
+      for (final e in state.entries)
+        e.key: e.key == bookingId
+            ? Booking(
+                id: bk.id,
+                businessId: bk.businessId,
+                locationId: bk.locationId,
+                clientId: clientId,
+                clientName: clientName ?? bk.clientName,
+                notes: bk.notes,
+              )
+            : e.value,
+    };
   }
 }
 

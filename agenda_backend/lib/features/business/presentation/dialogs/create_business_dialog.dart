@@ -100,14 +100,11 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
         Navigator.of(context).pop(true);
       }
     } on ApiException catch (e) {
-      debugPrint('❌ CreateBusiness ApiException: ${e.code} - ${e.message}');
       setState(() {
         _error = e.message;
         _isLoading = false;
       });
-    } catch (e, st) {
-      debugPrint('❌ CreateBusiness Error: $e');
-      debugPrint('$st');
+    } catch (e) {
       setState(() {
         _error = e.toString();
         _isLoading = false;

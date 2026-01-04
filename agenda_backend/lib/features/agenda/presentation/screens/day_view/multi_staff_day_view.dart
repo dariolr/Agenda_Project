@@ -53,6 +53,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   late final ProviderSubscription<Offset?> _dragSub;
   late final ProviderSubscription<LayoutConfig> _layoutSub;
   late final ProviderSubscription<AgendaScrollRequest?> _scrollRequestSub;
+  late final ProviderSubscription<DateTime> _dateSub;
 
   final ScrollController _headerHCtrl = ScrollController();
   bool _isSyncing = false;
@@ -124,6 +125,14 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       },
     );
 
+    // 🔹 Rimosso: lo scroll automatico al cambio data
+    // Lo scroll avviene SOLO:
+    // 1. Alla prima apertura dell'app (gestito in AgendaDay._handleCenterVerticalController)
+    // 2. Dopo creazione/modifica appuntamento (via agendaScrollRequestProvider)
+    _dateSub = ref.listenManual<DateTime>(agendaDateProvider, (prev, next) {
+      // No-op: non fare scroll automatico al cambio data
+    });
+
     // Prima inizializzazione
     _scheduleSyncUpdate();
   }
@@ -187,10 +196,12 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         .inMinutes
         .clamp(layoutConfig.minutesPerSlot, 1440);
     final cardHeight =
-        (durationMinutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
+        (durationMinutes / layoutConfig.minutesPerSlot) *
+        layoutConfig.slotHeight;
 
     final targetY =
-        startOffset - (viewportHeight - cardHeight).clamp(0, viewportHeight) / 2;
+        startOffset -
+        (viewportHeight - cardHeight).clamp(0, viewportHeight) / 2;
     final maxY = verticalCtrl.position.maxScrollExtent;
     final clampedY = targetY.clamp(0.0, maxY);
 
@@ -382,6 +393,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _dragSub.close();
     _layoutSub.close();
     _scrollRequestSub.close();
+    _dateSub.close();
     _stopAutoScroll();
     _syncDebounce?.cancel();
     _scrollRetryTimer?.cancel();

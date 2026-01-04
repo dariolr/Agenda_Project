@@ -1,8 +1,8 @@
 import 'package:agenda_backend/core/services/preferences_service.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/location.dart';
+import '../../../core/network/network_providers.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../business/presentation/business_list_screen.dart';
@@ -55,10 +55,10 @@ class LocationsNotifier extends Notifier<List<Location>> {
       final repository = ref.read(locationsRepositoryProvider);
       final locations = await repository.getByBusinessId(business.id);
       // Filtra solo le location attive
-      state = locations.where((l) => l.isActive).toList();
-    } catch (e) {
+      final activeLocations = locations.where((l) => l.isActive).toList();
+      state = activeLocations;
+    } catch (_) {
       // In caso di errore, mantieni lo stato vuoto
-      debugPrint('❌ LocationsNotifier._loadLocations error: $e');
       state = [];
     }
   }
@@ -158,12 +158,35 @@ class LocationsNotifier extends Notifier<List<Location>> {
     }
   }
 
-  void reorder(int oldIndex, int newIndex) {
+  Future<void> reorder(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex -= 1;
     final list = [...state];
     final item = list.removeAt(oldIndex);
     list.insert(newIndex, item);
-    state = list;
+
+    // Aggiorna sortOrder locale
+    final reordered = <Location>[];
+    for (int i = 0; i < list.length; i++) {
+      reordered.add(list[i].copyWith(sortOrder: i));
+    }
+    state = reordered;
+
+    // Persist to API
+    await _persistLocationsOrder(reordered);
+  }
+
+  /// Persiste l'ordine delle locations via API
+  Future<void> _persistLocationsOrder(List<Location> locations) async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.reorderLocations(
+        locations: locations
+            .map((l) => {'id': l.id, 'sort_order': l.sortOrder})
+            .toList(),
+      );
+    } catch (_) {
+      // Ignora errore - utente può riprovare
+    }
   }
 
   int nextId() {

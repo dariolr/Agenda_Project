@@ -9,6 +9,8 @@ class Business {
   final String currency;
   final String defaultPhonePrefix;
   final String? adminEmail; // Email dell'admin proprietario
+  final bool isSuspended; // Business sospeso (visibile ma non operativo)
+  final String? suspensionMessage; // Messaggio da mostrare quando sospeso
 
   const Business({
     required this.id,
@@ -21,6 +23,8 @@ class Business {
     this.currency = 'EUR',
     this.defaultPhonePrefix = '+39',
     this.adminEmail,
+    this.isSuspended = false,
+    this.suspensionMessage,
   });
 
   Business copyWith({
@@ -34,6 +38,8 @@ class Business {
     String? currency,
     String? defaultPhonePrefix,
     String? adminEmail,
+    bool? isSuspended,
+    String? suspensionMessage,
   }) {
     return Business(
       id: id ?? this.id,
@@ -46,6 +52,8 @@ class Business {
       currency: currency ?? this.currency,
       defaultPhonePrefix: defaultPhonePrefix ?? this.defaultPhonePrefix,
       adminEmail: adminEmail ?? this.adminEmail,
+      isSuspended: isSuspended ?? this.isSuspended,
+      suspensionMessage: suspensionMessage ?? this.suspensionMessage,
     );
   }
 
@@ -63,6 +71,8 @@ class Business {
       currency: json['currency'] as String? ?? 'EUR',
       defaultPhonePrefix: json['default_phone_prefix'] as String? ?? '+39',
       adminEmail: json['admin_email'] as String?,
+      isSuspended: json['is_suspended'] == true || json['is_suspended'] == 1,
+      suspensionMessage: json['suspension_message'] as String?,
     );
   }
 
@@ -78,6 +88,8 @@ class Business {
       'currency': currency,
       'default_phone_prefix': defaultPhonePrefix,
       'admin_email': adminEmail,
+      'is_suspended': isSuspended,
+      'suspension_message': suspensionMessage,
     };
   }
 }

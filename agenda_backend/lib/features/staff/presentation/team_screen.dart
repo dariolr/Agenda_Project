@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../agenda/providers/location_providers.dart';
-import '../../services/providers/services_provider.dart';
 import '../providers/staff_providers.dart';
 import '../providers/staff_reorder_provider.dart';
 import '../providers/staff_sorted_providers.dart';
@@ -29,16 +28,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   bool isReorderLocations = false;
   bool isReorderStaff = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // Ricarica staff, locations e servizi dal DB quando si entra nella schermata
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(allStaffProvider.notifier).refresh();
-      ref.read(locationsProvider.notifier).refresh();
-      ref.read(servicesProvider.notifier).refresh();
-    });
-  }
+  // NOTE: Non serve initState con refresh() perché:
+  // 1. I provider AsyncNotifier caricano i dati automaticamente nel build()
+  // 2. Il refresh al cambio tab avviene in _refreshProvidersForTab()
 
   void _toggleLocationReorder() {
     setState(() {
@@ -78,6 +70,13 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
         setState(() {
           isReorderLocations = false;
           isReorderStaff = false;
+        });
+      }
+      // Se apro il pannello e c'è solo 1 location, attiva subito riordino staff
+      if (next && previous == false && locations.length < 2) {
+        setState(() {
+          isReorderStaff = true;
+          isReorderLocations = false;
         });
       }
     });

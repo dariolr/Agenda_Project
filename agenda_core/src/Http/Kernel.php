@@ -125,12 +125,14 @@ final class Kernel
         $this->router->get('/v1/locations/{id}', LocationsController::class, 'show', ['auth']);
         $this->router->put('/v1/locations/{id}', LocationsController::class, 'update', ['auth']);
         $this->router->delete('/v1/locations/{id}', LocationsController::class, 'destroy', ['auth']);
+        $this->router->post('/v1/locations/reorder', LocationsController::class, 'reorder', ['auth']);
 
         // Staff management (auth required)
         $this->router->get('/v1/businesses/{business_id}/staff', StaffController::class, 'indexByBusiness', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/staff', StaffController::class, 'store', ['auth']);
         $this->router->put('/v1/staff/{id}', StaffController::class, 'update', ['auth']);
         $this->router->delete('/v1/staff/{id}', StaffController::class, 'destroy', ['auth']);
+        $this->router->post('/v1/staff/reorder', StaffController::class, 'reorder', ['auth']);
 
         // Staff schedules (auth required)
         $this->router->get('/v1/businesses/{business_id}/staff/schedules', StaffController::class, 'indexSchedules', ['auth']);
@@ -173,12 +175,14 @@ final class Kernel
         $this->router->post('/v1/locations/{location_id}/services', ServicesController::class, 'store', ['auth', 'location_path']);
         $this->router->put('/v1/services/{id}', ServicesController::class, 'update', ['auth']);
         $this->router->delete('/v1/services/{id}', ServicesController::class, 'destroy', ['auth']);
+        $this->router->post('/v1/services/reorder', ServicesController::class, 'reorderServices', ['auth']);
 
         // Service Categories CRUD (auth required)
         $this->router->get('/v1/businesses/{business_id}/categories', ServicesController::class, 'indexCategories', ['auth', 'business_access_route']);
         $this->router->post('/v1/businesses/{business_id}/categories', ServicesController::class, 'storeCategory', ['auth', 'business_access_route']);
         $this->router->put('/v1/categories/{id}', ServicesController::class, 'updateCategory', ['auth']);
         $this->router->delete('/v1/categories/{id}', ServicesController::class, 'destroyCategory', ['auth']);
+        $this->router->post('/v1/categories/reorder', ServicesController::class, 'reorderCategories', ['auth']);
 
         // Clients (auth required)
         $this->router->get('/v1/clients', ClientsController::class, 'index', ['auth']);
@@ -205,6 +209,8 @@ final class Kernel
         $this->router->get('/v1/locations/{location_id}/appointments/{id}', AppointmentsController::class, 'show', ['auth', 'location_path']);
         $this->router->patch('/v1/locations/{location_id}/appointments/{id}', AppointmentsController::class, 'update', ['auth', 'location_path']);
         $this->router->post('/v1/locations/{location_id}/appointments/{id}/cancel', AppointmentsController::class, 'cancel', ['auth', 'location_path']);
+        $this->router->post('/v1/bookings/{booking_id}/items', AppointmentsController::class, 'store', ['auth']);
+        $this->router->delete('/v1/bookings/{booking_id}/items/{item_id}', AppointmentsController::class, 'destroyItem', ['auth']);
 
         // =========================================================================
         // CUSTOMER AUTH (self-service booking)

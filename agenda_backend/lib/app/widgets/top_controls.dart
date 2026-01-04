@@ -52,42 +52,13 @@ class TopControls extends ConsumerWidget {
     TopControlsData data,
     WidgetRef ref,
   ) {
-    _StaffWeekMeta? weekMeta;
-    String label;
-    DateTime selectedDate;
+    // Su mobile per agenda, il date picker è in basso (come tablet)
+    // Mostra solo il selettore location se ce ne sono più di una
     if (mode == TopControlsMode.agenda) {
-      label = _formatSingleDate(data);
-      selectedDate = data.agendaDate;
-    } else {
-      weekMeta = _resolveWeekMeta(data);
-      label = weekMeta.label;
-      selectedDate = weekMeta.effectivePickerDate;
-    }
-    final showTopDateSwitcher = mode != TopControlsMode.agenda;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (showTopDateSwitcher) ...[
-          AgendaDateSwitcher(
-            label: label,
-            selectedDate: selectedDate,
-            onPreviousWeek: mode == TopControlsMode.staff
-                ? data.dateController.previousWeek
-                : null,
-            onNextWeek: mode == TopControlsMode.staff
-                ? data.dateController.nextWeek
-                : null,
-            onPreviousMonth: null,
-            onNextMonth: null,
-            onSelectDate: (date) {
-              data.dateController.set(DateUtils.dateOnly(date));
-            },
-            useWeekRangePicker: mode == TopControlsMode.staff,
-            isCompact: compact,
-          ),
-          const SizedBox(width: 8),
-          if (data.locations.length > 1) ...[
-            const SizedBox(width: 16),
+      if (data.locations.length > 1) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: AgendaLocationSelector(
@@ -98,6 +69,46 @@ class TopControls extends ConsumerWidget {
               ),
             ),
           ],
+        );
+      }
+      return const SizedBox.shrink();
+    }
+
+    // Per staff, mostra il date switcher settimanale
+    final weekMeta = _resolveWeekMeta(data);
+    final label = weekMeta.label;
+    final selectedDate = weekMeta.effectivePickerDate;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AgendaDateSwitcher(
+          label: label,
+          selectedDate: selectedDate,
+          onPrevious: null,
+          onNext: null,
+          onPreviousWeek: data.dateController.previousWeek,
+          onNextWeek: data.dateController.nextWeek,
+          onPreviousMonth: null,
+          onNextMonth: null,
+          onSelectDate: (date) {
+            data.dateController.set(DateUtils.dateOnly(date));
+          },
+          useWeekRangePicker: true,
+          isCompact: compact,
+        ),
+        const SizedBox(width: 8),
+        if (data.locations.length > 1) ...[
+          const SizedBox(width: 16),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AgendaLocationSelector(
+              locations: data.locations,
+              current: data.currentLocation,
+              onSelected: data.locationController.set,
+              iconOnly: true,
+            ),
+          ),
         ],
       ],
     );

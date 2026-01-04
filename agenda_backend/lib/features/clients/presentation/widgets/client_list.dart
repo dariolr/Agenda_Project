@@ -7,13 +7,11 @@ import '../dialogs/client_edit_dialog.dart';
 import 'client_card.dart';
 
 class ClientList extends ConsumerWidget {
-  const ClientList({super.key, required this.query});
-
-  final String query;
+  const ClientList({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clients = ref.watch(clientsSearchProvider(query));
+    final clients = ref.watch(filteredClientsProvider);
 
     if (clients.isEmpty) {
       return Center(child: Text(context.l10n.clientsEmpty));

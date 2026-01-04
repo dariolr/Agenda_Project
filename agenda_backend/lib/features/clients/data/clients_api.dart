@@ -66,19 +66,19 @@ class ClientsApi {
   }
 
   /// Converte Client in JSON snake_case
+  /// I campi nullable vengono sempre inviati per permettere la rimozione del valore
   Map<String, dynamic> _clientToJson(Client client) {
     return {
       'business_id': client.businessId,
-      if (client.firstName != null) 'first_name': client.firstName,
-      if (client.lastName != null) 'last_name': client.lastName,
-      if (client.email != null) 'email': client.email,
-      if (client.phone != null) 'phone': client.phone,
-      if (client.gender != null) 'gender': client.gender,
-      if (client.birthDate != null)
-        'birth_date': client.birthDate!.toIso8601String().split('T')[0],
-      if (client.city != null) 'city': client.city,
-      if (client.notes != null) 'notes': client.notes,
-      if (client.tags != null) 'tags': client.tags,
+      'first_name': client.firstName,
+      'last_name': client.lastName,
+      'email': client.email,
+      'phone': client.phone,
+      'gender': client.gender,
+      'birth_date': client.birthDate?.toIso8601String().split('T')[0],
+      'city': client.city,
+      'notes': client.notes,
+      'tags': client.tags,
       'is_archived': client.isArchived,
     };
   }

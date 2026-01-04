@@ -55,7 +55,9 @@ final class AdminBusinessesController
         }
 
         $search = $request->queryParam('search');
-        $limit = min((int) ($request->queryParam('limit') ?? 50), 100);
+        // If limit not specified, return all results (null)
+        $limitParam = $request->queryParam('limit');
+        $limit = $limitParam !== null ? (int) $limitParam : null;
         $offset = (int) ($request->queryParam('offset') ?? 0);
 
         $useCase = new GetAllBusinesses($this->businessRepo, $this->userRepo);

@@ -174,7 +174,8 @@ final class ClientsController
             $stmt->execute([(bool) $body['is_archived'], $clientId]);
         }
 
-        $updated = $this->clientRepo->findById($clientId);
+        // Use findByIdUnfiltered to return client even if just archived
+        $updated = $this->clientRepo->findByIdUnfiltered($clientId);
 
         return Response::success($this->formatClient($updated));
     }

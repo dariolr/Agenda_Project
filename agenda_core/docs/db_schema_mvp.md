@@ -385,7 +385,7 @@ Prenotazioni (contenitore di uno o più servizi).
 | location_id | INT UNSIGNED FK NOT NULL | |
 | client_id | INT UNSIGNED FK | |
 | user_id | INT UNSIGNED FK | User che ha prenotato online |
-| customer_name | VARCHAR(255) | Fallback se no client |
+| client_name | VARCHAR(255) | Fallback se no client |
 | notes | TEXT | |
 | status | ENUM('pending','confirmed','completed','cancelled','no_show') DEFAULT 'confirmed' | |
 | source | ENUM('online','manual','import') DEFAULT 'manual' | |

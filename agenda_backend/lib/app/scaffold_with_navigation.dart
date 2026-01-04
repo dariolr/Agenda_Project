@@ -77,10 +77,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isServices = navigationShell.currentIndex == 2;
     final isStaff = navigationShell.currentIndex == 3;
     final agendaDate = ref.watch(agendaDateProvider);
-    final isToday = DateUtils.isSameDay(
-      agendaDate,
-      DateUtils.dateOnly(DateTime.now()),
-    );
+    final today = DateUtils.dateOnly(DateTime.now());
+    final isToday = DateUtils.isSameDay(agendaDate, today);
+    final isPast = agendaDate.isBefore(today);
     final user = ref.watch(authProvider).user;
     final isSuperadmin = user?.isSuperadmin ?? false;
 
@@ -88,11 +87,14 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       context,
       isSuperadmin: isSuperadmin,
     );
+
+    // Quando non siamo su oggi, mostra freccia per tornare a oggi
+    // Freccia destra se nel passato (vai avanti), sinistra se nel futuro (torna indietro)
     final resolvedDestinations = isAgenda && !isToday
         ? [
             NavigationDestination(
-              iconData: Icons.today_outlined,
-              selectedIconData: Icons.today,
+              iconData: isPast ? Icons.arrow_forward : Icons.arrow_back,
+              selectedIconData: isPast ? Icons.arrow_forward : Icons.arrow_back,
               label: context.l10n.agendaToday,
             ),
             ...destinations.skip(1),
@@ -166,8 +168,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
 
     final isTablet = formFactor == AppFormFactor.tablet;
-    final showBottomDateSwitcher =
-        isAgenda && formFactor != AppFormFactor.desktop;
+    final isMobile = formFactor == AppFormFactor.mobile;
+    // Su mobile e tablet il date switcher è in basso, non nell'AppBar
+    final showBottomDateSwitcher = isAgenda && (isTablet || isMobile);
     final bottomNavColor =
         Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
         Theme.of(context).colorScheme.surface;
@@ -251,9 +254,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       }
     }
 
-    // Invalida i provider quando si cambia tab per forzare il refresh
+    // Ricarica i provider quando si cambia tab per forzare il refresh dei dati
     if (index != navigationShell.currentIndex) {
-      _invalidateProvidersForTab(index, ref);
+      _refreshProvidersForTab(index, ref);
     }
 
     navigationShell.goBranch(
@@ -262,18 +265,19 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     );
   }
 
-  /// Invalida i provider relativi alla tab selezionata
-  void _invalidateProvidersForTab(int index, WidgetRef ref) {
+  /// Ricarica i provider relativi alla tab selezionata
+  void _refreshProvidersForTab(int index, WidgetRef ref) {
     switch (index) {
       case 1: // Clienti
-        ref.invalidate(clientsProvider);
+        ref.read(clientSearchQueryProvider.notifier).clear();
+        ref.read(clientsProvider.notifier).refresh();
         break;
       case 2: // Servizi
-        ref.invalidate(servicesProvider);
+        ref.read(servicesProvider.notifier).refresh();
         break;
       case 3: // Staff
-        ref.invalidate(allStaffProvider);
-        ref.invalidate(locationsProvider);
+        ref.read(allStaffProvider.notifier).refresh();
+        ref.read(locationsProvider.notifier).refresh();
         break;
     }
   }

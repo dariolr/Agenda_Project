@@ -459,11 +459,35 @@ class ApiClient {
     String? startTime,
     String? endTime,
     int? staffId,
+    int? serviceId,
+    int? serviceVariantId,
+    String? serviceNameSnapshot,
+    int? clientId,
+    String? clientName,
+    String? clientNameSnapshot,
+    int? extraBlockedMinutes,
+    int? extraProcessingMinutes,
   }) async {
     final data = <String, dynamic>{};
     if (startTime != null) data['start_time'] = startTime;
     if (endTime != null) data['end_time'] = endTime;
     if (staffId != null) data['staff_id'] = staffId;
+    if (serviceId != null) data['service_id'] = serviceId;
+    if (serviceVariantId != null) data['service_variant_id'] = serviceVariantId;
+    if (serviceNameSnapshot != null) {
+      data['service_name_snapshot'] = serviceNameSnapshot;
+    }
+    if (clientId != null) data['client_id'] = clientId;
+    if (clientName != null) data['client_name'] = clientName;
+    if (clientNameSnapshot != null) {
+      data['client_name_snapshot'] = clientNameSnapshot;
+    }
+    if (extraBlockedMinutes != null) {
+      data['extra_blocked_minutes'] = extraBlockedMinutes;
+    }
+    if (extraProcessingMinutes != null) {
+      data['extra_processing_minutes'] = extraProcessingMinutes;
+    }
 
     try {
       final response = await _dio.patch(
@@ -482,6 +506,68 @@ class ApiClient {
     required int appointmentId,
   }) async {
     await post(ApiConfig.appointmentCancel(locationId, appointmentId));
+  }
+
+  /// POST /v1/bookings/{booking_id}/items
+  /// Add a new booking item (appointment) to an existing booking
+  Future<Map<String, dynamic>> addBookingItem({
+    required int bookingId,
+    required int locationId,
+    required int staffId,
+    required int serviceId,
+    required int serviceVariantId,
+    required String startTime,
+    required String endTime,
+    String? serviceNameSnapshot,
+    String? clientNameSnapshot,
+    double? price,
+    int? extraBlockedMinutes,
+    int? extraProcessingMinutes,
+  }) async {
+    final data = <String, dynamic>{
+      'location_id': locationId,
+      'staff_id': staffId,
+      'service_id': serviceId,
+      'service_variant_id': serviceVariantId,
+      'start_time': startTime,
+      'end_time': endTime,
+    };
+    if (serviceNameSnapshot != null) {
+      data['service_name_snapshot'] = serviceNameSnapshot;
+    }
+    if (clientNameSnapshot != null) {
+      data['client_name_snapshot'] = clientNameSnapshot;
+    }
+    if (price != null) data['price'] = price;
+    if (extraBlockedMinutes != null) {
+      data['extra_blocked_minutes'] = extraBlockedMinutes;
+    }
+    if (extraProcessingMinutes != null) {
+      data['extra_processing_minutes'] = extraProcessingMinutes;
+    }
+
+    try {
+      final response = await _dio.post(
+        ApiConfig.bookingItems(bookingId),
+        data: data,
+      );
+      return _handleResponse(response);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// DELETE /v1/bookings/{booking_id}/items/{item_id}
+  /// Delete a single booking item (appointment) from a booking
+  Future<void> deleteBookingItem({
+    required int bookingId,
+    required int itemId,
+  }) async {
+    try {
+      await _dio.delete(ApiConfig.bookingItem(bookingId, itemId));
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
   }
 
   /// GET /v1/locations/{location_id}/bookings?date=YYYY-MM-DD
@@ -536,12 +622,37 @@ class ApiClient {
     );
   }
 
+  /// POST /v1/locations/{location_id}/bookings (new items format)
+  Future<Map<String, dynamic>> createBookingWithItems({
+    required int locationId,
+    required String idempotencyKey,
+    required List<Map<String, dynamic>> items,
+    int? clientId,
+    String? notes,
+  }) async {
+    final data = <String, dynamic>{'items': items};
+    if (clientId != null) {
+      data['client_id'] = clientId;
+    }
+    if (notes != null && notes.isNotEmpty) {
+      data['notes'] = notes;
+    }
+
+    return post(
+      ApiConfig.bookings(locationId),
+      data: data,
+      headers: {'X-Idempotency-Key': idempotencyKey},
+    );
+  }
+
   /// PUT /v1/locations/{location_id}/bookings/{booking_id}
   Future<Map<String, dynamic>> updateBooking({
     required int locationId,
     required int bookingId,
     String? status,
     String? notes,
+    int? clientId,
+    bool clearClient = false,
   }) async {
     final data = <String, dynamic>{};
     if (status != null) {
@@ -549,6 +660,13 @@ class ApiClient {
     }
     if (notes != null) {
       data['notes'] = notes;
+    }
+    // clearClient: invia client_id: null per rimuovere il cliente
+    // clientId: invia client_id: valore per assegnare un cliente
+    if (clearClient) {
+      data['client_id'] = null;
+    } else if (clientId != null) {
+      data['client_id'] = clientId;
     }
     return put(ApiConfig.booking(locationId, bookingId), data: data);
   }
@@ -581,16 +699,14 @@ class ApiClient {
   /// Superadmin only: lista tutti i business.
   Future<List<Map<String, dynamic>>> getAdminBusinesses({
     String? search,
-    int limit = 50,
-    int offset = 0,
   }) async {
-    final queryParameters = <String, dynamic>{'limit': limit, 'offset': offset};
+    final queryParameters = <String, dynamic>{};
     if (search != null && search.isNotEmpty) {
       queryParameters['search'] = search;
     }
     final response = await get(
       '/v1/admin/businesses',
-      queryParameters: queryParameters,
+      queryParameters: queryParameters.isNotEmpty ? queryParameters : null,
     );
     // _handleResponse ritorna body['data'], quindi response = { businesses: [...], pagination: {...} }
     return (response['businesses'] as List).cast<Map<String, dynamic>>();
@@ -663,6 +779,30 @@ class ApiClient {
     await post('/v1/admin/businesses/$businessId/resend-invite');
   }
 
+  /// PUT /v1/admin/businesses/{id}/suspend
+  /// Superadmin only: sospende un business con messaggio opzionale.
+  Future<Map<String, dynamic>> suspendBusiness({
+    required int businessId,
+    required bool isSuspended,
+    String? suspensionMessage,
+  }) async {
+    final response = await put(
+      '/v1/admin/businesses/$businessId',
+      data: {
+        'is_suspended': isSuspended,
+        if (suspensionMessage != null) 'suspension_message': suspensionMessage,
+        if (!isSuspended) 'suspension_message': null,
+      },
+    );
+    return response;
+  }
+
+  /// DELETE /v1/admin/businesses/{id}
+  /// Superadmin only: soft-delete un business (is_active = 0).
+  Future<void> deleteAdminBusiness(int businessId) async {
+    await delete('/v1/admin/businesses/$businessId');
+  }
+
   // ========== LOCATIONS CRUD ==========
 
   /// GET /v1/businesses/{business_id}/locations
@@ -722,6 +862,13 @@ class ApiClient {
   /// DELETE /v1/locations/{id}
   Future<void> deleteLocation(int locationId) async {
     await delete('/v1/locations/$locationId');
+  }
+
+  /// POST /v1/locations/reorder - Batch update locations sort_order
+  Future<Map<String, dynamic>> reorderLocations({
+    required List<Map<String, dynamic>> locations,
+  }) async {
+    return post('/v1/locations/reorder', data: {'locations': locations});
   }
 
   // ========== SERVICES CRUD ==========
@@ -842,6 +989,20 @@ class ApiClient {
     await delete('/v1/categories/$categoryId');
   }
 
+  /// POST /v1/services/reorder - Batch update services sort_order and category_id
+  Future<Map<String, dynamic>> reorderServices({
+    required List<Map<String, dynamic>> services,
+  }) async {
+    return post('/v1/services/reorder', data: {'services': services});
+  }
+
+  /// POST /v1/categories/reorder - Batch update categories sort_order
+  Future<Map<String, dynamic>> reorderCategories({
+    required List<Map<String, dynamic>> categories,
+  }) async {
+    return post('/v1/categories/reorder', data: {'categories': categories});
+  }
+
   // ========== STAFF CRUD ==========
 
   /// GET /v1/businesses/{business_id}/staff
@@ -908,6 +1069,13 @@ class ApiClient {
   /// DELETE /v1/staff/{id}
   Future<void> deleteStaff(int staffId) async {
     await delete('/v1/staff/$staffId');
+  }
+
+  /// POST /v1/staff/reorder - Batch update staff sort_order
+  Future<Map<String, dynamic>> reorderStaff({
+    required List<Map<String, dynamic>> staff,
+  }) async {
+    return post('/v1/staff/reorder', data: {'staff': staff});
   }
 
   // ========== BUSINESS USERS (OPERATORS) ==========

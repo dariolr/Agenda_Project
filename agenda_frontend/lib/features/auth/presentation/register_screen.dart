@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/l10_extension.dart';
+import '../../booking/providers/business_provider.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -37,22 +39,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final firstName = _firstNameController.text.trim();
-    final lastName = _lastNameController.text.trim();
-    final fullName = lastName.isNotEmpty ? '$firstName $lastName' : firstName;
+    // Ottieni il businessId dal provider
+    final businessId = ref.read(currentBusinessIdProvider);
+    if (businessId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.authLoginFailed),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     final success = await ref
         .read(authProvider.notifier)
         .register(
+          businessId: businessId,
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          name: fullName,
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
           phone: _phoneController.text.trim().isNotEmpty
               ? _phoneController.text.trim()
               : null,
         );
 
     if (success && mounted) {
+      // Segnala al browser che l'autofill è completato con successo
+      TextInput.finishAutofillContext();
       context.go('/booking');
     }
   }

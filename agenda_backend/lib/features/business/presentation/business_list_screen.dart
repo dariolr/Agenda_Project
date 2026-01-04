@@ -6,6 +6,7 @@ import '../../../app/widgets/user_menu_button.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/preferences_service.dart';
 import '../../agenda/providers/agenda_scroll_provider.dart';
 import '../../agenda/providers/appointment_providers.dart';
 import '../../agenda/providers/bookings_provider.dart';
@@ -14,6 +15,7 @@ import '../../agenda/providers/date_range_provider.dart';
 import '../../agenda/providers/drag_session_provider.dart';
 import '../../agenda/providers/dragged_appointment_provider.dart';
 import '../../agenda/providers/dragged_base_range_provider.dart';
+import '../../agenda/providers/initial_scroll_provider.dart';
 import '../../agenda/providers/layout_config_provider.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../agenda/providers/pending_drop_provider.dart';
@@ -34,16 +36,38 @@ import 'dialogs/edit_business_dialog.dart';
 
 /// Notifier per tracciare se il superadmin ha selezionato un business.
 /// Quando è null, mostra la lista business.
+/// Salva l'ultimo business visitato nelle preferenze per accesso rapido.
 class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
   @override
-  int? build() => null;
+  int? build() {
+    // Carica l'ultimo business salvato dalle preferenze
+    final prefs = ref.read(preferencesServiceProvider);
+    return prefs.getSuperadminLastBusinessId();
+  }
 
-  void select(int businessId) => state = businessId;
+  void select(int businessId) {
+    state = businessId;
+    // Salva nelle preferenze per accesso rapido al prossimo login
+    ref
+        .read(preferencesServiceProvider)
+        .setSuperadminLastBusinessId(businessId);
+  }
 
   /// Pulisce la selezione e invalida tutti i provider relativi al business.
   void clear() {
     state = null;
+    // NON rimuoviamo dalle preferenze: l'utente può tornare con "Cambia Business"
+    // ma al prossimo login verrà comunque portato all'ultimo business
+
     // Invalida tutti i provider business-specific per forzare ricaricamento
+    _invalidateBusinessProviders();
+  }
+
+  /// Pulisce completamente la selezione, anche dalle preferenze.
+  /// Da usare al logout o se il business viene eliminato.
+  void clearCompletely() {
+    state = null;
+    ref.read(preferencesServiceProvider).clearSuperadminLastBusinessId();
     _invalidateBusinessProviders();
   }
 
@@ -67,7 +91,7 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
     // Appointments
     ref.invalidate(appointmentsProvider);
 
-    // Bookings (prenotazioni con note/customerName)
+    // Bookings (prenotazioni con note/clientName)
     ref.invalidate(bookingsProvider);
 
     // Resources
@@ -97,6 +121,8 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
     ref.invalidate(layoutConfigProvider);
     ref.invalidate(agendaDateProvider);
     ref.invalidate(agendaScrollProvider);
+    ref.invalidate(initialScrollDoneProvider);
+    ref.invalidate(agendaVerticalOffsetProvider);
   }
 }
 
@@ -133,6 +159,8 @@ class BusinessListScreen extends ConsumerWidget {
           onEdit: (business) => _showEditBusinessDialog(context, ref, business),
           onResendInvite: (business) =>
               _showResendInviteDialog(context, ref, business),
+          onSuspend: (business) => _showSuspendDialog(context, ref, business),
+          onDelete: (business) => _showDeleteDialog(context, ref, business),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -265,6 +293,216 @@ class BusinessListScreen extends ConsumerWidget {
       }
     }
   }
+
+  /// Mostra dialog per sospendere/riattivare un business
+  Future<void> _showSuspendDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Business business,
+  ) async {
+    final l10n = context.l10n;
+    final isSuspended = business.isSuspended;
+
+    // Se è già sospeso, mostra dialog per riattivare
+    if (isSuspended) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Riattiva Business'),
+          content: Text(
+            'Vuoi riattivare "${business.name}"?\n\n'
+            'Gli operatori e i clienti potranno accedere normalmente.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Riattiva'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true && context.mounted) {
+        await _executeSuspend(context, ref, business, false, null);
+      }
+      return;
+    }
+
+    // Dialog per sospendere con messaggio
+    final messageController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sospendi Business'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Sospendendo "${business.name}" gli operatori vedranno un avviso '
+                'e i clienti non potranno effettuare prenotazioni online.',
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: messageController,
+                decoration: const InputDecoration(
+                  labelText: 'Messaggio di sospensione (opzionale)',
+                  hintText: 'Es: Chiuso per ferie fino al 15 gennaio',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Sospendi'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final message = messageController.text.trim().isEmpty
+          ? null
+          : messageController.text.trim();
+      await _executeSuspend(context, ref, business, true, message);
+    }
+  }
+
+  Future<void> _executeSuspend(
+    BuildContext context,
+    WidgetRef ref,
+    Business business,
+    bool isSuspended,
+    String? message,
+  ) async {
+    try {
+      final repository = ref.read(businessRepositoryProvider);
+      await repository.suspendBusiness(
+        businessId: business.id,
+        isSuspended: isSuspended,
+        suspensionMessage: message,
+      );
+
+      if (context.mounted) {
+        final snackMessage = isSuspended
+            ? '${business.name} sospeso'
+            : '${business.name} riattivato';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(snackMessage),
+            backgroundColor: isSuspended
+                ? Colors.orange
+                : Theme.of(context).colorScheme.primary,
+          ),
+        );
+        // Refresh lista
+        ref.read(businessesRefreshProvider.notifier).refresh();
+      }
+    } on ApiException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Errore: ${e.message}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Errore: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Mostra dialog per eliminare un business
+  Future<void> _showDeleteDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Business business,
+  ) async {
+    final l10n = context.l10n;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Elimina Business'),
+        content: Text(
+          'Sei sicuro di voler eliminare "${business.name}"?\n\n'
+          '⚠️ Questa azione nasconderà il business dalla lista. '
+          'I dati non verranno cancellati definitivamente.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.actionDelete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final repository = ref.read(businessRepositoryProvider);
+        await repository.deleteBusiness(business.id);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${business.name} eliminato'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+          );
+          // Refresh lista
+          ref.read(businessesRefreshProvider.notifier).refresh();
+        }
+      } on ApiException catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Errore: ${e.message}'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Errore: $e'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    }
+  }
 }
 
 class _BusinessList extends StatelessWidget {
@@ -273,12 +511,16 @@ class _BusinessList extends StatelessWidget {
     required this.onSelect,
     required this.onEdit,
     required this.onResendInvite,
+    required this.onSuspend,
+    required this.onDelete,
   });
 
   final List<Business> businesses;
   final void Function(Business) onSelect;
   final void Function(Business) onEdit;
   final void Function(Business) onResendInvite;
+  final void Function(Business) onSuspend;
+  final void Function(Business) onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -339,6 +581,8 @@ class _BusinessList extends StatelessWidget {
               onTap: () => onSelect(business),
               onEdit: () => onEdit(business),
               onResendInvite: () => onResendInvite(business),
+              onSuspend: () => onSuspend(business),
+              onDelete: () => onDelete(business),
             );
           },
         );
@@ -353,12 +597,16 @@ class _BusinessCard extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onResendInvite,
+    required this.onSuspend,
+    required this.onDelete,
   });
 
   final Business business;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onResendInvite;
+  final VoidCallback onSuspend;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -413,6 +661,40 @@ class _BusinessCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 6),
+                        // Badge sospeso
+                        if (business.isSuspended) ...[
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isCompact ? 4 : 6,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.pause_circle,
+                                  size: isCompact ? 10 : 12,
+                                  color: Colors.orange.shade700,
+                                ),
+                                SizedBox(width: isCompact ? 2 : 4),
+                                Text(
+                                  'Sospeso',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: Colors.orange.shade700,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: isCompact ? 9 : 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        // Badge ID
                         Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: isCompact ? 4 : 6,
@@ -463,6 +745,10 @@ class _BusinessCard extends StatelessWidget {
                       onEdit();
                     case 'resend':
                       onResendInvite();
+                    case 'suspend':
+                      onSuspend();
+                    case 'delete':
+                      onDelete();
                   }
                 },
                 itemBuilder: (context) => [
@@ -480,6 +766,42 @@ class _BusinessCard extends StatelessWidget {
                     child: ListTile(
                       leading: Icon(Icons.email_outlined),
                       title: Text('Reinvia invito'),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'suspend',
+                    child: ListTile(
+                      leading: Icon(
+                        business.isSuspended
+                            ? Icons.play_circle_outline
+                            : Icons.pause_circle_outline,
+                        color: business.isSuspended
+                            ? Colors.green
+                            : Colors.orange,
+                      ),
+                      title: Text(
+                        business.isSuspended ? 'Riattiva' : 'Sospendi',
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.delete_outline,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      title: Text(
+                        'Elimina',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                       contentPadding: EdgeInsets.zero,
                       dense: true,
                     ),

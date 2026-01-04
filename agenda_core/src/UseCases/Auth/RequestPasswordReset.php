@@ -35,12 +35,12 @@ final class RequestPasswordReset
 
         // Store reset token (invalidate any existing tokens for this user)
         $stmt = $this->db->getPdo()->prepare(
-            'DELETE FROM password_reset_tokens WHERE user_id = ?'
+            'DELETE FROM password_reset_token_users WHERE user_id = ?'
         );
         $stmt->execute([(int) $user['id']]);
 
         $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)'
+            'INSERT INTO password_reset_token_users (user_id, token_hash, expires_at) VALUES (?, ?, ?)'
         );
         $stmt->execute([
             (int) $user['id'],

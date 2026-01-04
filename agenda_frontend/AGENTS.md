@@ -23,6 +23,15 @@ rsync -avz --delete build/web/ siteground:www/prenota.romeolab.it/public_html/
 
 ---
 
+## ⚠️ TERMINOLOGIA OBBLIGATORIA
+
+- Il termine **"frontend"** si riferisce SOLO al progetto `agenda_frontend` (prenotazioni clienti)
+- Il termine **"backend"** si riferisce SOLO al progetto `agenda_backend` (gestionale operatori)
+- Il termine **"core"** o **"API"** si riferisce al progetto `agenda_core` (backend PHP)
+- NON usare "frontend" per indicare genericamente interfacce utente
+
+---
+
 Piattaforma di **prenotazione online** in Flutter (web primary, mobile/desktop).
 L'agente deve produrre **file completi** e **non rompere le funzionalità esistenti**.
 L'agente deve centralizzare il codice a favore del riutilizzo. Deve sempre verificare se esiste già un'implementazione utile prima di creare nuovo codice. Eventualmente deve estendere il codice esistente.
@@ -177,6 +186,53 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
 - Favorire il riutilizzo del codice
 - Favorire l'uso di costruttori const
 - Estrarre widget privati da `build()` lunghi
+
+---
+
+## 🔑 Autofill e Salvataggio Credenziali (03/01/2026)
+
+Per far funzionare correttamente l'autofill su Safari e il salvataggio credenziali su tutti i browser, il form di login deve:
+
+### Requisiti
+1. **`AutofillGroup`** — wrappa il Form per raggruppare i campi
+2. **`autofillHints`** — specifica il tipo di campo
+3. **`TextInput.finishAutofillContext()`** — segnala login completato
+
+### Implementazione
+```dart
+import 'package:flutter/services.dart';
+
+// Nel widget build()
+AutofillGroup(
+  child: Form(
+    key: _formKey,
+    child: Column(
+      children: [
+        TextFormField(
+          controller: _emailController,
+          autofillHints: const [AutofillHints.username, AutofillHints.email],
+          // ...
+        ),
+        TextFormField(
+          controller: _passwordController,
+          autofillHints: const [AutofillHints.password],
+          // ...
+        ),
+      ],
+    ),
+  ),
+),
+
+// Dopo login success
+if (success) {
+  TextInput.finishAutofillContext(); // Triggera "Vuoi salvare le credenziali?"
+  context.go('/booking');
+}
+```
+
+### File modificati
+- `lib/features/auth/presentation/login_screen.dart`
+- `lib/features/auth/presentation/register_screen.dart`
 
 ---
 
@@ -412,12 +468,21 @@ Authorization: Bearer {access_token}
 
 ### File da Modificare per Integrazione
 
-| File | Modifiche necessarie |
-|------|---------------------|
-| `lib/features/auth/data/auth_api.dart` | Usare endpoint `/v1/customer/{business_id}/auth/*` |
-| `lib/features/auth/providers/auth_provider.dart` | Passare `businessId` agli endpoint |
-| `lib/features/booking/data/booking_api.dart` | Usare `POST /v1/customer/{business_id}/bookings` |
-| `lib/core/network/api_client.dart` | Aggiungere metodi per customer auth |
+**✅ COMPLETATO (03/01/2026)**
+
+L'integrazione customer auth è stata implementata. I seguenti file sono stati modificati:
+
+| File | Stato | Modifiche |
+|------|-------|-----------|
+| `lib/core/network/api_config.dart` | ✅ | Aggiunto endpoint customer auth |
+| `lib/core/network/api_client.dart` | ✅ | Metodi `customerLogin`, `customerRegister`, `customerLogout`, `getCustomerMe`, `getCustomerBookings`, `createCustomerBooking` |
+| `lib/core/network/token_storage_interface.dart` | ✅ | Aggiunto `getBusinessId`, `saveBusinessId`, `clearBusinessId` |
+| `lib/core/network/token_storage_web.dart` | ✅ | Implementazione web businessId |
+| `lib/core/network/token_storage_mobile.dart` | ✅ | Implementazione mobile businessId |
+| `lib/features/auth/data/auth_repository.dart` | ✅ | Usa endpoint customer, richiede `businessId` |
+| `lib/features/auth/providers/auth_provider.dart` | ✅ | `login`, `logout`, `register` richiedono `businessId` |
+| `lib/features/auth/presentation/login_screen.dart` | ✅ | Passa `businessId` da `currentBusinessIdProvider` |
+| `lib/features/auth/presentation/register_screen.dart` | ✅ | Passa `businessId` da `currentBusinessIdProvider` |
 
 ### Errori Comuni
 

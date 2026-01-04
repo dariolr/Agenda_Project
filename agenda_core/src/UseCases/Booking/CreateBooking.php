@@ -65,14 +65,23 @@ final class CreateBooking
             }
         }
 
-        // Validate required fields
-        $serviceIds = $data['service_ids'] ?? [];
-        $staffId = $data['staff_id'] ?? null;
-        $startTimeString = $data['start_time'] ?? null;
         $notes = $data['notes'] ?? null;
         $allowPast = $data['allow_past'] ?? false;
         $skipConflictCheck = $data['skip_conflict_check'] ?? false;
         $requestedClientId = $data['client_id'] ?? null;
+
+        // Check if using new "items" format or legacy "service_ids" format
+        if (isset($data['items']) && is_array($data['items']) && !empty($data['items'])) {
+            return $this->executeWithItems(
+                $userId, $locationId, $businessId, $data['items'],
+                $notes, $allowPast, $skipConflictCheck, $requestedClientId, $idempotencyKey
+            );
+        }
+
+        // Legacy format: service_ids with single staff_id
+        $serviceIds = $data['service_ids'] ?? [];
+        $staffId = $data['staff_id'] ?? null;
+        $startTimeString = $data['start_time'] ?? null;
 
         if (empty($serviceIds)) {
             throw BookingException::invalidService([]);
@@ -233,6 +242,166 @@ final class CreateBooking
         }
     }
 
+    /**
+     * Execute booking creation with new "items" format (each item has its own staff_id and start_time).
+     */
+    private function executeWithItems(
+        int $userId,
+        int $locationId,
+        int $businessId,
+        array $items,
+        ?string $notes,
+        bool $allowPast,
+        bool $skipConflictCheck,
+        ?int $requestedClientId,
+        ?string $idempotencyKey
+    ): array {
+        // Validate location
+        $location = $this->locationRepository->findById($locationId);
+        if ($location === null || (int) $location['business_id'] !== $businessId) {
+            throw BookingException::invalidLocation($locationId);
+        }
+
+        // Collect all service IDs for validation
+        $serviceIds = array_map(fn($item) => (int) $item['service_id'], $items);
+
+        // Validate all services belong to location
+        if (!$this->serviceRepository->allBelongToBusiness($serviceIds, $locationId, $businessId)) {
+            throw BookingException::invalidService($serviceIds);
+        }
+
+        // Get all services
+        $services = $this->serviceRepository->findByIds($serviceIds, $locationId, $businessId);
+        $servicesById = [];
+        foreach ($services as $svc) {
+            $servicesById[(int) $svc['id']] = $svc;
+        }
+
+        // Determine client
+        $clientId = null;
+        $clientName = null;
+        $isOperatorBooking = $allowPast || $skipConflictCheck;
+
+        if ($requestedClientId !== null) {
+            $client = $this->clientRepository->findById($requestedClientId);
+            if ($client !== null && (int) $client['business_id'] === $businessId) {
+                $clientId = (int) $client['id'];
+                $clientName = trim(($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? ''));
+            }
+        } elseif (!$isOperatorBooking) {
+            $client = $this->clientRepository->findOrCreateForUser($userId, $businessId);
+            $clientId = (int) $client['id'];
+            $user = $this->userRepository->findById($userId);
+            $clientName = $user ? trim($user['first_name'] . ' ' . $user['last_name']) : null;
+        }
+
+        // Start transaction
+        $this->db->beginTransaction();
+
+        try {
+            $itemsToCreate = [];
+
+            foreach ($items as $item) {
+                $serviceId = (int) $item['service_id'];
+                $staffId = (int) $item['staff_id'];
+                $startTimeString = $item['start_time'];
+
+                // Parse start time
+                try {
+                    $startTime = new DateTimeImmutable($startTimeString, new DateTimeZone('UTC'));
+                } catch (\Exception $e) {
+                    throw BookingException::invalidTime("Invalid ISO8601 format for service $serviceId");
+                }
+
+                // Validate start time in the future
+                if (!$allowPast) {
+                    $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+                    if ($startTime <= $now) {
+                        throw BookingException::invalidTime('start_time must be in the future');
+                    }
+                }
+
+                // Validate staff belongs to location
+                if (!$this->staffRepository->belongsToLocation($staffId, $locationId)) {
+                    throw BookingException::invalidStaff($staffId);
+                }
+
+                // Get service data
+                if (!isset($servicesById[$serviceId])) {
+                    throw BookingException::invalidService([$serviceId]);
+                }
+                $service = $servicesById[$serviceId];
+
+                // Use override values if provided, otherwise use service defaults
+                $duration = isset($item['duration_minutes']) ? (int) $item['duration_minutes'] : (int) $service['duration_minutes'];
+                $variantId = isset($item['service_variant_id']) ? (int) $item['service_variant_id'] : (int) $service['service_variant_id'];
+                $price = isset($item['price']) ? (float) $item['price'] : (float) $service['price'];
+                $blockedExtra = isset($item['blocked_extra_minutes']) ? (int) $item['blocked_extra_minutes'] : 0;
+                $processingExtra = isset($item['processing_extra_minutes']) ? (int) $item['processing_extra_minutes'] : 0;
+
+                $endTime = $startTime->modify("+{$duration} minutes");
+
+                // Conflict check
+                if (!$skipConflictCheck) {
+                    $conflicts = $this->bookingRepository->checkConflicts($staffId, $locationId, $startTime, $endTime);
+                    if (!empty($conflicts)) {
+                        $this->db->rollBack();
+                        throw BookingException::slotConflict($conflicts);
+                    }
+                }
+
+                $itemsToCreate[] = [
+                    'service_id' => $serviceId,
+                    'service_variant_id' => $variantId,
+                    'staff_id' => $staffId,
+                    'start_time' => $startTime->format('Y-m-d H:i:s'),
+                    'end_time' => $endTime->format('Y-m-d H:i:s'),
+                    'price' => $price,
+                    'extra_blocked_minutes' => $blockedExtra,
+                    'extra_processing_minutes' => $processingExtra,
+                    'service_name_snapshot' => $service['name'],
+                    'client_name_snapshot' => $clientName,
+                ];
+            }
+
+            // Create booking (container)
+            $bookingId = $this->bookingRepository->create([
+                'business_id' => $businessId,
+                'location_id' => $locationId,
+                'client_id' => $clientId,
+                'user_id' => $userId,
+                'notes' => $notes,
+                'status' => 'confirmed',
+                'source' => 'online',
+                'idempotency_key' => $idempotencyKey,
+            ]);
+
+            // Create booking items
+            foreach ($itemsToCreate as $itemData) {
+                $itemData['location_id'] = $locationId;
+                $this->bookingRepository->addBookingItem($bookingId, $itemData);
+            }
+
+            $this->db->commit();
+
+            $booking = $this->bookingRepository->findById($bookingId);
+            $this->queueNotifications($booking, $location, $userId);
+
+            return $this->formatBookingResponse($booking);
+
+        } catch (BookingException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        } catch (\Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     private function formatBookingResponse(array $booking): array
     {
         return [
@@ -241,7 +410,7 @@ final class CreateBooking
             'location_id' => (int) $booking['location_id'],
             'client_id' => $booking['client_id'] !== null ? (int) $booking['client_id'] : null,
             'user_id' => $booking['user_id'] !== null ? (int) $booking['user_id'] : null,
-            'customer_name' => $booking['customer_name'] ?? null,
+            'client_name' => $booking['client_name'] ?? null,
             'status' => $booking['status'],
             'source' => $booking['source'] ?? 'online',
             'notes' => $booking['notes'],

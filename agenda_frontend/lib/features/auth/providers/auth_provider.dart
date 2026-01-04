@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/network/network_providers.dart';
+import '../../../core/network/token_storage.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_state.dart';
 
@@ -30,7 +31,13 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> _tryRestoreSession() async {
     state = AuthState.loading();
     try {
-      final user = await _repository.tryRestoreSession();
+      // Recupera il businessId salvato
+      final tokenStorage = createTokenStorage();
+      final savedBusinessId = await tokenStorage.getBusinessId();
+
+      final user = await _repository.tryRestoreSession(
+        businessId: savedBusinessId,
+      );
       if (user != null) {
         state = AuthState.authenticated(user);
       } else {
@@ -42,10 +49,19 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   /// Login con email e password
-  Future<bool> login({required String email, required String password}) async {
+  /// Richiede businessId per usare l'endpoint customer corretto
+  Future<bool> login({
+    required int businessId,
+    required String email,
+    required String password,
+  }) async {
     state = AuthState.loading();
     try {
-      final user = await _repository.login(email: email, password: password);
+      final user = await _repository.login(
+        businessId: businessId,
+        email: email,
+        password: password,
+      );
       state = AuthState.authenticated(user);
       return true;
     } on ApiException catch (e) {
@@ -58,27 +74,31 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   /// Logout
-  Future<void> logout() async {
+  Future<void> logout({required int businessId}) async {
     try {
-      await _repository.logout();
+      await _repository.logout(businessId: businessId);
     } finally {
       state = AuthState.unauthenticated();
     }
   }
 
-  /// Registrazione nuovo utente
+  /// Registrazione nuovo cliente
   Future<bool> register({
+    required int businessId,
     required String email,
     required String password,
-    required String name,
+    required String firstName,
+    required String lastName,
     String? phone,
   }) async {
     state = AuthState.loading();
     try {
       final user = await _repository.register(
+        businessId: businessId,
         email: email,
         password: password,
-        name: name,
+        firstName: firstName,
+        lastName: lastName,
         phone: phone,
       );
       state = AuthState.authenticated(user);

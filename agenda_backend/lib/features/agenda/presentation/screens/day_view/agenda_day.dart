@@ -1,5 +1,6 @@
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/multi_staff_day_view.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/initial_scroll_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -60,18 +61,17 @@ class AgendaDay extends ConsumerStatefulWidget {
 
 class _AgendaDayState extends ConsumerState<AgendaDay> {
   ScrollController? _centerVerticalController;
-  double _currentScrollOffset = 0;
 
   DateTime? _previousDate;
   bool _slideFromRight = true;
+
+  /// Data attualmente attiva per filtrare eventi da widget in uscita
+  DateTime? _activeDate;
 
   @override
   void initState() {
     super.initState();
     widget.controller?._attach(this);
-
-    final layoutConfig = ref.read(layoutConfigProvider);
-    _currentScrollOffset = _timelineOffsetForToday(layoutConfig);
   }
 
   @override
@@ -80,15 +80,42 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
     super.dispose();
   }
 
+  /// Ottiene l'offset corrente (dal provider o calcolato dall'orario attuale)
+  double _getCurrentScrollOffset() {
+    final savedOffset = ref.read(agendaVerticalOffsetProvider);
+    if (savedOffset != null) {
+      return savedOffset;
+    }
+    // Prima apertura: usa l'orario corrente
+    final layoutConfig = ref.read(layoutConfigProvider);
+    return _timelineOffsetForToday(layoutConfig);
+  }
+
   void _handleCenterVerticalController(ScrollController controller) {
     if (_centerVerticalController == controller) return;
     _centerVerticalController = controller;
+
+    // 🔹 Scroll all'orario corrente SOLO alla prima apertura dell'app
+    final initialScrollDone = ref.read(initialScrollDoneProvider);
+
+    if (initialScrollDone) {
+      // Non è la prima apertura: sincronizza solo la HourColumn con l'offset corrente
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !controller.hasClients) return;
+        // Notifica l'offset corrente per sincronizzare la HourColumn
+        widget.onVerticalOffsetChanged?.call(_getCurrentScrollOffset());
+      });
+      return;
+    }
 
     final layoutConfig = ref.read(layoutConfigProvider);
     final initialOffset = _timelineOffsetForToday(layoutConfig);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !controller.hasClients) return;
+
+      // Marca lo scroll iniziale come completato (dopo il build)
+      ref.read(initialScrollDoneProvider.notifier).markDone();
 
       // Centra la timeline al centro della viewport visibile
       final viewportHeight = controller.position.viewportDimension;
@@ -99,7 +126,8 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
           )
           .toDouble();
       controller.jumpTo(target);
-      _currentScrollOffset = target;
+      // Salva nel provider
+      ref.read(agendaVerticalOffsetProvider.notifier).set(target);
       widget.onVerticalOffsetChanged?.call(target);
     });
   }
@@ -107,7 +135,7 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
   void _jumpToExternalOffset(double offset) {
     final controller = _centerVerticalController;
     if (controller == null || !controller.hasClients) {
-      _currentScrollOffset = offset;
+      ref.read(agendaVerticalOffsetProvider.notifier).set(offset);
       return;
     }
 
@@ -117,24 +145,28 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
     );
 
     if ((controller.offset - clamped).abs() < 0.5) {
-      _currentScrollOffset = clamped;
+      ref.read(agendaVerticalOffsetProvider.notifier).set(clamped);
       return;
     }
 
     controller.jumpTo(clamped);
-    _currentScrollOffset = clamped;
+    ref.read(agendaVerticalOffsetProvider.notifier).set(clamped);
     widget.onVerticalOffsetChanged?.call(clamped);
   }
 
   @override
   Widget build(BuildContext context) {
     final date = ref.watch(agendaDateProvider);
+    final currentScrollOffset = _getCurrentScrollOffset();
 
     // calcola direzione
     if (_previousDate != null && _previousDate != date) {
       _slideFromRight = date.isBefore(_previousDate!);
     }
     _previousDate = date;
+
+    // Aggiorna la data attiva per filtrare callback da widget in uscita
+    _activeDate = date;
 
     // 👇 AnimatedSwitcher forza animazione visibile anche se Flutter riusa il widget
     return AnimatedSwitcher(
@@ -169,14 +201,26 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
       // 👇 chiave unica e realmente diversa a ogni data
       child: _AnimatedDayContainer(
         key: ValueKey('day-${date.toIso8601String()}'),
+        date: date,
         staffList: widget.staffList,
-        currentScrollOffset: _currentScrollOffset,
-        onVerticalOffsetChanged: widget.onVerticalOffsetChanged,
+        currentScrollOffset: currentScrollOffset,
+        onVerticalOffsetChanged: (containerDate, offset) {
+          // Ignora callback da widget in uscita (durante animazione)
+          if (containerDate == _activeDate) {
+            _handleScrollOffsetChanged(offset);
+          }
+        },
         onVerticalControllerChanged: _handleCenterVerticalController,
         hourColumnWidth: widget.hourColumnWidth,
         currentTimeVerticalOffset: widget.currentTimeVerticalOffset,
       ),
     );
+  }
+
+  /// Intercetta l'offset scroll per mantenerlo al cambio data
+  void _handleScrollOffsetChanged(double offset) {
+    ref.read(agendaVerticalOffsetProvider.notifier).set(offset);
+    widget.onVerticalOffsetChanged?.call(offset);
   }
 
   double _timelineOffsetForToday(LayoutConfig layoutConfig) {
@@ -189,6 +233,7 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
 class _AnimatedDayContainer extends StatelessWidget {
   const _AnimatedDayContainer({
     super.key,
+    required this.date,
     required this.staffList,
     required this.currentScrollOffset,
     this.onVerticalOffsetChanged,
@@ -197,9 +242,10 @@ class _AnimatedDayContainer extends StatelessWidget {
     required this.currentTimeVerticalOffset,
   });
 
+  final DateTime date;
   final List<Staff> staffList;
   final double currentScrollOffset;
-  final ValueChanged<double>? onVerticalOffsetChanged;
+  final void Function(DateTime date, double offset)? onVerticalOffsetChanged;
   final ValueChanged<ScrollController> onVerticalControllerChanged;
   final double hourColumnWidth;
   final double currentTimeVerticalOffset;
@@ -212,7 +258,7 @@ class _AnimatedDayContainer extends StatelessWidget {
           staffList: staffList,
           initialScrollOffset: currentScrollOffset,
           onScrollOffsetChanged: (offset) {
-            onVerticalOffsetChanged?.call(offset);
+            onVerticalOffsetChanged?.call(date, offset);
           },
           onVerticalControllerChanged: onVerticalControllerChanged,
           hourColumnWidth: hourColumnWidth,

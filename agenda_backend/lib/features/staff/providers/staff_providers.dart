@@ -1,7 +1,7 @@
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/auth/providers/auth_provider.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/staff.dart';
@@ -24,7 +24,8 @@ class StaffNotifier extends AsyncNotifier<List<Staff>> {
     final repository = ref.watch(staffRepositoryProvider);
 
     try {
-      return await repository.getByBusiness(business.id);
+      final staff = await repository.getByBusiness(business.id);
+      return staff;
     } catch (e) {
       return [];
     }
@@ -179,7 +180,11 @@ class StaffNotifier extends AsyncNotifier<List<Staff>> {
     return relevant.map((s) => s.sortOrder).reduce((a, b) => a > b ? a : b) + 1;
   }
 
-  void reorderForLocation(int locationId, int oldIndex, int newIndex) {
+  Future<void> reorderForLocation(
+    int locationId,
+    int oldIndex,
+    int newIndex,
+  ) async {
     final current = state.value ?? [];
     final inLocation =
         current.where((s) => s.worksAtLocation(locationId)).toList()
@@ -203,6 +208,21 @@ class StaffNotifier extends AsyncNotifier<List<Staff>> {
     ];
 
     state = AsyncData(updatedAll);
+
+    // Persist to API
+    await _persistStaffOrder(updated);
+  }
+
+  /// Persiste l'ordine dello staff via API
+  Future<void> _persistStaffOrder(List<Staff> staffList) async {
+    try {
+      final repository = ref.read(staffRepositoryProvider);
+      await repository.reorderStaff(
+        staffList.map((s) => {'id': s.id, 'sort_order': s.sortOrder}).toList(),
+      );
+    } catch (_) {
+      // Ignora errore - utente può riprovare
+    }
   }
 
   int _nextId(List<Staff> current) {

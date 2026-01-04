@@ -34,11 +34,16 @@ class ApiException implements Exception {
 }
 
 /// Client HTTP per comunicare con agenda_core API
+/// Usato dal frontend prenotazioni (agenda_frontend) per CLIENTI
 class ApiClient {
   final Dio _dio;
   final TokenStorage _tokenStorage;
 
   String? _accessToken;
+
+  /// Business ID corrente per refresh token
+  /// Necessario perché l'endpoint di refresh è business-scoped
+  int? _currentBusinessId;
 
   ApiClient({required TokenStorage tokenStorage, Dio? dio})
     : _tokenStorage = tokenStorage,
@@ -93,17 +98,22 @@ class ApiClient {
     _accessToken = token;
   }
 
+  /// Imposta il business ID corrente (per refresh token)
+  void setCurrentBusinessId(int? businessId) {
+    _currentBusinessId = businessId;
+  }
+
   /// Verifica se autenticato
   bool get isAuthenticated => _accessToken != null;
 
-  /// Tenta refresh del token
+  /// Tenta refresh del token (customer)
   Future<bool> _refreshToken() async {
     final refreshToken = await _tokenStorage.getRefreshToken();
-    if (refreshToken == null) return false;
+    if (refreshToken == null || _currentBusinessId == null) return false;
 
     try {
       final response = await _dio.post(
-        ApiConfig.authRefresh,
+        ApiConfig.customerRefresh(_currentBusinessId!),
         data: {'refresh_token': refreshToken},
       );
 
@@ -120,24 +130,30 @@ class ApiClient {
     return false;
   }
 
-  /// Tenta di ripristinare sessione da refresh token
-  Future<Map<String, dynamic>?> tryRestoreSession() async {
+  /// Tenta di ripristinare sessione da refresh token (customer)
+  /// Richiede businessId per chiamare l'endpoint corretto
+  Future<Map<String, dynamic>?> tryRestoreSession({int? businessId}) async {
     final refreshToken = await _tokenStorage.getRefreshToken();
     if (refreshToken == null) return null;
 
+    // Usa il businessId passato o quello salvato
+    final effectiveBusinessId = businessId ?? _currentBusinessId;
+    if (effectiveBusinessId == null) return null;
+
     try {
       final response = await _dio.post(
-        ApiConfig.authRefresh,
+        ApiConfig.customerRefresh(effectiveBusinessId),
         data: {'refresh_token': refreshToken},
       );
 
       if (response.data['success'] == true) {
         final data = response.data['data'];
         _accessToken = data['access_token'];
+        _currentBusinessId = effectiveBusinessId;
         await _tokenStorage.saveRefreshToken(data['refresh_token']);
 
-        // Fetch user profile
-        return await getMe();
+        // Fetch customer profile
+        return await getCustomerMe();
       }
     } catch (_) {
       await _tokenStorage.clearRefreshToken();
@@ -240,9 +256,114 @@ class ApiClient {
     );
   }
 
-  // ========== AUTH ENDPOINTS ==========
+  // ========== CUSTOMER AUTH ENDPOINTS ==========
+  // Usati dal frontend prenotazioni per CLIENTI (tabella clients)
 
-  /// POST /v1/auth/login
+  /// POST /v1/customer/{business_id}/auth/login
+  Future<Map<String, dynamic>> customerLogin({
+    required int businessId,
+    required String email,
+    required String password,
+  }) async {
+    final data = await post(
+      ApiConfig.customerLogin(businessId),
+      data: {'email': email, 'password': password},
+    );
+
+    _accessToken = data['access_token'];
+    _currentBusinessId = businessId;
+    await _tokenStorage.saveRefreshToken(data['refresh_token']);
+    // Salva anche il business ID per restore session
+    await _tokenStorage.saveBusinessId(businessId);
+
+    return data;
+  }
+
+  /// POST /v1/customer/{business_id}/auth/register
+  Future<Map<String, dynamic>> customerRegister({
+    required int businessId,
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    String? phone,
+  }) async {
+    final data = await post(
+      ApiConfig.customerRegister(businessId),
+      data: {
+        'email': email,
+        'password': password,
+        'first_name': firstName,
+        'last_name': lastName,
+        if (phone != null) 'phone': phone,
+      },
+    );
+
+    _accessToken = data['access_token'];
+    _currentBusinessId = businessId;
+    await _tokenStorage.saveRefreshToken(data['refresh_token']);
+    await _tokenStorage.saveBusinessId(businessId);
+
+    return data;
+  }
+
+  /// POST /v1/customer/{business_id}/auth/logout
+  Future<void> customerLogout({required int businessId}) async {
+    final refreshToken = await _tokenStorage.getRefreshToken();
+    try {
+      await post(
+        ApiConfig.customerLogout(businessId),
+        data: {'refresh_token': refreshToken},
+      );
+    } finally {
+      _accessToken = null;
+      _currentBusinessId = null;
+      await _tokenStorage.clearRefreshToken();
+      await _tokenStorage.clearBusinessId();
+    }
+  }
+
+  /// GET /v1/customer/me
+  Future<Map<String, dynamic>> getCustomerMe() async {
+    return get(ApiConfig.customerMe);
+  }
+
+  /// GET /v1/customer/bookings
+  Future<Map<String, dynamic>> getCustomerBookings() async {
+    return get(ApiConfig.customerBookings);
+  }
+
+  /// POST /v1/customer/{business_id}/bookings
+  Future<Map<String, dynamic>> createCustomerBooking({
+    required int businessId,
+    required String idempotencyKey,
+    required List<int> serviceIds,
+    required String startTime,
+    int? staffId,
+    String? notes,
+  }) async {
+    final data = <String, dynamic>{
+      'service_ids': serviceIds,
+      'start_time': startTime,
+    };
+    if (staffId != null) {
+      data['staff_id'] = staffId;
+    }
+    if (notes != null && notes.isNotEmpty) {
+      data['notes'] = notes;
+    }
+
+    return post(
+      ApiConfig.customerCreateBooking(businessId),
+      data: data,
+      headers: {'X-Idempotency-Key': idempotencyKey},
+    );
+  }
+
+  // ========== LEGACY AUTH ENDPOINTS (per operatori, non usare nel frontend) ==========
+
+  /// POST /v1/auth/login (DEPRECATO - usare customerLogin)
+  @Deprecated('Use customerLogin for frontend auth')
   Future<Map<String, dynamic>> login(String email, String password) async {
     final data = await post(
       ApiConfig.authLogin,
@@ -255,7 +376,8 @@ class ApiClient {
     return data;
   }
 
-  /// POST /v1/auth/logout
+  /// POST /v1/auth/logout (DEPRECATO - usare customerLogout)
+  @Deprecated('Use customerLogout for frontend auth')
   Future<void> logout() async {
     final refreshToken = await _tokenStorage.getRefreshToken();
     try {

@@ -400,4 +400,51 @@ final class StaffRepository
             }
         }
     }
+
+    /**
+     * Batch update sort_order for multiple staff members.
+     * Used for drag & drop reordering.
+     * 
+     * @param array $staffList Array of ['id' => int, 'sort_order' => int]
+     */
+    public function batchUpdateSortOrder(array $staffList): bool
+    {
+        if (empty($staffList)) {
+            return true;
+        }
+
+        $pdo = $this->db->getPdo();
+        $stmt = $pdo->prepare(
+            'UPDATE staff SET sort_order = ?, updated_at = NOW() WHERE id = ?'
+        );
+
+        foreach ($staffList as $item) {
+            $stmt->execute([(int) $item['sort_order'], (int) $item['id']]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if all staff IDs belong to the same business.
+     */
+    public function allBelongToSameBusiness(array $staffIds): ?int
+    {
+        if (empty($staffIds)) {
+            return null;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($staffIds), '?'));
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT DISTINCT business_id FROM staff WHERE id IN ({$placeholders}) AND is_active = 1"
+        );
+        $stmt->execute(array_map('intval', $staffIds));
+        $businesses = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+        if (count($businesses) !== 1) {
+            return null;
+        }
+
+        return (int) $businesses[0];
+    }
 }

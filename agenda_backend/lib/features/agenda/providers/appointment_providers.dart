@@ -44,11 +44,12 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
       return [];
     }
 
-    return repository.getAppointments(
+    final appointments = await repository.getAppointments(
       locationId: location.id,
       businessId: business.id,
       date: date,
     );
+    return appointments;
   }
 
   /// Restituisce gli appointments associati a un booking specifico,
@@ -68,10 +69,31 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     final currentList = state.value;
     if (currentList == null) return;
 
+    // Trova l'appointment originale per calcolare extra blocked
+    final originalAppt = currentList.firstWhere(
+      (a) => a.id == appointmentId,
+      orElse: () => throw Exception('Appointment not found'),
+    );
+
     // Arrotonda gli orari a multipli di 5 minuti
     final roundedStart = _roundToNearestFiveMinutes(newStart);
     final duration = newEnd.difference(newStart);
     final roundedEnd = roundedStart.add(duration);
+
+    // Calcola extra blocked minutes
+    final oldTotalMinutes = originalAppt.endTime
+        .difference(originalAppt.startTime)
+        .inMinutes;
+    final newTotalMinutes = roundedEnd.difference(roundedStart).inMinutes;
+    final oldBlocked = originalAppt.blockedExtraMinutes;
+    final baseMinutes = oldTotalMinutes - oldBlocked;
+
+    int newBlocked = oldBlocked;
+    if (newTotalMinutes <= baseMinutes) {
+      newBlocked = 0;
+    } else {
+      newBlocked = newTotalMinutes - baseMinutes;
+    }
 
     final newList = [
       for (final appt in currentList)
@@ -99,9 +121,9 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
         startTime: roundedStart,
         endTime: roundedEnd,
         staffId: newStaffId,
+        extraBlockedMinutes: newBlocked,
       );
-    } catch (e) {
-      debugPrint('Error updating appointment: $e');
+    } catch (_) {
       // Rollback on error
       state = AsyncData(currentList);
     }
@@ -146,6 +168,8 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     );
   }
 
+  /// Elimina un singolo appuntamento (booking_item).
+  /// Usa deleteBookingItem per eliminare solo l'item, non l'intero booking.
   void deleteAppointment(int appointmentId) async {
     final currentList = state.value;
     if (currentList == null) return;
@@ -158,6 +182,11 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
       }
     }
 
+    // Se non troviamo il booking, non possiamo eliminare
+    if (relatedBookingId == null) {
+      return;
+    }
+
     final newList = [
       for (final appt in currentList)
         if (appt.id != appointmentId) appt,
@@ -165,27 +194,26 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
 
     state = AsyncData(newList);
 
-    if (relatedBookingId != null) {
-      ref.read(bookingsProvider.notifier).removeIfEmpty(relatedBookingId);
-    }
+    // Aggiorna lo stato locale dei bookings se vuoto
+    ref.read(bookingsProvider.notifier).removeIfEmpty(relatedBookingId);
 
-    // API delete: chiama l'API per cancellare appointment
-    final location = ref.read(currentLocationProvider);
+    // API delete: elimina il singolo booking_item
     final repository = ref.read(bookingsRepositoryProvider);
 
     try {
-      await repository.cancelAppointment(
-        locationId: location.id,
-        appointmentId: appointmentId,
+      await repository.deleteBookingItem(
+        bookingId: relatedBookingId,
+        itemId: appointmentId,
       );
-    } catch (e) {
-      debugPrint('Error deleting appointment: $e');
+    } catch (_) {
       // Rollback on error
       state = AsyncData(currentList);
     }
   }
 
   /// Aggiunge un nuovo appuntamento chiamando l'API
+  /// Se bookingId è fornito, aggiunge un item a un booking esistente
+  /// Altrimenti crea un nuovo booking
   Future<Appointment?> addAppointment({
     int? bookingId,
     required int staffId,
@@ -207,9 +235,36 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
 
     // Arrotonda gli orari a multipli di 5 minuti
     final roundedStart = _roundToNearestFiveMinutes(start);
+    final duration = end.difference(start);
+    final roundedEnd = roundedStart.add(duration);
 
     try {
-      // Call API
+      // Se bookingId è fornito, aggiungi un item al booking esistente
+      if (bookingId != null) {
+        final created = await repository.addBookingItem(
+          bookingId: bookingId,
+          businessId: location.businessId,
+          locationId: location.id,
+          staffId: staffId,
+          serviceId: serviceId,
+          serviceVariantId: serviceVariantId,
+          startTime: roundedStart,
+          endTime: roundedEnd,
+          serviceNameSnapshot: serviceName,
+          clientNameSnapshot: clientName,
+          price: price,
+          extraBlockedMinutes: extraBlockedMinutes,
+          extraProcessingMinutes: extraProcessingMinutes,
+        );
+
+        // Aggiorna lo state locale con il nuovo appuntamento
+        final currentList = state.value ?? [];
+        state = AsyncData([...currentList, created]);
+
+        return created;
+      }
+
+      // Altrimenti crea un nuovo booking
       final bookingResponse = await repository.createBooking(
         locationId: location.id,
         idempotencyKey: const Uuid().v4(),
@@ -240,12 +295,11 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
             businessId: bookingResponse.businessId,
             locationId: bookingResponse.locationId,
             clientId: bookingResponse.clientId,
-            customerName: bookingResponse.customerName ?? clientName,
+            clientName: bookingResponse.clientName ?? clientName,
           );
 
       return created;
-    } catch (e) {
-      debugPrint('Error creating appointment: $e');
+    } catch (_) {
       return null;
     }
   }
@@ -282,23 +336,32 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
         startTime: roundedStart,
         endTime: roundedEnd,
         staffId: updated.staffId,
+        serviceId: updated.serviceId,
+        serviceVariantId: updated.serviceVariantId,
+        serviceNameSnapshot: updated.serviceName,
+        clientId: updated.clientId,
+        clientName: updated.clientName,
+        clientNameSnapshot: updated.clientName,
+        extraBlockedMinutes: updated.extraBlockedMinutes,
+        extraProcessingMinutes: updated.extraProcessingMinutes,
       );
-    } catch (e) {
-      debugPrint('Error updating appointment: $e');
+    } catch (_) {
       // Rollback on error
       state = AsyncData(currentList);
     }
   }
 
   /// Aggiorna il cliente di tutti gli appuntamenti di una prenotazione.
-  void updateClientForBooking({
+  /// Chiama l'API per persistere la modifica del client_id nel booking.
+  Future<void> updateClientForBooking({
     required int bookingId,
     required int? clientId,
     required String clientName,
-  }) {
+  }) async {
     final currentList = state.value;
     if (currentList == null) return;
 
+    // Aggiornamento locale immediato per la UI
     final newList = [
       for (final appt in currentList)
         if (appt.bookingId == bookingId)
@@ -309,11 +372,31 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
 
     state = AsyncData(newList);
 
-    // Nota: L'API backend PATCH /appointments/{id} non supporta l'update di client_id.
-    // Il cliente è una proprietà del booking, non del singolo appointment.
-    // Per aggiornare il cliente, bisognerebbe chiamare PUT /bookings/{booking_id} con client_id,
-    // ma questa API al momento supporta solo status e notes.
-    // Soluzione attuale: aggiornamento solo in locale, sufficiente per la UI.
+    // Chiama API per persistere la modifica
+    try {
+      final repository = ref.read(bookingsRepositoryProvider);
+      final location = ref.read(currentLocationProvider);
+
+      await repository.updateBooking(
+        locationId: location.id,
+        bookingId: bookingId,
+        clientId: clientId,
+        clearClient: clientId == null, // Se null, rimuovi il cliente
+      );
+
+      // Aggiorna anche il booking locale
+      ref
+          .read(bookingsProvider.notifier)
+          .updateClientForBooking(
+            bookingId: bookingId,
+            clientId: clientId,
+            clientName: clientName,
+          );
+    } catch (e) {
+      // Rollback: ripristina lo stato precedente
+      state = AsyncData(currentList);
+      rethrow; // Propaga l'errore per gestirlo nella UI
+    }
   }
 
   /// Duplica un appuntamento
@@ -379,10 +462,8 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
       ];
 
       state = AsyncData(newList);
-    } catch (e) {
-      debugPrint('Error deleting booking: $e');
+    } catch (_) {
       // In caso di errore, mantieni lo stato corrente
-      // o gestisci l'errore come preferisci
     }
   }
 
