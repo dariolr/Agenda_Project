@@ -717,3 +717,9 @@ I permessi sono gestiti dalla tabella `business_users`:
 | Login screen | `lib/features/auth/presentation/login_screen.dart` |
 | API client | `lib/core/network/api_client.dart` |
 | Session listener | `lib/app/session_expired_listener.dart` |
+
+
+
+SOURCE OF TRUTH: STAFF_PLANNING_MODEL.md
+
+Leggi e segui ESATTAMENTE STAFF_PLANNING_MODEL.md. Non inventare regole. Non riscrivere la logica degli slot settimanali: riusala. Implementa solo nel progetto agenda_backend. Non toccare agenda_core né agenda_frontend.

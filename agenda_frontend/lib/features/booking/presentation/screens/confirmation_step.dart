@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/route_slug_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../providers/booking_provider.dart';
 
@@ -84,7 +85,8 @@ class ConfirmationStep extends ConsumerWidget {
             ElevatedButton(
               onPressed: () {
                 ref.read(bookingFlowProvider.notifier).reset();
-                context.go('/booking');
+                final slug = ref.read(routeSlugProvider);
+                context.go('/$slug/booking');
               },
               child: Text(l10n.confirmationNewBooking),
             ),

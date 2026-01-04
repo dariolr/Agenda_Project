@@ -3231,6 +3231,56 @@ class L10n {
     );
   }
 
+  /// `Recupera password`
+  String get authResetPasswordTitle {
+    return Intl.message(
+      'Recupera password',
+      name: 'authResetPasswordTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inserisci la tua email. Ti invieremo un link per reimpostare la password.`
+  String get authResetPasswordMessage {
+    return Intl.message(
+      'Inserisci la tua email. Ti invieremo un link per reimpostare la password.',
+      name: 'authResetPasswordMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invia`
+  String get authResetPasswordSend {
+    return Intl.message(
+      'Invia',
+      name: 'authResetPasswordSend',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Se l'email esiste nel sistema, riceverai un link per reimpostare la password.`
+  String get authResetPasswordSuccess {
+    return Intl.message(
+      'Se l\'email esiste nel sistema, riceverai un link per reimpostare la password.',
+      name: 'authResetPasswordSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Si è verificato un errore. Riprova più tardi.`
+  String get authResetPasswordError {
+    return Intl.message(
+      'Si è verificato un errore. Riprova più tardi.',
+      name: 'authResetPasswordError',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Campo obbligatorio`
   String get authRequiredField {
     return Intl.message(

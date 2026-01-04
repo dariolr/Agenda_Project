@@ -537,4 +537,89 @@ Agenda Platform - Gestione prenotazioni semplice e veloce
 TEXT,
         ];
     }
+
+    /**
+     * Get customer password reset template.
+     * Sent when a customer requests a password reset from the booking frontend.
+     */
+    public static function customerPasswordReset(): array
+    {
+        return [
+            'subject' => 'Reimposta la tua password - {{business_name}}',
+            'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reimposta Password</title>
+</head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+        <tr>
+            <td style="padding:40px 30px;text-align:center;background-color:#6366f1;">
+                <h1 style="margin:0;color:#ffffff;font-size:24px;">🔐 Reimposta Password</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:30px;">
+                <p style="margin:0 0 20px;font-size:16px;color:#333;">
+                    Ciao <strong>{{client_name}}</strong>,
+                </p>
+                <p style="margin:0 0 25px;font-size:16px;color:#333;">
+                    Abbiamo ricevuto una richiesta di reimpostazione password per il tuo account su <strong>{{business_name}}</strong>.
+                </p>
+                
+                <p style="margin:0 0 25px;font-size:16px;color:#333;">
+                    Clicca sul pulsante qui sotto per reimpostare la tua password:
+                </p>
+                
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="text-align:center;">
+                            <a href="{{reset_url}}" style="display:inline-block;padding:14px 30px;background-color:#6366f1;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">
+                                Reimposta Password
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p style="margin:25px 0 0;font-size:14px;color:#666;">
+                    ⏰ Questo link scade tra <strong>24 ore</strong>.
+                </p>
+                <p style="margin:10px 0 0;font-size:14px;color:#666;">
+                    Se non hai richiesto la reimpostazione della password, puoi ignorare questa email. La tua password rimarrà invariata.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+                <p style="margin:0;font-size:12px;color:#999;">
+                    {{business_name}}
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+HTML,
+            'text' => <<<TEXT
+Reimposta Password
+
+Ciao {{client_name}},
+
+Abbiamo ricevuto una richiesta di reimpostazione password per il tuo account su {{business_name}}.
+
+Per reimpostare la tua password, visita il seguente link:
+{{reset_url}}
+
+⏰ Questo link scade tra 24 ore.
+
+Se non hai richiesto la reimpostazione della password, puoi ignorare questa email.
+
+---
+{{business_name}}
+TEXT,
+        ];
+    }
 }

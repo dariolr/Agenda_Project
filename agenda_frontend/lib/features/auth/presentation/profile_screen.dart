@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/network/api_client.dart';
 import '../providers/auth_provider.dart';
@@ -314,7 +315,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   OutlinedButton.icon(
                     icon: const Icon(Icons.lock_outline),
                     label: Text(l10n.authChangePassword),
-                    onPressed: () => context.push('/change-password'),
+                    onPressed: () {
+                      final slug = ref.read(routeSlugProvider);
+                      context.push('/$slug/change-password');
+                    },
                   ),
                 ],
               ],

@@ -59,6 +59,12 @@ class AuthRepository {
     await _apiClient.verifyResetToken(token);
   }
 
+  /// Richiede il reset della password (invia email con link).
+  /// L'API ritorna sempre successo per non rivelare se l'email esiste.
+  Future<void> forgotPassword({required String email}) async {
+    await _apiClient.forgotPassword(email);
+  }
+
   /// Reset password con token (da email di invito/reset).
   Future<void> resetPasswordWithToken({
     required String token,

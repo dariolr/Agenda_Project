@@ -240,15 +240,22 @@ if (success) {
 
 ### Struttura URL
 ```
-/                      → Landing page (business non specificato)
-/:slug                 → Redirect a /:slug/booking
-/:slug/booking         → Schermata prenotazione
-/:slug/login           → Login
-/:slug/register        → Registrazione
-/:slug/my-bookings     → Le mie prenotazioni
-/:slug/profile         → Profilo utente
-/reset-password/:token → Reset password (globale, no slug)
+/                        → Landing page (business non specificato)
+/:slug                   → Redirect a /:slug/booking
+/:slug/booking           → Schermata prenotazione
+/:slug/login             → Login
+/:slug/register          → Registrazione
+/:slug/my-bookings       → Le mie prenotazioni (auth required)
+/:slug/profile           → Profilo utente (auth required)
+/:slug/change-password   → Cambio password (auth required)
+/reset-password/:token   → Reset password (globale, no slug)
 ```
+
+### Route protette (richiedono autenticazione)
+Le seguenti route richiedono autenticazione. Se l'utente non è autenticato, viene reindirizzato a `/:slug/login`:
+- `/:slug/my-bookings`
+- `/:slug/profile`
+- `/:slug/change-password`
 
 ### Provider chiave
 - `routeSlugProvider` — StateProvider aggiornato dal router con lo slug corrente
@@ -256,6 +263,13 @@ if (success) {
 
 ### Path riservati (NON sono slug di business)
 `reset-password`, `login`, `register`, `booking`, `my-bookings`, `profile`, `change-password`, `privacy`, `terms`
+
+### ⚠️ Navigazione con slug
+Quando si usa `context.go()` o `context.push()` per navigare a route con slug, leggere sempre lo slug corrente:
+```dart
+final slug = ref.read(routeSlugProvider);
+context.go('/$slug/profile');
+```
 
 ### ⚠️ NON usare SubdomainResolver per lo slug
 `SubdomainResolver.getBusinessSlug()` legge `Uri.base` che è **statico** al caricamento JS.
@@ -398,6 +412,8 @@ I **clienti** (utenti che prenotano online) usano endpoint **diversi** dagli ope
 | Registrazione | `POST /v1/customer/{business_id}/auth/register` | N/A |
 | Refresh | `POST /v1/customer/{business_id}/auth/refresh` | ~~POST /v1/auth/refresh~~ |
 | Logout | `POST /v1/customer/{business_id}/auth/logout` | ~~POST /v1/auth/logout~~ |
+| Forgot Password | `POST /v1/customer/{business_id}/auth/forgot-password` | ~~POST /v1/auth/forgot-password~~ |
+| Reset Password | `POST /v1/customer/auth/reset-password` | ~~POST /v1/auth/reset-password~~ |
 | Profilo | `GET /v1/customer/me` | ~~GET /v1/me~~ |
 | Mie prenotazioni | `GET /v1/customer/bookings` | N/A |
 | Crea prenotazione | `POST /v1/customer/{business_id}/bookings` | ~~POST /v1/bookings~~ |

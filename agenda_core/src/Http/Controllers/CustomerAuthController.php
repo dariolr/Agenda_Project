@@ -11,6 +11,10 @@ use Agenda\UseCases\CustomerAuth\RefreshCustomerToken;
 use Agenda\UseCases\CustomerAuth\LogoutCustomer;
 use Agenda\UseCases\CustomerAuth\GetCustomerMe;
 use Agenda\UseCases\CustomerAuth\RegisterCustomer;
+use Agenda\UseCases\CustomerAuth\RequestCustomerPasswordReset;
+use Agenda\UseCases\CustomerAuth\ResetCustomerPassword;
+use Agenda\UseCases\CustomerAuth\UpdateCustomerProfile;
+use Agenda\UseCases\CustomerAuth\ChangeCustomerPassword;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
 use Agenda\Domain\Exceptions\AuthException;
 use Agenda\Domain\Exceptions\ValidationException;
@@ -29,6 +33,10 @@ final class CustomerAuthController
         private readonly LogoutCustomer $logoutCustomer,
         private readonly GetCustomerMe $getCustomerMe,
         private readonly RegisterCustomer $registerCustomer,
+        private readonly RequestCustomerPasswordReset $requestPasswordReset,
+        private readonly ResetCustomerPassword $resetPassword,
+        private readonly UpdateCustomerProfile $updateCustomerProfile,
+        private readonly ChangeCustomerPassword $changeCustomerPassword,
         private readonly BusinessRepository $businessRepository,
     ) {}
 
@@ -254,6 +262,123 @@ final class CustomerAuthController
         try {
             $client = $this->getCustomerMe->execute((int) $clientId);
             return Response::success($client, 200);
+        } catch (AuthException $e) {
+            return Response::error($e->getMessage(), $e->getErrorCode(), $e->getHttpStatus());
+        }
+    }
+
+    /**
+     * POST /v1/customer/{business_id}/auth/forgot-password
+     * Request password reset email for customer.
+     */
+    public function forgotPassword(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        
+        // Verify business exists
+        $business = $this->businessRepository->findById($businessId);
+        if ($business === null) {
+            return Response::error('Business not found', 'not_found', 404);
+        }
+
+        $body = $request->getBody();
+        $email = $body['email'] ?? null;
+
+        if ($email === null || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return Response::error('Valid email is required', 'validation_error', 400);
+        }
+
+        // Always return success to prevent email enumeration
+        $this->requestPasswordReset->execute($email, $businessId);
+
+        return Response::success([
+            'message' => 'If the email exists in our system, you will receive a password reset link.',
+        ], 200);
+    }
+
+    /**
+     * POST /v1/customer/auth/reset-password
+     * Reset password using token from email.
+     */
+    public function resetPasswordWithToken(Request $request): Response
+    {
+        $body = $request->getBody();
+        $token = $body['token'] ?? null;
+        $password = $body['password'] ?? null;
+
+        if ($token === null || $password === null) {
+            return Response::error('Token and password are required', 'validation_error', 400);
+        }
+
+        try {
+            $this->resetPassword->execute($token, $password);
+            return Response::success([
+                'message' => 'Password has been reset successfully. You can now login with your new password.',
+            ], 200);
+        } catch (AuthException $e) {
+            return Response::error($e->getMessage(), $e->getErrorCode(), $e->getHttpStatus());
+        }
+    }
+
+    /**
+     * PUT /v1/customer/me
+     * Update customer profile.
+     * Protected by CustomerAuthMiddleware.
+     */
+    public function updateProfile(Request $request): Response
+    {
+        $clientId = $request->getAttribute('client_id');
+
+        if ($clientId === null) {
+            return Response::error('Unauthorized', 'unauthorized', 401);
+        }
+
+        $body = $request->getBody();
+
+        try {
+            $client = $this->updateCustomerProfile->execute(
+                (int) $clientId,
+                $body['first_name'] ?? null,
+                $body['last_name'] ?? null,
+                $body['email'] ?? null,
+                $body['phone'] ?? null
+            );
+            return Response::success($client, 200);
+        } catch (ValidationException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 400);
+        }
+    }
+
+    /**
+     * POST /v1/customer/me/change-password
+     * Change password for authenticated customer.
+     * Protected by CustomerAuthMiddleware.
+     */
+    public function changePassword(Request $request): Response
+    {
+        $clientId = $request->getAttribute('client_id');
+
+        if ($clientId === null) {
+            return Response::error('Unauthorized', 'unauthorized', 401);
+        }
+
+        $body = $request->getBody();
+        $currentPassword = $body['current_password'] ?? null;
+        $newPassword = $body['new_password'] ?? null;
+
+        if ($currentPassword === null || $newPassword === null) {
+            return Response::error('Current password and new password are required', 'validation_error', 400);
+        }
+
+        try {
+            $this->changeCustomerPassword->execute(
+                (int) $clientId,
+                $currentPassword,
+                $newPassword
+            );
+            return Response::success([
+                'message' => 'Password changed successfully.',
+            ], 200);
         } catch (AuthException $e) {
             return Response::error($e->getMessage(), $e->getErrorCode(), $e->getHttpStatus());
         }

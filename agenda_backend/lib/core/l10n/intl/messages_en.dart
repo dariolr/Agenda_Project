@@ -190,6 +190,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "authPhone": MessageLookupByLibrary.simpleMessage("Phone"),
     "authRememberMe": MessageLookupByLibrary.simpleMessage("Remember me"),
     "authRequiredField": MessageLookupByLibrary.simpleMessage("Required field"),
+    "authResetPasswordError": MessageLookupByLibrary.simpleMessage(
+      "An error occurred. Please try again later.",
+    ),
+    "authResetPasswordMessage": MessageLookupByLibrary.simpleMessage(
+      "Enter your email. We will send you a link to reset your password.",
+    ),
+    "authResetPasswordSend": MessageLookupByLibrary.simpleMessage("Send"),
+    "authResetPasswordSuccess": MessageLookupByLibrary.simpleMessage(
+      "If the email exists in our system, you will receive a password reset link.",
+    ),
+    "authResetPasswordTitle": MessageLookupByLibrary.simpleMessage(
+      "Reset password",
+    ),
     "availabilitySave": MessageLookupByLibrary.simpleMessage("Save changes"),
     "availabilityTitle": MessageLookupByLibrary.simpleMessage(
       "Weekly availability",

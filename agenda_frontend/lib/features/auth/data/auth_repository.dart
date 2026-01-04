@@ -67,46 +67,47 @@ class AuthRepository {
   }
 
   /// Reset password (invia email con link)
-  /// POST /v1/auth/forgot-password
-  /// NOTA: Usa ancora l'endpoint legacy, TODO: implementare customer password reset
-  Future<void> resetPassword({required String email}) async {
-    await _apiClient.forgotPassword(email: email);
+  /// POST /v1/customer/{business_id}/auth/forgot-password
+  Future<void> resetPassword({
+    required int businessId,
+    required String email,
+  }) async {
+    await _apiClient.customerForgotPassword(
+      businessId: businessId,
+      email: email,
+    );
   }
 
   /// Conferma reset password con token
-  /// POST /v1/auth/reset-password
+  /// POST /v1/customer/auth/reset-password
   Future<void> confirmResetPassword({
     required String token,
     required String newPassword,
   }) async {
-    await _apiClient.resetPasswordWithToken(
-      token: token,
-      password: newPassword,
-    );
+    await _apiClient.customerResetPassword(token: token, password: newPassword);
   }
 
   /// Cambia password (utente loggato)
-  /// POST /v1/me/change-password
-  /// NOTA: TODO - implementare endpoint customer change-password
+  /// POST /v1/customer/me/change-password
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
   }) async {
-    await _apiClient.changePassword(
+    await _apiClient.customerChangePassword(
       currentPassword: currentPassword,
       newPassword: newPassword,
     );
   }
 
   /// Aggiorna profilo cliente
-  /// PUT /v1/me (TODO: implementare /v1/customer/me PUT)
+  /// PUT /v1/customer/me
   Future<User> updateProfile({
     String? firstName,
     String? lastName,
     String? email,
     String? phone,
   }) async {
-    final data = await _apiClient.updateProfile(
+    final data = await _apiClient.customerUpdateProfile(
       firstName: firstName,
       lastName: lastName,
       email: email,

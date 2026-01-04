@@ -65,6 +65,10 @@ use Agenda\UseCases\CustomerAuth\RegisterCustomer;
 use Agenda\UseCases\CustomerAuth\RefreshCustomerToken;
 use Agenda\UseCases\CustomerAuth\LogoutCustomer;
 use Agenda\UseCases\CustomerAuth\GetCustomerMe;
+use Agenda\UseCases\CustomerAuth\RequestCustomerPasswordReset;
+use Agenda\UseCases\CustomerAuth\ResetCustomerPassword;
+use Agenda\UseCases\CustomerAuth\UpdateCustomerProfile;
+use Agenda\UseCases\CustomerAuth\ChangeCustomerPassword;
 use Throwable;
 
 final class Kernel
@@ -220,7 +224,11 @@ final class Kernel
         $this->router->post('/v1/customer/{business_id}/auth/register', CustomerAuthController::class, 'register');
         $this->router->post('/v1/customer/{business_id}/auth/refresh', CustomerAuthController::class, 'refresh');
         $this->router->post('/v1/customer/{business_id}/auth/logout', CustomerAuthController::class, 'logout');
+        $this->router->post('/v1/customer/{business_id}/auth/forgot-password', CustomerAuthController::class, 'forgotPassword');
+        $this->router->post('/v1/customer/auth/reset-password', CustomerAuthController::class, 'resetPasswordWithToken');
         $this->router->get('/v1/customer/me', CustomerAuthController::class, 'me', ['customer_auth']);
+        $this->router->put('/v1/customer/me', CustomerAuthController::class, 'updateProfile', ['customer_auth']);
+        $this->router->post('/v1/customer/me/change-password', CustomerAuthController::class, 'changePassword', ['customer_auth']);
         
         // Customer bookings (protected, uses client_id from customer JWT)
         $this->router->post('/v1/customer/{business_id}/bookings', BookingsController::class, 'storeCustomer', ['customer_auth', 'idempotency']);
@@ -286,6 +294,10 @@ final class Kernel
         $refreshCustomerToken = new RefreshCustomerToken($clientAuthRepo, $jwtService);
         $logoutCustomer = new LogoutCustomer($clientAuthRepo);
         $getCustomerMe = new GetCustomerMe($clientAuthRepo);
+        $requestCustomerPasswordReset = new RequestCustomerPasswordReset($clientAuthRepo, $businessRepo);
+        $resetCustomerPassword = new ResetCustomerPassword($clientAuthRepo, $passwordHasher);
+        $updateCustomerProfile = new UpdateCustomerProfile($clientAuthRepo);
+        $changeCustomerPassword = new ChangeCustomerPassword($clientAuthRepo, $passwordHasher);
 
         // Booking Use Cases
         $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo);
@@ -298,7 +310,7 @@ final class Kernel
         $this->controllers = [
             HealthController::class => new HealthController(),
             AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $verifyResetToken, $changePassword, $updateProfile),
-            CustomerAuthController::class => new CustomerAuthController($loginCustomer, $refreshCustomerToken, $logoutCustomer, $getCustomerMe, $registerCustomer, $businessRepo),
+            CustomerAuthController::class => new CustomerAuthController($loginCustomer, $refreshCustomerToken, $logoutCustomer, $getCustomerMe, $registerCustomer, $requestCustomerPasswordReset, $resetCustomerPassword, $updateCustomerProfile, $changeCustomerPassword, $businessRepo),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo, $businessUserRepo, $userRepo),
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
             ServicesController::class => new ServicesController($serviceRepo, $locationRepo, $businessUserRepo, $userRepo),

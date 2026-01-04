@@ -203,6 +203,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "authRequiredField": MessageLookupByLibrary.simpleMessage(
       "Campo obbligatorio",
     ),
+    "authResetPasswordError": MessageLookupByLibrary.simpleMessage(
+      "Si è verificato un errore. Riprova più tardi.",
+    ),
+    "authResetPasswordMessage": MessageLookupByLibrary.simpleMessage(
+      "Inserisci la tua email. Ti invieremo un link per reimpostare la password.",
+    ),
+    "authResetPasswordSend": MessageLookupByLibrary.simpleMessage("Invia"),
+    "authResetPasswordSuccess": MessageLookupByLibrary.simpleMessage(
+      "Se l\'email esiste nel sistema, riceverai un link per reimpostare la password.",
+    ),
+    "authResetPasswordTitle": MessageLookupByLibrary.simpleMessage(
+      "Recupera password",
+    ),
     "availabilitySave": MessageLookupByLibrary.simpleMessage("Salva modifiche"),
     "availabilityTitle": MessageLookupByLibrary.simpleMessage(
       "Disponibilità settimanale",

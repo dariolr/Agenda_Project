@@ -35,8 +35,23 @@ class ApiConfig {
   static String customerLogout(int businessId) =>
       '/v1/customer/$businessId/auth/logout';
 
+  /// POST /v1/customer/{business_id}/auth/forgot-password
+  static String customerForgotPassword(int businessId) =>
+      '/v1/customer/$businessId/auth/forgot-password';
+
+  /// POST /v1/customer/auth/reset-password
+  static const String customerResetPassword =
+      '/v1/customer/auth/reset-password';
+
   /// GET /v1/customer/me
   static const String customerMe = '/v1/customer/me';
+
+  /// PUT /v1/customer/me - Aggiorna profilo cliente
+  static const String customerUpdateProfile = '/v1/customer/me';
+
+  /// POST /v1/customer/me/change-password
+  static const String customerChangePassword =
+      '/v1/customer/me/change-password';
 
   /// GET /v1/customer/bookings
   static const String customerBookings = '/v1/customer/bookings';
