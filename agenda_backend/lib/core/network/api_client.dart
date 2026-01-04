@@ -203,8 +203,14 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
+      // ignore: avoid_print
+      print('DEBUG GET $path response.data: ${response.data}');
       return _handleResponse(response);
     } on DioException catch (e) {
+      // ignore: avoid_print
+      print('DEBUG GET $path DioException: ${e.message}');
+      // ignore: avoid_print
+      print('DEBUG GET $path response: ${e.response?.data}');
       throw _handleError(e);
     }
   }
@@ -267,7 +273,12 @@ class ApiClient {
   Map<String, dynamic> _handleResponse(Response response) {
     final body = response.data as Map<String, dynamic>;
     if (body['success'] == true) {
-      return body['data'] as Map<String, dynamic>? ?? {};
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      // Per risposte con data come List, ritorna wrapper
+      return {'_list': data, '_raw': body};
     }
     throw ApiException(
       code: body['error']?['code'] ?? 'unknown_error',
@@ -1535,5 +1546,101 @@ class ApiClient {
   /// DELETE /v1/time-blocks/{blockId}
   Future<void> deleteTimeBlock(int blockId) async {
     await delete('/v1/time-blocks/$blockId');
+  }
+
+  // ========== STAFF PLANNING ENDPOINTS ==========
+
+  /// Get all plannings for a staff member
+  /// GET /v1/staff/{staffId}/plannings
+  Future<List<Map<String, dynamic>>> getStaffPlannings(int staffId) async {
+    // ignore: avoid_print
+    print(
+      'DEBUG getStaffPlannings calling ${ApiConfig.staffPlannings(staffId)}',
+    );
+    final response = await get(ApiConfig.staffPlannings(staffId));
+    // ignore: avoid_print
+    print('DEBUG getStaffPlannings raw response: $response');
+    // _handleResponse wrappa le liste in {'_list': data}
+    final plannings = response['_list'] as List<dynamic>? ?? [];
+    return plannings.cast<Map<String, dynamic>>();
+  }
+
+  /// Get planning valid for a specific date
+  /// GET /v1/staff/{staffId}/planning?date=YYYY-MM-DD
+  Future<Map<String, dynamic>?> getStaffPlanningForDate({
+    required int staffId,
+    required String date,
+  }) async {
+    final response = await get(
+      ApiConfig.staffPlanningForDate(staffId),
+      queryParameters: {'date': date},
+    );
+    return response['planning'] as Map<String, dynamic>?;
+  }
+
+  /// Get available slots for a staff on a date
+  /// GET /v1/staff/{staffId}/planning-availability?date=YYYY-MM-DD
+  Future<List<int>> getStaffPlanningAvailability({
+    required int staffId,
+    required String date,
+  }) async {
+    final response = await get(
+      ApiConfig.staffPlanningAvailability(staffId),
+      queryParameters: {'date': date},
+    );
+    final slots = response['slots'] as List<dynamic>? ?? [];
+    return slots.cast<int>();
+  }
+
+  /// Create a new staff planning
+  /// POST /v1/staff/{staffId}/plannings
+  Future<Map<String, dynamic>> createStaffPlanning({
+    required int staffId,
+    required String type,
+    required String validFrom,
+    String? validTo,
+    required List<Map<String, dynamic>> templates,
+  }) async {
+    // _handleResponse già estrae body['data'], quindi response È il planning
+    final response = await post(
+      ApiConfig.staffPlannings(staffId),
+      data: {
+        'type': type,
+        'valid_from': validFrom,
+        if (validTo != null) 'valid_to': validTo,
+        'templates': templates,
+      },
+    );
+    return Map<String, dynamic>.from(response);
+  }
+
+  /// Update an existing staff planning
+  /// PUT /v1/staff/{staffId}/plannings/{planningId}
+  Future<Map<String, dynamic>> updateStaffPlanning({
+    required int staffId,
+    required int planningId,
+    String? type,
+    String? validFrom,
+    String? validTo,
+    List<Map<String, dynamic>>? templates,
+  }) async {
+    final data = <String, dynamic>{};
+    if (type != null) data['type'] = type;
+    if (validFrom != null) data['valid_from'] = validFrom;
+    if (validTo != null) data['valid_to'] = validTo;
+    if (templates != null) data['templates'] = templates;
+
+    // _handleResponse già estrae body['data'], quindi response È il planning
+    final response = await put(
+      ApiConfig.staffPlanning(staffId, planningId),
+      data: data,
+    );
+    return Map<String, dynamic>.from(response);
+  }
+
+  /// Delete a staff planning
+  /// DELETE /v1/staff/{staffId}/plannings/{planningId}
+  Future<void> deleteStaffPlanning(int staffId, int planningId) async {
+    await delete(ApiConfig.staffPlanning(staffId, planningId));
   }
 }

@@ -35,6 +35,8 @@ String? _localizedReasonCode(String? code, BuildContext context) {
 
 class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
   late DateTime _currentMonth;
+  bool _isLoading = false;
+  int? _loadedStaffId;
 
   @override
   void initState() {
@@ -43,19 +45,39 @@ class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
     _loadExceptions();
   }
 
+  @override
+  void didUpdateWidget(covariant ExceptionCalendarView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Se lo staff è cambiato, ricarica le eccezioni
+    if (oldWidget.staffId != widget.staffId) {
+      _loadedStaffId = null;
+      _loadExceptions();
+    }
+  }
+
   Future<void> _loadExceptions() async {
-    // Carica eccezioni per un range di 3 mesi (mese corrente ± 1)
-    final from = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
-    final to = DateTime(_currentMonth.year, _currentMonth.month + 2, 0);
-    await ref
-        .read(availabilityExceptionsProvider.notifier)
-        .loadExceptionsForStaff(widget.staffId, fromDate: from, toDate: to);
+    // Evita chiamate multiple per lo stesso staff
+    if (_isLoading || _loadedStaffId == widget.staffId) return;
+
+    _isLoading = true;
+    try {
+      // Carica eccezioni per un range di 3 mesi (mese corrente ± 1)
+      final from = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
+      final to = DateTime(_currentMonth.year, _currentMonth.month + 2, 0);
+      await ref
+          .read(availabilityExceptionsProvider.notifier)
+          .loadExceptionsForStaff(widget.staffId, fromDate: from, toDate: to);
+      _loadedStaffId = widget.staffId;
+    } finally {
+      _isLoading = false;
+    }
   }
 
   void _previousMonth() {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
     });
+    _loadedStaffId = null; // Forza ricaricamento per nuovo range
     _loadExceptions();
   }
 
@@ -63,6 +85,7 @@ class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
     });
+    _loadedStaffId = null; // Forza ricaricamento per nuovo range
     _loadExceptions();
   }
 

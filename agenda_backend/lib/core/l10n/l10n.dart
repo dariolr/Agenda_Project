@@ -3355,6 +3355,281 @@ class L10n {
   String get profileTitle {
     return Intl.message('Profilo', name: 'profileTitle', desc: '', args: []);
   }
+
+  /// `Nuovo planning`
+  String get planningCreateTitle {
+    return Intl.message(
+      'Nuovo planning',
+      name: 'planningCreateTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modifica planning`
+  String get planningEditTitle {
+    return Intl.message(
+      'Modifica planning',
+      name: 'planningEditTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Elimina planning`
+  String get planningDeleteTitle {
+    return Intl.message(
+      'Elimina planning',
+      name: 'planningDeleteTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sei sicuro di voler eliminare questo planning? Gli orari settimanali verranno rimossi.`
+  String get planningDeleteConfirm {
+    return Intl.message(
+      'Sei sicuro di voler eliminare questo planning? Gli orari settimanali verranno rimossi.',
+      name: 'planningDeleteConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo planning`
+  String get planningType {
+    return Intl.message(
+      'Tipo planning',
+      name: 'planningType',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Settimanale`
+  String get planningTypeWeekly {
+    return Intl.message(
+      'Settimanale',
+      name: 'planningTypeWeekly',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Bisettimanale`
+  String get planningTypeBiweekly {
+    return Intl.message(
+      'Bisettimanale',
+      name: 'planningTypeBiweekly',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Data inizio validità`
+  String get planningValidFrom {
+    return Intl.message(
+      'Data inizio validità',
+      name: 'planningValidFrom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Data fine validità`
+  String get planningValidTo {
+    return Intl.message(
+      'Data fine validità',
+      name: 'planningValidTo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Senza scadenza`
+  String get planningOpenEnded {
+    return Intl.message(
+      'Senza scadenza',
+      name: 'planningOpenEnded',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Valida dal {from} al {to}`
+  String planningValidFromTo(String from, String to) {
+    return Intl.message(
+      'Valida dal $from al $to',
+      name: 'planningValidFromTo',
+      desc: '',
+      args: [from, to],
+    );
+  }
+
+  /// `Valida dal {from}`
+  String planningValidFromOnly(String from) {
+    return Intl.message(
+      'Valida dal $from',
+      name: 'planningValidFromOnly',
+      desc: '',
+      args: [from],
+    );
+  }
+
+  /// `{hours}h/settimana`
+  String planningWeeklyHours(int hours) {
+    return Intl.message(
+      '${hours}h/settimana',
+      name: 'planningWeeklyHours',
+      desc: '',
+      args: [hours],
+    );
+  }
+
+  /// `Sett. A: {hoursA}h | Sett. B: {hoursB}h | Tot: {total}h`
+  String planningBiweeklyHours(int hoursA, int hoursB, int total) {
+    return Intl.message(
+      'Sett. A: ${hoursA}h | Sett. B: ${hoursB}h | Tot: ${total}h',
+      name: 'planningBiweeklyHours',
+      desc: '',
+      args: [hoursA, hoursB, total],
+    );
+  }
+
+  /// `Mostra planning scaduti ({count})`
+  String planningShowExpired(int count) {
+    return Intl.message(
+      'Mostra planning scaduti ($count)',
+      name: 'planningShowExpired',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Nascondi planning scaduti`
+  String get planningHideExpired {
+    return Intl.message(
+      'Nascondi planning scaduti',
+      name: 'planningHideExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Imposta data fine`
+  String get planningSetEndDate {
+    return Intl.message(
+      'Imposta data fine',
+      name: 'planningSetEndDate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona data`
+  String get planningSelectDate {
+    return Intl.message(
+      'Seleziona data',
+      name: 'planningSelectDate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Planning`
+  String get planningListTitle {
+    return Intl.message(
+      'Planning',
+      name: 'planningListTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun planning definito`
+  String get planningListEmpty {
+    return Intl.message(
+      'Nessun planning definito',
+      name: 'planningListEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Aggiungi planning`
+  String get planningListAdd {
+    return Intl.message(
+      'Aggiungi planning',
+      name: 'planningListAdd',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Settimana A`
+  String get planningWeekA {
+    return Intl.message(
+      'Settimana A',
+      name: 'planningWeekA',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Settimana B`
+  String get planningWeekB {
+    return Intl.message(
+      'Settimana B',
+      name: 'planningWeekB',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Settimana attuale: {week}`
+  String planningCurrentWeek(String week) {
+    return Intl.message(
+      'Settimana attuale: $week',
+      name: 'planningCurrentWeek',
+      desc: '',
+      args: [week],
+    );
+  }
+
+  /// `Dal {from} al {to}`
+  String planningValidityRange(String from, String to) {
+    return Intl.message(
+      'Dal $from al $to',
+      name: 'planningValidityRange',
+      desc: '',
+      args: [from, to],
+    );
+  }
+
+  /// `Dal {from}`
+  String planningValidityFrom(String from) {
+    return Intl.message(
+      'Dal $from',
+      name: 'planningValidityFrom',
+      desc: '',
+      args: [from],
+    );
+  }
+
+  /// `Attivo`
+  String get planningActive {
+    return Intl.message('Attivo', name: 'planningActive', desc: '', args: []);
+  }
+
+  /// `Futuro`
+  String get planningFuture {
+    return Intl.message('Futuro', name: 'planningFuture', desc: '', args: []);
+  }
+
+  /// `Passato`
+  String get planningPast {
+    return Intl.message('Passato', name: 'planningPast', desc: '', args: []);
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

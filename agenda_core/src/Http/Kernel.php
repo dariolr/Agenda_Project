@@ -18,6 +18,7 @@ use Agenda\Http\Controllers\LocationsController;
 use Agenda\Http\Controllers\ServicesController;
 use Agenda\Http\Controllers\StaffController;
 use Agenda\Http\Controllers\StaffAvailabilityExceptionController;
+use Agenda\Http\Controllers\StaffPlanningController;
 use Agenda\Http\Controllers\ResourcesController;
 use Agenda\Http\Controllers\TimeBlocksController;
 use Agenda\Http\Controllers\AppointmentsController;
@@ -40,6 +41,7 @@ use Agenda\Infrastructure\Repositories\ServiceRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\StaffScheduleRepository;
 use Agenda\Infrastructure\Repositories\StaffAvailabilityExceptionRepository;
+use Agenda\Infrastructure\Repositories\StaffPlanningRepository;
 use Agenda\Infrastructure\Repositories\ResourceRepository;
 use Agenda\Infrastructure\Repositories\TimeBlockRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
@@ -149,6 +151,15 @@ final class Kernel
         $this->router->post('/v1/staff/{id}/availability-exceptions', StaffAvailabilityExceptionController::class, 'store', ['auth']);
         $this->router->put('/v1/staff/availability-exceptions/{id}', StaffAvailabilityExceptionController::class, 'update', ['auth']);
         $this->router->delete('/v1/staff/availability-exceptions/{id}', StaffAvailabilityExceptionController::class, 'destroy', ['auth']);
+
+        // Staff planning (auth required)
+        $this->router->get('/v1/staff/{id}/plannings', StaffPlanningController::class, 'indexForStaff', ['auth']);
+        $this->router->get('/v1/staff/{id}/planning', StaffPlanningController::class, 'showForDate', ['auth']);
+        $this->router->get('/v1/staff/{id}/planning/{planning_id}', StaffPlanningController::class, 'show', ['auth']);
+        $this->router->get('/v1/staff/{id}/planning-availability', StaffPlanningController::class, 'availabilityForDate', ['auth']);
+        $this->router->post('/v1/staff/{id}/plannings', StaffPlanningController::class, 'store', ['auth']);
+        $this->router->put('/v1/staff/{id}/plannings/{planning_id}', StaffPlanningController::class, 'update', ['auth']);
+        $this->router->delete('/v1/staff/{id}/plannings/{planning_id}', StaffPlanningController::class, 'destroy', ['auth']);
 
         // Resources (auth required)
         $this->router->get('/v1/businesses/{business_id}/resources', ResourcesController::class, 'indexByBusiness', ['auth']);
@@ -266,6 +277,7 @@ final class Kernel
         $staffRepo = new StaffRepository($this->db);
         $staffScheduleRepo = new StaffScheduleRepository($this->db);
         $staffExceptionRepo = new StaffAvailabilityExceptionRepository($this->db);
+        $staffPlanningRepo = new StaffPlanningRepository($this->db);
         $resourceRepo = new ResourceRepository($this->db);
         $timeBlockRepo = new TimeBlockRepository($this->db);
         $bookingRepo = new BookingRepository($this->db);
@@ -300,7 +312,7 @@ final class Kernel
         $changeCustomerPassword = new ChangeCustomerPassword($clientAuthRepo, $passwordHasher);
 
         // Booking Use Cases
-        $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo);
+        $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo);
         $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo);
         $updateBooking = new UpdateBooking($bookingRepo, $this->db);
         $deleteBooking = new DeleteBooking($bookingRepo, $this->db);
@@ -323,6 +335,7 @@ final class Kernel
             BusinessUsersController::class => new BusinessUsersController($businessRepo, $businessUserRepo, $userRepo),
             BusinessInvitationsController::class => new BusinessInvitationsController($businessRepo, $businessUserRepo, $businessInvitationRepo, $userRepo),
             StaffAvailabilityExceptionController::class => new StaffAvailabilityExceptionController($staffExceptionRepo, $staffRepo, $businessUserRepo, $userRepo),
+            StaffPlanningController::class => new StaffPlanningController($staffPlanningRepo, $staffRepo, $businessUserRepo, $userRepo),
             ResourcesController::class => new ResourcesController($resourceRepo, $locationRepo, $businessUserRepo, $userRepo),
             TimeBlocksController::class => new TimeBlocksController($timeBlockRepo, $locationRepo, $businessUserRepo, $userRepo),
         ];

@@ -3,7 +3,7 @@ import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/availability_exception.dart';
-import 'package:agenda_backend/core/models/staff.dart';
+import 'package:agenda_backend/core/models/staff_planning.dart' hide DateUtils;
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
@@ -13,7 +13,9 @@ import 'package:agenda_backend/features/agenda/providers/date_range_provider.dar
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/presentation/dialogs/add_exception_dialog.dart';
 import 'package:agenda_backend/features/staff/presentation/staff_availability_screen.dart';
+import 'package:agenda_backend/features/staff/presentation/staff_planning_screen.dart';
 import 'package:agenda_backend/features/staff/providers/availability_exceptions_provider.dart';
+import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:agenda_backend/features/staff/widgets/staff_top_controls.dart';
 import 'package:flutter/material.dart';
@@ -305,27 +307,6 @@ final weeklyExceptionsLoadKeyProvider =
       WeeklyExceptionsLoadKeyNotifier.new,
     );
 
-void _ensureExceptionsLoadedForWeekWithKey(
-  String? lastKey,
-  void Function(String? value) setKey,
-  Future<void> Function(int staffId, {DateTime? fromDate, DateTime? toDate})
-  loadForStaff,
-  DateTime agendaDate,
-  List<Staff> staffList,
-) {
-  if (staffList.isEmpty) return;
-  final monday = _mondayOfWeek(agendaDate);
-  final staffIds = staffList.map((s) => s.id).toList()..sort();
-  final key =
-      '${monday.toIso8601String().split('T').first}|${staffIds.join(",")}';
-  if (lastKey == key) return;
-  final fromDate = monday;
-  final toDate = monday.add(const Duration(days: 6));
-  for (final staff in staffList) {
-    loadForStaff(staff.id, fromDate: fromDate, toDate: toDate);
-  }
-}
-
 final weeklyStaffAvailabilityFromEditorProvider =
     Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
       final staffList = ref.watch(staffForStaffSectionProvider);
@@ -336,15 +317,9 @@ final weeklyStaffAvailabilityFromEditorProvider =
 
       // Ottieni la data corrente dell'agenda per calcolare la settimana mostrata
       final agendaDate = ref.watch(agendaDateProvider);
-      _ensureExceptionsLoadedForWeekWithKey(
-        ref.watch(weeklyExceptionsLoadKeyProvider),
-        ref.read(weeklyExceptionsLoadKeyProvider.notifier).setKey,
-        ref
-            .read(availabilityExceptionsProvider.notifier)
-            .loadExceptionsForStaff,
-        agendaDate,
-        staffList,
-      );
+      // ⚠️ RIMOSSO: Il caricamento delle eccezioni causa loop infinito
+      // Le eccezioni vengono caricate on-demand in ExceptionCalendarView
+      // _ensureExceptionsLoadedForWeekWithKey(...)
       final monday = _mondayOfWeek(agendaDate);
 
       List<HourRange> slotsToHourRanges(Set<int> slots) {
@@ -483,13 +458,9 @@ final weeklyStaffBaseAvailabilityProvider =
 final weeklyExceptionDaysProvider = Provider<Map<int, Set<int>>>((ref) {
   final staffList = ref.watch(staffForStaffSectionProvider);
   final agendaDate = ref.watch(agendaDateProvider);
-  _ensureExceptionsLoadedForWeekWithKey(
-    ref.watch(weeklyExceptionsLoadKeyProvider),
-    ref.read(weeklyExceptionsLoadKeyProvider.notifier).setKey,
-    ref.read(availabilityExceptionsProvider.notifier).loadExceptionsForStaff,
-    agendaDate,
-    staffList,
-  );
+  // ⚠️ RIMOSSO: Il caricamento delle eccezioni causa loop infinito
+  // Le eccezioni vengono caricate on-demand in ExceptionCalendarView
+  // _ensureExceptionsLoadedForWeekWithKey(...)
   final monday = _mondayOfWeek(agendaDate);
 
   final Map<int, Set<int>> result = {};
@@ -603,13 +574,9 @@ class _StaffWeekOverviewScreenState
     // Track which staff/day combinations have exceptions applied
     final exceptionDays = ref.watch(weeklyExceptionDaysProvider);
     final formFactor = ref.watch(formFactorProvider);
-    _ensureExceptionsLoadedForWeekWithKey(
-      ref.watch(weeklyExceptionsLoadKeyProvider),
-      ref.read(weeklyExceptionsLoadKeyProvider.notifier).setKey,
-      ref.read(availabilityExceptionsProvider.notifier).loadExceptionsForStaff,
-      selectedDate,
-      staffList,
-    );
+    // ⚠️ RIMOSSO: Il caricamento delle eccezioni causa loop infinito
+    // Le eccezioni vengono caricate on-demand in ExceptionCalendarView
+    // _ensureExceptionsLoadedForWeekWithKey(...)
 
     // Week days (Mon..Sun)
     final weekStart = _mondayOfWeek(selectedDate);
@@ -744,10 +711,49 @@ class _StaffWeekOverviewScreenState
       final minutes = _totalMinutesForStaff(availability[staffId] ?? const {});
       final isMobile = formFactor == AppFormFactor.mobile;
       void openStaffAvailability() {
-        final vn = ref.read(initialStaffToEditProvider);
-        vn.value = staffId;
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const StaffAvailabilityScreen()),
+          MaterialPageRoute(
+            builder: (_) => StaffPlanningScreen(initialStaffId: staffId),
+          ),
+        );
+      }
+
+      // Cerca planning biweekly attivo per mostrare badge A/B
+      Widget? weekLabelBadge;
+      final plannings = ref.watch(planningsForStaffProvider(staffId));
+      final activePlanning = plannings
+          .where((p) => p.isValidForDate(weekStart))
+          .where((p) => p.type == StaffPlanningType.biweekly)
+          .toList();
+      if (activePlanning.isNotEmpty) {
+        final planning = activePlanning.first;
+        final label = planning.computeWeekLabel(weekStart);
+        final labelText = label == WeekLabel.a
+            ? context.l10n.planningWeekA
+            : context.l10n.planningWeekB;
+        weekLabelBadge = Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: label == WeekLabel.a
+                ? const Color(0xFFE3F2FD) // light blue
+                : const Color(0xFFFCE4EC), // light pink
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: label == WeekLabel.a
+                  ? const Color(0xFF1976D2).withValues(alpha: 0.3)
+                  : const Color(0xFFC2185B).withValues(alpha: 0.3),
+            ),
+          ),
+          child: Text(
+            labelText,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: label == WeekLabel.a
+                  ? const Color(0xFF1976D2)
+                  : const Color(0xFFC2185B),
+              fontWeight: FontWeight.w600,
+              fontSize: 10,
+            ),
+          ),
         );
       }
 
@@ -806,6 +812,10 @@ class _StaffWeekOverviewScreenState
                       context,
                     ).textTheme.labelSmall?.copyWith(color: Colors.black54),
                   ),
+                if (weekLabelBadge != null) ...[
+                  const SizedBox(height: 4),
+                  weekLabelBadge,
+                ],
               ],
             ),
           ),
@@ -829,10 +839,20 @@ class _StaffWeekOverviewScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    staff.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          staff.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (weekLabelBadge != null) ...[
+                        const SizedBox(width: 8),
+                        weekLabelBadge,
+                      ],
+                    ],
                   ),
                   if (minutes > 0)
                     Text(
@@ -1216,10 +1236,10 @@ class _StaffWeekOverviewScreenState
 
       // Helper per modificare tutti i turni (naviga all'editor settimanale)
       void editAll() {
-        final vn = ref.read(initialStaffToEditProvider);
-        vn.value = staffId;
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const StaffAvailabilityScreen()),
+          MaterialPageRoute(
+            builder: (_) => StaffPlanningScreen(initialStaffId: staffId),
+          ),
         );
       }
 

@@ -545,5 +545,80 @@
   "authLastName": "Last Name",
   "authPhone": "Phone",
   "switchBusiness": "Switch",
-  "profileTitle": "Profile"
+  "profileTitle": "Profile",
+  "planningCreateTitle": "New planning",
+  "planningEditTitle": "Edit planning",
+  "planningDeleteTitle": "Delete planning",
+  "planningDeleteConfirm": "Are you sure you want to delete this planning? Weekly schedules will be removed.",
+  "planningType": "Planning type",
+  "planningTypeWeekly": "Weekly",
+  "planningTypeBiweekly": "Biweekly",
+  "planningValidFrom": "Validity start date",
+  "planningValidTo": "Validity end date",
+  "planningOpenEnded": "No end date",
+  "planningValidFromTo": "Valid from {from} to {to}",
+  "@planningValidFromTo": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "planningValidFromOnly": "Valid from {from}",
+  "@planningValidFromOnly": {
+    "placeholders": {
+      "from": { "type": "String" }
+    }
+  },
+  "planningWeeklyHours": "{hours}h/week",
+  "@planningWeeklyHours": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "planningBiweeklyHours": "Week A: {hoursA}h | Week B: {hoursB}h | Tot: {total}h",
+  "@planningBiweeklyHours": {
+    "placeholders": {
+      "hoursA": { "type": "int" },
+      "hoursB": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "planningShowExpired": "Show expired ({count})",
+  "@planningShowExpired": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "planningHideExpired": "Hide expired",
+  "planningSetEndDate": "Set end date",
+  "planningSelectDate": "Select date",
+  "planningListTitle": "Planning",
+  "planningListEmpty": "No planning defined",
+  "planningListAdd": "Add planning",
+  "planningWeekA": "Week A",
+  "planningWeekB": "Week B",
+  "planningCurrentWeek": "Current week: {week}",
+  "@planningCurrentWeek": {
+    "placeholders": {
+      "week": {
+        "type": "String"
+      }
+    }
+  },
+  "planningValidityRange": "From {from} to {to}",
+  "@planningValidityRange": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "planningValidityFrom": "From {from}",
+  "@planningValidityFrom": {
+    "placeholders": {
+      "from": { "type": "String" }
+    }
+  },
+  "planningActive": "Active",
+  "planningFuture": "Future",
+  "planningPast": "Past"
 }

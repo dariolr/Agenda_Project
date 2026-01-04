@@ -558,6 +558,36 @@ class ApiClient {
     return get(ApiConfig.availability, queryParameters: params);
   }
 
+  // ========== STAFF PLANNING ENDPOINTS (read-only) ==========
+
+  /// GET /v1/staff/{id}/plannings - tutti i planning per uno staff
+  Future<Map<String, dynamic>> getStaffPlannings(int staffId) async {
+    return get(ApiConfig.staffPlannings(staffId));
+  }
+
+  /// GET /v1/staff/{id}/planning?date=YYYY-MM-DD - planning valido per data
+  Future<Map<String, dynamic>> getStaffPlanningForDate({
+    required int staffId,
+    required String date,
+  }) async {
+    return get(
+      ApiConfig.staffPlanningForDate(staffId),
+      queryParameters: {'date': date},
+    );
+  }
+
+  /// GET /v1/staff/{id}/planning-availability?date=YYYY-MM-DD - slot disponibili per data
+  /// Ritorna array di slot index (es: [36, 37, 38, 48, 49, 50...])
+  Future<Map<String, dynamic>> getStaffPlanningAvailability({
+    required int staffId,
+    required String date,
+  }) async {
+    return get(
+      ApiConfig.staffPlanningAvailability(staffId),
+      queryParameters: {'date': date},
+    );
+  }
+
   // ========== BOOKING ENDPOINT ==========
 
   /// POST /v1/locations/{location_id}/bookings
