@@ -795,3 +795,35 @@ L'integrazione customer auth è **COMPLETATA** in `agenda_frontend`:
 ```
 
 ---
+
+
+SOURCE OF TRUTH: ../../STAFF_PLANNING_MODEL.md
+
+Agisci come senior backend engineer.
+
+Obiettivo:
+Integrare nel progetto agenda_core il modello di staff planning temporale già implementato in agenda_backend.
+
+Vincoli:
+- Segui ESATTAMENTE STAFF_PLANNING_MODEL.md.
+- Non introdurre nuove regole.
+- Non modificare il modello dati deciso.
+- Non riscrivere logica di business già implementata nel backend.
+- Esporre solo API e query necessarie.
+- Non toccare agenda_backend né agenda_frontend.
+
+Attività obbligatorie:
+1) Esporre via API le entità staff_planning e staff_planning_week_template.
+2) Esporre endpoint per:
+   - lettura planning per staff
+   - lettura planning valido per una data
+   - lettura disponibilità staff per una data
+3) Gestire valid_to = null come “mai”.
+4) Rispettare intervalli temporali chiusi-chiusi.
+5) Se più planning risultano validi per una data, restituire errore di consistenza.
+6) Non aggiungere fallback automatici.
+
+Output richiesto:
+- Codice PHP/API aggiornato.
+- Eventuali query SQL di lettura necessarie.
+- Nessuna spiegazione testuale.

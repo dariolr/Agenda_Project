@@ -515,3 +515,38 @@ L'integrazione customer auth è stata implementata. I seguenti file sono stati m
 - **Mobile**: entrambi in secure storage (flutter_secure_storage)
 
 Vedi [TOKEN_STORAGE_WEB.md](TOKEN_STORAGE_WEB.md) per dettagli implementazione web.
+
+
+SOURCE OF TRUTH: STAFF_PLANNING_MODEL.md
+
+Agisci come senior frontend engineer.
+
+Obiettivo:
+Adeguare il progetto agenda_frontend alla nuova logica di disponibilità staff già implementata in agenda_backend e esposta da agenda_core.
+
+Vincoli:
+- Segui ESATTAMENTE STAFF_PLANNING_MODEL.md.
+- Non introdurre nuove regole di business.
+- Non duplicare logica di planning lato frontend.
+- Usa solo i dati restituiti dalle API di agenda_core.
+- Non modificare agenda_backend né agenda_core.
+
+Attività obbligatorie:
+1) Usare gli endpoint di agenda_core per ottenere:
+   - planning valido per staff e data
+   - disponibilità staff per una data
+   - slot disponibili per una data
+2) Rimuovere qualsiasi logica frontend che assuma:
+   - planning unico sempre valido
+   - disponibilità settimanale statica
+3) Gestire correttamente:
+   - valid_to = null come “mai”
+   - assenza di planning → staff non disponibile
+4) Adeguare UI e flussi di prenotazione affinché:
+   - le date mostrino solo slot realmente disponibili
+   - i cambi settimana A/B siano trasparenti per l’utente
+5) Non introdurre fallback o assunzioni locali.
+
+Output richiesto:
+- Codice frontend aggiornato.
+- Nessuna spiegazione testuale.

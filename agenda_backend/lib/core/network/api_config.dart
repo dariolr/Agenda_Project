@@ -97,4 +97,21 @@ class ApiConfig {
 
   /// Schedule di uno staff specifico
   static String staffSchedule(int staffId) => '/v1/staff/$staffId/schedules';
+
+  // ========== STAFF PLANNING ENDPOINTS ==========
+
+  /// Lista tutti i planning di uno staff
+  static String staffPlannings(int staffId) => '/v1/staff/$staffId/plannings';
+
+  /// Singolo planning (per update/delete)
+  static String staffPlanning(int staffId, int planningId) =>
+      '/v1/staff/$staffId/plannings/$planningId';
+
+  /// Planning valido per una data
+  static String staffPlanningForDate(int staffId) =>
+      '/v1/staff/$staffId/planning';
+
+  /// Slot disponibili per una data
+  static String staffPlanningAvailability(int staffId) =>
+      '/v1/staff/$staffId/planning-availability';
 }

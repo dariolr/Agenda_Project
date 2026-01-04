@@ -545,5 +545,80 @@
   "authLastName": "Cognome",
   "authPhone": "Telefono",
   "switchBusiness": "Cambia",
-  "profileTitle": "Profilo"
+  "profileTitle": "Profilo",
+  "planningCreateTitle": "Nuovo planning",
+  "planningEditTitle": "Modifica planning",
+  "planningDeleteTitle": "Elimina planning",
+  "planningDeleteConfirm": "Sei sicuro di voler eliminare questo planning? Gli orari settimanali verranno rimossi.",
+  "planningType": "Tipo planning",
+  "planningTypeWeekly": "Settimanale",
+  "planningTypeBiweekly": "Bisettimanale",
+  "planningValidFrom": "Data inizio validità",
+  "planningValidTo": "Data fine validità",
+  "planningOpenEnded": "Senza scadenza",
+  "planningValidFromTo": "Valida dal {from} al {to}",
+  "@planningValidFromTo": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "planningValidFromOnly": "Valida dal {from}",
+  "@planningValidFromOnly": {
+    "placeholders": {
+      "from": { "type": "String" }
+    }
+  },
+  "planningWeeklyHours": "{hours}h/settimana",
+  "@planningWeeklyHours": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "planningBiweeklyHours": "Sett. A: {hoursA}h | Sett. B: {hoursB}h | Tot: {total}h",
+  "@planningBiweeklyHours": {
+    "placeholders": {
+      "hoursA": { "type": "int" },
+      "hoursB": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "planningShowExpired": "Mostra planning scaduti ({count})",
+  "@planningShowExpired": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "planningHideExpired": "Nascondi planning scaduti",
+  "planningSetEndDate": "Imposta data fine",
+  "planningSelectDate": "Seleziona data",
+  "planningListTitle": "Planning",
+  "planningListEmpty": "Nessun planning definito",
+  "planningListAdd": "Aggiungi planning",
+  "planningWeekA": "Settimana A",
+  "planningWeekB": "Settimana B",
+  "planningCurrentWeek": "Settimana attuale: {week}",
+  "@planningCurrentWeek": {
+    "placeholders": {
+      "week": {
+        "type": "String"
+      }
+    }
+  },
+  "planningValidityRange": "Dal {from} al {to}",
+  "@planningValidityRange": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "planningValidityFrom": "Dal {from}",
+  "@planningValidityFrom": {
+    "placeholders": {
+      "from": { "type": "String" }
+    }
+  },
+  "planningActive": "Attivo",
+  "planningFuture": "Futuro",
+  "planningPast": "Passato"
 }

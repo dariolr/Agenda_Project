@@ -721,5 +721,5 @@ I permessi sono gestiti dalla tabella `business_users`:
 
 
 SOURCE OF TRUTH: STAFF_PLANNING_MODEL.md
-
+OBBLIGO: genera anche le migrazioni SQL. Nessuna implementazione è completa senza aggiornamento DB.
 Leggi e segui ESATTAMENTE STAFF_PLANNING_MODEL.md. Non inventare regole. Non riscrivere la logica degli slot settimanali: riusala. Implementa solo nel progetto agenda_backend. Non toccare agenda_core né agenda_frontend.

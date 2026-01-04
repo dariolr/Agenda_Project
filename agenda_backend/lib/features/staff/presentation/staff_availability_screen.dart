@@ -18,6 +18,7 @@ AGGIORNAMENTI RECENTI:
 - Scroll verticale sincronizzato tra colonna orari e griglia giorni
 - Etichetta oraria centrata in ogni cella (HH:MM)
 - Persistenza su DB tramite API (01/01/2026)
+- Integrazione Staff Planning (04/01/2026)
 
 */
 
@@ -27,12 +28,15 @@ import 'package:agenda_backend/app/theme/extensions.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff.dart';
+import 'package:agenda_backend/core/models/staff_planning.dart';
 import 'package:agenda_backend/core/network/network_providers.dart';
 import 'package:agenda_backend/core/widgets/staff_picker_sheet.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/exception_calendar_view.dart';
+import 'package:agenda_backend/features/staff/presentation/widgets/staff_planning_selector.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/weekly_schedule_editor.dart';
+import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -236,6 +240,10 @@ class _StaffAvailabilityScreenState
   int? _selectedStaffId; // definito dopo aver caricato staff list
   bool _initializedFromProvider = false;
 
+  // Staff Planning state
+  StaffPlanning? _selectedPlanning;
+  WeekLabel _selectedWeekLabel = WeekLabel.a;
+
   // Tab controller per navigare tra orario settimanale ed eccezioni
   late TabController _tabController;
 
@@ -299,11 +307,80 @@ class _StaffAvailabilityScreenState
             entry.key: Set<int>.from(entry.value),
         };
       }
+      // Reset planning selection when switching staff
+      _selectedPlanning = null;
+      _selectedWeekLabel = WeekLabel.a;
+    });
+
+    // Carica i planning per questo staff dall'API
+    ref.read(staffPlanningsProvider.notifier).loadPlanningsForStaff(newStaffId);
+  }
+
+  /// Callback quando viene selezionato un planning
+  void _onPlanningSelected(StaffPlanning? planning) {
+    // ignore: avoid_print
+    print(
+      'DEBUG _onPlanningSelected: planning=${planning?.id}, staffId=${planning?.staffId}',
+    );
+    setState(() {
+      _selectedPlanning = planning;
+      if (planning != null) {
+        // Calcola la settimana corrente per biweekly
+        _selectedWeekLabel = planning.computeWeekLabel(DateTime.now());
+        // Carica gli slot dal template selezionato
+        _loadSlotsFromPlanning(planning, _selectedWeekLabel);
+      } else {
+        _weeklySelections = {for (int d = 1; d <= 7; d++) d: <int>{}};
+        _savedWeeklySelections = {for (int d = 1; d <= 7; d++) d: <int>{}};
+      }
     });
   }
 
-  Future<void> _save(WidgetRef ref, int minutesPerSlot) async {
-    // Prima di salvare, unifica le fasce orarie contigue
+  /// Callback quando viene cambiato il template A/B
+  void _onTemplateChanged(WeekLabel label) {
+    if (_selectedPlanning == null) return;
+    setState(() {
+      _selectedWeekLabel = label;
+      _loadSlotsFromPlanning(_selectedPlanning!, label);
+    });
+  }
+
+  /// Carica gli slot dall'apposito template del planning
+  void _loadSlotsFromPlanning(StaffPlanning planning, WeekLabel label) {
+    final template = label == WeekLabel.a
+        ? planning.templateA
+        : planning.templateB;
+    if (template != null) {
+      _weeklySelections = {
+        for (int d = 1; d <= 7; d++)
+          d: Set<int>.from(template.daySlots[d] ?? {}),
+      };
+      _savedWeeklySelections = {
+        for (int d = 1; d <= 7; d++)
+          d: Set<int>.from(template.daySlots[d] ?? {}),
+      };
+    } else {
+      _weeklySelections = {for (int d = 1; d <= 7; d++) d: <int>{}};
+      _savedWeeklySelections = {for (int d = 1; d <= 7; d++) d: <int>{}};
+    }
+  }
+
+  /// Salva il planning corrente tramite API
+  Future<void> _savePlanning(WidgetRef ref, int minutesPerSlot) async {
+    // ignore: avoid_print
+    print(
+      'DEBUG _savePlanning called: planningId=${_selectedPlanning?.id}, staffId=$_selectedStaffId',
+    );
+    if (_selectedPlanning == null || _selectedStaffId == null) {
+      // ignore: avoid_print
+      print('DEBUG _savePlanning: ABORTED - planning or staff is null');
+      return;
+    }
+
+    // ignore: avoid_print
+    print('DEBUG _savePlanning: weeklySelections=$_weeklySelections');
+
+    // Unifica le fasce orarie contigue
     final currentSchedule = WeeklySchedule.fromSlots(
       _weeklySelections,
       minutesPerSlot: minutesPerSlot,
@@ -311,28 +388,61 @@ class _StaffAvailabilityScreenState
     final mergedSchedule = currentSchedule.mergeContiguousShifts();
     final mergedSlots = mergedSchedule.toSlots(minutesPerSlot: minutesPerSlot);
 
-    // Aggiorna lo stato locale con le fasce unificate
+    // Aggiorna stato locale
     setState(() {
       _weeklySelections = mergedSlots;
     });
 
-    // Persisti nello storage locale per staff corrente
-    if (_selectedStaffId != null) {
-      _staffSelections[_selectedStaffId!] = {
-        for (final entry in mergedSlots.entries)
-          entry.key: Set<int>.from(entry.value),
-      };
+    // Aggiorna il template nel planning
+    final oldTemplate = _selectedWeekLabel == WeekLabel.a
+        ? _selectedPlanning!.templateA
+        : _selectedPlanning!.templateB;
+
+    final newTemplate = StaffPlanningWeekTemplate(
+      id: oldTemplate?.id ?? 0,
+      staffPlanningId: _selectedPlanning!.id,
+      weekLabel: _selectedWeekLabel,
+      daySlots: {
+        for (final e in mergedSlots.entries) e.key: Set<int>.from(e.value),
+      },
+    );
+
+    // Crea nuova lista template
+    final newTemplates =
+        _selectedPlanning!.templates
+            .where((t) => t.weekLabel != _selectedWeekLabel)
+            .toList()
+          ..add(newTemplate);
+
+    final updatedPlanning = _selectedPlanning!.copyWith(
+      templates: newTemplates,
+    );
+
+    // Salva tramite API
+    final notifier = ref.read(staffPlanningsProvider.notifier);
+    final result = await notifier.updatePlanning(
+      updatedPlanning,
+      _selectedPlanning!,
+    );
+
+    if (result.isValid) {
+      setState(() {
+        _selectedPlanning = updatedPlanning;
+        _savedWeeklySelections = {
+          for (final e in mergedSlots.entries) e.key: Set<int>.from(e.value),
+        };
+      });
+    } else {
+      // Mostra errore
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.errors.join('\n')),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
-    if (_selectedStaffId != null) {
-      await ref
-          .read(staffAvailabilityByStaffProvider.notifier)
-          .saveForStaff(_selectedStaffId!, mergedSlots);
-    }
-    // Aggiorna lo stato salvato dopo il salvataggio
-    _savedWeeklySelections = {
-      for (final entry in mergedSlots.entries)
-        entry.key: Set<int>.from(entry.value),
-    };
   }
 
   @override
@@ -345,14 +455,23 @@ class _StaffAvailabilityScreenState
     // If a staffId was requested from another screen, pre-select it once
     final requested = ref.read(initialStaffToEditProvider).value;
     if (_selectedStaffId == null && requested != null && staffList.isNotEmpty) {
-      _switchStaff(requested);
-      // clear the request to avoid re-applying
-      ref.read(initialStaffToEditProvider).value = null;
+      // Usa addPostFrameCallback per evitare setState durante build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _selectedStaffId == null) {
+          _switchStaff(requested);
+          ref.read(initialStaffToEditProvider).value = null;
+        }
+      });
     }
 
     // Imposta staff iniziale se non selezionato
     if (_selectedStaffId == null && staffList.isNotEmpty) {
-      _switchStaff(staffList.first.id);
+      // Usa addPostFrameCallback per evitare setState durante build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _selectedStaffId == null) {
+          _switchStaff(staffList.first.id);
+        }
+      });
     }
 
     availabilityByStaff.whenOrNull(
@@ -417,7 +536,7 @@ class _StaffAvailabilityScreenState
         body: Column(
           children: [
             // ── Toolbar azioni ───────────────────────────────
-            // Toolbar semplificata: solo selezione staff e salvataggio
+            // Toolbar con selezione staff, planning e salvataggio
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Wrap(
@@ -434,6 +553,22 @@ class _StaffAvailabilityScreenState
                       updateWeeklyState: _tabController.index == 0,
                     ),
                   ),
+                  // Planning selector (solo nella tab orario settimanale)
+                  AnimatedBuilder(
+                    animation: _tabController,
+                    builder: (context, _) {
+                      if (_tabController.index != 0 ||
+                          _selectedStaffId == null) {
+                        return const SizedBox.shrink();
+                      }
+                      return StaffPlanningSelector(
+                        staffId: _selectedStaffId!,
+                        selectedPlanningId: _selectedPlanning?.id,
+                        onPlanningSelected: _onPlanningSelected,
+                        onTemplateChanged: _onTemplateChanged,
+                      );
+                    },
+                  ),
                   // Mostra pulsante salva solo nella tab orario settimanale
                   AnimatedBuilder(
                     animation: _tabController,
@@ -442,9 +577,12 @@ class _StaffAvailabilityScreenState
                         return const SizedBox.shrink();
                       }
                       return FilledButton(
-                        onPressed: (_selectedStaffId == null || isSaving)
+                        onPressed:
+                            (_selectedStaffId == null ||
+                                _selectedPlanning == null ||
+                                isSaving)
                             ? null
-                            : () => _save(ref, layout.minutesPerSlot),
+                            : () => _savePlanning(ref, layout.minutesPerSlot),
                         child: isSaving
                             ? const SizedBox(
                                 width: 18,

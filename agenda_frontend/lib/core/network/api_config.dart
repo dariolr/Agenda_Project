@@ -77,6 +77,18 @@ class ApiConfig {
   static const String staff = '/v1/staff';
   static const String availability = '/v1/availability';
 
+  // ========== STAFF PLANNING ENDPOINTS (read-only) ==========
+  /// GET /v1/staff/{id}/plannings - tutti i planning per uno staff
+  static String staffPlannings(int staffId) => '/v1/staff/$staffId/plannings';
+
+  /// GET /v1/staff/{id}/planning?date=YYYY-MM-DD - planning valido per data
+  static String staffPlanningForDate(int staffId) =>
+      '/v1/staff/$staffId/planning';
+
+  /// GET /v1/staff/{id}/planning-availability?date=YYYY-MM-DD - slot disponibili per data
+  static String staffPlanningAvailability(int staffId) =>
+      '/v1/staff/$staffId/planning-availability';
+
   // ========== BUSINESS ENDPOINTS ==========
   /// Get business by slug (public, no auth required)
   static String businessBySlug(String slug) => '/v1/businesses/by-slug/$slug';

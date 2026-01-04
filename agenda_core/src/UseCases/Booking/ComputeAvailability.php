@@ -6,6 +6,7 @@ namespace Agenda\UseCases\Booking;
 
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
+use Agenda\Infrastructure\Repositories\StaffPlanningRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use DateInterval;
@@ -19,6 +20,7 @@ final class ComputeAvailability
         private readonly BookingRepository $bookingRepository,
         private readonly StaffRepository $staffRepository,
         private readonly \Agenda\Infrastructure\Repositories\LocationRepository $locationRepository,
+        private readonly StaffPlanningRepository $staffPlanningRepository,
     ) {}
 
     /**
@@ -107,26 +109,23 @@ final class ComputeAvailability
         int $durationMinutes,
         DateTimeZone $timezone
     ): array {
-        // Get day of week (0 = Sunday, 6 = Saturday in MySQL, PHP uses 0-6 starting Monday)
-        $dayOfWeek = (int) $date->format('N'); // 1 = Monday, 7 = Sunday
+        $dateStr = $date->format('Y-m-d');
         
-        // Get working hours for this day
-        $workingHours = $this->staffRepository->getWorkingHours($staffId, $dayOfWeek);
+        // Usa StaffPlanningRepository per ottenere gli slot index disponibili
+        $slotIndices = $this->staffPlanningRepository->getSlotsForDate($staffId, $dateStr);
 
-        // If no working hours defined or not working, return empty
-        if ($workingHours === null || !$workingHours['is_working']) {
+        // Se nessun planning valido o nessuno slot, staff non disponibile
+        if ($slotIndices === null || empty($slotIndices)) {
             return [];
         }
 
-        // Parse working hours
-        $startOfDay = $date->setTime(
-            (int) substr($workingHours['start_time'], 0, 2),
-            (int) substr($workingHours['start_time'], 3, 2)
-        );
-        $endOfDay = $date->setTime(
-            (int) substr($workingHours['end_time'], 0, 2),
-            (int) substr($workingHours['end_time'], 3, 2)
-        );
+        // Converti slot index in intervalli di tempo
+        // Slot index 0 = 00:00-00:15, slot index 1 = 00:15-00:30, ecc.
+        $workingIntervals = $this->slotIndicesToIntervals($slotIndices, $date);
+
+        if (empty($workingIntervals)) {
+            return [];
+        }
 
         // Get occupied slots for this day
         $dayStart = $date->setTime(0, 0, 0);
@@ -147,37 +146,101 @@ final class ComputeAvailability
 
         // Generate available slots
         $availableSlots = [];
-        $current = $startOfDay;
         $now = new DateTimeImmutable('now', $timezone);
 
-        while ($current->modify("+{$durationMinutes} minutes") <= $endOfDay) {
-            $slotEnd = $current->modify("+{$durationMinutes} minutes");
+        foreach ($workingIntervals as $interval) {
+            $current = $interval['start'];
+            $intervalEnd = $interval['end'];
 
-            // Skip if slot starts in the past
-            if ($current <= $now) {
-                $current = $current->modify('+' . self::SLOT_INTERVAL_MINUTES . ' minutes');
-                continue;
-            }
+            while ($current->modify("+{$durationMinutes} minutes") <= $intervalEnd) {
+                $slotEnd = $current->modify("+{$durationMinutes} minutes");
 
-            // Check if slot conflicts with any occupied slot
-            $hasConflict = false;
-            foreach ($occupied as $occ) {
-                if ($current < $occ['end'] && $slotEnd > $occ['start']) {
-                    $hasConflict = true;
-                    break;
+                // Skip if slot starts in the past
+                if ($current <= $now) {
+                    $current = $current->modify('+' . self::SLOT_INTERVAL_MINUTES . ' minutes');
+                    continue;
                 }
-            }
 
-            if (!$hasConflict) {
-                $availableSlots[] = [
-                    'start_time' => $current->format('c'),
-                    'end_time' => $slotEnd->format('c'),
-                ];
-            }
+                // Check if slot conflicts with any occupied slot
+                $hasConflict = false;
+                foreach ($occupied as $occ) {
+                    if ($current < $occ['end'] && $slotEnd > $occ['start']) {
+                        $hasConflict = true;
+                        break;
+                    }
+                }
 
-            $current = $current->modify('+' . self::SLOT_INTERVAL_MINUTES . ' minutes');
+                if (!$hasConflict) {
+                    $availableSlots[] = [
+                        'start_time' => $current->format('c'),
+                        'end_time' => $slotEnd->format('c'),
+                    ];
+                }
+
+                $current = $current->modify('+' . self::SLOT_INTERVAL_MINUTES . ' minutes');
+            }
         }
 
         return $availableSlots;
+    }
+
+    /**
+     * Converte array di slot index in intervalli di tempo continui.
+     * 
+     * Esempio: [36, 37, 38, 48, 49] diventa:
+     * - 09:00-09:45 (slot 36,37,38)
+     * - 12:00-12:30 (slot 48,49)
+     */
+    private function slotIndicesToIntervals(array $slotIndices, DateTimeImmutable $date): array
+    {
+        if (empty($slotIndices)) {
+            return [];
+        }
+
+        sort($slotIndices);
+        
+        $intervals = [];
+        $currentStart = $slotIndices[0];
+        $currentEnd = $slotIndices[0];
+
+        for ($i = 1; $i < count($slotIndices); $i++) {
+            if ($slotIndices[$i] === $currentEnd + 1) {
+                // Slot consecutivo, estendi l'intervallo
+                $currentEnd = $slotIndices[$i];
+            } else {
+                // Gap trovato, salva intervallo corrente e inizia nuovo
+                $intervals[] = $this->slotRangeToTimeInterval($currentStart, $currentEnd, $date);
+                $currentStart = $slotIndices[$i];
+                $currentEnd = $slotIndices[$i];
+            }
+        }
+
+        // Aggiungi ultimo intervallo
+        $intervals[] = $this->slotRangeToTimeInterval($currentStart, $currentEnd, $date);
+
+        return $intervals;
+    }
+
+    /**
+     * Converte un range di slot index in un intervallo di DateTimeImmutable.
+     * 
+     * Lo slot index N corrisponde al range [N*15min, (N+1)*15min).
+     * Es: slot 36 = 09:00-09:15
+     */
+    private function slotRangeToTimeInterval(int $startSlot, int $endSlot, DateTimeImmutable $date): array
+    {
+        $startMinutes = $startSlot * self::SLOT_INTERVAL_MINUTES;
+        $startHour = intdiv($startMinutes, 60);
+        $startMin = $startMinutes % 60;
+
+        // L'end slot include lo slot stesso, quindi aggiungiamo 1 slot alla fine
+        $endMinutes = ($endSlot + 1) * self::SLOT_INTERVAL_MINUTES;
+        $endHour = intdiv($endMinutes, 60);
+        $endMin = $endMinutes % 60;
+
+        return [
+            'start' => $date->setTime($startHour, $startMin),
+            'end' => $date->setTime($endHour, $endMin),
+        ];
     }
 }

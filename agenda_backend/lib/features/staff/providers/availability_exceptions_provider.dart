@@ -9,10 +9,11 @@ import '../data/availability_exceptions_repository.dart';
 
 /// Provider per il repository delle eccezioni.
 /// Usa l'implementazione API reale.
+/// ⚠️ Usa ref.read per evitare rebuild continui quando currentBusinessProvider cambia
 final availabilityExceptionsRepositoryProvider =
     Provider<AvailabilityExceptionsRepository>((ref) {
-      final apiClient = ref.watch(apiClientProvider);
-      final business = ref.watch(currentBusinessProvider);
+      final apiClient = ref.read(apiClientProvider);
+      final business = ref.read(currentBusinessProvider);
       return ApiAvailabilityExceptionsRepository(
         apiClient: apiClient,
         businessId: business.id,
