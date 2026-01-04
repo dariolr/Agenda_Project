@@ -323,9 +323,58 @@ class ApiClient {
     }
   }
 
+  /// POST /v1/customer/{business_id}/auth/forgot-password
+  Future<void> customerForgotPassword({
+    required int businessId,
+    required String email,
+  }) async {
+    await post(
+      ApiConfig.customerForgotPassword(businessId),
+      data: {'email': email},
+    );
+  }
+
+  /// POST /v1/customer/auth/reset-password
+  Future<void> customerResetPassword({
+    required String token,
+    required String password,
+  }) async {
+    await post(
+      ApiConfig.customerResetPassword,
+      data: {'token': token, 'password': password},
+    );
+  }
+
   /// GET /v1/customer/me
   Future<Map<String, dynamic>> getCustomerMe() async {
     return get(ApiConfig.customerMe);
+  }
+
+  /// PUT /v1/customer/me - Aggiorna profilo cliente
+  Future<Map<String, dynamic>> customerUpdateProfile({
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+  }) async {
+    final data = <String, dynamic>{};
+    if (firstName != null) data['first_name'] = firstName;
+    if (lastName != null) data['last_name'] = lastName;
+    if (email != null) data['email'] = email;
+    if (phone != null) data['phone'] = phone;
+
+    return put(ApiConfig.customerUpdateProfile, data: data);
+  }
+
+  /// POST /v1/customer/me/change-password
+  Future<void> customerChangePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await post(
+      ApiConfig.customerChangePassword,
+      data: {'current_password': currentPassword, 'new_password': newPassword},
+    );
   }
 
   /// GET /v1/customer/bookings

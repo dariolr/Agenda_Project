@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/route_slug_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
@@ -105,11 +106,19 @@ class BookingScreen extends ConsumerWidget {
     final isAuthenticated = ref.watch(
       authProvider.select((state) => state.isAuthenticated),
     );
+    final slug = ref.watch(routeSlugProvider);
+
+    // Determina se mostrare il back button
+    // Se c'è una sola location e siamo su services, non mostrare back
+    final showBackButton =
+        bookingState.canGoBack &&
+        !(bookingState.currentStep == BookingStep.services &&
+            !hasMultipleLocations);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.bookingTitle),
-        leading: bookingState.canGoBack
+        leading: showBackButton
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () =>
@@ -117,16 +126,16 @@ class BookingScreen extends ConsumerWidget {
               )
             : null,
         actions: [
-          if (isAuthenticated)
+          if (isAuthenticated && slug != null)
             PopupMenuButton<String>(
               icon: const Icon(Icons.account_circle_outlined),
               tooltip: l10n.profileTitle,
               onSelected: (value) {
                 switch (value) {
                   case 'bookings':
-                    context.go('/my-bookings');
+                    context.go('/$slug/my-bookings');
                   case 'profile':
-                    context.push('/profile');
+                    context.push('/$slug/profile');
                 }
               },
               itemBuilder: (context) => [

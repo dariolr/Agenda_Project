@@ -141,6 +141,18 @@ class AuthNotifier extends Notifier<AuthState> {
     await _repository.verifyResetToken(token);
   }
 
+  /// Richiede il reset della password (invia email con link).
+  /// Ritorna sempre true per non rivelare se l'email esiste.
+  Future<bool> forgotPassword({required String email}) async {
+    try {
+      await _repository.forgotPassword(email: email);
+      return true;
+    } catch (e) {
+      // Anche in caso di errore, ritorna true per sicurezza
+      return true;
+    }
+  }
+
   /// Reset password con token (da email di invito/reset).
   Future<void> resetPasswordWithToken({
     required String token,

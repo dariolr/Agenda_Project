@@ -130,6 +130,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
+                      autofocus:
+                          true, // Aiuta Safari mobile a riconoscere il form
+                      autocorrect: false,
+                      enableSuggestions: true,
                       autofillHints: const [
                         AutofillHints.username,
                         AutofillHints.email,
@@ -156,6 +160,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       textInputAction: TextInputAction.done,
+                      enableSuggestions: false,
+                      autocorrect: false,
                       autofillHints: const [AutofillHints.password],
                       onFieldSubmitted: (_) => _handleLogin(),
                       decoration: InputDecoration(
@@ -284,15 +290,86 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _showForgotPasswordInfo(BuildContext context) {
     final l10n = context.l10n;
+    final emailController = TextEditingController();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.authForgotPassword),
-        content: Text(l10n.authForgotPasswordInfo),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.authResetPasswordTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.authResetPasswordMessage),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: l10n.authEmail,
+                prefixIcon: const Icon(Icons.email_outlined),
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.actionClose),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final email = emailController.text.trim();
+              if (email.isEmpty) return;
+
+              // Salva riferimento al ScaffoldMessenger prima dell'async gap
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+              // Chiudi il dialog prima di fare la chiamata
+              Navigator.of(dialogContext).pop();
+
+              // Mostra indicatore di caricamento
+              if (mounted) {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 16),
+                        Text('Invio email in corso...'),
+                      ],
+                    ),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+
+              final success = await ref
+                  .read(authProvider.notifier)
+                  .forgotPassword(email: email);
+
+              if (mounted) {
+                // Nascondi snackbar precedente
+                scaffoldMessenger.hideCurrentSnackBar();
+
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? l10n.authResetPasswordSuccess
+                          : l10n.authResetPasswordError,
+                    ),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+            },
+            child: Text(l10n.authResetPasswordSend),
           ),
         ],
       ),

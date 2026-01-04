@@ -1,8 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../core/models/location.dart';
 import 'booking_provider.dart';
 import 'business_provider.dart';
+
+/// Provider per la location ID passata via URL (?location=4)
+/// Se valorizzato, lo step location viene saltato
+final urlLocationIdProvider = StateProvider<int?>((ref) => null);
 
 /// Provider per le locations del business corrente
 final locationsProvider =
@@ -74,8 +79,15 @@ final selectedLocationProvider =
       SelectedLocationNotifier.new,
     );
 
-/// Provider derivato: true se ci sono multiple locations
+/// Provider derivato: true se ci sono multiple locations E nessuna location pre-selezionata via URL
+/// Se urlLocationIdProvider è valorizzato, consideriamo come "singola location" (step saltato)
 final hasMultipleLocationsProvider = Provider<bool>((ref) {
+  // Se c'è una location passata via URL, non mostrare lo step location
+  final urlLocationId = ref.watch(urlLocationIdProvider);
+  if (urlLocationId != null) {
+    return false;
+  }
+
   final locationsAsync = ref.watch(locationsProvider);
   return locationsAsync.maybeWhen(
     data: (locations) => locations.length > 1,
@@ -84,15 +96,29 @@ final hasMultipleLocationsProvider = Provider<bool>((ref) {
 });
 
 /// Provider derivato: la location effettiva da usare per il booking
-/// Se c'è una sola location, usa quella. Altrimenti usa quella selezionata.
+/// Priorità: 1) URL param, 2) Selezione utente, 3) Location singola/default
 final effectiveLocationProvider = Provider<Location?>((ref) {
   final locationsAsync = ref.watch(locationsProvider);
+  final urlLocationId = ref.watch(urlLocationIdProvider);
   final selectedLocation = ref.watch(selectedLocationProvider);
 
   return locationsAsync.maybeWhen(
     data: (locations) {
       if (locations.isEmpty) return null;
+
+      // 1) Se c'è location da URL, cerca quella
+      if (urlLocationId != null) {
+        final urlLocation = locations
+            .where((l) => l.id == urlLocationId)
+            .firstOrNull;
+        if (urlLocation != null) return urlLocation;
+        // Se non trovata, fallback a default
+      }
+
+      // 2) Se c'è una sola location, usa quella
       if (locations.length == 1) return locations.first;
+
+      // 3) Usa la selezione dell'utente
       return selectedLocation;
     },
     orElse: () => null,

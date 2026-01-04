@@ -50,7 +50,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        context.go('/login');
+        // Redirect a landing - l'utente dovrà navigare al business per fare login
+        context.go('/');
       }
     } catch (e) {
       if (mounted) {
@@ -77,7 +78,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/login'),
+          onPressed: () => context.go('/'),
         ),
         title: Text(l10n.authResetPasswordConfirmTitle),
       ),

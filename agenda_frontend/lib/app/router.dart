@@ -11,6 +11,7 @@ import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/booking/presentation/screens/booking_screen.dart';
 import '../features/booking/presentation/screens/my_bookings_screen.dart';
+import '../features/booking/providers/locations_provider.dart';
 import 'providers/route_slug_provider.dart';
 
 /// Router provider con supporto path-based multi-business
@@ -49,25 +50,38 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       debugPrint('🔀 ROUTER: extracted slug=$slug');
 
-      // Aggiorna il provider con lo slug corrente
+      // Estrae location ID dal query param (?location=4)
+      final locationParam = state.uri.queryParameters['location'];
+      final urlLocationId = locationParam != null
+          ? int.tryParse(locationParam)
+          : null;
+
+      // Aggiorna i provider con slug e location correnti
       // Usiamo Future.microtask per evitare modifiche durante il build
       Future.microtask(() {
         ref.read(routeSlugProvider.notifier).state = slug;
-        debugPrint('🔀 ROUTER: routeSlugProvider updated to $slug');
+        ref.read(urlLocationIdProvider.notifier).state = urlLocationId;
+        debugPrint(
+          '🔀 ROUTER: routeSlugProvider updated to $slug, urlLocationId=$urlLocationId',
+        );
       });
 
-      // Se siamo su /:slug senza sotto-path, redirect a /:slug/booking
+      // Se siamo su /:slug senza sotto-path, redirect a /:slug/booking (mantieni query params)
       if (slug != null && pathSegments.length == 1) {
-        debugPrint('🔀 ROUTER: redirecting to /$slug/booking');
-        return '/$slug/booking';
+        final query = state.uri.query.isNotEmpty ? '?${state.uri.query}' : '';
+        debugPrint('🔀 ROUTER: redirecting to /$slug/booking$query');
+        return '/$slug/booking$query';
       }
 
       // Auth redirect logic per route con slug
       if (slug != null) {
         final subPath = pathSegments.length > 1 ? pathSegments[1] : '';
 
-        // Se non autenticato e cerca di accedere a my-bookings, redirect a login
-        if (!isAuthenticated && subPath == 'my-bookings') {
+        // Route protette che richiedono autenticazione
+        const protectedRoutes = {'my-bookings', 'profile', 'change-password'};
+
+        // Se non autenticato e cerca di accedere a route protetta, redirect a login
+        if (!isAuthenticated && protectedRoutes.contains(subPath)) {
           return '/$slug/login';
         }
 

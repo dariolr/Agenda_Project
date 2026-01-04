@@ -58,7 +58,11 @@ Endpoint minimi:
 - POST /v1/customer/{business_id}/auth/register
 - POST /v1/customer/{business_id}/auth/refresh
 - POST /v1/customer/{business_id}/auth/logout
+- POST /v1/customer/{business_id}/auth/forgot-password (richiede email reset)
+- POST /v1/customer/auth/reset-password (reset con token)
 - GET  /v1/customer/me (customer_auth)
+- PUT  /v1/customer/me (customer_auth, aggiorna profilo)
+- POST /v1/customer/me/change-password (customer_auth, cambio password)
 - POST /v1/customer/{business_id}/bookings (customer_auth, idempotent)
 - GET  /v1/customer/bookings (customer_auth)
 
@@ -642,6 +646,8 @@ CREATE TABLE password_reset_token_clients (
 | POST | `/v1/customer/{business_id}/auth/login` | Login cliente |
 | POST | `/v1/customer/{business_id}/auth/refresh` | Rinnovo access token |
 | POST | `/v1/customer/{business_id}/auth/logout` | Logout (revoca refresh token) |
+| POST | `/v1/customer/{business_id}/auth/forgot-password` | Richiede email reset password |
+| POST | `/v1/customer/auth/reset-password` | Reset password con token |
 | GET | `/v1/customer/me` | Profilo cliente autenticato |
 | POST | `/v1/customer/{business_id}/bookings` | Crea prenotazione (customer) |
 | GET | `/v1/customer/bookings` | Lista prenotazioni del cliente |
@@ -681,6 +687,8 @@ CREATE TABLE password_reset_token_clients (
 | `src/UseCases/CustomerAuth/RefreshCustomerToken.php` | UseCase refresh token |
 | `src/UseCases/CustomerAuth/LogoutCustomer.php` | UseCase logout |
 | `src/UseCases/CustomerAuth/GetCustomerMe.php` | UseCase profilo |
+| `src/UseCases/CustomerAuth/UpdateCustomerProfile.php` | UseCase aggiorna profilo cliente |
+| `src/UseCases/CustomerAuth/ChangeCustomerPassword.php` | UseCase cambio password cliente |
 
 ### File PHP Modificati
 
@@ -722,6 +730,8 @@ $router->post('/v1/customer/{business_id}/auth/register', ...);
 $router->post('/v1/customer/{business_id}/auth/login', ...);
 $router->post('/v1/customer/{business_id}/auth/refresh', ...);
 $router->post('/v1/customer/{business_id}/auth/logout', ...);
+$router->post('/v1/customer/{business_id}/auth/forgot-password', ...);
+$router->post('/v1/customer/auth/reset-password', ...);
 
 // Route customer protette
 $router->group(['middleware' => [$customerAuthMiddleware]], function ($router) {

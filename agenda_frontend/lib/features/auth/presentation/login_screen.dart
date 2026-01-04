@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../booking/providers/business_provider.dart';
 import '../providers/auth_provider.dart';
@@ -55,7 +56,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // Segnala al browser che l'autofill è completato con successo
       // Questo triggera la richiesta di salvataggio credenziali
       TextInput.finishAutofillContext();
-      context.go('/booking');
+      final slug = ref.read(routeSlugProvider);
+      context.go('/$slug/booking');
     }
   }
 
@@ -97,6 +99,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
+                    autofocus:
+                        true, // Aiuta Safari mobile a riconoscere il form
+                    autocorrect: false,
+                    enableSuggestions: true,
                     autofillHints: const [
                       AutofillHints.username,
                       AutofillHints.email,
@@ -122,6 +128,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.done,
+                    enableSuggestions: false,
+                    autocorrect: false,
                     autofillHints: const [AutofillHints.password],
                     onFieldSubmitted: (_) => _handleLogin(),
                     decoration: InputDecoration(
@@ -209,7 +217,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       Text(l10n.authNoAccount),
                       TextButton(
-                        onPressed: () => context.go('/register'),
+                        onPressed: () {
+                          final slug = ref.read(routeSlugProvider);
+                          context.go('/$slug/register');
+                        },
                         child: Text(l10n.actionRegister),
                       ),
                     ],
@@ -226,6 +237,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void _showResetPasswordDialog(BuildContext context, WidgetRef ref) {
     final emailController = TextEditingController();
     final l10n = context.l10n;
+    final businessId = ref.read(currentBusinessIdProvider);
 
     showDialog(
       context: context,
@@ -257,11 +269,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               final email = emailController.text.trim();
               if (email.isEmpty) return;
 
+              // Chiudi il dialog prima di fare la chiamata
               Navigator.pop(context);
+
+              // Verifica businessId
+              if (businessId == null) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(l10n.authResetPasswordError),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+                return;
+              }
 
               final success = await ref
                   .read(authProvider.notifier)
-                  .resetPassword(email: email);
+                  .resetPassword(businessId: businessId, email: email);
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
