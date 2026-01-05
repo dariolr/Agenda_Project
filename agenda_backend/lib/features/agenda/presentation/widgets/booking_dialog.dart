@@ -989,7 +989,23 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     } else {
       // Prendi l'ultimo servizio e calcola il suo orario di fine
       final lastItem = _serviceItems.last;
+      final lastStartMinutes =
+          lastItem.startTime.hour * 60 + lastItem.startTime.minute;
       nextStart = _resolveServiceEndTime(lastItem, variants);
+      final nextStartMinutes = nextStart.hour * 60 + nextStart.minute;
+
+      // Se l'orario calcolato è "minore" dell'inizio dell'ultimo servizio,
+      // significa che abbiamo superato la mezzanotte
+      if (nextStartMinutes < lastStartMinutes) {
+        // Mostra errore all'utente
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.serviceStartsAfterMidnight),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        return;
+      }
     }
 
     // Smart staff selection:

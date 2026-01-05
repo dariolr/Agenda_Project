@@ -1,6 +1,15 @@
+import '../../../core/models/appointment.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_config.dart';
 import '../domain/clients.dart';
+
+/// Struttura per gli appuntamenti di un cliente divisi per tempo
+class ClientAppointmentsData {
+  final List<Appointment> upcoming;
+  final List<Appointment> past;
+
+  ClientAppointmentsData({required this.upcoming, required this.past});
+}
 
 /// API layer per Clients - chiamate reali a agenda_core
 class ClientsApi {
@@ -13,6 +22,22 @@ class ClientsApi {
     final data = await _apiClient.getClients(businessId);
     final List<dynamic> items = data['clients'] ?? [];
     return items.map((json) => _clientFromJson(json)).toList();
+  }
+
+  /// GET /v1/clients/{id}/appointments
+  /// Carica tutti gli appuntamenti di un cliente, divisi in passati e futuri.
+  Future<ClientAppointmentsData> fetchClientAppointments(int clientId) async {
+    final data = await _apiClient.get(
+      '${ApiConfig.clients}/$clientId/appointments',
+    );
+
+    final List<dynamic> upcomingJson = data['upcoming'] ?? [];
+    final List<dynamic> pastJson = data['past'] ?? [];
+
+    return ClientAppointmentsData(
+      upcoming: upcomingJson.map((json) => _appointmentFromJson(json)).toList(),
+      past: pastJson.map((json) => _appointmentFromJson(json)).toList(),
+    );
   }
 
   /// POST /v1/clients
@@ -81,5 +106,24 @@ class ClientsApi {
       'tags': client.tags,
       'is_archived': client.isArchived,
     };
+  }
+
+  /// Converte JSON snake_case in Appointment (per cronologia cliente)
+  Appointment _appointmentFromJson(Map<String, dynamic> json) {
+    return Appointment(
+      id: json['id'] as int,
+      bookingId: json['booking_id'] as int,
+      businessId: 0, // Non disponibile dalla risposta API semplificata
+      locationId: json['location_id'] as int,
+      serviceId: json['service_id'] as int,
+      serviceVariantId: (json['service_variant_id'] as int?) ?? 0,
+      staffId: json['staff_id'] as int,
+      clientId: null, // Non necessario nella cronologia
+      clientName: '',
+      serviceName: json['service_name'] as String? ?? '',
+      startTime: DateTime.parse(json['start_time'] as String),
+      endTime: DateTime.parse(json['end_time'] as String),
+      price: (json['price'] as num?)?.toDouble() ?? 0,
+    );
   }
 }

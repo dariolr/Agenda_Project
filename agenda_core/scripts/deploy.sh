@@ -46,13 +46,6 @@ rsync -avz --delete \
   "$LOCAL_DIR/vendor/" \
   "$SSH_ALIAS:$REMOTE_BASE/vendor/"
 
-# === 4. Deploy migrations/ (opzionale) ===
-echo "🔹 Sincronizzando migrations/..."
-rsync -avz --delete \
-  -e "ssh" \
-  "$LOCAL_DIR/migrations/" \
-  "$SSH_ALIAS:$REMOTE_BASE/migrations/"
-
 # === NON toccare .env ===
 # Il file .env contiene credenziali di produzione e NON deve essere sovrascritto
 # Se serve aggiornarlo, fallo manualmente via SSH

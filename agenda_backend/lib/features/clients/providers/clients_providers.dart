@@ -2,9 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/appointment.dart';
 import '../../../core/network/network_providers.dart';
-import '../../agenda/providers/appointment_providers.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../data/clients_api.dart';
 import '../data/clients_repository.dart';
 import '../domain/client_sort_option.dart';
 import '../domain/clients.dart';
@@ -13,6 +13,12 @@ import '../domain/clients.dart';
 final clientsRepositoryProvider = Provider<ClientsRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return ClientsRepository(apiClient: apiClient);
+});
+
+// ClientsApi provider
+final clientsApiProvider = Provider<ClientsApi>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return ClientsApi(apiClient: apiClient);
 });
 
 /// AsyncNotifier per caricare i clienti dall'API
@@ -269,13 +275,24 @@ final frequentClientsProvider = Provider<List<Client>>((ref) {
       .toList();
 });
 
-// Collegamenti Booking <-> Client (stub per futura integrazione bookings reali)
+// Provider per caricare appuntamenti di un cliente dall'API.
+// Ritorna ClientAppointmentsData con liste upcoming e past già ordinate.
+final clientAppointmentsProvider =
+    FutureProvider.family<ClientAppointmentsData, int>((ref, clientId) async {
+      final api = ref.watch(clientsApiProvider);
+      return api.fetchClientAppointments(clientId);
+    });
+
+// Provider di convenienza che unisce upcoming + past in una lista singola
+// (usato da bookingIdsByClientProvider per retrocompatibilità)
 final clientWithAppointmentsProvider = Provider.family<List<Appointment>, int>((
   ref,
   clientId,
 ) {
-  final all = ref.watch(appointmentsProvider).value ?? [];
-  return all.where((a) => a.clientId == clientId).toList();
+  final asyncData = ref.watch(clientAppointmentsProvider(clientId));
+  final data = asyncData.value;
+  if (data == null) return [];
+  return [...data.upcoming, ...data.past];
 });
 
 final bookingIdsByClientProvider = Provider.family<Set<int>, int>((

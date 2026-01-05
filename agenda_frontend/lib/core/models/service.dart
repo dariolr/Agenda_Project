@@ -55,8 +55,9 @@ class Service {
   factory Service.fromJson(Map<String, dynamic> json) => Service(
     id: json['id'] as int,
     // API può usare business_id o derivarlo dalla location
-    businessId: json['business_id'] as int? ?? 1,
-    categoryId: json['category_id'] as int,
+    businessId: json['business_id'] as int? ?? 0,
+    // category_id può essere null per servizi non categorizzati
+    categoryId: json['category_id'] as int? ?? 0,
     name: json['name'] as String,
     description: json['description'] as String?,
     sortOrder: json['sort_order'] as int? ?? 0,

@@ -99,14 +99,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    autofocus:
-                        true, // Aiuta Safari mobile a riconoscere il form
+                    // Non usare autofocus: interferisce con autofill su Safari iOS
                     autocorrect: false,
                     enableSuggestions: true,
-                    autofillHints: const [
-                      AutofillHints.username,
-                      AutofillHints.email,
-                    ],
+                    // Solo username per massima compatibilità Safari iOS
+                    autofillHints: const [AutofillHints.username],
                     decoration: InputDecoration(
                       labelText: l10n.authEmail,
                       prefixIcon: const Icon(Icons.email_outlined),

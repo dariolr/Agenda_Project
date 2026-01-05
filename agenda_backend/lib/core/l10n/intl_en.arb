@@ -304,6 +304,7 @@
   "blockTimeError": "End time must be after start time",
   "blockReason": "Reason (optional)",
   "blockReasonHint": "E.g. Meeting, Break, etc.",
+  "serviceStartsAfterMidnight": "Cannot add service: the time exceeds midnight. Change the start time or staff member.",
   "sortByTitle": "Sort by",
   "selectStaffTitle": "Select team",
   "addClientToAppointment": "Add a client to the appointment",
@@ -445,14 +446,7 @@
   "exceptionDeleteShiftDesc": "Restore base availability",
   "clientLockedHint": "Client cannot be changed for this appointment",
   "applyClientToAllAppointmentsTitle": "Apply client to entire booking?",
-  "applyClientToAllAppointmentsMessage": "The client will also be associated with the other {count} appointments in this booking.",
-  "@applyClientToAllAppointmentsMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "applyClientToAllAppointmentsMessage": "The client will also be associated with the appointments in this booking that have been assigned to other staff members.",
 
   "operatorsTitle": "Operators",
   "operatorsSubtitle": "Manage who can access the platform",
