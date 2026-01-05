@@ -206,6 +206,7 @@ final class CreateBooking
                 'business_id' => $businessId,
                 'location_id' => $locationId,
                 'client_id' => $clientId,
+                'client_name' => $clientName,
                 'user_id' => $userId,
                 'notes' => $notes,
                 'status' => 'confirmed',
@@ -369,6 +370,7 @@ final class CreateBooking
                 'business_id' => $businessId,
                 'location_id' => $locationId,
                 'client_id' => $clientId,
+                'client_name' => $clientName,
                 'user_id' => $userId,
                 'notes' => $notes,
                 'status' => 'confirmed',
@@ -620,6 +622,7 @@ final class CreateBooking
                 'business_id' => $businessId,
                 'location_id' => $locationId,
                 'client_id' => $clientId,
+                'client_name' => $clientName,
                 'user_id' => null, // Customer booking, no operator user
                 'notes' => $notes,
                 'status' => 'confirmed',
