@@ -314,7 +314,7 @@ final class Kernel
         // Booking Use Cases
         $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo);
         $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo);
-        $updateBooking = new UpdateBooking($bookingRepo, $this->db);
+        $updateBooking = new UpdateBooking($bookingRepo, $this->db, $clientRepo);
         $deleteBooking = new DeleteBooking($bookingRepo, $this->db);
         $getMyBookings = new GetMyBookings($this->db);
 

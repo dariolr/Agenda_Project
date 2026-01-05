@@ -6,6 +6,7 @@ namespace Agenda\UseCases\Booking;
 
 use Agenda\Domain\Exceptions\BookingException;
 use Agenda\Infrastructure\Repositories\BookingRepository;
+use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Database\Connection;
 use DateTimeImmutable;
 
@@ -19,6 +20,7 @@ final class UpdateBooking
     public function __construct(
         private readonly BookingRepository $bookingRepo,
         private readonly Connection $db,
+        private readonly ?ClientRepository $clientRepo = null,
     ) {}
 
     /**
@@ -105,12 +107,20 @@ final class UpdateBooking
         // Gestione client_id: key_exists permette di distinguere "non inviato" da "inviato null"
         // Se client_id è presente nella request (anche se null), aggiorna il campo
         $clientId = null;
+        $customerName = null;
         $clearClient = false;
         if (array_key_exists('client_id', $data)) {
             if ($data['client_id'] === null) {
                 $clearClient = true; // Rimuovi cliente
             } else {
                 $clientId = (int) $data['client_id'];
+                // Deriva customerName dal client_id
+                if ($this->clientRepo !== null) {
+                    $client = $this->clientRepo->findById($clientId);
+                    if ($client !== null) {
+                        $customerName = trim(($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? ''));
+                    }
+                }
             }
         }
 
@@ -120,7 +130,7 @@ final class UpdateBooking
             $data['status'] ?? null,
             $data['notes'] ?? null,
             $clientId,
-            null, // customerName
+            $customerName,
             $clearClient
         );
 
