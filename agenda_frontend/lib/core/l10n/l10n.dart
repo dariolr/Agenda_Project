@@ -877,6 +877,16 @@ class L10n {
     );
   }
 
+  /// `Vai alla prima data disponibile`
+  String get dateTimeGoToFirst {
+    return Intl.message(
+      'Vai alla prima data disponibile',
+      name: 'dateTimeGoToFirst',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Nessun orario disponibile per questa data`
   String get dateTimeNoSlots {
     return Intl.message(

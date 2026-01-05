@@ -71,6 +71,7 @@ class BookingFlowState {
   final bool isLoading;
   final String? errorMessage;
   final String? confirmedBookingId;
+  final bool isStaffAutoSelected;
 
   const BookingFlowState({
     this.currentStep = BookingStep.location,
@@ -78,6 +79,7 @@ class BookingFlowState {
     this.isLoading = false,
     this.errorMessage,
     this.confirmedBookingId,
+    this.isStaffAutoSelected = false,
   });
 
   bool get canGoBack =>
@@ -107,12 +109,14 @@ class BookingFlowState {
     String? errorMessage,
     String? confirmedBookingId,
     bool clearError = false,
+    bool? isStaffAutoSelected,
   }) => BookingFlowState(
     currentStep: currentStep ?? this.currentStep,
     request: request ?? this.request,
     isLoading: isLoading ?? this.isLoading,
     errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     confirmedBookingId: confirmedBookingId ?? this.confirmedBookingId,
+    isStaffAutoSelected: isStaffAutoSelected ?? this.isStaffAutoSelected,
   );
 }
 
@@ -164,8 +168,47 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       if (nextStep == BookingStep.staff && !_config.allowStaffSelection) {
         nextStep = BookingStep.dateTime;
       }
+      // Se staff è stato auto-selezionato, salta lo step staff
+      if (nextStep == BookingStep.staff && state.isStaffAutoSelected) {
+        nextStep = BookingStep.dateTime;
+      }
       state = state.copyWith(currentStep: nextStep);
     }
+  }
+
+  /// Avanza dallo step servizi con auto-selezione staff se possibile
+  Future<void> nextFromServicesWithAutoStaff() async {
+    if (state.currentStep != BookingStep.services) {
+      nextStep();
+      return;
+    }
+    if (!_config.allowStaffSelection) {
+      nextStep();
+      return;
+    }
+
+    final locationId = ref.read(effectiveLocationIdProvider);
+    final serviceIds = state.request.services.map((s) => s.id).toList();
+    if (locationId <= 0 || serviceIds.isEmpty) return;
+
+    final repository = ref.read(bookingRepositoryProvider);
+    final allStaff = await repository.getStaff(locationId);
+    final serviceIdSet = serviceIds.toSet();
+    final staffList = allStaff.where((s) {
+      if (s.serviceIds.isEmpty) {
+        return false;
+      }
+      return s.serviceIds.any(serviceIdSet.contains);
+    }).toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    if (staffList.length == 1) {
+      autoSelectStaff(staffList.first);
+      state = state.copyWith(currentStep: BookingStep.dateTime);
+      return;
+    }
+
+    state = state.copyWith(currentStep: BookingStep.staff);
   }
 
   /// Vai allo step precedente
@@ -177,6 +220,11 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
 
     // Se staff selection è disabilitata, salta lo step staff
     if (prevStep == BookingStep.staff && !_config.allowStaffSelection) {
+      prevIndex--;
+      prevStep = BookingStep.values[prevIndex];
+    }
+    // Se staff è stato auto-selezionato, salta lo step staff
+    if (prevStep == BookingStep.staff && state.isStaffAutoSelected) {
       prevIndex--;
       prevStep = BookingStep.values[prevIndex];
     }
@@ -194,6 +242,10 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
   void goToStep(BookingStep step) {
     // Non permettere di tornare allo step location se c'è una sola location
     if (step == BookingStep.location && !_hasMultipleLocations) {
+      return;
+    }
+    // Se staff è auto-selezionato, non permettere di andare allo step staff
+    if (step == BookingStep.staff && state.isStaffAutoSelected) {
       return;
     }
     if (step.index < state.currentStep.index) {
@@ -231,6 +283,18 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     );
   }
 
+  /// Seleziona staff automaticamente e disabilita ritorno allo step staff
+  void autoSelectStaff(Staff staff) {
+    state = state.copyWith(
+      request: state.request.copyWith(
+        selectedStaff: staff,
+        clearStaff: false,
+        clearSlot: true,
+      ),
+      isStaffAutoSelected: true,
+    );
+  }
+
   /// Seleziona slot temporale
   void selectTimeSlot(TimeSlot slot) {
     state = state.copyWith(request: state.request.copyWith(selectedSlot: slot));
@@ -250,8 +314,10 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     try {
       // Usa la location effettiva (selezionata o default)
       final locationId = ref.read(effectiveLocationIdProvider);
+      final businessId = _config.businessId;
 
       final result = await _repository.confirmBooking(
+        businessId: businessId,
         locationId: locationId,
         serviceIds: state.request.services.map((s) => s.id).toList(),
         startTime: state.request.selectedSlot!.startTime,
@@ -287,7 +353,7 @@ class ServicesData {
 
   /// Servizi prenotabili online
   List<Service> get bookableServices =>
-      services.where((s) => s.isBookableOnline).toList();
+      services.where((s) => s.isBookableOnline && s.isActive).toList();
 
   bool get isEmpty => bookableServices.isEmpty;
 }
@@ -361,57 +427,81 @@ final servicesProvider = FutureProvider<List<Service>>((ref) async {
   return asyncData.whenData((data) => data.services).value ?? [];
 });
 
-/// Notifier per lo staff con protezione da loop
-class StaffDataNotifier extends StateNotifier<AsyncValue<List<Staff>>> {
-  final Ref _ref;
-  bool _hasFetched = false;
-  int? _lastLocationId;
-
-  StaffDataNotifier(this._ref) : super(const AsyncValue.loading()) {
-    // Ascolta cambiamenti della location effettiva
-    _ref.listen(effectiveLocationIdProvider, (previous, next) {
-      if (next > 0 && next != _lastLocationId) {
-        _hasFetched = false;
-        _lastLocationId = next;
-        _loadData();
-      }
-    }, fireImmediately: true);
-  }
-
-  Future<void> _loadData() async {
-    if (_hasFetched) return;
-
-    final locationId = _ref.read(effectiveLocationIdProvider);
-    if (locationId <= 0) return;
-
-    _hasFetched = true;
-
-    try {
-      final repository = _ref.read(bookingRepositoryProvider);
-      final staff = await repository.getStaff(locationId);
-      final sortedStaff = List<Staff>.from(staff)
-        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-      state = AsyncValue.data(sortedStaff);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
-
-  Future<void> refresh() async {
-    _hasFetched = false;
-    state = const AsyncValue.loading();
-    await _loadData();
-  }
-}
-
 /// Provider per lo staff
 final staffProvider =
-    StateNotifierProvider<StaffDataNotifier, AsyncValue<List<Staff>>>(
-      (ref) => StaffDataNotifier(ref),
+    StateNotifierProvider<AvailableStaffNotifier, AsyncValue<List<Staff>>>(
+      (ref) => AvailableStaffNotifier(ref),
     );
 
 /// Provider per la data selezionata nel calendario
 final selectedDateProvider = StateProvider<DateTime?>((ref) => null);
+
+/// Provider per il mese attualmente focalizzato nel calendario
+final focusedMonthProvider = StateProvider<DateTime>((ref) => DateTime.now());
+
+/// Notifier per le date disponibili (con slot reali)
+class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
+  final Ref _ref;
+  bool _hasFetched = false;
+  String? _lastKey;
+
+  AvailableDatesNotifier(this._ref) : super(const AsyncValue.loading()) {
+    _ref.listen(focusedMonthProvider, (_, __) => _invalidate(), fireImmediately: true);
+    _ref.listen(effectiveLocationIdProvider, (_, __) => _invalidate());
+    _ref.listen(
+      bookingFlowProvider.select((s) => s.request.services),
+      (_, __) => _invalidate(),
+    );
+    _ref.listen(
+      bookingFlowProvider.select((s) => s.request.selectedStaff?.id),
+      (_, __) => _invalidate(),
+    );
+  }
+
+  void _invalidate() {
+    _hasFetched = false;
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final locationId = _ref.read(effectiveLocationIdProvider);
+    final bookingState = _ref.read(bookingFlowProvider);
+    final serviceIds = bookingState.request.services.map((s) => s.id).toList();
+    final staffId = bookingState.request.selectedStaff?.id;
+    final month = _ref.read(focusedMonthProvider);
+
+    final key = '$locationId|${month.year}-${month.month}|${staffId ?? 0}|${serviceIds.join(',')}';
+    if (_hasFetched && _lastKey == key) return;
+    _lastKey = key;
+    _hasFetched = true;
+
+    if (locationId <= 0 || serviceIds.isEmpty) {
+      state = const AsyncValue.data({});
+      return;
+    }
+
+    state = const AsyncValue.loading();
+
+    try {
+      final repository = _ref.read(bookingRepositoryProvider);
+      final dates = await repository.getAvailableDatesForMonth(
+        locationId: locationId,
+        month: month,
+        serviceIds: serviceIds,
+        staffId: staffId,
+      );
+      state = AsyncValue.data(dates);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
+
+/// Provider per le date disponibili (slot reali)
+final availableDatesProvider =
+    StateNotifierProvider<AvailableDatesNotifier, AsyncValue<Set<DateTime>>>(
+      (ref) => AvailableDatesNotifier(ref),
+    );
 
 /// Provider per gli slot disponibili
 final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
@@ -450,3 +540,79 @@ final firstAvailableDateProvider = FutureProvider<DateTime>((ref) async {
     staffId: bookingState.request.selectedStaff?.id,
   );
 });
+
+/// Notifier per lo staff disponibile (planning + slots reali)
+class AvailableStaffNotifier extends StateNotifier<AsyncValue<List<Staff>>> {
+  final Ref _ref;
+  bool _hasFetched = false;
+  String? _lastKey;
+  List<Staff> _allStaff = const [];
+
+  AvailableStaffNotifier(this._ref) : super(const AsyncValue.loading()) {
+    _ref.listen(effectiveLocationIdProvider, (_, __) => _invalidate(), fireImmediately: true);
+    _ref.listen(
+      bookingFlowProvider.select((s) => s.currentStep),
+      (_, __) => _invalidate(),
+    );
+    _ref.listen(
+      bookingFlowProvider.select((s) => s.request.services),
+      (_, __) => _applyFilter(),
+    );
+  }
+
+  void _invalidate() {
+    _hasFetched = false;
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final currentStep = _ref.read(bookingFlowProvider).currentStep;
+    if (currentStep != BookingStep.staff) {
+      return;
+    }
+
+    final locationId = _ref.read(effectiveLocationIdProvider);
+    final bookingState = _ref.read(bookingFlowProvider);
+    final serviceIds = bookingState.request.services.map((s) => s.id).toList();
+
+    final key = '$locationId|${serviceIds.join(',')}';
+    if (_hasFetched && _lastKey == key) return;
+    _lastKey = key;
+    _hasFetched = true;
+
+    if (locationId <= 0 || serviceIds.isEmpty) {
+      state = const AsyncValue.data([]);
+      return;
+    }
+
+    state = const AsyncValue.loading();
+
+    try {
+      final repository = _ref.read(bookingRepositoryProvider);
+      _allStaff = await repository.getStaff(locationId);
+      _applyFilter();
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  void _applyFilter() {
+    final bookingState = _ref.read(bookingFlowProvider);
+    final serviceIds = bookingState.request.services.map((s) => s.id).toList();
+    if (serviceIds.isEmpty) {
+      state = const AsyncValue.data([]);
+      return;
+    }
+
+    final serviceIdSet = serviceIds.toSet();
+    final availableStaff = _allStaff.where((s) {
+      if (s.serviceIds.isEmpty) {
+        return false;
+      }
+      return s.serviceIds.any(serviceIdSet.contains);
+    }).toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    state = AsyncValue.data(availableStaff);
+  }
+}

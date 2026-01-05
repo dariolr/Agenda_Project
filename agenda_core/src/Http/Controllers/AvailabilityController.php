@@ -68,7 +68,8 @@ final class AvailabilityController
             $locationId,
             $staffId,
             $totalDuration,
-            $date
+            $date,
+            $serviceIds
         );
 
         return Response::success($result, 200);

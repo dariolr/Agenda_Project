@@ -129,6 +129,7 @@
       "date": { "type": "String" }
     }
   },
+  "dateTimeGoToFirst": "Go to first available date",
   "dateTimeNoSlots": "No time slots available for this date",
   "dateTimeSelectDate": "Select a date",
   "dateTimeMorning": "Morning",

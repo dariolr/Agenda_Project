@@ -7,6 +7,7 @@ class Staff {
   final String? avatarUrl;
   final int sortOrder;
   final bool isBookableOnline;
+  final List<int> serviceIds;
 
   const Staff({
     required this.id,
@@ -16,12 +17,15 @@ class Staff {
     this.avatarUrl,
     this.sortOrder = 0,
     this.isBookableOnline = true,
+    this.serviceIds = const [],
   });
 
   String get displayName {
     if (surname.isEmpty) return name;
     return '$name $surname';
   }
+
+  String get fullName => '${name.trim()} ${surname.trim()}'.trim();
 
   String get initials {
     final nameInitial = name.isNotEmpty ? name[0].toUpperCase() : '';
@@ -37,6 +41,7 @@ class Staff {
     String? avatarUrl,
     int? sortOrder,
     bool? isBookableOnline,
+    List<int>? serviceIds,
   }) =>
       Staff(
         id: id ?? this.id,
@@ -46,6 +51,7 @@ class Staff {
         avatarUrl: avatarUrl ?? this.avatarUrl,
         sortOrder: sortOrder ?? this.sortOrder,
         isBookableOnline: isBookableOnline ?? this.isBookableOnline,
+        serviceIds: serviceIds ?? this.serviceIds,
       );
 
   factory Staff.fromJson(Map<String, dynamic> json) => Staff(
@@ -56,6 +62,10 @@ class Staff {
         avatarUrl: json['avatar_url'] as String?,
         sortOrder: json['sort_order'] as int? ?? 0,
         isBookableOnline: json['is_bookable_online'] as bool? ?? true,
+        serviceIds: (json['service_ids'] as List<dynamic>? ?? [])
+            .map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0)
+            .where((id) => id > 0)
+            .toList(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -66,5 +76,6 @@ class Staff {
         if (avatarUrl != null) 'avatar_url': avatarUrl,
         'sort_order': sortOrder,
         'is_bookable_online': isBookableOnline,
+        'service_ids': serviceIds,
       };
 }

@@ -11,6 +11,8 @@ class Location {
   final double? latitude;
   final double? longitude;
   final String? currency;
+  final int minBookingNoticeHours;
+  final int maxBookingAdvanceDays;
   final bool isDefault;
   final bool isActive;
   final int sortOrder;
@@ -28,6 +30,8 @@ class Location {
     this.latitude,
     this.longitude,
     this.currency,
+    this.minBookingNoticeHours = 1,
+    this.maxBookingAdvanceDays = 90,
     this.isDefault = false,
     this.isActive = true,
     this.sortOrder = 0,
@@ -46,6 +50,8 @@ class Location {
     double? latitude,
     double? longitude,
     String? currency,
+    int? minBookingNoticeHours,
+    int? maxBookingAdvanceDays,
     bool? isDefault,
     bool? isActive,
     int? sortOrder,
@@ -63,6 +69,10 @@ class Location {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       currency: currency ?? this.currency,
+      minBookingNoticeHours:
+          minBookingNoticeHours ?? this.minBookingNoticeHours,
+      maxBookingAdvanceDays:
+          maxBookingAdvanceDays ?? this.maxBookingAdvanceDays,
       isDefault: isDefault ?? this.isDefault,
       isActive: isActive ?? this.isActive,
       sortOrder: sortOrder ?? this.sortOrder,
@@ -83,6 +93,8 @@ class Location {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       currency: json['currency'] as String?,
+      minBookingNoticeHours: json['min_booking_notice_hours'] as int? ?? 1,
+      maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
       isDefault: json['is_default'] as bool? ?? false,
       isActive: json['is_active'] as bool? ?? true,
       sortOrder: json['sort_order'] as int? ?? 0,
@@ -103,6 +115,8 @@ class Location {
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (currency != null) 'currency': currency,
+      'min_booking_notice_hours': minBookingNoticeHours,
+      'max_booking_advance_days': maxBookingAdvanceDays,
       'is_default': isDefault,
       'is_active': isActive,
     };

@@ -75,6 +75,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
     String? phone,
     String? email,
     String? timezone,
+    int? minBookingNoticeHours,
+    int? maxBookingAdvanceDays,
     bool? isActive,
   }) async {
     final business = ref.read(currentBusinessProvider);
@@ -86,6 +88,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
       phone: phone,
       email: email,
       timezone: timezone,
+      minBookingNoticeHours: minBookingNoticeHours,
+      maxBookingAdvanceDays: maxBookingAdvanceDays,
       isActive: isActive,
     );
     state = [...state, location];
@@ -100,6 +104,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
     String? phone,
     String? email,
     String? timezone,
+    int? minBookingNoticeHours,
+    int? maxBookingAdvanceDays,
     bool? isActive,
   }) async {
     final repository = ref.read(locationsRepositoryProvider);
@@ -110,6 +116,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
       phone: phone,
       email: email,
       timezone: timezone,
+      minBookingNoticeHours: minBookingNoticeHours,
+      maxBookingAdvanceDays: maxBookingAdvanceDays,
       isActive: isActive,
     );
     state = [

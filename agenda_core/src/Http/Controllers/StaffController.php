@@ -40,9 +40,12 @@ final class StaffController
         return Response::success([
             'staff' => array_map(fn($s) => [
                 'id' => (int) $s['id'],
+                'name' => $s['name'],
+                'surname' => $s['surname'],
                 'display_name' => $s['display_name'],
                 'color' => $s['color_hex'],
                 'avatar_url' => $s['avatar_url'] ?? null,
+                'service_ids' => $this->staffRepository->getServiceIds((int) $s['id']),
             ], $staff),
         ], 200);
     }

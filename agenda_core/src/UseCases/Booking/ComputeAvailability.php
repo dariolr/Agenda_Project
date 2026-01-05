@@ -31,6 +31,7 @@ final class ComputeAvailability
      * @param int|null $staffId Filter by specific staff (optional)
      * @param int $durationMinutes Total duration needed
      * @param string $date Date in Y-m-d format
+     * @param array<int> $serviceIds Services requested (used to filter eligible staff)
      * @return array Available slots
      */
     public function execute(
@@ -38,7 +39,8 @@ final class ComputeAvailability
         int $locationId,
         ?int $staffId,
         int $durationMinutes,
-        string $date
+        string $date,
+        array $serviceIds
     ): array {
         // Get timezone from location
         $location = $this->locationRepository->findById($locationId);
@@ -73,6 +75,13 @@ final class ComputeAvailability
         } else {
             $staffMembers = $this->staffRepository->findByLocationId($locationId, $businessId);
         }
+
+        // Filter by service capabilities (staff must be able to perform ALL requested services)
+        $serviceIds = array_values(array_map('intval', $serviceIds));
+        $staffMembers = array_filter(
+            $staffMembers,
+            fn ($s) => $this->staffRepository->canPerformServices((int) $s['id'], $serviceIds, $locationId, $businessId)
+        );
 
         if (empty($staffMembers)) {
             return ['slots' => []];

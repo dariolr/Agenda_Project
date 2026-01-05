@@ -148,6 +148,23 @@
   "teamLocationEmailHint": "Email for customer notifications",
   "teamLocationIsActiveLabel": "Location active",
   "teamLocationIsActiveHint": "If disabled, the location will not be visible to customers",
+  "teamLocationBookingLimitsSection": "Online booking limits",
+  "teamLocationMinBookingNoticeLabel": "Minimum booking notice",
+  "teamLocationMinBookingNoticeHint": "How far in advance customers must book",
+  "teamLocationMaxBookingAdvanceLabel": "Maximum booking advance",
+  "teamLocationMaxBookingAdvanceHint": "How far ahead customers can book",
+  "teamLocationHours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@teamLocationHours": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teamLocationDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@teamLocationDays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "teamNewStaffTitle": "New team member",
   "teamEditStaffTitle": "Edit team member",
   "teamStaffNameLabel": "First name",

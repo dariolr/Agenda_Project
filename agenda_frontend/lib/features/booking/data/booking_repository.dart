@@ -48,6 +48,12 @@ class BookingRepository {
 
       for (final svcJson in servicesJson) {
         final svc = svcJson as Map<String, dynamic>;
+        if (!_isTruthy(svc['is_bookable_online'])) {
+          continue;
+        }
+        if (!_isTruthy(svc['is_active'])) {
+          continue;
+        }
         if (!svc.containsKey('category_id')) {
           svc['category_id'] = catId;
         }
@@ -127,6 +133,99 @@ class BookingRepository {
     }).toList();
   }
 
+  /// GET /v1/staff/{id}/planning?date=YYYY-MM-DD
+  /// Ritorna il planning valido per data (data può essere null se non esiste)
+  Future<Map<String, dynamic>?> getStaffPlanningForDate({
+    required int staffId,
+    required DateTime date,
+  }) async {
+    final dateStr =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final data = await _apiClient.getStaffPlanningForDate(
+      staffId: staffId,
+      date: dateStr,
+    );
+    return data['data'] as Map<String, dynamic>?;
+  }
+
+  /// GET /v1/staff/{id}/planning-availability?date=YYYY-MM-DD
+  /// Ritorna se lo staff ha disponibilità (planning) per la data
+  Future<bool> isStaffAvailableByPlanning({
+    required int staffId,
+    required DateTime date,
+  }) async {
+    final dateStr =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final data = await _apiClient.getStaffPlanningAvailability(
+      staffId: staffId,
+      date: dateStr,
+    );
+    final payload = data['data'] as Map<String, dynamic>? ?? {};
+    return payload['is_available'] == true;
+  }
+
+  /// Verifica se lo staff è prenotabile per servizi + data (planning + slots)
+  Future<bool> isStaffBookableForDate({
+    required int staffId,
+    required int locationId,
+    required DateTime date,
+    required List<int> serviceIds,
+  }) async {
+    final planning = await getStaffPlanningForDate(
+      staffId: staffId,
+      date: date,
+    );
+    if (planning == null) return false;
+
+    final planningAvailable = await isStaffAvailableByPlanning(
+      staffId: staffId,
+      date: date,
+    );
+    if (!planningAvailable) return false;
+
+    final slots = await getAvailableSlots(
+      locationId: locationId,
+      date: date,
+      serviceIds: serviceIds,
+      staffId: staffId,
+    );
+    return slots.isNotEmpty;
+  }
+
+  /// Recupera le date del mese con almeno uno slot disponibile
+  Future<Set<DateTime>> getAvailableDatesForMonth({
+    required int locationId,
+    required DateTime month,
+    required List<int> serviceIds,
+    int? staffId,
+  }) async {
+    if (serviceIds.isEmpty) return {};
+
+    final year = month.year;
+    final monthNumber = month.month;
+    final daysInMonth = DateTime(year, monthNumber + 1, 0).day;
+    final availableDates = <DateTime>{};
+
+    for (var day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(year, monthNumber, day);
+      try {
+        final slots = await getAvailableSlots(
+          locationId: locationId,
+          date: date,
+          serviceIds: serviceIds,
+          staffId: staffId,
+        );
+        if (slots.isNotEmpty) {
+          availableDates.add(DateTime(year, monthNumber, day));
+        }
+      } catch (_) {
+        // Ignora errori e continua con il giorno successivo
+      }
+    }
+
+    return availableDates;
+  }
+
   /// Trova la prima data con disponibilità
   /// Cerca nei prossimi 30 giorni
   Future<DateTime> getFirstAvailableDate({
@@ -175,6 +274,7 @@ class BookingRepository {
   /// Ritorna i dati del booking creato
   /// Throws ApiException con code='slot_conflict' se slot occupato
   Future<Map<String, dynamic>> confirmBooking({
+    required int businessId,
     required int locationId,
     required List<int> serviceIds,
     required DateTime startTime,
@@ -185,7 +285,8 @@ class BookingRepository {
     // Genera idempotency key se non fornita
     final key = idempotencyKey ?? _uuid.v4();
 
-    return _apiClient.createBooking(
+    return _apiClient.createCustomerBooking(
+      businessId: businessId,
       locationId: locationId,
       idempotencyKey: key,
       serviceIds: serviceIds,
@@ -197,4 +298,15 @@ class BookingRepository {
 
   /// Genera un nuovo idempotency key (UUID v4)
   String generateIdempotencyKey() => _uuid.v4();
+
+  bool _isTruthy(dynamic value) {
+    if (value == null) return true;
+    if (value is bool) return value;
+    if (value is num) return value == 1;
+    if (value is String) {
+      final normalized = value.toLowerCase();
+      return normalized == '1' || normalized == 'true';
+    }
+    return true;
+  }
 }

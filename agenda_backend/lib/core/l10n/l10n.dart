@@ -1009,6 +1009,80 @@ class L10n {
     );
   }
 
+  /// `Limiti prenotazione online`
+  String get teamLocationBookingLimitsSection {
+    return Intl.message(
+      'Limiti prenotazione online',
+      name: 'teamLocationBookingLimitsSection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Preavviso minimo prenotazione`
+  String get teamLocationMinBookingNoticeLabel {
+    return Intl.message(
+      'Preavviso minimo prenotazione',
+      name: 'teamLocationMinBookingNoticeLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Quanto tempo prima devono prenotare i clienti`
+  String get teamLocationMinBookingNoticeHint {
+    return Intl.message(
+      'Quanto tempo prima devono prenotare i clienti',
+      name: 'teamLocationMinBookingNoticeHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione massima anticipata`
+  String get teamLocationMaxBookingAdvanceLabel {
+    return Intl.message(
+      'Prenotazione massima anticipata',
+      name: 'teamLocationMaxBookingAdvanceLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fino a quanto tempo in anticipo possono prenotare`
+  String get teamLocationMaxBookingAdvanceHint {
+    return Intl.message(
+      'Fino a quanto tempo in anticipo possono prenotare',
+      name: 'teamLocationMaxBookingAdvanceHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count, plural, =1{1 ora} other{{count} ore}}`
+  String teamLocationHours(int count) {
+    return Intl.plural(
+      count,
+      one: '1 ora',
+      other: '$count ore',
+      name: 'teamLocationHours',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `{count, plural, =1{1 giorno} other{{count} giorni}}`
+  String teamLocationDays(int count) {
+    return Intl.plural(
+      count,
+      one: '1 giorno',
+      other: '$count giorni',
+      name: 'teamLocationDays',
+      desc: '',
+      args: [count],
+    );
+  }
+
   /// `Nuovo membro del team`
   String get teamNewStaffTitle {
     return Intl.message(

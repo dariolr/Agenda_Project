@@ -52,6 +52,12 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   final _addressController = TextEditingController();
   final _emailController = TextEditingController();
   bool _isActive = true;
+  int _minBookingNoticeHours = 1;
+  int _maxBookingAdvanceDays = 90;
+
+  // Opzioni disponibili per i dropdown
+  static const _noticeHoursOptions = [1, 2, 4, 6, 12, 24, 48];
+  static const _advanceDaysOptions = [7, 14, 30, 60, 90, 180, 365];
 
   @override
   void initState() {
@@ -61,6 +67,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       _addressController.text = widget.initial!.address ?? '';
       _emailController.text = widget.initial!.email ?? '';
       _isActive = widget.initial!.isActive;
+      _minBookingNoticeHours = widget.initial!.minBookingNoticeHours;
+      _maxBookingAdvanceDays = widget.initial!.maxBookingAdvanceDays;
     } else {
       // Pre-popola con il nome del business per nuove sedi
       final businessName = ref.read(currentBusinessProvider).name;
@@ -174,6 +182,58 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
             value: _isActive,
             onChanged: (v) => setState(() => _isActive = v),
             contentPadding: EdgeInsets.zero,
+          ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          // Sezione Limiti Prenotazione Online
+          Text(
+            l10n.teamLocationBookingLimitsSection,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          // Preavviso minimo
+          LabeledFormField(
+            label: l10n.teamLocationMinBookingNoticeLabel,
+            child: DropdownButtonFormField<int>(
+              value: _minBookingNoticeHours,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                isDense: true,
+                helperText: l10n.teamLocationMinBookingNoticeHint,
+              ),
+              items: _noticeHoursOptions.map((hours) {
+                return DropdownMenuItem(
+                  value: hours,
+                  child: Text(l10n.teamLocationHours(hours)),
+                );
+              }).toList(),
+              onChanged: (v) {
+                if (v != null) setState(() => _minBookingNoticeHours = v);
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          // Anticipo massimo
+          LabeledFormField(
+            label: l10n.teamLocationMaxBookingAdvanceLabel,
+            child: DropdownButtonFormField<int>(
+              value: _maxBookingAdvanceDays,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                isDense: true,
+                helperText: l10n.teamLocationMaxBookingAdvanceHint,
+              ),
+              items: _advanceDaysOptions.map((days) {
+                return DropdownMenuItem(
+                  value: days,
+                  child: Text(l10n.teamLocationDays(days)),
+                );
+              }).toList(),
+              onChanged: (v) {
+                if (v != null) setState(() => _maxBookingAdvanceDays = v);
+              },
+            ),
           ),
           if (_error != null) ...[
             const SizedBox(height: AppSpacing.formRowSpacing),
@@ -309,6 +369,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           address: address.isEmpty ? null : address,
           email: email.isEmpty ? null : email,
           isActive: _isActive,
+          minBookingNoticeHours: _minBookingNoticeHours,
+          maxBookingAdvanceDays: _maxBookingAdvanceDays,
         );
       } else {
         // Crea nuova location
@@ -317,6 +379,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           address: address.isEmpty ? null : address,
           email: email.isEmpty ? null : email,
           isActive: _isActive,
+          minBookingNoticeHours: _minBookingNoticeHours,
+          maxBookingAdvanceDays: _maxBookingAdvanceDays,
         );
       }
       if (mounted) Navigator.of(context).pop();

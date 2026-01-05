@@ -216,6 +216,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "dateTimeAfternoon": MessageLookupByLibrary.simpleMessage("Pomeriggio"),
     "dateTimeEvening": MessageLookupByLibrary.simpleMessage("Sera"),
     "dateTimeFirstAvailable": m1,
+    "dateTimeGoToFirst": MessageLookupByLibrary.simpleMessage(
+      "Vai alla prima data disponibile",
+    ),
     "dateTimeMorning": MessageLookupByLibrary.simpleMessage("Mattina"),
     "dateTimeNoSlots": MessageLookupByLibrary.simpleMessage(
       "Nessun orario disponibile per questa data",
