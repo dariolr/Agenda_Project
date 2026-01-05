@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../app/providers/route_slug_provider.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 
 class SummaryStep extends ConsumerStatefulWidget {
@@ -52,80 +55,6 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                 ),
                 const SizedBox(height: 24),
 
-                // Servizi selezionati
-                _SummarySection(
-                  title: l10n.summaryServices,
-                  icon: Icons.list_alt,
-                  child: Column(
-                    children: request.services.map((service) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    service.name,
-                                    style: theme.textTheme.bodyMedium,
-                                  ),
-                                  Text(
-                                    l10n.durationMinutes(
-                                      service.durationMinutes,
-                                    ),
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withOpacity(0.6),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Text(
-                              service.formattedPrice,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Operatore
-                if (request.selectedStaff != null)
-                  _SummarySection(
-                    title: l10n.summaryOperator,
-                    icon: Icons.person,
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: theme.colorScheme.primary
-                              .withOpacity(0.1),
-                          child: Text(
-                            request.selectedStaff!.initials,
-                            style: TextStyle(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          request.selectedStaff!.displayName,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                if (request.selectedStaff != null) const SizedBox(height: 16),
-
                 // Data e ora
                 if (request.selectedSlot != null)
                   _SummarySection(
@@ -141,29 +70,157 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                   ),
                 if (request.selectedSlot != null) const SizedBox(height: 16),
 
-                // Durata totale
+                // Servizi selezionati (con operatore)
                 _SummarySection(
-                  title: l10n.summaryDuration,
-                  icon: Icons.schedule,
-                  child: Text(
-                    l10n.durationMinutes(request.totalDurationMinutes),
-                    style: theme.textTheme.bodyMedium,
+                  title: l10n.summaryServices,
+                  icon: Icons.list_alt,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ...request.services.map((service) {
+                        final operatorLabel = request.selectedStaff != null
+                            ? request.selectedStaff!.fullName
+                            : l10n.staffAnyOperator;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      service.name,
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      operatorLabel,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurface
+                                            .withOpacity(0.6),
+                                      ),
+                                    ),
+                                    if (request.services.length > 1)
+                                      Text(
+                                        l10n.durationMinutes(
+                                          service.durationMinutes,
+                                        ),
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.6),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              if (request.services.length > 1)
+                                Text(
+                                  service.formattedPrice,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 12),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SizedBox(
+                            height: 1,
+                            child: Stack(
+                              children: [
+                                Positioned(
+                                  left: -16,
+                                  right: -16,
+                                  top: 0,
+                                  child: Divider(
+                                    height: 1,
+                                    color: theme.dividerColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            l10n.summaryDuration,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                l10n.summaryPrice,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.schedule,
+                                size: 16,
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.7),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                l10n.durationMinutes(
+                                  request.totalDurationMinutes,
+                                ),
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.euro,
+                                size: 16,
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                request.formattedTotalPrice
+                                    .replaceFirst('€', '')
+                                    .trim(),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // Prezzo totale
-                _SummarySection(
-                  title: l10n.summaryPrice,
-                  icon: Icons.euro,
-                  child: Text(
-                    request.formattedTotalPrice,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 24),
 
                 // Note
@@ -205,6 +262,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
   ) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final isAuthenticated =
+        ref.watch(authProvider.select((state) => state.isAuthenticated));
+    final slug = ref.watch(routeSlugProvider);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -250,8 +310,15 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
             ElevatedButton(
               onPressed: state.isLoading
                   ? null
-                  : () =>
-                        ref.read(bookingFlowProvider.notifier).confirmBooking(),
+                  : () {
+                      if (!isAuthenticated && slug != null) {
+                        context.go('/$slug/login');
+                        return;
+                      }
+                      ref
+                          .read(bookingFlowProvider.notifier)
+                          .confirmBooking();
+                    },
               child: state.isLoading
                   ? const SizedBox(
                       height: 20,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../app/providers/route_slug_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../auth/providers/auth_provider.dart';
@@ -161,29 +162,66 @@ class BookingScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          // Step indicator
-          if (bookingState.currentStep != BookingStep.confirmation)
-            BookingStepIndicator(
-              currentStep: bookingState.currentStep,
-              allowStaffSelection: config.allowStaffSelection,
-              showLocationStep: hasMultipleLocations,
-              onStepTap: (step) {
-                ref.read(bookingFlowProvider.notifier).goToStep(step);
-              },
-            ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref
+                .read(formFactorProvider.notifier)
+                .update(constraints.maxWidth);
+          });
+          final formFactor = _formFactorForWidth(constraints.maxWidth);
+          final maxWidth = switch (formFactor) {
+            AppFormFactor.desktop => 980.0,
+            AppFormFactor.tablet => 760.0,
+            AppFormFactor.mobile => double.infinity,
+          };
+          final horizontalPadding = switch (formFactor) {
+            AppFormFactor.desktop => 32.0,
+            AppFormFactor.tablet => 24.0,
+            AppFormFactor.mobile => 0.0,
+          };
 
-          // Content
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: _buildStepContent(bookingState.currentStep),
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: Column(
+                  children: [
+                    // Step indicator
+                    if (bookingState.currentStep != BookingStep.confirmation)
+                      BookingStepIndicator(
+                        currentStep: bookingState.currentStep,
+                        allowStaffSelection: config.allowStaffSelection,
+                        showLocationStep: hasMultipleLocations,
+                        onStepTap: (step) {
+                          ref
+                              .read(bookingFlowProvider.notifier)
+                              .goToStep(step);
+                        },
+                      ),
+
+                    // Content
+                    Expanded(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: _buildStepContent(bookingState.currentStep),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
+  }
+
+  AppFormFactor _formFactorForWidth(double width) {
+    if (width >= 1024) return AppFormFactor.desktop;
+    if (width >= 600) return AppFormFactor.tablet;
+    return AppFormFactor.mobile;
   }
 
   Widget _buildStepContent(BookingStep step) {

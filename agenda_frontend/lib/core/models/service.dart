@@ -11,6 +11,7 @@ class Service {
   final bool isFree;
   final bool isPriceStartingFrom;
   final bool isBookableOnline;
+  final bool isActive;
 
   const Service({
     required this.id,
@@ -24,6 +25,7 @@ class Service {
     this.isFree = false,
     this.isPriceStartingFrom = false,
     this.isBookableOnline = true,
+    this.isActive = true,
   });
 
   Service copyWith({
@@ -38,6 +40,7 @@ class Service {
     bool? isFree,
     bool? isPriceStartingFrom,
     bool? isBookableOnline,
+    bool? isActive,
   }) => Service(
     id: id ?? this.id,
     businessId: businessId ?? this.businessId,
@@ -50,10 +53,11 @@ class Service {
     isFree: isFree ?? this.isFree,
     isPriceStartingFrom: isPriceStartingFrom ?? this.isPriceStartingFrom,
     isBookableOnline: isBookableOnline ?? this.isBookableOnline,
+    isActive: isActive ?? this.isActive,
   );
 
   factory Service.fromJson(Map<String, dynamic> json) => Service(
-    id: json['id'] as int,
+        id: json['id'] as int,
     // API può usare business_id o derivarlo dalla location
     businessId: json['business_id'] as int? ?? 0,
     // category_id può essere null per servizi non categorizzati
@@ -73,8 +77,23 @@ class Service {
         0.0,
     isFree: json['is_free'] as bool? ?? false,
     isPriceStartingFrom: json['is_price_starting_from'] as bool? ?? false,
-    isBookableOnline: json['is_bookable_online'] as bool? ?? true,
+    isBookableOnline: _parseBookableOnline(json['is_bookable_online']),
+    isActive: _parseIsActive(json['is_active']),
   );
+
+  static bool _parseBookableOnline(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value == 1;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return true;
+  }
+
+  static bool _parseIsActive(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value == 1;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return true;
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -88,6 +107,7 @@ class Service {
     'is_free': isFree,
     'is_price_starting_from': isPriceStartingFrom,
     'is_bookable_online': isBookableOnline,
+    'is_active': isActive,
   };
 
   String get formattedPrice {

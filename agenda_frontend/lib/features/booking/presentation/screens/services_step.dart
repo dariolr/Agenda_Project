@@ -202,7 +202,9 @@ class ServicesStep extends ConsumerWidget {
             // Bottone avanti
             ElevatedButton(
               onPressed: bookingState.canGoNext
-                  ? () => ref.read(bookingFlowProvider.notifier).nextStep()
+                  ? () => ref
+                      .read(bookingFlowProvider.notifier)
+                      .nextFromServicesWithAutoStaff()
                   : null,
               child: Text(l10n.actionNext),
             ),

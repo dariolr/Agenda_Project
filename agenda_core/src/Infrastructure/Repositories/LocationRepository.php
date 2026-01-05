@@ -128,8 +128,8 @@ final class LocationRepository
     {
         $isActive = $data['is_active'] ?? 1;
         $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO locations (business_id, name, address, phone, email, timezone, is_active) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO locations (business_id, name, address, phone, email, timezone, min_booking_notice_hours, max_booking_advance_days, is_active) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
@@ -138,6 +138,8 @@ final class LocationRepository
             $data['phone'] ?? null,
             $data['email'] ?? null,
             $data['timezone'] ?? 'Europe/Rome',
+            $data['min_booking_notice_hours'] ?? 1,
+            $data['max_booking_advance_days'] ?? 90,
             $isActive ? 1 : 0,
         ]);
 
@@ -153,6 +155,14 @@ final class LocationRepository
             if (array_key_exists($field, $data)) {
                 $fields[] = "{$field} = ?";
                 $values[] = $data[$field];
+            }
+        }
+
+        // Integer fields
+        foreach (['min_booking_notice_hours', 'max_booking_advance_days'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $fields[] = "{$field} = ?";
+                $values[] = (int) $data[$field];
             }
         }
 

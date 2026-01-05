@@ -5,11 +5,23 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/staff.dart';
 import '../../providers/booking_provider.dart';
 
-class StaffStep extends ConsumerWidget {
+class StaffStep extends ConsumerStatefulWidget {
   const StaffStep({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StaffStep> createState() => _StaffStepState();
+}
+
+class _StaffStepState extends ConsumerState<StaffStep> {
+  bool _autoAdvanced = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final staffAsync = ref.watch(staffProvider);
@@ -46,37 +58,51 @@ class StaffStep extends ConsumerWidget {
           child: staffAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text(l10n.errorLoadingStaff)),
-            data: (staffList) => ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                // Opzione "Qualsiasi operatore"
-                _StaffTile(
-                  staff: null,
-                  isSelected: selectedStaff == null,
-                  onTap: () {
-                    ref.read(bookingFlowProvider.notifier).selectStaff(null);
-                  },
-                ),
-                const SizedBox(height: 8),
-                // Lista operatori
-                ...staffList
-                    .where((s) => s.isBookableOnline)
-                    .map(
-                      (staff) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _StaffTile(
-                          staff: staff,
-                          isSelected: selectedStaff?.id == staff.id,
-                          onTap: () {
-                            ref
-                                .read(bookingFlowProvider.notifier)
-                                .selectStaff(staff);
-                          },
-                        ),
+            data: (staffList) {
+              if (staffList.length == 1 && !_autoAdvanced) {
+                final onlyStaff = staffList.first;
+                _autoAdvanced = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ref
+                      .read(bookingFlowProvider.notifier)
+                      .autoSelectStaff(onlyStaff);
+                  ref.read(bookingFlowProvider.notifier).nextStep();
+                });
+              }
+              if (staffList.isEmpty) {
+                return Center(child: Text(l10n.staffEmpty));
+              }
+
+              return ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  // Opzione "Qualsiasi operatore"
+                  _StaffTile(
+                    staff: null,
+                    isSelected: selectedStaff == null,
+                    onTap: () {
+                      ref.read(bookingFlowProvider.notifier).selectStaff(null);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  // Lista operatori
+                  ...staffList.map(
+                    (staff) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _StaffTile(
+                        staff: staff,
+                        isSelected: selectedStaff?.id == staff.id,
+                        onTap: () {
+                          ref
+                              .read(bookingFlowProvider.notifier)
+                              .selectStaff(staff);
+                        },
                       ),
                     ),
-              ],
-            ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
 

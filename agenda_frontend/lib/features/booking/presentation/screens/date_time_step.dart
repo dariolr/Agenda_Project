@@ -14,23 +14,9 @@ class DateTimeStep extends ConsumerStatefulWidget {
 }
 
 class _DateTimeStepState extends ConsumerState<DateTimeStep> {
-  DateTime _focusedMonth = DateTime.now();
-
   @override
   void initState() {
     super.initState();
-    // Imposta la prima data disponibile
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadFirstAvailableDate();
-    });
-  }
-
-  Future<void> _loadFirstAvailableDate() async {
-    final firstDateAsync = ref.read(firstAvailableDateProvider);
-    firstDateAsync.whenData((date) {
-      ref.read(selectedDateProvider.notifier).state = date;
-      setState(() => _focusedMonth = date);
-    });
   }
 
   @override
@@ -41,6 +27,9 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
     final slotsAsync = ref.watch(availableSlotsProvider);
     final bookingState = ref.watch(bookingFlowProvider);
     final firstDateAsync = ref.watch(firstAvailableDateProvider);
+    final focusedMonth = ref.watch(focusedMonthProvider);
+    final availableDatesAsync = ref.watch(availableDatesProvider);
+    final availableDates = availableDatesAsync.value ?? <DateTime>{};
 
     return Column(
       children: [
@@ -56,19 +45,6 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
-              firstDateAsync.when(
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (date) => Text(
-                  l10n.dateTimeFirstAvailable(
-                    DateFormat('EEEE d MMMM', 'it').format(date),
-                  ),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -79,7 +55,12 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
             child: Column(
               children: [
                 // Calendario
-                _buildCalendar(context, selectedDate),
+                _buildCalendar(
+                  context,
+                  selectedDate,
+                  focusedMonth,
+                  availableDates,
+                ),
 
                 const Divider(),
 
@@ -111,6 +92,58 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                                       .withOpacity(0.6),
                                 ),
                               ),
+                              const SizedBox(height: 12),
+                              firstDateAsync.when(
+                                loading: () => const SizedBox.shrink(),
+                                error: (_, __) => const SizedBox.shrink(),
+                                data: (date) {
+                                  final isAlreadyOnFirstDate =
+                                      selectedDate != null &&
+                                      selectedDate.year == date.year &&
+                                      selectedDate.month == date.month &&
+                                      selectedDate.day == date.day;
+                                  if (isAlreadyOnFirstDate) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return TextButton.icon(
+                                    onPressed: () {
+                                      ref
+                                          .read(
+                                            focusedMonthProvider.notifier,
+                                          )
+                                          .state = DateTime(
+                                        date.year,
+                                        date.month,
+                                        1,
+                                      );
+                                      ref
+                                          .read(
+                                            selectedDateProvider.notifier,
+                                          )
+                                          .state = date;
+                                    },
+                                    icon: Icon(
+                                      Icons.fast_forward,
+                                      size: 18,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    label: Text(
+                                      l10n.dateTimeGoToFirst,
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
+                                        color: theme.colorScheme.primary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  );
+                                },
+                              ),
                             ],
                           ),
                         )
@@ -127,17 +160,18 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
     );
   }
 
-  Widget _buildCalendar(BuildContext context, DateTime? selectedDate) {
+  Widget _buildCalendar(
+    BuildContext context,
+    DateTime? selectedDate,
+    DateTime focusedMonth,
+    Set<DateTime> availableDates,
+  ) {
     final theme = Theme.of(context);
     final now = DateTime.now();
-    final firstDayOfMonth = DateTime(
-      _focusedMonth.year,
-      _focusedMonth.month,
-      1,
-    );
+    final firstDayOfMonth = DateTime(focusedMonth.year, focusedMonth.month, 1);
     final lastDayOfMonth = DateTime(
-      _focusedMonth.year,
-      _focusedMonth.month + 1,
+      focusedMonth.year,
+      focusedMonth.month + 1,
       0,
     );
     final firstWeekday = firstDayOfMonth.weekday;
@@ -154,16 +188,15 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
               IconButton(
                 icon: const Icon(Icons.chevron_left),
                 onPressed: () {
-                  setState(() {
-                    _focusedMonth = DateTime(
-                      _focusedMonth.year,
-                      _focusedMonth.month - 1,
-                    );
-                  });
+                  ref.read(focusedMonthProvider.notifier).state = DateTime(
+                    focusedMonth.year,
+                    focusedMonth.month - 1,
+                    1,
+                  );
                 },
               ),
               Text(
-                DateFormat('MMMM yyyy', 'it').format(_focusedMonth),
+                DateFormat('MMMM yyyy', 'it').format(focusedMonth),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -171,12 +204,11 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
               IconButton(
                 icon: const Icon(Icons.chevron_right),
                 onPressed: () {
-                  setState(() {
-                    _focusedMonth = DateTime(
-                      _focusedMonth.year,
-                      _focusedMonth.month + 1,
-                    );
-                  });
+                  ref.read(focusedMonthProvider.notifier).state = DateTime(
+                    focusedMonth.year,
+                    focusedMonth.month + 1,
+                    1,
+                  );
                 },
               ),
             ],
@@ -212,14 +244,14 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
             ),
             itemCount: 42,
             itemBuilder: (context, index) {
-              final dayOffset = index - (firstWeekday - 1);
+              final dayOffset = index - (firstWeekday - 1) + 1;
               if (dayOffset < 1 || dayOffset > daysInMonth) {
                 return const SizedBox.shrink();
               }
 
               final date = DateTime(
-                _focusedMonth.year,
-                _focusedMonth.month,
+                focusedMonth.year,
+                focusedMonth.month,
                 dayOffset,
               );
               final isToday =
@@ -229,6 +261,8 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
               final isPast = date.isBefore(
                 DateTime(now.year, now.month, now.day),
               );
+              final isAvailable = _containsDate(availableDates, date);
+              final isDisabled = isPast || !isAvailable;
               final isSelected =
                   selectedDate != null &&
                   date.year == selectedDate.year &&
@@ -236,7 +270,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                   date.day == selectedDate.day;
 
               return GestureDetector(
-                onTap: isPast
+                onTap: isDisabled
                     ? null
                     : () {
                         ref.read(selectedDateProvider.notifier).state = date;
@@ -256,7 +290,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: isSelected
                             ? Colors.white
-                            : isPast
+                            : isDisabled
                             ? theme.colorScheme.onSurface.withOpacity(0.3)
                             : theme.colorScheme.onSurface,
                         fontWeight: isToday || isSelected
@@ -291,27 +325,30 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
         .toList();
     final eveningSlots = slots.where((s) => s.startTime.hour >= 18).toList();
 
-    return ListView(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      children: [
-        if (morningSlots.isNotEmpty) ...[
-          Text(l10n.dateTimeMorning, style: theme.textTheme.titleSmall),
-          const SizedBox(height: 8),
-          _buildSlotGrid(context, ref, morningSlots, selectedSlot),
-          const SizedBox(height: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (morningSlots.isNotEmpty) ...[
+            Text(l10n.dateTimeMorning, style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            _buildSlotGrid(context, ref, morningSlots, selectedSlot),
+            const SizedBox(height: 16),
+          ],
+          if (afternoonSlots.isNotEmpty) ...[
+            Text(l10n.dateTimeAfternoon, style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            _buildSlotGrid(context, ref, afternoonSlots, selectedSlot),
+            const SizedBox(height: 16),
+          ],
+          if (eveningSlots.isNotEmpty) ...[
+            Text(l10n.dateTimeEvening, style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            _buildSlotGrid(context, ref, eveningSlots, selectedSlot),
+          ],
         ],
-        if (afternoonSlots.isNotEmpty) ...[
-          Text(l10n.dateTimeAfternoon, style: theme.textTheme.titleSmall),
-          const SizedBox(height: 8),
-          _buildSlotGrid(context, ref, afternoonSlots, selectedSlot),
-          const SizedBox(height: 16),
-        ],
-        if (eveningSlots.isNotEmpty) ...[
-          Text(l10n.dateTimeEvening, style: theme.textTheme.titleSmall),
-          const SizedBox(height: 8),
-          _buildSlotGrid(context, ref, eveningSlots, selectedSlot),
-        ],
-      ],
+      ),
     );
   }
 
@@ -331,6 +368,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
         return GestureDetector(
           onTap: () {
             ref.read(bookingFlowProvider.notifier).selectTimeSlot(slot);
+            ref.read(bookingFlowProvider.notifier).nextStep();
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -387,6 +425,12 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
           child: Text(l10n.actionNext),
         ),
       ),
+    );
+  }
+
+  bool _containsDate(Set<DateTime> dates, DateTime date) {
+    return dates.any(
+      (d) => d.year == date.year && d.month == date.month && d.day == date.day,
     );
   }
 }

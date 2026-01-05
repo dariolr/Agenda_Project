@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 import 'api_config.dart';
 import 'token_storage.dart';
@@ -55,11 +54,7 @@ class ApiClient {
     _dio.options.headers['Accept'] = 'application/json';
 
     // Interceptor per logging in debug
-    if (kDebugMode) {
-      _dio.interceptors.add(
-        LogInterceptor(requestBody: true, responseBody: true),
-      );
-    }
+    // LogInterceptor rimosso per evitare log verbosi durante il booking flow.
 
     // Interceptor per auth token
     _dio.interceptors.add(
@@ -386,12 +381,14 @@ class ApiClient {
   Future<Map<String, dynamic>> createCustomerBooking({
     required int businessId,
     required String idempotencyKey,
+    required int locationId,
     required List<int> serviceIds,
     required String startTime,
     int? staffId,
     String? notes,
   }) async {
     final data = <String, dynamic>{
+      'location_id': locationId,
       'service_ids': serviceIds,
       'start_time': startTime,
     };

@@ -116,6 +116,8 @@ final class LocationsController
             'longitude' => $row['longitude'] ? (float) $row['longitude'] : null,
             'currency' => $row['currency'],
             'timezone' => $row['timezone'] ?? 'Europe/Rome',
+            'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
+            'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'is_default' => (bool) $row['is_default'],
             'sort_order' => (int) ($row['sort_order'] ?? 0),
             'is_active' => (bool) $row['is_active'],
@@ -137,6 +139,8 @@ final class LocationsController
             'city' => $row['city'],
             'phone' => $row['phone'],
             'timezone' => $row['timezone'] ?? 'Europe/Rome',
+            'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
+            'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'is_default' => (bool) $row['is_default'],
         ];
     }
@@ -168,6 +172,8 @@ final class LocationsController
             'phone' => $body['phone'] ?? null,
             'email' => $body['email'] ?? null,
             'timezone' => $body['timezone'] ?? 'Europe/Rome',
+            'min_booking_notice_hours' => $body['min_booking_notice_hours'] ?? 1,
+            'max_booking_advance_days' => $body['max_booking_advance_days'] ?? 90,
             'is_active' => $body['is_active'] ?? true,
         ]);
 
@@ -200,14 +206,24 @@ final class LocationsController
 
         $body = $request->getBody();
         
-        $this->locationRepo->update($locationId, [
+        $updateData = [
             'name' => $body['name'] ?? $location['name'],
             'address' => array_key_exists('address', $body) ? $body['address'] : $location['address'],
             'phone' => array_key_exists('phone', $body) ? $body['phone'] : $location['phone'],
             'email' => array_key_exists('email', $body) ? $body['email'] : $location['email'],
             'timezone' => $body['timezone'] ?? $location['timezone'],
             'is_active' => array_key_exists('is_active', $body) ? $body['is_active'] : $location['is_active'],
-        ]);
+        ];
+
+        // Handle booking limits fields
+        if (array_key_exists('min_booking_notice_hours', $body)) {
+            $updateData['min_booking_notice_hours'] = (int) $body['min_booking_notice_hours'];
+        }
+        if (array_key_exists('max_booking_advance_days', $body)) {
+            $updateData['max_booking_advance_days'] = (int) $body['max_booking_advance_days'];
+        }
+
+        $this->locationRepo->update($locationId, $updateData);
 
         $updated = $this->locationRepo->findById($locationId);
 

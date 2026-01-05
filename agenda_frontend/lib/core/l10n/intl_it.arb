@@ -129,6 +129,7 @@
       "date": { "type": "String" }
     }
   },
+  "dateTimeGoToFirst": "Vai alla prima data disponibile",
   "dateTimeNoSlots": "Nessun orario disponibile per questa data",
   "dateTimeSelectDate": "Seleziona una data",
   "dateTimeMorning": "Mattina",

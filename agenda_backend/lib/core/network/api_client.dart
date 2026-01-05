@@ -830,6 +830,8 @@ class ApiClient {
     String? phone,
     String? email,
     String? timezone,
+    int? minBookingNoticeHours,
+    int? maxBookingAdvanceDays,
     bool? isActive,
   }) async {
     final response = await post(
@@ -840,6 +842,10 @@ class ApiClient {
         if (phone != null && phone.isNotEmpty) 'phone': phone,
         if (email != null && email.isNotEmpty) 'email': email,
         if (timezone != null && timezone.isNotEmpty) 'timezone': timezone,
+        if (minBookingNoticeHours != null)
+          'min_booking_notice_hours': minBookingNoticeHours,
+        if (maxBookingAdvanceDays != null)
+          'max_booking_advance_days': maxBookingAdvanceDays,
         if (isActive != null) 'is_active': isActive,
       },
     );
@@ -854,6 +860,8 @@ class ApiClient {
     String? phone,
     String? email,
     String? timezone,
+    int? minBookingNoticeHours,
+    int? maxBookingAdvanceDays,
     bool? isActive,
   }) async {
     final response = await put(
@@ -864,6 +872,10 @@ class ApiClient {
         if (phone != null) 'phone': phone,
         if (email != null) 'email': email,
         if (timezone != null) 'timezone': timezone,
+        if (minBookingNoticeHours != null)
+          'min_booking_notice_hours': minBookingNoticeHours,
+        if (maxBookingAdvanceDays != null)
+          'max_booking_advance_days': maxBookingAdvanceDays,
         if (isActive != null) 'is_active': isActive,
       },
     );

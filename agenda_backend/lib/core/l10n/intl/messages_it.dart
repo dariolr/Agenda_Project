@@ -99,9 +99,15 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m35(count) => "${count} servizi abilitati";
 
-  static String m36(selected, total) => "${selected} su ${total}";
+  static String m36(count) =>
+      "${Intl.plural(count, one: '1 giorno', other: '${count} giorni')}";
 
-  static String m37(hours) => "${hours} ore totale";
+  static String m37(count) =>
+      "${Intl.plural(count, one: '1 ora', other: '${count} ore')}";
+
+  static String m38(selected, total) => "${selected} su ${total}";
+
+  static String m39(hours) => "${hours} ore totale";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -840,10 +846,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationAddressLabel": MessageLookupByLibrary.simpleMessage(
       "Indirizzo",
     ),
+    "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
+      "Limiti prenotazione online",
+    ),
+    "teamLocationDays": m36,
     "teamLocationEmailHint": MessageLookupByLibrary.simpleMessage(
       "Email per notifiche ai clienti",
     ),
     "teamLocationEmailLabel": MessageLookupByLibrary.simpleMessage("Email"),
+    "teamLocationHours": m37,
     "teamLocationIsActiveHint": MessageLookupByLibrary.simpleMessage(
       "Se disattivata, la sede non sarà visibile ai clienti",
     ),
@@ -851,6 +862,18 @@ class MessageLookup extends MessageLookupByLibrary {
       "Sede attiva",
     ),
     "teamLocationLabel": MessageLookupByLibrary.simpleMessage("Sede"),
+    "teamLocationMaxBookingAdvanceHint": MessageLookupByLibrary.simpleMessage(
+      "Fino a quanto tempo in anticipo possono prenotare",
+    ),
+    "teamLocationMaxBookingAdvanceLabel": MessageLookupByLibrary.simpleMessage(
+      "Prenotazione massima anticipata",
+    ),
+    "teamLocationMinBookingNoticeHint": MessageLookupByLibrary.simpleMessage(
+      "Quanto tempo prima devono prenotare i clienti",
+    ),
+    "teamLocationMinBookingNoticeLabel": MessageLookupByLibrary.simpleMessage(
+      "Preavviso minimo prenotazione",
+    ),
     "teamLocationNameLabel": MessageLookupByLibrary.simpleMessage("Nome sede"),
     "teamLocationsLabel": MessageLookupByLibrary.simpleMessage("Sedi"),
     "teamNewLocationTitle": MessageLookupByLibrary.simpleMessage("Nuova sede"),
@@ -872,7 +895,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamSelectedServicesButton": MessageLookupByLibrary.simpleMessage(
       "Servizi selezionati",
     ),
-    "teamSelectedServicesCount": m36,
+    "teamSelectedServicesCount": m38,
     "teamServicesLabel": MessageLookupByLibrary.simpleMessage("Servizi"),
     "teamStaffBookableOnlineLabel": MessageLookupByLibrary.simpleMessage(
       "Abilitato alle prenotazioni online",
@@ -910,6 +933,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "weeklyScheduleTitle": MessageLookupByLibrary.simpleMessage(
       "Orario settimanale",
     ),
-    "weeklyScheduleTotalHours": m37,
+    "weeklyScheduleTotalHours": m39,
   };
 }
