@@ -93,8 +93,10 @@ class ClientCard extends ConsumerWidget {
               ),
             ),
             // Colonna destra: icone allineate verticalmente
+            // Il delete button deve restare sempre allineato in alto a destra
             Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 _DeleteButton(client: client),
                 const SizedBox(height: 8),

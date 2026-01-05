@@ -4,21 +4,36 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
+import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../domain/clients.dart';
 import '../../providers/clients_providers.dart';
 
 /// Mostra il dialog con la cronologia appuntamenti del cliente.
+/// Su desktop usa un AlertDialog, su tablet/mobile un modal bottom sheet.
 Future<void> showClientAppointmentsDialog(
   BuildContext context,
   WidgetRef ref, {
   required Client client,
 }) async {
-  await showDialog(
-    context: context,
-    builder: (_) => ClientAppointmentsDialog(client: client),
-  );
+  final formFactor = ref.read(formFactorProvider);
+
+  if (formFactor == AppFormFactor.desktop) {
+    await showDialog(
+      context: context,
+      builder: (_) => ClientAppointmentsDialog(client: client),
+    );
+  } else {
+    await AppBottomSheet.show<void>(
+      context: context,
+      useRootNavigator: true,
+      padding: EdgeInsets.zero,
+      heightFactor: AppBottomSheet.defaultHeightFactor,
+      builder: (_) => ClientAppointmentsBottomSheet(client: client),
+    );
+  }
 }
 
 class ClientAppointmentsDialog extends ConsumerWidget {
@@ -30,20 +45,7 @@ class ClientAppointmentsDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final appointments = ref.watch(clientWithAppointmentsProvider(client.id));
-    final now = DateTime.now();
-
-    // Dividi in passati e futuri
-    final upcoming =
-        appointments.where((a) => a.startTime.isAfter(now)).toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
-    final past =
-        appointments
-            .where((a) => a.startTime.isBefore(now) || a.startTime == now)
-            .toList()
-          ..sort(
-            (a, b) => b.startTime.compareTo(a.startTime),
-          ); // più recenti prima
+    final asyncData = ref.watch(clientAppointmentsProvider(client.id));
 
     final screenWidth = MediaQuery.of(context).size.width;
     final dialogWidth = screenWidth < 600 ? screenWidth * 0.95 : 500.0;
@@ -60,40 +62,45 @@ class ClientAppointmentsDialog extends ConsumerWidget {
           content: SizedBox(
             width: dialogWidth,
             height: 400,
-            child: DefaultTabController(
-              length: 2,
-              child: Column(
-                children: [
-                  TabBar(
-                    tabs: [
-                      Tab(
-                        text:
-                            '${l10n.clientAppointmentsUpcoming} (${upcoming.length})',
-                      ),
-                      Tab(
-                        text: '${l10n.clientAppointmentsPast} (${past.length})',
-                      ),
-                    ],
-                    labelColor: theme.colorScheme.primary,
-                    unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-                    indicatorColor: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        _AppointmentList(
-                          appointments: upcoming,
-                          emptyMessage: l10n.clientAppointmentsEmpty,
+            child: asyncData.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Errore: $e')),
+              data: (data) => DefaultTabController(
+                length: 2,
+                child: Column(
+                  children: [
+                    TabBar(
+                      tabs: [
+                        Tab(
+                          text:
+                              '${l10n.clientAppointmentsUpcoming} (${data.upcoming.length})',
                         ),
-                        _AppointmentList(
-                          appointments: past,
-                          emptyMessage: l10n.clientAppointmentsEmpty,
+                        Tab(
+                          text:
+                              '${l10n.clientAppointmentsPast} (${data.past.length})',
                         ),
                       ],
+                      labelColor: theme.colorScheme.primary,
+                      unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+                      indicatorColor: theme.colorScheme.primary,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          _AppointmentList(
+                            appointments: data.upcoming,
+                            emptyMessage: l10n.clientAppointmentsEmpty,
+                          ),
+                          _AppointmentList(
+                            appointments: data.past,
+                            emptyMessage: l10n.clientAppointmentsEmpty,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -215,6 +222,90 @@ class _AppointmentTile extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet per tablet/mobile.
+class ClientAppointmentsBottomSheet extends ConsumerWidget {
+  const ClientAppointmentsBottomSheet({super.key, required this.client});
+
+  final Client client;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final asyncData = ref.watch(clientAppointmentsProvider(client.id));
+
+    return asyncData.when(
+      loading: () => Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.clientAppointmentsTitle(client.name)),
+          automaticallyImplyLeading: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.clientAppointmentsTitle(client.name)),
+          automaticallyImplyLeading: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+        body: Center(child: Text('Errore: $e')),
+      ),
+      data: (data) => DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.clientAppointmentsTitle(client.name)),
+            automaticallyImplyLeading: false,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+            bottom: TabBar(
+              tabs: [
+                Tab(
+                  text:
+                      '${l10n.clientAppointmentsUpcoming} (${data.upcoming.length})',
+                ),
+                Tab(
+                  text: '${l10n.clientAppointmentsPast} (${data.past.length})',
+                ),
+              ],
+              labelColor: theme.colorScheme.primary,
+              unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+              indicatorColor: theme.colorScheme.primary,
+            ),
+          ),
+          body: TabBarView(
+            children: [
+              _AppointmentList(
+                appointments: data.upcoming,
+                emptyMessage: l10n.clientAppointmentsEmpty,
+              ),
+              _AppointmentList(
+                appointments: data.past,
+                emptyMessage: l10n.clientAppointmentsEmpty,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

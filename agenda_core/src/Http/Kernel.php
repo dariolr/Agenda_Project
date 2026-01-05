@@ -202,6 +202,7 @@ final class Kernel
         // Clients (auth required)
         $this->router->get('/v1/clients', ClientsController::class, 'index', ['auth']);
         $this->router->get('/v1/clients/{id}', ClientsController::class, 'show', ['auth']);
+        $this->router->get('/v1/clients/{id}/appointments', ClientsController::class, 'appointments', ['auth']);
         $this->router->post('/v1/clients', ClientsController::class, 'store', ['auth']);
         $this->router->put('/v1/clients/{id}', ClientsController::class, 'update', ['auth']);
         $this->router->delete('/v1/clients/{id}', ClientsController::class, 'destroy', ['auth']);
@@ -329,7 +330,7 @@ final class Kernel
             StaffController::class => new StaffController($staffRepo, $staffScheduleRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo),
-            ClientsController::class => new ClientsController($clientRepo, $businessUserRepo, $userRepo),
+            ClientsController::class => new ClientsController($clientRepo, $businessUserRepo, $userRepo, $bookingRepo),
             AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo),
             AdminBusinessesController::class => new AdminBusinessesController($this->db, $businessRepo, $businessUserRepo, $userRepo),
             BusinessUsersController::class => new BusinessUsersController($businessRepo, $businessUserRepo, $userRepo),

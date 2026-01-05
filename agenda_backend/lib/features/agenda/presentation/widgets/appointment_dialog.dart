@@ -1183,17 +1183,21 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
     // Se il cliente è cambiato, aggiorna il booking
     if (clientChanged) {
-      // Se ci sono altri appuntamenti, chiedi conferma
-      if (existingAppointments.length > 1 && mounted) {
+      // Verifica se ci sono appuntamenti con staff diversi
+      final currentStaffId = _serviceItems.isNotEmpty
+          ? _serviceItems.first.staffId
+          : widget.initial.staffId;
+      final hasOtherStaff = existingAppointments.any(
+        (a) => a.staffId != currentStaffId,
+      );
+
+      // Mostra conferma SOLO se ci sono appuntamenti assegnati ad altri operatori
+      if (hasOtherStaff && mounted) {
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
             title: Text(l10n.applyClientToAllAppointmentsTitle),
-            content: Text(
-              l10n.applyClientToAllAppointmentsMessage(
-                existingAppointments.length - 1,
-              ),
-            ),
+            content: Text(l10n.applyClientToAllAppointmentsMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),

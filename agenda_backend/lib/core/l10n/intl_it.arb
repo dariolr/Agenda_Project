@@ -304,6 +304,7 @@
   "blockTimeError": "L'ora di fine deve essere successiva all'ora di inizio",
   "blockReason": "Motivo (opzionale)",
   "blockReasonHint": "Es. Riunione, Pausa, ecc.",
+  "serviceStartsAfterMidnight": "Impossibile aggiungere il servizio: l'orario supera la mezzanotte. Modifica l'orario di inizio o l'operatore.",
   "sortByTitle": "Ordina per",
   "selectStaffTitle": "Seleziona team",
   "addClientToAppointment": "Aggiungi un cliente all'appuntamento",
@@ -445,14 +446,7 @@
   "exceptionDeleteShiftDesc": "Ripristina la disponibilità base",
   "clientLockedHint": "Il cliente non può essere modificato per questo appuntamento",
   "applyClientToAllAppointmentsTitle": "Applicare il cliente a tutta la prenotazione?",
-  "applyClientToAllAppointmentsMessage": "Il cliente verrà associato anche agli altri {count} appuntamenti di questa prenotazione.",
-  "@applyClientToAllAppointmentsMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "applyClientToAllAppointmentsMessage": "Il cliente verrà associato anche agli appuntamenti di questa prenotazione che sono stati assegnati ad altro operatore.",
 
   "operatorsTitle": "Operatori",
   "operatorsSubtitle": "Gestisci chi può accedere al gestionale",

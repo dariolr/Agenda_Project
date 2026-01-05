@@ -37,9 +37,13 @@ class BookingRepository {
 
     for (final json in categoriesJson) {
       final catJson = json as Map<String, dynamic>;
+
+      // Skip categorie senza ID (non categorizzate)
+      final catId = catJson['id'] as int?;
+      if (catId == null) continue;
+
       categories.add(ServiceCategory.fromJson(catJson));
 
-      final catId = catJson['id'] as int;
       final servicesJson = catJson['services'] as List<dynamic>? ?? [];
 
       for (final svcJson in servicesJson) {

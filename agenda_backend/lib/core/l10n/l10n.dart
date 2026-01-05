@@ -2134,6 +2134,16 @@ class L10n {
     );
   }
 
+  /// `Impossibile aggiungere il servizio: l'orario supera la mezzanotte. Modifica l'orario di inizio o l'operatore.`
+  String get serviceStartsAfterMidnight {
+    return Intl.message(
+      'Impossibile aggiungere il servizio: l\'orario supera la mezzanotte. Modifica l\'orario di inizio o l\'operatore.',
+      name: 'serviceStartsAfterMidnight',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Ordina per`
   String get sortByTitle {
     return Intl.message('Ordina per', name: 'sortByTitle', desc: '', args: []);
@@ -2906,13 +2916,13 @@ class L10n {
     );
   }
 
-  /// `Il cliente verrà associato anche agli altri {count} appuntamenti di questa prenotazione.`
-  String applyClientToAllAppointmentsMessage(int count) {
+  /// `Il cliente verrà associato anche agli appuntamenti di questa prenotazione che sono stati assegnati ad altro operatore.`
+  String get applyClientToAllAppointmentsMessage {
     return Intl.message(
-      'Il cliente verrà associato anche agli altri $count appuntamenti di questa prenotazione.',
+      'Il cliente verrà associato anche agli appuntamenti di questa prenotazione che sono stati assegnati ad altro operatore.',
       name: 'applyClientToAllAppointmentsMessage',
       desc: '',
-      args: [count],
+      args: [],
     );
   }
 

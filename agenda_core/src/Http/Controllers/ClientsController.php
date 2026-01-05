@@ -7,6 +7,7 @@ namespace Agenda\Http\Controllers;
 use Agenda\Domain\Helpers\DataMasker;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
+use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
@@ -17,6 +18,7 @@ final class ClientsController
         private readonly ClientRepository $clientRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
+        private readonly BookingRepository $bookingRepo,
     ) {}
 
     /**
@@ -205,6 +207,86 @@ final class ClientsController
         $stmt->execute([$clientId]);
 
         return Response::success(['deleted' => true]);
+    }
+
+    /**
+     * GET /v1/clients/{id}/appointments
+     * Returns all appointments for a specific client.
+     */
+    public function appointments(Request $request): Response
+    {
+        $clientId = (int) $request->getRouteParam('id');
+        if ($clientId <= 0) {
+            return Response::badRequest('Invalid client ID', $request->traceId);
+        }
+
+        // Verify client exists
+        $client = $this->clientRepo->findById($clientId);
+        if ($client === null) {
+            return Response::notFound('Client not found');
+        }
+
+        // Authorization check: verify user has access to the client's business
+        $businessId = (int) $client['business_id'];
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Client not found');
+        }
+
+        try {
+            // Get all bookings for this client
+            $bookings = $this->bookingRepo->findByClientId($clientId, 200);
+
+            $now = new \DateTimeImmutable();
+            $upcoming = [];
+            $past = [];
+
+            foreach ($bookings as $booking) {
+                foreach ($booking['items'] ?? [] as $item) {
+                    $startTime = new \DateTimeImmutable($item['start_time']);
+                    $formatted = $this->formatAppointmentItem($item, $booking);
+
+                    if ($startTime > $now) {
+                        $upcoming[] = $formatted;
+                    } else {
+                        $past[] = $formatted;
+                    }
+                }
+            }
+
+            // Sort upcoming by start_time ascending, past by start_time descending
+            usort($upcoming, fn($a, $b) => $a['start_time'] <=> $b['start_time']);
+            usort($past, fn($a, $b) => $b['start_time'] <=> $a['start_time']);
+
+            return Response::success([
+                'upcoming' => $upcoming,
+                'past' => $past,
+            ]);
+
+        } catch (\Exception $e) {
+            return Response::serverError($e->getMessage());
+        }
+    }
+
+    /**
+     * Format a booking item as an appointment for client history.
+     */
+    private function formatAppointmentItem(array $item, array $booking): array
+    {
+        return [
+            'id' => (int) $item['id'],
+            'booking_id' => (int) $booking['id'],
+            'location_id' => (int) $booking['location_id'],
+            'service_id' => (int) $item['service_id'],
+            'service_variant_id' => $item['service_variant_id'] ? (int) $item['service_variant_id'] : null,
+            'staff_id' => (int) $item['staff_id'],
+            'start_time' => $item['start_time'],
+            'end_time' => $item['end_time'],
+            'duration_minutes' => (int) ($item['duration_minutes'] ?? 0),
+            'service_name' => $item['service_name'] ?? '',
+            'staff_name' => $item['staff_name'] ?? '',
+            'price' => (float) ($item['price'] ?? 0),
+            'status' => $booking['status'] ?? 'confirmed',
+        ];
     }
 
     private function formatClient(array $client): array
