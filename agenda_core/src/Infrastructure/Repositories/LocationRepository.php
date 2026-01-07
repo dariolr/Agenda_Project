@@ -17,7 +17,7 @@ final class LocationRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT l.id, l.business_id, l.name, l.address, l.city, l.region, l.country,
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
-                    l.is_default, l.is_active, l.created_at, l.updated_at,
+                    l.allow_customer_choose_staff, l.is_default, l.is_active, l.created_at, l.updated_at,
                     b.name AS business_name,
                     b.email AS business_email
              FROM locations l
@@ -38,6 +38,7 @@ final class LocationRepository
     {
         $sql = 'SELECT id, business_id, name, address, city, region, country, 
                     phone, email, latitude, longitude, currency, timezone,
+                    allow_customer_choose_staff,
                     is_default, sort_order, is_active, created_at, updated_at
              FROM locations
              WHERE business_id = ?';
@@ -96,6 +97,7 @@ final class LocationRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, name, address, city, region, country,
                     phone, email, latitude, longitude, currency, timezone,
+                    allow_customer_choose_staff,
                     is_default, is_active, created_at, updated_at
              FROM locations
              WHERE business_id = ? AND is_default = 1 AND is_active = 1
@@ -112,6 +114,7 @@ final class LocationRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, name, address, city, region, country,
                     phone, email, latitude, longitude, currency, timezone,
+                    allow_customer_choose_staff,
                     is_default, is_active, created_at, updated_at
              FROM locations
              WHERE business_id = ? AND is_active = 1
@@ -128,8 +131,8 @@ final class LocationRepository
     {
         $isActive = $data['is_active'] ?? 1;
         $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO locations (business_id, name, address, phone, email, timezone, min_booking_notice_hours, max_booking_advance_days, is_active) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO locations (business_id, name, address, phone, email, timezone, min_booking_notice_hours, max_booking_advance_days, allow_customer_choose_staff, is_active) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
@@ -140,6 +143,7 @@ final class LocationRepository
             $data['timezone'] ?? 'Europe/Rome',
             $data['min_booking_notice_hours'] ?? 1,
             $data['max_booking_advance_days'] ?? 90,
+            !empty($data['allow_customer_choose_staff']) ? 1 : 0,
             $isActive ? 1 : 0,
         ]);
 
@@ -169,6 +173,11 @@ final class LocationRepository
         if (array_key_exists('is_active', $data)) {
             $fields[] = 'is_active = ?';
             $values[] = $data['is_active'] ? 1 : 0;
+        }
+
+        if (array_key_exists('allow_customer_choose_staff', $data)) {
+            $fields[] = 'allow_customer_choose_staff = ?';
+            $values[] = $data['allow_customer_choose_staff'] ? 1 : 0;
         }
 
         if (empty($fields)) {

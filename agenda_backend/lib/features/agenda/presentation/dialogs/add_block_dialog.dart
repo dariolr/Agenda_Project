@@ -476,6 +476,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
   Future<void> _pickTime({required bool isStart}) async {
     final step = ref.read(layoutConfigProvider).minutesPerSlot;
+    final l10n = context.l10n;
     final selected = await AppBottomSheet.show<TimeOfDay>(
       context: context,
       useRootNavigator: true,
@@ -487,6 +488,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
           child: _TimeGridPicker(
             initial: isStart ? _startTime : _endTime,
             stepMinutes: step,
+            title: isStart ? l10n.blockStartTime : l10n.blockEndTime,
           ),
         );
       },
@@ -608,9 +610,14 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 }
 
 class _TimeGridPicker extends StatefulWidget {
-  const _TimeGridPicker({required this.initial, required this.stepMinutes});
+  const _TimeGridPicker({
+    required this.initial,
+    required this.stepMinutes,
+    required this.title,
+  });
   final TimeOfDay initial;
   final int stepMinutes;
+  final String title;
 
   @override
   State<_TimeGridPicker> createState() => _TimeGridPickerState();
@@ -730,7 +737,7 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
                 const Icon(Icons.schedule, size: 18),
                 const SizedBox(width: 8),
                 Text(
-                  MaterialLocalizations.of(context).timePickerHourLabel,
+                  widget.title,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ],

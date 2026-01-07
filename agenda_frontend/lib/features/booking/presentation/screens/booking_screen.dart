@@ -108,6 +108,9 @@ class BookingScreen extends ConsumerWidget {
       authProvider.select((state) => state.isAuthenticated),
     );
     final slug = ref.watch(routeSlugProvider);
+    final isMobile =
+        _formFactorForWidth(MediaQuery.of(context).size.width) ==
+        AppFormFactor.mobile;
 
     // Determina se mostrare il back button
     // Se c'è una sola location e siamo su services, non mostrare back
@@ -116,104 +119,113 @@ class BookingScreen extends ConsumerWidget {
         !(bookingState.currentStep == BookingStep.services &&
             !hasMultipleLocations);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.bookingTitle),
-        leading: showBackButton
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () =>
-                    ref.read(bookingFlowProvider.notifier).previousStep(),
-              )
-            : null,
-        actions: [
-          if (isAuthenticated && slug != null)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.account_circle_outlined),
-              tooltip: l10n.profileTitle,
-              onSelected: (value) {
-                switch (value) {
-                  case 'bookings':
-                    context.go('/$slug/my-bookings');
-                  case 'profile':
-                    context.push('/$slug/profile');
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem<String>(
-                  value: 'bookings',
-                  child: ListTile(
-                    leading: const Icon(Icons.event_note),
-                    title: Text(l10n.myBookings),
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'profile',
-                  child: ListTile(
-                    leading: const Icon(Icons.person_outline),
-                    title: Text(l10n.profileTitle),
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            ref
-                .read(formFactorProvider.notifier)
-                .update(constraints.maxWidth);
-          });
-          final formFactor = _formFactorForWidth(constraints.maxWidth);
-          final maxWidth = switch (formFactor) {
-            AppFormFactor.desktop => 980.0,
-            AppFormFactor.tablet => 760.0,
-            AppFormFactor.mobile => double.infinity,
-          };
-          final horizontalPadding = switch (formFactor) {
-            AppFormFactor.desktop => 32.0,
-            AppFormFactor.tablet => 24.0,
-            AppFormFactor.mobile => 0.0,
-          };
-
-          return Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: Column(
-                  children: [
-                    // Step indicator
-                    if (bookingState.currentStep != BookingStep.confirmation)
-                      BookingStepIndicator(
-                        currentStep: bookingState.currentStep,
-                        allowStaffSelection: config.allowStaffSelection,
-                        showLocationStep: hasMultipleLocations,
-                        onStepTap: (step) {
-                          ref
-                              .read(bookingFlowProvider.notifier)
-                              .goToStep(step);
-                        },
-                      ),
-
-                    // Content
-                    Expanded(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: _buildStepContent(bookingState.currentStep),
-                      ),
+    return PopScope(
+      canPop: !(isMobile && showBackButton),
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (isMobile && showBackButton) {
+          ref.read(bookingFlowProvider.notifier).previousStep();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.bookingTitle),
+          leading: showBackButton
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () =>
+                      ref.read(bookingFlowProvider.notifier).previousStep(),
+                )
+              : null,
+          actions: [
+            if (isAuthenticated && slug != null)
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.account_circle_outlined),
+                tooltip: l10n.profileTitle,
+                onSelected: (value) {
+                  switch (value) {
+                    case 'bookings':
+                      context.go('/$slug/my-bookings');
+                    case 'profile':
+                      context.push('/$slug/profile');
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem<String>(
+                    value: 'bookings',
+                    child: ListTile(
+                      leading: const Icon(Icons.event_note),
+                      title: Text(l10n.myBookings),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
                     ),
-                  ],
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'profile',
+                    child: ListTile(
+                      leading: const Icon(Icons.person_outline),
+                      title: Text(l10n.profileTitle),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ref
+                  .read(formFactorProvider.notifier)
+                  .update(constraints.maxWidth);
+            });
+            final formFactor = _formFactorForWidth(constraints.maxWidth);
+            final maxWidth = switch (formFactor) {
+              AppFormFactor.desktop => 980.0,
+              AppFormFactor.tablet => 760.0,
+              AppFormFactor.mobile => double.infinity,
+            };
+            final horizontalPadding = switch (formFactor) {
+              AppFormFactor.desktop => 32.0,
+              AppFormFactor.tablet => 24.0,
+              AppFormFactor.mobile => 0.0,
+            };
+
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: Column(
+                    children: [
+                      // Step indicator
+                      if (bookingState.currentStep != BookingStep.confirmation)
+                        BookingStepIndicator(
+                          currentStep: bookingState.currentStep,
+                          allowStaffSelection: config.allowStaffSelection,
+                          showLocationStep: hasMultipleLocations,
+                          onStepTap: (step) {
+                            ref
+                                .read(bookingFlowProvider.notifier)
+                                .goToStep(step);
+                          },
+                        ),
+
+                      // Content
+                      Expanded(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: _buildStepContent(bookingState.currentStep),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

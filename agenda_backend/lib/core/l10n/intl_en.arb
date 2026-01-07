@@ -149,6 +149,8 @@
   "teamLocationIsActiveLabel": "Location active",
   "teamLocationIsActiveHint": "If disabled, the location will not be visible to customers",
   "teamLocationBookingLimitsSection": "Online booking limits",
+  "teamLocationAllowCustomerChooseStaffLabel": "Allow customers to choose the team member",
+  "teamLocationAllowCustomerChooseStaffHint": "If disabled, the system assigns the team member automatically",
   "teamLocationMinBookingNoticeLabel": "Minimum booking notice",
   "teamLocationMinBookingNoticeHint": "How far in advance customers must book",
   "teamLocationMaxBookingAdvanceLabel": "Maximum booking advance",

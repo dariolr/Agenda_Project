@@ -20,6 +20,7 @@ class LocationsRepository {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    bool? allowCustomerChooseStaff,
     bool? isActive,
   }) async {
     final data = await _apiClient.createLocation(
@@ -31,6 +32,7 @@ class LocationsRepository {
       timezone: timezone,
       minBookingNoticeHours: minBookingNoticeHours,
       maxBookingAdvanceDays: maxBookingAdvanceDays,
+      allowCustomerChooseStaff: allowCustomerChooseStaff,
       isActive: isActive,
     );
     return Location.fromJson(data);
@@ -45,6 +47,7 @@ class LocationsRepository {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    bool? allowCustomerChooseStaff,
     bool? isActive,
   }) async {
     final data = await _apiClient.updateLocation(
@@ -56,6 +59,7 @@ class LocationsRepository {
       timezone: timezone,
       minBookingNoticeHours: minBookingNoticeHours,
       maxBookingAdvanceDays: maxBookingAdvanceDays,
+      allowCustomerChooseStaff: allowCustomerChooseStaff,
       isActive: isActive,
     );
     return Location.fromJson(data);

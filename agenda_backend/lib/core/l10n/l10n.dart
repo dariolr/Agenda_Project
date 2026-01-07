@@ -179,9 +179,9 @@ class L10n {
     return Intl.message('Conferma', name: 'actionConfirm', desc: '', args: []);
   }
 
-  /// `Conferma`
+  /// `Chiudi`
   String get actionClose {
-    return Intl.message('Conferma', name: 'actionClose', desc: '', args: []);
+    return Intl.message('Chiudi', name: 'actionClose', desc: '', args: []);
   }
 
   /// `Confermi l’eliminazione?`
@@ -1014,6 +1014,26 @@ class L10n {
     return Intl.message(
       'Limiti prenotazione online',
       name: 'teamLocationBookingLimitsSection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Consenti ai clienti di scegliere l'operatore`
+  String get teamLocationAllowCustomerChooseStaffLabel {
+    return Intl.message(
+      'Consenti ai clienti di scegliere l\'operatore',
+      name: 'teamLocationAllowCustomerChooseStaffLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Se disattivato, il sistema assegna automaticamente l'operatore`
+  String get teamLocationAllowCustomerChooseStaffHint {
+    return Intl.message(
+      'Se disattivato, il sistema assegna automaticamente l\'operatore',
+      name: 'teamLocationAllowCustomerChooseStaffHint',
       desc: '',
       args: [],
     );

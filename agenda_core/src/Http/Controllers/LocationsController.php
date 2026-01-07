@@ -118,6 +118,7 @@ final class LocationsController
             'timezone' => $row['timezone'] ?? 'Europe/Rome',
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
+            'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
             'is_default' => (bool) $row['is_default'],
             'sort_order' => (int) ($row['sort_order'] ?? 0),
             'is_active' => (bool) $row['is_active'],
@@ -141,6 +142,7 @@ final class LocationsController
             'timezone' => $row['timezone'] ?? 'Europe/Rome',
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
+            'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
             'is_default' => (bool) $row['is_default'],
         ];
     }
@@ -174,6 +176,7 @@ final class LocationsController
             'timezone' => $body['timezone'] ?? 'Europe/Rome',
             'min_booking_notice_hours' => $body['min_booking_notice_hours'] ?? 1,
             'max_booking_advance_days' => $body['max_booking_advance_days'] ?? 90,
+            'allow_customer_choose_staff' => $body['allow_customer_choose_staff'] ?? false,
             'is_active' => $body['is_active'] ?? true,
         ]);
 
@@ -214,6 +217,10 @@ final class LocationsController
             'timezone' => $body['timezone'] ?? $location['timezone'],
             'is_active' => array_key_exists('is_active', $body) ? $body['is_active'] : $location['is_active'],
         ];
+
+        if (array_key_exists('allow_customer_choose_staff', $body)) {
+            $updateData['allow_customer_choose_staff'] = (bool) $body['allow_customer_choose_staff'];
+        }
 
         // Handle booking limits fields
         if (array_key_exists('min_booking_notice_hours', $body)) {

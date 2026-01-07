@@ -112,7 +112,7 @@ class MessageLookup extends MessageLookupByLibrary {
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "actionCancel": MessageLookupByLibrary.simpleMessage("Annulla"),
-    "actionClose": MessageLookupByLibrary.simpleMessage("Conferma"),
+    "actionClose": MessageLookupByLibrary.simpleMessage("Chiudi"),
     "actionConfirm": MessageLookupByLibrary.simpleMessage("Conferma"),
     "actionDelete": MessageLookupByLibrary.simpleMessage("Elimina"),
     "actionDeleteBooking": MessageLookupByLibrary.simpleMessage(
@@ -846,6 +846,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationAddressLabel": MessageLookupByLibrary.simpleMessage(
       "Indirizzo",
     ),
+    "teamLocationAllowCustomerChooseStaffHint":
+        MessageLookupByLibrary.simpleMessage(
+          "Se disattivato, il sistema assegna automaticamente l\'operatore",
+        ),
+    "teamLocationAllowCustomerChooseStaffLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Consenti ai clienti di scegliere l\'operatore",
+        ),
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Limiti prenotazione online",
     ),
