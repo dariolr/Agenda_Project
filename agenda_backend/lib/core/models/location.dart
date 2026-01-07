@@ -13,6 +13,7 @@ class Location {
   final String? currency;
   final int minBookingNoticeHours;
   final int maxBookingAdvanceDays;
+  final bool allowCustomerChooseStaff;
   final bool isDefault;
   final bool isActive;
   final int sortOrder;
@@ -32,6 +33,7 @@ class Location {
     this.currency,
     this.minBookingNoticeHours = 1,
     this.maxBookingAdvanceDays = 90,
+    this.allowCustomerChooseStaff = false,
     this.isDefault = false,
     this.isActive = true,
     this.sortOrder = 0,
@@ -52,6 +54,7 @@ class Location {
     String? currency,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    bool? allowCustomerChooseStaff,
     bool? isDefault,
     bool? isActive,
     int? sortOrder,
@@ -73,6 +76,8 @@ class Location {
           minBookingNoticeHours ?? this.minBookingNoticeHours,
       maxBookingAdvanceDays:
           maxBookingAdvanceDays ?? this.maxBookingAdvanceDays,
+      allowCustomerChooseStaff:
+          allowCustomerChooseStaff ?? this.allowCustomerChooseStaff,
       isDefault: isDefault ?? this.isDefault,
       isActive: isActive ?? this.isActive,
       sortOrder: sortOrder ?? this.sortOrder,
@@ -95,6 +100,8 @@ class Location {
       currency: json['currency'] as String?,
       minBookingNoticeHours: json['min_booking_notice_hours'] as int? ?? 1,
       maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
+      allowCustomerChooseStaff:
+          json['allow_customer_choose_staff'] as bool? ?? false,
       isDefault: json['is_default'] as bool? ?? false,
       isActive: json['is_active'] as bool? ?? true,
       sortOrder: json['sort_order'] as int? ?? 0,
@@ -117,6 +124,7 @@ class Location {
       if (currency != null) 'currency': currency,
       'min_booking_notice_hours': minBookingNoticeHours,
       'max_booking_advance_days': maxBookingAdvanceDays,
+      'allow_customer_choose_staff': allowCustomerChooseStaff,
       'is_default': isDefault,
       'is_active': isActive,
     };

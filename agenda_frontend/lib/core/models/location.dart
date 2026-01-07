@@ -16,6 +16,7 @@ class Location {
   final double? longitude;
   final String? currency;
   final String timezone;
+  final bool allowCustomerChooseStaff;
   final bool isDefault;
 
   const Location({
@@ -32,6 +33,7 @@ class Location {
     this.longitude,
     this.currency,
     this.timezone = 'Europe/Rome',
+    this.allowCustomerChooseStaff = false,
     this.isDefault = false,
   });
 
@@ -54,6 +56,8 @@ class Location {
           : null,
       currency: json['currency'] as String?,
       timezone: json['timezone'] as String? ?? 'Europe/Rome',
+      allowCustomerChooseStaff:
+          json['allow_customer_choose_staff'] as bool? ?? false,
       isDefault: json['is_default'] as bool? ?? false,
     );
   }
@@ -73,6 +77,7 @@ class Location {
       'longitude': longitude,
       'currency': currency,
       'timezone': timezone,
+      'allow_customer_choose_staff': allowCustomerChooseStaff,
       'is_default': isDefault,
     };
   }

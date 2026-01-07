@@ -77,6 +77,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    bool? allowCustomerChooseStaff,
     bool? isActive,
   }) async {
     final business = ref.read(currentBusinessProvider);
@@ -90,6 +91,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
       timezone: timezone,
       minBookingNoticeHours: minBookingNoticeHours,
       maxBookingAdvanceDays: maxBookingAdvanceDays,
+      allowCustomerChooseStaff: allowCustomerChooseStaff,
       isActive: isActive,
     );
     state = [...state, location];
@@ -106,6 +108,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    bool? allowCustomerChooseStaff,
     bool? isActive,
   }) async {
     final repository = ref.read(locationsRepositoryProvider);
@@ -118,6 +121,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
       timezone: timezone,
       minBookingNoticeHours: minBookingNoticeHours,
       maxBookingAdvanceDays: maxBookingAdvanceDays,
+      allowCustomerChooseStaff: allowCustomerChooseStaff,
       isActive: isActive,
     );
     state = [

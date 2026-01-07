@@ -271,6 +271,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       case 1: // Clienti
         ref.read(clientSearchQueryProvider.notifier).clear();
         ref.read(clientsProvider.notifier).refresh();
+        ref.read(clientAppointmentsRefreshProvider.notifier).bump();
         break;
       case 2: // Servizi
         ref.read(servicesProvider.notifier).refresh();

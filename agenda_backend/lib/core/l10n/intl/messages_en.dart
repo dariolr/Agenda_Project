@@ -793,6 +793,14 @@ class MessageLookup extends MessageLookupByLibrary {
       "Eligible team members",
     ),
     "teamLocationAddressLabel": MessageLookupByLibrary.simpleMessage("Address"),
+    "teamLocationAllowCustomerChooseStaffHint":
+        MessageLookupByLibrary.simpleMessage(
+          "If disabled, the system assigns the team member automatically",
+        ),
+    "teamLocationAllowCustomerChooseStaffLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Allow customers to choose the team member",
+        ),
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Online booking limits",
     ),

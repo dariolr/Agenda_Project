@@ -54,6 +54,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   bool _isActive = true;
   int _minBookingNoticeHours = 1;
   int _maxBookingAdvanceDays = 90;
+  bool _allowCustomerChooseStaff = false;
 
   // Opzioni disponibili per i dropdown
   static const _noticeHoursOptions = [1, 2, 4, 6, 12, 24, 48];
@@ -69,6 +70,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       _isActive = widget.initial!.isActive;
       _minBookingNoticeHours = widget.initial!.minBookingNoticeHours;
       _maxBookingAdvanceDays = widget.initial!.maxBookingAdvanceDays;
+      _allowCustomerChooseStaff = widget.initial!.allowCustomerChooseStaff;
     } else {
       // Pre-popola con il nome del business per nuove sedi
       final businessName = ref.read(currentBusinessProvider).name;
@@ -192,6 +194,17 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
             ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
+          SwitchListTile(
+            title: Text(l10n.teamLocationAllowCustomerChooseStaffLabel),
+            subtitle: Text(
+              l10n.teamLocationAllowCustomerChooseStaffHint,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            value: _allowCustomerChooseStaff,
+            onChanged: (v) => setState(() => _allowCustomerChooseStaff = v),
+            contentPadding: EdgeInsets.zero,
+          ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
           // Preavviso minimo
           LabeledFormField(
             label: l10n.teamLocationMinBookingNoticeLabel,
@@ -371,6 +384,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           isActive: _isActive,
           minBookingNoticeHours: _minBookingNoticeHours,
           maxBookingAdvanceDays: _maxBookingAdvanceDays,
+          allowCustomerChooseStaff: _allowCustomerChooseStaff,
         );
       } else {
         // Crea nuova location
@@ -381,6 +395,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           isActive: _isActive,
           minBookingNoticeHours: _minBookingNoticeHours,
           maxBookingAdvanceDays: _maxBookingAdvanceDays,
+          allowCustomerChooseStaff: _allowCustomerChooseStaff,
         );
       }
       if (mounted) Navigator.of(context).pop();

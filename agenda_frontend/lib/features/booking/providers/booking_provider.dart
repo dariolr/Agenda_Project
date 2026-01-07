@@ -21,6 +21,7 @@ final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
 /// Provider per la configurazione del booking (dinamico basato sul business corrente)
 final bookingConfigProvider = Provider<BookingConfig>((ref) {
   final businessAsync = ref.watch(currentBusinessProvider);
+  final effectiveLocation = ref.watch(effectiveLocationProvider);
 
   // Se il business è ancora in caricamento o ha errori, ritorna placeholder
   if (businessAsync.isLoading || businessAsync.hasError) {
@@ -44,8 +45,12 @@ final bookingConfigProvider = Provider<BookingConfig>((ref) {
     );
   }
 
+  final allowStaffSelection = effectiveLocation != null
+      ? !effectiveLocation.allowCustomerChooseStaff
+      : true;
+
   return BookingConfig(
-    allowStaffSelection: true,
+    allowStaffSelection: allowStaffSelection,
     businessId: business.id,
     locationId: locationId,
   );

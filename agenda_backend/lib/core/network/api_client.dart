@@ -204,13 +204,13 @@ class ApiClient {
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
       // ignore: avoid_print
-      print('DEBUG GET $path response.data: ${response.data}');
+      //print('DEBUG GET $path response.data: ${response.data}');
       return _handleResponse(response);
     } on DioException catch (e) {
       // ignore: avoid_print
-      print('DEBUG GET $path DioException: ${e.message}');
+      //print('DEBUG GET $path DioException: ${e.message}');
       // ignore: avoid_print
-      print('DEBUG GET $path response: ${e.response?.data}');
+      //print('DEBUG GET $path response: ${e.response?.data}');
       throw _handleError(e);
     }
   }
@@ -832,6 +832,7 @@ class ApiClient {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    bool? allowCustomerChooseStaff,
     bool? isActive,
   }) async {
     final response = await post(
@@ -846,6 +847,8 @@ class ApiClient {
           'min_booking_notice_hours': minBookingNoticeHours,
         if (maxBookingAdvanceDays != null)
           'max_booking_advance_days': maxBookingAdvanceDays,
+        if (allowCustomerChooseStaff != null)
+          'allow_customer_choose_staff': allowCustomerChooseStaff,
         if (isActive != null) 'is_active': isActive,
       },
     );
@@ -862,6 +865,7 @@ class ApiClient {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    bool? allowCustomerChooseStaff,
     bool? isActive,
   }) async {
     final response = await put(
@@ -876,6 +880,8 @@ class ApiClient {
           'min_booking_notice_hours': minBookingNoticeHours,
         if (maxBookingAdvanceDays != null)
           'max_booking_advance_days': maxBookingAdvanceDays,
+        if (allowCustomerChooseStaff != null)
+          'allow_customer_choose_staff': allowCustomerChooseStaff,
         if (isActive != null) 'is_active': isActive,
       },
     );

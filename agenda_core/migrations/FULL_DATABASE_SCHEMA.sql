@@ -58,6 +58,8 @@ CREATE TABLE IF NOT EXISTS locations (
     currency VARCHAR(3) DEFAULT NULL COMMENT 'Override business currency',
     cancellation_hours INT UNSIGNED DEFAULT NULL 
         COMMENT 'Override business cancellation policy. NULL = use business default',
+    allow_customer_choose_staff TINYINT(1) NOT NULL DEFAULT 0
+        COMMENT 'Allow customers to choose staff for online booking',
     is_default TINYINT(1) NOT NULL DEFAULT 0,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

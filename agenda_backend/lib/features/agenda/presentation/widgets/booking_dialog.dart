@@ -122,6 +122,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   int _itemKeyCounter = 0;
 
   bool _warningDismissed = false;
+  bool _midnightWarningVisible = false;
+  bool _midnightWarningDismissed = false;
 
   @override
   void initState() {
@@ -608,6 +610,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                                   processingExtraMinutes: defaultProcessing,
                                 );
                           _recalculateTimesFrom(i + 1, variants.cast());
+                          _clearMidnightWarningIfResolved(variants.cast());
                         });
                       },
                       child: Row(
@@ -648,6 +651,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                                 processingExtraMinutes: defaultProcessing,
                               );
                         _recalculateTimesFrom(i + 1, variants.cast());
+                        _clearMidnightWarningIfResolved(variants.cast());
                       });
                     },
                     child: Row(
@@ -661,6 +665,13 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                   ),
                 ),
               const SizedBox(height: 16),
+              if (isLast &&
+                  item.serviceId != null &&
+                  _midnightWarningVisible &&
+                  !_midnightWarningDismissed) ...[
+                _midnightWarningBanner(),
+                const SizedBox(height: 16),
+              ],
             ],
             if (hasBlockedExtra) ...[
               ExtraTimeCard(
@@ -675,6 +686,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                       blockedExtraMinutes: duration,
                     );
                     _recalculateTimesFrom(i + 1, variants.cast());
+                    _clearMidnightWarningIfResolved(variants.cast());
                   });
                 },
                 onRemove: () {
@@ -683,6 +695,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                       blockedExtraMinutes: 0,
                     );
                     _recalculateTimesFrom(i + 1, variants.cast());
+                    _clearMidnightWarningIfResolved(variants.cast());
                   });
                 },
               ),
@@ -704,6 +717,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                       processingExtraMinutes: duration,
                     );
                     _recalculateTimesFrom(i + 1, variants.cast());
+                    _clearMidnightWarningIfResolved(variants.cast());
                   });
                 },
                 onRemove: () {
@@ -712,6 +726,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                       processingExtraMinutes: 0,
                     );
                     _recalculateTimesFrom(i + 1, variants.cast());
+                    _clearMidnightWarningIfResolved(variants.cast());
                   });
                 },
               ),
@@ -733,6 +748,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 ),
               ),
               const SizedBox(height: 8),
+              if (_midnightWarningVisible && !_midnightWarningDismissed) ...[
+                _midnightWarningBanner(),
+                const SizedBox(height: 8),
+              ],
             ],
           ],
         ),
@@ -809,6 +828,70 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         ],
       ),
     );
+  }
+
+  Widget _midnightWarningBanner() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.amber,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              context.l10n.serviceStartsAfterMidnight,
+              style: const TextStyle(
+                color: Color(0xFF8A4D00),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            color: const Color(0xFF8A4D00),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+            onPressed: () {
+              setState(() => _midnightWarningDismissed = true);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMidnightWarning() {
+    setState(() {
+      _midnightWarningVisible = true;
+      _midnightWarningDismissed = false;
+    });
+  }
+
+  void _clearMidnightWarningIfResolved(List<ServiceVariant> variants) {
+    if (!_midnightWarningVisible) return;
+    if (!_hasMidnightOverflow(variants)) {
+      _midnightWarningVisible = false;
+      _midnightWarningDismissed = false;
+    }
+  }
+
+  bool _hasMidnightOverflow(List<ServiceVariant> variants) {
+    for (final item in _serviceItems) {
+      final startMinutes = item.startTime.hour * 60 + item.startTime.minute;
+      final endTime = _resolveServiceEndTime(item, variants);
+      final endMinutes = endTime.hour * 60 + endTime.minute;
+      if (endMinutes < startMinutes) return true;
+    }
+    return false;
   }
 
   bool _isWarningEligible(ServiceItemData item) {
@@ -991,21 +1074,15 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       final lastItem = _serviceItems.last;
       final lastStartMinutes =
           lastItem.startTime.hour * 60 + lastItem.startTime.minute;
-      nextStart = _resolveServiceEndTime(lastItem, variants);
-      final nextStartMinutes = nextStart.hour * 60 + nextStart.minute;
+      final lastEnd = _resolveServiceEndTime(lastItem, variants);
+      final lastEndMinutes = lastEnd.hour * 60 + lastEnd.minute;
 
-      // Se l'orario calcolato è "minore" dell'inizio dell'ultimo servizio,
-      // significa che abbiamo superato la mezzanotte
-      if (nextStartMinutes < lastStartMinutes) {
-        // Mostra errore all'utente
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.serviceStartsAfterMidnight),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+      // Blocca se il servizio precedente termina dopo la mezzanotte
+      if (lastEndMinutes < lastStartMinutes) {
+        _showMidnightWarning();
         return;
       }
+      nextStart = lastEnd;
     }
 
     // Smart staff selection:
@@ -1015,6 +1092,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
     final newIndex = _serviceItems.length;
     setState(() {
+      _clearMidnightWarningIfResolved(variants.cast());
       _serviceItems.add(
         ServiceItemData(
           key: _nextItemKey(),
@@ -1036,6 +1114,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
       // Ricalcola gli orari per i servizi successivi
       _recalculateTimesFrom(index, variants);
+      _clearMidnightWarningIfResolved(variants.cast());
     });
   }
 
@@ -1054,11 +1133,22 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         final newStaffId = _findBestStaff(updated.serviceId!);
         _serviceItems[index] = updated.copyWith(staffId: newStaffId);
       }
+      _clearMidnightWarningIfResolved(variants.cast());
     });
   }
 
   void _updateServiceStartTime(int index, TimeOfDay newTime) {
     final variants = ref.read(serviceVariantsProvider).value ?? [];
+    if (index > 0) {
+      final prev = _serviceItems[index - 1];
+      final prevStartMinutes = prev.startTime.hour * 60 + prev.startTime.minute;
+      final prevEnd = _resolveServiceEndTime(prev, variants);
+      final prevEndMinutes = prevEnd.hour * 60 + prevEnd.minute;
+      if (prevEndMinutes < prevStartMinutes) {
+        _showMidnightWarning();
+        return;
+      }
+    }
 
     setState(() {
       final updated = _serviceItems[index].copyWith(startTime: newTime);
@@ -1066,6 +1156,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
       // Ricalcola gli orari per i servizi successivi
       _recalculateTimesFrom(index + 1, variants);
+      _clearMidnightWarningIfResolved(variants.cast());
     });
   }
 
@@ -1092,6 +1183,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         variants,
       );
       _recalculateTimesFrom(index + 1, variants);
+      _clearMidnightWarningIfResolved(variants.cast());
     });
   }
 
@@ -1108,6 +1200,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         variants,
       );
       _recalculateTimesFrom(index + 1, variants);
+      _clearMidnightWarningIfResolved(variants.cast());
     });
   }
 

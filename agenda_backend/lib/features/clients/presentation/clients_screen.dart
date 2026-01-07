@@ -7,11 +7,25 @@ import 'widgets/client_list.dart';
 import 'widgets/clients_search_field.dart';
 import 'widgets/clients_sort_dropdown.dart';
 
-class ClientsScreen extends ConsumerWidget {
+class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ClientsScreen> createState() => _ClientsScreenState();
+}
+
+class _ClientsScreenState extends ConsumerState<ClientsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(clientAppointmentsRefreshProvider.notifier).bump();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final sortOption = ref.watch(clientSortOptionProvider);
     final clientsAsync = ref.watch(clientsProvider);
     final bottomPadding = MediaQuery.of(context).padding.bottom;

@@ -275,10 +275,24 @@ final frequentClientsProvider = Provider<List<Client>>((ref) {
       .toList();
 });
 
+/// Forza il refresh degli appuntamenti cliente quando si entra in sezione.
+class ClientAppointmentsRefreshNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() => state++;
+}
+
+final clientAppointmentsRefreshProvider =
+    NotifierProvider<ClientAppointmentsRefreshNotifier, int>(
+      ClientAppointmentsRefreshNotifier.new,
+    );
+
 // Provider per caricare appuntamenti di un cliente dall'API.
 // Ritorna ClientAppointmentsData con liste upcoming e past già ordinate.
 final clientAppointmentsProvider =
     FutureProvider.family<ClientAppointmentsData, int>((ref, clientId) async {
+      ref.watch(clientAppointmentsRefreshProvider);
       final api = ref.watch(clientsApiProvider);
       return api.fetchClientAppointments(clientId);
     });
