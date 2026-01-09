@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../core/models/booking_request.dart';
+import '../../../core/models/location.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/staff.dart';
@@ -46,7 +47,7 @@ final bookingConfigProvider = Provider<BookingConfig>((ref) {
   }
 
   final allowStaffSelection = effectiveLocation != null
-      ? !effectiveLocation.allowCustomerChooseStaff
+      ? effectiveLocation.allowCustomerChooseStaff
       : true;
 
   return BookingConfig(
@@ -139,6 +140,28 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     final initialStep = hasMultipleLocations
         ? BookingStep.location
         : BookingStep.services;
+    ref.listen<Location?>(effectiveLocationProvider, (previous, next) {
+      if (previous?.id == next?.id) return;
+      state = state.copyWith(
+        request: state.request.copyWith(
+          clearStaff: true,
+          clearStaffSelections: true,
+          clearSlot: true,
+        ),
+        isStaffAutoSelected: false,
+      );
+    });
+    ref.listen<int?>(urlLocationIdProvider, (previous, next) {
+      if (previous == next) return;
+      state = state.copyWith(
+        request: state.request.copyWith(
+          clearStaff: true,
+          clearStaffSelections: true,
+          clearSlot: true,
+        ),
+        isStaffAutoSelected: false,
+      );
+    });
     return BookingFlowState(currentStep: initialStep);
   }
 
@@ -188,6 +211,10 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       return;
     }
     if (!_config.allowStaffSelection) {
+      state = state.copyWith(
+        request: state.request.copyWith(clearStaff: true, clearSlot: true),
+        isStaffAutoSelected: false,
+      );
       nextStep();
       return;
     }
@@ -203,7 +230,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       if (s.serviceIds.isEmpty) {
         return false;
       }
-      return s.serviceIds.any(serviceIdSet.contains);
+      return serviceIdSet.every(s.serviceIds.contains);
     }).toList()
       ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
@@ -213,6 +240,10 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       return;
     }
 
+    state = state.copyWith(
+      request: state.request.copyWith(clearStaff: true, clearSlot: true),
+      isStaffAutoSelected: false,
+    );
     state = state.copyWith(currentStep: BookingStep.staff);
   }
 
@@ -268,17 +299,33 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       currentServices.add(service);
     }
 
+    final shouldClearStaff = !_config.allowStaffSelection;
+    final updatedStaffByService = Map<int, Staff?>.from(
+      state.request.selectedStaffByService,
+    )..removeWhere(
+        (serviceId, _) => !currentServices.any((s) => s.id == serviceId),
+      );
+
     // Quando cambiano i servizi, resetta slot selezionato
     state = state.copyWith(
       request: state.request.copyWith(
         services: currentServices,
+        selectedStaffByService:
+            shouldClearStaff ? {} : updatedStaffByService,
+        clearStaff: shouldClearStaff,
         clearSlot: true,
       ),
+      isStaffAutoSelected: shouldClearStaff ? false : state.isStaffAutoSelected,
     );
   }
 
   /// Seleziona staff
   void selectStaff(Staff? staff) {
+    final services = state.request.services;
+    if (services.isNotEmpty) {
+      selectStaffForService(services.first, staff);
+      return;
+    }
     state = state.copyWith(
       request: state.request.copyWith(
         selectedStaff: staff,
@@ -288,12 +335,38 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     );
   }
 
+  /// Seleziona staff per servizio
+  void selectStaffForService(Service service, Staff? staff) {
+    final updated = Map<int, Staff?>.from(
+      state.request.selectedStaffByService,
+    );
+    updated[service.id] = staff;
+    final isSingleService = state.request.services.length == 1;
+    state = state.copyWith(
+      request: state.request.copyWith(
+        selectedStaff: isSingleService ? staff : state.request.selectedStaff,
+        selectedStaffByService: updated,
+        clearStaff: isSingleService && staff == null,
+        clearSlot: true,
+      ),
+      isStaffAutoSelected: false,
+    );
+  }
+
   /// Seleziona staff automaticamente e disabilita ritorno allo step staff
   void autoSelectStaff(Staff staff) {
+    final services = state.request.services;
+    final updated = Map<int, Staff?>.from(
+      state.request.selectedStaffByService,
+    );
+    if (services.isNotEmpty) {
+      updated[services.first.id] = staff;
+    }
     state = state.copyWith(
       request: state.request.copyWith(
         selectedStaff: staff,
         clearStaff: false,
+        selectedStaffByService: updated,
         clearSlot: true,
       ),
       isStaffAutoSelected: true,
