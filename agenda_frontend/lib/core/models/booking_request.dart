@@ -6,12 +6,14 @@ import 'time_slot.dart';
 class BookingRequest {
   final List<Service> services;
   final Staff? selectedStaff;
+  final Map<int, Staff?> selectedStaffByService;
   final TimeSlot? selectedSlot;
   final String? notes;
 
   const BookingRequest({
     this.services = const [],
     this.selectedStaff,
+    this.selectedStaffByService = const {},
     this.selectedSlot,
     this.notes,
   });
@@ -34,17 +36,51 @@ class BookingRequest {
   bool get isComplete =>
       services.isNotEmpty && selectedSlot != null;
 
+  bool get hasStaffSelectionForAllServices {
+    if (services.isEmpty) return false;
+    if (selectedStaffByService.isNotEmpty) {
+      return services.every((s) => selectedStaffByService[s.id] != null);
+    }
+    return selectedStaff != null;
+  }
+
+  int? get singleStaffId {
+    if (selectedStaffByService.isNotEmpty) {
+      final staffIds = selectedStaffByService.values
+          .whereType<Staff>()
+          .map((s) => s.id)
+          .toSet();
+      if (staffIds.length == 1 &&
+          services.every((s) => selectedStaffByService[s.id] != null)) {
+        return staffIds.first;
+      }
+      return null;
+    }
+    return selectedStaff?.id;
+  }
+
+  Staff? staffForService(int serviceId) {
+    if (selectedStaffByService.isNotEmpty) {
+      return selectedStaffByService[serviceId];
+    }
+    return selectedStaff;
+  }
+
   BookingRequest copyWith({
     List<Service>? services,
     Staff? selectedStaff,
+    Map<int, Staff?>? selectedStaffByService,
     TimeSlot? selectedSlot,
     String? notes,
     bool clearStaff = false,
+    bool clearStaffSelections = false,
     bool clearSlot = false,
   }) =>
       BookingRequest(
         services: services ?? this.services,
         selectedStaff: clearStaff ? null : (selectedStaff ?? this.selectedStaff),
+        selectedStaffByService:
+            clearStaffSelections ? {} : (selectedStaffByService ?? this.selectedStaffByService),
         selectedSlot: clearSlot ? null : (selectedSlot ?? this.selectedSlot),
         notes: notes ?? this.notes,
       );
