@@ -7,7 +7,9 @@ import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/staff.dart';
 import '../../../core/models/time_slot.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/network/network_providers.dart';
+import '../../../core/services/pending_booking_storage.dart';
 import '../data/booking_repository.dart';
 import '../domain/booking_config.dart';
 import 'business_provider.dart';
@@ -65,6 +67,12 @@ final effectiveLocationIdProvider = Provider<int>((ref) {
   }
   // Fallback alla config
   return ref.watch(bookingConfigProvider).locationId;
+});
+
+/// Provider per il numero massimo di giorni prenotabili in anticipo
+final maxBookingAdvanceDaysProvider = Provider<int>((ref) {
+  final effectiveLocation = ref.watch(effectiveLocationProvider);
+  return effectiveLocation?.maxBookingAdvanceDays ?? 90;
 });
 
 /// Step del flow di prenotazione
@@ -146,6 +154,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         request: state.request.copyWith(
           clearStaff: true,
           clearStaffSelections: true,
+          clearAnyOperatorSelections: true,
           clearSlot: true,
         ),
         isStaffAutoSelected: false,
@@ -157,6 +166,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         request: state.request.copyWith(
           clearStaff: true,
           clearStaffSelections: true,
+          clearAnyOperatorSelections: true,
           clearSlot: true,
         ),
         isStaffAutoSelected: false,
@@ -201,6 +211,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         nextStep = BookingStep.dateTime;
       }
       state = state.copyWith(currentStep: nextStep);
+      // Il prefetch viene gestito automaticamente dai listener in DateTimeStep
     }
   }
 
@@ -212,7 +223,11 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     }
     if (!_config.allowStaffSelection) {
       state = state.copyWith(
-        request: state.request.copyWith(clearStaff: true, clearSlot: true),
+        request: state.request.copyWith(
+          clearStaff: true,
+          clearAnyOperatorSelections: true,
+          clearSlot: true,
+        ),
         isStaffAutoSelected: false,
       );
       nextStep();
@@ -220,28 +235,59 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     }
 
     final locationId = ref.read(effectiveLocationIdProvider);
-    final serviceIds = state.request.services.map((s) => s.id).toList();
+    final services = state.request.services;
+    final serviceIds = services.map((s) => s.id).toList();
     if (locationId <= 0 || serviceIds.isEmpty) return;
 
     final repository = ref.read(bookingRepositoryProvider);
     final allStaff = await repository.getStaff(locationId);
-    final serviceIdSet = serviceIds.toSet();
-    final staffList = allStaff.where((s) {
-      if (s.serviceIds.isEmpty) {
-        return false;
-      }
-      return serviceIdSet.every(s.serviceIds.contains);
-    }).toList()
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-    if (staffList.length == 1) {
-      autoSelectStaff(staffList.first);
+    // Per ogni servizio, trova gli operatori che possono erogarlo
+    final staffByService = <int, List<Staff>>{};
+    for (final service in services) {
+      staffByService[service.id] =
+          allStaff.where((s) => s.serviceIds.contains(service.id)).toList()
+            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    }
+
+    // Pre-seleziona automaticamente gli operatori per servizi con un solo operatore
+    final autoSelected = <int, Staff?>{};
+    var allAutoSelected = true;
+    for (final service in services) {
+      final staffForService = staffByService[service.id] ?? [];
+      if (staffForService.length == 1) {
+        autoSelected[service.id] = staffForService.first;
+      } else {
+        autoSelected[service.id] = null;
+        allAutoSelected = false;
+      }
+    }
+
+    // Se tutti i servizi hanno un solo operatore, auto-seleziona e salta lo step
+    if (allAutoSelected && services.isNotEmpty) {
+      if (services.length == 1) {
+        autoSelectStaff(autoSelected[services.first.id]!);
+      } else {
+        state = state.copyWith(
+          request: state.request.copyWith(
+            selectedStaffByService: autoSelected,
+            clearSlot: true,
+            anyOperatorSelected: false,
+          ),
+          isStaffAutoSelected: true,
+        );
+      }
       state = state.copyWith(currentStep: BookingStep.dateTime);
       return;
     }
 
+    // Altrimenti mostra lo step staff con le pre-selezioni
     state = state.copyWith(
-      request: state.request.copyWith(clearStaff: true, clearSlot: true),
+      request: state.request.copyWith(
+        selectedStaffByService: autoSelected,
+        clearSlot: true,
+        anyOperatorSelected: false,
+      ),
       isStaffAutoSelected: false,
     );
     state = state.copyWith(currentStep: BookingStep.staff);
@@ -300,19 +346,19 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     }
 
     final shouldClearStaff = !_config.allowStaffSelection;
-    final updatedStaffByService = Map<int, Staff?>.from(
-      state.request.selectedStaffByService,
-    )..removeWhere(
-        (serviceId, _) => !currentServices.any((s) => s.id == serviceId),
-      );
+    final updatedStaffByService =
+        Map<int, Staff?>.from(state.request.selectedStaffByService)
+          ..removeWhere(
+            (serviceId, _) => !currentServices.any((s) => s.id == serviceId),
+          );
 
     // Quando cambiano i servizi, resetta slot selezionato
     state = state.copyWith(
       request: state.request.copyWith(
         services: currentServices,
-        selectedStaffByService:
-            shouldClearStaff ? {} : updatedStaffByService,
+        selectedStaffByService: shouldClearStaff ? {} : updatedStaffByService,
         clearStaff: shouldClearStaff,
+        clearAnyOperatorSelections: shouldClearStaff,
         clearSlot: true,
       ),
       isStaffAutoSelected: shouldClearStaff ? false : state.isStaffAutoSelected,
@@ -330,6 +376,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       request: state.request.copyWith(
         selectedStaff: staff,
         clearStaff: staff == null,
+        clearAnyOperatorSelections: true,
         clearSlot: true, // Resetta slot quando cambia staff
       ),
     );
@@ -337,9 +384,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
 
   /// Seleziona staff per servizio
   void selectStaffForService(Service service, Staff? staff) {
-    final updated = Map<int, Staff?>.from(
-      state.request.selectedStaffByService,
-    );
+    final updated = Map<int, Staff?>.from(state.request.selectedStaffByService);
     updated[service.id] = staff;
     final isSingleService = state.request.services.length == 1;
     state = state.copyWith(
@@ -347,6 +392,30 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         selectedStaff: isSingleService ? staff : state.request.selectedStaff,
         selectedStaffByService: updated,
         clearStaff: isSingleService && staff == null,
+        clearSlot: true,
+        anyOperatorSelected: false,
+      ),
+      isStaffAutoSelected: false,
+    );
+  }
+
+  /// Seleziona "qualsiasi operatore" per i servizi con più operatori,
+  /// ma mantiene l'operatore selezionato per i servizi con un solo operatore
+  void selectAnyOperatorForAllServices(Map<int, List<Staff>> staffByService) {
+    // Per i servizi con un solo operatore, mantieni quell'operatore
+    final selectedStaffByService = <int, Staff?>{};
+    for (final entry in staffByService.entries) {
+      if (entry.value.length == 1) {
+        selectedStaffByService[entry.key] = entry.value.first;
+      }
+    }
+
+    state = state.copyWith(
+      request: state.request.copyWith(
+        selectedStaff: null,
+        selectedStaffByService: selectedStaffByService,
+        anyOperatorSelected: true,
+        clearStaff: true,
         clearSlot: true,
       ),
       isStaffAutoSelected: false,
@@ -356,9 +425,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
   /// Seleziona staff automaticamente e disabilita ritorno allo step staff
   void autoSelectStaff(Staff staff) {
     final services = state.request.services;
-    final updated = Map<int, Staff?>.from(
-      state.request.selectedStaffByService,
-    );
+    final updated = Map<int, Staff?>.from(state.request.selectedStaffByService);
     if (services.isNotEmpty) {
       updated[services.first.id] = staff;
     }
@@ -368,6 +435,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         clearStaff: false,
         selectedStaffByService: updated,
         clearSlot: true,
+        anyOperatorSelected: false,
       ),
       isStaffAutoSelected: true,
     );
@@ -384,24 +452,81 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
   }
 
   /// Conferma prenotazione
+  /// Ritorna:
+  /// - true: prenotazione confermata con successo
+  /// - false: errore generico
+  /// - Lancia TokenExpiredException se il token è scaduto (401)
   Future<bool> confirmBooking() async {
     if (!state.request.isComplete) return false;
 
     state = state.copyWith(isLoading: true, clearError: true);
 
+    // Salva lo stato PRIMA di tentare la conferma (per recovery in caso di 401)
+    final locationId = ref.read(effectiveLocationIdProvider);
+    final businessId = _config.businessId;
+    final selectedLocation = ref.read(selectedLocationProvider);
+
+    await PendingBookingStorage.save(
+      PendingBookingData.fromBookingRequest(
+        businessId: businessId,
+        locationId: locationId,
+        selectedLocation: selectedLocation,
+        request: state.request,
+      ),
+    );
+
     try {
-      // Usa la location effettiva (selezionata o default)
-      final locationId = ref.read(effectiveLocationIdProvider);
-      final businessId = _config.businessId;
+      final services = state.request.services;
+
+      List<Map<String, dynamic>>? items;
+      final shouldUseItems =
+          services.length > 1 &&
+          state.request.hasOnlyStaffSelectionForAllServices;
+      if (shouldUseItems) {
+        if (!state.request.hasStaffSelectionForAllServices) {
+          state = state.copyWith(isLoading: false);
+          return false;
+        }
+        var currentStart = state.request.selectedSlot!.startTime;
+        items = [];
+        for (final service in services) {
+          final staff = state.request.staffForService(service.id);
+          if (staff == null) {
+            state = state.copyWith(isLoading: false);
+            return false;
+          }
+          items.add({
+            'service_id': service.id,
+            'staff_id': staff.id,
+            // Invia orario come ISO locale (NO toUtc - il backend gestisce il timezone)
+            'start_time': currentStart.toIso8601String(),
+          });
+          currentStart = currentStart.add(
+            Duration(minutes: service.durationMinutes),
+          );
+        }
+      }
+
+      final staffId = state.request.singleStaffId;
+      if (!shouldUseItems &&
+          services.length > 1 &&
+          !state.request.allServicesAnyOperatorSelected) {
+        state = state.copyWith(isLoading: false);
+        return false;
+      }
 
       final result = await _repository.confirmBooking(
         businessId: businessId,
         locationId: locationId,
-        serviceIds: state.request.services.map((s) => s.id).toList(),
+        serviceIds: services.map((s) => s.id).toList(),
         startTime: state.request.selectedSlot!.startTime,
-        staffId: state.request.selectedStaff?.id,
+        staffId: staffId,
         notes: state.request.notes,
+        items: items,
       );
+
+      // Prenotazione confermata - elimina lo stato salvato
+      await PendingBookingStorage.clear();
 
       // Estrai booking ID dalla risposta
       final bookingId =
@@ -415,11 +540,62 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         confirmedBookingId: bookingId,
       );
       return true;
+    } on ApiException catch (e) {
+      // Se è 401, converti in TokenExpiredException
+      // (il refresh token è già stato tentato dall'interceptor)
+      if (e.isUnauthorized) {
+        state = state.copyWith(isLoading: false);
+        throw const TokenExpiredException(
+          'Sessione scaduta. Effettua nuovamente il login.',
+        );
+      }
+      // Altri errori API - elimina lo stato salvato
+      await PendingBookingStorage.clear();
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
+      return false;
+    } on TokenExpiredException {
+      // Token scaduto - lo stato è già salvato, rilancia per gestione UI
+      state = state.copyWith(isLoading: false);
+      rethrow;
     } catch (e) {
+      // Errore generico - elimina lo stato salvato
+      await PendingBookingStorage.clear();
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
       return false;
     }
   }
+
+  /// Ripristina una prenotazione salvata (dopo login da token scaduto)
+  Future<bool> restorePendingBooking() async {
+    final pending = await PendingBookingStorage.load();
+    if (pending == null) return false;
+
+    // Verifica che il business corrisponda
+    if (pending.businessId != _config.businessId) {
+      await PendingBookingStorage.clear();
+      return false;
+    }
+
+    // Ripristina lo stato
+    state = state.copyWith(
+      currentStep: BookingStep.summary,
+      request: pending.toBookingRequest(),
+    );
+
+    // Ripristina la location selezionata se presente
+    final location = pending.selectedLocation;
+    if (location != null) {
+      ref.read(selectedLocationProvider.notifier).select(location);
+    }
+
+    // Pulisci lo storage
+    await PendingBookingStorage.clear();
+
+    return true;
+  }
+
+  /// Verifica se c'è una prenotazione in sospeso
+  Future<bool> hasPendingBooking() => PendingBookingStorage.hasPendingBooking();
 }
 
 /// Dati servizi (categories + services in un'unica chiamata API)
@@ -518,59 +694,123 @@ final selectedDateProvider = StateProvider<DateTime?>((ref) => null);
 final focusedMonthProvider = StateProvider<DateTime>((ref) => DateTime.now());
 
 /// Notifier per le date disponibili (con slot reali)
+/// Carica le date disponibili in blocchi di 15 giorni per performance
 class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
   final Ref _ref;
-  bool _hasFetched = false;
   String? _lastKey;
+  int _loadedDays = 0;
+  bool _isLoadingMore = false;
+  final Set<DateTime> _allDates = {};
+  static const int _chunkSize = 15;
 
   AvailableDatesNotifier(this._ref) : super(const AsyncValue.loading()) {
-    _ref.listen(focusedMonthProvider, (_, __) => _invalidate(), fireImmediately: true);
-    _ref.listen(effectiveLocationIdProvider, (_, __) => _invalidate());
+    _ref.listen(effectiveLocationIdProvider, (_, __) => _reset());
+    _ref.listen(maxBookingAdvanceDaysProvider, (_, __) => _reset());
     _ref.listen(
       bookingFlowProvider.select((s) => s.request.services),
-      (_, __) => _invalidate(),
+      (_, __) => _reset(),
+      fireImmediately: true,
     );
     _ref.listen(
-      bookingFlowProvider.select((s) => s.request.selectedStaff?.id),
-      (_, __) => _invalidate(),
+      bookingFlowProvider.select((s) => s.request.singleStaffId),
+      (_, __) => _reset(),
     );
   }
 
-  void _invalidate() {
-    _hasFetched = false;
-    _loadData();
+  void _reset() {
+    final key = _currentKey();
+    if (key != null && _lastKey == key) {
+      return;
+    }
+    _lastKey = key;
+    _loadedDays = 0;
+    _allDates.clear();
+    _loadNextChunk();
   }
 
-  Future<void> _loadData() async {
+  String? _currentKey() {
     final locationId = _ref.read(effectiveLocationIdProvider);
+    final maxDays = _ref.read(maxBookingAdvanceDaysProvider);
     final bookingState = _ref.read(bookingFlowProvider);
     final serviceIds = bookingState.request.services.map((s) => s.id).toList();
-    final staffId = bookingState.request.selectedStaff?.id;
-    final month = _ref.read(focusedMonthProvider);
+    final staffId = bookingState.request.singleStaffId;
 
-    final key = '$locationId|${month.year}-${month.month}|${staffId ?? 0}|${serviceIds.join(',')}';
-    if (_hasFetched && _lastKey == key) return;
-    _lastKey = key;
-    _hasFetched = true;
+    if (locationId <= 0 || serviceIds.isEmpty) {
+      return null;
+    }
+    return '$locationId|$maxDays|${staffId ?? 0}|${serviceIds.join(',')}';
+  }
+
+  /// Carica il prossimo blocco di 15 giorni
+  Future<void> loadMore() async {
+    final maxDays = _ref.read(maxBookingAdvanceDaysProvider);
+    if (_loadedDays >= maxDays || _isLoadingMore) return;
+    await _loadNextChunk();
+  }
+
+  /// Verifica se ci sono altri giorni da caricare
+  bool get hasMore {
+    final maxDays = _ref.read(maxBookingAdvanceDaysProvider);
+    return _loadedDays < maxDays;
+  }
+
+  /// Numero di giorni già caricati
+  int get loadedDays => _loadedDays;
+
+  Future<void> _loadNextChunk() async {
+    if (_isLoadingMore) return;
+    _isLoadingMore = true;
+
+    final locationId = _ref.read(effectiveLocationIdProvider);
+    final maxDays = _ref.read(maxBookingAdvanceDaysProvider);
+    final bookingState = _ref.read(bookingFlowProvider);
+    final serviceIds = bookingState.request.services.map((s) => s.id).toList();
+    final staffId = bookingState.request.singleStaffId;
 
     if (locationId <= 0 || serviceIds.isEmpty) {
       state = const AsyncValue.data({});
+      _isLoadingMore = false;
       return;
     }
 
-    state = const AsyncValue.loading();
+    // Se è il primo caricamento, mostra loading
+    if (_loadedDays == 0) {
+      state = const AsyncValue.loading();
+    }
 
     try {
       final repository = _ref.read(bookingRepositoryProvider);
-      final dates = await repository.getAvailableDatesForMonth(
-        locationId: locationId,
-        month: month,
-        serviceIds: serviceIds,
-        staffId: staffId,
-      );
-      state = AsyncValue.data(dates);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      // Calcola il range di giorni da caricare
+      final startDay = _loadedDays;
+      final endDay = (startDay + _chunkSize).clamp(0, maxDays);
+
+      // Carica le date per questo blocco di giorni
+      for (var i = startDay; i < endDay; i++) {
+        final date = today.add(Duration(days: i));
+        try {
+          final slots = await repository.getAvailableSlots(
+            locationId: locationId,
+            date: date,
+            serviceIds: serviceIds,
+            staffId: staffId,
+          );
+          if (slots.isNotEmpty) {
+            _allDates.add(DateTime(date.year, date.month, date.day));
+          }
+        } catch (_) {
+          // Ignora errori per singoli giorni
+        }
+      }
+
+      _loadedDays = endDay;
+      state = AsyncValue.data(Set.from(_allDates));
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    } finally {
+      _isLoadingMore = false;
     }
   }
 }
@@ -594,12 +834,93 @@ final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
     return [];
   }
 
-  return repository.getAvailableSlots(
-    locationId: locationId,
-    date: selectedDate,
-    serviceIds: bookingState.request.services.map((s) => s.id).toList(),
-    staffId: bookingState.request.selectedStaff?.id,
+  final services = bookingState.request.services;
+  if (services.isEmpty) {
+    return [];
+  }
+
+  final selectedStaffByService = bookingState.request.selectedStaffByService;
+  final hasPerServiceSelection =
+      services.length > 1 &&
+      selectedStaffByService.isNotEmpty &&
+      !bookingState.request.anyOperatorSelected;
+  final allAnyOperatorSelected =
+      bookingState.request.allServicesAnyOperatorSelected &&
+      selectedStaffByService.isEmpty;
+
+  if (!hasPerServiceSelection || allAnyOperatorSelected) {
+    return repository.getAvailableSlots(
+      locationId: locationId,
+      date: selectedDate,
+      serviceIds: services.map((s) => s.id).toList(),
+      staffId: bookingState.request.singleStaffId,
+    );
+  }
+
+  final slotsByService = <int, List<TimeSlot>>{};
+  for (final service in services) {
+    final staffId = selectedStaffByService[service.id]?.id;
+    final slots = await repository.getAvailableSlots(
+      locationId: locationId,
+      date: selectedDate,
+      serviceIds: [service.id],
+      staffId: staffId,
+    );
+    slotsByService[service.id] = slots;
+    if (slots.isEmpty) {
+      return [];
+    }
+  }
+
+  final totalDuration = services.fold<int>(
+    0,
+    (sum, service) => sum + service.durationMinutes,
   );
+  final startSets = <int, Set<int>>{};
+  for (final entry in slotsByService.entries) {
+    startSets[entry.key] = entry.value
+        .map((s) => s.startTime.millisecondsSinceEpoch)
+        .toSet();
+  }
+
+  final baseService = services.first;
+  final baseStarts = startSets[baseService.id] ?? {};
+  if (baseStarts.isEmpty) {
+    return [];
+  }
+
+  final offsets = <int>[];
+  var running = 0;
+  for (final service in services) {
+    offsets.add(running);
+    running += service.durationMinutes;
+  }
+
+  final available = <TimeSlot>[];
+  for (final startEpoch in baseStarts) {
+    final startTime = DateTime.fromMillisecondsSinceEpoch(startEpoch);
+    var valid = true;
+    for (var i = 0; i < services.length; i++) {
+      final service = services[i];
+      final requiredStart = startTime.add(Duration(minutes: offsets[i]));
+      final requiredEpoch = requiredStart.millisecondsSinceEpoch;
+      final set = startSets[service.id];
+      if (set == null || !set.contains(requiredEpoch)) {
+        valid = false;
+        break;
+      }
+    }
+    if (valid) {
+      available.add(
+        TimeSlot(
+          startTime: startTime,
+          endTime: startTime.add(Duration(minutes: totalDuration)),
+        ),
+      );
+    }
+  }
+  available.sort((a, b) => a.startTime.compareTo(b.startTime));
+  return available;
 });
 
 /// Provider per la prima data disponibile
@@ -615,7 +936,7 @@ final firstAvailableDateProvider = FutureProvider<DateTime>((ref) async {
   return repository.getFirstAvailableDate(
     locationId: locationId,
     serviceIds: bookingState.request.services.map((s) => s.id).toList(),
-    staffId: bookingState.request.selectedStaff?.id,
+    staffId: bookingState.request.singleStaffId,
   );
 });
 
@@ -627,7 +948,11 @@ class AvailableStaffNotifier extends StateNotifier<AsyncValue<List<Staff>>> {
   List<Staff> _allStaff = const [];
 
   AvailableStaffNotifier(this._ref) : super(const AsyncValue.loading()) {
-    _ref.listen(effectiveLocationIdProvider, (_, __) => _invalidate(), fireImmediately: true);
+    _ref.listen(
+      effectiveLocationIdProvider,
+      (_, __) => _invalidate(),
+      fireImmediately: true,
+    );
     _ref.listen(
       bookingFlowProvider.select((s) => s.currentStep),
       (_, __) => _invalidate(),
@@ -688,8 +1013,7 @@ class AvailableStaffNotifier extends StateNotifier<AsyncValue<List<Staff>>> {
         return false;
       }
       return s.serviceIds.any(serviceIdSet.contains);
-    }).toList()
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    }).toList()..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     state = AsyncValue.data(availableStaff);
   }

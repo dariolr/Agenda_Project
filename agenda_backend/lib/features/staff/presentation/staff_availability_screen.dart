@@ -30,6 +30,7 @@ import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart';
 import 'package:agenda_backend/core/network/network_providers.dart';
+import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
 import 'package:agenda_backend/core/widgets/staff_picker_sheet.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
@@ -435,11 +436,10 @@ class _StaffAvailabilityScreenState
     } else {
       // Mostra errore
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.errors.join('\n')),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: result.errors.join('\n'),
         );
       }
     }

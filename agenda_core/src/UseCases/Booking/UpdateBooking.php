@@ -7,7 +7,9 @@ namespace Agenda\UseCases\Booking;
 use Agenda\Domain\Exceptions\BookingException;
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
+use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\UseCases\Notifications\QueueBookingRescheduled;
 use DateTimeImmutable;
 
 /**
@@ -21,6 +23,7 @@ final class UpdateBooking
         private readonly BookingRepository $bookingRepo,
         private readonly Connection $db,
         private readonly ?ClientRepository $clientRepo = null,
+        private readonly ?NotificationRepository $notificationRepo = null,
     ) {}
 
     /**
@@ -62,6 +65,12 @@ final class UpdateBooking
                 throw BookingException::validationError('Invalid start_time format. Use ISO8601.');
             }
 
+            // Save old start time for notification
+            $oldStartTime = null;
+            if (!empty($booking['items'])) {
+                $oldStartTime = $booking['items'][0]['start_time'] ?? null;
+            }
+
             // Esegui reschedule in transazione per garantire atomicità
             $this->db->beginTransaction();
             
@@ -90,7 +99,13 @@ final class UpdateBooking
                 throw $e;
             }
 
-            return $this->bookingRepo->findById($bookingId);
+            // Fetch updated booking
+            $updatedBooking = $this->bookingRepo->findById($bookingId);
+            
+            // Queue reschedule notification (if client is associated)
+            $this->queueRescheduleNotification($updatedBooking, $oldStartTime);
+
+            return $updatedBooking;
         }
 
         // Altrimenti update normale (status/notes/client_id)
@@ -236,5 +251,101 @@ final class UpdateBooking
                 );
             }
         }
+    }
+
+    /**
+     * Queue reschedule notification for client.
+     */
+    private function queueRescheduleNotification(array $booking, ?string $oldStartTime): void
+    {
+        // No client = no notification
+        $clientId = $booking['client_id'] ?? null;
+        if ($clientId === null) {
+            return;
+        }
+        
+        if ($this->notificationRepo === null) {
+            return;
+        }
+
+        try {
+            // Get location and business details
+            $locationData = $this->getLocationAndBusinessData((int) $booking['location_id']);
+            
+            // Get client email
+            $clientEmail = null;
+            $clientName = $booking['client_name'] ?? 'Cliente';
+            if ($this->clientRepo !== null) {
+                $client = $this->clientRepo->findById((int) $clientId);
+                if ($client !== null) {
+                    $clientEmail = $client['email'] ?? null;
+                    $clientName = trim(($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? ''));
+                }
+            }
+            
+            if (empty($clientEmail)) {
+                return;
+            }
+
+            // Determine sender
+            $senderEmail = $locationData['location_email'] ?? $locationData['business_email'] ?? null;
+            $senderName = $locationData['location_email'] 
+                ? $locationData['location_name'] 
+                : ($locationData['business_email'] ? $locationData['business_name'] : null);
+
+            // Get new start time from booking items
+            $newStartTime = $booking['items'][0]['start_time'] ?? null;
+            
+            $notificationData = [
+                'booking_id' => (int) $booking['id'],
+                'client_id' => (int) $clientId,
+                'client_email' => $clientEmail,
+                'client_name' => $clientName,
+                'business_id' => (int) $booking['business_id'],
+                'business_name' => $locationData['business_name'] ?? '',
+                'business_email' => $locationData['business_email'] ?? '',
+                'location_name' => $locationData['location_name'] ?? '',
+                'location_email' => $locationData['location_email'] ?? '',
+                'location_address' => $locationData['location_address'] ?? '',
+                'location_city' => $locationData['location_city'] ?? '',
+                'location_phone' => $locationData['location_phone'] ?? '',
+                'sender_email' => $senderEmail,
+                'sender_name' => $senderName,
+                'old_start_time' => $oldStartTime,
+                'new_start_time' => $newStartTime,
+                'start_time' => $newStartTime,
+                'services' => implode(', ', array_column($booking['items'] ?? [], 'service_name')),
+                'manage_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/bookings',
+                'booking_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/booking',
+            ];
+
+            $rescheduledUseCase = new QueueBookingRescheduled($this->db, $this->notificationRepo);
+            $rescheduledUseCase->execute($notificationData);
+        } catch (\Throwable $e) {
+            // Non bloccare l'operazione per errori nelle notifiche
+            error_log("Failed to queue reschedule notification for booking {$booking['id']}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get location and business data for notifications.
+     */
+    private function getLocationAndBusinessData(int $locationId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT 
+                l.name as location_name,
+                l.email as location_email,
+                l.address as location_address,
+                l.city as location_city,
+                l.phone as location_phone,
+                b.name as business_name,
+                b.email as business_email
+             FROM locations l
+             JOIN businesses b ON l.business_id = b.id
+             WHERE l.id = ?'
+        );
+        $stmt->execute([$locationId]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
     }
 }

@@ -400,17 +400,12 @@ final class BookingsController
 
         $body = $request->getBody();
 
+        // DEBUG: Log request body
+        file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " storeCustomer body: " . json_encode($body) . "\n", FILE_APPEND);
+
         // Validate required fields
         if (!isset($body['location_id'])) {
             return Response::error('location_id is required', 'validation_error', 400);
-        }
-
-        if (!isset($body['service_ids']) || !is_array($body['service_ids'])) {
-            return Response::error('service_ids is required and must be an array', 'validation_error', 400);
-        }
-
-        if (!isset($body['start_time'])) {
-            return Response::error('start_time is required', 'validation_error', 400);
         }
 
         $locationId = (int) $body['location_id'];
@@ -423,20 +418,70 @@ final class BookingsController
             }
         }
 
+        // Support both "items" format and "service_ids" format
+        $items = null;
+        if (isset($body['items']) && is_array($body['items'])) {
+            // New format: items with per-service staff and start_time
+            $items = [];
+            foreach ($body['items'] as $item) {
+                if (!isset($item['service_id']) || !isset($item['staff_id']) || !isset($item['start_time'])) {
+                    return Response::error(
+                        'Each item must have service_id, staff_id, and start_time',
+                        'validation_error',
+                        400
+                    );
+                }
+                $items[] = [
+                    'service_id' => (int) $item['service_id'],
+                    'staff_id' => (int) $item['staff_id'],
+                    'start_time' => $item['start_time'],
+                ];
+            }
+            if (empty($items)) {
+                return Response::error('items array cannot be empty', 'validation_error', 400);
+            }
+        } elseif (isset($body['service_ids']) && is_array($body['service_ids'])) {
+            // Legacy format: service_ids + start_time + optional staff_id
+            if (!isset($body['start_time'])) {
+                return Response::error('start_time is required', 'validation_error', 400);
+            }
+        } else {
+            return Response::error(
+                'Either items array or service_ids array is required',
+                'validation_error',
+                400
+            );
+        }
+
         try {
             // Customer bookings: no past dates, no conflict override
-            $booking = $this->createBooking->executeForCustomer(
-                (int) $clientId,
-                $locationId,
-                $routeBusinessId,
-                [
-                    'service_ids' => array_map('intval', $body['service_ids']),
-                    'staff_id' => isset($body['staff_id']) ? (int) $body['staff_id'] : null,
-                    'start_time' => $body['start_time'],
-                    'notes' => $body['notes'] ?? null,
-                ],
-                $idempotencyKey
-            );
+            if ($items !== null) {
+                // Use items format
+                $booking = $this->createBooking->executeForCustomer(
+                    (int) $clientId,
+                    $locationId,
+                    $routeBusinessId,
+                    [
+                        'items' => $items,
+                        'notes' => $body['notes'] ?? null,
+                    ],
+                    $idempotencyKey
+                );
+            } else {
+                // Use legacy service_ids format
+                $booking = $this->createBooking->executeForCustomer(
+                    (int) $clientId,
+                    $locationId,
+                    $routeBusinessId,
+                    [
+                        'service_ids' => array_map('intval', $body['service_ids']),
+                        'staff_id' => isset($body['staff_id']) ? (int) $body['staff_id'] : null,
+                        'start_time' => $body['start_time'],
+                        'notes' => $body['notes'] ?? null,
+                    ],
+                    $idempotencyKey
+                );
+            }
 
             return Response::success($booking, 201);
 

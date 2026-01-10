@@ -174,6 +174,16 @@ class L10n {
     );
   }
 
+  /// `Caricamento disponibilità...`
+  String get loadingAvailability {
+    return Intl.message(
+      'Caricamento disponibilità...',
+      name: 'loadingAvailability',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Nessun servizio disponibile al momento`
   String get servicesEmpty {
     return Intl.message(
@@ -474,6 +484,16 @@ class L10n {
     );
   }
 
+  /// `Questa email è già registrata. Prova ad accedere.`
+  String get authEmailAlreadyRegistered {
+    return Intl.message(
+      'Questa email è già registrata. Prova ad accedere.',
+      name: 'authEmailAlreadyRegistered',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Recupera password`
   String get authResetPasswordTitle {
     return Intl.message(
@@ -519,6 +539,16 @@ class L10n {
     return Intl.message(
       'Errore durante l\'invio. Riprova.',
       name: 'authResetPasswordError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email non trovata nel sistema. Verifica l'indirizzo o registrati.`
+  String get authResetPasswordEmailNotFound {
+    return Intl.message(
+      'Email non trovata nel sistema. Verifica l\'indirizzo o registrati.',
+      name: 'authResetPasswordEmailNotFound',
       desc: '',
       args: [],
     );
@@ -882,6 +912,16 @@ class L10n {
     return Intl.message(
       'Vai alla prima data disponibile',
       name: 'dateTimeGoToFirst',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Vai alla prossima data disponibile`
+  String get dateTimeGoToNext {
+    return Intl.message(
+      'Vai alla prossima data disponibile',
+      name: 'dateTimeGoToNext',
       desc: '',
       args: [],
     );

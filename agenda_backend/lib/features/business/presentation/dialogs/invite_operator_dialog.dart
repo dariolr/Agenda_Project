@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../../core/widgets/feedback_dialog.dart';
 import '../../providers/business_users_provider.dart';
 
 /// Dialog per invitare un nuovo operatore (desktop).
@@ -121,25 +122,23 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
 
     if (invitation != null) {
       Navigator.of(context).pop();
-      _showSuccessSnackbar(context, invitation.email, invitation.token);
+      _showSuccessDialog(context, invitation.email, invitation.token);
     }
   }
 
-  void _showSuccessSnackbar(BuildContext context, String email, String? token) {
+  void _showSuccessDialog(BuildContext context, String email, String? token) {
     final l10n = context.l10n;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.operatorsInviteSuccess(email)),
-        action: token != null
-            ? SnackBarAction(
-                label: 'Copy',
-                onPressed: () {
-                  final url = 'https://agenda.example.com/invite/$token';
-                  Clipboard.setData(ClipboardData(text: url));
-                },
-              )
-            : null,
-      ),
+    FeedbackDialog.showSuccess(
+      context,
+      title: l10n.operatorsInviteTitle,
+      message: l10n.operatorsInviteSuccess(email),
+      actionLabel: token != null ? 'Copia link' : null,
+      onAction: token != null
+          ? () {
+              final url = 'https://agenda.example.com/invite/$token';
+              Clipboard.setData(ClipboardData(text: url));
+            }
+          : null,
     );
   }
 }
@@ -281,25 +280,23 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
 
     if (invitation != null) {
       Navigator.of(context).pop();
-      _showSuccessSnackbar(context, invitation.email, invitation.token);
+      _showSuccessDialog(context, invitation.email, invitation.token);
     }
   }
 
-  void _showSuccessSnackbar(BuildContext context, String email, String? token) {
+  void _showSuccessDialog(BuildContext context, String email, String? token) {
     final l10n = context.l10n;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.operatorsInviteSuccess(email)),
-        action: token != null
-            ? SnackBarAction(
-                label: 'Copy',
-                onPressed: () {
-                  final url = 'https://agenda.example.com/invite/$token';
-                  Clipboard.setData(ClipboardData(text: url));
-                },
-              )
-            : null,
-      ),
+    FeedbackDialog.showSuccess(
+      context,
+      title: l10n.operatorsInviteTitle,
+      message: l10n.operatorsInviteSuccess(email),
+      actionLabel: token != null ? 'Copia link' : null,
+      onAction: token != null
+          ? () {
+              final url = 'https://agenda.example.com/invite/$token';
+              Clipboard.setData(ClipboardData(text: url));
+            }
+          : null,
     );
   }
 }

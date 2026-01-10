@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/l10n/l10_extension.dart';
 import '../../../../app/providers/route_slug_provider.dart';
+import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 
@@ -78,9 +79,14 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ...request.services.map((service) {
-                        final operatorLabel = request.selectedStaff != null
-                            ? request.selectedStaff!.fullName
-                            : l10n.staffAnyOperator;
+                        final staff = request.staffForService(service.id);
+                        final operatorLabel = request.isAnyOperatorForService(
+                                  service.id,
+                                )
+                            ? l10n.staffAnyOperator
+                            : (staff != null
+                                ? staff.fullName
+                                : l10n.staffAnyOperator);
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Row(
@@ -310,14 +316,22 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
             ElevatedButton(
               onPressed: state.isLoading
                   ? null
-                  : () {
+                  : () async {
                       if (!isAuthenticated && slug != null) {
                         context.go('/$slug/login');
                         return;
                       }
-                      ref
-                          .read(bookingFlowProvider.notifier)
-                          .confirmBooking();
+                      try {
+                        await ref
+                            .read(bookingFlowProvider.notifier)
+                            .confirmBooking();
+                      } on TokenExpiredException {
+                        // Sessione scaduta - reindirizza al login
+                        // Lo stato della prenotazione è già salvato in localStorage
+                        if (context.mounted && slug != null) {
+                          context.go('/$slug/login');
+                        }
+                      }
                     },
               child: state.isLoading
                   ? const SizedBox(

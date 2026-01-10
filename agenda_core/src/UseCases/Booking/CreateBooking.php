@@ -440,50 +440,21 @@ final class CreateBooking
     /**
      * Queue email notifications for the booking (non-blocking).
      */
+    /**
+     * Queue notifications for booking - sends to CLIENT (not operator).
+     * Used when operator creates booking from gestionale.
+     */
     private function queueNotifications(array $booking, array $location, int $userId): void
     {
-        if ($this->notificationRepo === null) {
-            return; // Notifications not configured
+        // Get client_id from booking - notifications go to CLIENT, not operator
+        $clientId = $booking['client_id'] ?? null;
+        if ($clientId === null) {
+            error_log("Cannot queue notifications for booking {$booking['id']}: no client_id");
+            return;
         }
-
-        try {
-            // Determine sender email/name with priority: location > business > .env
-            $senderEmail = $location['email'] ?? $location['business_email'] ?? null;
-            $senderName = $location['email'] ? $location['name'] : ($location['business_email'] ? $location['business_name'] : null);
-            
-            // Prepare notification data
-            $notificationData = [
-                'booking_id' => (int) $booking['id'],
-                'user_id' => $userId,
-                'business_id' => (int) $booking['business_id'],
-                'business_name' => $location['business_name'] ?? '',
-                'business_email' => $location['business_email'] ?? '',
-                'location_name' => $location['name'] ?? '',
-                'location_email' => $location['email'] ?? '',
-                'location_address' => $location['address'] ?? '',
-                'location_city' => $location['city'] ?? '',
-                'location_phone' => $location['phone'] ?? '',
-                'sender_email' => $senderEmail,  // Prioritized email
-                'sender_name' => $senderName,    // Prioritized name
-                'start_time' => $booking['items'][0]['start_time'] ?? $booking['created_at'],
-                'services' => implode(', ', array_column($booking['items'] ?? [], 'service_name')),
-                'total_price' => $booking['total_price'] ?? 0,
-                'cancellation_hours' => $location['cancellation_hours'] ?? 24,
-                'manage_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/bookings',
-                'booking_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/booking',
-            ];
-
-            // Queue confirmation email
-            $confirmationUseCase = new QueueBookingConfirmation($this->db, $this->notificationRepo);
-            $confirmationUseCase->execute($notificationData);
-
-            // Queue reminder (scheduled for 24h before)
-            $reminderUseCase = new QueueBookingReminder($this->db, $this->notificationRepo);
-            $reminderUseCase->execute($notificationData);
-        } catch (\Throwable $e) {
-            // Log error but don't fail the booking
-            error_log("Failed to queue notifications for booking {$booking['id']}: " . $e->getMessage());
-        }
+        
+        // Use the same method as customer bookings
+        $this->queueNotificationsForClient($booking, $location, (int) $clientId);
     }
 
     /**
@@ -513,11 +484,20 @@ final class CreateBooking
             }
         }
 
-        // Validate required fields
+        $notes = $data['notes'] ?? null;
+
+        // Check if using new "items" format or legacy "service_ids" format
+        if (isset($data['items']) && is_array($data['items']) && !empty($data['items'])) {
+            return $this->executeForCustomerWithItems(
+                $clientId, $locationId, $businessId, $data['items'],
+                $notes, $idempotencyKey
+            );
+        }
+
+        // Legacy format: service_ids with single staff_id
         $serviceIds = $data['service_ids'] ?? [];
         $staffId = $data['staff_id'] ?? null;
         $startTimeString = $data['start_time'] ?? null;
-        $notes = $data['notes'] ?? null;
 
         if (empty($serviceIds)) {
             throw BookingException::invalidService([]);
@@ -527,23 +507,31 @@ final class CreateBooking
             throw BookingException::invalidTime('start_time is required');
         }
 
-        // Parse start time
+        // Validate location FIRST (need timezone for time validation)
+        $location = $this->locationRepository->findById($locationId);
+        if ($location === null || (int) $location['business_id'] !== $businessId) {
+            throw BookingException::invalidLocation($locationId);
+        }
+
+        $locationTimezone = new DateTimeZone($location['timezone'] ?? 'Europe/Rome');
+
+        // Parse start time in location timezone (frontend sends naive ISO local time)
         try {
-            $startTime = new DateTimeImmutable($startTimeString, new DateTimeZone('UTC'));
+            $startTimeLocal = new DateTimeImmutable($startTimeString, $locationTimezone);
         } catch (\Exception $e) {
             throw BookingException::invalidTime('Invalid ISO8601 format');
         }
 
-        // Validate start time is in the future (customers cannot book in the past)
-        $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        if ($startTime <= $now) {
-            throw BookingException::invalidTime('start_time must be in the future');
-        }
+        // Convert to UTC for storage and comparison
+        $startTime = $startTimeLocal->setTimezone(new DateTimeZone('UTC'));
 
-        // Validate location
-        $location = $this->locationRepository->findById($locationId);
-        if ($location === null || (int) $location['business_id'] !== $businessId) {
-            throw BookingException::invalidLocation($locationId);
+        // DEBUG LOG
+        $now = new DateTimeImmutable('now', $locationTimezone);
+        file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " executeForCustomer: now_local={$now->format('Y-m-d H:i:s')} start_time_raw={$startTimeString} start_time_local={$startTimeLocal->format('Y-m-d H:i:s')} tz={$location['timezone']}\n", FILE_APPEND);
+
+        // Validate start time is in the future (customers cannot book in the past)
+        if ($startTimeLocal <= $now) {
+            throw BookingException::invalidTime('start_time must be in the future');
         }
 
         // Validate client belongs to business
@@ -660,10 +648,157 @@ final class CreateBooking
     }
 
     /**
+     * Execute customer booking with items format (per-service staff and start_time).
+     */
+    private function executeForCustomerWithItems(
+        int $clientId,
+        int $locationId,
+        int $businessId,
+        array $items,
+        ?string $notes,
+        ?string $idempotencyKey
+    ): array {
+        // Validate location
+        $location = $this->locationRepository->findById($locationId);
+        if ($location === null || (int) $location['business_id'] !== $businessId) {
+            throw BookingException::invalidLocation($locationId);
+        }
+
+        // Validate client belongs to business
+        $client = $this->clientRepository->findById($clientId);
+        if ($client === null || (int) $client['business_id'] !== $businessId) {
+            throw BookingException::invalidClient($clientId);
+        }
+        $clientName = trim(($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? ''));
+
+        // Get location timezone for time comparisons
+        $locationTimezone = new DateTimeZone($location['timezone'] ?? 'Europe/Rome');
+
+        // Validate all times are in the future
+        // Frontend sends local time (business timezone), compare with "now" in same timezone
+        $nowLocal = new DateTimeImmutable('now', $locationTimezone);
+        foreach ($items as $item) {
+            // Parse start_time as local time (frontend sends naive ISO without timezone)
+            $itemStartTimeLocal = new DateTimeImmutable($item['start_time'], $locationTimezone);
+            
+            // DEBUG LOG
+            file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " executeForCustomerWithItems: now_local={$nowLocal->format('Y-m-d H:i:s')} start_time_raw={$item['start_time']} start_time_local={$itemStartTimeLocal->format('Y-m-d H:i:s')} tz={$location['timezone']}\n", FILE_APPEND);
+            
+            if ($itemStartTimeLocal <= $nowLocal) {
+                throw BookingException::invalidTime('All start times must be in the future');
+            }
+        }
+
+        // Collect service IDs
+        $serviceIds = array_map(fn($item) => (int) $item['service_id'], $items);
+
+        // Validate services belong to business at this location
+        if (!$this->serviceRepository->allBelongToBusiness($serviceIds, $locationId, $businessId)) {
+            throw BookingException::invalidService($serviceIds);
+        }
+
+        // Start transaction for conflict detection
+        $this->db->beginTransaction();
+
+        try {
+            $itemsToCreate = [];
+
+            foreach ($items as $item) {
+                $serviceId = (int) $item['service_id'];
+                $staffId = (int) $item['staff_id'];
+                // Frontend sends local time (naive ISO), parse in location timezone then convert to UTC for storage
+                $startTimeLocal = new DateTimeImmutable($item['start_time'], $locationTimezone);
+                $startTime = $startTimeLocal->setTimezone(new DateTimeZone('UTC'));
+
+                // Validate staff belongs to location
+                if (!$this->staffRepository->belongsToLocation($staffId, $locationId)) {
+                    throw BookingException::invalidStaff($staffId);
+                }
+
+                // Get service with variant
+                $services = $this->serviceRepository->findByIds([$serviceId], $locationId, $businessId);
+                if (empty($services)) {
+                    throw BookingException::invalidService([$serviceId]);
+                }
+                $service = $services[0];
+
+                $serviceDuration = (int) $service['duration_minutes'];
+                $endTime = $startTime->modify("+{$serviceDuration} minutes");
+
+                // Check for conflicts (customers ALWAYS check conflicts)
+                $conflicts = $this->bookingRepository->checkConflicts(
+                    $staffId,
+                    $locationId,
+                    $startTime,
+                    $endTime
+                );
+
+                if (!empty($conflicts)) {
+                    $this->db->rollBack();
+                    throw BookingException::slotConflict($conflicts);
+                }
+
+                $itemsToCreate[] = [
+                    'service_id' => $serviceId,
+                    'service_variant_id' => (int) $service['service_variant_id'],
+                    'staff_id' => $staffId,
+                    'start_time' => $startTime->format('Y-m-d H:i:s'),
+                    'end_time' => $endTime->format('Y-m-d H:i:s'),
+                    'price' => (float) $service['price'],
+                    'service_name_snapshot' => $service['name'],
+                    'client_name_snapshot' => $clientName,
+                ];
+            }
+
+            // Create booking (container)
+            $bookingId = $this->bookingRepository->create([
+                'business_id' => $businessId,
+                'location_id' => $locationId,
+                'client_id' => $clientId,
+                'client_name' => $clientName,
+                'user_id' => null, // Customer booking, no operator user
+                'notes' => $notes,
+                'status' => 'confirmed',
+                'source' => 'online',
+                'idempotency_key' => $idempotencyKey,
+            ]);
+
+            // Create booking items
+            foreach ($itemsToCreate as $itemData) {
+                $itemData['location_id'] = $locationId;
+                $this->bookingRepository->addBookingItem($bookingId, $itemData);
+            }
+
+            $this->db->commit();
+
+            // Fetch and return created booking
+            $booking = $this->bookingRepository->findById($bookingId);
+
+            // Queue notifications
+            $this->queueNotificationsForClient($booking, $location, $clientId);
+
+            return $this->formatBookingResponse($booking);
+
+        } catch (BookingException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        } catch (\Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
      * Queue email notifications for customer booking.
      */
     private function queueNotificationsForClient(array $booking, array $location, int $clientId): void
     {
+        file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " queueNotificationsForClient: notificationRepo=" . ($this->notificationRepo === null ? 'NULL' : 'OK') . " booking_id={$booking['id']} client_id={$clientId}\n", FILE_APPEND);
+        
         if ($this->notificationRepo === null) {
             return;
         }
@@ -701,12 +836,16 @@ final class CreateBooking
             ];
 
             $confirmationUseCase = new QueueBookingConfirmation($this->db, $this->notificationRepo);
-            $confirmationUseCase->execute($notificationData);
+            $confirmResult = $confirmationUseCase->execute($notificationData);
+            
+            file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " queueNotificationsForClient: confirmation result=$confirmResult\n", FILE_APPEND);
 
             $reminderUseCase = new QueueBookingReminder($this->db, $this->notificationRepo);
-            $reminderUseCase->execute($notificationData);
+            $reminderResult = $reminderUseCase->execute($notificationData);
+            
+            file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " queueNotificationsForClient: reminder result=$reminderResult\n", FILE_APPEND);
         } catch (\Throwable $e) {
-            error_log("Failed to queue notifications for customer booking {$booking['id']}: " . $e->getMessage());
+            file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " queueNotificationsForClient ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
         }
     }
 }

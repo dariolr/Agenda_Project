@@ -14,7 +14,8 @@ use DateInterval;
 final class ComputeAvailability
 {
     private const SLOT_INTERVAL_MINUTES = 15;
-    private const MAX_DAYS_AHEAD = 60;
+    private const DEFAULT_MAX_DAYS_AHEAD = 60;
+    private const DEFAULT_MIN_NOTICE_HOURS = 1;
 
     public function __construct(
         private readonly BookingRepository $bookingRepository,
@@ -42,7 +43,7 @@ final class ComputeAvailability
         string $date,
         array $serviceIds
     ): array {
-        // Get timezone from location
+        // Get timezone and booking limits from location
         $location = $this->locationRepository->findById($locationId);
         if (!$location) {
             return ['error' => 'Location not found'];
@@ -51,14 +52,18 @@ final class ComputeAvailability
         $timezoneStr = $location['timezone'] ?? 'Europe/Rome';
         $timezone = new DateTimeZone($timezoneStr);
         
+        // Get booking limits from location (with defaults)
+        $maxDaysAhead = (int) ($location['max_booking_advance_days'] ?? self::DEFAULT_MAX_DAYS_AHEAD);
+        $minNoticeHours = (int) ($location['min_booking_notice_hours'] ?? self::DEFAULT_MIN_NOTICE_HOURS);
+        
         try {
             $targetDate = new DateTimeImmutable($date, $timezone);
         } catch (\Exception $e) {
             return ['error' => 'Invalid date format'];
         }
 
-        // Validate date is not too far in the future
-        $maxDate = (new DateTimeImmutable('now', $timezone))->modify('+' . self::MAX_DAYS_AHEAD . ' days');
+        // Validate date is not too far in the future (using location setting)
+        $maxDate = (new DateTimeImmutable('now', $timezone))->modify('+' . $maxDaysAhead . ' days');
         if ($targetDate > $maxDate) {
             return ['slots' => []];
         }
@@ -68,6 +73,9 @@ final class ComputeAvailability
         if ($targetDate < $today) {
             return ['slots' => []];
         }
+
+        // Calculate minimum booking time (now + min_booking_notice_hours)
+        $minBookingTime = (new DateTimeImmutable('now', $timezone))->modify('+' . $minNoticeHours . ' hours');
 
         // Get staff members to check
         if ($staffId !== null) {
@@ -95,7 +103,8 @@ final class ComputeAvailability
                 $locationId,
                 $targetDate,
                 $durationMinutes,
-                $timezone
+                $timezone,
+                $minBookingTime
             );
 
             foreach ($staffSlots as $slot) {
@@ -116,7 +125,8 @@ final class ComputeAvailability
         int $locationId,
         DateTimeImmutable $date,
         int $durationMinutes,
-        DateTimeZone $timezone
+        DateTimeZone $timezone,
+        DateTimeImmutable $minBookingTime
     ): array {
         $dateStr = $date->format('Y-m-d');
         
@@ -155,7 +165,6 @@ final class ComputeAvailability
 
         // Generate available slots
         $availableSlots = [];
-        $now = new DateTimeImmutable('now', $timezone);
 
         foreach ($workingIntervals as $interval) {
             $current = $interval['start'];
@@ -164,8 +173,8 @@ final class ComputeAvailability
             while ($current->modify("+{$durationMinutes} minutes") <= $intervalEnd) {
                 $slotEnd = $current->modify("+{$durationMinutes} minutes");
 
-                // Skip if slot starts in the past
-                if ($current <= $now) {
+                // Skip if slot starts before minimum booking time (includes past + notice hours)
+                if ($current <= $minBookingTime) {
                     $current = $current->modify('+' . self::SLOT_INTERVAL_MINUTES . ' minutes');
                     continue;
                 }

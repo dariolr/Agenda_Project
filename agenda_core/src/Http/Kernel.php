@@ -45,6 +45,7 @@ use Agenda\Infrastructure\Repositories\StaffPlanningRepository;
 use Agenda\Infrastructure\Repositories\ResourceRepository;
 use Agenda\Infrastructure\Repositories\TimeBlockRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
 use Agenda\UseCases\Auth\GetMe;
@@ -284,6 +285,7 @@ final class Kernel
         $bookingRepo = new BookingRepository($this->db);
         $clientRepo = new ClientRepository($this->db);
         $clientAuthRepo = new ClientAuthRepository($this->db);
+        $notificationRepo = new NotificationRepository($this->db);
 
         // Services
         $jwtService = new JwtService();
@@ -314,9 +316,9 @@ final class Kernel
 
         // Booking Use Cases
         $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo);
-        $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo);
-        $updateBooking = new UpdateBooking($bookingRepo, $this->db, $clientRepo);
-        $deleteBooking = new DeleteBooking($bookingRepo, $this->db);
+        $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo);
+        $updateBooking = new UpdateBooking($bookingRepo, $this->db, $clientRepo, $notificationRepo);
+        $deleteBooking = new DeleteBooking($bookingRepo, $this->db, $notificationRepo);
         $getMyBookings = new GetMyBookings($this->db);
 
         // Controllers

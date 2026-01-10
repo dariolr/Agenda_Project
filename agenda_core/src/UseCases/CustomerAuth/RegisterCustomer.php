@@ -51,7 +51,7 @@ final class RegisterCustomer
         if ($existingClient !== null) {
             // Check if already has password (already registered)
             if (!empty($existingClient['password_hash'])) {
-                throw new AuthException('Email already registered', 'email_exists', 409);
+                throw AuthException::emailAlreadyExists();
             }
 
             // Existing client without password - enable login

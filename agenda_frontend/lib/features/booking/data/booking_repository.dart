@@ -281,6 +281,7 @@ class BookingRepository {
     int? staffId,
     String? notes,
     String? idempotencyKey,
+    List<Map<String, dynamic>>? items,
   }) async {
     // Genera idempotency key se non fornita
     final key = idempotencyKey ?? _uuid.v4();
@@ -290,9 +291,11 @@ class BookingRepository {
       locationId: locationId,
       idempotencyKey: key,
       serviceIds: serviceIds,
-      startTime: startTime.toUtc().toIso8601String(),
+      // Invia orario come ISO locale (NO toUtc - il backend gestisce il timezone)
+      startTime: startTime.toIso8601String(),
       staffId: staffId,
       notes: notes,
+      items: items,
     );
   }
 

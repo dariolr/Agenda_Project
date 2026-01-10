@@ -142,12 +142,19 @@ class BookingScreen extends ConsumerWidget {
               PopupMenuButton<String>(
                 icon: const Icon(Icons.account_circle_outlined),
                 tooltip: l10n.profileTitle,
-                onSelected: (value) {
+                onSelected: (value) async {
                   switch (value) {
                     case 'bookings':
                       context.go('/$slug/my-bookings');
                     case 'profile':
                       context.push('/$slug/profile');
+                    case 'logout':
+                      final businessId = ref.read(currentBusinessIdProvider);
+                      if (businessId != null) {
+                        await ref
+                            .read(authProvider.notifier)
+                            .logout(businessId: businessId);
+                      }
                   }
                 },
                 itemBuilder: (context) => [
@@ -165,6 +172,16 @@ class BookingScreen extends ConsumerWidget {
                     child: ListTile(
                       leading: const Icon(Icons.person_outline),
                       title: Text(l10n.profileTitle),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem<String>(
+                    value: 'logout',
+                    child: ListTile(
+                      leading: const Icon(Icons.logout),
+                      title: Text(l10n.actionLogout),
                       contentPadding: EdgeInsets.zero,
                       dense: true,
                     ),

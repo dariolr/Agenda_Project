@@ -6,9 +6,9 @@ namespace Agenda\UseCases\Booking;
 
 use Agenda\Domain\Exceptions\BookingException;
 use Agenda\Infrastructure\Repositories\BookingRepository;
-use Agenda\Infrastructure\Repositories\NotificationRepository;
+use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Database\Connection;
-use Agenda\UseCases\Notification\QueueBookingCancellation;
+use Agenda\UseCases\Notifications\QueueBookingCancellation;
 use DateTimeImmutable;
 
 /**
@@ -68,15 +68,17 @@ final class DeleteBooking
     private function prepareNotificationData(array $booking): array
     {
         // Get booking details before deletion including location and business emails
+        // NOTE: notifications go to CLIENT (from clients table), not user (operator)
         $stmt = $this->db->getPdo()->prepare(
             'SELECT 
                 bi.start_time,
                 s.name as service_name,
                 st.name as staff_first_name,
                 st.surname as staff_last_name,
-                u.email as customer_email,
-                u.first_name as customer_first_name,
-                u.last_name as customer_last_name,
+                c.id as client_id,
+                c.email as client_email,
+                c.first_name as client_first_name,
+                c.last_name as client_last_name,
                 l.name as location_name,
                 l.address as location_address,
                 l.email as location_email,
@@ -86,7 +88,7 @@ final class DeleteBooking
              JOIN services s ON bi.service_id = s.id
              LEFT JOIN staff st ON bi.staff_id = st.id
              JOIN bookings bk ON bi.booking_id = bk.id
-             JOIN users u ON bk.user_id = u.id
+             LEFT JOIN clients c ON bk.client_id = c.id
              LEFT JOIN locations l ON bk.location_id = l.id
              LEFT JOIN businesses b ON bk.business_id = b.id
              WHERE bi.booking_id = ?
@@ -100,6 +102,11 @@ final class DeleteBooking
             return [];
         }
         
+        // If no client associated, cannot send notification
+        if (empty($details['client_id']) || empty($details['client_email'])) {
+            return [];
+        }
+        
         // Priority: location email > business email
         $senderEmail = $details['location_email'] ?? $details['business_email'] ?? null;
         $senderName = $details['location_email'] 
@@ -108,11 +115,12 @@ final class DeleteBooking
         
         return [
             'booking_id' => $booking['id'],
-            'user_id' => $booking['user_id'] ?? null,
+            'client_id' => $details['client_id'],
+            'client_email' => $details['client_email'],
+            'client_name' => trim($details['client_first_name'] . ' ' . ($details['client_last_name'] ?? '')),
             'business_id' => $booking['business_id'] ?? null,
-            'customer_email' => $details['customer_email'],
-            'client_name' => trim($details['customer_first_name'] . ' ' . ($details['customer_last_name'] ?? '')),
             'service_name' => $details['service_name'],
+            'start_time' => $details['start_time'],
             'staff_name' => trim(($details['staff_first_name'] ?? '') . ' ' . ($details['staff_last_name'] ?? '')),
             'date_time' => (new DateTimeImmutable($details['start_time']))->format('d/m/Y H:i'),
             'location_name' => $details['location_name'] ?? '',

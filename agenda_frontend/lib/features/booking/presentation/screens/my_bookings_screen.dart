@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '/core/l10n/l10_extension.dart';
 import '/core/models/booking_item.dart';
+import '/core/widgets/feedback_dialog.dart';
 import '/features/booking/providers/my_bookings_provider.dart';
 import '../dialogs/reschedule_booking_dialog.dart';
 
@@ -350,11 +351,10 @@ class _BookingCard extends ConsumerWidget {
     );
 
     if (result == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.bookingRescheduled),
-          backgroundColor: Colors.green,
-        ),
+      await FeedbackDialog.showSuccess(
+        context,
+        title: context.l10n.rescheduleBookingTitle,
+        message: context.l10n.bookingRescheduled,
       );
     }
   }
@@ -385,16 +385,19 @@ class _BookingCard extends ConsumerWidget {
           .cancelBooking(booking.locationId, booking.id);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? context.l10n.bookingCancelled
-                  : context.l10n.bookingCancelFailed,
-            ),
-            backgroundColor: success ? Colors.green : Colors.red,
-          ),
-        );
+        if (success) {
+          await FeedbackDialog.showSuccess(
+            context,
+            title: context.l10n.cancelBookingTitle,
+            message: context.l10n.bookingCancelled,
+          );
+        } else {
+          await FeedbackDialog.showError(
+            context,
+            title: context.l10n.errorTitle,
+            message: context.l10n.bookingCancelFailed,
+          );
+        }
       }
     }
   }

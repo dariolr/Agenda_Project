@@ -5,11 +5,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
+import '../../../core/widgets/feedback_dialog.dart';
 import '../../booking/providers/business_provider.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
-  const RegisterScreen({super.key});
+  final String? initialEmail;
+
+  const RegisterScreen({super.key, this.initialEmail});
 
   @override
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
@@ -27,6 +30,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscureConfirmPassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Pre-compila l'email se passata dal login
+    _initEmail();
+  }
+
+  void _initEmail() {
+    final email = widget.initialEmail;
+    debugPrint('RegisterScreen initialEmail: $email');
+    if (email != null && email.isNotEmpty) {
+      _emailController.text = email;
+    }
+  }
+
+  @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
@@ -37,18 +55,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
+  /// Traduce il messaggio di errore dall'API
+  String _getErrorMessage(String apiMessage, dynamic l10n) {
+    // Mappa messaggi API a traduzioni
+    if (apiMessage.toLowerCase().contains('email already registered')) {
+      return l10n.authEmailAlreadyRegistered;
+    }
+    // Fallback al messaggio generico
+    return l10n.authRegisterFailed;
+  }
+
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
     // Ottieni il businessId dal provider
     final businessId = ref.read(currentBusinessIdProvider);
     if (businessId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.authLoginFailed),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.authLoginFailed,
+        );
+      }
       return;
     }
 
@@ -83,7 +112,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            final slug = ref.read(routeSlugProvider);
+            context.go('/$slug/booking');
+          },
         ),
         title: Text(l10n.authRegisterTitle),
       ),
@@ -247,7 +279,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.error.withOpacity(0.1),
+                        color: theme.colorScheme.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -259,7 +291,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              l10n.authRegisterFailed,
+                              _getErrorMessage(authState.errorMessage!, l10n),
                               style: TextStyle(color: theme.colorScheme.error),
                             ),
                           ),

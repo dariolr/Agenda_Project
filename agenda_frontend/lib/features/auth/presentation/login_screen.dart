@@ -5,6 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/services/pending_booking_storage.dart';
+import '../../../core/widgets/feedback_dialog.dart';
+import '../../booking/providers/booking_provider.dart';
 import '../../booking/providers/business_provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -22,6 +26,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Pulisci eventuali errori residui quando si entra nella pagina
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('LOGIN initState - clearing error');
+      debugPrint(
+        'LOGIN initState - authState before clear: ${ref.read(authProvider)}',
+      );
+      ref.read(authProvider.notifier).clearError();
+      debugPrint(
+        'LOGIN initState - authState after clear: ${ref.read(authProvider)}',
+      );
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -29,21 +49,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
+    debugPrint('LOGIN _handleLogin called');
+    debugPrint('LOGIN email: ${_emailController.text}');
+    debugPrint('LOGIN password length: ${_passwordController.text.length}');
 
-    // Ottieni il businessId dal provider
-    final businessId = ref.read(currentBusinessIdProvider);
+    if (!_formKey.currentState!.validate()) {
+      debugPrint('LOGIN form validation FAILED');
+      return;
+    }
+    debugPrint('LOGIN form validation OK');
+
+    // Attendi che il business sia caricato
+    int? businessId = ref.read(currentBusinessIdProvider);
+    debugPrint('LOGIN businessId (sync): $businessId');
+
     if (businessId == null) {
+      // Il business potrebbe non essere ancora caricato, aspettiamo
+      debugPrint('LOGIN waiting for business to load...');
+      try {
+        final business = await ref.read(currentBusinessProvider.future);
+        businessId = business?.id;
+        debugPrint('LOGIN businessId (async): $businessId');
+      } catch (e) {
+        debugPrint('LOGIN business load failed: $e');
+      }
+    }
+
+    if (businessId == null) {
+      debugPrint('LOGIN businessId is NULL - showing error');
       // Se non c'è un business, mostra errore
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.authLoginFailed),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.authLoginFailed,
+        );
+      }
       return;
     }
 
+    debugPrint('LOGIN calling API...');
     final success = await ref
         .read(authProvider.notifier)
         .login(
@@ -51,13 +96,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
+    debugPrint('LOGIN API returned: success=$success');
 
     if (success && mounted) {
       // Segnala al browser che l'autofill è completato con successo
       // Questo triggera la richiesta di salvataggio credenziali
       TextInput.finishAutofillContext();
+
       final slug = ref.read(routeSlugProvider);
-      context.go('/$slug/booking');
+
+      // Verifica se c'è una prenotazione in sospeso (da token scaduto)
+      if (await PendingBookingStorage.hasPendingBooking()) {
+        // Ripristina la prenotazione e vai al riepilogo
+        final restored = await ref
+            .read(bookingFlowProvider.notifier)
+            .restorePendingBooking();
+        if (restored && mounted) {
+          debugPrint(
+            'LOGIN pending booking restored - going to booking (summary step)',
+          );
+          context.go('/$slug/booking');
+          return;
+        }
+      }
+
+      // Nessuna prenotazione in sospeso - vai al booking normale
+      if (mounted) {
+        context.go('/$slug/booking');
+      }
     }
   }
 
@@ -71,7 +137,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            final slug = ref.read(routeSlugProvider);
+            context.go('/$slug/booking');
+          },
         ),
         title: Text(l10n.authLoginTitle),
       ),
@@ -151,9 +220,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       if (value == null || value.isEmpty) {
                         return l10n.authRequiredField;
                       }
-                      if (value.length < 6) {
-                        return l10n.authInvalidPassword;
-                      }
+                      // Nel login non validiamo la lunghezza minima,
+                      // sarà l'API a rispondere con credenziali non valide
                       return null;
                     },
                   ),
@@ -220,7 +288,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       TextButton(
                         onPressed: () {
                           final slug = ref.read(routeSlugProvider);
-                          context.go('/$slug/register');
+                          final email = _emailController.text.trim();
+                          if (email.isNotEmpty) {
+                            context.go(
+                              '/$slug/register?email=${Uri.encodeComponent(email)}',
+                            );
+                          } else {
+                            context.go('/$slug/register');
+                          }
                         },
                         child: Text(l10n.actionRegister),
                       ),
@@ -238,11 +313,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void _showResetPasswordDialog(BuildContext context, WidgetRef ref) {
     final emailController = TextEditingController();
     final l10n = context.l10n;
-    final businessId = ref.read(currentBusinessIdProvider);
+    final parentContext = context;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n.authResetPasswordTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -262,7 +337,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(l10n.actionCancel),
           ),
           FilledButton(
@@ -271,36 +346,63 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               if (email.isEmpty) return;
 
               // Chiudi il dialog prima di fare la chiamata
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
+
+              // Ottieni businessId - se non disponibile, prova ad aspettare
+              var businessId = ref.read(currentBusinessIdProvider);
+
+              // Se businessId è null, attendi il caricamento del business
+              if (businessId == null) {
+                final businessAsync = await ref.read(
+                  currentBusinessProvider.future,
+                );
+                businessId = businessAsync?.id;
+              }
 
               // Verifica businessId
               if (businessId == null) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(l10n.authResetPasswordError),
-                      backgroundColor: Colors.red,
-                    ),
+                if (parentContext.mounted) {
+                  await FeedbackDialog.showError(
+                    parentContext,
+                    title: l10n.errorTitle,
+                    message: l10n.authResetPasswordError,
                   );
                 }
                 return;
               }
 
-              final success = await ref
-                  .read(authProvider.notifier)
-                  .resetPassword(businessId: businessId, email: email);
+              try {
+                await ref
+                    .read(authProvider.notifier)
+                    .resetPassword(businessId: businessId, email: email);
 
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success
-                          ? l10n.authResetPasswordSuccess
-                          : l10n.authResetPasswordError,
-                    ),
-                    backgroundColor: success ? Colors.green : Colors.red,
-                  ),
-                );
+                if (parentContext.mounted) {
+                  await FeedbackDialog.showSuccess(
+                    parentContext,
+                    title: l10n.authResetPasswordTitle,
+                    message: l10n.authResetPasswordSuccess,
+                  );
+                }
+              } on ApiException catch (e) {
+                if (parentContext.mounted) {
+                  // Messaggio specifico se email non trovata
+                  final message = e.code == 'email_not_found'
+                      ? l10n.authResetPasswordEmailNotFound
+                      : l10n.authResetPasswordError;
+                  await FeedbackDialog.showError(
+                    parentContext,
+                    title: l10n.errorTitle,
+                    message: message,
+                  );
+                }
+              } catch (e) {
+                if (parentContext.mounted) {
+                  await FeedbackDialog.showError(
+                    parentContext,
+                    title: l10n.errorTitle,
+                    message: l10n.authResetPasswordError,
+                  );
+                }
               }
             },
             child: Text(l10n.authResetPasswordSend),

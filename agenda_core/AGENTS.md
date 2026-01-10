@@ -220,7 +220,14 @@ Deploy Produzione (28/12/2025):
 - Gestionale: https://gestionale.romeolab.it
 - Hosting: SiteGround condiviso
 - CORS: `CORS_ALLOWED_ORIGINS=https://prenota.romeolab.it,https://gestionale.romeolab.it,http://localhost:8080`
-- SSH: porta 18765, chiave ed25519
+
+**SSH Accesso Configurato (10/01/2026):**
+- Host alias: `siteground`
+- HostName: `ssh.romeolab.it`
+- User: `u1251-kkefwq4fumer`
+- Port: `18765`
+- IdentityFile: `~/.ssh/siteground_ed25519`
+- Configurazione in `~/.ssh/config`
 
 ⚠️ DEPLOY agenda_core — SOLO QUESTE CARTELLE:
 - `public_html/` → entry point (index.php, .htaccess)
@@ -469,6 +476,11 @@ Questo impatta filtri agenda, sezione team e dialog staff.
 - **MAI** inserire, modificare o eliminare dati nel database senza richiesta esplicita dell'utente
 - Le operazioni di seed/migration vanno eseguite solo se l'utente lo richiede
 - In caso di dubbio, chiedere conferma prima di modificare dati in produzione
+
+⚠️ REGOLA DEPLOY AUTOMATICO:
+- **SEMPRE** eseguire deploy su SiteGround dopo ogni modifica ai file PHP di agenda_core
+- Usare i comandi rsync documentati in DEPLOY.md sezione 12
+- Non attendere richiesta esplicita: il deploy è parte integrante della modifica
 
 ⚠️ REGOLA CRITICA DEPLOY:
 - **MAI** deployare l'intero progetto con un singolo rsync

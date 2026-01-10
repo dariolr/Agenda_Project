@@ -3,6 +3,16 @@ import 'package:dio/dio.dart';
 import 'api_config.dart';
 import 'token_storage.dart';
 
+/// Eccezione per token scaduto (401 non recuperabile)
+/// Usata quando il refresh token fallisce
+class TokenExpiredException implements Exception {
+  final String message;
+  const TokenExpiredException([this.message = 'Session expired']);
+
+  @override
+  String toString() => 'TokenExpiredException: $message';
+}
+
 /// Eccezione API custom
 class ApiException implements Exception {
   final String code;
@@ -386,14 +396,17 @@ class ApiClient {
     required String startTime,
     int? staffId,
     String? notes,
+    List<Map<String, dynamic>>? items,
   }) async {
-    final data = <String, dynamic>{
-      'location_id': locationId,
-      'service_ids': serviceIds,
-      'start_time': startTime,
-    };
-    if (staffId != null) {
-      data['staff_id'] = staffId;
+    final data = <String, dynamic>{'location_id': locationId};
+    if (items != null) {
+      data['items'] = items;
+    } else {
+      data['service_ids'] = serviceIds;
+      data['start_time'] = startTime;
+      if (staffId != null) {
+        data['staff_id'] = staffId;
+      }
     }
     if (notes != null && notes.isNotEmpty) {
       data['notes'] = notes;
