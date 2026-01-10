@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/l10n/l10_extension.dart';
+import '../features/auth/domain/auth_state.dart';
 import '../features/auth/presentation/change_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/profile_screen.dart';
@@ -28,11 +29,22 @@ final routerProvider = Provider<GoRouter>((ref) {
   // NOTA: usa ref.read per evitare rebuild del router quando auth cambia
   // Il redirect legge sempre lo stato auth corrente senza causare loop
 
+  // Listenable che triggera refresh del router quando auth cambia
+  final authRefreshListenable = _AuthRefreshNotifier(ref);
+
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: authRefreshListenable,
     redirect: (context, state) {
       // Legge auth con ref.read (non ref.watch) per evitare loop
-      final isAuthenticated = ref.read(authProvider).isAuthenticated;
+      final authState = ref.read(authProvider);
+      final isAuthenticated = authState.isAuthenticated;
+
+      // Se auth è ancora in loading/initial, non fare redirect auth
+      // Il refreshListenable trigghererà un nuovo check quando l'auth è pronto
+      final authReady =
+          authState.status != AuthStatus.initial &&
+          authState.status != AuthStatus.loading;
 
       // Filtra segmenti vuoti (trailing slash produce ['slug', ''])
       final pathSegments = state.uri.pathSegments
@@ -73,12 +85,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/$slug/booking$query';
       }
 
-      // Auth redirect logic per route con slug
-      if (slug != null) {
+      // Auth redirect logic per route con slug (solo se auth è ready)
+      if (slug != null && authReady) {
         final subPath = pathSegments.length > 1 ? pathSegments[1] : '';
 
         // Route protette che richiedono autenticazione
-        const protectedRoutes = {'my-bookings', 'profile', 'change-password'};
+        // booking incluso: l'utente deve essere loggato per prenotare
+        const protectedRoutes = {
+          'booking',
+          'my-bookings',
+          'profile',
+          'change-password',
+        };
 
         // Se non autenticato e cerca di accedere a route protetta, redirect a login
         if (!isAuthenticated && protectedRoutes.contains(subPath)) {
@@ -138,7 +156,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/:slug/register',
         name: 'business-register',
-        builder: (context, state) => const RegisterScreen(),
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'];
+          return RegisterScreen(initialEmail: email);
+        },
       ),
 
       /// Le mie prenotazioni (richiede auth)
@@ -160,6 +181,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/:slug/profile',
         name: 'business-profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+
+      /// Reset password con business context (link da email)
+      GoRoute(
+        path: '/:slug/reset-password/:token',
+        name: 'business-reset-password',
+        builder: (context, state) {
+          final token = state.pathParameters['token'] ?? '';
+          return ResetPasswordScreen(token: token);
+        },
       ),
 
       /// Catch-all per /:slug → redirect a /:slug/booking
@@ -261,4 +292,23 @@ class _ErrorScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Listenable che notifica il router quando lo stato auth cambia
+/// Permette di ri-valutare i redirect dopo il restore della sessione
+class _AuthRefreshNotifier extends ChangeNotifier {
+  _AuthRefreshNotifier(this._ref) {
+    // Ascolta i cambiamenti dello stato auth
+    _ref.listen(authProvider, (previous, next) {
+      // Notifica solo quando lo status cambia (non per ogni cambio di state)
+      if (previous?.status != next.status) {
+        debugPrint(
+          '🔀 ROUTER: auth status changed ${previous?.status} → ${next.status}',
+        );
+        notifyListeners();
+      }
+    });
+  }
+
+  final Ref _ref;
 }

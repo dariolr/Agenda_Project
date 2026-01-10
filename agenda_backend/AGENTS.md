@@ -140,6 +140,26 @@ final formFactor = ref.watch(formFactorProvider);
 - **Desktop**: dialog/popup
 - **Mobile**: bottom sheet (`AppBottomSheet`)
 
+### Feedback utente (10/01/2026)
+**NESSUNA SnackBar** in tutta l'applicazione. Usare sempre `FeedbackDialog`:
+```dart
+import '/core/widgets/feedback_dialog.dart';
+
+// Successo
+await FeedbackDialog.showSuccess(
+  context,
+  title: 'Operazione completata',
+  message: 'Dettaglio del successo',
+);
+
+// Errore
+await FeedbackDialog.showError(
+  context,
+  title: context.l10n.errorTitle,
+  message: 'Dettaglio dell\'errore',
+);
+```
+
 ### Localizzazione
 ```dart
 import '/core/l10n/l10_extension.dart';
@@ -167,6 +187,7 @@ Aggiungere chiavi in `lib/core/l10n/intl_it.arb` e `intl_en.arb`.
 
 ## 🚫 L'agente NON deve
 
+- **Eseguire deploy** (build + rsync) dei progetti Flutter senza richiesta esplicita dell'utente
 - Aggiungere dipendenze non richieste
 - Modificare indici route o `router.dart` senza richiesta esplicita
 - Produrre snippet parziali invece di file completi

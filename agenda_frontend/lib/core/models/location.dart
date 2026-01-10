@@ -18,6 +18,7 @@ class Location {
   final String timezone;
   final bool allowCustomerChooseStaff;
   final bool isDefault;
+  final int maxBookingAdvanceDays;
 
   const Location({
     required this.id,
@@ -35,6 +36,7 @@ class Location {
     this.timezone = 'Europe/Rome',
     this.allowCustomerChooseStaff = false,
     this.isDefault = false,
+    this.maxBookingAdvanceDays = 90,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) {
@@ -59,6 +61,7 @@ class Location {
       allowCustomerChooseStaff:
           json['allow_customer_choose_staff'] as bool? ?? false,
       isDefault: json['is_default'] as bool? ?? false,
+      maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
     );
   }
 
@@ -79,6 +82,7 @@ class Location {
       'timezone': timezone,
       'allow_customer_choose_staff': allowCustomerChooseStaff,
       'is_default': isDefault,
+      'max_booking_advance_days': maxBookingAdvanceDays,
     };
   }
 

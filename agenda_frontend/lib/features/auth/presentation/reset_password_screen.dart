@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
+import '../../../core/widgets/feedback_dialog.dart';
 import '../providers/auth_provider.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
@@ -44,22 +46,27 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.authResetPasswordConfirmSuccess),
-            backgroundColor: Colors.green,
-          ),
+        await FeedbackDialog.showSuccess(
+          context,
+          title: context.l10n.authResetPasswordConfirmTitle,
+          message: context.l10n.authResetPasswordConfirmSuccess,
         );
-        // Redirect a landing - l'utente dovrà navigare al business per fare login
-        context.go('/');
+        // Redirect al login del business
+        if (mounted) {
+          final slug = ref.read(routeSlugProvider);
+          if (slug != null) {
+            context.go('/$slug/login');
+          } else {
+            context.go('/');
+          }
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.authResetPasswordConfirmError),
-            backgroundColor: Colors.red,
-          ),
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.authResetPasswordConfirmError,
         );
       }
     } finally {
@@ -76,10 +83,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-        ),
+        automaticallyImplyLeading: false,
         title: Text(l10n.authResetPasswordConfirmTitle),
       ),
       body: SafeArea(

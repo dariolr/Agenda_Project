@@ -7,6 +7,7 @@ import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/preferences_service.dart';
+import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/agenda_scroll_provider.dart';
 import '../../agenda/providers/appointment_providers.dart';
 import '../../agenda/providers/bookings_provider.dart';
@@ -265,29 +266,26 @@ class BusinessListScreen extends ConsumerWidget {
         await repository.resendAdminInvite(business.id);
 
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Invito inviato a ${business.adminEmail}'),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-            ),
+          await FeedbackDialog.showSuccess(
+            context,
+            title: 'Invito inviato',
+            message: 'Invito inviato a ${business.adminEmail}',
           );
         }
       } on ApiException catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Errore: ${e.message}'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+          await FeedbackDialog.showError(
+            context,
+            title: context.l10n.errorTitle,
+            message: e.message,
           );
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Errore: $e'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+          await FeedbackDialog.showError(
+            context,
+            title: context.l10n.errorTitle,
+            message: e.toString(),
           );
         }
       }

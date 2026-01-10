@@ -161,6 +161,10 @@ final class CustomerAuthController
             return Response::error($e->getMessage(), $e->getErrorCode(), $e->getHttpStatus());
         } catch (ValidationException $e) {
             return Response::error($e->getMessage(), 'validation_error', 400);
+        } catch (\Exception $e) {
+            // Log the real error for debugging
+            error_log('Customer registration error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            return Response::error('Registration failed: ' . $e->getMessage(), 'internal_error', 500);
         }
     }
 
@@ -288,11 +292,19 @@ final class CustomerAuthController
             return Response::error('Valid email is required', 'validation_error', 400);
         }
 
-        // Always return success to prevent email enumeration
-        $this->requestPasswordReset->execute($email, $businessId);
+        // Execute reset request - returns false if email not found
+        $emailFound = $this->requestPasswordReset->execute($email, $businessId);
+
+        if (!$emailFound) {
+            return Response::error(
+                'Email not found in our system',
+                'email_not_found',
+                404
+            );
+        }
 
         return Response::success([
-            'message' => 'If the email exists in our system, you will receive a password reset link.',
+            'message' => 'Password reset email sent successfully.',
         ], 200);
     }
 

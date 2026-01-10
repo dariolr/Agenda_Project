@@ -18,10 +18,11 @@ declare(strict_types=1);
 // Autoload e bootstrap
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use AgendaCore\Infrastructure\Notification\EmailService;
-use AgendaCore\Infrastructure\Notification\EmailTemplateRenderer;
-use AgendaCore\Infrastructure\Persistence\NotificationRepository;
-use AgendaCore\Infrastructure\Persistence\DatabaseConnection;
+use Agenda\Infrastructure\Notifications\EmailService;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
+use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Database\Connection;
+use Dotenv\Dotenv;
 
 // Parse CLI options
 $options = getopt('', ['batch::', 'verbose', 'dry-run', 'help']);
@@ -47,22 +48,11 @@ $verbose = isset($options['verbose']);
 $dryRun = isset($options['dry-run']);
 
 // Load environment
-$envFile = __DIR__ . '/../.env';
-if (file_exists($envFile)) {
-    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (str_starts_with(trim($line), '#')) {
-            continue;
-        }
-        if (str_contains($line, '=')) {
-            [$key, $value] = explode('=', $line, 2);
-            $_ENV[trim($key)] = trim($value);
-        }
-    }
-}
+$dotenv = Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv->load();
 
 // Check required config
-$requiredEnv = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS'];
+$requiredEnv = ['DB_HOST', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD'];
 foreach ($requiredEnv as $key) {
     if (empty($_ENV[$key])) {
         fwrite(STDERR, "Missing required environment variable: {$key}\n");
@@ -72,7 +62,7 @@ foreach ($requiredEnv as $key) {
 
 // Initialize services
 try {
-    $db = DatabaseConnection::getInstance();
+    $db = new Connection();
     $notificationRepo = new NotificationRepository($db);
     $emailService = EmailService::create();
 } catch (\Throwable $e) {
@@ -82,7 +72,7 @@ try {
 
 if ($verbose) {
     echo "Notification Worker started\n";
-    echo "Provider: " . $emailService->getProvider()->getName() . "\n";
+    echo "Provider: " . $emailService->getName() . "\n";
     echo "Batch size: {$batchSize}\n";
     echo "Dry run: " . ($dryRun ? 'yes' : 'no') . "\n";
     echo "---\n";
@@ -109,10 +99,11 @@ $failed = 0;
 foreach ($notifications as $notification) {
     $id = (int) $notification['id'];
     $type = $notification['type'];
-    $recipient = $notification['recipient'];
+    $channel = $notification['channel'];  // booking_confirmed, booking_reminder, etc.
+    $recipient = $notification['recipient_email'];
     
     if ($verbose) {
-        echo "[{$id}] {$type} -> {$recipient}... ";
+        echo "[{$id}] {$channel} -> {$recipient}... ";
     }
     
     // Mark as processing
@@ -125,8 +116,8 @@ foreach ($notifications as $notification) {
             throw new \RuntimeException('Invalid payload JSON');
         }
         
-        // Render email template
-        $templateData = renderTemplate($type, $payload);
+        // Render email template based on channel (not type)
+        $templateData = renderTemplate($channel, $payload);
         
         if ($dryRun) {
             if ($verbose) {
@@ -202,32 +193,17 @@ exit($sent === 0 && $failed > 0 ? 1 : 0);
 /**
  * Render email template based on notification type
  */
-function renderTemplate(string $type, array $payload): array
+function renderTemplate(string $channel, array $payload): array
 {
-    $businessName = $payload['business_name'] ?? 'Agenda';
-    $clientName = $payload['client_name'] ?? '';
-    $serviceName = $payload['service_name'] ?? '';
-    $staffName = $payload['staff_name'] ?? '';
-    $dateTime = $payload['date_time'] ?? '';
-    $locationName = $payload['location_name'] ?? '';
-    $locationAddress = $payload['location_address'] ?? '';
-    $bookingId = $payload['booking_id'] ?? '';
-    $notes = $payload['notes'] ?? '';
+    // Extract variables from payload (may be nested under 'variables')
+    $variables = $payload['variables'] ?? $payload;
     
-    $variables = [
-        'business_name' => $businessName,
-        'client_name' => $clientName,
-        'service_name' => $serviceName,
-        'staff_name' => $staffName,
-        'date_time' => $dateTime,
-        'location_name' => $locationName,
-        'location_address' => $locationAddress,
-        'booking_id' => $bookingId,
-        'notes' => $notes,
-        'year' => date('Y'),
-    ];
+    // Add year if not present
+    if (!isset($variables['year'])) {
+        $variables['year'] = date('Y');
+    }
     
-    switch ($type) {
+    switch ($channel) {
         case 'booking_confirmed':
             return EmailTemplateRenderer::bookingConfirmed($variables);
             
@@ -238,16 +214,15 @@ function renderTemplate(string $type, array $payload): array
             return EmailTemplateRenderer::bookingReminder($variables);
             
         case 'booking_rescheduled':
-            $variables['old_date_time'] = $payload['old_date_time'] ?? '';
-            $variables['new_date_time'] = $payload['new_date_time'] ?? $dateTime;
             return EmailTemplateRenderer::bookingRescheduled($variables);
             
         default:
             // Generic email with custom subject/body from payload
+            $businessName = $variables['business_name'] ?? 'Agenda';
             return [
-                'subject' => $payload['subject'] ?? 'Notifica da ' . $businessName,
-                'html' => $payload['html_body'] ?? $payload['body'] ?? '',
-                'text' => $payload['text_body'] ?? strip_tags($payload['body'] ?? ''),
+                'subject' => $variables['subject'] ?? 'Notifica da ' . $businessName,
+                'html' => $variables['html_body'] ?? $variables['body'] ?? '',
+                'text' => $variables['text_body'] ?? strip_tags($variables['body'] ?? ''),
             ];
     }
 }

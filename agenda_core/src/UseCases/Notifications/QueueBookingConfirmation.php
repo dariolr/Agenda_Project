@@ -23,6 +23,7 @@ final class QueueBookingConfirmation
      * Queue a booking confirmation email.
      * 
      * @param array $booking Booking data with all required fields
+     *                       Supports both 'user_id' (operators) and 'client_id' (customers)
      */
     public function execute(array $booking): int
     {
@@ -37,9 +38,24 @@ final class QueueBookingConfirmation
             return 0;
         }
 
-        // Get user email
-        $userEmail = $this->getUserEmail((int) $booking['user_id']);
-        if (!$userEmail) {
+        // Notifications go ONLY to clients, never to operators
+        if (!isset($booking['client_id']) || empty($booking['client_id'])) {
+            return 0; // No client = no notification
+        }
+        
+        $recipientType = 'client';
+        $recipientId = (int) $booking['client_id'];
+        $recipientEmail = [
+            'email' => $booking['client_email'] ?? null,
+            'name' => $booking['client_name'] ?? 'Cliente',
+        ];
+        
+        // Fallback: if email not provided, query clients table
+        if (empty($recipientEmail['email'])) {
+            $recipientEmail = $this->getClientEmail($recipientId);
+        }
+        
+        if (!$recipientEmail || empty($recipientEmail['email'])) {
             return 0;
         }
 
@@ -53,10 +69,10 @@ final class QueueBookingConfirmation
         return $this->notificationRepo->queue([
             'type' => 'email',
             'channel' => 'booking_confirmed',
-            'recipient_type' => 'user',
-            'recipient_id' => $booking['user_id'],
-            'recipient_email' => $userEmail['email'],
-            'recipient_name' => $userEmail['name'],
+            'recipient_type' => $recipientType,
+            'recipient_id' => $recipientId,
+            'recipient_email' => $recipientEmail['email'],
+            'recipient_name' => $recipientEmail['name'],
             'subject' => EmailTemplateRenderer::render($template['subject'], $variables),
             'payload' => [
                 'template' => 'booking_confirmed',
@@ -68,13 +84,13 @@ final class QueueBookingConfirmation
         ]);
     }
 
-    private function getUserEmail(int $userId): ?array
+    private function getClientEmail(int $clientId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT email, CONCAT(first_name, " ", last_name) as name 
-             FROM users WHERE id = :id'
+             FROM clients WHERE id = :id'
         );
-        $stmt->execute(['id' => $userId]);
+        $stmt->execute(['id' => $clientId]);
         return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
     }
 

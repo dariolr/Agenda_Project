@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/booking_item.dart';
 import '/core/network/network_providers.dart';
+import '/core/widgets/feedback_dialog.dart';
 import '../../providers/my_bookings_provider.dart';
 
 /// Dialog per riprogrammare una prenotazione esistente
@@ -138,11 +139,10 @@ class _RescheduleBookingDialogState
         Navigator.of(context).pop(true);
       } else {
         final bookingsState = ref.read(myBookingsProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(bookingsState.error ?? context.l10n.errorGeneric),
-            backgroundColor: Colors.red,
-          ),
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: bookingsState.error ?? context.l10n.errorGeneric,
         );
       }
     }

@@ -17,58 +17,70 @@ class ServicesStep extends ConsumerWidget {
     final servicesDataAsync = ref.watch(servicesDataProvider);
     final bookingState = ref.watch(bookingFlowProvider);
     final selectedServices = bookingState.request.services;
+    final isLoading = servicesDataAsync.isLoading;
 
-    return Column(
+    return Stack(
       children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.servicesTitle,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+        Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.servicesTitle,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.servicesSubtitle,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.servicesSubtitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
-                ),
+            ),
+
+            // Lista servizi per categoria (singola chiamata API)
+            Expanded(
+              child: servicesDataAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (e, _) => _buildErrorWidget(context, ref, e),
+                data: (data) {
+                  if (data.isEmpty) {
+                    return _EmptyView(
+                      title: l10n.servicesEmpty,
+                      subtitle: l10n.servicesEmptySubtitle,
+                    );
+                  }
+
+                  return _buildServicesList(
+                    context,
+                    ref,
+                    data.categories,
+                    data.bookableServices,
+                    selectedServices,
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+
+            // Footer con selezione e bottone
+            _buildFooter(context, ref, selectedServices),
+          ],
         ),
-
-        // Lista servizi per categoria (singola chiamata API)
-        Expanded(
-          child: servicesDataAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => _buildErrorWidget(context, ref, e),
-            data: (data) {
-              if (data.isEmpty) {
-                return _EmptyView(
-                  title: l10n.servicesEmpty,
-                  subtitle: l10n.servicesEmptySubtitle,
-                );
-              }
-
-              return _buildServicesList(
-                context,
-                ref,
-                data.categories,
-                data.bookableServices,
-                selectedServices,
-              );
-            },
+        if (isLoading)
+          Positioned.fill(
+            child: ColoredBox(
+              color: theme.colorScheme.surface.withOpacity(0.6),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
           ),
-        ),
-
-        // Footer con selezione e bottone
-        _buildFooter(context, ref, selectedServices),
       ],
     );
   }

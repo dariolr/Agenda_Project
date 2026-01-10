@@ -113,7 +113,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         title: Text(l10n.profileTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            final slug = ref.read(routeSlugProvider);
+            context.go('/$slug/my-bookings');
+          },
         ),
         actions: [
           if (!_isEditing)

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/providers/route_slug_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/locations_provider.dart';
 
 class ConfirmationStep extends ConsumerWidget {
   const ConfirmationStep({super.key});
@@ -84,19 +85,16 @@ class ConfirmationStep extends ConsumerWidget {
             // Bottoni azioni
             ElevatedButton(
               onPressed: () {
-                ref.read(bookingFlowProvider.notifier).reset();
                 final slug = ref.read(routeSlugProvider);
-                context.go('/$slug/booking');
+                final locationId = ref.read(effectiveLocationProvider)?.id;
+                ref.read(bookingFlowProvider.notifier).reset();
+                if (locationId != null) {
+                  context.go('/$slug/booking?location=$locationId');
+                } else {
+                  context.go('/$slug/booking');
+                }
               },
               child: Text(l10n.confirmationNewBooking),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () {
-                ref.read(bookingFlowProvider.notifier).reset();
-                context.go('/');
-              },
-              child: Text(l10n.confirmationGoHome),
             ),
           ],
         ),

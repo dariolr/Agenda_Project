@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
@@ -57,17 +58,22 @@ class AuthNotifier extends Notifier<AuthState> {
   }) async {
     state = AuthState.loading();
     try {
+      debugPrint('AUTH PROVIDER: calling repository.login');
       final user = await _repository.login(
         businessId: businessId,
         email: email,
         password: password,
       );
+      debugPrint('AUTH PROVIDER: login success, user=${user.email}');
       state = AuthState.authenticated(user);
       return true;
     } on ApiException catch (e) {
+      debugPrint('AUTH PROVIDER: ApiException: ${e.code} - ${e.message}');
       state = AuthState.error(e.message);
       return false;
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('AUTH PROVIDER: generic error: $e');
+      debugPrint('AUTH PROVIDER: stack trace: $st');
       state = AuthState.error(e.toString());
       return false;
     }
@@ -93,6 +99,9 @@ class AuthNotifier extends Notifier<AuthState> {
   }) async {
     state = AuthState.loading();
     try {
+      debugPrint(
+        'Register: businessId=$businessId, email=$email, firstName=$firstName, lastName=$lastName',
+      );
       final user = await _repository.register(
         businessId: businessId,
         email: email,
@@ -104,28 +113,24 @@ class AuthNotifier extends Notifier<AuthState> {
       state = AuthState.authenticated(user);
       return true;
     } on ApiException catch (e) {
+      debugPrint('Register ApiException: ${e.message}');
       state = AuthState.error(e.message);
       return false;
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('Register error: $e');
+      debugPrint('Stack trace: $st');
       state = AuthState.error(e.toString());
       return false;
     }
   }
 
   /// Reset password (invia email con link)
-  Future<bool> resetPassword({
+  /// Lancia ApiException se l'email non esiste (code: email_not_found)
+  Future<void> resetPassword({
     required int businessId,
     required String email,
   }) async {
-    state = AuthState.loading();
-    try {
-      await _repository.resetPassword(businessId: businessId, email: email);
-      state = AuthState.unauthenticated();
-      return true;
-    } catch (e) {
-      state = AuthState.error(e.toString());
-      return false;
-    }
+    await _repository.resetPassword(businessId: businessId, email: email);
   }
 
   /// Conferma reset password con token

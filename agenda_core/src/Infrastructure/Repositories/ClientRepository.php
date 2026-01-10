@@ -114,6 +114,25 @@ final class ClientRepository
     }
 
     /**
+     * Find client by email in a specific business.
+     * Used for customer registration to check if email already exists.
+     */
+    public function findByEmail(string $email, int $businessId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
+                    password_hash, notes, is_archived, created_at, updated_at
+             FROM clients
+             WHERE business_id = ? AND email = ? AND is_archived = 0
+             LIMIT 1'
+        );
+        $stmt->execute([$businessId, $email]);
+        $result = $stmt->fetch();
+
+        return $result ?: null;
+    }
+
+    /**
      * Find client without user_id by email or phone.
      * Priority: email match first, then phone.
      */

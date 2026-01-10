@@ -21,6 +21,7 @@ final class QueueBookingReminder
 
     /**
      * Queue reminder for a specific booking.
+     * Supports both 'user_id' (operators) and 'client_id' (customers).
      */
     public function execute(array $booking, int $hoursBeforeDefault = 24): int
     {
@@ -37,9 +38,34 @@ final class QueueBookingReminder
         
         $hoursBefore = $settings['email_reminder_hours'] ?? $hoursBeforeDefault;
 
-        // Get user email
-        $userEmail = $this->getUserEmail((int) $booking['user_id']);
-        if (!$userEmail) {
+        // Get recipient email - support both client_id (customers) and user_id (operators)
+        $recipientType = 'user';
+        $recipientId = null;
+        $recipientEmail = null;
+        $clientName = null;
+        
+        // Notifications go ONLY to clients, never to operators
+        if (!isset($booking['client_id']) || empty($booking['client_id'])) {
+            return 0; // No client = no notification
+        }
+        
+        $recipientType = 'client';
+        $recipientId = (int) $booking['client_id'];
+        $clientName = $booking['client_name'] ?? 'Cliente';
+        $recipientEmail = [
+            'email' => $booking['client_email'] ?? null,
+            'name' => $clientName,
+        ];
+        
+        // Fallback: if email not provided, query clients table
+        if (empty($recipientEmail['email'])) {
+            $recipientEmail = $this->getClientEmail($recipientId);
+            if ($recipientEmail) {
+                $clientName = $recipientEmail['name'];
+            }
+        }
+        
+        if (!$recipientEmail || empty($recipientEmail['email'])) {
             return 0;
         }
 
@@ -54,7 +80,7 @@ final class QueueBookingReminder
 
         // Prepare variables
         $variables = [
-            'client_name' => $userEmail['name'] ?? 'Cliente',
+            'client_name' => $clientName ?? 'Cliente',
             'business_name' => $booking['business_name'] ?? '',
             'business_email' => $booking['business_email'] ?? '',
             'location_name' => $booking['location_name'] ?? '',
@@ -74,10 +100,10 @@ final class QueueBookingReminder
         return $this->notificationRepo->queue([
             'type' => 'email',
             'channel' => 'booking_reminder',
-            'recipient_type' => 'user',
-            'recipient_id' => $booking['user_id'],
-            'recipient_email' => $userEmail['email'],
-            'recipient_name' => $userEmail['name'],
+            'recipient_type' => $recipientType,
+            'recipient_id' => $recipientId,
+            'recipient_email' => $recipientEmail['email'],
+            'recipient_name' => $recipientEmail['name'],
             'subject' => EmailTemplateRenderer::render($template['subject'], $variables),
             'payload' => [
                 'template' => 'booking_reminder',
@@ -140,13 +166,13 @@ final class QueueBookingReminder
         return $queued;
     }
 
-    private function getUserEmail(int $userId): ?array
+    private function getClientEmail(int $clientId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT email, CONCAT(first_name, " ", last_name) as name 
-             FROM users WHERE id = :id'
+             FROM clients WHERE id = :id'
         );
-        $stmt->execute(['id' => $userId]);
+        $stmt->execute(['id' => $clientId]);
         return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
     }
 }

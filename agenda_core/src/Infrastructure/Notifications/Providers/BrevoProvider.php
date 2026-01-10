@@ -111,11 +111,10 @@ final class BrevoProvider implements EmailProviderInterface
         }
 
         if ($httpCode >= 200 && $httpCode < 300) {
-            error_log("[Brevo] SUCCESS: email sent to {$to} (HTTP {$httpCode})");
             return true;
         }
 
-        error_log("[Brevo] API error (HTTP {$httpCode}): {$response} (to: {$to})");
+        error_log("[Brevo] HTTP {$httpCode}: {$response} (to: {$to})");
         return false;
     }
 

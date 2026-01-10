@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
+import '../../../core/widgets/feedback_dialog.dart';
 import '../providers/auth_provider.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
@@ -47,19 +49,17 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
     if (mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.authChangePasswordSuccess),
-            backgroundColor: Colors.green,
-          ),
+        await FeedbackDialog.showSuccess(
+          context,
+          title: context.l10n.authChangePasswordTitle,
+          message: context.l10n.authChangePasswordSuccess,
         );
-        context.pop();
+        if (mounted) context.pop();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.authChangePasswordError),
-            backgroundColor: Colors.red,
-          ),
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.authChangePasswordError,
         );
       }
     }
@@ -74,7 +74,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            final slug = ref.read(routeSlugProvider);
+            context.go('/$slug/my-bookings');
+          },
         ),
         title: Text(l10n.authChangePasswordTitle),
       ),

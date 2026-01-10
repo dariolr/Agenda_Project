@@ -109,6 +109,26 @@ final formFactor = ref.watch(formFactorProvider);
 - **Desktop**: dialog/popup
 - **Mobile e Tablet**: bottom sheet (`AppBottomSheet`)
 
+### Feedback utente (10/01/2026)
+**NESSUNA SnackBar** in tutta l'applicazione. Usare sempre `FeedbackDialog`:
+```dart
+import '/core/widgets/feedback_dialog.dart';
+
+// Successo
+await FeedbackDialog.showSuccess(
+  context,
+  title: 'Operazione completata',
+  message: 'Dettaglio del successo',
+);
+
+// Errore
+await FeedbackDialog.showError(
+  context,
+  title: context.l10n.errorTitle,
+  message: 'Dettaglio dell\'errore',
+);
+```
+
 ### Localizzazione
 ```dart
 import '/core/l10n/l10_extension.dart';
@@ -120,6 +140,7 @@ Aggiungere chiavi in `lib/core/l10n/intl_it.arb` e `intl_en.arb`.
 - Estetica sobria: **no ripple/splash invasivi**
 - `const` constructor dove possibile
 - Estrarre widget privati da `build()` lunghi
+- **Divider**: usare sempre `PopupMenuDivider()` nei menu popup e `Divider()` per le liste. Non specificare parametri custom se non richiesto esplicitamente.
 
 ---
 
@@ -170,6 +191,7 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
 
 ## 🚫 L'agente NON deve
 
+- **Eseguire deploy** (build + rsync) dei progetti Flutter senza richiesta esplicita dell'utente
 - Aggiungere dipendenze non richieste
 - Modificare route o `router.dart` senza richiesta esplicita
 - Produrre snippet parziali invece di file completi
@@ -396,6 +418,59 @@ Gli utenti autenticati possono modificare il proprio profilo dalla voce "Profilo
 | Auth provider | `lib/features/auth/providers/auth_provider.dart` |
 | API client | `lib/core/network/api_client.dart` |
 | API config | `lib/core/network/api_config.dart` |
+
+---
+
+## 👥 Selezione Operatore per Servizio (10/01/2026)
+
+Quando l'utente seleziona più servizi, può scegliere un operatore diverso per ogni servizio.
+
+### Comportamento
+
+| Scenario | Comportamento |
+|----------|---------------|
+| 1 servizio | Selezione operatore classica (singolo staff o "Qualsiasi operatore") |
+| N servizi | Per ogni servizio si può scegliere un operatore diverso |
+| "Qualsiasi operatore" | Se selezionato, vale per TUTTI i servizi |
+
+### Modello Dati
+
+`BookingRequest` contiene:
+- `selectedStaff` — staff singolo (legacy, usato per 1 servizio)
+- `selectedStaffByService` — `Map<int, Staff?>` mappa serviceId → Staff
+- `anyOperatorSelected` — `bool` se true, "qualsiasi operatore" per tutti
+
+### Getter utili in BookingRequest
+
+| Getter | Descrizione |
+|--------|-------------|
+| `hasStaffSelectionForAllServices` | True se ogni servizio ha uno staff assegnato (o anyOperator) |
+| `singleStaffId` | Ritorna l'ID staff se tutti i servizi hanno lo stesso operatore, altrimenti `null` |
+| `staffForService(serviceId)` | Ritorna lo Staff assegnato a un servizio specifico |
+| `allServicesAnyOperatorSelected` | True se è stato scelto "Qualsiasi operatore" |
+
+### Calcolo Disponibilità con Staff Diversi
+
+Quando ogni servizio ha un operatore diverso, `availableSlotsProvider` calcola gli slot disponibili in modo che:
+1. Per ogni servizio, recupera gli slot dello staff assegnato
+2. Gli slot sono "concatenabili": il primo servizio inizia, poi il secondo, ecc.
+3. Solo gli orari che permettono la sequenza completa sono mostrati
+
+### UI (StaffStep)
+
+Se l'utente ha selezionato più servizi, lo step staff mostra una lista con:
+- Nome del servizio
+- Dropdown per selezionare l'operatore (o "Qualsiasi")
+- Opzione globale "Qualsiasi operatore" che si applica a tutti
+
+### File di riferimento
+
+| Concetto | File |
+|----------|------|
+| Booking request model | `lib/core/models/booking_request.dart` |
+| Staff step UI | `lib/features/booking/presentation/screens/staff_step.dart` |
+| Booking provider | `lib/features/booking/providers/booking_provider.dart` |
+| Available slots | `availableSlotsProvider` in booking_provider.dart |
 
 ---
 

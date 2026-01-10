@@ -29,100 +29,116 @@ class LocationStep extends ConsumerWidget {
     final theme = Theme.of(context);
     final locationsAsync = ref.watch(locationsProvider);
     final selectedLocation = ref.watch(selectedLocationProvider);
+    final isLoading = locationsAsync.isLoading;
 
-    return Column(
+    return Stack(
       children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.locationTitle,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.locationSubtitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Lista locations
-        Expanded(
-          child: locationsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(
+        Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(l10n.errorGeneric),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: () =>
-                        ref.read(locationsProvider.notifier).refresh(),
-                    icon: const Icon(Icons.refresh),
-                    label: Text(l10n.actionRetry),
+                  Text(
+                    l10n.locationTitle,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.locationSubtitle,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
                   ),
                 ],
               ),
             ),
-            data: (locations) {
-              if (locations.isEmpty) {
-                return Center(
+
+            // Lista locations
+            Expanded(
+              child: locationsAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (e, _) => Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.location_off,
-                        size: 64,
-                        color: theme.colorScheme.onSurface.withOpacity(0.4),
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        l10n.locationEmpty,
-                        style: theme.textTheme.titleMedium,
+                      Text(l10n.errorGeneric),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () =>
+                            ref.read(locationsProvider.notifier).refresh(),
+                        icon: const Icon(Icons.refresh),
+                        label: Text(l10n.actionRetry),
                       ),
                     ],
                   ),
-                );
-              }
+                ),
+                data: (locations) {
+                  if (locations.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.location_off,
+                            size: 64,
+                            color: theme.colorScheme.onSurface.withOpacity(0.4),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            l10n.locationEmpty,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: locations.length,
-                itemBuilder: (context, index) {
-                  final location = locations[index];
-                  final isSelected = selectedLocation?.id == location.id;
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: locations.length,
+                    itemBuilder: (context, index) {
+                      final location = locations[index];
+                      final isSelected = selectedLocation?.id == location.id;
 
-                  return _LocationCard(
-                    location: location,
-                    isSelected: isSelected,
-                    onTap: () {
-                      ref
-                          .read(selectedLocationProvider.notifier)
-                          .select(location);
-                      // Aggiorna URL con location selezionata per persistenza
-                      _updateUrlWithLocation(context, location.id);
+                      return _LocationCard(
+                        location: location,
+                        isSelected: isSelected,
+                        onTap: () {
+                          ref
+                              .read(selectedLocationProvider.notifier)
+                              .select(location);
+                          // Aggiorna URL con location selezionata per persistenza
+                          _updateUrlWithLocation(context, location.id);
+                        },
+                      );
                     },
                   );
                 },
-              );
-            },
-          ),
-        ),
+              ),
+            ),
 
-        // Footer con bottone
-        _buildFooter(context, ref, selectedLocation),
+            // Footer con bottone
+            _buildFooter(context, ref, selectedLocation),
+          ],
+        ),
+        if (isLoading)
+          Positioned.fill(
+            child: ColoredBox(
+              color: theme.colorScheme.surface.withOpacity(0.6),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          ),
       ],
     );
   }

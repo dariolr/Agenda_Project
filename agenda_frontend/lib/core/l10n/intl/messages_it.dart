@@ -85,6 +85,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Password attuale",
     ),
     "authEmail": MessageLookupByLibrary.simpleMessage("Email"),
+    "authEmailAlreadyRegistered": MessageLookupByLibrary.simpleMessage(
+      "Questa email è già registrata. Prova ad accedere.",
+    ),
     "authFirstName": MessageLookupByLibrary.simpleMessage("Nome"),
     "authForgotPassword": MessageLookupByLibrary.simpleMessage(
       "Password dimenticata?",
@@ -149,6 +152,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "authResetPasswordConfirmTitle": MessageLookupByLibrary.simpleMessage(
       "Reimposta password",
+    ),
+    "authResetPasswordEmailNotFound": MessageLookupByLibrary.simpleMessage(
+      "Email non trovata nel sistema. Verifica l\'indirizzo o registrati.",
     ),
     "authResetPasswordError": MessageLookupByLibrary.simpleMessage(
       "Errore durante l\'invio. Riprova.",
@@ -219,6 +225,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "dateTimeGoToFirst": MessageLookupByLibrary.simpleMessage(
       "Vai alla prima data disponibile",
     ),
+    "dateTimeGoToNext": MessageLookupByLibrary.simpleMessage(
+      "Vai alla prossima data disponibile",
+    ),
     "dateTimeMorning": MessageLookupByLibrary.simpleMessage("Mattina"),
     "dateTimeNoSlots": MessageLookupByLibrary.simpleMessage(
       "Nessun orario disponibile per questa data",
@@ -281,6 +290,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Stiamo lavorando per risolvere il problema. Riprova tra qualche minuto.",
     ),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Errore"),
+    "loadingAvailability": MessageLookupByLibrary.simpleMessage(
+      "Caricamento disponibilità...",
+    ),
     "locationEmpty": MessageLookupByLibrary.simpleMessage(
       "Nessuna sede disponibile",
     ),
