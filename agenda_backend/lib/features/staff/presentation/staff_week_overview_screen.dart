@@ -310,16 +310,12 @@ final weeklyExceptionsLoadKeyProvider =
 final weeklyStaffAvailabilityFromEditorProvider =
     Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
       final staffList = ref.watch(staffForStaffSectionProvider);
-      final asyncByStaff = ref.watch(staffAvailabilityByStaffProvider);
       final layout = ref.watch(layoutConfigProvider);
       final minutesPerSlot = layout.minutesPerSlot;
       final totalSlots = layout.totalSlots;
 
       // Ottieni la data corrente dell'agenda per calcolare la settimana mostrata
       final agendaDate = ref.watch(agendaDateProvider);
-      // ⚠️ RIMOSSO: Il caricamento delle eccezioni causa loop infinito
-      // Le eccezioni vengono caricate on-demand in ExceptionCalendarView
-      // _ensureExceptionsLoadedForWeekWithKey(...)
       final monday = _mondayOfWeek(agendaDate);
 
       List<HourRange> slotsToHourRanges(Set<int> slots) {
@@ -351,20 +347,24 @@ final weeklyStaffAvailabilityFromEditorProvider =
         return ranges;
       }
 
-      final all = asyncByStaff.value ?? const <int, Map<int, Set<int>>>{};
-
       // Build per-staff availability with exceptions applied for each specific date
       final Map<int, Map<int, List<HourRange>>> result = {};
 
       for (final s in staffList) {
+        // Triggera il caricamento automatico dei planning se non già caricati
+        ref.watch(ensureStaffPlanningLoadedProvider(s.id));
+
         final Map<int, List<HourRange>> staffWeek = {};
 
         for (int d = 1; d <= 7; d++) {
           // Calcola la data specifica per questo giorno della settimana
           final specificDate = monday.add(Duration(days: d - 1));
 
-          // 1️⃣ BASE: Template settimanale
-          Set<int> baseSlots = Set<int>.from(all[s.id]?[d] ?? const <int>{});
+          // 1️⃣ BASE: Planning per la data specifica (supporta biweekly e validità temporale)
+          final planningSlots = ref.watch(
+            planningSlotsForDateProvider((staffId: s.id, date: specificDate)),
+          );
+          Set<int> baseSlots = planningSlots ?? <int>{};
 
           // 2️⃣ ECCEZIONI: Applica modifiche per la data specifica
           final exceptions = ref.watch(
@@ -405,14 +405,15 @@ final weeklyStaffAvailabilityFromEditorProvider =
       return result;
     });
 
-/// Provider che fornisce la disponibilità BASE (template settimanale) senza eccezioni.
+/// Provider che fornisce la disponibilità BASE (dal planning) senza eccezioni.
 /// Usato per confrontare con la disponibilità effettiva e identificare i turni modificati.
 final weeklyStaffBaseAvailabilityProvider =
     Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
       final staffList = ref.watch(staffForStaffSectionProvider);
-      final asyncByStaff = ref.watch(staffAvailabilityByStaffProvider);
       final layout = ref.watch(layoutConfigProvider);
       final minutesPerSlot = layout.minutesPerSlot;
+      final agendaDate = ref.watch(agendaDateProvider);
+      final monday = _mondayOfWeek(agendaDate);
 
       List<HourRange> slotsToHourRanges(Set<int> slots) {
         if (slots.isEmpty) return const [];
@@ -442,15 +443,26 @@ final weeklyStaffBaseAvailabilityProvider =
         return ranges;
       }
 
-      final all = asyncByStaff.value ?? const <int, Map<int, Set<int>>>{};
+      final Map<int, Map<int, List<HourRange>>> result = {};
 
-      return {
-        for (final s in staffList)
-          s.id: {
-            for (int d = 1; d <= 7; d++)
-              d: slotsToHourRanges(all[s.id]?[d] ?? const <int>{}),
-          },
-      };
+      for (final s in staffList) {
+        // Triggera il caricamento automatico dei planning se non già caricati
+        ref.watch(ensureStaffPlanningLoadedProvider(s.id));
+
+        final Map<int, List<HourRange>> staffWeek = {};
+
+        for (int d = 1; d <= 7; d++) {
+          final specificDate = monday.add(Duration(days: d - 1));
+          final planningSlots = ref.watch(
+            planningSlotsForDateProvider((staffId: s.id, date: specificDate)),
+          );
+          staffWeek[d] = slotsToHourRanges(planningSlots ?? <int>{});
+        }
+
+        result[s.id] = staffWeek;
+      }
+
+      return result;
     });
 
 /// Provider che traccia quali giorni della settimana hanno eccezioni per ogni staff.

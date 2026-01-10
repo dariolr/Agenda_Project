@@ -1,6 +1,47 @@
 # Agenda Backend - Staff Planning Integration Instructions
 
-## Scope
+## ✅ INTEGRAZIONE COMPLETATA (14/01/2026)
+
+L'integrazione del modello staff planning nell'agenda backend è stata completata.
+
+### Modifiche Effettuate
+
+#### 1. `staff_slot_availability_provider.dart`
+- Rimosso import e uso di `staffAvailabilityByStaffProvider` (legacy schedules)
+- Ora usa `staffPlanningBaseSlotsProvider` per gli slot base
+- Aggiunto trigger automatico `ensureStaffPlanningLoadedProvider` per caricare i planning
+
+#### 2. `staff_planning_provider.dart`
+- Aggiunto `ensureStaffPlanningLoadedProvider` che carica automaticamente i planning per uno staff quando richiesto
+
+### Architettura Risultante
+
+```
+staffSlotAvailabilityProvider(staffId)
+  │
+  ├─ ensureStaffPlanningLoadedProvider(staffId)  // Triggera caricamento se necessario
+  │     └─ loadPlanningsForStaff(staffId)        // Chiama API /v1/staff/{id}/plannings
+  │
+  ├─ staffPlanningBaseSlotsProvider(staffId)     // Slot base da planning
+  │     └─ planningSlotsForDateProvider          // Calcola slot per data con supporto biweekly
+  │           └─ planningForStaffOnDateProvider  // Trova planning valido per la data
+  │
+  └─ exceptionsForStaffOnDateProvider            // Eccezioni (aggiunge/rimuove slot)
+```
+
+### Separazione Responsabilità
+
+| Componente | Usa planning | Usa schedules legacy |
+|------------|-------------|---------------------|
+| **Agenda** (slot availability) | ✅ | ❌ |
+| **Team/Staff UI** (gestione turni) | ❌ | ✅ |
+
+L'agenda usa esclusivamente il planning per determinare la disponibilità.
+La sezione Team usa ancora le schedules legacy per la gestione manuale dei turni base.
+
+---
+
+## Scope (COMPLETATO)
 
 Align agenda availability with the new staff planning model.
 Use only agenda_core API data. Do not re-implement planning logic locally.

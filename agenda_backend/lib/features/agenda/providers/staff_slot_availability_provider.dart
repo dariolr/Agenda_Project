@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/availability_exception.dart';
-import '../../staff/presentation/staff_availability_screen.dart';
 import '../../staff/providers/availability_exceptions_provider.dart';
+import '../../staff/providers/staff_planning_provider.dart';
 import 'date_range_provider.dart';
 import 'layout_config_provider.dart';
 
@@ -10,7 +10,7 @@ import 'layout_config_provider.dart';
 /// in base alla data corrente dell'agenda.
 ///
 /// La disponibilità finale è calcolata come:
-/// 1. Base: template settimanale (es. Lun-Ven 09:00-18:00)
+/// 1. Base: planning da API (template settimanale con supporto biweekly A/B)
 /// 2. + Eccezioni "available": aggiungono slot disponibili
 /// 3. - Eccezioni "unavailable": rimuovono slot disponibili
 ///
@@ -22,28 +22,20 @@ final staffSlotAvailabilityProvider = Provider.family<Set<int>, int>((
   staffId,
 ) {
   final agendaDate = ref.watch(agendaDateProvider);
-  final asyncByStaff = ref.watch(staffAvailabilityByStaffProvider);
   final layoutConfig = ref.watch(layoutConfigProvider);
 
-  // Determina il giorno della settimana (1 = Lunedì, 7 = Domenica)
-  final dayOfWeek = agendaDate.weekday;
-
   // ═══════════════════════════════════════════════════════════════
-  // 1️⃣ BASE: Template settimanale
+  // 1️⃣ BASE: Planning da API (supporta weekly/biweekly, validità temporale)
   // ═══════════════════════════════════════════════════════════════
-  Set<int> baseSlots;
+  //
+  // Triggera il caricamento automatico dei planning se non già caricati
+  ref.watch(ensureStaffPlanningLoadedProvider(staffId));
 
-  final allData = asyncByStaff.value;
-  if (allData == null) {
-    baseSlots = <int>{};
-  } else {
-    final staffData = allData[staffId];
-    if (staffData == null || !staffData.containsKey(dayOfWeek)) {
-      baseSlots = <int>{};
-    } else {
-      baseSlots = Set<int>.from(staffData[dayOfWeek]!);
-    }
-  }
+  // Legge gli slot dal planning locale
+  final localPlanningSlots = ref.watch(staffPlanningBaseSlotsProvider(staffId));
+
+  // Usa gli slot dal planning locale se disponibili
+  Set<int> baseSlots = localPlanningSlots;
 
   // ═══════════════════════════════════════════════════════════════
   // 2️⃣ ECCEZIONI: Applica modifiche per la data specifica

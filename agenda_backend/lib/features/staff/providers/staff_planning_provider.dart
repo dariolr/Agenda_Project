@@ -358,3 +358,24 @@ final currentPlanningForStaffProvider = Provider.family<StaffPlanning?, int>((
   }
   return null;
 });
+
+/// Provider che carica automaticamente i planning per uno staff.
+///
+/// Usa questo provider nell'agenda per assicurarsi che i planning
+/// siano caricati prima di calcolare la disponibilità.
+final ensureStaffPlanningLoadedProvider = FutureProvider.family<void, int>((
+  ref,
+  staffId,
+) async {
+  final plannings = ref.watch(staffPlanningsProvider);
+
+  // Se i planning per questo staff sono già caricati, non fare nulla
+  if (plannings.containsKey(staffId)) {
+    return;
+  }
+
+  // Altrimenti carica i planning
+  await ref
+      .read(staffPlanningsProvider.notifier)
+      .loadPlanningsForStaff(staffId);
+});
