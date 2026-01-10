@@ -133,65 +133,6 @@ class BookingRepository {
     }).toList();
   }
 
-  /// GET /v1/staff/{id}/planning?date=YYYY-MM-DD
-  /// Ritorna il planning valido per data (data può essere null se non esiste)
-  Future<Map<String, dynamic>?> getStaffPlanningForDate({
-    required int staffId,
-    required DateTime date,
-  }) async {
-    final dateStr =
-        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    final data = await _apiClient.getStaffPlanningForDate(
-      staffId: staffId,
-      date: dateStr,
-    );
-    return data['data'] as Map<String, dynamic>?;
-  }
-
-  /// GET /v1/staff/{id}/planning-availability?date=YYYY-MM-DD
-  /// Ritorna se lo staff ha disponibilità (planning) per la data
-  Future<bool> isStaffAvailableByPlanning({
-    required int staffId,
-    required DateTime date,
-  }) async {
-    final dateStr =
-        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    final data = await _apiClient.getStaffPlanningAvailability(
-      staffId: staffId,
-      date: dateStr,
-    );
-    final payload = data['data'] as Map<String, dynamic>? ?? {};
-    return payload['is_available'] == true;
-  }
-
-  /// Verifica se lo staff è prenotabile per servizi + data (planning + slots)
-  Future<bool> isStaffBookableForDate({
-    required int staffId,
-    required int locationId,
-    required DateTime date,
-    required List<int> serviceIds,
-  }) async {
-    final planning = await getStaffPlanningForDate(
-      staffId: staffId,
-      date: date,
-    );
-    if (planning == null) return false;
-
-    final planningAvailable = await isStaffAvailableByPlanning(
-      staffId: staffId,
-      date: date,
-    );
-    if (!planningAvailable) return false;
-
-    final slots = await getAvailableSlots(
-      locationId: locationId,
-      date: date,
-      serviceIds: serviceIds,
-      staffId: staffId,
-    );
-    return slots.isNotEmpty;
-  }
-
   /// Recupera le date del mese con almeno uno slot disponibile
   Future<Set<DateTime>> getAvailableDatesForMonth({
     required int locationId,

@@ -1,6 +1,39 @@
 # Agenda Frontend - Staff Planning Integration Instructions
 
-## Scope
+## STATUS: ✅ INTEGRAZIONE COMPLETATA (10/01/2026)
+
+L'integrazione con il nuovo modello di staff planning è **già completata**.
+
+### Come funziona
+
+1. **Backend (agenda_core)**: `ComputeAvailability` usa `StaffPlanningRepository.getSlotsForDate()`
+2. **Frontend**: Chiama solo `/v1/availability` che già include la logica planning
+3. **Se nessun planning**: `getSlotsForDate()` ritorna `null` → nessun slot disponibile
+4. **Week A/B**: Calcolata automaticamente dal backend per planning biweekly
+
+### Endpoint usato
+
+```
+GET /v1/availability?location_id=X&date=YYYY-MM-DD&service_ids=1,2&staff_id=N
+```
+
+Questo endpoint:
+- Verifica planning valido per la data
+- Calcola week label (A/B) per biweekly
+- Ritorna slot disponibili considerando prenotazioni esistenti
+
+### Nessuna logica locale
+
+Il frontend **NON** deve:
+- Calcolare week A/B
+- Verificare validità planning
+- Assumere disponibilità settimanale statica
+
+Tutto è delegato al backend.
+
+---
+
+## Scope (ORIGINALE - per riferimento)
 
 Align availability, slots, and date selection with the new staff planning model.
 Use only agenda_core API data. Do not re-implement planning logic locally.
