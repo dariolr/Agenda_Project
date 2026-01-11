@@ -172,6 +172,59 @@ Aggiungere chiavi in `lib/core/l10n/intl_it.arb` e `intl_en.arb`.
 - `const` constructor dove possibile
 - Estrarre widget privati da `build()` lunghi
 
+### Pulsanti Async con Loading State (11/01/2026)
+Per prevenire doppi click durante operazioni asincrone, usare i pulsanti async:
+
+```dart
+import '/core/widgets/app_buttons.dart';
+
+// Pulsante primario con loading
+AppAsyncFilledButton(
+  onPressed: _isSaving ? null : _onSave,
+  isLoading: _isSaving,
+  child: Text(l10n.actionSave),
+)
+
+// Pulsante eliminazione con loading
+AppAsyncDangerButton(
+  onPressed: _isSaving ? null : _onDelete,
+  disabled: _isSaving,
+  child: Text(l10n.actionDelete),
+)
+
+// Pulsante outlined con loading
+AppAsyncOutlinedButton(
+  onPressed: _isSaving ? null : _onAction,
+  isLoading: _isSaving,
+  child: Text(l10n.actionConfirm),
+)
+```
+
+**Pattern obbligatorio nei dialog/form:**
+```dart
+bool _isSaving = false;
+
+Future<void> _onSave() async {
+  // validazione...
+  
+  setState(() => _isSaving = true);
+  try {
+    await operazioneAsync();
+    if (mounted) Navigator.of(context).pop();
+  } finally {
+    if (mounted) setState(() => _isSaving = false);
+  }
+}
+```
+
+**Dialog già implementati con loading state:**
+- `client_edit_dialog.dart` - Clienti
+- `category_dialog.dart` - Categorie servizi
+- `service_dialog.dart` - Servizi
+- `appointment_dialog.dart` - Appuntamenti
+- `booking_dialog.dart` - Prenotazioni
+- `add_block_dialog.dart` - Blocchi non disponibilità
+
 ---
 
 ## ✅ Checklist prima di modificare
@@ -459,6 +512,7 @@ void main() async {
 | Booking | `features/agenda/providers/bookings_provider.dart` |
 | Repository pattern | `features/clients/data/clients_repository.dart` |
 | Form factor | `app/providers/form_factor_provider.dart` |
+| Pulsanti (sync/async) | `core/widgets/app_buttons.dart` |
 | Profilo utente | `features/auth/presentation/profile_screen.dart` |
 | Cambio password | `features/auth/presentation/change_password_screen.dart` |
 | Reset password | `features/auth/presentation/reset_password_screen.dart` |

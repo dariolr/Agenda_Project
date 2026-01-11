@@ -494,6 +494,96 @@ class L10n {
     );
   }
 
+  /// `Email o password non valide`
+  String get authErrorInvalidCredentials {
+    return Intl.message(
+      'Email o password non valide',
+      name: 'authErrorInvalidCredentials',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il tuo account è disabilitato`
+  String get authErrorAccountDisabled {
+    return Intl.message(
+      'Il tuo account è disabilitato',
+      name: 'authErrorAccountDisabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sessione scaduta. Effettua di nuovo il login.`
+  String get authErrorTokenExpired {
+    return Intl.message(
+      'Sessione scaduta. Effettua di nuovo il login.',
+      name: 'authErrorTokenExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sessione non valida. Effettua di nuovo il login.`
+  String get authErrorTokenInvalid {
+    return Intl.message(
+      'Sessione non valida. Effettua di nuovo il login.',
+      name: 'authErrorTokenInvalid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sessione revocata. Effettua di nuovo il login.`
+  String get authErrorSessionRevoked {
+    return Intl.message(
+      'Sessione revocata. Effettua di nuovo il login.',
+      name: 'authErrorSessionRevoked',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questa email è già registrata. Prova ad accedere.`
+  String get authErrorEmailAlreadyExists {
+    return Intl.message(
+      'Questa email è già registrata. Prova ad accedere.',
+      name: 'authErrorEmailAlreadyExists',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password troppo debole. Scegline una più sicura.`
+  String get authErrorWeakPassword {
+    return Intl.message(
+      'Password troppo debole. Scegline una più sicura.',
+      name: 'authErrorWeakPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Token di reset password non valido`
+  String get authErrorInvalidResetToken {
+    return Intl.message(
+      'Token di reset password non valido',
+      name: 'authErrorInvalidResetToken',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Token di reset password scaduto`
+  String get authErrorResetTokenExpired {
+    return Intl.message(
+      'Token di reset password scaduto',
+      name: 'authErrorResetTokenExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Recupera password`
   String get authResetPasswordTitle {
     return Intl.message(
@@ -1052,6 +1142,126 @@ class L10n {
     return Intl.message(
       'Aggiungi eventuali note per l\'appuntamento...',
       name: 'summaryNotesHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `L'orario selezionato non è più disponibile`
+  String get bookingErrorSlotConflict {
+    return Intl.message(
+      'L\'orario selezionato non è più disponibile',
+      name: 'bookingErrorSlotConflict',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Uno o più servizi selezionati non sono disponibili`
+  String get bookingErrorInvalidService {
+    return Intl.message(
+      'Uno o più servizi selezionati non sono disponibili',
+      name: 'bookingErrorInvalidService',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `L'operatore selezionato non è disponibile per questi servizi`
+  String get bookingErrorInvalidStaff {
+    return Intl.message(
+      'L\'operatore selezionato non è disponibile per questi servizi',
+      name: 'bookingErrorInvalidStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La sede selezionata non è disponibile`
+  String get bookingErrorInvalidLocation {
+    return Intl.message(
+      'La sede selezionata non è disponibile',
+      name: 'bookingErrorInvalidLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il cliente selezionato non è valido`
+  String get bookingErrorInvalidClient {
+    return Intl.message(
+      'Il cliente selezionato non è valido',
+      name: 'bookingErrorInvalidClient',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `L'orario selezionato non è valido`
+  String get bookingErrorInvalidTime {
+    return Intl.message(
+      'L\'orario selezionato non è valido',
+      name: 'bookingErrorInvalidTime',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `L'operatore selezionato non è disponibile in questo orario`
+  String get bookingErrorStaffUnavailable {
+    return Intl.message(
+      'L\'operatore selezionato non è disponibile in questo orario',
+      name: 'bookingErrorStaffUnavailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `L'orario selezionato è fuori dall'orario di lavoro`
+  String get bookingErrorOutsideWorkingHours {
+    return Intl.message(
+      'L\'orario selezionato è fuori dall\'orario di lavoro',
+      name: 'bookingErrorOutsideWorkingHours',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione non trovata`
+  String get bookingErrorNotFound {
+    return Intl.message(
+      'Prenotazione non trovata',
+      name: 'bookingErrorNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Non sei autorizzato a completare questa azione`
+  String get bookingErrorUnauthorized {
+    return Intl.message(
+      'Non sei autorizzato a completare questa azione',
+      name: 'bookingErrorUnauthorized',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Controlla i dati inseriti`
+  String get bookingErrorValidation {
+    return Intl.message(
+      'Controlla i dati inseriti',
+      name: 'bookingErrorValidation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Si è verificato un errore. Riprova più tardi`
+  String get bookingErrorServer {
+    return Intl.message(
+      'Si è verificato un errore. Riprova più tardi',
+      name: 'bookingErrorServer',
       desc: '',
       args: [],
     );

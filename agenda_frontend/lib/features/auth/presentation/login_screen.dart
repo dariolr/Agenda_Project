@@ -10,6 +10,7 @@ import '../../../core/services/pending_booking_storage.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../booking/providers/booking_provider.dart';
 import '../../booking/providers/business_provider.dart';
+import '../domain/auth_state.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -125,6 +126,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         context.go('/$slug/booking');
       }
     }
+  }
+
+  String _resolveAuthErrorMessage(
+    BuildContext context,
+    AuthState authState,
+  ) {
+    final l10n = context.l10n;
+    switch (authState.errorCode) {
+      case 'invalid_credentials':
+        return l10n.authErrorInvalidCredentials;
+      case 'account_disabled':
+        return l10n.authErrorAccountDisabled;
+      case 'token_expired':
+        return l10n.authErrorTokenExpired;
+      case 'token_invalid':
+        return l10n.authErrorTokenInvalid;
+      case 'session_revoked':
+        return l10n.authErrorSessionRevoked;
+      case 'email_already_exists':
+        return l10n.authErrorEmailAlreadyExists;
+      case 'weak_password':
+        return l10n.authErrorWeakPassword;
+      case 'invalid_reset_token':
+        return l10n.authErrorInvalidResetToken;
+      case 'reset_token_expired':
+        return l10n.authErrorResetTokenExpired;
+    }
+    return authState.errorMessage ?? l10n.authLoginFailed;
   }
 
   @override
@@ -254,7 +283,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              l10n.authLoginFailed,
+                              _resolveAuthErrorMessage(context, authState),
                               style: TextStyle(color: theme.colorScheme.error),
                             ),
                           ),

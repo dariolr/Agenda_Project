@@ -13,8 +13,6 @@ class StaffStep extends ConsumerStatefulWidget {
 }
 
 class _StaffStepState extends ConsumerState<StaffStep> {
-  bool _autoAdvanced = false;
-  String _lastServicesKey = '';
 
   @override
   void initState() {
@@ -33,11 +31,6 @@ class _StaffStepState extends ConsumerState<StaffStep> {
     final anyOperatorSelected = bookingState.request.anyOperatorSelected;
     final isMultiService = services.length > 1;
     final isLoading = staffAsync.isLoading;
-    final servicesKey = services.map((s) => s.id).join(',');
-    if (servicesKey != _lastServicesKey) {
-      _lastServicesKey = servicesKey;
-      _autoAdvanced = false;
-    }
 
     return Stack(
       children: [
@@ -72,18 +65,6 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                 loading: () => const SizedBox.shrink(),
                 error: (e, _) => Center(child: Text(l10n.errorLoadingStaff)),
                 data: (staffList) {
-                  if (!isMultiService &&
-                      staffList.length == 1 &&
-                      !_autoAdvanced) {
-                    final onlyStaff = staffList.first;
-                    _autoAdvanced = true;
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ref
-                          .read(bookingFlowProvider.notifier)
-                          .autoSelectStaff(onlyStaff);
-                      ref.read(bookingFlowProvider.notifier).nextStep();
-                    });
-                  }
                   if (staffList.isEmpty) {
                     return Center(child: Text(l10n.staffEmpty));
                   }
@@ -99,22 +80,6 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                               (a, b) => a.sortOrder.compareTo(b.sortOrder),
                             );
                       staffByService[service.id] = eligible;
-                    }
-
-                    final canAutoAdvance =
-                        !_autoAdvanced &&
-                        staffByService.values.every((list) => list.length == 1);
-                    if (canAutoAdvance) {
-                      _autoAdvanced = true;
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        for (final service in services) {
-                          final staff = staffByService[service.id]!.first;
-                          ref
-                              .read(bookingFlowProvider.notifier)
-                              .selectStaffForService(service, staff);
-                        }
-                        ref.read(bookingFlowProvider.notifier).nextStep();
-                      });
                     }
 
                     final hasEmpty = staffByService.values.any(
@@ -172,17 +137,19 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                   return ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      // Opzione "Qualsiasi operatore"
-                      _StaffTile(
-                        staff: null,
-                        isSelected: selectedStaff == null,
-                        onTap: () {
-                          ref
-                              .read(bookingFlowProvider.notifier)
-                              .selectStaff(null);
-                        },
-                      ),
-                      const SizedBox(height: 8),
+                      if (staffList.length > 1) ...[
+                        // Opzione "Qualsiasi operatore"
+                        _StaffTile(
+                          staff: null,
+                          isSelected: selectedStaff == null,
+                          onTap: () {
+                            ref
+                                .read(bookingFlowProvider.notifier)
+                                .selectStaff(null);
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       // Lista operatori
                       ...staffList.map(
                         (staff) => Padding(

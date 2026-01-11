@@ -69,7 +69,7 @@ class AuthNotifier extends Notifier<AuthState> {
       return true;
     } on ApiException catch (e) {
       debugPrint('AUTH PROVIDER: ApiException: ${e.code} - ${e.message}');
-      state = AuthState.error(e.message);
+      state = AuthState.error(e.message, code: e.code);
       return false;
     } catch (e, st) {
       debugPrint('AUTH PROVIDER: generic error: $e');
@@ -114,7 +114,7 @@ class AuthNotifier extends Notifier<AuthState> {
       return true;
     } on ApiException catch (e) {
       debugPrint('Register ApiException: ${e.message}');
-      state = AuthState.error(e.message);
+      state = AuthState.error(e.message, code: e.code);
       return false;
     } catch (e, st) {
       debugPrint('Register error: $e');

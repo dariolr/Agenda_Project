@@ -88,6 +88,33 @@ class MessageLookup extends MessageLookupByLibrary {
     "authEmailAlreadyRegistered": MessageLookupByLibrary.simpleMessage(
       "Questa email è già registrata. Prova ad accedere.",
     ),
+    "authErrorAccountDisabled": MessageLookupByLibrary.simpleMessage(
+      "Il tuo account è disabilitato",
+    ),
+    "authErrorEmailAlreadyExists": MessageLookupByLibrary.simpleMessage(
+      "Questa email è già registrata. Prova ad accedere.",
+    ),
+    "authErrorInvalidCredentials": MessageLookupByLibrary.simpleMessage(
+      "Email o password non valide",
+    ),
+    "authErrorInvalidResetToken": MessageLookupByLibrary.simpleMessage(
+      "Token di reset password non valido",
+    ),
+    "authErrorResetTokenExpired": MessageLookupByLibrary.simpleMessage(
+      "Token di reset password scaduto",
+    ),
+    "authErrorSessionRevoked": MessageLookupByLibrary.simpleMessage(
+      "Sessione revocata. Effettua di nuovo il login.",
+    ),
+    "authErrorTokenExpired": MessageLookupByLibrary.simpleMessage(
+      "Sessione scaduta. Effettua di nuovo il login.",
+    ),
+    "authErrorTokenInvalid": MessageLookupByLibrary.simpleMessage(
+      "Sessione non valida. Effettua di nuovo il login.",
+    ),
+    "authErrorWeakPassword": MessageLookupByLibrary.simpleMessage(
+      "Password troppo debole. Scegline una più sicura.",
+    ),
     "authFirstName": MessageLookupByLibrary.simpleMessage("Nome"),
     "authForgotPassword": MessageLookupByLibrary.simpleMessage(
       "Password dimenticata?",
@@ -175,6 +202,42 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingCancelled": MessageLookupByLibrary.simpleMessage(
       "Prenotazione annullata con successo",
+    ),
+    "bookingErrorInvalidClient": MessageLookupByLibrary.simpleMessage(
+      "Il cliente selezionato non è valido",
+    ),
+    "bookingErrorInvalidLocation": MessageLookupByLibrary.simpleMessage(
+      "La sede selezionata non è disponibile",
+    ),
+    "bookingErrorInvalidService": MessageLookupByLibrary.simpleMessage(
+      "Uno o più servizi selezionati non sono disponibili",
+    ),
+    "bookingErrorInvalidStaff": MessageLookupByLibrary.simpleMessage(
+      "L\'operatore selezionato non è disponibile per questi servizi",
+    ),
+    "bookingErrorInvalidTime": MessageLookupByLibrary.simpleMessage(
+      "L\'orario selezionato non è valido",
+    ),
+    "bookingErrorNotFound": MessageLookupByLibrary.simpleMessage(
+      "Prenotazione non trovata",
+    ),
+    "bookingErrorOutsideWorkingHours": MessageLookupByLibrary.simpleMessage(
+      "L\'orario selezionato è fuori dall\'orario di lavoro",
+    ),
+    "bookingErrorServer": MessageLookupByLibrary.simpleMessage(
+      "Si è verificato un errore. Riprova più tardi",
+    ),
+    "bookingErrorSlotConflict": MessageLookupByLibrary.simpleMessage(
+      "L\'orario selezionato non è più disponibile",
+    ),
+    "bookingErrorStaffUnavailable": MessageLookupByLibrary.simpleMessage(
+      "L\'operatore selezionato non è disponibile in questo orario",
+    ),
+    "bookingErrorUnauthorized": MessageLookupByLibrary.simpleMessage(
+      "Non sei autorizzato a completare questa azione",
+    ),
+    "bookingErrorValidation": MessageLookupByLibrary.simpleMessage(
+      "Controlla i dati inseriti",
     ),
     "bookingRescheduled": MessageLookupByLibrary.simpleMessage(
       "Prenotazione riprogrammata con successo",

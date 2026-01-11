@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../providers/auth_provider.dart';
 
@@ -61,6 +62,14 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           }
         }
       }
+    } on ApiException catch (e) {
+      if (mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: _resolveResetPasswordError(context, e.code),
+        );
+      }
     } catch (e) {
       if (mounted) {
         await FeedbackDialog.showError(
@@ -74,6 +83,19 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  String _resolveResetPasswordError(BuildContext context, String errorCode) {
+    final l10n = context.l10n;
+    switch (errorCode) {
+      case 'invalid_reset_token':
+        return l10n.authErrorInvalidResetToken;
+      case 'reset_token_expired':
+        return l10n.authErrorResetTokenExpired;
+      case 'weak_password':
+        return l10n.authErrorWeakPassword;
+    }
+    return l10n.authResetPasswordConfirmError;
   }
 
   @override

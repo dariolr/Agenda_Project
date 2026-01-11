@@ -8,11 +8,13 @@ class AuthState {
   final AuthStatus status;
   final User? user;
   final String? errorMessage;
+  final String? errorCode;
 
   const AuthState({
     this.status = AuthStatus.initial,
     this.user,
     this.errorMessage,
+    this.errorCode,
   });
 
   bool get isAuthenticated =>
@@ -23,12 +25,14 @@ class AuthState {
     AuthStatus? status,
     User? user,
     String? errorMessage,
+    String? errorCode,
     bool clearUser = false,
     bool clearError = false,
   }) => AuthState(
     status: status ?? this.status,
     user: clearUser ? null : (user ?? this.user),
     errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    errorCode: clearError ? null : (errorCode ?? this.errorCode),
   );
 
   factory AuthState.initial() => const AuthState(status: AuthStatus.initial);
@@ -41,10 +45,10 @@ class AuthState {
   factory AuthState.unauthenticated() =>
       const AuthState(status: AuthStatus.unauthenticated);
 
-  factory AuthState.error(String message) =>
-      AuthState(status: AuthStatus.error, errorMessage: message);
+  factory AuthState.error(String message, {String? code}) =>
+      AuthState(status: AuthStatus.error, errorMessage: message, errorCode: code);
 
   @override
   String toString() =>
-      'AuthState(status: $status, user: ${user?.email}, errorMessage: $errorMessage)';
+      'AuthState(status: $status, user: ${user?.email}, errorMessage: $errorMessage, errorCode: $errorCode)';
 }

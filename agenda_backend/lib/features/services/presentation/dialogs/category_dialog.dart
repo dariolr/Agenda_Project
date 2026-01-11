@@ -30,6 +30,7 @@ Future<void> showCategoryDialog(
 
   bool nameError = false;
   bool duplicateError = false;
+  bool isSaving = false;
 
   Widget buildContent(void Function(VoidCallback) setState) {
     return Column(
@@ -118,7 +119,7 @@ Future<void> showCategoryDialog(
       final cancelButton = SizedBox(
         width: AppButtonStyles.dialogButtonWidth,
         child: AppOutlinedActionButton(
-          onPressed: () => Navigator.pop(ctx),
+          onPressed: isSaving ? null : () => Navigator.pop(ctx),
           padding: AppButtonStyles.dialogButtonPadding,
           child: Text(context.l10n.actionCancel),
         ),
@@ -126,18 +127,26 @@ Future<void> showCategoryDialog(
 
       final saveButton = SizedBox(
         width: AppButtonStyles.dialogButtonWidth,
-        child: AppFilledButton(
-          onPressed: () async {
-            final closed = await handleSave();
-            if (!closed) {
-              setState(() {});
-            } else {
-              if (ctx.mounted) {
-                Navigator.of(ctx).pop();
-              }
-            }
-          },
+        child: AppAsyncFilledButton(
+          onPressed: isSaving
+              ? null
+              : () async {
+                  setState(() => isSaving = true);
+                  try {
+                    final closed = await handleSave();
+                    if (!closed) {
+                      setState(() => isSaving = false);
+                    } else {
+                      if (ctx.mounted) {
+                        Navigator.of(ctx).pop();
+                      }
+                    }
+                  } catch (e) {
+                    setState(() => isSaving = false);
+                  }
+                },
           padding: AppButtonStyles.dialogButtonPadding,
+          isLoading: isSaving,
           child: Text(context.l10n.actionSave),
         ),
       );

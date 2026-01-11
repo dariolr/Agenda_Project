@@ -522,8 +522,8 @@ final class CreateBooking
             throw BookingException::invalidTime('Invalid ISO8601 format');
         }
 
-        // Convert to UTC for storage and comparison
-        $startTime = $startTimeLocal->setTimezone(new DateTimeZone('UTC'));
+        // Use local time for storage (database stores location time, not UTC)
+        $startTime = $startTimeLocal;
 
         // DEBUG LOG
         $now = new DateTimeImmutable('now', $locationTimezone);
@@ -706,9 +706,9 @@ final class CreateBooking
             foreach ($items as $item) {
                 $serviceId = (int) $item['service_id'];
                 $staffId = (int) $item['staff_id'];
-                // Frontend sends local time (naive ISO), parse in location timezone then convert to UTC for storage
-                $startTimeLocal = new DateTimeImmutable($item['start_time'], $locationTimezone);
-                $startTime = $startTimeLocal->setTimezone(new DateTimeZone('UTC'));
+                // Frontend sends local time (naive ISO), parse in location timezone
+                // Database stores location time, not UTC
+                $startTime = new DateTimeImmutable($item['start_time'], $locationTimezone);
 
                 // Validate staff belongs to location
                 if (!$this->staffRepository->belongsToLocation($staffId, $locationId)) {

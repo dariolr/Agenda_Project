@@ -8,9 +8,6 @@ class ApiConfig {
     defaultValue: 'https://api.romeolab.it',
   );
 
-  /// Location ID di default (per MVP single-location)
-  static const int defaultLocationId = 1;
-
   /// Timeout per le richieste (ridotti per risposta rapida)
   static const Duration connectTimeout = Duration(seconds: 5);
   static const Duration receiveTimeout = Duration(seconds: 5);

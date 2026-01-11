@@ -82,6 +82,36 @@ final class TimeBlockRepository
     }
 
     /**
+     * Find time blocks for a specific staff member on a specific date.
+     * Returns blocks where the staff is assigned (via time_block_staff).
+     */
+    public function findByStaffAndDate(int $staffId, int $locationId, string $date): array
+    {
+        $dateStart = $date . ' 00:00:00';
+        $dateEnd = $date . ' 23:59:59';
+
+        $stmt = $this->db->getPdo()->prepare('
+            SELECT tb.id, tb.business_id, tb.location_id, tb.start_time, tb.end_time,
+                   tb.is_all_day, tb.reason
+            FROM time_blocks tb
+            INNER JOIN time_block_staff tbs ON tb.id = tbs.time_block_id
+            WHERE tbs.staff_id = :staff_id
+              AND tb.location_id = :location_id
+              AND tb.start_time < :date_end
+              AND tb.end_time > :date_start
+            ORDER BY tb.start_time ASC
+        ');
+        $stmt->execute([
+            'staff_id' => $staffId,
+            'location_id' => $locationId,
+            'date_start' => $dateStart,
+            'date_end' => $dateEnd,
+        ]);
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Find a single time block by ID.
      */
     public function findById(int $id): ?array

@@ -88,6 +88,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   bool _midnightWarningVisible = false;
   bool _midnightWarningDismissed = false;
   int? _autoOpenServicePickerIndex;
+  bool _isSaving = false;
 
   /// Stato iniziale per rilevare modifiche
   late DateTime _initialDate;
@@ -378,49 +379,58 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     );
 
     final actions = [
-      AppDangerButton(
-        onPressed: () async {
-          final deleteTitle = _bookingHasSingleAppointment
-              ? l10n.deleteAppointmentConfirmTitle
-              : l10n.deleteBookingConfirmTitle;
-          final deleteMessage = _bookingHasSingleAppointment
-              ? l10n.deleteAppointmentConfirmMessage
-              : l10n.deleteBookingConfirmMessage;
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: Text(deleteTitle),
-              content: Text(deleteMessage),
-              actions: [
-                AppOutlinedActionButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(l10n.actionCancel),
-                ),
-                AppDangerButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: Text(l10n.actionDelete),
-                ),
-              ],
-            ),
-          );
-          if (confirmed == true) {
-            await ref
-                .read(bookingsProvider.notifier)
-                .deleteBooking(widget.initial.bookingId);
-            if (context.mounted) Navigator.of(context).pop();
-          }
-        },
+      AppAsyncDangerButton(
+        onPressed: _isSaving
+            ? null
+            : () async {
+                final deleteTitle = _bookingHasSingleAppointment
+                    ? l10n.deleteAppointmentConfirmTitle
+                    : l10n.deleteBookingConfirmTitle;
+                final deleteMessage = _bookingHasSingleAppointment
+                    ? l10n.deleteAppointmentConfirmMessage
+                    : l10n.deleteBookingConfirmMessage;
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: Text(deleteTitle),
+                    content: Text(deleteMessage),
+                    actions: [
+                      AppOutlinedActionButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text(l10n.actionCancel),
+                      ),
+                      AppDangerButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: Text(l10n.actionDelete),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  setState(() => _isSaving = true);
+                  try {
+                    await ref
+                        .read(bookingsProvider.notifier)
+                        .deleteBooking(widget.initial.bookingId);
+                    if (context.mounted) Navigator.of(context).pop();
+                  } finally {
+                    if (mounted) setState(() => _isSaving = false);
+                  }
+                }
+              },
         padding: AppButtonStyles.dialogButtonPadding,
+        disabled: _isSaving,
         child: Text(l10n.actionDelete),
       ),
       AppOutlinedActionButton(
-        onPressed: _handleClose,
+        onPressed: _isSaving ? null : _handleClose,
         padding: AppButtonStyles.dialogButtonPadding,
         child: Text(l10n.actionCancel),
       ),
-      AppFilledButton(
-        onPressed: _onSave,
+      AppAsyncFilledButton(
+        onPressed: _isSaving ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
+        isLoading: _isSaving,
         child: Text(l10n.actionSave),
       ),
     ];
@@ -1112,8 +1122,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final variants = ref.read(serviceVariantsProvider).value ?? [];
     if (index > 0) {
       final prev = _serviceItems[index - 1];
-      final prevStartMinutes =
-          prev.startTime.hour * 60 + prev.startTime.minute;
+      final prevStartMinutes = prev.startTime.hour * 60 + prev.startTime.minute;
       final prevEnd = _resolveServiceEndTime(prev, variants);
       final prevEndMinutes = prevEnd.hour * 60 + prevEnd.minute;
       if (prevEndMinutes < prevStartMinutes) {
@@ -1247,7 +1256,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     return eligibleIds.first;
   }
 
-  void _onSave() async {
+  Future<void> _onSave() async {
     final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
 
@@ -1269,192 +1278,197 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       return;
     }
 
-    final variants = ref.read(serviceVariantsProvider).value ?? [];
-    final services = ref.read(servicesProvider).value ?? [];
+    setState(() => _isSaving = true);
+    try {
+      final variants = ref.read(serviceVariantsProvider).value ?? [];
+      final services = ref.read(servicesProvider).value ?? [];
 
-    // Client info (può essere null se nessun cliente è associato)
-    final int? clientId = _clientId;
-    final String clientName = _clientName.trim();
-    final String? notes = _notesController.text.trim().isEmpty
-        ? null
-        : _notesController.text.trim();
+      // Client info (può essere null se nessun cliente è associato)
+      final int? clientId = _clientId;
+      final String clientName = _clientName.trim();
+      final String? notes = _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim();
 
-    // Modifica appuntamento esistente
-    final bookingId = widget.initial.bookingId;
+      // Modifica appuntamento esistente
+      final bookingId = widget.initial.bookingId;
 
-    // Ottieni gli appuntamenti esistenti per questa prenotazione
-    final existingAppointments = ref
-        .read(appointmentsProvider.notifier)
-        .getByBookingId(bookingId);
+      // Ottieni gli appuntamenti esistenti per questa prenotazione
+      final existingAppointments = ref
+          .read(appointmentsProvider.notifier)
+          .getByBookingId(bookingId);
 
-    // Verifica se il cliente è cambiato (aggiunto, rimosso, o sostituito)
-    final initialClientId = widget.initial.clientId;
-    final clientChanged = initialClientId != clientId;
+      // Verifica se il cliente è cambiato (aggiunto, rimosso, o sostituito)
+      final initialClientId = widget.initial.clientId;
+      final clientChanged = initialClientId != clientId;
 
-    // Se il cliente è cambiato, aggiorna il booking
-    if (clientChanged) {
-      // Verifica se ci sono appuntamenti con staff diversi
-      final currentStaffId = _serviceItems.isNotEmpty
-          ? _serviceItems.first.staffId
-          : widget.initial.staffId;
-      final hasOtherStaff = existingAppointments.any(
-        (a) => a.staffId != currentStaffId,
-      );
-
-      // Mostra conferma SOLO se ci sono appuntamenti assegnati ad altri operatori
-      if (hasOtherStaff && mounted) {
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: Text(l10n.applyClientToAllAppointmentsTitle),
-            content: Text(l10n.applyClientToAllAppointmentsMessage),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(l10n.actionCancel),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(l10n.actionConfirm),
-              ),
-            ],
-          ),
+      // Se il cliente è cambiato, aggiorna il booking
+      if (clientChanged) {
+        // Verifica se ci sono appuntamenti con staff diversi
+        final currentStaffId = _serviceItems.isNotEmpty
+            ? _serviceItems.first.staffId
+            : widget.initial.staffId;
+        final hasOtherStaff = existingAppointments.any(
+          (a) => a.staffId != currentStaffId,
         );
 
-        if (confirmed != true) {
-          // Utente ha annullato, non salvare
+        // Mostra conferma SOLO se ci sono appuntamenti assegnati ad altri operatori
+        if (hasOtherStaff && mounted) {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: Text(l10n.applyClientToAllAppointmentsTitle),
+              content: Text(l10n.applyClientToAllAppointmentsMessage),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(l10n.actionCancel),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(l10n.actionConfirm),
+                ),
+              ],
+            ),
+          );
+
+          if (confirmed != true) {
+            // Utente ha annullato, non salvare
+            return;
+          }
+        }
+
+        // Aggiorna il cliente su tutti gli appuntamenti della prenotazione
+        try {
+          await ref
+              .read(appointmentsProvider.notifier)
+              .updateClientForBooking(
+                bookingId: bookingId,
+                clientId: clientId,
+                clientName: clientName,
+              );
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(l10n.errorTitle)));
+          }
           return;
         }
       }
 
-      // Aggiorna il cliente su tutti gli appuntamenti della prenotazione
-      try {
-        await ref
-            .read(appointmentsProvider.notifier)
-            .updateClientForBooking(
-              bookingId: bookingId,
-              clientId: clientId,
-              clientName: clientName,
-            );
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(l10n.errorTitle)));
+      // Aggiorna tutti i servizi
+      final existingIds = existingAppointments.map((a) => a.id).toSet();
+      final processedIds = <int>{};
+      Appointment? scrollTarget;
+
+      for (int i = 0; i < validItems.length; i++) {
+        final item = validItems[i];
+
+        final selectedVariant = variants.firstWhere(
+          (v) => v.serviceId == item.serviceId,
+        );
+        final service = services.firstWhere((s) => s.id == item.serviceId);
+        final serviceName = service.name;
+        final serviceId = service.id;
+
+        final blockedExtraMinutes = item.blockedExtraMinutes;
+        final processingExtraMinutes = item.processingExtraMinutes;
+        final extraMinutesType = blockedExtraMinutes > 0
+            ? ExtraMinutesType.blocked
+            : (processingExtraMinutes > 0 ? ExtraMinutesType.processing : null);
+        final extraMinutes = extraMinutesType == ExtraMinutesType.blocked
+            ? blockedExtraMinutes
+            : (extraMinutesType == ExtraMinutesType.processing
+                  ? processingExtraMinutes
+                  : 0);
+        final effectivePrice = selectedVariant.isFree
+            ? null
+            : selectedVariant.price;
+
+        final start = DateTime(
+          _date.year,
+          _date.month,
+          _date.day,
+          item.startTime.hour,
+          item.startTime.minute,
+        );
+
+        final baseDuration = item.durationMinutes > 0
+            ? item.durationMinutes
+            : selectedVariant.durationMinutes;
+        final duration =
+            baseDuration + (blockedExtraMinutes > 0 ? blockedExtraMinutes : 0);
+        final end = start.add(Duration(minutes: duration));
+
+        // Usa appointmentId per determinare se aggiornare o creare
+        if (item.appointmentId != null) {
+          // Aggiorna appuntamento esistente usando l'ID memorizzato
+          final existing = existingAppointments.firstWhere(
+            (a) => a.id == item.appointmentId,
+          );
+          processedIds.add(existing.id);
+
+          final updated = existing.copyWith(
+            staffId: item.staffId!,
+            serviceId: serviceId,
+            serviceVariantId: selectedVariant.id,
+            clientId: clientId,
+            clientName: clientName,
+            serviceName: serviceName,
+            startTime: start,
+            endTime: end,
+            price: effectivePrice,
+            extraMinutes: extraMinutes,
+            extraMinutesType: extraMinutesType,
+            extraBlockedMinutes: blockedExtraMinutes,
+            extraProcessingMinutes: processingExtraMinutes,
+          );
+          ref.read(appointmentsProvider.notifier).updateAppointment(updated);
+          scrollTarget ??= updated;
+        } else {
+          // Crea nuovo appuntamento (aggiunto durante la modifica)
+          final created = await ref
+              .read(appointmentsProvider.notifier)
+              .addAppointment(
+                bookingId: bookingId,
+                staffId: item.staffId!,
+                serviceId: serviceId,
+                serviceVariantId: selectedVariant.id,
+                clientId: clientId,
+                clientName: clientName,
+                serviceName: serviceName,
+                start: start,
+                end: end,
+                price: effectivePrice,
+                extraMinutes: extraMinutes,
+                extraMinutesType: extraMinutesType,
+                extraBlockedMinutes: blockedExtraMinutes,
+                extraProcessingMinutes: processingExtraMinutes,
+              );
+          scrollTarget ??= created;
         }
-        return;
       }
-    }
 
-    // Aggiorna tutti i servizi
-    final existingIds = existingAppointments.map((a) => a.id).toSet();
-    final processedIds = <int>{};
-    Appointment? scrollTarget;
-
-    for (int i = 0; i < validItems.length; i++) {
-      final item = validItems[i];
-
-      final selectedVariant = variants.firstWhere(
-        (v) => v.serviceId == item.serviceId,
-      );
-      final service = services.firstWhere((s) => s.id == item.serviceId);
-      final serviceName = service.name;
-      final serviceId = service.id;
-
-      final blockedExtraMinutes = item.blockedExtraMinutes;
-      final processingExtraMinutes = item.processingExtraMinutes;
-      final extraMinutesType = blockedExtraMinutes > 0
-          ? ExtraMinutesType.blocked
-          : (processingExtraMinutes > 0 ? ExtraMinutesType.processing : null);
-      final extraMinutes = extraMinutesType == ExtraMinutesType.blocked
-          ? blockedExtraMinutes
-          : (extraMinutesType == ExtraMinutesType.processing
-                ? processingExtraMinutes
-                : 0);
-      final effectivePrice = selectedVariant.isFree
-          ? null
-          : selectedVariant.price;
-
-      final start = DateTime(
-        _date.year,
-        _date.month,
-        _date.day,
-        item.startTime.hour,
-        item.startTime.minute,
-      );
-
-      final baseDuration = item.durationMinutes > 0
-          ? item.durationMinutes
-          : selectedVariant.durationMinutes;
-      final duration =
-          baseDuration + (blockedExtraMinutes > 0 ? blockedExtraMinutes : 0);
-      final end = start.add(Duration(minutes: duration));
-
-      // Usa appointmentId per determinare se aggiornare o creare
-      if (item.appointmentId != null) {
-        // Aggiorna appuntamento esistente usando l'ID memorizzato
-        final existing = existingAppointments.firstWhere(
-          (a) => a.id == item.appointmentId,
-        );
-        processedIds.add(existing.id);
-
-        final updated = existing.copyWith(
-          staffId: item.staffId!,
-          serviceId: serviceId,
-          serviceVariantId: selectedVariant.id,
-          clientId: clientId,
-          clientName: clientName,
-          serviceName: serviceName,
-          startTime: start,
-          endTime: end,
-          price: effectivePrice,
-          extraMinutes: extraMinutes,
-          extraMinutesType: extraMinutesType,
-          extraBlockedMinutes: blockedExtraMinutes,
-          extraProcessingMinutes: processingExtraMinutes,
-        );
-        ref.read(appointmentsProvider.notifier).updateAppointment(updated);
-        scrollTarget ??= updated;
-      } else {
-        // Crea nuovo appuntamento (aggiunto durante la modifica)
-        final created = await ref
-            .read(appointmentsProvider.notifier)
-            .addAppointment(
-              bookingId: bookingId,
-              staffId: item.staffId!,
-              serviceId: serviceId,
-              serviceVariantId: selectedVariant.id,
-              clientId: clientId,
-              clientName: clientName,
-              serviceName: serviceName,
-              start: start,
-              end: end,
-              price: effectivePrice,
-              extraMinutes: extraMinutes,
-              extraMinutesType: extraMinutesType,
-              extraBlockedMinutes: blockedExtraMinutes,
-              extraProcessingMinutes: processingExtraMinutes,
-            );
-        scrollTarget ??= created;
+      // Elimina appuntamenti rimossi (quelli in existingIds ma non in processedIds)
+      for (final id in existingIds.difference(processedIds)) {
+        ref.read(appointmentsProvider.notifier).deleteAppointment(id);
       }
-    }
 
-    // Elimina appuntamenti rimossi (quelli in existingIds ma non in processedIds)
-    for (final id in existingIds.difference(processedIds)) {
-      ref.read(appointmentsProvider.notifier).deleteAppointment(id);
-    }
+      // Aggiorna le note nella booking associata
+      ref.read(bookingsProvider.notifier).setNotes(bookingId, notes);
 
-    // Aggiorna le note nella booking associata
-    ref.read(bookingsProvider.notifier).setNotes(bookingId, notes);
+      // Rimuovi la booking se vuota
+      ref.read(bookingsProvider.notifier).removeIfEmpty(bookingId);
 
-    // Rimuovi la booking se vuota
-    ref.read(bookingsProvider.notifier).removeIfEmpty(bookingId);
-
-    if (scrollTarget != null) {
-      ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
-    }
-    if (mounted) {
-      Navigator.of(context).pop();
+      if (scrollTarget != null) {
+        ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
+      }
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 }

@@ -7,6 +7,8 @@ namespace Agenda\UseCases\Booking;
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\StaffPlanningRepository;
+use Agenda\Infrastructure\Repositories\TimeBlockRepository;
+use Agenda\Infrastructure\Repositories\StaffAvailabilityExceptionRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use DateInterval;
@@ -22,6 +24,8 @@ final class ComputeAvailability
         private readonly StaffRepository $staffRepository,
         private readonly \Agenda\Infrastructure\Repositories\LocationRepository $locationRepository,
         private readonly StaffPlanningRepository $staffPlanningRepository,
+        private readonly TimeBlockRepository $timeBlockRepository,
+        private readonly StaffAvailabilityExceptionRepository $staffExceptionRepository,
     ) {}
 
     /**
@@ -157,11 +161,63 @@ final class ComputeAvailability
             $dayEnd
         );
 
+        // Get time blocks for this staff on this day
+        $timeBlocks = $this->timeBlockRepository->findByStaffAndDate($staffId, $locationId, $dateStr);
+
+        // Get availability exceptions for this staff on this day
+        $exceptions = $this->staffExceptionRepository->getByStaffId($staffId, $dateStr, $dateStr);
+
+        // Process exceptions - split into unavailable (to block) and available (to add)
+        $unavailableExceptions = [];
+        $availableExceptions = [];
+        foreach ($exceptions as $exc) {
+            if ($exc['type'] === 'unavailable') {
+                $unavailableExceptions[] = $exc;
+            } else {
+                $availableExceptions[] = $exc;
+            }
+        }
+
+        // Add available exceptions as extra working intervals
+        foreach ($availableExceptions as $exc) {
+            if ($exc['start_time'] !== null && $exc['end_time'] !== null) {
+                $workingIntervals[] = [
+                    'start' => new DateTimeImmutable($dateStr . ' ' . $exc['start_time'], $timezone),
+                    'end' => new DateTimeImmutable($dateStr . ' ' . $exc['end_time'], $timezone),
+                ];
+            }
+        }
+
         // Convert occupied slots to DateTimeImmutable
         $occupied = array_map(fn($slot) => [
             'start' => new DateTimeImmutable($slot['start_time'], $timezone),
             'end' => new DateTimeImmutable($slot['end_time'], $timezone),
         ], $occupiedSlots);
+
+        // Convert time blocks to DateTimeImmutable and add to occupied
+        foreach ($timeBlocks as $block) {
+            $occupied[] = [
+                'start' => new DateTimeImmutable($block['start_time'], $timezone),
+                'end' => new DateTimeImmutable($block['end_time'], $timezone),
+            ];
+        }
+
+        // Convert unavailable exceptions to occupied slots
+        foreach ($unavailableExceptions as $exc) {
+            if ($exc['start_time'] !== null && $exc['end_time'] !== null) {
+                // Partial day unavailability
+                $occupied[] = [
+                    'start' => new DateTimeImmutable($dateStr . ' ' . $exc['start_time'], $timezone),
+                    'end' => new DateTimeImmutable($dateStr . ' ' . $exc['end_time'], $timezone),
+                ];
+            } else {
+                // Full day unavailability - block entire day
+                $occupied[] = [
+                    'start' => $date->setTime(0, 0, 0),
+                    'end' => $date->setTime(23, 59, 59),
+                ];
+            }
+        }
 
         // Generate available slots
         $availableSlots = [];

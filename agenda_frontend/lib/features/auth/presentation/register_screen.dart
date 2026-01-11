@@ -55,13 +55,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  /// Traduce il messaggio di errore dall'API
-  String _getErrorMessage(String apiMessage, dynamic l10n) {
-    // Mappa messaggi API a traduzioni
-    if (apiMessage.toLowerCase().contains('email already registered')) {
-      return l10n.authEmailAlreadyRegistered;
+  /// Traduce il codice errore dall'API
+  String _getErrorMessage(String? errorCode, dynamic l10n) {
+    switch (errorCode) {
+      case 'email_already_exists':
+        return l10n.authErrorEmailAlreadyExists;
+      case 'weak_password':
+        return l10n.authErrorWeakPassword;
+      case 'invalid_credentials':
+        return l10n.authErrorInvalidCredentials;
+      case 'account_disabled':
+        return l10n.authErrorAccountDisabled;
+      case 'token_expired':
+        return l10n.authErrorTokenExpired;
+      case 'token_invalid':
+        return l10n.authErrorTokenInvalid;
+      case 'session_revoked':
+        return l10n.authErrorSessionRevoked;
+      case 'invalid_reset_token':
+        return l10n.authErrorInvalidResetToken;
+      case 'reset_token_expired':
+        return l10n.authErrorResetTokenExpired;
     }
-    // Fallback al messaggio generico
     return l10n.authRegisterFailed;
   }
 
@@ -291,7 +306,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              _getErrorMessage(authState.errorMessage!, l10n),
+                              _getErrorMessage(authState.errorCode, l10n),
                               style: TextStyle(color: theme.colorScheme.error),
                             ),
                           ),
