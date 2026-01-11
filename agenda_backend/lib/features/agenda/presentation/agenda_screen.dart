@@ -7,6 +7,7 @@ import 'package:agenda_backend/features/agenda/presentation/screens/day_view/age
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/components/hour_column.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/is_resizing_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
@@ -159,6 +160,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final staffAsync = ref.watch(allStaffProvider);
     final locations = ref.watch(locationsProvider);
     final appointmentsAsync = ref.watch(appointmentsProvider);
+    final currentBusinessId = ref.watch(currentBusinessIdProvider);
 
     // Ascolta cambi data per resettare il flag polling
     // (se l'utente cambia data durante il polling, deve mostrare loading)
@@ -177,9 +179,10 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     // 1. Staff in caricamento iniziale (senza dati)
     // 2. Locations vuote
     // 3. Appuntamenti in caricamento E non è polling automatico
+    final hasLocations = locations.isNotEmpty;
     final isLoading =
         (staffAsync.isLoading && !staffAsync.hasValue) ||
-        locations.isEmpty ||
+        (!hasLocations && currentBusinessId == 0) ||
         (appointmentsAsync.isLoading && !_isPolling);
 
     final staffList = ref.watch(filteredStaffProvider);
@@ -283,6 +286,14 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
                 child: isLoading
                     // Mostra loading indicator durante il caricamento
                     ? const Center(child: CircularProgressIndicator())
+                    : !hasLocations
+                    ? Center(
+                        child: Text(
+                          context.l10n.agendaNoLocations,
+                          style: Theme.of(context).textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      )
                     : hasStaff
                     ? mainRow
                     : Center(
