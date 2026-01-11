@@ -84,6 +84,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
   bool _isAllDay = false;
   String? _staffError;
   String? _timeError;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -340,19 +341,21 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
     final actions = [
       if (isEdit)
-        AppDangerButton(
-          onPressed: _onDelete,
+        AppAsyncDangerButton(
+          onPressed: _isSaving ? null : _onDelete,
           padding: AppButtonStyles.dialogButtonPadding,
+          disabled: _isSaving,
           child: Text(l10n.actionDelete),
         ),
       AppOutlinedActionButton(
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
         padding: AppButtonStyles.dialogButtonPadding,
         child: Text(l10n.actionCancel),
       ),
-      AppFilledButton(
-        onPressed: _onSave,
+      AppAsyncFilledButton(
+        onPressed: _isSaving ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
+        isLoading: _isSaving,
         child: Text(l10n.actionSave),
       ),
     ];
@@ -541,70 +544,80 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
     if (hasError) return;
 
-    final DateTime startDateTime;
-    final DateTime endDateTime;
+    setState(() => _isSaving = true);
+    try {
+      final DateTime startDateTime;
+      final DateTime endDateTime;
 
-    if (_isAllDay) {
-      // Per blocchi giornata intera, usa l'intera giornata lavorativa
-      startDateTime = DateTime(_date.year, _date.month, _date.day, 0, 0);
-      endDateTime = DateTime(_date.year, _date.month, _date.day, 23, 59);
-    } else {
-      startDateTime = DateTime(
-        _date.year,
-        _date.month,
-        _date.day,
-        _startTime.hour,
-        _startTime.minute,
-      );
-      endDateTime = DateTime(
-        _date.year,
-        _date.month,
-        _date.day,
-        _endTime.hour,
-        _endTime.minute,
-      );
+      if (_isAllDay) {
+        // Per blocchi giornata intera, usa l'intera giornata lavorativa
+        startDateTime = DateTime(_date.year, _date.month, _date.day, 0, 0);
+        endDateTime = DateTime(_date.year, _date.month, _date.day, 23, 59);
+      } else {
+        startDateTime = DateTime(
+          _date.year,
+          _date.month,
+          _date.day,
+          _startTime.hour,
+          _startTime.minute,
+        );
+        endDateTime = DateTime(
+          _date.year,
+          _date.month,
+          _date.day,
+          _endTime.hour,
+          _endTime.minute,
+        );
+      }
+
+      final reason = _reasonController.text.trim().isEmpty
+          ? null
+          : _reasonController.text.trim();
+
+      if (widget.initial == null) {
+        // Nuovo blocco
+        await ref
+            .read(timeBlocksProvider.notifier)
+            .addBlock(
+              staffIds: _selectedStaffIds.toList(),
+              startTime: startDateTime,
+              endTime: endDateTime,
+              reason: reason,
+              isAllDay: _isAllDay,
+            );
+      } else {
+        // Aggiorna blocco esistente
+        await ref
+            .read(timeBlocksProvider.notifier)
+            .updateBlock(
+              blockId: widget.initial!.id,
+              staffIds: _selectedStaffIds.toList(),
+              startTime: startDateTime,
+              endTime: endDateTime,
+              reason: reason,
+              isAllDay: _isAllDay,
+            );
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-
-    final reason = _reasonController.text.trim().isEmpty
-        ? null
-        : _reasonController.text.trim();
-
-    if (widget.initial == null) {
-      // Nuovo blocco
-      await ref
-          .read(timeBlocksProvider.notifier)
-          .addBlock(
-            staffIds: _selectedStaffIds.toList(),
-            startTime: startDateTime,
-            endTime: endDateTime,
-            reason: reason,
-            isAllDay: _isAllDay,
-          );
-    } else {
-      // Aggiorna blocco esistente
-      await ref
-          .read(timeBlocksProvider.notifier)
-          .updateBlock(
-            blockId: widget.initial!.id,
-            staffIds: _selectedStaffIds.toList(),
-            startTime: startDateTime,
-            endTime: endDateTime,
-            reason: reason,
-            isAllDay: _isAllDay,
-          );
-    }
-
-    if (!mounted) return;
-    Navigator.of(context).pop();
   }
 
   Future<void> _onDelete() async {
     if (widget.initial != null) {
-      await ref
-          .read(timeBlocksProvider.notifier)
-          .deleteBlock(widget.initial!.id);
-      if (!mounted) return;
-      Navigator.of(context).pop();
+      setState(() => _isSaving = true);
+      try {
+        await ref
+            .read(timeBlocksProvider.notifier)
+            .deleteBlock(widget.initial!.id);
+        if (!mounted) return;
+        Navigator.of(context).pop();
+      } finally {
+        if (mounted) setState(() => _isSaving = false);
+      }
     }
   }
 }

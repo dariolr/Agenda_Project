@@ -309,6 +309,7 @@ Future<void> showServiceDialog(
   bool nameError = false;
   bool durationError = false;
   bool categoryError = false;
+  bool isSaving = false;
 
   void scrollToSelected({required bool animate}) {
     if (!colorScrollController.hasClients) return;
@@ -983,7 +984,9 @@ Future<void> showServiceDialog(
       final cancelButton = SizedBox(
         width: AppButtonStyles.dialogButtonWidth,
         child: AppOutlinedActionButton(
-          onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+          onPressed: isSaving
+              ? null
+              : () => Navigator.of(context, rootNavigator: true).pop(),
           padding: AppButtonStyles.dialogButtonPadding,
           child: Text(context.l10n.actionCancel),
         ),
@@ -991,12 +994,20 @@ Future<void> showServiceDialog(
 
       final saveButton = SizedBox(
         width: AppButtonStyles.dialogButtonWidth,
-        child: AppFilledButton(
-          onPressed: () async {
-            await handleSave();
-            setState(() {});
-          },
+        child: AppAsyncFilledButton(
+          onPressed: isSaving
+              ? null
+              : () async {
+                  setState(() => isSaving = true);
+                  try {
+                    await handleSave();
+                    setState(() {});
+                  } finally {
+                    setState(() => isSaving = false);
+                  }
+                },
           padding: AppButtonStyles.dialogButtonPadding,
+          isLoading: isSaving,
           child: Text(context.l10n.actionSave),
         ),
       );

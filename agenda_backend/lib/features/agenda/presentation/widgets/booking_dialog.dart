@@ -124,6 +124,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   bool _warningDismissed = false;
   bool _midnightWarningVisible = false;
   bool _midnightWarningDismissed = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -353,13 +354,14 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
     final actions = [
       AppOutlinedActionButton(
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
         padding: AppButtonStyles.dialogButtonPadding,
         child: Text(l10n.actionCancel),
       ),
-      AppFilledButton(
-        onPressed: _onSave,
+      AppAsyncFilledButton(
+        onPressed: _isSaving ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
+        isLoading: _isSaving,
         child: Text(l10n.actionSave),
       ),
     ];
@@ -1320,6 +1322,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       return;
     }
 
+    setState(() => _isSaving = true);
+
     final clientsById = ref.read(clientsByIdProvider);
     final bookingsNotifier = ref.read(bookingsProvider.notifier);
     final location = ref.read(currentLocationProvider);
@@ -1395,6 +1399,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         ).showSnackBar(SnackBar(content: Text(l10n.errorTitle)));
       }
       return;
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
 
     if (!mounted) return;

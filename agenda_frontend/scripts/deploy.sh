@@ -76,8 +76,8 @@ fi
 
 cd "$ROOT_DIR"
 
-echo "Eseguo: $FLUTTER_BIN build web --release --no-tree-shake-icons --pwa-strategy=none"
-"$FLUTTER_BIN" build web --release --no-tree-shake-icons --pwa-strategy=none
+echo "Eseguo: $FLUTTER_BIN build web --release --no-tree-shake-icons --pwa-strategy=none --dart-define=API_BASE_URL=https://api.romeolab.it"
+"$FLUTTER_BIN" build web --release --no-tree-shake-icons --pwa-strategy=none --dart-define=API_BASE_URL=https://api.romeolab.it
 
 ###############################################################################
 # 3) Copia .htaccess nel build (necessario per SPA routing)
@@ -93,4 +93,4 @@ else
   echo "WARN: .htaccess non trovato in web/, SPA routing potrebbe non funzionare"
 fi
 
-# Use the VSCode task named dart-analyze instead of running dart analyze directly.
+rsync -avz --delete "$ROOT_DIR/build/web/" siteground:www/prenota.romeolab.it/public_html/

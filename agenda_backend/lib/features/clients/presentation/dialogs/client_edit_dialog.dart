@@ -57,6 +57,7 @@ class ClientEditDialog extends ConsumerStatefulWidget {
 class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
   final _form = GlobalKey<ClientFormState>();
   bool _hasChanges = false;
+  bool _isSaving = false;
 
   @override
   Widget build(BuildContext context) {
@@ -98,9 +99,10 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
                     if (isEditing) ...[
                       SizedBox(
                         width: AppButtonStyles.dialogButtonWidth,
-                        child: AppDangerButton(
-                          onPressed: _onDelete,
+                        child: AppAsyncDangerButton(
+                          onPressed: _isSaving ? null : _onDelete,
                           padding: AppButtonStyles.dialogButtonPadding,
+                          disabled: _isSaving,
                           child: Text(l10n.actionDelete),
                         ),
                       ),
@@ -109,7 +111,7 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
                     SizedBox(
                       width: AppButtonStyles.dialogButtonWidth,
                       child: AppOutlinedActionButton(
-                        onPressed: () => _onCancel(context),
+                        onPressed: _isSaving ? null : () => _onCancel(context),
                         padding: AppButtonStyles.dialogButtonPadding,
                         child: Text(l10n.actionCancel),
                       ),
@@ -117,9 +119,10 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
                     const SizedBox(width: 8),
                     SizedBox(
                       width: AppButtonStyles.dialogButtonWidth,
-                      child: AppFilledButton(
-                        onPressed: _onSave,
+                      child: AppAsyncFilledButton(
+                        onPressed: _isSaving ? null : _onSave,
                         padding: AppButtonStyles.dialogButtonPadding,
+                        isLoading: _isSaving,
                         child: Text(l10n.actionSave),
                       ),
                     ),
@@ -160,8 +163,13 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
     );
     if (!confirm) return;
 
-    await ref.read(clientsProvider.notifier).deleteClient(client.id);
-    if (mounted) Navigator.of(context).pop();
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(clientsProvider.notifier).deleteClient(client.id);
+      if (mounted) Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   Future<void> _onSave() async {
@@ -169,15 +177,22 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
     if (formState == null) return;
     if (!formState.validate()) return;
 
-    final client = formState.buildClient();
-    Client savedClient;
-    if (widget.isExistingClient) {
-      await ref.read(clientsProvider.notifier).updateClient(client);
-      savedClient = client;
-    } else {
-      savedClient = await ref.read(clientsProvider.notifier).addClient(client);
+    setState(() => _isSaving = true);
+    try {
+      final client = formState.buildClient();
+      Client savedClient;
+      if (widget.isExistingClient) {
+        await ref.read(clientsProvider.notifier).updateClient(client);
+        savedClient = client;
+      } else {
+        savedClient = await ref
+            .read(clientsProvider.notifier)
+            .addClient(client);
+      }
+      if (mounted) Navigator.of(context).pop(savedClient);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-    if (mounted) Navigator.of(context).pop(savedClient);
   }
 }
 
@@ -199,6 +214,7 @@ class ClientEditBottomSheet extends ConsumerStatefulWidget {
 class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
   final _form = GlobalKey<ClientFormState>();
   bool _hasChanges = false;
+  bool _isSaving = false;
 
   @override
   Widget build(BuildContext context) {
@@ -211,19 +227,21 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
     // Azioni in basso - stesso stile di appointment_dialog
     final actions = <Widget>[
       if (isEditing)
-        AppDangerButton(
-          onPressed: _onDelete,
+        AppAsyncDangerButton(
+          onPressed: _isSaving ? null : _onDelete,
           padding: AppButtonStyles.dialogButtonPadding,
+          disabled: _isSaving,
           child: Text(l10n.actionDelete),
         ),
       AppOutlinedActionButton(
-        onPressed: () => _onCancel(context),
+        onPressed: _isSaving ? null : () => _onCancel(context),
         padding: AppButtonStyles.dialogButtonPadding,
         child: Text(l10n.actionCancel),
       ),
-      AppFilledButton(
-        onPressed: _onSave,
+      AppAsyncFilledButton(
+        onPressed: _isSaving ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
+        isLoading: _isSaving,
         child: Text(l10n.actionSave),
       ),
     ];
@@ -339,8 +357,13 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
     );
     if (!confirm) return;
 
-    await ref.read(clientsProvider.notifier).deleteClient(client.id);
-    if (mounted) Navigator.of(context).pop();
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(clientsProvider.notifier).deleteClient(client.id);
+      if (mounted) Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   Future<void> _onSave() async {
@@ -348,14 +371,21 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
     if (formState == null) return;
     if (!formState.validate()) return;
 
-    final client = formState.buildClient();
-    Client savedClient;
-    if (widget.isExistingClient) {
-      await ref.read(clientsProvider.notifier).updateClient(client);
-      savedClient = client;
-    } else {
-      savedClient = await ref.read(clientsProvider.notifier).addClient(client);
+    setState(() => _isSaving = true);
+    try {
+      final client = formState.buildClient();
+      Client savedClient;
+      if (widget.isExistingClient) {
+        await ref.read(clientsProvider.notifier).updateClient(client);
+        savedClient = client;
+      } else {
+        savedClient = await ref
+            .read(clientsProvider.notifier)
+            .addClient(client);
+      }
+      if (mounted) Navigator.of(context).pop(savedClient);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-    if (mounted) Navigator.of(context).pop(savedClient);
   }
 }

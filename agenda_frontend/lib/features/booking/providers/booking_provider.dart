@@ -84,6 +84,7 @@ class BookingFlowState {
   final BookingRequest request;
   final bool isLoading;
   final String? errorMessage;
+  final String? errorCode;
   final String? confirmedBookingId;
   final bool isStaffAutoSelected;
 
@@ -92,6 +93,7 @@ class BookingFlowState {
     this.request = const BookingRequest(),
     this.isLoading = false,
     this.errorMessage,
+    this.errorCode,
     this.confirmedBookingId,
     this.isStaffAutoSelected = false,
   });
@@ -121,6 +123,7 @@ class BookingFlowState {
     BookingRequest? request,
     bool? isLoading,
     String? errorMessage,
+    String? errorCode,
     String? confirmedBookingId,
     bool clearError = false,
     bool? isStaffAutoSelected,
@@ -129,6 +132,7 @@ class BookingFlowState {
     request: request ?? this.request,
     isLoading: isLoading ?? this.isLoading,
     errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    errorCode: clearError ? null : (errorCode ?? this.errorCode),
     confirmedBookingId: confirmedBookingId ?? this.confirmedBookingId,
     isStaffAutoSelected: isStaffAutoSelected ?? this.isStaffAutoSelected,
   );
@@ -206,11 +210,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       if (nextStep == BookingStep.staff && !_config.allowStaffSelection) {
         nextStep = BookingStep.dateTime;
       }
-      // Se staff è stato auto-selezionato, salta lo step staff
-      if (nextStep == BookingStep.staff && state.isStaffAutoSelected) {
-        nextStep = BookingStep.dateTime;
-      }
-      state = state.copyWith(currentStep: nextStep);
+      state = state.copyWith(currentStep: nextStep, clearError: true);
       // Il prefetch viene gestito automaticamente dai listener in DateTimeStep
     }
   }
@@ -263,21 +263,21 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       }
     }
 
-    // Se tutti i servizi hanno un solo operatore, auto-seleziona e salta lo step
+    // Se tutti i servizi hanno un solo operatore, auto-seleziona e mostra lo step
     if (allAutoSelected && services.isNotEmpty) {
-      if (services.length == 1) {
-        autoSelectStaff(autoSelected[services.first.id]!);
-      } else {
-        state = state.copyWith(
-          request: state.request.copyWith(
-            selectedStaffByService: autoSelected,
-            clearSlot: true,
-            anyOperatorSelected: false,
-          ),
-          isStaffAutoSelected: true,
-        );
-      }
-      state = state.copyWith(currentStep: BookingStep.dateTime);
+      final isSingleService = services.length == 1;
+      final selectedStaff =
+          isSingleService ? autoSelected[services.first.id] : null;
+      state = state.copyWith(
+        request: state.request.copyWith(
+          selectedStaff: selectedStaff,
+          selectedStaffByService: autoSelected,
+          clearSlot: true,
+          anyOperatorSelected: false,
+        ),
+        isStaffAutoSelected: false,
+        currentStep: BookingStep.staff,
+      );
       return;
     }
 
@@ -305,11 +305,6 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       prevIndex--;
       prevStep = BookingStep.values[prevIndex];
     }
-    // Se staff è stato auto-selezionato, salta lo step staff
-    if (prevStep == BookingStep.staff && state.isStaffAutoSelected) {
-      prevIndex--;
-      prevStep = BookingStep.values[prevIndex];
-    }
 
     // Se c'è una sola location, salta lo step location
     if (prevStep == BookingStep.location && !_hasMultipleLocations) {
@@ -317,7 +312,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       return;
     }
 
-    state = state.copyWith(currentStep: prevStep);
+    state = state.copyWith(currentStep: prevStep, clearError: true);
   }
 
   /// Vai a uno step specifico
@@ -326,12 +321,8 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     if (step == BookingStep.location && !_hasMultipleLocations) {
       return;
     }
-    // Se staff è auto-selezionato, non permettere di andare allo step staff
-    if (step == BookingStep.staff && state.isStaffAutoSelected) {
-      return;
-    }
     if (step.index < state.currentStep.index) {
-      state = state.copyWith(currentStep: step);
+      state = state.copyWith(currentStep: step, clearError: true);
     }
   }
 
@@ -361,6 +352,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         clearAnyOperatorSelections: shouldClearStaff,
         clearSlot: true,
       ),
+      clearError: true,
       isStaffAutoSelected: shouldClearStaff ? false : state.isStaffAutoSelected,
     );
   }
@@ -379,6 +371,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         clearAnyOperatorSelections: true,
         clearSlot: true, // Resetta slot quando cambia staff
       ),
+      clearError: true,
     );
   }
 
@@ -395,6 +388,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         clearSlot: true,
         anyOperatorSelected: false,
       ),
+      clearError: true,
       isStaffAutoSelected: false,
     );
   }
@@ -418,6 +412,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         clearStaff: true,
         clearSlot: true,
       ),
+      clearError: true,
       isStaffAutoSelected: false,
     );
   }
@@ -437,13 +432,17 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         clearSlot: true,
         anyOperatorSelected: false,
       ),
+      clearError: true,
       isStaffAutoSelected: true,
     );
   }
 
   /// Seleziona slot temporale
   void selectTimeSlot(TimeSlot slot) {
-    state = state.copyWith(request: state.request.copyWith(selectedSlot: slot));
+    state = state.copyWith(
+      request: state.request.copyWith(selectedSlot: slot),
+      clearError: true,
+    );
   }
 
   /// Aggiorna note
@@ -551,7 +550,11 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       }
       // Altri errori API - elimina lo stato salvato
       await PendingBookingStorage.clear();
-      state = state.copyWith(isLoading: false, errorMessage: e.message);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message,
+        errorCode: e.code,
+      );
       return false;
     } on TokenExpiredException {
       // Token scaduto - lo stato è già salvato, rilancia per gestione UI
@@ -560,7 +563,11 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     } catch (e) {
       // Errore generico - elimina lo stato salvato
       await PendingBookingStorage.clear();
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+        errorCode: null,
+      );
       return false;
     }
   }

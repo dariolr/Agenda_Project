@@ -315,7 +315,7 @@ final class Kernel
         $changeCustomerPassword = new ChangeCustomerPassword($clientAuthRepo, $passwordHasher);
 
         // Booking Use Cases
-        $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo);
+        $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo, $timeBlockRepo, $staffExceptionRepo);
         $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo);
         $updateBooking = new UpdateBooking($bookingRepo, $this->db, $clientRepo, $notificationRepo);
         $deleteBooking = new DeleteBooking($bookingRepo, $this->db, $notificationRepo);

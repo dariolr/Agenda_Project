@@ -304,7 +304,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        state.errorMessage!,
+                        _resolveBookingErrorMessage(context, state),
                         style: TextStyle(color: theme.colorScheme.error),
                       ),
                     ),
@@ -348,6 +348,40 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
         ),
       ),
     );
+  }
+
+  String _resolveBookingErrorMessage(
+    BuildContext context,
+    BookingFlowState state,
+  ) {
+    final l10n = context.l10n;
+    switch (state.errorCode) {
+      case 'slot_conflict':
+        return l10n.bookingErrorSlotConflict;
+      case 'invalid_service':
+        return l10n.bookingErrorInvalidService;
+      case 'invalid_staff':
+        return l10n.bookingErrorInvalidStaff;
+      case 'invalid_location':
+        return l10n.bookingErrorInvalidLocation;
+      case 'invalid_client':
+        return l10n.bookingErrorInvalidClient;
+      case 'invalid_time':
+        return l10n.bookingErrorInvalidTime;
+      case 'staff_unavailable':
+        return l10n.bookingErrorStaffUnavailable;
+      case 'outside_working_hours':
+        return l10n.bookingErrorOutsideWorkingHours;
+      case 'not_found':
+        return l10n.bookingErrorNotFound;
+      case 'unauthorized':
+        return l10n.bookingErrorUnauthorized;
+      case 'validation_error':
+        return l10n.bookingErrorValidation;
+      case 'internal_error':
+        return l10n.bookingErrorServer;
+    }
+    return state.errorMessage ?? l10n.errorGeneric;
   }
 }
 
