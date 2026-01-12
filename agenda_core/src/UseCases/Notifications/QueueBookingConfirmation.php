@@ -47,7 +47,7 @@ final class QueueBookingConfirmation
         $recipientId = (int) $booking['client_id'];
         $recipientEmail = [
             'email' => $booking['client_email'] ?? null,
-            'name' => $booking['client_name'] ?? 'Cliente',
+            'name' => $booking['client_name'] ?? null,
         ];
         
         // Fallback: if email not provided, query clients table
@@ -61,6 +61,9 @@ final class QueueBookingConfirmation
 
         // Prepare template variables
         $variables = $this->prepareVariables($booking);
+        if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
+            $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
+        }
         
         // Get template
         $template = EmailTemplateRenderer::bookingConfirmed();

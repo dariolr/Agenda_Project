@@ -131,9 +131,30 @@ foreach ($notifications as $notification) {
         // Sender: ALWAYS use the verified sender from .env
         // The business email is used as reply-to only
         $variables = $payload['variables'] ?? $payload;
+        if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
+            $fallbackName = $notification['recipient_name'] ?? 'Cliente';
+            $variables['client_name'] = $fallbackName;
+        }
         
-        // From: always use .env (must be verified on Brevo)
-        $fromEmail = null; // EmailService will use MAIL_FROM_ADDRESS from .env
+        // From: use channel-specific verified sender (fallback to default)
+        $fromEmail = match ($channel) {
+            'booking_reminder' =>
+                $_ENV['MAIL_FROM_ADDRESS_BOOKING_REMINDER']
+                    ?? $_ENV['MAIL_FROM_ADDRESS']
+                    ?? null,
+            'booking_cancelled' =>
+                $_ENV['MAIL_FROM_ADDRESS_BOOKING_CANCELLED']
+                    ?? $_ENV['MAIL_FROM_ADDRESS']
+                    ?? null,
+            'booking_rescheduled' =>
+                $_ENV['MAIL_FROM_ADDRESS_BOOKING_RESCHEDULED']
+                    ?? $_ENV['MAIL_FROM_ADDRESS']
+                    ?? null,
+            default =>
+                $_ENV['MAIL_FROM_ADDRESS_BOOKING_CONFIRMED']
+                    ?? $_ENV['MAIL_FROM_ADDRESS']
+                    ?? null,
+        };
         $fromName = $variables['business_name'] ?? null; // Show business name as sender name
         
         // Reply-To: use business/location email so replies go to the business

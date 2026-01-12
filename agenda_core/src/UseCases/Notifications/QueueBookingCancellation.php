@@ -44,7 +44,7 @@ final class QueueBookingCancellation
         
         $recipientType = 'client';
         $recipientId = (int) $booking['client_id'];
-        $clientName = $booking['client_name'] ?? 'Cliente';
+        $clientName = $booking['client_name'] ?? null;
         $recipientEmail = [
             'email' => $booking['client_email'] ?? null,
             'name' => $clientName,
@@ -79,6 +79,9 @@ final class QueueBookingCancellation
             'services' => $booking['services'] ?? '',
             'booking_url' => $booking['booking_url'] ?? '#',
         ];
+        if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
+            $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
+        }
         
         $template = EmailTemplateRenderer::bookingCancelled();
         

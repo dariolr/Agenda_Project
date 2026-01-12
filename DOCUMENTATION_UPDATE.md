@@ -15,6 +15,9 @@
 ### agenda_backend
 - Agenda: stato vuoto per business senza sedi, evita loading infinito sugli appuntamenti.
 
+### agenda_core
+- Notifiche email: sender per canale configurabile via `.env` (reminder/cancellazione/modifica/conferma).
+
 ## 📋 Riepilogo Modifiche
 
 Analisi completa del progetto eseguita e tutta la documentazione è stata aggiornata per riflettere lo stato attuale dell'implementazione.

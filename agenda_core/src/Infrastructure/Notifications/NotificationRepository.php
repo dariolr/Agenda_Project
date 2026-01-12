@@ -95,7 +95,7 @@ final class NotificationRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE notification_queue 
-             SET status = "sent", sent_at = NOW(), error_message = NULL
+             SET status = "sent", sent_at = NOW(), error_message = NULL, failed_at = NULL
              WHERE id = :id'
         );
         $stmt->execute(['id' => $id]);
