@@ -73,7 +73,24 @@ final effectiveLocationIdProvider = Provider<int>((ref) {
 /// Provider per il numero massimo di giorni prenotabili in anticipo
 final maxBookingAdvanceDaysProvider = Provider<int>((ref) {
   final effectiveLocation = ref.watch(effectiveLocationProvider);
-  return effectiveLocation?.maxBookingAdvanceDays ?? 90;
+  if (effectiveLocation != null) {
+    return effectiveLocation.maxBookingAdvanceDays;
+  }
+
+  final locationsAsync = ref.watch(locationsProvider);
+  final fallbackLocationId = ref.watch(bookingConfigProvider).locationId;
+  return locationsAsync.maybeWhen(
+        data: (locations) {
+          if (locations.isEmpty) return 90;
+          final fallback = locations.firstWhere(
+            (l) => l.id == fallbackLocationId,
+            orElse: () => locations.first,
+          );
+          return fallback.maxBookingAdvanceDays;
+        },
+        orElse: () => 90,
+      ) ??
+      90;
 });
 
 /// Step del flow di prenotazione
@@ -192,6 +209,8 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     state = BookingFlowState(currentStep: initialStep);
     // Reset anche la location selezionata
     ref.read(selectedLocationProvider.notifier).clear();
+    // Reset anche le date disponibili per forzare ricaricamento
+    ref.read(availableDatesProvider.notifier).resetForNewSelection();
   }
 
   /// Vai allo step successivo
@@ -836,6 +855,7 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
   String? _lastKey;
   int _loadedDays = 0;
   bool _isLoadingMore = false;
+  bool _didPreload = false;
   final Set<DateTime> _allDates = {};
   static const int _chunkSize = 15;
 
@@ -866,6 +886,7 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
     _lastKey = key;
     _loadedDays = 0;
     _allDates.clear();
+    _didPreload = false;
     // Forza interruzione del caricamento in corso per permettere il nuovo
     _isLoadingMore = false;
     _loadNextChunk();
@@ -875,6 +896,7 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
     _lastKey = null;
     _loadedDays = 0;
     _allDates.clear();
+    _didPreload = false;
     // Forza interruzione del caricamento in corso
     _isLoadingMore = false;
     state = const AsyncValue.loading();
@@ -901,6 +923,22 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
     await _loadNextChunk();
   }
 
+  /// Carica fino a coprire almeno il giorno richiesto (indice relativo a oggi)
+  Future<void> loadUntilDay(int dayIndex) async {
+    if (dayIndex < 0 || _isLoadingMore) return;
+    final maxDays = _ref.read(maxBookingAdvanceDaysProvider);
+    if (maxDays <= 0) return;
+
+    final target = (dayIndex + _chunkSize).clamp(0, maxDays);
+    while (_loadedDays < target) {
+      final before = _loadedDays;
+      await _loadNextChunk();
+      if (_loadedDays == before) {
+        break;
+      }
+    }
+  }
+
   /// Verifica se ci sono altri giorni da caricare
   bool get hasMore {
     final maxDays = _ref.read(maxBookingAdvanceDaysProvider);
@@ -921,7 +959,7 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
     final staffId = bookingState.request.singleStaffId;
 
     debugPrint(
-      '[AvailableDatesNotifier] _loadNextChunk: locationId=$locationId, serviceIds=$serviceIds, staffId=$staffId',
+      '[AvailableDatesNotifier] _loadNextChunk: locationId=$locationId, serviceIds=$serviceIds, staffId=$staffId, loadedDays=$_loadedDays, maxDays=$maxDays',
     );
 
     if (locationId <= 0 || serviceIds.isEmpty) {
@@ -964,6 +1002,15 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
 
       _loadedDays = endDay;
       state = AsyncValue.data(Set.from(_allDates));
+
+      if (!_didPreload) {
+        _didPreload = true;
+        if (_loadedDays < maxDays) {
+          Future(() async {
+            await _loadNextChunk();
+          });
+        }
+      }
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     } finally {

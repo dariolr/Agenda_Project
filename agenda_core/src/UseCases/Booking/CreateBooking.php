@@ -36,6 +36,7 @@ final class CreateBooking
         private readonly LocationRepository $locationRepository,
         private readonly UserRepository $userRepository,
         private readonly ?NotificationRepository $notificationRepo = null,
+        private readonly ?ComputeAvailability $computeAvailability = null,
     ) {}
 
     /**
@@ -124,13 +125,101 @@ final class CreateBooking
             throw BookingException::invalidService($serviceIds);
         }
 
-        // If no staff specified, auto-assign first available
+        // Calculate total duration needed
+        $totalDuration = 0;
+        foreach ($services as $service) {
+            $totalDuration += (int) $service['duration_minutes'];
+        }
+
+        // If no staff specified, find first available staff for this slot
         if ($staffId === null) {
-            $availableStaff = $this->staffRepository->findByLocationId($locationId, $businessId);
-            if (empty($availableStaff)) {
-                throw BookingException::invalidStaff(0);
+            // Use ComputeAvailability to find staff with real availability
+            // (includes planning, exceptions, time blocks, and existing bookings)
+            if ($this->computeAvailability !== null) {
+                $dateStr = $startTime->format('Y-m-d');
+                $availabilityResult = $this->computeAvailability->execute(
+                    $businessId,
+                    $locationId,
+                    null, // any staff
+                    $totalDuration,
+                    $dateStr,
+                    $serviceIds,
+                    true // keepStaffInfo = true per ottenere staff_id
+                );
+                
+                $slots = $availabilityResult['slots'] ?? [];
+                $requestedStartFormatted = $startTime->format('Y-m-d H:i');
+                
+                // DEBUG: Log to file
+                $debugLog = __DIR__ . '/../../../logs/debug.log';
+                file_put_contents($debugLog, date('Y-m-d H:i:s') . " [CreateBooking] Looking for slot at: {$requestedStartFormatted}\n", FILE_APPEND);
+                file_put_contents($debugLog, date('Y-m-d H:i:s') . " [CreateBooking] Available slots count: " . count($slots) . "\n", FILE_APPEND);
+                foreach ($slots as $idx => $slot) {
+                    $slotStart = new DateTimeImmutable($slot['start_time']);
+                    $staffIdInSlot = $slot['staff_id'] ?? 'N/A';
+                    file_put_contents($debugLog, date('Y-m-d H:i:s') . " [CreateBooking] Slot {$idx}: {$slotStart->format('Y-m-d H:i')} staff_id={$staffIdInSlot}\n", FILE_APPEND);
+                }
+                
+                // Find a staff that has this exact slot available
+                $foundStaff = null;
+                foreach ($slots as $slot) {
+                    // Compare start times (normalize to same format)
+                    $slotStart = new DateTimeImmutable($slot['start_time']);
+                    if ($slotStart->format('Y-m-d H:i') === $requestedStartFormatted) {
+                        if (isset($slot['staff_id'])) {
+                            $foundStaff = ['id' => $slot['staff_id']];
+                            file_put_contents($debugLog, date('Y-m-d H:i:s') . " [CreateBooking] Found matching slot with staff_id: {$slot['staff_id']}\n", FILE_APPEND);
+                            break;
+                        }
+                    }
+                }
+                
+                if ($foundStaff === null) {
+                    file_put_contents($debugLog, date('Y-m-d H:i:s') . " [CreateBooking] No staff found for slot {$requestedStartFormatted}\n", FILE_APPEND);
+                    throw BookingException::slotConflict(['message' => 'No staff available for this time slot']);
+                }
+                
+                $staffId = (int) $foundStaff['id'];
+            } else {
+                // Fallback: use basic check (legacy behavior)
+                $availableStaff = $this->staffRepository->findByLocationId($locationId, $businessId);
+                if (empty($availableStaff)) {
+                    throw BookingException::invalidStaff(0);
+                }
+                
+                // Filter staff that can perform ALL requested services
+                $eligibleStaff = array_filter($availableStaff, function($staff) use ($serviceIds, $locationId, $businessId) {
+                    return $this->staffRepository->canPerformServices((int) $staff['id'], $serviceIds, $locationId, $businessId);
+                });
+                
+                if (empty($eligibleStaff)) {
+                    throw BookingException::invalidStaff(0);
+                }
+                
+                // Find first staff without conflicts for this time slot
+                $slotEndTime = $startTime->modify("+{$totalDuration} minutes");
+                $foundStaff = null;
+                
+                foreach ($eligibleStaff as $staff) {
+                    $conflicts = $this->bookingRepository->checkConflicts(
+                        (int) $staff['id'],
+                        $locationId,
+                        $startTime,
+                        $slotEndTime
+                    );
+                    
+                    if (empty($conflicts)) {
+                        $foundStaff = $staff;
+                        break;
+                    }
+                }
+                
+                if ($foundStaff === null) {
+                    throw BookingException::slotConflict(['message' => 'No staff available for this time slot']);
+                }
+                
+                $staffId = (int) $foundStaff['id'];
             }
-            $staffId = (int) $availableStaff[0]['id'];
         }
 
         // Validate staff belongs to location
@@ -553,13 +642,67 @@ final class CreateBooking
             throw BookingException::invalidService($serviceIds);
         }
 
-        // If no staff specified, auto-assign first available
+        // Calculate total duration
+        $totalDuration = 0;
+        foreach ($services as $service) {
+            $totalDuration += (int) $service['duration_minutes'];
+        }
+
+        // If no staff specified, find available staff using ComputeAvailability
         if ($staffId === null) {
-            $availableStaff = $this->staffRepository->findByLocationId($locationId, $businessId);
-            if (empty($availableStaff)) {
-                throw BookingException::invalidStaff(0);
+            $debugLog = __DIR__ . '/../../../logs/debug.log';
+            
+            if ($this->computeAvailability !== null) {
+                $dateStr = $startTimeLocal->format('Y-m-d');
+                $availabilityResult = $this->computeAvailability->execute(
+                    $businessId,
+                    $locationId,
+                    null, // any staff
+                    $totalDuration,
+                    $dateStr,
+                    $serviceIds,
+                    true // keepStaffInfo = true per ottenere staff_id
+                );
+                
+                $slots = $availabilityResult['slots'] ?? [];
+                $requestedStartFormatted = $startTimeLocal->format('Y-m-d H:i');
+                
+                // DEBUG
+                file_put_contents($debugLog, date('Y-m-d H:i:s') . " [executeForCustomer] Looking for slot at: {$requestedStartFormatted}\n", FILE_APPEND);
+                file_put_contents($debugLog, date('Y-m-d H:i:s') . " [executeForCustomer] Available slots count: " . count($slots) . "\n", FILE_APPEND);
+                foreach (array_slice($slots, 0, 10) as $idx => $slot) {
+                    $slotStart = new DateTimeImmutable($slot['start_time']);
+                    $staffIdInSlot = $slot['staff_id'] ?? 'N/A';
+                    file_put_contents($debugLog, date('Y-m-d H:i:s') . " [executeForCustomer] Slot {$idx}: {$slotStart->format('Y-m-d H:i')} staff_id={$staffIdInSlot}\n", FILE_APPEND);
+                }
+                
+                // Find staff that has this exact slot available
+                $foundStaff = null;
+                foreach ($slots as $slot) {
+                    $slotStart = new DateTimeImmutable($slot['start_time']);
+                    if ($slotStart->format('Y-m-d H:i') === $requestedStartFormatted) {
+                        if (isset($slot['staff_id'])) {
+                            $foundStaff = ['id' => $slot['staff_id']];
+                            file_put_contents($debugLog, date('Y-m-d H:i:s') . " [executeForCustomer] Found matching slot with staff_id: {$slot['staff_id']}\n", FILE_APPEND);
+                            break;
+                        }
+                    }
+                }
+                
+                if ($foundStaff === null) {
+                    file_put_contents($debugLog, date('Y-m-d H:i:s') . " [executeForCustomer] No staff found for slot {$requestedStartFormatted}\n", FILE_APPEND);
+                    throw BookingException::slotConflict(['message' => 'No staff available for this time slot']);
+                }
+                
+                $staffId = (int) $foundStaff['id'];
+            } else {
+                // Fallback: legacy behavior
+                $availableStaff = $this->staffRepository->findByLocationId($locationId, $businessId);
+                if (empty($availableStaff)) {
+                    throw BookingException::invalidStaff(0);
+                }
+                $staffId = (int) $availableStaff[0]['id'];
             }
-            $staffId = (int) $availableStaff[0]['id'];
         }
 
         // Validate staff belongs to location

@@ -37,6 +37,7 @@ final class ComputeAvailability
      * @param int $durationMinutes Total duration needed
      * @param string $date Date in Y-m-d format
      * @param array<int> $serviceIds Services requested (used to filter eligible staff)
+     * @param bool $keepStaffInfo If true, keep staff_id even when deduplicating (for internal use)
      * @return array Available slots
      */
     public function execute(
@@ -45,7 +46,8 @@ final class ComputeAvailability
         ?int $staffId,
         int $durationMinutes,
         string $date,
-        array $serviceIds
+        array $serviceIds,
+        bool $keepStaffInfo = false
     ): array {
         // Get timezone and booking limits from location
         $location = $this->locationRepository->findById($locationId);
@@ -129,8 +131,10 @@ final class ComputeAvailability
             foreach ($allSlots as $slot) {
                 if (!isset($seenStartTimes[$slot['start_time']])) {
                     $seenStartTimes[$slot['start_time']] = true;
-                    // Rimuovi staff_id e staff_name per "qualsiasi operatore"
-                    unset($slot['staff_id'], $slot['staff_name']);
+                    // Mantieni staff_id se richiesto (per CreateBooking), altrimenti rimuovi (per API pubblica)
+                    if (!$keepStaffInfo) {
+                        unset($slot['staff_id'], $slot['staff_name']);
+                    }
                     $uniqueSlots[] = $slot;
                 }
             }
@@ -277,8 +281,8 @@ final class ComputeAvailability
         }
 
         // === SLOT OPPORTUNISTICI ===
-        // Aggiungi slot che partono dalla fine di appuntamenti esistenti
-        // Es: se un appuntamento finisce alle 12:50, aggiungi slot 12:50
+        // 1) Slot che PARTONO dalla fine di appuntamenti esistenti
+        // Es: appuntamento finisce alle 12:50 → aggiungi slot 12:50
         foreach ($occupied as $occ) {
             $opportunisticStart = $occ['end'];
             
@@ -294,6 +298,57 @@ final class ComputeAvailability
             }
             
             $opportunisticEnd = $opportunisticStart->modify("+{$durationMinutes} minutes");
+            
+            // Verifica che lo slot sia dentro un intervallo di lavoro
+            $inWorkingInterval = false;
+            foreach ($workingIntervals as $interval) {
+                if ($opportunisticStart >= $interval['start'] && $opportunisticEnd <= $interval['end']) {
+                    $inWorkingInterval = true;
+                    break;
+                }
+            }
+            
+            if (!$inWorkingInterval) {
+                continue;
+            }
+            
+            // Verifica che non ci siano conflitti con altri slot occupati
+            $hasConflict = false;
+            foreach ($occupied as $otherOcc) {
+                if ($opportunisticStart < $otherOcc['end'] && $opportunisticEnd > $otherOcc['start']) {
+                    $hasConflict = true;
+                    break;
+                }
+            }
+            
+            if (!$hasConflict) {
+                $startTimeKey = $opportunisticStart->format('c');
+                if (!isset($addedStartTimes[$startTimeKey])) {
+                    $availableSlots[] = [
+                        'start_time' => $startTimeKey,
+                        'end_time' => $opportunisticEnd->format('c'),
+                    ];
+                    $addedStartTimes[$startTimeKey] = true;
+                }
+            }
+        }
+        
+        // 2) Slot che FINISCONO all'inizio di appuntamenti esistenti
+        // Es: appuntamento inizia alle 12:40, servizio 35 min → aggiungi slot 12:05
+        foreach ($occupied as $occ) {
+            $opportunisticEnd = $occ['start'];
+            $opportunisticStart = $opportunisticEnd->modify("-{$durationMinutes} minutes");
+            
+            // Skip se è già un orario multiplo di SLOT_INTERVAL_MINUTES
+            $minutes = (int) $opportunisticStart->format('i');
+            if ($minutes % self::SLOT_INTERVAL_MINUTES === 0) {
+                continue;
+            }
+            
+            // Skip se è prima del minimo tempo di prenotazione
+            if ($opportunisticStart <= $minBookingTime) {
+                continue;
+            }
             
             // Verifica che lo slot sia dentro un intervallo di lavoro
             $inWorkingInterval = false;
