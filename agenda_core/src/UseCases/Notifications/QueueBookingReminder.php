@@ -42,7 +42,7 @@ final class QueueBookingReminder
         $recipientType = 'user';
         $recipientId = null;
         $recipientEmail = null;
-        $clientName = null;
+        $clientName = $booking['client_name'] ?? null;
         
         // Notifications go ONLY to clients, never to operators
         if (!isset($booking['client_id']) || empty($booking['client_id'])) {
@@ -80,7 +80,7 @@ final class QueueBookingReminder
 
         // Prepare variables
         $variables = [
-            'client_name' => $clientName ?? 'Cliente',
+            'client_name' => $clientName,
             'business_name' => $booking['business_name'] ?? '',
             'business_email' => $booking['business_email'] ?? '',
             'location_name' => $booking['location_name'] ?? '',
@@ -94,6 +94,9 @@ final class QueueBookingReminder
             'services' => $booking['services'] ?? '',
             'manage_url' => $booking['manage_url'] ?? '#',
         ];
+        if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
+            $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
+        }
         
         $template = EmailTemplateRenderer::bookingReminder();
         

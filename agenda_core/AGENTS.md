@@ -93,8 +93,13 @@ Notifiche Email (M10):
 **Configurazione Sender Email (12/01/2026):**
 - `MAIL_FROM_ADDRESS` deve essere un mittente **verificato su Brevo**
 - Email business NON verificata → usare sender globale con reply-to al business
-- Worker usa: `MAIL_FROM_ADDRESS` come sender, `business_email` come reply-to
-- Sender verificato attuale: `conferma-appuntamento@romeolab.it`
+- Worker usa sender per canale (se presente), altrimenti `MAIL_FROM_ADDRESS`
+- Variabili per canale (opzionali, mittenti verificati):
+  - `MAIL_FROM_ADDRESS_BOOKING_CONFIRMED`
+  - `MAIL_FROM_ADDRESS_BOOKING_REMINDER`
+  - `MAIL_FROM_ADDRESS_BOOKING_CANCELLED`
+  - `MAIL_FROM_ADDRESS_BOOKING_RESCHEDULED`
+- `notification_queue.failed_at` viene azzerato quando la notifica va in `sent` (markSent) per evitare residui da retry riusciti.
 
 **Template Variables (12/01/2026):**
 | Template | Variabili obbligatorie |

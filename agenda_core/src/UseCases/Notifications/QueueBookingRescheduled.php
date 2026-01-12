@@ -44,7 +44,7 @@ final class QueueBookingRescheduled
         $recipientType = 'client';
         $recipientId = null;
         $recipientEmail = null;
-        $clientName = $booking['client_name'] ?? 'Cliente';
+        $clientName = $booking['client_name'] ?? null;
         
         if (isset($booking['client_id']) && !empty($booking['client_id'])) {
             $recipientId = (int) $booking['client_id'];
@@ -94,6 +94,9 @@ final class QueueBookingRescheduled
             'manage_url' => $booking['manage_url'] ?? '#',
             'booking_url' => $booking['booking_url'] ?? '#',
         ];
+        if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
+            $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
+        }
         
         $template = EmailTemplateRenderer::bookingRescheduled();
         
