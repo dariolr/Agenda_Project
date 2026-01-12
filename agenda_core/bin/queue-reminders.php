@@ -6,23 +6,23 @@ declare(strict_types=1);
 /**
  * Queue Upcoming Reminders
  * 
- * Scans bookings scheduled in the next 24-48 hours and queues reminder notifications.
+ * Scans bookings scheduled in the next 48 hours and queues reminder notifications.
  * Run via cron: 0 * * * * php /path/to/agenda_core/bin/queue-reminders.php
  * 
  * Options:
- *   --hours=N     Look ahead N hours (default: 24)
  *   --verbose     Show detailed output
- *   --dry-run     Don't actually queue reminders
+ *   --dry-run     Don't actually queue reminders (just show what would be queued)
+ *   --help        Show this help message
  */
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use AgendaCore\Infrastructure\Persistence\DatabaseConnection;
-use AgendaCore\Infrastructure\Persistence\NotificationRepository;
-use AgendaCore\UseCases\Notification\QueueBookingReminder;
+use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\UseCases\Notifications\QueueBookingReminder;
 
 // Parse CLI options
-$options = getopt('', ['hours::', 'verbose', 'dry-run', 'help']);
+$options = getopt('', ['verbose', 'dry-run', 'help']);
 
 if (isset($options['help'])) {
     echo <<<HELP
@@ -31,16 +31,20 @@ Queue Upcoming Reminders
 Usage: php queue-reminders.php [options]
 
 Options:
-  --hours=N     Look ahead N hours for bookings (default: 24)
   --verbose     Show detailed output
-  --dry-run     Don't actually queue reminders
+  --dry-run     Show what would be queued without actually queuing
   --help        Show this help message
+
+Notes:
+  - Scans bookings in the next 48 hours
+  - Only queues reminders for bookings with client_id (registered customers)
+  - Respects business notification settings (email_reminder_enabled)
+  - Uses email_reminder_hours setting for scheduling (default 24h before)
 
 HELP;
     exit(0);
 }
 
-$hoursAhead = isset($options['hours']) ? (int) $options['hours'] : 24;
 $verbose = isset($options['verbose']);
 $dryRun = isset($options['dry-run']);
 
@@ -54,178 +58,77 @@ if (file_exists($envFile)) {
         }
         if (str_contains($line, '=')) {
             [$key, $value] = explode('=', $line, 2);
-            $_ENV[trim($key)] = trim($value);
+            $key = trim($key);
+            $value = trim($value);
+            // Remove quotes if present
+            $value = trim($value, '"\'');
+            $_ENV[$key] = $value;
+            putenv("$key=$value");
         }
     }
 }
 
-// Initialize services
-try {
-    $db = DatabaseConnection::getInstance();
-    $notificationRepo = new NotificationRepository($db);
-} catch (\Throwable $e) {
-    fwrite(STDERR, "Failed to initialize services: {$e->getMessage()}\n");
-    exit(1);
-}
-
 if ($verbose) {
-    echo "Queue Reminders started\n";
-    echo "Looking ahead: {$hoursAhead} hours\n";
+    echo "[" . date('Y-m-d H:i:s') . "] Queue Reminders started\n";
     echo "Dry run: " . ($dryRun ? 'yes' : 'no') . "\n";
     echo "---\n";
 }
 
-// Find bookings in the next N hours that don't have a reminder queued yet
-$now = new DateTimeImmutable();
-$until = $now->modify("+{$hoursAhead} hours");
-
-$sql = "
-    SELECT 
-        b.id AS booking_id,
-        b.start_time,
-        b.notes,
-        u.id AS user_id,
-        u.email AS customer_email,
-        u.first_name AS customer_first_name,
-        u.last_name AS customer_last_name,
-        s.name AS service_name,
-        st.first_name AS staff_first_name,
-        st.last_name AS staff_last_name,
-        l.name AS location_name,
-        l.address AS location_address,
-        bu.name AS business_name
-    FROM bookings b
-    JOIN users u ON b.user_id = u.id
-    JOIN booking_services bs ON bs.booking_id = b.id
-    JOIN services s ON bs.service_id = s.id
-    LEFT JOIN staff st ON b.staff_id = st.id
-    LEFT JOIN locations l ON b.location_id = l.id
-    LEFT JOIN businesses bu ON b.business_id = bu.id
-    WHERE b.status = 'confirmed'
-    AND b.start_time BETWEEN :now AND :until
-    AND NOT EXISTS (
-        SELECT 1 FROM notification_queue nq
-        WHERE nq.type = 'booking_reminder'
-        AND nq.recipient = u.email
-        AND JSON_EXTRACT(nq.payload, '$.booking_id') = b.id
-        AND nq.status IN ('pending', 'processing', 'sent')
-    )
-    GROUP BY b.id
-    ORDER BY b.start_time ASC
-";
-
+// Initialize services
 try {
-    $stmt = $db->prepare($sql);
-    $stmt->execute([
-        'now' => $now->format('Y-m-d H:i:s'),
-        'until' => $until->format('Y-m-d H:i:s'),
-    ]);
-    $bookings = $stmt->fetchAll();
-} catch (\PDOException $e) {
-    // Table might not exist yet or different schema
-    if ($verbose) {
-        echo "Query failed (schema might differ): {$e->getMessage()}\n";
-    }
-    $bookings = [];
+    $db = Connection::getInstance();
+    $notificationRepo = new NotificationRepository($db);
+    $queueReminder = new QueueBookingReminder($db, $notificationRepo);
+} catch (\Throwable $e) {
+    fwrite(STDERR, "[ERROR] Failed to initialize services: {$e->getMessage()}\n");
+    exit(1);
 }
 
-$count = count($bookings);
-
-if ($count === 0) {
-    if ($verbose) {
-        echo "No bookings need reminders\n";
-    }
+// Dry run mode: just show statistics
+if ($dryRun) {
+    // Count bookings that would be queued
+    $stmt = $db->getPdo()->prepare(
+        'SELECT COUNT(DISTINCT b.id) as total
+         FROM bookings b
+         JOIN booking_items bi ON b.id = bi.booking_id
+         WHERE b.status IN ("pending", "confirmed")
+           AND (b.client_id IS NOT NULL OR b.user_id IS NOT NULL)
+           AND bi.start_time BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 48 HOUR)
+           AND NOT EXISTS (
+               SELECT 1 FROM notification_queue nq 
+               WHERE nq.booking_id = b.id 
+                 AND nq.channel = "booking_reminder"
+                 AND nq.status IN ("pending", "processing", "sent")
+           )'
+    );
+    $stmt->execute();
+    $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+    $count = $row['total'] ?? 0;
+    
+    echo "[DRY-RUN] Found {$count} booking(s) that would have reminders queued\n";
     exit(0);
 }
 
-if ($verbose) {
-    echo "Found {$count} booking(s) needing reminders\n";
-}
-
-$queued = 0;
-$skipped = 0;
-
-foreach ($bookings as $booking) {
-    $bookingId = $booking['booking_id'];
-    $customerEmail = $booking['customer_email'];
-    $startTime = new DateTimeImmutable($booking['start_time']);
+// Queue reminders
+try {
+    $queued = $queueReminder->queueUpcomingReminders();
     
     if ($verbose) {
-        echo "[{$bookingId}] {$customerEmail} at {$startTime->format('Y-m-d H:i')}... ";
-    }
-    
-    // Check business notification settings
-    $businessId = $booking['business_id'] ?? null;
-    if ($businessId) {
-        $settings = $notificationRepo->getSettings($businessId);
-        if (!($settings['reminder_enabled'] ?? true)) {
-            if ($verbose) {
-                echo "SKIPPED (disabled)\n";
-            }
-            $skipped++;
-            continue;
+        echo "---\n";
+        echo "[" . date('Y-m-d H:i:s') . "] Completed: {$queued} reminder(s) queued\n";
+    } else {
+        // Log only if something was queued
+        if ($queued > 0) {
+            echo "[" . date('Y-m-d H:i:s') . "] Queued {$queued} reminder(s)\n";
         }
     }
     
-    if ($dryRun) {
-        if ($verbose) {
-            echo "DRY-RUN OK\n";
-        }
-        $queued++;
-        continue;
+} catch (\Throwable $e) {
+    fwrite(STDERR, "[ERROR] Failed to queue reminders: {$e->getMessage()}\n");
+    if ($verbose) {
+        fwrite(STDERR, $e->getTraceAsString() . "\n");
     }
-    
-    try {
-        // Queue reminder to be sent immediately (booking is within 24h)
-        $payload = [
-            'booking_id' => $bookingId,
-            'client_name' => trim($booking['customer_first_name'] . ' ' . ($booking['customer_last_name'] ?? '')),
-            'customer_email' => $customerEmail,
-            'service_name' => $booking['service_name'],
-            'staff_name' => trim(($booking['staff_first_name'] ?? '') . ' ' . ($booking['staff_last_name'] ?? '')),
-            'date_time' => $startTime->format('d/m/Y H:i'),
-            'location_name' => $booking['location_name'] ?? '',
-            'location_address' => $booking['location_address'] ?? '',
-            'business_name' => $booking['business_name'] ?? 'Agenda',
-            'notes' => $booking['notes'] ?? '',
-        ];
-        
-        // Check deduplication
-        if ($notificationRepo->wasRecentlySent('booking_reminder', $customerEmail, $bookingId, 24)) {
-            if ($verbose) {
-                echo "SKIPPED (already sent)\n";
-            }
-            $skipped++;
-            continue;
-        }
-        
-        $notificationRepo->queue(
-            type: 'booking_reminder',
-            channel: 'email',
-            recipient: $customerEmail,
-            payload: $payload,
-            scheduledAt: null, // Send immediately
-            priority: 5
-        );
-        
-        $queued++;
-        if ($verbose) {
-            echo "QUEUED\n";
-        }
-        
-    } catch (\Throwable $e) {
-        if ($verbose) {
-            echo "FAILED: {$e->getMessage()}\n";
-        } else {
-            error_log("Failed to queue reminder for booking {$bookingId}: {$e->getMessage()}");
-        }
-        $skipped++;
-    }
-}
-
-if ($verbose) {
-    echo "---\n";
-    echo "Completed: {$queued} queued, {$skipped} skipped\n";
+    exit(1);
 }
 
 exit(0);

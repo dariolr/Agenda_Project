@@ -1,5 +1,20 @@
 # Documentazione Aggiornata — 15 Gennaio 2025
 
+---
+
+## Aggiornamento — 12 Gennaio 2026
+
+### agenda_frontend
+- Flow booking: reset coerente degli step quando si torna indietro (staff/slot/data/notes).
+- Calendario disponibilita: reset completo come "primo accesso" quando si rientra nello step date/time.
+- Calendario disponibilita: load progressivo piu robusto su scroll veloce (jump load) + preload di un chunk.
+- Staff step: se c'e un solo operatore non mostra "Qualsiasi operatore".
+- Auth routing: `/:slug/booking` non richiede autenticazione per evitare redirect loop su login.
+- maxBookingAdvanceDays: usa la location effettiva o fallback di business per evitare mismatch.
+
+### agenda_backend
+- Agenda: stato vuoto per business senza sedi, evita loading infinito sugli appuntamenti.
+
 ## 📋 Riepilogo Modifiche
 
 Analisi completa del progetto eseguita e tutta la documentazione è stata aggiornata per riflettere lo stato attuale dell'implementazione.

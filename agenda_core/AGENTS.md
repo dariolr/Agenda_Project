@@ -90,6 +90,20 @@ Notifiche Email (M10):
 - Template: bookingConfirmed, bookingCancelled, bookingReminder, bookingRescheduled
 - **Test mode**: `NOTIFICATION_TEST_MODE=true` → email inviate a `nome.cognome@romeolab.it`
 
+**Configurazione Sender Email (12/01/2026):**
+- `MAIL_FROM_ADDRESS` deve essere un mittente **verificato su Brevo**
+- Email business NON verificata → usare sender globale con reply-to al business
+- Worker usa: `MAIL_FROM_ADDRESS` come sender, `business_email` come reply-to
+- Sender verificato attuale: `conferma-appuntamento@romeolab.it`
+
+**Template Variables (12/01/2026):**
+| Template | Variabili obbligatorie |
+|----------|------------------------|
+| `bookingConfirmed` | client_name, business_name, location_name, location_address, location_city, location_phone, date, time, services, total_price, cancel_deadline, manage_url |
+| `bookingReminder` | client_name, business_name, location_name, location_address, location_phone, date, time, services, manage_url |
+| `bookingCancelled` | client_name, business_name, location_address, location_city, date, time, services, booking_url |
+| `bookingRescheduled` | client_name, business_name, old_date, old_time, date, time, location_name, location_address, services, manage_url |
+
 Cron Jobs (02/01/2026):
 | Job | Comando | Intervallo | Scopo |
 |-----|---------|------------|-------|
@@ -805,6 +819,62 @@ L'integrazione customer auth è **COMPLETATA** in `agenda_frontend`:
 5. Token JWT con role: "customer" salvato in memoria
 6. businessId salvato in localStorage/secureStorage per refresh
 ```
+
+---
+
+## 📅 ComputeAvailability e Slot Opportunistici (12/01/2026)
+
+### Parametro `keepStaffInfo`
+
+`ComputeAvailability::execute()` accetta un parametro opzionale `keepStaffInfo`:
+- **false (default)**: Ritorna slot aggregati con `staff_id: null` per uso pubblico
+- **true**: Ritorna slot con `staff_id` reale, per uso interno (es. `CreateBooking`)
+
+### Slot Opportunistici
+
+Gli slot opportunistici sono orari non-standard che diventano disponibili grazie a prenotazioni esistenti:
+
+**Forward (slot che iniziano alla fine di booking esistenti):**
+```
+Planning: 09:00-12:00 (slot ogni 30min)
+Booking esistente: 09:15-09:45
+→ Slot opportunistico: 09:45 (non standard, ma disponibile)
+```
+
+**Backward (slot che finiscono all'inizio di booking esistenti):**
+```
+Planning: 09:00-12:00 (slot ogni 30min)
+Servizio richiesto: 30min
+Booking esistente: 10:15-10:45
+→ Slot opportunistico: 09:45 (finisce esattamente quando inizia il booking)
+```
+
+### Selezione Staff per "Qualsiasi Operatore"
+
+Quando `staff_id` è null (qualsiasi operatore), `CreateBooking` usa `ComputeAvailability` con `keepStaffInfo=true` per trovare uno staff realmente disponibile:
+
+```php
+// CreateBooking.php
+if ($staffId === null) {
+    $availability = $this->computeAvailability->execute(
+        locationId: $locationId,
+        serviceIds: $serviceIds,
+        date: $startTime->format('Y-m-d'),
+        staffId: null,
+        keepStaffInfo: true  // Mantiene info staff per assegnazione
+    );
+    // Trova slot corrispondente e usa il suo staff_id
+}
+```
+
+### File Modificati
+
+| File | Modifica |
+|------|----------|
+| `ComputeAvailability.php` | Parametro `keepStaffInfo`, slot opportunistici forward e backward |
+| `CreateBooking.php` | Usa `ComputeAvailability` per trovare staff disponibile |
+| `QueueBookingReminder.php` | Supporto `client_id`, costruzione `manage_url` |
+| `queue-reminders.php` | Riscritto per usare `QueueBookingReminder::queueUpcomingReminders()` |
 
 ---
 

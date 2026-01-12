@@ -123,26 +123,35 @@ final class QueueBookingReminder
     public function queueUpcomingReminders(): int
     {
         // Find bookings starting in next 48 hours without reminder queued
+        // Support both client_id (customers) and user_id (legacy operators)
         $stmt = $this->db->getPdo()->prepare(
             'SELECT 
                 b.id as booking_id,
                 b.user_id,
+                b.client_id,
+                b.client_name,
                 b.status,
                 l.business_id,
                 bus.name as business_name,
+                bus.email as business_email,
+                bus.slug as business_slug,
                 l.name as location_name,
                 l.address as location_address,
                 l.phone as location_phone,
+                l.email as location_email,
+                c.email as client_email,
+                CONCAT(c.first_name, " ", c.last_name) as client_full_name,
                 MIN(bi.start_time) as start_time,
                 GROUP_CONCAT(DISTINCT s.name SEPARATOR ", ") as services
              FROM bookings b
              JOIN locations l ON b.location_id = l.id
              JOIN businesses bus ON l.business_id = bus.id
+             LEFT JOIN clients c ON b.client_id = c.id
              LEFT JOIN booking_items bi ON b.id = bi.booking_id
              LEFT JOIN service_variants sv ON bi.service_variant_id = sv.id
              LEFT JOIN services s ON sv.service_id = s.id
              WHERE b.status IN ("pending", "confirmed")
-               AND b.user_id IS NOT NULL
+               AND (b.client_id IS NOT NULL OR b.user_id IS NOT NULL)
                AND bi.start_time BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 48 HOUR)
                AND NOT EXISTS (
                    SELECT 1 FROM notification_queue nq 
@@ -155,6 +164,19 @@ final class QueueBookingReminder
         );
         $stmt->execute();
         $bookings = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        
+        // Get frontend URL from env
+        $frontendUrl = getenv('FRONTEND_URL') ?: 'https://prenota.romeolab.it';
+        
+        // Process bookings to set client_name and manage_url properly
+        foreach ($bookings as &$booking) {
+            if (!empty($booking['client_full_name'])) {
+                $booking['client_name'] = $booking['client_full_name'];
+            }
+            // Build manage_url from business slug
+            $slug = $booking['business_slug'] ?? '';
+            $booking['manage_url'] = $frontendUrl . '/' . $slug . '/my-bookings';
+        }
 
         $queued = 0;
         foreach ($bookings as $booking) {
