@@ -362,8 +362,10 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
               getWeekdayAbbr: getWeekdayAbbr,
               today: today,
               loadedDays: ref.watch(availableDatesProvider.notifier).loadedDays,
-              onLoadMore: () {
-                ref.read(availableDatesProvider.notifier).loadMore();
+              onLoadMore: (dayIndex) {
+                ref
+                    .read(availableDatesProvider.notifier)
+                    .loadUntilDay(dayIndex);
               },
               onDateSelected: (date) {
                 ref.read(selectedDateProvider.notifier).state = date;
@@ -394,6 +396,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
     final l10n = context.l10n;
     final bookingState = ref.watch(bookingFlowProvider);
     final selectedSlot = bookingState.request.selectedSlot;
+    final selectedDate = ref.watch(selectedDateProvider);
 
     // Raggruppa per fascia oraria
     final morningSlots = slots.where((s) => s.startTime.hour < 12).toList();
@@ -402,11 +405,41 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
         .toList();
     final eveningSlots = slots.where((s) => s.startTime.hour >= 18).toList();
 
+    // Formatta la data in formato esteso localizzato
+    String formattedDate = '';
+    if (selectedDate != null) {
+      final locale = Localizations.localeOf(context).toString();
+      final now = DateTime.now();
+      // Se l'anno è diverso dall'attuale, mostralo
+      if (selectedDate.year != now.year) {
+        formattedDate = DateFormat(
+          'EEEE d MMMM yyyy',
+          locale,
+        ).format(selectedDate);
+      } else {
+        formattedDate = DateFormat('EEEE d MMMM', locale).format(selectedDate);
+      }
+      // Capitalizza la prima lettera
+      formattedDate =
+          formattedDate[0].toUpperCase() + formattedDate.substring(1);
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Data selezionata in formato esteso
+          if (formattedDate.isNotEmpty) ...[
+            Text(
+              formattedDate,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           if (morningSlots.isNotEmpty) ...[
             Text(l10n.dateTimeMorning, style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
@@ -529,7 +562,7 @@ class _HorizontalDateList extends StatefulWidget {
   final String Function(DateTime) getWeekdayAbbr;
   final DateTime today;
   final void Function(DateTime) onDateSelected;
-  final VoidCallback onLoadMore;
+  final void Function(int dayIndex) onLoadMore;
   final int loadedDays;
 
   @override
@@ -550,11 +583,15 @@ class _HorizontalDateListState extends State<_HorizontalDateList> {
   }
 
   void _onScroll() {
+    _maybeLoadMore();
+  }
+
+  void _maybeLoadMore() {
     // Carica più date quando si avvicina alla fine dei giorni caricati
     final currentDay = (_scrollController.offset / _itemWidth).floor();
     // Triggerare caricamento quando siamo a 5 giorni dalla fine dei giorni caricati
     if (currentDay >= widget.loadedDays - 5) {
-      widget.onLoadMore();
+      widget.onLoadMore(currentDay);
     }
   }
 
@@ -580,6 +617,12 @@ class _HorizontalDateListState extends State<_HorizontalDateList> {
           curve: Curves.easeInOut,
         );
       }
+    }
+    if (widget.loadedDays != oldWidget.loadedDays) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _maybeLoadMore();
+      });
     }
   }
 
