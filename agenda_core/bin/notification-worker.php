@@ -128,29 +128,31 @@ foreach ($notifications as $notification) {
             continue;
         }
         
-        // Dynamic sender per-business
+        // Sender: ALWAYS use the verified sender from .env
+        // The business email is used as reply-to only
         $variables = $payload['variables'] ?? $payload;
         
-        // Priority: sender_email (pre-computed) > business_email > null (use .env)
-        $fromEmail = $variables['sender_email'] 
+        // From: always use .env (must be verified on Brevo)
+        $fromEmail = null; // EmailService will use MAIL_FROM_ADDRESS from .env
+        $fromName = $variables['business_name'] ?? null; // Show business name as sender name
+        
+        // Reply-To: use business/location email so replies go to the business
+        $replyTo = $variables['sender_email'] 
             ?? $variables['location_email'] 
             ?? $variables['business_email'] 
             ?? null;
         
-        // Priority: sender_name (pre-computed) > location_name (if has email) > business_name > null
-        $fromName = $variables['sender_name'] 
-            ?? (!empty($variables['location_email']) ? $variables['location_name'] : null)
-            ?? $variables['business_name'] 
-            ?? null;
-        
-        $replyTo = $fromEmail; // Reply to the same prioritized email
+        // Render template placeholders in subject and body
+        $subject = EmailTemplateRenderer::render($templateData['subject'], $variables);
+        $htmlBody = EmailTemplateRenderer::render($templateData['html'], $variables);
+        $textBody = isset($templateData['text']) ? EmailTemplateRenderer::render($templateData['text'], $variables) : null;
         
         // Send email
         $success = $emailService->send(
             to: $recipient,
-            subject: $templateData['subject'],
-            htmlBody: $templateData['html'],
-            textBody: $templateData['text'],
+            subject: $subject,
+            htmlBody: $htmlBody,
+            textBody: $textBody,
             fromEmail: $fromEmail,  // Dynamic: location > business > .env
             fromName: $fromName,    // Dynamic: location > business > .env
             replyTo: $replyTo       // Reply to location/business email

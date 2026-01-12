@@ -592,6 +592,57 @@ L'integrazione customer auth è stata implementata. I seguenti file sono stati m
 
 Vedi [TOKEN_STORAGE_WEB.md](TOKEN_STORAGE_WEB.md) per dettagli implementazione web.
 
+---
+
+## 📅 Slot Disponibilità e Data Display (12/01/2026)
+
+### Slot Opportunistici
+
+Gli slot opportunistici sono orari non-standard creati dal backend grazie a prenotazioni esistenti:
+- **Forward**: slot che iniziano alla fine di una prenotazione esistente
+- **Backward**: slot che finiscono all'inizio di una prenotazione esistente
+
+Il frontend riceve questi slot già calcolati dall'API - **nessuna logica da implementare lato client**.
+
+### Deduplicazione Slot "Qualsiasi Operatore"
+
+Quando l'utente seleziona "Qualsiasi operatore", l'API ritorna slot da tutti gli staff disponibili.
+Per evitare duplicati, il frontend deduplica per `start_time`:
+
+```dart
+// booking_provider.dart
+final deduplicatedSlots = <String, AvailableSlot>{};
+for (final slot in allSlots) {
+  final key = slot.startTime.toIso8601String();
+  if (!deduplicatedSlots.containsKey(key)) {
+    deduplicatedSlots[key] = slot;
+  }
+}
+```
+
+### Data Display Esteso
+
+Lo step Data/Ora mostra la data selezionata in formato esteso:
+```
+Mercoledì 14 gennaio
+```
+
+### Reset Date su Modifica Servizi/Staff
+
+Quando l'utente torna indietro e modifica servizi o staff, le date disponibili vengono resettate:
+- `BookingNotifier.resetAvailability()` chiamato da `selectStaff()` e `resetFlow()`
+- Evita di mostrare slot non più validi per la nuova selezione
+
+### File di riferimento
+
+| Concetto | File |
+|----------|------|
+| Deduplicazione slot | `lib/features/booking/providers/booking_provider.dart` |
+| Data display | `lib/features/booking/presentation/screens/date_time_step.dart` |
+| Reset availability | `BookingNotifier` in booking_provider.dart |
+
+---
+
 
 SOURCE OF TRUTH: STAFF_PLANNING_MODEL.md
 
