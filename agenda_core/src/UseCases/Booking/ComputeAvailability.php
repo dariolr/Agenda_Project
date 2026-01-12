@@ -121,6 +121,22 @@ final class ComputeAvailability
         // Sort by start time
         usort($allSlots, fn($a, $b) => $a['start_time'] <=> $b['start_time']);
 
+        // Se staffId non è specificato ("qualsiasi operatore"), deduplica per orario
+        // Mostra ogni orario una sola volta (con il primo staff disponibile)
+        if ($staffId === null) {
+            $uniqueSlots = [];
+            $seenStartTimes = [];
+            foreach ($allSlots as $slot) {
+                if (!isset($seenStartTimes[$slot['start_time']])) {
+                    $seenStartTimes[$slot['start_time']] = true;
+                    // Rimuovi staff_id e staff_name per "qualsiasi operatore"
+                    unset($slot['staff_id'], $slot['staff_name']);
+                    $uniqueSlots[] = $slot;
+                }
+            }
+            return ['slots' => $uniqueSlots];
+        }
+
         return ['slots' => $allSlots];
     }
 
@@ -221,6 +237,7 @@ final class ComputeAvailability
 
         // Generate available slots
         $availableSlots = [];
+        $addedStartTimes = []; // Track start times to avoid duplicates
 
         foreach ($workingIntervals as $interval) {
             $current = $interval['start'];
@@ -245,15 +262,75 @@ final class ComputeAvailability
                 }
 
                 if (!$hasConflict) {
-                    $availableSlots[] = [
-                        'start_time' => $current->format('c'),
-                        'end_time' => $slotEnd->format('c'),
-                    ];
+                    $startTimeKey = $current->format('c');
+                    if (!isset($addedStartTimes[$startTimeKey])) {
+                        $availableSlots[] = [
+                            'start_time' => $startTimeKey,
+                            'end_time' => $slotEnd->format('c'),
+                        ];
+                        $addedStartTimes[$startTimeKey] = true;
+                    }
                 }
 
                 $current = $current->modify('+' . self::SLOT_INTERVAL_MINUTES . ' minutes');
             }
         }
+
+        // === SLOT OPPORTUNISTICI ===
+        // Aggiungi slot che partono dalla fine di appuntamenti esistenti
+        // Es: se un appuntamento finisce alle 12:50, aggiungi slot 12:50
+        foreach ($occupied as $occ) {
+            $opportunisticStart = $occ['end'];
+            
+            // Skip se è già un orario multiplo di SLOT_INTERVAL_MINUTES
+            $minutes = (int) $opportunisticStart->format('i');
+            if ($minutes % self::SLOT_INTERVAL_MINUTES === 0) {
+                continue;
+            }
+            
+            // Skip se è prima del minimo tempo di prenotazione
+            if ($opportunisticStart <= $minBookingTime) {
+                continue;
+            }
+            
+            $opportunisticEnd = $opportunisticStart->modify("+{$durationMinutes} minutes");
+            
+            // Verifica che lo slot sia dentro un intervallo di lavoro
+            $inWorkingInterval = false;
+            foreach ($workingIntervals as $interval) {
+                if ($opportunisticStart >= $interval['start'] && $opportunisticEnd <= $interval['end']) {
+                    $inWorkingInterval = true;
+                    break;
+                }
+            }
+            
+            if (!$inWorkingInterval) {
+                continue;
+            }
+            
+            // Verifica che non ci siano conflitti con altri slot occupati
+            $hasConflict = false;
+            foreach ($occupied as $otherOcc) {
+                if ($opportunisticStart < $otherOcc['end'] && $opportunisticEnd > $otherOcc['start']) {
+                    $hasConflict = true;
+                    break;
+                }
+            }
+            
+            if (!$hasConflict) {
+                $startTimeKey = $opportunisticStart->format('c');
+                if (!isset($addedStartTimes[$startTimeKey])) {
+                    $availableSlots[] = [
+                        'start_time' => $startTimeKey,
+                        'end_time' => $opportunisticEnd->format('c'),
+                    ];
+                    $addedStartTimes[$startTimeKey] = true;
+                }
+            }
+        }
+
+        // Sort by start time
+        usort($availableSlots, fn($a, $b) => $a['start_time'] <=> $b['start_time']);
 
         return $availableSlots;
     }
