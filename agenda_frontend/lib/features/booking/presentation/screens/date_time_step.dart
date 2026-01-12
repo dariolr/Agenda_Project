@@ -16,6 +16,8 @@ class DateTimeStep extends ConsumerStatefulWidget {
 
 class _DateTimeStepState extends ConsumerState<DateTimeStep> {
   bool _hasInitialized = false;
+  List<int>? _lastServiceIds;
+  int? _lastStaffId;
 
   @override
   void initState() {
@@ -23,11 +25,39 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
   }
 
   void _tryInitializeSelectedDate(AsyncValue<DateTime> firstDateAsync) {
+    // Controlla se servizi o staff sono cambiati → reset
+    final bookingState = ref.read(bookingFlowProvider);
+    final currentServiceIds = bookingState.request.services
+        .map((s) => s.id)
+        .toList();
+    final currentStaffId = bookingState.request.singleStaffId;
+
+    bool selectionChanged = false;
+    if (_lastServiceIds != null &&
+        !_listEquals(_lastServiceIds!, currentServiceIds)) {
+      selectionChanged = true;
+    }
+    if (_lastStaffId != currentStaffId) {
+      selectionChanged = true;
+    }
+
+    if (selectionChanged) {
+      _hasInitialized = false;
+      // Resetta anche la data selezionata
+      Future(() {
+        if (!mounted) return;
+        ref.read(selectedDateProvider.notifier).state = null;
+      });
+    }
+
+    _lastServiceIds = currentServiceIds;
+    _lastStaffId = currentStaffId;
+
     if (_hasInitialized) return;
 
-    // Se già selezionata una data, non fare nulla
+    // Se già selezionata una data e non è cambiata la selezione, non fare nulla
     final currentDate = ref.read(selectedDateProvider);
-    if (currentDate != null) {
+    if (currentDate != null && !selectionChanged) {
       _hasInitialized = true;
       return;
     }
@@ -52,6 +82,14 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
         }
       });
     });
+  }
+
+  bool _listEquals(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   @override
