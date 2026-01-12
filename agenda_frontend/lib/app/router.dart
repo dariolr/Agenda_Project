@@ -90,9 +90,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         final subPath = pathSegments.length > 1 ? pathSegments[1] : '';
 
         // Route protette che richiedono autenticazione
-        // booking incluso: l'utente deve essere loggato per prenotare
         const protectedRoutes = {
-          'booking',
           'my-bookings',
           'profile',
           'change-password',

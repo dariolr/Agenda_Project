@@ -27,6 +27,7 @@
   "servicesEmpty": "No services available at the moment",
   "servicesEmptySubtitle": "There are no services available for online booking at this business",
   "staffEmpty": "No staff available at the moment",
+  "noStaffForAllServices": "No staff member can perform all selected services. Try selecting fewer or different services.",
   "errorConnectionTimeout": "The connection is taking too long. Please try again.",
   "errorBusinessNotFound": "Business not found",
   "errorBusinessNotFoundSubtitle": "The requested business does not exist. Please check the URL or contact the business directly.",

@@ -214,6 +214,16 @@ class L10n {
     );
   }
 
+  /// `Nessun operatore può eseguire tutti i servizi selezionati. Prova a selezionare meno servizi o servizi diversi.`
+  String get noStaffForAllServices {
+    return Intl.message(
+      'Nessun operatore può eseguire tutti i servizi selezionati. Prova a selezionare meno servizi o servizi diversi.',
+      name: 'noStaffForAllServices',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `La connessione sta impiegando troppo tempo. Riprova.`
   String get errorConnectionTimeout {
     return Intl.message(

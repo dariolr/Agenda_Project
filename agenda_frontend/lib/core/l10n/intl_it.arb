@@ -27,6 +27,7 @@
   "servicesEmpty": "Nessun servizio disponibile al momento",
   "servicesEmptySubtitle": "Non ci sono servizi prenotabili online per questa attività",
   "staffEmpty": "Nessun operatore disponibile al momento",
+  "noStaffForAllServices": "Nessun operatore può eseguire tutti i servizi selezionati. Prova a selezionare meno servizi o servizi diversi.",
   "errorConnectionTimeout": "La connessione sta impiegando troppo tempo. Riprova.",
   "errorBusinessNotFound": "Attività non trovata",
   "errorBusinessNotFoundSubtitle": "L'attività richiesta non esiste. Verifica l'indirizzo o contatta direttamente l'attività.",

@@ -113,6 +113,7 @@ class BookingRequest {
     bool clearStaffSelections = false,
     bool clearAnyOperatorSelections = false,
     bool clearSlot = false,
+    bool clearNotes = false,
   }) => BookingRequest(
     services: services ?? this.services,
     selectedStaff: clearStaff ? null : (selectedStaff ?? this.selectedStaff),
@@ -123,7 +124,7 @@ class BookingRequest {
         ? false
         : (anyOperatorSelected ?? this.anyOperatorSelected),
     selectedSlot: clearSlot ? null : (selectedSlot ?? this.selectedSlot),
-    notes: notes ?? this.notes,
+    notes: clearNotes ? null : (notes ?? this.notes),
   );
 
   Map<String, dynamic> toJson() => {
