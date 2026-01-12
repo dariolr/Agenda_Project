@@ -3,6 +3,11 @@ class BookingConfig {
   /// Consente all'utente di scegliere l'operatore
   final bool allowStaffSelection;
 
+  /// Consente di selezionare staff diversi per servizi diversi nella stessa prenotazione.
+  /// TEMPORANEAMENTE DISABILITATO: richiede implementazione API multi-staff.
+  /// Per riabilitare, impostare a true qui e nel placeholderBookingConfig.
+  final bool allowMultiStaffBooking;
+
   /// ID del business
   final int businessId;
 
@@ -14,6 +19,8 @@ class BookingConfig {
 
   const BookingConfig({
     this.allowStaffSelection = true,
+    this.allowMultiStaffBooking =
+        false, // riabilitare quando API multi-staff pronta
     required this.businessId,
     required this.locationId,
     this.businessExistsButNotActive = false,
@@ -27,6 +34,7 @@ class BookingConfig {
 /// NON usare direttamente - serve solo come fallback temporaneo.
 const placeholderBookingConfig = BookingConfig(
   allowStaffSelection: true,
+  allowMultiStaffBooking: false, //  riabilitare quando API multi-staff pronta
   businessId: 0,
   locationId: 0,
 );

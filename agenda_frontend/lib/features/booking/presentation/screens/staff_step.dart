@@ -13,7 +13,6 @@ class StaffStep extends ConsumerStatefulWidget {
 }
 
 class _StaffStepState extends ConsumerState<StaffStep> {
-
   @override
   void initState() {
     super.initState();
@@ -25,11 +24,14 @@ class _StaffStepState extends ConsumerState<StaffStep> {
     final theme = Theme.of(context);
     final staffAsync = ref.watch(staffProvider);
     final bookingState = ref.watch(bookingFlowProvider);
+    final bookingConfig = ref.watch(bookingConfigProvider);
     final selectedStaff = bookingState.request.selectedStaff;
     final services = bookingState.request.services;
     final selectedStaffByService = bookingState.request.selectedStaffByService;
     final anyOperatorSelected = bookingState.request.anyOperatorSelected;
-    final isMultiService = services.length > 1;
+    // Multi-staff UI solo se abilitata E più servizi selezionati
+    final showMultiStaffUI =
+        bookingConfig.allowMultiStaffBooking && services.length > 1;
     final isLoading = staffAsync.isLoading;
 
     return Stack(
@@ -69,7 +71,9 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                     return Center(child: Text(l10n.staffEmpty));
                   }
 
-                  if (isMultiService) {
+                  // UI multi-staff: permette di selezionare staff diversi per servizi diversi
+                  // NOTA: Temporaneamente disabilitata (allowMultiStaffBooking = false)
+                  if (showMultiStaffUI) {
                     final staffByService = <int, List<Staff>>{};
                     for (final service in services) {
                       final eligible =
@@ -134,24 +138,73 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                     );
                   }
 
+                  // UI standard: un solo staff per tutti i servizi
+                  // Filtra solo staff che possono fare TUTTI i servizi selezionati
+                  final eligibleStaff = services.length > 1
+                      ? staffList
+                            .where(
+                              (staff) => services.every(
+                                (s) => staff.serviceIds.contains(s.id),
+                              ),
+                            )
+                            .toList()
+                      : staffList;
+
+                  if (eligibleStaff.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          l10n.noStaffForAllServices,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                      ),
+                    );
+                  }
+
+                  // Se c'è un solo staff idoneo, auto-selezionalo
+                  if (eligibleStaff.length == 1 && selectedStaff == null) {
+                    // Auto-selezione differita per evitare rebuild durante build
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      ref
+                          .read(bookingFlowProvider.notifier)
+                          .autoSelectStaff(eligibleStaff.first);
+                    });
+                  }
+
+                  // Se c'è un solo staff, mostra solo quello (già selezionato)
+                  if (eligibleStaff.length == 1) {
+                    return ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        _StaffTile(
+                          staff: eligibleStaff.first,
+                          isSelected:
+                              true, // Sempre selezionato quando è l'unico
+                          onTap: null, // Non cliccabile, è l'unica opzione
+                        ),
+                      ],
+                    );
+                  }
+
+                  // Più staff disponibili: mostra "Qualsiasi" + lista
                   return ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      if (staffList.length > 1) ...[
-                        // Opzione "Qualsiasi operatore"
-                        _StaffTile(
-                          staff: null,
-                          isSelected: selectedStaff == null,
-                          onTap: () {
-                            ref
-                                .read(bookingFlowProvider.notifier)
-                                .selectStaff(null);
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                      ],
+                      // Opzione "Qualsiasi operatore"
+                      _StaffTile(
+                        staff: null,
+                        isSelected: anyOperatorSelected,
+                        onTap: () {
+                          ref
+                              .read(bookingFlowProvider.notifier)
+                              .selectAnyOperator();
+                        },
+                      ),
+                      const SizedBox(height: 8),
                       // Lista operatori
-                      ...staffList.map(
+                      ...eligibleStaff.map(
                         (staff) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: _StaffTile(
@@ -190,12 +243,35 @@ class _StaffStepState extends ConsumerState<StaffStep> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final bookingState = ref.watch(bookingFlowProvider);
-    final isMultiService = bookingState.request.services.length > 1;
+    final staffAsync = ref.watch(staffProvider);
+
+    // Logica semplificata: il pulsante è abilitato se:
+    // 1. "Qualsiasi operatore" è selezionato (selectedStaff == null e anyOperatorSelected == true)
+    // 2. Uno staff specifico è selezionato (selectedStaff != null)
+    // 3. C'è un solo staff disponibile (auto-selezionato)
+    final selectedStaff = bookingState.request.selectedStaff;
+    final anyOperatorSelected = bookingState.request.anyOperatorSelected;
+
+    // Conta gli staff idonei
+    final eligibleStaffCount = staffAsync.maybeWhen(
+      data: (staffList) {
+        final services = bookingState.request.services;
+        if (services.length > 1) {
+          return staffList
+              .where(
+                (staff) =>
+                    services.every((s) => staff.serviceIds.contains(s.id)),
+              )
+              .length;
+        }
+        return staffList.length;
+      },
+      orElse: () => 0,
+    );
+
+    // canProceed: staff selezionato OPPURE "qualsiasi" OPPURE un solo staff (auto)
     final canProceed =
-        !isMultiService ||
-        (bookingState.request.hasStaffSelectionForAllServices &&
-            (bookingState.request.allServicesAnyOperatorSelected ||
-                bookingState.request.hasOnlyStaffSelectionForAllServices));
+        selectedStaff != null || anyOperatorSelected || eligibleStaffCount == 1;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -225,13 +301,9 @@ class _StaffStepState extends ConsumerState<StaffStep> {
 class _StaffTile extends StatelessWidget {
   final Staff? staff;
   final bool isSelected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
-  const _StaffTile({
-    required this.staff,
-    required this.isSelected,
-    required this.onTap,
-  });
+  const _StaffTile({required this.staff, required this.isSelected, this.onTap});
 
   @override
   Widget build(BuildContext context) {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
@@ -266,8 +267,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     // Se tutti i servizi hanno un solo operatore, auto-seleziona e mostra lo step
     if (allAutoSelected && services.isNotEmpty) {
       final isSingleService = services.length == 1;
-      final selectedStaff =
-          isSingleService ? autoSelected[services.first.id] : null;
+      final selectedStaff = isSingleService
+          ? autoSelected[services.first.id]
+          : null;
       state = state.copyWith(
         request: state.request.copyWith(
           selectedStaff: selectedStaff,
@@ -312,7 +314,27 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       return;
     }
 
-    state = state.copyWith(currentStep: prevStep, clearError: true);
+    final updatedRequest = _resetRequestForStep(prevStep);
+    final shouldClearSelectedDate = _shouldClearSelectedDate(prevStep);
+    final shouldResetAutoStaff = _shouldResetAutoStaff(prevStep);
+
+    state = state.copyWith(
+      currentStep: prevStep,
+      request: updatedRequest,
+      clearError: true,
+      isStaffAutoSelected: shouldResetAutoStaff
+          ? false
+          : state.isStaffAutoSelected,
+    );
+
+    if (_shouldResetAvailability(prevStep)) {
+      ref.read(availableDatesProvider.notifier).resetForNewSelection();
+      ref.read(focusedMonthProvider.notifier).state = DateTime.now();
+    }
+
+    if (shouldClearSelectedDate) {
+      ref.read(selectedDateProvider.notifier).state = null;
+    }
   }
 
   /// Vai a uno step specifico
@@ -322,7 +344,96 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       return;
     }
     if (step.index < state.currentStep.index) {
-      state = state.copyWith(currentStep: step, clearError: true);
+      final updatedRequest = _resetRequestForStep(step);
+      final shouldClearSelectedDate = _shouldClearSelectedDate(step);
+      final shouldResetAutoStaff = _shouldResetAutoStaff(step);
+
+      state = state.copyWith(
+        currentStep: step,
+        request: updatedRequest,
+        clearError: true,
+        isStaffAutoSelected: shouldResetAutoStaff
+            ? false
+            : state.isStaffAutoSelected,
+      );
+
+      if (_shouldResetAvailability(step)) {
+        ref.read(availableDatesProvider.notifier).resetForNewSelection();
+        ref.read(focusedMonthProvider.notifier).state = DateTime.now();
+      }
+
+      if (shouldClearSelectedDate) {
+        ref.read(selectedDateProvider.notifier).state = null;
+      }
+    }
+  }
+
+  BookingRequest _resetRequestForStep(BookingStep step) {
+    final request = state.request;
+    switch (step) {
+      case BookingStep.location:
+        return request.copyWith(
+          services: const [],
+          clearStaff: true,
+          clearStaffSelections: true,
+          clearAnyOperatorSelections: true,
+          clearSlot: true,
+          clearNotes: true,
+        );
+      case BookingStep.services:
+        return request.copyWith(
+          clearStaff: true,
+          clearStaffSelections: true,
+          clearAnyOperatorSelections: true,
+          clearSlot: true,
+          clearNotes: true,
+        );
+      case BookingStep.staff:
+        return request.copyWith(clearSlot: true, clearNotes: true);
+      case BookingStep.dateTime:
+        return request.copyWith(clearSlot: true, clearNotes: true);
+      case BookingStep.summary:
+      case BookingStep.confirmation:
+        return request;
+    }
+  }
+
+  bool _shouldClearSelectedDate(BookingStep step) {
+    switch (step) {
+      case BookingStep.location:
+      case BookingStep.services:
+      case BookingStep.staff:
+      case BookingStep.dateTime:
+        return true;
+      case BookingStep.summary:
+      case BookingStep.confirmation:
+        return false;
+    }
+  }
+
+  bool _shouldResetAutoStaff(BookingStep step) {
+    switch (step) {
+      case BookingStep.location:
+      case BookingStep.services:
+      case BookingStep.staff:
+        return true;
+      case BookingStep.dateTime:
+      case BookingStep.summary:
+      case BookingStep.confirmation:
+        return false;
+    }
+  }
+
+  bool _shouldResetAvailability(BookingStep step) {
+    switch (step) {
+      case BookingStep.location:
+      case BookingStep.services:
+      case BookingStep.staff:
+      case BookingStep.dateTime:
+        return true;
+      case BookingStep.summary:
+      case BookingStep.confirmation:
+        return false;
     }
   }
 
@@ -357,25 +468,27 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     );
   }
 
-  /// Seleziona staff
+  /// Seleziona staff specifico (resetta "qualsiasi operatore")
   void selectStaff(Staff? staff) {
-    final services = state.request.services;
-    if (services.isNotEmpty) {
-      selectStaffForService(services.first, staff);
+    // Se staff è null, usa selectAnyOperator() invece
+    if (staff == null) {
+      selectAnyOperator();
       return;
     }
+
     state = state.copyWith(
       request: state.request.copyWith(
         selectedStaff: staff,
-        clearStaff: staff == null,
-        clearAnyOperatorSelections: true,
+        selectedStaffByService: const {},
+        anyOperatorSelected: false,
         clearSlot: true, // Resetta slot quando cambia staff
       ),
       clearError: true,
+      isStaffAutoSelected: false,
     );
   }
 
-  /// Seleziona staff per servizio
+  /// Seleziona staff per servizio (usato con allowMultiStaffBooking = true)
   void selectStaffForService(Service service, Staff? staff) {
     final updated = Map<int, Staff?>.from(state.request.selectedStaffByService);
     updated[service.id] = staff;
@@ -393,8 +506,24 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     );
   }
 
+  /// Seleziona "qualsiasi operatore" (caso semplice, un solo staff per tutti i servizi)
+  void selectAnyOperator() {
+    state = state.copyWith(
+      request: state.request.copyWith(
+        selectedStaff: null,
+        selectedStaffByService: const {},
+        anyOperatorSelected: true,
+        clearStaff: true,
+        clearSlot: true,
+      ),
+      clearError: true,
+      isStaffAutoSelected: false,
+    );
+  }
+
   /// Seleziona "qualsiasi operatore" per i servizi con più operatori,
   /// ma mantiene l'operatore selezionato per i servizi con un solo operatore
+  /// NOTA: Usato solo con allowMultiStaffBooking = true
   void selectAnyOperatorForAllServices(Map<int, List<Staff>> staffByService) {
     // Per i servizi con un solo operatore, mantieni quell'operatore
     final selectedStaffByService = <int, Staff?>{};
@@ -726,12 +855,29 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
 
   void _reset() {
     final key = _currentKey();
+    debugPrint(
+      '[AvailableDatesNotifier] _reset called, key=$key, lastKey=$_lastKey',
+    );
     if (key != null && _lastKey == key) {
+      debugPrint('[AvailableDatesNotifier] Key unchanged, skipping reset');
       return;
     }
+    debugPrint('[AvailableDatesNotifier] Resetting with new key');
     _lastKey = key;
     _loadedDays = 0;
     _allDates.clear();
+    // Forza interruzione del caricamento in corso per permettere il nuovo
+    _isLoadingMore = false;
+    _loadNextChunk();
+  }
+
+  void resetForNewSelection() {
+    _lastKey = null;
+    _loadedDays = 0;
+    _allDates.clear();
+    // Forza interruzione del caricamento in corso
+    _isLoadingMore = false;
+    state = const AsyncValue.loading();
     _loadNextChunk();
   }
 
@@ -773,6 +919,10 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
     final bookingState = _ref.read(bookingFlowProvider);
     final serviceIds = bookingState.request.services.map((s) => s.id).toList();
     final staffId = bookingState.request.singleStaffId;
+
+    debugPrint(
+      '[AvailableDatesNotifier] _loadNextChunk: locationId=$locationId, serviceIds=$serviceIds, staffId=$staffId',
+    );
 
     if (locationId <= 0 || serviceIds.isEmpty) {
       state = const AsyncValue.data({});
@@ -846,6 +996,19 @@ final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
     return [];
   }
 
+  // Con allowMultiStaffBooking = false, usiamo sempre la chiamata standard
+  // che cerca uno staff capace di fare TUTTI i servizi
+  return repository.getAvailableSlots(
+    locationId: locationId,
+    date: selectedDate,
+    serviceIds: services.map((s) => s.id).toList(),
+    staffId: bookingState.request.singleStaffId,
+  );
+
+  // === CODICE MULTI-STAFF (DISABILITATO) ===
+  // Riabilitare quando allowMultiStaffBooking = true in BookingConfig
+  // e l'API multi-staff è implementata.
+  /*
   final selectedStaffByService = bookingState.request.selectedStaffByService;
   final hasPerServiceSelection =
       services.length > 1 &&
@@ -896,11 +1059,17 @@ final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
     return [];
   }
 
+  // Calcola gli offset per ogni servizio, arrotondando al prossimo multiplo
+  // di 15 minuti (granularità degli slot API)
+  const slotInterval = 15;
   final offsets = <int>[];
   var running = 0;
   for (final service in services) {
     offsets.add(running);
-    running += service.durationMinutes;
+    final duration = service.durationMinutes;
+    final roundedDuration =
+        ((duration + slotInterval - 1) ~/ slotInterval) * slotInterval;
+    running += roundedDuration;
   }
 
   final available = <TimeSlot>[];
@@ -928,6 +1097,7 @@ final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
   }
   available.sort((a, b) => a.startTime.compareTo(b.startTime));
   return available;
+  */
 });
 
 /// Provider per la prima data disponibile

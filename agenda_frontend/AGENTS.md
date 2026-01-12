@@ -192,6 +192,7 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
 ## 🚫 L'agente NON deve
 
 - **Eseguire deploy** (build + rsync) dei progetti Flutter senza richiesta esplicita dell'utente
+- **Avviare l'applicazione** (`flutter run`) senza richiesta esplicita dell'utente
 - Aggiungere dipendenze non richieste
 - Modificare route o `router.dart` senza richiesta esplicita
 - Produrre snippet parziali invece di file completi

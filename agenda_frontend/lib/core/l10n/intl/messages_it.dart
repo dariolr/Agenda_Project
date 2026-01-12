@@ -388,6 +388,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "noPastBookings": MessageLookupByLibrary.simpleMessage(
       "Non hai prenotazioni passate",
     ),
+    "noStaffForAllServices": MessageLookupByLibrary.simpleMessage(
+      "Nessun operatore può eseguire tutti i servizi selezionati. Prova a selezionare meno servizi o servizi diversi.",
+    ),
     "noUpcomingBookings": MessageLookupByLibrary.simpleMessage(
       "Non hai prenotazioni in programma",
     ),
