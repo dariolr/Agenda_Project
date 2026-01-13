@@ -18,6 +18,7 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
+import '../../../../core/widgets/form_loading_overlay.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
@@ -363,6 +364,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         onPressed: _isSaving ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
         isLoading: _isSaving,
+        showSpinner: false,
         child: Text(l10n.actionSave),
       ),
     ];
@@ -376,39 +378,45 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 8),
-                  Flexible(child: content),
-                  const SizedBox(height: AppSpacing.formToActionsSpacing),
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: AppSpacing.formFirstRowSpacing,
+            child: FormLoadingOverlay(
+              isLoading: _isSaving,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                    child: _warningBanner(
-                      20,
-                      showAppointmentWarning,
-                      l10n.bookingUnavailableTimeWarningAppointment,
+                    const SizedBox(height: 8),
+                    Flexible(child: content),
+                    const SizedBox(height: AppSpacing.formToActionsSpacing),
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        bottom: AppSpacing.formFirstRowSpacing,
+                      ),
+                      child: _warningBanner(
+                        20,
+                        showAppointmentWarning,
+                        l10n.bookingUnavailableTimeWarningAppointment,
+                      ),
                     ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      for (int i = 0; i < actions.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 8),
-                        SizedBox(
-                          width: AppButtonStyles.dialogButtonWidth,
-                          child: actions[i],
-                        ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        for (int i = 0; i < actions.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 8),
+                          SizedBox(
+                            width: AppButtonStyles.dialogButtonWidth,
+                            child: actions[i],
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -428,53 +436,55 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return SafeArea(
       top: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: titlePadding,
-            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: content,
-            ),
-          ),
-          _warningBanner(
-            horizontalPadding,
-            showAppointmentWarning,
-            l10n.bookingUnavailableTimeWarningAppointment,
-          ),
-          if (!isKeyboardOpen) ...[
-            const AppBottomSheetDivider(),
+      child: FormLoadingOverlay(
+        isLoading: _isSaving,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(
-                horizontalPadding,
-                AppSpacing.formFirstRowSpacing,
-                horizontalPadding,
-                0,
-              ),
-              child: Row(
-                mainAxisAlignment: actions.length == 3
-                    ? MainAxisAlignment.center
-                    : MainAxisAlignment.end,
-                children: [
-                  for (int i = 0; i < actions.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 8),
-                    SizedBox(
-                      width: AppButtonStyles.dialogButtonWidth,
-                      child: actions[i],
-                    ),
-                  ],
-                ],
+              padding: titlePadding,
+              child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: content,
               ),
             ),
+            _warningBanner(
+              horizontalPadding,
+              showAppointmentWarning,
+              l10n.bookingUnavailableTimeWarningAppointment,
+            ),
+            if (!isKeyboardOpen) ...[
+              const AppBottomSheetDivider(),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  AppSpacing.formFirstRowSpacing,
+                  horizontalPadding,
+                  0,
+                ),
+                child: Row(
+                  mainAxisAlignment: actions.length == 3
+                      ? MainAxisAlignment.center
+                      : MainAxisAlignment.end,
+                  children: [
+                    for (int i = 0; i < actions.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      SizedBox(
+                        width: AppButtonStyles.dialogButtonWidth,
+                        child: actions[i],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+            SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
           ],
-
-          SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
-        ],
+        ),
       ),
     );
   }

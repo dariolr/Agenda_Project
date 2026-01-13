@@ -4,6 +4,7 @@ import 'package:agenda_backend/core/models/staff_planning.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
+import 'package:agenda_backend/core/widgets/form_loading_overlay.dart';
 import 'package:agenda_backend/core/widgets/labeled_form_field.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:flutter/material.dart';
@@ -367,22 +368,21 @@ class _StaffPlanningDialogState extends ConsumerState<_StaffPlanningDialog> {
       ),
       AppFilledButton(
         onPressed: _isSaving ? null : _onSave,
-        child: _isSaving
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text(l10n.actionSave),
+        child: Text(l10n.actionSave),
       ),
     ];
+
+    final loadingContent = FormLoadingOverlay(
+      isLoading: _isSaving,
+      child: content,
+    );
 
     if (widget.isDesktop) {
       return AppFormDialog(
         title: Text(
           widget.isEditing ? l10n.planningEditTitle : l10n.planningCreateTitle,
         ),
-        content: content,
+        content: loadingContent,
         actions: actions,
       );
     }
@@ -397,7 +397,7 @@ class _StaffPlanningDialogState extends ConsumerState<_StaffPlanningDialog> {
           style: theme.textTheme.titleLarge,
         ),
         const SizedBox(height: 16),
-        content,
+        loadingContent,
         const SizedBox(height: 24),
         Wrap(
           spacing: 12,

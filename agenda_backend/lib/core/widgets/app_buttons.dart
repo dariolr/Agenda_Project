@@ -193,6 +193,7 @@ class AppAsyncFilledButton extends StatefulWidget {
     this.expand = false,
     this.isLoading = false,
     this.disabled = false,
+    this.showSpinner = true,
   });
 
   /// Callback async che verrà eseguito al tap.
@@ -210,6 +211,9 @@ class AppAsyncFilledButton extends StatefulWidget {
 
   /// Se true, disabilita il pulsante.
   final bool disabled;
+
+  /// Se false, mantiene il contenuto anche durante il loading.
+  final bool showSpinner;
 
   @override
   State<AppAsyncFilledButton> createState() => _AppAsyncFilledButtonState();
@@ -247,7 +251,7 @@ class _AppAsyncFilledButtonState extends State<AppAsyncFilledButton> {
       padding: widget.padding,
       borderRadius: widget.borderRadius,
       expand: widget.expand,
-      child: _effectiveLoading
+      child: _effectiveLoading && widget.showSpinner
           ? SizedBox(
               width: 20,
               height: 20,
@@ -276,6 +280,7 @@ class AppAsyncDangerButton extends StatefulWidget {
     this.backgroundColor,
     this.isLoading = false,
     this.disabled = false,
+    this.showSpinner = true,
   });
 
   final Future<void> Function()? onPressed;
@@ -286,6 +291,7 @@ class AppAsyncDangerButton extends StatefulWidget {
   final Color? backgroundColor;
   final bool isLoading;
   final bool disabled;
+  final bool showSpinner;
 
   @override
   State<AppAsyncDangerButton> createState() => _AppAsyncDangerButtonState();
@@ -324,7 +330,7 @@ class _AppAsyncDangerButtonState extends State<AppAsyncDangerButton> {
       borderRadius: widget.borderRadius,
       backgroundColor: widget.backgroundColor ?? colorScheme.error,
       foregroundColor: colorScheme.onError,
-      child: _effectiveLoading
+      child: _effectiveLoading && widget.showSpinner
           ? SizedBox(
               width: 20,
               height: 20,
@@ -351,6 +357,7 @@ class AppAsyncOutlinedButton extends StatefulWidget {
     this.expand = false,
     this.isLoading = false,
     this.disabled = false,
+    this.showSpinner = true,
   });
 
   final Future<void> Function()? onPressed;
@@ -362,6 +369,7 @@ class AppAsyncOutlinedButton extends StatefulWidget {
   final bool expand;
   final bool isLoading;
   final bool disabled;
+  final bool showSpinner;
 
   @override
   State<AppAsyncOutlinedButton> createState() => _AppAsyncOutlinedButtonState();
@@ -402,7 +410,7 @@ class _AppAsyncOutlinedButtonState extends State<AppAsyncOutlinedButton> {
       padding: widget.padding,
       borderRadius: widget.borderRadius,
       expand: widget.expand,
-      child: _effectiveLoading
+      child: _effectiveLoading && widget.showSpinner
           ? SizedBox(
               width: 20,
               height: 20,

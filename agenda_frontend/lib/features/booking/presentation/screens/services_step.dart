@@ -31,7 +31,7 @@ class ServicesStep extends ConsumerWidget {
                 children: [
                   Text(
                     l10n.servicesTitle,
-                    style: theme.textTheme.headlineSmall?.copyWith(
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),

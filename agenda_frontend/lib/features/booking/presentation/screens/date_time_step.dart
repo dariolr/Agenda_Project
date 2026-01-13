@@ -120,7 +120,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                 children: [
                   Text(
                     l10n.dateTimeTitle,
-                    style: theme.textTheme.headlineSmall?.copyWith(
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -478,7 +478,6 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
         return GestureDetector(
           onTap: () {
             ref.read(bookingFlowProvider.notifier).selectTimeSlot(slot);
-            ref.read(bookingFlowProvider.notifier).nextStep();
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -701,11 +700,7 @@ class _HorizontalDateListState extends State<_HorizontalDateList> {
                   height: 40,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : isToday
-                        ? theme.colorScheme.primary.withOpacity(0.15)
-                        : null,
+                    color: isSelected ? theme.colorScheme.primary : null,
                     border: isToday && !isSelected
                         ? Border.all(
                             color: theme.colorScheme.primary,

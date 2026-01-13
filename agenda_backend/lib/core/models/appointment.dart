@@ -29,6 +29,7 @@ class Appointment {
   final DateTime startTime;
   final DateTime endTime;
   final double? price; // prezzo applicato al singolo appuntamento
+  final String? bookingSource;
   // Legacy single extra fields (kept for backward compatibility)
   final int? extraMinutes;
   final ExtraMinutesType? extraMinutesType;
@@ -50,6 +51,7 @@ class Appointment {
     required this.startTime,
     required this.endTime,
     this.price,
+    this.bookingSource,
     this.extraMinutes,
     this.extraMinutesType,
     this.extraBlockedMinutes,
@@ -70,6 +72,8 @@ class Appointment {
     startTime: DateTime.parse(json['start_time'] as String),
     endTime: DateTime.parse(json['end_time'] as String),
     price: json['price'] != null ? (json['price'] as num).toDouble() : null,
+    bookingSource:
+        (json['booking_source'] ?? json['source']) as String?,
     extraMinutes: json['extra_minutes'] as int?,
     extraMinutesType: _extraMinutesTypeFromJson(
       json['extra_minutes_type'],
@@ -92,6 +96,7 @@ class Appointment {
     DateTime? startTime,
     DateTime? endTime,
     double? price,
+    String? bookingSource,
     int? extraMinutes,
     ExtraMinutesType? extraMinutesType,
     int? extraBlockedMinutes,
@@ -111,6 +116,7 @@ class Appointment {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       price: price ?? this.price,
+      bookingSource: bookingSource ?? this.bookingSource,
       extraMinutes: extraMinutes ?? this.extraMinutes,
       extraMinutesType: extraMinutesType ?? this.extraMinutesType,
       extraBlockedMinutes: extraBlockedMinutes ?? this.extraBlockedMinutes,
@@ -142,6 +148,7 @@ class Appointment {
       'start_time': startTime.toIso8601String(),
       'end_time': endTime.toIso8601String(),
       if (price != null) 'price': price,
+      if (bookingSource != null) 'booking_source': bookingSource,
       if (legacyMinutes != null) 'extra_minutes': legacyMinutes,
       if (legacyType != null)
         'extra_minutes_type': _extraMinutesTypeToJson(legacyType),

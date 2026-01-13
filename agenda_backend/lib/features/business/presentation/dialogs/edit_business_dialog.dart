@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/business.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/widgets/form_loading_overlay.dart';
 import '../../providers/business_providers.dart';
 
 /// Dialog per modificare un business esistente (solo superadmin).
@@ -106,13 +107,15 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
       title: const Text('Modifica Business'),
       content: SizedBox(
         width: 400,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+        child: FormLoadingOverlay(
+          isLoading: _isLoading,
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 if (_error != null) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -261,7 +264,8 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
                     return null;
                   },
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -273,13 +277,7 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
         ),
         FilledButton(
           onPressed: _isLoading ? null : _submit,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Salva'),
+          child: const Text('Salva'),
         ),
       ],
     );

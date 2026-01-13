@@ -14,6 +14,7 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
+import '../../../../core/widgets/form_loading_overlay.dart';
 import '../../domain/config/layout_config.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
@@ -345,6 +346,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
           onPressed: _isSaving ? null : _onDelete,
           padding: AppButtonStyles.dialogButtonPadding,
           disabled: _isSaving,
+          showSpinner: false,
           child: Text(l10n.actionDelete),
         ),
       AppOutlinedActionButton(
@@ -356,6 +358,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
         onPressed: _isSaving ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
         isLoading: _isSaving,
+        showSpinner: false,
         child: Text(l10n.actionSave),
       ),
     ];
@@ -375,30 +378,36 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 16),
-                  Flexible(child: SingleChildScrollView(child: content)),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (isEdit) ...[
-                        bottomActions.first, // Delete button
-                        const Spacer(),
-                        bottomActions[1], // Cancel button
-                      ] else
-                        bottomActions[0], // Cancel button
-                      const SizedBox(width: 8),
-                      bottomActions.last, // Save button
-                    ],
-                  ),
-                ],
+            child: FormLoadingOverlay(
+              isLoading: _isSaving,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 16),
+                    Flexible(child: SingleChildScrollView(child: content)),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (isEdit) ...[
+                          bottomActions.first, // Delete button
+                          const Spacer(),
+                          bottomActions[1], // Cancel button
+                        ] else
+                          bottomActions[0], // Cancel button
+                        const SizedBox(width: 8),
+                        bottomActions.last, // Save button
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -411,53 +420,56 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-          return SizedBox(
-            height: constraints.maxHeight,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.only(bottom: 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(
-                            title,
-                            style: Theme.of(context).textTheme.titleLarge,
+          return FormLoadingOverlay(
+            isLoading: _isSaving,
+            child: SizedBox(
+              height: constraints.maxHeight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.only(bottom: 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              title,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
                           ),
-                        ),
-                        content,
-                        const SizedBox(height: 24),
-                        const SizedBox(height: AppSpacing.formRowSpacing),
-                      ],
-                    ),
-                  ),
-                ),
-                if (!isKeyboardOpen) ...[
-                  const AppBottomSheetDivider(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
-                    child: Align(
-                      alignment: bottomActions.length == 3
-                          ? Alignment.center
-                          : Alignment.centerRight,
-                      child: Wrap(
-                        alignment: bottomActions.length == 3
-                            ? WrapAlignment.center
-                            : WrapAlignment.end,
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: bottomActions,
+                          content,
+                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSpacing.formRowSpacing),
+                        ],
                       ),
                     ),
                   ),
+                  if (!isKeyboardOpen) ...[
+                    const AppBottomSheetDivider(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+                      child: Align(
+                        alignment: bottomActions.length == 3
+                            ? Alignment.center
+                            : Alignment.centerRight,
+                        child: Wrap(
+                          alignment: bottomActions.length == 3
+                              ? WrapAlignment.center
+                              : WrapAlignment.end,
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: bottomActions,
+                        ),
+                      ),
+                    ),
+                  ],
+                  SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
                 ],
-                SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
-              ],
+              ),
             ),
           );
         },

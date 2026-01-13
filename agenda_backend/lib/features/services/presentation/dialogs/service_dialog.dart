@@ -18,6 +18,7 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
+import '../../../../core/widgets/form_loading_overlay.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../staff/providers/staff_providers.dart';
 import '../../providers/service_categories_provider.dart';
@@ -1008,6 +1009,7 @@ Future<void> showServiceDialog(
                 },
           padding: AppButtonStyles.dialogButtonPadding,
           isLoading: isSaving,
+          showSpinner: false,
           child: Text(context.l10n.actionSave),
         ),
       );
@@ -1022,28 +1024,31 @@ Future<void> showServiceDialog(
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      dialogTitle,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 16),
-                    Flexible(child: SingleChildScrollView(child: body)),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        cancelButton,
-                        const SizedBox(width: 8),
-                        saveButton,
-                      ],
-                    ),
-                  ],
+              child: FormLoadingOverlay(
+                isLoading: isSaving,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        dialogTitle,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      Flexible(child: SingleChildScrollView(child: body)),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          cancelButton,
+                          const SizedBox(width: 8),
+                          saveButton,
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1056,66 +1061,69 @@ Future<void> showServiceDialog(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-            return SizedBox(
-              height: constraints.maxHeight,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.zero,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Text(
-                                    dialogTitle,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleLarge,
+            return FormLoadingOverlay(
+              isLoading: isSaving,
+              child: SizedBox(
+                height: constraints.maxHeight,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: Text(
+                                      dialogTitle,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleLarge,
+                                    ),
                                   ),
-                                ),
-                                body,
-                                const SizedBox(height: 24),
-                                const SizedBox(
-                                  height: AppSpacing.formRowSpacing,
-                                ),
-                              ],
+                                  body,
+                                  const SizedBox(height: 24),
+                                  const SizedBox(
+                                    height: AppSpacing.formRowSpacing,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (!isKeyboardOpen) ...[
-                    const AppBottomSheetDivider(),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: Align(
-                        alignment: bottomActions.length == 3
-                            ? Alignment.center
-                            : Alignment.centerRight,
-                        child: Wrap(
-                          alignment: bottomActions.length == 3
-                              ? WrapAlignment.center
-                              : WrapAlignment.end,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: bottomActions,
+                          ],
                         ),
                       ),
                     ),
+                    if (!isKeyboardOpen) ...[
+                      const AppBottomSheetDivider(),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: Align(
+                          alignment: bottomActions.length == 3
+                              ? Alignment.center
+                              : Alignment.centerRight,
+                          child: Wrap(
+                            alignment: bottomActions.length == 3
+                                ? WrapAlignment.center
+                                : WrapAlignment.end,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: bottomActions,
+                          ),
+                        ),
+                      ),
+                    ],
+                    SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
                   ],
-                  SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
-                ],
+                ),
               ),
             );
           },

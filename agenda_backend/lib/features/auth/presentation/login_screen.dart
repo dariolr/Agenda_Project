@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/widgets/feedback_dialog.dart';
+import '../../../core/widgets/form_loading_overlay.dart';
 import '../providers/auth_provider.dart';
 
 /// Schermata di login per il gestionale.
@@ -95,12 +96,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: AutofillGroup(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+              child: FormLoadingOverlay(
+                isLoading: _isLoading,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                     // Logo e titolo
                     Icon(
                       Icons.calendar_month_rounded,
@@ -255,16 +258,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(l10n.authLogin),
+                      child: Text(l10n.authLogin),
                     ),
                     const SizedBox(height: 32),
 
@@ -276,7 +270,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

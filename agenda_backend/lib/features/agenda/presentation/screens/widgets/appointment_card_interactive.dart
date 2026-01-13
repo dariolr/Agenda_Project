@@ -560,6 +560,9 @@ class _AppointmentCardInteractiveState
                     client,
                     info,
                     showNotes: hasNotes && !forFeedback,
+                    showOnline:
+                        widget.appointment.bookingSource == 'online' &&
+                        !forFeedback,
                     onNotesTap: hasNotes && !forFeedback
                         ? () => _showNotesDialog(
                             bookingNotes: hasBookingNotes ? bookingNotes : null,
@@ -601,8 +604,44 @@ class _AppointmentCardInteractiveState
     String client,
     String info, {
     required bool showNotes,
+    required bool showOnline,
     VoidCallback? onNotesTap,
   }) {
+    final trailingIcons = <Widget>[];
+    if (showOnline) {
+      trailingIcons.add(
+        const Padding(
+          padding: EdgeInsets.only(left: 4),
+          child: Icon(
+            Icons.cloud_outlined,
+            size: 14,
+            color: Colors.black54,
+          ),
+        ),
+      );
+    }
+    if (showNotes) {
+      trailingIcons.add(
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Tooltip(
+            message: context.l10n.appointmentNotesTitle,
+            child: InkWell(
+              onTap: onNotesTap,
+              borderRadius: BorderRadius.circular(6),
+              child: const Padding(
+                padding: EdgeInsets.all(2),
+                child: Icon(
+                  Icons.sticky_note_2_outlined,
+                  size: 14,
+                  color: Colors.black54,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return ClipRect(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,25 +675,7 @@ class _AppointmentCardInteractiveState
                     ),
                   ),
                 ),
-                if (showNotes)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Tooltip(
-                      message: context.l10n.appointmentNotesTitle,
-                      child: InkWell(
-                        onTap: onNotesTap,
-                        borderRadius: BorderRadius.circular(6),
-                        child: const Padding(
-                          padding: EdgeInsets.all(2),
-                          child: Icon(
-                            Icons.sticky_note_2_outlined,
-                            size: 14,
-                            color: Colors.black54,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                if (trailingIcons.isNotEmpty) ...trailingIcons,
               ],
             ),
           ),
