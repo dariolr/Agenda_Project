@@ -123,7 +123,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           onPressed: () {
             final slug = ref.read(routeSlugProvider);
-            context.go('/$slug/my-bookings');
+            context.go('/$slug/booking');
           },
         ),
         title: Text(
@@ -315,14 +315,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: FilledButton(
+                        child: OutlinedButton(
                           onPressed: _isLoading ? null : _saveChanges,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colorScheme.primary,
+                            side: BorderSide(color: colorScheme.primary),
+                          ),
                           child: _isLoading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
+                                    color: colorScheme.primary,
                                   ),
                                 )
                               : Text(l10n.actionConfirm),

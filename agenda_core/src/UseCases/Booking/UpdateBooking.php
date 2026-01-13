@@ -35,10 +35,17 @@ final class UpdateBooking
      *   - 'start_time' => string|null (ISO8601 per reschedule)
      * 
      * @param bool $isOperator Se true, bypassa controlli permessi/policy/conflitti
+     * @param bool $isCustomer Se true, usa client_id per i permessi
      * @throws BookingException
      * @return array Booking aggiornato
      */
-    public function execute(int $bookingId, int $userId, array $data, bool $isOperator = false): array
+    public function execute(
+        int $bookingId,
+        int $userId,
+        array $data,
+        bool $isOperator = false,
+        bool $isCustomer = false
+    ): array
     {
         // Verifica che il booking esista
         $booking = $this->bookingRepo->findById($bookingId);
@@ -48,8 +55,16 @@ final class UpdateBooking
         }
 
         // Verifica permessi: operatori possono modificare qualsiasi booking del business
-        if (!$isOperator && $booking['user_id'] !== $userId) {
-            throw BookingException::unauthorized('You do not have permission to update this booking');
+        if (!$isOperator) {
+            if ($isCustomer) {
+                if (empty($booking['client_id']) || (int) $booking['client_id'] !== $userId) {
+                    throw BookingException::unauthorized('You do not have permission to update this booking');
+                }
+            } else {
+                if ((int) ($booking['user_id'] ?? 0) !== $userId) {
+                    throw BookingException::unauthorized('You do not have permission to update this booking');
+                }
+            }
         }
 
         // Verifica cancellation policy (skip per operatori)

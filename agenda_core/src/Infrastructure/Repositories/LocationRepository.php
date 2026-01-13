@@ -87,6 +87,28 @@ final class LocationRepository
         return $result !== false ? $result : null;
     }
 
+    public function getCancellationPolicy(int $locationId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT l.cancellation_hours as location_cancellation_hours,
+                    b.cancellation_hours as business_cancellation_hours
+             FROM locations l
+             JOIN businesses b ON l.business_id = b.id
+             WHERE l.id = ? AND l.is_active = 1'
+        );
+        $stmt->execute([$locationId]);
+        $result = $stmt->fetch();
+
+        if (!$result) {
+            return [
+                'location_cancellation_hours' => null,
+                'business_cancellation_hours' => null,
+            ];
+        }
+
+        return $result;
+    }
+
     /**
      * Find the default location for a business.
      * Returns the location with is_default=1, or the first active location if none is marked default.

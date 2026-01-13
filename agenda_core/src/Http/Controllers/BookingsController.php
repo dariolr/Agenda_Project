@@ -286,7 +286,7 @@ final class BookingsController
             $businessId = $request->getAttribute('business_id');
             $isOperator = $businessId !== null && $this->hasBusinessAccess($request, $businessId);
             
-            $booking = $this->updateBooking->execute($bookingId, $userId, $body, $isOperator);
+            $booking = $this->updateBooking->execute($bookingId, $userId, $body, $isOperator, false);
             return Response::success($this->formatBooking($booking));
 
         } catch (BookingException $e) {
@@ -323,9 +323,111 @@ final class BookingsController
             $businessId = $request->getAttribute('business_id');
             $isOperator = $businessId !== null && $this->hasBusinessAccess($request, $businessId);
             
-            $this->deleteBooking->execute($bookingId, $userId, $isOperator);
+            $this->deleteBooking->execute($bookingId, $userId, $isOperator, false);
             return Response::success(['message' => 'Booking deleted successfully']);
 
+        } catch (BookingException $e) {
+            return Response::json([
+                'success' => false,
+                'error' => [
+                    'message' => $e->getMessage(),
+                    'code' => $e->getErrorCode(),
+                    'details' => $e->getDetails(),
+                ],
+            ], $e->getHttpStatus());
+        }
+    }
+
+    /**
+     * PUT /v1/customer/bookings/{booking_id}
+     * Customer endpoint - updates a booking (notes or reschedule with start_time).
+     */
+    public function updateCustomer(Request $request): Response
+    {
+        $clientId = $request->getAttribute('client_id');
+        $businessId = $request->getAttribute('business_id');
+        $bookingId = (int) $request->getAttribute('booking_id');
+
+        if ($clientId === null || $businessId === null) {
+            return Response::error('Customer authentication required', 'unauthorized', 401);
+        }
+
+        if ($this->updateBooking === null) {
+            return Response::serverError('UpdateBooking use case not initialized');
+        }
+
+        $body = $request->getBody();
+
+        if (!isset($body['notes']) && !isset($body['start_time'])) {
+            return Response::error(
+                'At least one field required: notes or start_time',
+                'validation_error',
+                400
+            );
+        }
+
+        if (isset($body['status']) || array_key_exists('client_id', $body)) {
+            return Response::error('Field not allowed for customers', 'validation_error', 400);
+        }
+
+        $booking = $this->bookingRepo->findById($bookingId);
+        if ($booking === null) {
+            return Response::notFound('Booking not found', $request->traceId);
+        }
+        if ((int) $booking['business_id'] !== (int) $businessId) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+
+        try {
+            $updated = $this->updateBooking->execute(
+                $bookingId,
+                (int) $clientId,
+                $body,
+                false,
+                true
+            );
+            return Response::success($this->formatBooking($updated));
+        } catch (BookingException $e) {
+            return Response::json([
+                'success' => false,
+                'error' => [
+                    'message' => $e->getMessage(),
+                    'code' => $e->getErrorCode(),
+                    'details' => $e->getDetails(),
+                ],
+            ], $e->getHttpStatus());
+        }
+    }
+
+    /**
+     * DELETE /v1/customer/bookings/{booking_id}
+     * Customer endpoint - deletes a booking and all its items.
+     */
+    public function destroyCustomer(Request $request): Response
+    {
+        $clientId = $request->getAttribute('client_id');
+        $businessId = $request->getAttribute('business_id');
+        $bookingId = (int) $request->getAttribute('booking_id');
+
+        if ($clientId === null || $businessId === null) {
+            return Response::error('Customer authentication required', 'unauthorized', 401);
+        }
+
+        if ($this->deleteBooking === null) {
+            return Response::serverError('DeleteBooking use case not initialized');
+        }
+
+        $booking = $this->bookingRepo->findById($bookingId);
+        if ($booking === null) {
+            return Response::notFound('Booking not found', $request->traceId);
+        }
+        if ((int) $booking['business_id'] !== (int) $businessId) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+
+        try {
+            $this->deleteBooking->execute($bookingId, (int) $clientId, false, true);
+            return Response::success(['message' => 'Booking deleted successfully']);
         } catch (BookingException $e) {
             return Response::json([
                 'success' => false,
@@ -516,16 +618,47 @@ final class BookingsController
             $now = new \DateTimeImmutable();
             $upcoming = [];
             $past = [];
+            $cancellationPolicyCache = [];
 
             foreach ($bookings as $booking) {
                 $formatted = $this->formatBooking($booking);
                 
                 // Determine if booking is upcoming or past based on first item start_time
                 $startTime = null;
-                if (!empty($booking['items'])) {
+                $policy = $this->bookingRepo->getCancellationPolicyForBooking((int) $booking['id']);
+                if ($policy && !empty($policy['earliest_start'])) {
+                    $startTime = new \DateTimeImmutable($policy['earliest_start']);
+                } elseif (!empty($booking['items'])) {
                     $startTime = new \DateTimeImmutable($booking['items'][0]['start_time']);
                 }
                 
+                if ($startTime !== null) {
+                    $cancellationHours = 24;
+                    if ($policy) {
+                        $cancellationHours = $policy['location_cancellation_hours']
+                            ?? $policy['business_cancellation_hours']
+                            ?? 24;
+                    } else {
+                        $locationId = (int) ($booking['location_id'] ?? 0);
+                        if ($locationId > 0) {
+                            if (!array_key_exists($locationId, $cancellationPolicyCache)) {
+                                $policy = $this->locationRepo !== null
+                                    ? $this->locationRepo->getCancellationPolicy($locationId)
+                                    : ['location_cancellation_hours' => null, 'business_cancellation_hours' => null];
+                                $cancellationPolicyCache[$locationId] = $policy;
+                            }
+                            $policy = $cancellationPolicyCache[$locationId];
+                            $cancellationHours = $policy['location_cancellation_hours']
+                                ?? $policy['business_cancellation_hours']
+                                ?? 24;
+                        }
+                    }
+
+                    $canModifyUntil = $startTime->modify("-{$cancellationHours} hours");
+                    $formatted['can_modify'] = $now < $canModifyUntil;
+                    $formatted['can_modify_until'] = $canModifyUntil->format('c');
+                }
+
                 if ($startTime !== null && $startTime > $now) {
                     $upcoming[] = $formatted;
                 } else {

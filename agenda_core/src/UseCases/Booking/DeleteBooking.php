@@ -28,11 +28,17 @@ final class DeleteBooking
      * @param int $bookingId ID del booking da cancellare
      * @param int $userId ID dell'utente che richiede la cancellazione
      * @param bool $isOperator Se true, bypassa controlli permessi/policy
+     * @param bool $isCustomer Se true, usa client_id per i permessi
      * 
      * @throws BookingException
      * @return void
      */
-    public function execute(int $bookingId, int $userId, bool $isOperator = false): void
+    public function execute(
+        int $bookingId,
+        int $userId,
+        bool $isOperator = false,
+        bool $isCustomer = false
+    ): void
     {
         // Verifica che il booking esista
         $booking = $this->bookingRepo->findById($bookingId);
@@ -42,8 +48,16 @@ final class DeleteBooking
         }
 
         // Verifica permessi: operatori possono cancellare qualsiasi booking del business
-        if (!$isOperator && $booking['user_id'] !== $userId) {
-            throw BookingException::unauthorized('You do not have permission to delete this booking');
+        if (!$isOperator) {
+            if ($isCustomer) {
+                if (empty($booking['client_id']) || (int) $booking['client_id'] !== $userId) {
+                    throw BookingException::unauthorized('You do not have permission to delete this booking');
+                }
+            } else {
+                if ((int) ($booking['user_id'] ?? 0) !== $userId) {
+                    throw BookingException::unauthorized('You do not have permission to delete this booking');
+                }
+            }
         }
 
         // Verifica cancellation policy (skip per operatori)
