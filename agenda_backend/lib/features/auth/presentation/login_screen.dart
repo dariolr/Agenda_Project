@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/l10_extension.dart';
+import '../../../core/widgets/feedback_dialog.dart';
 import '../providers/auth_provider.dart';
 
 /// Schermata di login per il gestionale.
@@ -320,50 +321,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               final email = emailController.text.trim();
               if (email.isEmpty) return;
 
-              // Salva riferimento al ScaffoldMessenger prima dell'async gap
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-
               // Chiudi il dialog prima di fare la chiamata
               Navigator.of(dialogContext).pop();
-
-              // Mostra indicatore di caricamento
-              if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Row(
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        SizedBox(width: 16),
-                        Text('Invio email in corso...'),
-                      ],
-                    ),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
 
               final success = await ref
                   .read(authProvider.notifier)
                   .forgotPassword(email: email);
 
               if (mounted) {
-                // Nascondi snackbar precedente
-                scaffoldMessenger.hideCurrentSnackBar();
-
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success
-                          ? l10n.authResetPasswordSuccess
-                          : l10n.authResetPasswordError,
-                    ),
-                    backgroundColor: success ? Colors.green : Colors.red,
-                  ),
-                );
+                if (success) {
+                  await FeedbackDialog.showSuccess(
+                    context,
+                    title: l10n.authResetPasswordTitle,
+                    message: l10n.authResetPasswordSuccess,
+                  );
+                } else {
+                  await FeedbackDialog.showError(
+                    context,
+                    title: l10n.errorTitle,
+                    message: l10n.authResetPasswordError,
+                  );
+                }
               }
             },
             child: Text(l10n.authResetPasswordSend),

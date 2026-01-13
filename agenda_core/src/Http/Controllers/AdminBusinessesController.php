@@ -206,7 +206,7 @@ final class AdminBusinessesController
         }
 
         // Soft delete by setting is_active = false
-        $this->businessRepo->update($businessId, ['is_active' => false]);
+        $this->businessRepo->delete($businessId);
 
         return Response::success([
             'message' => 'Business deleted successfully',

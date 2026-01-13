@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/business.dart';
 import '../../features/agenda/providers/business_providers.dart';
+import '../../features/business/providers/superadmin_selected_business_provider.dart';
 import '../../features/auth/providers/auth_provider.dart';
 
 /// Selettore business per superadmin.
@@ -27,6 +28,7 @@ class BusinessSelector extends ConsumerWidget {
         currentBusinessId: currentBusinessId,
         onChanged: (id) {
           ref.read(currentBusinessIdProvider.notifier).set(id);
+          ref.read(superadminSelectedBusinessProvider.notifier).select(id);
         },
       ),
       loading: () => const Padding(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/business.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../business/providers/business_providers.dart';
+import '../../business/providers/superadmin_selected_business_provider.dart';
 
 /// Notifier per forzare il refresh della lista business
 class BusinessesRefreshNotifier extends Notifier<int> {
@@ -46,11 +47,47 @@ final businessesProvider = FutureProvider<List<Business>>((ref) async {
 class CurrentBusinessId extends Notifier<int> {
   @override
   int build() {
-    // ✅ Imposta come default il primo business disponibile
+    // ✅ Imposta come default il business selezionato (superadmin)
+    // oppure il primo business disponibile.
+    final authState = ref.read(authProvider);
+    final isSuperadmin = authState.user?.isSuperadmin ?? false;
+
+    // Allinea al business selezionato quando cambia
+    ref.listen(superadminSelectedBusinessProvider, (previous, next) {
+      if (!isSuperadmin) return;
+      if (next != null && state != next) {
+        state = next;
+      }
+    });
+
     // Aspetta che businessesProvider carichi i dati
     ref.listen(businessesProvider, (previous, next) {
       next.whenData((businesses) {
-        if (businesses.isNotEmpty && state == 0) {
+        if (businesses.isEmpty) {
+          state = 0;
+          return;
+        }
+
+        final selectedBusiness = ref.read(superadminSelectedBusinessProvider);
+
+        if (isSuperadmin && selectedBusiness != null) {
+          final exists = businesses.any((b) => b.id == selectedBusiness);
+          if (exists) {
+            if (state != selectedBusiness) {
+              state = selectedBusiness;
+            }
+            return;
+          }
+
+          // Business non più valido: pulisci preferenze e fallback al primo
+          ref
+              .read(superadminSelectedBusinessProvider.notifier)
+              .clearCompletely();
+          state = businesses.first.id;
+          return;
+        }
+
+        if (state == 0) {
           state = businesses.first.id;
         }
       });

@@ -13,6 +13,7 @@ import '../../../../core/models/service_variant.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
@@ -1272,9 +1273,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         .toList();
 
     if (validItems.isEmpty) {
-      ScaffoldMessenger.of(
+      await FeedbackDialog.showError(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.validationRequired)));
+        title: l10n.errorTitle,
+        message: l10n.validationRequired,
+      );
       return;
     }
 
@@ -1349,9 +1352,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               );
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(
+            await FeedbackDialog.showError(
               context,
-            ).showSnackBar(SnackBar(content: Text(l10n.errorTitle)));
+              title: l10n.errorTitle,
+              message: l10n.errorTitle,
+            );
           }
           return;
         }

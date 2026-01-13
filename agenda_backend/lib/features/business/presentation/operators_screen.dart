@@ -10,6 +10,7 @@ import '../../../core/models/business_invitation.dart';
 import '../../../core/models/business_user.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_dialogs.dart';
+import '../../../core/widgets/feedback_dialog.dart';
 import '../providers/business_users_provider.dart';
 import 'dialogs/invite_operator_dialog.dart';
 import 'dialogs/role_selection_dialog.dart';
@@ -274,9 +275,11 @@ class _InvitationTile extends ConsumerWidget {
   void _copyInviteLink(BuildContext context, String token) {
     final url = 'https://agenda.example.com/invite/$token';
     Clipboard.setData(ClipboardData(text: url));
-    ScaffoldMessenger.of(
+    FeedbackDialog.showSuccess(
       context,
-    ).showSnackBar(SnackBar(content: Text(context.l10n.operatorsInviteCopied)));
+      title: context.l10n.operatorsInviteCopied,
+      message: context.l10n.operatorsInviteCopied,
+    );
   }
 }
 

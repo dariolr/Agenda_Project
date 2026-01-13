@@ -102,11 +102,24 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0.5,
+        centerTitle: true,
         automaticallyImplyLeading: false,
-        title: Text(l10n.authResetPasswordConfirmTitle),
+        title: Text(
+          l10n.authResetPasswordConfirmTitle,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.3,
+            color: colorScheme.onSurface,
+          ),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(

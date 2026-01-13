@@ -47,7 +47,7 @@ final class QueueBookingConfirmation
         $recipientId = (int) $booking['client_id'];
         $recipientEmail = [
             'email' => $booking['client_email'] ?? null,
-            'name' => $booking['client_name'] ?? null,
+            'name' => $this->extractFirstName($booking['client_name'] ?? null),
         ];
         
         // Fallback: if email not provided, query clients table
@@ -58,11 +58,14 @@ final class QueueBookingConfirmation
         if (!$recipientEmail || empty($recipientEmail['email'])) {
             return 0;
         }
+        $recipientEmail['name'] = $this->extractFirstName($recipientEmail['name'] ?? null);
 
         // Prepare template variables
         $variables = $this->prepareVariables($booking);
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
             $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
+        } else {
+            $variables['client_name'] = $this->extractFirstName($variables['client_name']);
         }
         
         // Get template
@@ -90,7 +93,7 @@ final class QueueBookingConfirmation
     private function getClientEmail(int $clientId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT email, CONCAT(first_name, " ", last_name) as name 
+            'SELECT email, first_name as name 
              FROM clients WHERE id = :id'
         );
         $stmt->execute(['id' => $clientId]);
@@ -105,7 +108,7 @@ final class QueueBookingConfirmation
             : $startTime->modify('-24 hours');
 
         return [
-            'client_name' => $booking['client_name'] ?? 'Cliente',
+            'client_name' => $this->extractFirstName($booking['client_name'] ?? 'Cliente'),
             'business_name' => $booking['business_name'] ?? '',
             'business_email' => $booking['business_email'] ?? '',
             'location_name' => $booking['location_name'] ?? '',
@@ -123,5 +126,16 @@ final class QueueBookingConfirmation
             'manage_url' => $booking['manage_url'] ?? '#',
             'booking_url' => $booking['booking_url'] ?? '#',
         ];
+    }
+
+    private function extractFirstName(?string $fullName): string
+    {
+        $name = trim((string) $fullName);
+        if ($name === '') {
+            return '';
+        }
+
+        $parts = preg_split('/\s+/', $name);
+        return $parts[0] ?? $name;
     }
 }

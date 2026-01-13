@@ -44,7 +44,7 @@ final class QueueBookingRescheduled
         $recipientType = 'client';
         $recipientId = null;
         $recipientEmail = null;
-        $clientName = $booking['client_name'] ?? null;
+        $clientName = $this->extractFirstName($booking['client_name'] ?? null);
         
         if (isset($booking['client_id']) && !empty($booking['client_id'])) {
             $recipientId = (int) $booking['client_id'];
@@ -66,6 +66,8 @@ final class QueueBookingRescheduled
         if (!$recipientEmail || empty($recipientEmail['email'])) {
             return 0;
         }
+        $recipientEmail['name'] = $this->extractFirstName($recipientEmail['name'] ?? null);
+        $clientName = $this->extractFirstName($clientName);
 
         // Prepare template variables
         $oldStartTime = isset($booking['old_start_time']) 
@@ -96,6 +98,8 @@ final class QueueBookingRescheduled
         ];
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
             $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
+        } else {
+            $variables['client_name'] = $this->extractFirstName($variables['client_name']);
         }
         
         $template = EmailTemplateRenderer::bookingRescheduled();
@@ -121,10 +125,21 @@ final class QueueBookingRescheduled
     private function getClientEmail(int $clientId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT email, CONCAT(first_name, " ", last_name) as name 
+            'SELECT email, first_name as name 
              FROM clients WHERE id = :id'
         );
         $stmt->execute(['id' => $clientId]);
         return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+    }
+
+    private function extractFirstName(?string $fullName): string
+    {
+        $name = trim((string) $fullName);
+        if ($name === '') {
+            return '';
+        }
+
+        $parts = preg_split('/\s+/', $name);
+        return $parts[0] ?? $name;
     }
 }
