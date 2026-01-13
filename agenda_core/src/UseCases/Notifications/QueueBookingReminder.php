@@ -42,7 +42,7 @@ final class QueueBookingReminder
         $recipientType = 'user';
         $recipientId = null;
         $recipientEmail = null;
-        $clientName = $booking['client_name'] ?? null;
+        $clientName = $this->extractFirstName($booking['client_name'] ?? null);
         
         // Notifications go ONLY to clients, never to operators
         if (!isset($booking['client_id']) || empty($booking['client_id'])) {
@@ -51,7 +51,7 @@ final class QueueBookingReminder
         
         $recipientType = 'client';
         $recipientId = (int) $booking['client_id'];
-        $clientName = $booking['client_name'] ?? 'Cliente';
+        $clientName = $this->extractFirstName($booking['client_name'] ?? 'Cliente');
         $recipientEmail = [
             'email' => $booking['client_email'] ?? null,
             'name' => $clientName,
@@ -68,6 +68,8 @@ final class QueueBookingReminder
         if (!$recipientEmail || empty($recipientEmail['email'])) {
             return 0;
         }
+        $recipientEmail['name'] = $this->extractFirstName($recipientEmail['name'] ?? null);
+        $clientName = $this->extractFirstName($clientName);
 
         // Calculate scheduled time
         $startTime = new DateTimeImmutable($booking['start_time']);
@@ -96,6 +98,8 @@ final class QueueBookingReminder
         ];
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
             $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
+        } else {
+            $variables['client_name'] = $this->extractFirstName($variables['client_name']);
         }
         
         $template = EmailTemplateRenderer::bookingReminder();
@@ -143,7 +147,7 @@ final class QueueBookingReminder
                 l.phone as location_phone,
                 l.email as location_email,
                 c.email as client_email,
-                CONCAT(c.first_name, " ", c.last_name) as client_full_name,
+                c.first_name as client_first_name,
                 MIN(bi.start_time) as start_time,
                 GROUP_CONCAT(DISTINCT s.name SEPARATOR ", ") as services
              FROM bookings b
@@ -173,8 +177,8 @@ final class QueueBookingReminder
         
         // Process bookings to set client_name and manage_url properly
         foreach ($bookings as &$booking) {
-            if (!empty($booking['client_full_name'])) {
-                $booking['client_name'] = $booking['client_full_name'];
+            if (!empty($booking['client_first_name'])) {
+                $booking['client_name'] = $booking['client_first_name'];
             }
             // Build manage_url from business slug
             $slug = $booking['business_slug'] ?? '';
@@ -194,10 +198,21 @@ final class QueueBookingReminder
     private function getClientEmail(int $clientId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT email, CONCAT(first_name, " ", last_name) as name 
+            'SELECT email, first_name as name 
              FROM clients WHERE id = :id'
         );
         $stmt->execute(['id' => $clientId]);
         return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+    }
+
+    private function extractFirstName(?string $fullName): string
+    {
+        $name = trim((string) $fullName);
+        if ($name === '') {
+            return '';
+        }
+
+        $parts = preg_split('/\s+/', $name);
+        return $parts[0] ?? $name;
     }
 }

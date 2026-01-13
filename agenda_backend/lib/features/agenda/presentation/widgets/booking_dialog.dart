@@ -17,6 +17,7 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
@@ -1316,9 +1317,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         .toList();
 
     if (validItems.isEmpty) {
-      ScaffoldMessenger.of(
+      await FeedbackDialog.showError(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.atLeastOneServiceRequired)));
+        title: l10n.errorTitle,
+        message: l10n.atLeastOneServiceRequired,
+      );
       return;
     }
 
@@ -1394,9 +1397,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        await FeedbackDialog.showError(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.errorTitle)));
+          title: l10n.errorTitle,
+          message: l10n.errorTitle,
+        );
       }
       return;
     } finally {

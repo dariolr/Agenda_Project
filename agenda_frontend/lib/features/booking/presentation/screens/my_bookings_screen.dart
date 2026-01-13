@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '/core/l10n/l10_extension.dart';
 import '/core/models/booking_item.dart';
+import '/core/widgets/booking_app_bar.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/booking/providers/my_bookings_provider.dart';
 import '../dialogs/reschedule_booking_dialog.dart';
@@ -38,21 +39,24 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
   @override
   Widget build(BuildContext context) {
     final bookingsState = ref.watch(myBookingsProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.myBookings),
+      appBar: BookingAppBar(
+        showBackButton: true,
         bottom: TabBar(
           controller: _tabController,
+          labelColor: colorScheme.primary,
+          unselectedLabelColor: colorScheme.onSurface.withOpacity(0.6),
+          indicatorColor: colorScheme.primary,
+          indicatorWeight: 2,
+          labelStyle: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
           tabs: [
-            Tab(
-              text: context.l10n.upcomingBookings,
-              icon: const Icon(Icons.event_available),
-            ),
-            Tab(
-              text: context.l10n.pastBookings,
-              icon: const Icon(Icons.history),
-            ),
+            Tab(text: context.l10n.upcomingBookings),
+            Tab(text: context.l10n.pastBookings),
           ],
         ),
       ),

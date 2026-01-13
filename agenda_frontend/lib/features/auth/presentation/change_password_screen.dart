@@ -69,17 +69,34 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0.5,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            size: 20,
+            color: colorScheme.onSurface,
+          ),
           onPressed: () {
             final slug = ref.read(routeSlugProvider);
             context.go('/$slug/my-bookings');
           },
         ),
-        title: Text(l10n.authChangePasswordTitle),
+        title: Text(
+          l10n.authChangePasswordTitle,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.3,
+            color: colorScheme.onSurface,
+          ),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(

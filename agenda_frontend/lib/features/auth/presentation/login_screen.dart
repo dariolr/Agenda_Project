@@ -128,10 +128,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  String _resolveAuthErrorMessage(
-    BuildContext context,
-    AuthState authState,
-  ) {
+  String _resolveAuthErrorMessage(BuildContext context, AuthState authState) {
     final l10n = context.l10n;
     switch (authState.errorCode) {
       case 'invalid_credentials':
@@ -161,17 +158,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authProvider);
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0.5,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            size: 20,
+            color: colorScheme.onSurface,
+          ),
           onPressed: () {
             final slug = ref.read(routeSlugProvider);
             context.go('/$slug/booking');
           },
         ),
-        title: Text(l10n.authLoginTitle),
+        title: Text(
+          l10n.authLoginTitle,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.3,
+            color: colorScheme.onSurface,
+          ),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(

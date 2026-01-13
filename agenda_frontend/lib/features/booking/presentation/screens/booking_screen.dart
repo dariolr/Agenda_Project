@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
-import '../../../../app/providers/route_slug_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
-import '../../../auth/providers/auth_provider.dart';
+import '../../../../core/widgets/booking_app_bar.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/locations_provider.dart';
@@ -28,16 +26,16 @@ class BookingScreen extends ConsumerWidget {
 
     // Se il business è in caricamento, mostra loading
     if (businessAsync.isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: Text(l10n.bookingTitle)),
-        body: const Center(child: CircularProgressIndicator()),
+      return const Scaffold(
+        appBar: BookingAppBar(showUserMenu: false),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     // Se c'è un errore nel caricamento del business
     if (businessAsync.hasError) {
       return Scaffold(
-        appBar: AppBar(title: Text(l10n.bookingTitle)),
+        appBar: const BookingAppBar(showUserMenu: false),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -74,7 +72,7 @@ class BookingScreen extends ConsumerWidget {
       final icon = isNotActive ? Icons.schedule : Icons.storefront_outlined;
 
       return Scaffold(
-        appBar: AppBar(title: Text(l10n.bookingTitle)),
+        appBar: const BookingAppBar(showUserMenu: false),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -104,10 +102,6 @@ class BookingScreen extends ConsumerWidget {
     // Normal booking flow
     final bookingState = ref.watch(bookingFlowProvider);
     final hasMultipleLocations = ref.watch(hasMultipleLocationsProvider);
-    final isAuthenticated = ref.watch(
-      authProvider.select((state) => state.isAuthenticated),
-    );
-    final slug = ref.watch(routeSlugProvider);
     final isMobile =
         _formFactorForWidth(MediaQuery.of(context).size.width) ==
         AppFormFactor.mobile;
@@ -128,67 +122,10 @@ class BookingScreen extends ConsumerWidget {
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.bookingTitle),
-          leading: showBackButton
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () =>
-                      ref.read(bookingFlowProvider.notifier).previousStep(),
-                )
-              : null,
-          actions: [
-            if (isAuthenticated && slug != null)
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.account_circle_outlined),
-                tooltip: l10n.profileTitle,
-                onSelected: (value) async {
-                  switch (value) {
-                    case 'bookings':
-                      context.go('/$slug/my-bookings');
-                    case 'profile':
-                      context.push('/$slug/profile');
-                    case 'logout':
-                      final businessId = ref.read(currentBusinessIdProvider);
-                      if (businessId != null) {
-                        await ref
-                            .read(authProvider.notifier)
-                            .logout(businessId: businessId);
-                      }
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem<String>(
-                    value: 'bookings',
-                    child: ListTile(
-                      leading: const Icon(Icons.event_note),
-                      title: Text(l10n.myBookings),
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'profile',
-                    child: ListTile(
-                      leading: const Icon(Icons.person_outline),
-                      title: Text(l10n.profileTitle),
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem<String>(
-                    value: 'logout',
-                    child: ListTile(
-                      leading: const Icon(Icons.logout),
-                      title: Text(l10n.actionLogout),
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                    ),
-                  ),
-                ],
-              ),
-          ],
+        appBar: BookingAppBar(
+          showBackButton: showBackButton,
+          onBackPressed: () =>
+              ref.read(bookingFlowProvider.notifier).previousStep(),
         ),
         body: LayoutBuilder(
           builder: (context, constraints) {

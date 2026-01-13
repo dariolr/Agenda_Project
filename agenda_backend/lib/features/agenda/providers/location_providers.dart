@@ -5,7 +5,7 @@ import '../../../core/models/location.dart';
 import '../../../core/network/network_providers.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../business/presentation/business_list_screen.dart';
+import '../../business/providers/superadmin_selected_business_provider.dart';
 import '../../business/providers/locations_providers.dart';
 
 ///

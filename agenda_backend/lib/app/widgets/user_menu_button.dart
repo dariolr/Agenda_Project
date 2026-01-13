@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/l10_extension.dart';
 import '../../core/models/user.dart';
 import '../../features/auth/providers/auth_provider.dart';
-import '../../features/business/presentation/business_list_screen.dart';
+import '../../features/business/providers/superadmin_selected_business_provider.dart';
 
 /// Avatar utente riutilizzabile.
 class UserAvatar extends StatelessWidget {

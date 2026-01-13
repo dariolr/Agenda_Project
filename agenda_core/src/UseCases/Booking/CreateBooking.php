@@ -952,6 +952,9 @@ final class CreateBooking
             if ($client === null || empty($client['email'])) {
                 return;
             }
+            $clientName = trim(
+                ($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? '')
+            );
 
             $senderEmail = $location['email'] ?? $location['business_email'] ?? null;
             $senderName = $location['email'] ? $location['name'] : ($location['business_email'] ? $location['business_name'] : null);
@@ -960,6 +963,7 @@ final class CreateBooking
                 'booking_id' => (int) $booking['id'],
                 'client_id' => $clientId,
                 'client_email' => $client['email'],
+                'client_name' => $clientName,
                 'business_id' => (int) $booking['business_id'],
                 'business_name' => $location['business_name'] ?? '',
                 'business_email' => $location['business_email'] ?? '',
