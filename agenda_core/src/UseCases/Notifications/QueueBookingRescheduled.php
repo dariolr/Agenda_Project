@@ -75,15 +75,25 @@ final class QueueBookingRescheduled
             : null;
         $newStartTime = new DateTimeImmutable($booking['new_start_time'] ?? $booking['start_time']);
         
+        $locationName = $booking['location_name'] ?? '';
+        $locationAddress = $booking['location_address'] ?? '';
+        $hasMultipleLocations = $this->hasMultipleLocations((int) ($booking['business_id'] ?? 0));
+        $locationBlockHtml = $hasMultipleLocations
+            ? sprintf('📍 %s, %s<br>', $locationName, $locationAddress)
+            : '';
+        $locationBlockText = $hasMultipleLocations
+            ? sprintf("📍 %s, %s\n", $locationName, $locationAddress)
+            : '';
+
         $variables = [
             'client_name' => $clientName,
             'business_name' => $booking['business_name'] ?? '',
             'business_email' => $booking['business_email'] ?? '',
-            'location_name' => $booking['location_name'] ?? '',
+            'location_name' => $locationName,
             'location_email' => $booking['location_email'] ?? '',
             'sender_email' => $booking['sender_email'] ?? '',
             'sender_name' => $booking['sender_name'] ?? '',
-            'location_address' => $booking['location_address'] ?? '',
+            'location_address' => $locationAddress,
             'location_city' => $booking['location_city'] ?? '',
             'location_phone' => $booking['location_phone'] ?? '',
             'old_date' => $oldStartTime ? $oldStartTime->format('d/m/Y') : '',
@@ -95,6 +105,8 @@ final class QueueBookingRescheduled
             'services' => $booking['services'] ?? '',
             'manage_url' => $booking['manage_url'] ?? '#',
             'booking_url' => $booking['booking_url'] ?? '#',
+            'location_block_html' => $locationBlockHtml,
+            'location_block_text' => $locationBlockText,
         ];
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
             $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
@@ -141,5 +153,19 @@ final class QueueBookingRescheduled
 
         $parts = preg_split('/\s+/', $name);
         return $parts[0] ?? $name;
+    }
+
+    private function hasMultipleLocations(int $businessId): bool
+    {
+        if ($businessId <= 0) {
+            return false;
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) FROM locations WHERE business_id = ? AND is_active = 1'
+        );
+        $stmt->execute([$businessId]);
+
+        return (int) $stmt->fetchColumn() > 1;
     }
 }

@@ -8,6 +8,7 @@ import '/core/models/booking_item.dart';
 import '/core/widgets/booking_app_bar.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/booking/providers/my_bookings_provider.dart';
+import '/features/booking/providers/locations_provider.dart';
 import '../dialogs/reschedule_booking_dialog.dart';
 
 class MyBookingsScreen extends ConsumerStatefulWidget {
@@ -42,11 +43,13 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     final bookingsState = ref.watch(myBookingsProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: BookingAppBar(
         showBackButton: true,
         onBackPressed: () => context.pop(),
+        showUserMenu: false,
         bottom: TabBar(
           controller: _tabController,
           labelColor: colorScheme.primary,
@@ -66,14 +69,33 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
           ? const Center(child: CircularProgressIndicator())
           : bookingsState.error != null
           ? _ErrorView(error: bookingsState.error!)
-          : TabBarView(
-              controller: _tabController,
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _BookingsList(
-                  bookings: bookingsState.upcoming,
-                  isUpcoming: true,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    l10n.myBookings,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-                _BookingsList(bookings: bookingsState.past, isUpcoming: false),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _BookingsList(
+                        bookings: bookingsState.upcoming,
+                        isUpcoming: true,
+                      ),
+                      _BookingsList(
+                        bookings: bookingsState.past,
+                        isUpcoming: false,
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
     );
@@ -162,8 +184,14 @@ class _BookingCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final locationsAsync = ref.watch(locationsProvider);
+    final showLocation = locationsAsync.maybeWhen(
+      data: (locations) => locations.length > 1,
+      orElse: () => true,
+    );
     final dateFormat = DateFormat('dd/MM/yyyy', 'it');
     final timeFormat = DateFormat('HH:mm', 'it');
+    final theme = Theme.of(context);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -186,29 +214,41 @@ class _BookingCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.location_on, size: 18, color: Colors.grey),
-                const SizedBox(width: 8),
-                Text(
-                  booking.locationName,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
+            if (showLocation)
+              Row(
+                children: [
+                  const Icon(Icons.location_on, size: 18, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Text(
+                    booking.locationName,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
             const Divider(height: 24),
 
             // Servizi
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.work_outline, size: 18),
+                const Icon(Icons.list_alt, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    booking.servicesDisplay,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
+                  child: booking.serviceNames.length <= 1
+                      ? Text(
+                          booking.servicesDisplay,
+                          style: theme.textTheme.bodyMedium,
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (final service in booking.serviceNames)
+                              Text(
+                                service,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                          ],
+                        ),
                 ),
               ],
             ),
@@ -252,8 +292,8 @@ class _BookingCard extends ConsumerWidget {
                   const Icon(Icons.euro, size: 18, color: Colors.grey),
                   const SizedBox(width: 8),
                   Text(
-                    '${booking.totalPrice.toStringAsFixed(2)} €',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    booking.totalPrice.toStringAsFixed(2),
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -291,7 +331,9 @@ class _BookingCard extends ConsumerWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: booking.canModify ? Colors.green : Colors.orange,
+                      color: booking.canModify
+                          ? Colors.green
+                          : theme.colorScheme.primary,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
