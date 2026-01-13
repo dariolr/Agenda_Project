@@ -44,7 +44,7 @@ final class EmailTemplateRenderer
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
         <tr>
             <td style="padding:40px 30px;text-align:center;background-color:#2196F3;">
-                <h1 style="margin:0;color:#ffffff;font-size:24px;">✓ Prenotazione Confermata</h1>
+                <h1 style="margin:0;color:#ffffff;font-size:24px;">✅ Prenotazione Confermata</h1>
             </td>
         </tr>
         <tr>
@@ -60,13 +60,7 @@ final class EmailTemplateRenderer
                     <tr>
                         <td style="padding:20px;">
                             <table width="100%" cellpadding="0" cellspacing="0">
-                                <tr>
-                                    <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;">📍 Dove</span><br>
-                                        <strong style="color:#333;">{{location_name}}</strong><br>
-                                        <span style="color:#666;font-size:14px;">{{location_address}}</span>
-                                    </td>
-                                </tr>
+                                {{location_block_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                                         <span style="color:#666;">📅 Quando</span><br>
@@ -75,7 +69,7 @@ final class EmailTemplateRenderer
                                 </tr>
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;">✂️ Servizi</span><br>
+                                        <span style="color:#666;">📋 Servizi</span><br>
                                         <strong style="color:#333;">{{services}}</strong>
                                     </td>
                                 </tr>
@@ -119,15 +113,14 @@ final class EmailTemplateRenderer
 </html>
 HTML,
             'text' => <<<TEXT
-Prenotazione Confermata
+✅ Prenotazione Confermata
 
 Ciao {{client_name}},
 
 La tua prenotazione presso {{business_name}} è stata confermata.
 
-📍 Dove: {{location_name}}, {{location_address}}
-📅 Quando: {{date}} alle {{time}}
-✂️ Servizi: {{services}}
+{{location_block_text}}📅 Quando: {{date}} alle {{time}}
+📋 Servizi: {{services}}
 💰 Totale: €{{total_price}}
 
 Puoi modificare o cancellare fino a {{cancel_deadline}}.
@@ -161,7 +154,7 @@ TEXT,
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
         <tr>
             <td style="padding:40px 30px;text-align:center;background-color:#f44336;">
-                <h1 style="margin:0;color:#ffffff;font-size:24px;">✕ Prenotazione Cancellata</h1>
+                <h1 style="margin:0;color:#ffffff;font-size:24px;">❌ Prenotazione Cancellata</h1>
             </td>
         </tr>
         <tr>
@@ -178,7 +171,7 @@ TEXT,
                         <td style="padding:20px;">
                             <p style="margin:0;color:#666;">
                                 📅 <strong>{{date}} alle {{time}}</strong><br>
-                                ✂️ {{services}}
+                                📋 {{services}}
                             </p>
                         </td>
                     </tr>
@@ -219,7 +212,7 @@ Ciao {{client_name}},
 La tua prenotazione presso {{business_name}} è stata cancellata.
 
 📅 {{date}} alle {{time}}
-✂️ {{services}}
+📋 {{services}}
 
 Se desideri prenotare nuovamente: {{booking_url}}
 
@@ -270,15 +263,10 @@ TEXT,
                                         <strong style="color:#333;">📅 {{date}} alle {{time}}</strong>
                                     </td>
                                 </tr>
+                                {{location_block_html}}
                                 <tr>
                                     <td style="padding:5px 0;">
-                                        <span style="color:#666;">📍 {{location_name}}</span><br>
-                                        <span style="color:#666;font-size:14px;">{{location_address}}</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding:5px 0;">
-                                        <span style="color:#666;">✂️ {{services}}</span>
+                                        <span style="color:#666;">📋 {{services}}</span>
                                     </td>
                                 </tr>
                             </table>
@@ -320,8 +308,7 @@ Ciao {{client_name}},
 Ti ricordiamo che hai un appuntamento DOMANI presso {{business_name}}.
 
 📅 {{date}} alle {{time}}
-📍 {{location_name}}, {{location_address}}
-✂️ {{services}}
+{{location_block_text}}📋 {{services}}
 
 Se non puoi presentarti, cancella la prenotazione: {{manage_url}}
 
@@ -371,7 +358,7 @@ TEXT,
                     </tr>
                     <tr>
                         <td style="padding:15px;background-color:#e8f5e9;border-radius:0 0 8px 8px;">
-                            <span style="color:#2e7d32;font-weight:bold;">✓ Nuova data</span><br>
+                            <span style="color:#2e7d32;font-weight:bold;">✅ Nuova data</span><br>
                             <strong style="color:#333;">{{date}} alle {{time}}</strong>
                         </td>
                     </tr>
@@ -381,8 +368,7 @@ TEXT,
                     <tr>
                         <td style="padding:20px;">
                             <p style="margin:0;color:#666;">
-                                📍 {{location_name}}, {{location_address}}<br>
-                                ✂️ {{services}}
+                                {{location_block_html}}📋 {{services}}
                             </p>
                         </td>
                     </tr>
@@ -418,10 +404,9 @@ Ciao {{client_name}},
 La tua prenotazione presso {{business_name}} è stata modificata.
 
 ❌ Vecchia data: {{old_date}} alle {{old_time}}
-✓ Nuova data: {{date}} alle {{time}}
+✅ Nuova data: {{date}} alle {{time}}
 
-📍 {{location_name}}, {{location_address}}
-✂️ {{services}}
+{{location_block_text}}📋 {{services}}
 
 Vedi dettagli: {{manage_url}}
 

@@ -106,16 +106,33 @@ final class QueueBookingConfirmation
         $cancelDeadline = isset($booking['cancellation_hours']) 
             ? $startTime->modify("-{$booking['cancellation_hours']} hours")
             : $startTime->modify('-24 hours');
+        $locationName = $booking['location_name'] ?? '';
+        $locationAddress = $booking['location_address'] ?? '';
+        $hasMultipleLocations = $this->hasMultipleLocations((int) ($booking['business_id'] ?? 0));
+        $locationBlockHtml = $hasMultipleLocations ? sprintf(
+            '<tr>
+                                    <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                                        <span style="color:#666;">📍 Dove</span><br>
+                                        <strong style="color:#333;">%s</strong><br>
+                                        <span style="color:#666;font-size:14px;">%s</span>
+                                    </td>
+                                </tr>',
+            $locationName,
+            $locationAddress
+        ) : '';
+        $locationBlockText = $hasMultipleLocations
+            ? sprintf("📍 Dove: %s, %s\n", $locationName, $locationAddress)
+            : '';
 
         return [
             'client_name' => $this->extractFirstName($booking['client_name'] ?? 'Cliente'),
             'business_name' => $booking['business_name'] ?? '',
             'business_email' => $booking['business_email'] ?? '',
-            'location_name' => $booking['location_name'] ?? '',
+            'location_name' => $locationName,
             'location_email' => $booking['location_email'] ?? '',
             'sender_email' => $booking['sender_email'] ?? '',
             'sender_name' => $booking['sender_name'] ?? '',
-            'location_address' => $booking['location_address'] ?? '',
+            'location_address' => $locationAddress,
             'location_city' => $booking['location_city'] ?? '',
             'location_phone' => $booking['location_phone'] ?? '',
             'date' => $startTime->format('d/m/Y'),
@@ -125,6 +142,8 @@ final class QueueBookingConfirmation
             'cancel_deadline' => $cancelDeadline->format('d/m/Y H:i'),
             'manage_url' => $booking['manage_url'] ?? '#',
             'booking_url' => $booking['booking_url'] ?? '#',
+            'location_block_html' => $locationBlockHtml,
+            'location_block_text' => $locationBlockText,
         ];
     }
 
@@ -137,5 +156,19 @@ final class QueueBookingConfirmation
 
         $parts = preg_split('/\s+/', $name);
         return $parts[0] ?? $name;
+    }
+
+    private function hasMultipleLocations(int $businessId): bool
+    {
+        if ($businessId <= 0) {
+            return false;
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) FROM locations WHERE business_id = ? AND is_active = 1'
+        );
+        $stmt->execute([$businessId]);
+
+        return (int) $stmt->fetchColumn() > 1;
     }
 }

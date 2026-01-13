@@ -149,46 +149,47 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                     ),
 
                     // Slot orari
-                    slotsAsync.when(
-                      loading: () => const SizedBox.shrink(),
-                      error: (e, _) =>
-                          Center(child: Text(l10n.errorLoadingAvailability)),
-                      data: (slots) => slots.isEmpty
-                          ? Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.event_busy,
-                                    size: 48,
-                                    color: theme.colorScheme.onSurface
-                                        .withOpacity(0.3),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    l10n.dateTimeNoSlots,
-                                    textAlign: TextAlign.center,
-                                    style: theme.textTheme.bodyLarge?.copyWith(
+                    if (!isLoading)
+                      slotsAsync.when(
+                        loading: () => const SizedBox.shrink(),
+                        error: (e, _) =>
+                            Center(child: Text(l10n.errorLoadingAvailability)),
+                        data: (slots) => slots.isEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.all(32),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.event_busy,
+                                      size: 48,
                                       color: theme.colorScheme.onSurface
-                                          .withOpacity(0.6),
+                                          .withOpacity(0.3),
                                     ),
-                                  ),
-                                  const SizedBox(height: 36),
-                                  _buildGoToAvailableDateButton(
-                                    context,
-                                    ref,
-                                    selectedDate,
-                                    availableDates,
-                                    focusedMonth,
-                                    l10n,
-                                    theme,
-                                  ),
-                                ],
-                              ),
-                            )
-                          : _buildTimeSlots(context, ref, slots),
-                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      l10n.dateTimeNoSlots,
+                                      textAlign: TextAlign.center,
+                                      style: theme.textTheme.bodyLarge?.copyWith(
+                                        color: theme.colorScheme.onSurface
+                                            .withOpacity(0.6),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 36),
+                                    _buildGoToAvailableDateButton(
+                                      context,
+                                      ref,
+                                      selectedDate,
+                                      availableDates,
+                                      focusedMonth,
+                                      l10n,
+                                      theme,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : _buildTimeSlots(context, ref, slots),
+                      ),
                   ],
                 ),
               ),

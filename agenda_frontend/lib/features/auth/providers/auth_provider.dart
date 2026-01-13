@@ -156,7 +156,7 @@ class AuthNotifier extends Notifier<AuthState> {
       );
       return true;
     } catch (e) {
-      state = AuthState.error(e.toString());
+      state = state.copyWith(errorMessage: e.toString());
       return false;
     }
   }
