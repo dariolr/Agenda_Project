@@ -215,6 +215,7 @@ class BookingsRepository {
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
       price: null, // Non sempre presente
+      bookingSource: (json['booking_source'] ?? json['source']) as String?,
       extraMinutes: json['extra_blocked_minutes'] as int?,
       extraMinutesType:
           (json['extra_blocked_minutes'] as int?) != null &&
@@ -246,6 +247,7 @@ class BookingsRepository {
       startTime: item.startDateTime,
       endTime: item.endDateTime,
       price: item.price,
+      bookingSource: booking.source,
     );
   }
 }

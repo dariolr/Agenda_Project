@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
+import '../../../../core/widgets/form_loading_overlay.dart';
 import '../../providers/business_users_provider.dart';
 
 /// Dialog per invitare un nuovo operatore (desktop).
@@ -36,49 +37,52 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
 
     return AppFormDialog(
       title: Text(l10n.operatorsInviteTitle),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.operatorsInviteSubtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+      content: FormLoadingOverlay(
+        isLoading: _isLoading,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.operatorsInviteSubtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            TextFormField(
-              controller: _emailController,
-              decoration: InputDecoration(
-                labelText: l10n.operatorsInviteEmail,
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.email_outlined),
+              const SizedBox(height: 24),
+              TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: l10n.operatorsInviteEmail,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.email_outlined),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                autofocus: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return l10n.validationRequired;
+                  }
+                  if (!_isValidEmail(value)) {
+                    return l10n.validationInvalidEmail;
+                  }
+                  return null;
+                },
               ),
-              keyboardType: TextInputType.emailAddress,
-              autofocus: true,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return l10n.validationRequired;
-                }
-                if (!_isValidEmail(value)) {
-                  return l10n.validationInvalidEmail;
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.operatorsInviteRole,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            _RoleSelector(
-              selectedRole: _selectedRole,
-              onChanged: (role) => setState(() => _selectedRole = role),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                l10n.operatorsInviteRole,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              _RoleSelector(
+                selectedRole: _selectedRole,
+                onChanged: (role) => setState(() => _selectedRole = role),
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -88,13 +92,7 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
         ),
         FilledButton(
           onPressed: _isLoading ? null : _submit,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.operatorsInviteSend),
+          child: Text(l10n.operatorsInviteSend),
         ),
       ],
     );
@@ -170,91 +168,88 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Header
-        Text(
-          l10n.operatorsInviteTitle,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          l10n.operatorsInviteSubtitle,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return FormLoadingOverlay(
+      isLoading: _isLoading,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Text(
+            l10n.operatorsInviteTitle,
+            style: Theme.of(context).textTheme.titleLarge,
           ),
-        ),
-        const SizedBox(height: 24),
+          const SizedBox(height: 4),
+          Text(
+            l10n.operatorsInviteSubtitle,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
 
-        // Form
-        Expanded(
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                TextFormField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: l10n.operatorsInviteEmail,
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.email_outlined),
+          // Form
+          Expanded(
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                children: [
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: l10n.operatorsInviteEmail,
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.email_outlined),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    autofocus: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return l10n.validationRequired;
+                      }
+                      if (!_isValidEmail(value)) {
+                        return l10n.validationInvalidEmail;
+                      }
+                      return null;
+                    },
                   ),
-                  keyboardType: TextInputType.emailAddress,
-                  autofocus: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return l10n.validationRequired;
-                    }
-                    if (!_isValidEmail(value)) {
-                      return l10n.validationInvalidEmail;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  l10n.operatorsInviteRole,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: 8),
-                _RoleSelector(
-                  selectedRole: _selectedRole,
-                  onChanged: (role) => setState(() => _selectedRole = role),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  Text(
+                    l10n.operatorsInviteRole,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  _RoleSelector(
+                    selectedRole: _selectedRole,
+                    onChanged: (role) => setState(() => _selectedRole = role),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
 
-        // Actions
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _isLoading
-                    ? null
-                    : () => Navigator.of(context).pop(),
-                child: Text(l10n.actionCancel),
+          // Actions
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () => Navigator.of(context).pop(),
+                  child: Text(l10n.actionCancel),
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: FilledButton(
-                onPressed: _isLoading ? null : _submit,
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(l10n.operatorsInviteSend),
+              const SizedBox(width: 16),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _isLoading ? null : _submit,
+                  child: Text(l10n.operatorsInviteSend),
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 

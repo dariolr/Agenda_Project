@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/widgets/form_loading_overlay.dart';
 import '../providers/auth_provider.dart';
 
 /// Schermata profilo utente.
@@ -123,9 +124,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 500),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+            child: FormLoadingOverlay(
+              isLoading: _isLoading,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 // Avatar
                 Center(
                   child: CircleAvatar(
@@ -291,15 +294,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Expanded(
                         child: FilledButton(
                           onPressed: _isLoading ? null : _saveChanges,
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(l10n.actionSave),
+                          child: Text(l10n.actionSave),
                         ),
                       ),
                     ],
@@ -335,7 +330,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ],
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

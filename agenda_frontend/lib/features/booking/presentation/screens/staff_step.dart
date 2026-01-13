@@ -46,7 +46,7 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                 children: [
                   Text(
                     l10n.staffTitle,
-                    style: theme.textTheme.headlineSmall?.copyWith(
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),

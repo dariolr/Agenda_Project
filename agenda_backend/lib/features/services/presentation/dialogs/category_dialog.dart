@@ -10,6 +10,7 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/form_loading_overlay.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../utils/service_validators.dart';
@@ -147,6 +148,7 @@ Future<void> showCategoryDialog(
                 },
           padding: AppButtonStyles.dialogButtonPadding,
           isLoading: isSaving,
+          showSpinner: false,
           child: Text(context.l10n.actionSave),
         ),
       );
@@ -160,25 +162,28 @@ Future<void> showCategoryDialog(
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(title, style: Theme.of(ctx).textTheme.headlineSmall),
-                    const SizedBox(height: 16),
-                    content,
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        cancelButton,
-                        const SizedBox(width: 8),
-                        saveButton,
-                      ],
-                    ),
-                  ],
+              child: FormLoadingOverlay(
+                isLoading: isSaving,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(title, style: Theme.of(ctx).textTheme.headlineSmall),
+                      const SizedBox(height: 16),
+                      content,
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          cancelButton,
+                          const SizedBox(width: 8),
+                          saveButton,
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -191,64 +196,67 @@ Future<void> showCategoryDialog(
         child: LayoutBuilder(
           builder: (ctx, constraints) {
             final isKeyboardOpen = MediaQuery.of(ctx).viewInsets.bottom > 0;
-            return SizedBox(
-              height: constraints.maxHeight,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.only(bottom: 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Text(
-                                    title,
-                                    style: Theme.of(ctx).textTheme.titleLarge,
+            return FormLoadingOverlay(
+              isLoading: isSaving,
+              child: SizedBox(
+                height: constraints.maxHeight,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.only(bottom: 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: Text(
+                                      title,
+                                      style: Theme.of(ctx).textTheme.titleLarge,
+                                    ),
                                   ),
-                                ),
-                                content,
-                                const SizedBox(height: 24),
-                                const SizedBox(
-                                  height: AppSpacing.formRowSpacing,
-                                ),
-                              ],
+                                  content,
+                                  const SizedBox(height: 24),
+                                  const SizedBox(
+                                    height: AppSpacing.formRowSpacing,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (!isKeyboardOpen) ...[
-                    const AppBottomSheetDivider(),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: Align(
-                        alignment: 2 == 3
-                            ? Alignment.center
-                            : Alignment.centerRight,
-                        child: Wrap(
-                          alignment: 2 == 3
-                              ? WrapAlignment.center
-                              : WrapAlignment.end,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [cancelButton, saveButton],
+                          ],
                         ),
                       ),
                     ),
+                    if (!isKeyboardOpen) ...[
+                      const AppBottomSheetDivider(),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: Align(
+                          alignment: 2 == 3
+                              ? Alignment.center
+                              : Alignment.centerRight,
+                          child: Wrap(
+                            alignment: 2 == 3
+                                ? WrapAlignment.center
+                                : WrapAlignment.end,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [cancelButton, saveButton],
+                          ),
+                        ),
+                      ),
+                    ],
+                    SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
                   ],
-                  SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
-                ],
+                ),
               ),
             );
           },

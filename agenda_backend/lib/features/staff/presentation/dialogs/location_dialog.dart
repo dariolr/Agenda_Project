@@ -8,6 +8,7 @@ import '../../../../core/models/location.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/form_loading_overlay.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../../agenda/providers/location_providers.dart';
@@ -102,13 +103,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       AppFilledButton(
         onPressed: _isLoading ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
-        child: _isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text(l10n.actionSave),
+        child: Text(l10n.actionSave),
       ),
     ];
 
@@ -266,26 +261,29 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
         insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 16),
-                Flexible(child: SingleChildScrollView(child: content)),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    for (int i = 0; i < bottomActions.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 8),
-                      bottomActions[i],
+          child: FormLoadingOverlay(
+            isLoading: _isLoading,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.headlineSmall),
+                  const SizedBox(height: 16),
+                  Flexible(child: SingleChildScrollView(child: content)),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      for (int i = 0; i < bottomActions.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 8),
+                        bottomActions[i],
+                      ],
                     ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -297,59 +295,62 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-          return SizedBox(
-            height: constraints.maxHeight,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        top: 12,
-                        bottom: 0,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Text(
-                              title,
-                              style: Theme.of(context).textTheme.titleLarge,
+          return FormLoadingOverlay(
+            isLoading: _isLoading,
+            child: SizedBox(
+              height: constraints.maxHeight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          top: 12,
+                          bottom: 0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text(
+                                title,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
                             ),
-                          ),
-                          content,
-                          const SizedBox(height: 24),
-                        ],
+                            content,
+                            const SizedBox(height: 24),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                if (!isKeyboardOpen) ...[
-                  const AppBottomSheetDivider(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Align(
-                      alignment: bottomActions.length == 3
-                          ? Alignment.center
-                          : Alignment.centerRight,
-                      child: Wrap(
+                  if (!isKeyboardOpen) ...[
+                    const AppBottomSheetDivider(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Align(
                         alignment: bottomActions.length == 3
-                            ? WrapAlignment.center
-                            : WrapAlignment.end,
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: bottomActions,
+                            ? Alignment.center
+                            : Alignment.centerRight,
+                        child: Wrap(
+                          alignment: bottomActions.length == 3
+                              ? WrapAlignment.center
+                              : WrapAlignment.end,
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: bottomActions,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
+                  SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
                 ],
-                SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
-              ],
+              ),
             ),
           );
         },

@@ -17,6 +17,7 @@ import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
+import 'package:agenda_backend/core/widgets/form_loading_overlay.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/weekly_schedule_editor.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
@@ -392,6 +393,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final dateFormat = DateFormat('d MMM yyyy', 'it');
+    final isBusy = _isSaving || _isDeleting;
 
     final currentSlots = _currentTab == WeekLabel.a ? _slotsA : _slotsB;
     final title = widget.isEditing
@@ -407,13 +409,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
         TextButton(
           onPressed: _isDeleting || _isSaving ? null : _delete,
           style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
-          child: _isDeleting
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.actionDelete),
+          child: Text(l10n.actionDelete),
         ),
       // Annulla
       TextButton(
@@ -425,16 +421,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
       // Salva (senza icona)
       AppFilledButton(
         onPressed: _isSaving || _isDeleting ? null : _save,
-        child: _isSaving
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Text(l10n.actionSave),
+        child: Text(l10n.actionSave),
       ),
     ];
 
@@ -706,6 +693,10 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
         SizedBox(height: MediaQuery.of(context).viewPadding.bottom + 16),
       ],
     );
+    final loadingContent = FormLoadingOverlay(
+      isLoading: isBusy,
+      child: content,
+    );
 
     if (widget.isDesktop) {
       return Dialog(
@@ -722,7 +713,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
                 Text(title, style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 16),
                 // Contenuto scrollabile
-                Flexible(child: content),
+                Flexible(child: loadingContent),
               ],
             ),
           ),
@@ -756,7 +747,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
             ),
           ),
           const Divider(height: 1),
-          Expanded(child: content),
+          Expanded(child: loadingContent),
         ],
       ),
     );

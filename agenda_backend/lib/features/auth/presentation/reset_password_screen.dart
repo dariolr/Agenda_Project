@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/l10_extension.dart';
+import '../../../core/widgets/form_loading_overlay.dart';
 import '../providers/auth_provider.dart';
 
 /// Schermata per impostare nuova password da link email.
@@ -178,11 +179,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+              child: FormLoadingOverlay(
+                isLoading: _isLoading,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                     // Icon
                     Icon(
                       Icons.lock_reset,
@@ -285,13 +288,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     // Submit button
                     FilledButton(
                       onPressed: _isLoading ? null : _handleResetPassword,
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Imposta password'),
+                      child: const Text('Imposta password'),
                     ),
 
                     const SizedBox(height: 16),
@@ -301,7 +298,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       onPressed: () => context.go('/login'),
                       child: const Text('Torna al login'),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

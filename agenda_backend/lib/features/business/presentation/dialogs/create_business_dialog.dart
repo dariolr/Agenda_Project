@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/widgets/form_loading_overlay.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../providers/business_providers.dart';
 
@@ -122,173 +123,176 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
       title: const Text('Nuovo Business'),
       content: SizedBox(
         width: 400,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_error != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: colorScheme.onErrorContainer,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _error!,
-                            style: TextStyle(
-                              color: colorScheme.onErrorContainer,
+        child: FormLoadingOverlay(
+          isLoading: _isLoading,
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_error != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: colorScheme.onErrorContainer,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _error!,
+                              style: TextStyle(
+                                color: colorScheme.onErrorContainer,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(height: 16),
+                  ],
+                  // Nome
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome *',
+                      hintText: 'es. Salone Bellezza',
+                      prefixIcon: Icon(Icons.business),
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Il nome è obbligatorio';
+                      }
+                      if (value.trim().length < 2) {
+                        return 'Il nome deve avere almeno 2 caratteri';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
+                  // Slug
+                  TextFormField(
+                    controller: _slugController,
+                    decoration: InputDecoration(
+                      labelText: 'Slug URL *',
+                      hintText: 'es. salone-bellezza',
+                      prefixIcon: const Icon(Icons.link),
+                      helperText: 'Usato per URL: prenota.romeolab.it/slug',
+                      suffixIcon: _autoGenerateSlug
+                          ? IconButton(
+                              icon: const Icon(Icons.edit),
+                              tooltip: 'Modifica manualmente',
+                              onPressed: () {
+                                setState(() => _autoGenerateSlug = false);
+                              },
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.auto_fix_high),
+                              tooltip: 'Genera automaticamente',
+                              onPressed: () {
+                                setState(() {
+                                  _autoGenerateSlug = true;
+                                  _slugController.text = _generateSlug(
+                                    _nameController.text,
+                                  );
+                                });
+                              },
+                            ),
+                    ),
+                    onChanged: (_) {
+                      if (_autoGenerateSlug) {
+                        setState(() => _autoGenerateSlug = false);
+                      }
+                    },
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Lo slug è obbligatorio';
+                      }
+                      if (!RegExp(r'^[a-z0-9-]+$').hasMatch(value)) {
+                        return 'Solo lettere minuscole, numeri e trattini';
+                      }
+                      if (value.length < 3) {
+                        return 'Lo slug deve avere almeno 3 caratteri';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Email Admin (opzionale - può essere assegnato dopo)
+                  TextFormField(
+                    controller: _adminEmailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email Amministratore',
+                      hintText: 'es. mario.rossi@email.it',
+                      prefixIcon: Icon(Icons.admin_panel_settings),
+                      helperText:
+                          'Opzionale: riceverà email per configurare account',
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      // Solo valida se inserito
+                      if (value != null && value.trim().isNotEmpty) {
+                        if (!RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        ).hasMatch(value)) {
+                          return 'Email non valida';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Email Business (opzionale)
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email Business',
+                      hintText: 'es. info@salone.it',
+                      prefixIcon: Icon(Icons.email_outlined),
+                      helperText: 'Contatto pubblico del business',
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        if (!RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        ).hasMatch(value)) {
+                          return 'Email non valida';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Telefono
+                  TextFormField(
+                    controller: _phoneController,
+                    decoration: const InputDecoration(
+                      labelText: 'Telefono',
+                      hintText: 'es. +39 123 456 7890',
+                      prefixIcon: Icon(Icons.phone_outlined),
+                    ),
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '* Campi obbligatori',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
-                // Nome
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome *',
-                    hintText: 'es. Salone Bellezza',
-                    prefixIcon: Icon(Icons.business),
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Il nome è obbligatorio';
-                    }
-                    if (value.trim().length < 2) {
-                      return 'Il nome deve avere almeno 2 caratteri';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                // Slug
-                TextFormField(
-                  controller: _slugController,
-                  decoration: InputDecoration(
-                    labelText: 'Slug URL *',
-                    hintText: 'es. salone-bellezza',
-                    prefixIcon: const Icon(Icons.link),
-                    helperText: 'Usato per URL: prenota.romeolab.it/slug',
-                    suffixIcon: _autoGenerateSlug
-                        ? IconButton(
-                            icon: const Icon(Icons.edit),
-                            tooltip: 'Modifica manualmente',
-                            onPressed: () {
-                              setState(() => _autoGenerateSlug = false);
-                            },
-                          )
-                        : IconButton(
-                            icon: const Icon(Icons.auto_fix_high),
-                            tooltip: 'Genera automaticamente',
-                            onPressed: () {
-                              setState(() {
-                                _autoGenerateSlug = true;
-                                _slugController.text = _generateSlug(
-                                  _nameController.text,
-                                );
-                              });
-                            },
-                          ),
-                  ),
-                  onChanged: (_) {
-                    if (_autoGenerateSlug) {
-                      setState(() => _autoGenerateSlug = false);
-                    }
-                  },
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Lo slug è obbligatorio';
-                    }
-                    if (!RegExp(r'^[a-z0-9-]+$').hasMatch(value)) {
-                      return 'Solo lettere minuscole, numeri e trattini';
-                    }
-                    if (value.length < 3) {
-                      return 'Lo slug deve avere almeno 3 caratteri';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                // Email Admin (opzionale - può essere assegnato dopo)
-                TextFormField(
-                  controller: _adminEmailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email Amministratore',
-                    hintText: 'es. mario.rossi@email.it',
-                    prefixIcon: Icon(Icons.admin_panel_settings),
-                    helperText:
-                        'Opzionale: riceverà email per configurare account',
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    // Solo valida se inserito
-                    if (value != null && value.trim().isNotEmpty) {
-                      if (!RegExp(
-                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                      ).hasMatch(value)) {
-                        return 'Email non valida';
-                      }
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                // Email Business (opzionale)
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email Business',
-                    hintText: 'es. info@salone.it',
-                    prefixIcon: Icon(Icons.email_outlined),
-                    helperText: 'Contatto pubblico del business',
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value != null && value.isNotEmpty) {
-                      if (!RegExp(
-                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                      ).hasMatch(value)) {
-                        return 'Email non valida';
-                      }
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                // Telefono
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Telefono',
-                    hintText: 'es. +39 123 456 7890',
-                    prefixIcon: Icon(Icons.phone_outlined),
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '* Campi obbligatori',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -300,13 +304,7 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
         ),
         FilledButton(
           onPressed: _isLoading ? null : _submit,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Crea Business'),
+          child: const Text('Crea Business'),
         ),
       ],
     );
