@@ -86,7 +86,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           ),
           onPressed: () {
             final slug = ref.read(routeSlugProvider);
-            context.go('/$slug/my-bookings');
+            context.go('/$slug/booking');
           },
         ),
         title: Text(

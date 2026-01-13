@@ -53,6 +53,14 @@ class ApiConfig {
   /// GET /v1/customer/bookings
   static const String customerBookings = '/v1/customer/bookings';
 
+  /// PUT /v1/customer/bookings/{booking_id}
+  static String customerUpdateBooking(int bookingId) =>
+      '/v1/customer/bookings/$bookingId';
+
+  /// DELETE /v1/customer/bookings/{booking_id}
+  static String customerDeleteBooking(int bookingId) =>
+      '/v1/customer/bookings/$bookingId';
+
   /// POST /v1/customer/{business_id}/bookings
   static String customerCreateBooking(int businessId) =>
       '/v1/customer/$businessId/bookings';

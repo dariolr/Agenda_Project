@@ -8,7 +8,7 @@ import '../../features/booking/providers/business_provider.dart';
 import '../l10n/l10_extension.dart';
 
 /// AppBar professionale per il sistema di prenotazione.
-/// 
+///
 /// Caratteristiche:
 /// - Mostra nome business centrato
 /// - Design minimal e professionale
@@ -36,9 +36,8 @@ class BookingAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final PreferredSizeWidget? bottom;
 
   @override
-  Size get preferredSize => Size.fromHeight(
-        kToolbarHeight + (bottom?.preferredSize.height ?? 0),
-      );
+  Size get preferredSize =>
+      Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0));
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -111,15 +110,13 @@ class _UserMenuButton extends ConsumerWidget {
 
     return PopupMenuButton<String>(
       offset: const Offset(0, 48),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       position: PopupMenuPosition.under,
       tooltip: l10n.profileTitle,
       onSelected: (value) async {
         switch (value) {
           case 'bookings':
-            context.go('/$slug/my-bookings');
+            context.push('/$slug/my-bookings');
           case 'profile':
             context.push('/$slug/profile');
           case 'change-password':
@@ -189,22 +186,21 @@ class _UserMenuButton extends ConsumerWidget {
           ),
         ),
       ],
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              initials,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
+      padding: EdgeInsets.zero,
+      splashRadius: 24,
+      icon: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            initials,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -240,10 +236,7 @@ class _MenuItemContent extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: color),
         const SizedBox(width: 12),
-        Text(
-          label,
-          style: TextStyle(color: color),
-        ),
+        Text(label, style: TextStyle(color: color)),
       ],
     );
   }

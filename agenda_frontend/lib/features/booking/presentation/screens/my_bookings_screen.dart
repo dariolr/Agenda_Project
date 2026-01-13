@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '/core/l10n/l10_extension.dart';
@@ -45,6 +46,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     return Scaffold(
       appBar: BookingAppBar(
         showBackButton: true,
+        onBackPressed: () => context.pop(),
         bottom: TabBar(
           controller: _tabController,
           labelColor: colorScheme.primary,

@@ -47,6 +47,25 @@ final class BookingRepository
         return $result;
     }
 
+    public function getCancellationPolicyForBooking(int $bookingId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT MIN(bi.start_time) as earliest_start,
+                    l.cancellation_hours as location_cancellation_hours,
+                    b.cancellation_hours as business_cancellation_hours
+             FROM booking_items bi
+             JOIN bookings bk ON bi.booking_id = bk.id
+             JOIN locations l ON bk.location_id = l.id
+             JOIN businesses b ON l.business_id = b.id
+             WHERE bk.id = ?
+             GROUP BY l.cancellation_hours, b.cancellation_hours'
+        );
+        $stmt->execute([$bookingId]);
+        $result = $stmt->fetch();
+
+        return $result ?: null;
+    }
+
     public function findByIdempotencyKey(int $businessId, string $idempotencyKey): ?array
     {
         $stmt = $this->db->getPdo()->prepare(

@@ -387,6 +387,26 @@ class ApiClient {
     return get(ApiConfig.customerBookings);
   }
 
+  /// PUT /v1/customer/bookings/{booking_id}
+  Future<Map<String, dynamic>> customerUpdateBooking({
+    required int bookingId,
+    String? startTime,
+    String? notes,
+  }) async {
+    return put(
+      ApiConfig.customerUpdateBooking(bookingId),
+      data: {
+        if (startTime != null) 'start_time': startTime,
+        if (notes != null) 'notes': notes,
+      },
+    );
+  }
+
+  /// DELETE /v1/customer/bookings/{booking_id}
+  Future<void> customerDeleteBooking(int bookingId) async {
+    await delete(ApiConfig.customerDeleteBooking(bookingId));
+  }
+
   /// POST /v1/customer/{business_id}/bookings
   Future<Map<String, dynamic>> createCustomerBooking({
     required int businessId,

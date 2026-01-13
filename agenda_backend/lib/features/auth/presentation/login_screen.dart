@@ -328,20 +328,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   .read(authProvider.notifier)
                   .forgotPassword(email: email);
 
-              if (mounted) {
-                if (success) {
-                  await FeedbackDialog.showSuccess(
-                    context,
-                    title: l10n.authResetPasswordTitle,
-                    message: l10n.authResetPasswordSuccess,
-                  );
-                } else {
-                  await FeedbackDialog.showError(
-                    context,
-                    title: l10n.errorTitle,
-                    message: l10n.authResetPasswordError,
-                  );
-                }
+              if (!context.mounted) return;
+
+              if (success) {
+                await FeedbackDialog.showSuccess(
+                  context,
+                  title: l10n.authResetPasswordTitle,
+                  message: l10n.authResetPasswordSuccess,
+                );
+              } else {
+                await FeedbackDialog.showError(
+                  context,
+                  title: l10n.errorTitle,
+                  message: l10n.authResetPasswordError,
+                );
               }
             },
             child: Text(l10n.authResetPasswordSend),

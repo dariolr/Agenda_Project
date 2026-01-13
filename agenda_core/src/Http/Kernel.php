@@ -246,6 +246,8 @@ final class Kernel
         // Customer bookings (protected, uses client_id from customer JWT)
         $this->router->post('/v1/customer/{business_id}/bookings', BookingsController::class, 'storeCustomer', ['customer_auth', 'idempotency']);
         $this->router->get('/v1/customer/bookings', BookingsController::class, 'myCustomerBookings', ['customer_auth']);
+        $this->router->put('/v1/customer/bookings/{booking_id}', BookingsController::class, 'updateCustomer', ['customer_auth']);
+        $this->router->delete('/v1/customer/bookings/{booking_id}', BookingsController::class, 'destroyCustomer', ['customer_auth']);
     }
 
     private function registerMiddleware(): void
