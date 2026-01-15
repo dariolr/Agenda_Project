@@ -991,6 +991,7 @@ final class CreateBooking
                 'cancellation_hours' => $location['cancellation_hours'] ?? 24,
                 'manage_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/bookings',
                 'booking_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/booking',
+                'locale' => $_ENV['DEFAULT_LOCALE'] ?? 'it',
             ];
 
             $confirmationUseCase = new QueueBookingConfirmation($this->db, $this->notificationRepo);

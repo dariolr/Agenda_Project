@@ -146,6 +146,7 @@ final class DeleteBooking
             'business_email' => $details['business_email'] ?? '',
             'sender_email' => $senderEmail,
             'sender_name' => $senderName,
+            'locale' => $_ENV['DEFAULT_LOCALE'] ?? 'it',
         ];
     }
 

@@ -67,14 +67,16 @@ final class RequestCustomerPasswordReset
         string $resetToken
     ): void {
         try {
-            $template = EmailTemplateRenderer::customerPasswordReset();
+            $locale = $_ENV['DEFAULT_LOCALE'] ?? 'it';
+            $template = EmailTemplateRenderer::customerPasswordReset($locale);
             
             // Reset URL va al FRONTEND prenotazioni
             $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it';
             $resetUrl = $frontendUrl . '/' . $businessSlug . '/reset-password/' . $resetToken;
 
+            $strings = EmailTemplateRenderer::strings($locale);
             $variables = [
-                'client_name' => $clientName ?: 'Cliente',
+                'client_name' => $clientName ?: $strings['client_fallback'],
                 'business_name' => $businessName,
                 'reset_url' => $resetUrl,
             ];

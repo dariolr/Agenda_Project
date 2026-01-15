@@ -60,16 +60,19 @@ final class QueueBookingConfirmation
         }
         $recipientEmail['name'] = $this->extractFirstName($recipientEmail['name'] ?? null);
 
+        $locale = $this->resolveLocale($booking);
+
         // Prepare template variables
-        $variables = $this->prepareVariables($booking);
+        $variables = $this->prepareVariables($booking, $locale);
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
-            $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
+            $strings = EmailTemplateRenderer::strings($locale);
+            $variables['client_name'] = $recipientEmail['name'] ?? $strings['client_fallback'];
         } else {
             $variables['client_name'] = $this->extractFirstName($variables['client_name']);
         }
         
         // Get template
-        $template = EmailTemplateRenderer::bookingConfirmed();
+        $template = EmailTemplateRenderer::bookingConfirmed($locale);
         
         // Queue notification
         return $this->notificationRepo->queue([
@@ -100,7 +103,7 @@ final class QueueBookingConfirmation
         return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
     }
 
-    private function prepareVariables(array $booking): array
+    private function prepareVariables(array $booking, string $locale): array
     {
         $startTime = new DateTimeImmutable($booking['start_time']);
         $cancelDeadline = isset($booking['cancellation_hours']) 
@@ -108,24 +111,26 @@ final class QueueBookingConfirmation
             : $startTime->modify('-24 hours');
         $locationName = $booking['location_name'] ?? '';
         $locationAddress = $booking['location_address'] ?? '';
+        $strings = EmailTemplateRenderer::strings($locale);
         $hasMultipleLocations = $this->hasMultipleLocations((int) ($booking['business_id'] ?? 0));
         $locationBlockHtml = $hasMultipleLocations ? sprintf(
             '<tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;">📍 Dove</span><br>
+                                        <span style="color:#666;">📍 %s</span><br>
                                         <strong style="color:#333;">%s</strong><br>
                                         <span style="color:#666;font-size:14px;">%s</span>
                                     </td>
                                 </tr>',
+            $strings['where_label'],
             $locationName,
             $locationAddress
         ) : '';
         $locationBlockText = $hasMultipleLocations
-            ? sprintf("📍 Dove: %s, %s\n", $locationName, $locationAddress)
+            ? sprintf("📍 %s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
             : '';
 
         return [
-            'client_name' => $this->extractFirstName($booking['client_name'] ?? 'Cliente'),
+            'client_name' => $this->extractFirstName($booking['client_name'] ?? $strings['client_fallback']),
             'business_name' => $booking['business_name'] ?? '',
             'business_email' => $booking['business_email'] ?? '',
             'location_name' => $locationName,
@@ -135,11 +140,11 @@ final class QueueBookingConfirmation
             'location_address' => $locationAddress,
             'location_city' => $booking['location_city'] ?? '',
             'location_phone' => $booking['location_phone'] ?? '',
-            'date' => $startTime->format('d/m/Y'),
+            'date' => EmailTemplateRenderer::formatLongDate($startTime, $locale),
             'time' => $startTime->format('H:i'),
             'services' => $booking['services'] ?? '',
             'total_price' => number_format((float) ($booking['total_price'] ?? 0), 2, ',', '.'),
-            'cancel_deadline' => $cancelDeadline->format('d/m/Y H:i'),
+            'cancel_deadline' => EmailTemplateRenderer::formatLongDateTime($cancelDeadline, $locale),
             'manage_url' => $booking['manage_url'] ?? '#',
             'booking_url' => $booking['booking_url'] ?? '#',
             'location_block_html' => $locationBlockHtml,
@@ -170,5 +175,12 @@ final class QueueBookingConfirmation
         $stmt->execute([$businessId]);
 
         return (int) $stmt->fetchColumn() > 1;
+    }
+
+    private function resolveLocale(array $booking): string
+    {
+        return EmailTemplateRenderer::normalizeLocale(
+            $booking['locale'] ?? $booking['business_locale'] ?? null
+        );
     }
 }

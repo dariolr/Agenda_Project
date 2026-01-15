@@ -342,6 +342,7 @@ final class UpdateBooking
                 'services' => implode(', ', array_column($booking['items'] ?? [], 'service_name')),
                 'manage_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/bookings',
                 'booking_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/booking',
+                'locale' => $_ENV['DEFAULT_LOCALE'] ?? 'it',
             ];
 
             $rescheduledUseCase = new QueueBookingRescheduled($this->db, $this->notificationRepo);

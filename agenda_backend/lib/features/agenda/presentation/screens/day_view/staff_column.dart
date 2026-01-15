@@ -610,8 +610,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final variants = variantsAsync.value ?? const <ServiceVariant>[];
     final isInitialVariantsLoading =
         useServiceColors && variantsAsync.isLoading && !variantsAsync.hasValue;
-    final neutralServiceColor =
-        Theme.of(context).colorScheme.surfaceContainerHighest;
+    final neutralServiceColor = Theme.of(
+      context,
+    ).colorScheme.surfaceContainerHighest;
     // Pre-calcola la mappa dei colori dei servizi (da varianti)
     final serviceColorMap = <int, Color>{};
     for (final variant in variants) {
@@ -719,7 +720,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           0.0,
         );
 
-        Color cardColor = widget.staff.color;
+        Color cardColor;
         if (useServiceColors) {
           if (isInitialVariantsLoading) {
             cardColor = neutralServiceColor;
@@ -734,9 +735,15 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               );
               if (variant != null && variant.colorHex != null) {
                 cardColor = ColorUtils.fromHex(variant.colorHex!);
+              } else {
+                // Fallback: colore neutro se servizio senza colore
+                cardColor = neutralServiceColor;
               }
             }
           }
+        } else {
+          // Se non uso colori servizio, usa colore staff
+          cardColor = widget.staff.color;
         }
 
         groupWidgets.add(
@@ -798,7 +805,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final padding = LayoutConfig.columnInnerPadding;
         final cardWidth = math.max(widget.columnWidth - padding * 2, 0.0);
 
-        Color cardColor = widget.staff.color;
+        Color cardColor;
         if (useServiceColors) {
           if (isInitialVariantsLoading) {
             cardColor = neutralServiceColor;
@@ -813,9 +820,15 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               );
               if (variant != null && variant.colorHex != null) {
                 cardColor = ColorUtils.fromHex(variant.colorHex!);
+              } else {
+                // Fallback: colore neutro se servizio senza colore
+                cardColor = neutralServiceColor;
               }
             }
           }
+        } else {
+          // Se non uso colori servizio, usa colore staff
+          cardColor = widget.staff.color;
         }
 
         // Preview card con bordo tratteggiato per indicare la posizione proposta
