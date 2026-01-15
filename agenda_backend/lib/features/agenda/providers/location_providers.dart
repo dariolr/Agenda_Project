@@ -19,6 +19,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
 
     // Non caricare se non autenticato
     if (!authState.isAuthenticated) {
+      ref.read(locationsLoadedProvider.notifier).setLoaded(false);
       return [];
     }
 
@@ -27,6 +28,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
       final selectedBusiness = ref.watch(superadminSelectedBusinessProvider);
       if (selectedBusiness == null) {
         // Superadmin nella lista business, non caricare locations
+        ref.read(locationsLoadedProvider.notifier).setLoaded(false);
         return [];
       }
     }
@@ -35,6 +37,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
     final businessId = ref.watch(currentBusinessIdProvider);
     if (businessId <= 0) {
       // Business non ancora caricato, aspetta
+      ref.read(locationsLoadedProvider.notifier).setLoaded(false);
       return [];
     }
 
@@ -47,10 +50,12 @@ class LocationsNotifier extends Notifier<List<Location>> {
     // Verifica autenticazione prima di chiamare API
     final authState = ref.read(authProvider);
     if (!authState.isAuthenticated) {
+      ref.read(locationsLoadedProvider.notifier).setLoaded(false);
       return;
     }
 
     try {
+      ref.read(locationsLoadedProvider.notifier).setLoaded(false);
       final business = ref.read(currentBusinessProvider);
       final repository = ref.read(locationsRepositoryProvider);
       final locations = await repository.getByBusinessId(business.id);
@@ -60,6 +65,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
     } catch (_) {
       // In caso di errore, mantieni lo stato vuoto
       state = [];
+    } finally {
+      ref.read(locationsLoadedProvider.notifier).setLoaded(true);
     }
   }
 
@@ -211,6 +218,21 @@ class LocationsNotifier extends Notifier<List<Location>> {
 final locationsProvider = NotifierProvider<LocationsNotifier, List<Location>>(
   LocationsNotifier.new,
 );
+
+class LocationsLoadedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void setLoaded(bool value) {
+    if (state == value) return;
+    state = value;
+  }
+}
+
+final locationsLoadedProvider =
+    NotifierProvider<LocationsLoadedNotifier, bool>(
+      LocationsLoadedNotifier.new,
+    );
 
 ///
 /// 🔹 LOCATION CORRENTE

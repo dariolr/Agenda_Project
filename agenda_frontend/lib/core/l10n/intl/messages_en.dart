@@ -60,6 +60,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionCancel": MessageLookupByLibrary.simpleMessage("Cancel"),
     "actionClose": MessageLookupByLibrary.simpleMessage("Close"),
     "actionConfirm": MessageLookupByLibrary.simpleMessage("Confirm"),
+    "actionDelete": MessageLookupByLibrary.simpleMessage("Delete"),
     "actionLogin": MessageLookupByLibrary.simpleMessage("Login"),
     "actionLogout": MessageLookupByLibrary.simpleMessage("Logout"),
     "actionNext": MessageLookupByLibrary.simpleMessage("Next"),
@@ -194,10 +195,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "authWelcome": MessageLookupByLibrary.simpleMessage("Welcome"),
     "bookingCancelFailed": MessageLookupByLibrary.simpleMessage(
-      "Error cancelling booking",
+      "Error deleting booking",
     ),
     "bookingCancelled": MessageLookupByLibrary.simpleMessage(
-      "Booking cancelled successfully",
+      "Booking deleted successfully",
     ),
     "bookingErrorInvalidClient": MessageLookupByLibrary.simpleMessage(
       "The selected client is not valid",
@@ -252,10 +253,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
     "cancelBookingConfirm": MessageLookupByLibrary.simpleMessage(
-      "Are you sure you want to cancel this booking?",
+      "Are you sure you want to delete this booking?",
     ),
     "cancelBookingTitle": MessageLookupByLibrary.simpleMessage(
-      "Cancel booking",
+      "Delete booking",
     ),
     "confirmReschedule": MessageLookupByLibrary.simpleMessage(
       "Confirm reschedule",

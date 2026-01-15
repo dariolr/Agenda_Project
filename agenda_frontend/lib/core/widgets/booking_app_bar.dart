@@ -21,6 +21,7 @@ class BookingAppBar extends ConsumerWidget implements PreferredSizeWidget {
     this.onBackPressed,
     this.showUserMenu = true,
     this.bottom,
+    this.title,
   });
 
   /// Se mostrare il pulsante back
@@ -35,6 +36,7 @@ class BookingAppBar extends ConsumerWidget implements PreferredSizeWidget {
   /// Widget opzionale da mostrare sotto l'AppBar (es. TabBar)
   final PreferredSizeWidget? bottom;
 
+  final String? title;
   @override
   Size get preferredSize =>
       Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0));
@@ -71,9 +73,9 @@ class BookingAppBar extends ConsumerWidget implements PreferredSizeWidget {
             )
           : null,
       // Title: nome business con stile
-      title: businessName.isNotEmpty
+      title: title != null || businessName.isNotEmpty
           ? Text(
-              businessName,
+              title ?? businessName,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.3,

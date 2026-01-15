@@ -96,6 +96,7 @@ final class DeleteBooking
                 l.name as location_name,
                 l.address as location_address,
                 l.email as location_email,
+                l.timezone as location_timezone,
                 b.name as business_name,
                 b.email as business_email
              FROM booking_items bi
@@ -140,6 +141,7 @@ final class DeleteBooking
             'location_name' => $details['location_name'] ?? '',
             'location_address' => $details['location_address'] ?? '',
             'location_email' => $details['location_email'] ?? '',
+            'location_timezone' => $details['location_timezone'] ?? null,
             'business_name' => $details['business_name'] ?? 'Agenda',
             'business_email' => $details['business_email'] ?? '',
             'sender_email' => $senderEmail,
@@ -154,6 +156,16 @@ final class DeleteBooking
         }
         
         try {
+            $timezoneName = $data['location_timezone'] ?? 'Europe/Rome';
+            $locationTimezone = new \DateTimeZone($timezoneName);
+            if (!empty($data['start_time'])) {
+                $startTime = new DateTimeImmutable($data['start_time'], $locationTimezone);
+                $nowLocal = new DateTimeImmutable('now', $locationTimezone);
+                if ($startTime <= $nowLocal) {
+                    return;
+                }
+            }
+
             $cancellationUseCase = new QueueBookingCancellation($this->db, $this->notificationRepo);
             $cancellationUseCase->execute($data);
         } catch (\Throwable $e) {

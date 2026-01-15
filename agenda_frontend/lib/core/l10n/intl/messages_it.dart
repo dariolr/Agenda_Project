@@ -60,6 +60,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionCancel": MessageLookupByLibrary.simpleMessage("Annulla"),
     "actionClose": MessageLookupByLibrary.simpleMessage("Chiudi"),
     "actionConfirm": MessageLookupByLibrary.simpleMessage("Conferma"),
+    "actionDelete": MessageLookupByLibrary.simpleMessage("Cancella"),
     "actionLogin": MessageLookupByLibrary.simpleMessage("Accedi"),
     "actionLogout": MessageLookupByLibrary.simpleMessage("Esci"),
     "actionNext": MessageLookupByLibrary.simpleMessage("Avanti"),
@@ -198,10 +199,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "authWelcome": MessageLookupByLibrary.simpleMessage("Benvenuto"),
     "bookingCancelFailed": MessageLookupByLibrary.simpleMessage(
-      "Errore durante l\'annullamento",
+      "Errore durante la cancellazione",
     ),
     "bookingCancelled": MessageLookupByLibrary.simpleMessage(
-      "Prenotazione annullata con successo",
+      "Prenotazione cancellata con successo",
     ),
     "bookingErrorInvalidClient": MessageLookupByLibrary.simpleMessage(
       "Il cliente selezionato non è valido",
@@ -258,10 +259,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "cancel": MessageLookupByLibrary.simpleMessage("Annulla"),
     "cancelBookingConfirm": MessageLookupByLibrary.simpleMessage(
-      "Sei sicuro di voler annullare questa prenotazione?",
+      "Sei sicuro di voler cancellare questa prenotazione?",
     ),
     "cancelBookingTitle": MessageLookupByLibrary.simpleMessage(
-      "Annulla prenotazione",
+      "Cancella prenotazione",
     ),
     "confirmReschedule": MessageLookupByLibrary.simpleMessage(
       "Conferma modifica",

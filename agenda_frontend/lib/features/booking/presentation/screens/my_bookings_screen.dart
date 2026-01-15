@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '/app/providers/form_factor_provider.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/booking_item.dart';
 import '/core/widgets/booking_app_bar.dart';
 import '/core/widgets/feedback_dialog.dart';
-import '/features/booking/providers/my_bookings_provider.dart';
 import '/features/booking/providers/locations_provider.dart';
+import '/features/booking/providers/my_bookings_provider.dart';
 import '../dialogs/reschedule_booking_dialog.dart';
 
 class MyBookingsScreen extends ConsumerStatefulWidget {
@@ -21,6 +22,7 @@ class MyBookingsScreen extends ConsumerStatefulWidget {
 class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isCancellingBooking = false;
 
   @override
   void initState() {
@@ -50,6 +52,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
         showBackButton: true,
         onBackPressed: () => context.pop(),
         showUserMenu: false,
+        title: l10n.myBookings,
         bottom: TabBar(
           controller: _tabController,
           labelColor: colorScheme.primary,
@@ -65,40 +68,62 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
           ],
         ),
       ),
-      body: bookingsState.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : bookingsState.error != null
-          ? _ErrorView(error: bookingsState.error!)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text(
-                    l10n.myBookings,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+      body: Stack(
+        children: [
+          bookingsState.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : bookingsState.error != null
+              ? _ErrorView(error: bookingsState.error!)
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Text(
+                        l10n.myBookings,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _BookingsList(
-                        bookings: bookingsState.upcoming,
-                        isUpcoming: true,
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _BookingsList(
+                            bookings: bookingsState.upcoming,
+                            isUpcoming: true,
+                            onCancelLoadingChanged: _setCancelLoading,
+                          ),
+                          _BookingsList(
+                            bookings: bookingsState.past,
+                            isUpcoming: false,
+                            onCancelLoadingChanged: _setCancelLoading,
+                          ),
+                        ],
                       ),
-                      _BookingsList(
-                        bookings: bookingsState.past,
-                        isUpcoming: false,
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+          if (_isCancellingBooking)
+            Positioned.fill(
+              child: AbsorbPointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface.withOpacity(0.6),
+                  ),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+              ),
             ),
+        ],
+      ),
     );
+  }
+
+  void _setCancelLoading(bool value) {
+    if (_isCancellingBooking == value) return;
+    setState(() => _isCancellingBooking = value);
   }
 }
 
@@ -136,10 +161,15 @@ class _ErrorView extends StatelessWidget {
 }
 
 class _BookingsList extends StatelessWidget {
-  const _BookingsList({required this.bookings, required this.isUpcoming});
+  const _BookingsList({
+    required this.bookings,
+    required this.isUpcoming,
+    required this.onCancelLoadingChanged,
+  });
 
   final List<BookingItem> bookings;
   final bool isUpcoming;
+  final ValueChanged<bool> onCancelLoadingChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -170,20 +200,38 @@ class _BookingsList extends StatelessWidget {
       itemCount: bookings.length,
       itemBuilder: (context, index) {
         final booking = bookings[index];
-        return _BookingCard(booking: booking, isUpcoming: isUpcoming);
+        return _BookingCard(
+          booking: booking,
+          isUpcoming: isUpcoming,
+          onCancelLoadingChanged: onCancelLoadingChanged,
+        );
       },
     );
   }
 }
 
-class _BookingCard extends ConsumerWidget {
-  const _BookingCard({required this.booking, required this.isUpcoming});
+class _BookingCard extends ConsumerStatefulWidget {
+  const _BookingCard({
+    required this.booking,
+    required this.isUpcoming,
+    required this.onCancelLoadingChanged,
+  });
 
   final BookingItem booking;
   final bool isUpcoming;
+  final ValueChanged<bool> onCancelLoadingChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_BookingCard> createState() => _BookingCardState();
+}
+
+class _BookingCardState extends ConsumerState<_BookingCard> {
+  bool _isCancelling = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final booking = widget.booking;
+    final formFactor = ref.watch(formFactorProvider);
     final locationsAsync = ref.watch(locationsProvider);
     final showLocation = locationsAsync.maybeWhen(
       data: (locations) => locations.length > 1,
@@ -192,6 +240,17 @@ class _BookingCard extends ConsumerWidget {
     final dateFormat = DateFormat('dd/MM/yyyy', 'it');
     final timeFormat = DateFormat('HH:mm', 'it');
     final theme = Theme.of(context);
+    const actionButtonPadding = EdgeInsets.symmetric(horizontal: 12);
+    final modifyButtonStyle = ElevatedButton.styleFrom(
+      minimumSize: const Size(0, 40),
+      padding: actionButtonPadding,
+    );
+    final cancelButtonStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size(0, 40),
+      padding: actionButtonPadding,
+      foregroundColor: theme.colorScheme.error,
+      side: BorderSide(color: theme.colorScheme.error),
+    );
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -219,10 +278,7 @@ class _BookingCard extends ConsumerWidget {
                 children: [
                   const Icon(Icons.location_on, size: 18, color: Colors.grey),
                   const SizedBox(width: 8),
-                  Text(
-                    booking.locationName,
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                  Text(booking.locationName, style: theme.textTheme.bodyMedium),
                 ],
               ),
             const Divider(height: 24),
@@ -243,10 +299,7 @@ class _BookingCard extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             for (final service in booking.serviceNames)
-                              Text(
-                                service,
-                                style: theme.textTheme.bodyMedium,
-                              ),
+                              Text(service, style: theme.textTheme.bodyMedium),
                           ],
                         ),
                 ),
@@ -320,57 +373,82 @@ class _BookingCard extends ConsumerWidget {
             ],
 
             // Badge e azioni per prenotazioni future
-            if (isUpcoming) ...[
+            if (widget.isUpcoming) ...[
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  // Badge can_modify
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: booking.canModify
-                          ? Colors.green
-                          : theme.colorScheme.primary,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      booking.canModify
-                          ? context.l10n.modifiable
-                          : context.l10n.notModifiable,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Countdown se modificabile
-                  if (booking.canModify && booking.canModifyUntil != null)
-                    Text(
-                      _formatTimeUntil(context, booking.canModifyUntil!),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-
-                  const Spacer(),
-
-                  // Pulsanti azione
-                  if (booking.canModify) ...[
-                    TextButton.icon(
-                      onPressed: () => _handleModify(context, ref),
-                      icon: const Icon(Icons.edit),
-                      label: Text(context.l10n.modify),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton.icon(
-                      onPressed: () => _handleCancel(context, ref),
-                      icon: const Icon(Icons.cancel),
-                      label: Text(context.l10n.cancel),
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                    ),
+              if (formFactor == AppFormFactor.mobile)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (booking.canModify && booking.canModifyUntil != null)
+                      Text(
+                        _formatTimeUntil(context, booking.canModifyUntil!),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    if (booking.canModify) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _handleModify(context, ref),
+                            style: modifyButtonStyle,
+                            child: Text(context.l10n.modify),
+                          ),
+                          const Spacer(),
+                          OutlinedButton(
+                            onPressed: _isCancelling
+                                ? null
+                                : () => _handleCancel(context, ref),
+                            style: cancelButtonStyle,
+                            child: _isCancelling
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(context.l10n.actionDelete),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
-                ],
-              ),
+                )
+              else
+                Row(
+                  children: [
+                    // Countdown se modificabile
+                    if (booking.canModify && booking.canModifyUntil != null)
+                      Text(
+                        _formatTimeUntil(context, booking.canModifyUntil!),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+
+                    const Spacer(),
+
+                    // Pulsanti azione
+                    if (booking.canModify) ...[
+                      ElevatedButton(
+                        onPressed: () => _handleModify(context, ref),
+                        style: modifyButtonStyle,
+                        child: Text(context.l10n.modify),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton(
+                        onPressed:
+                            _isCancelling ? null : () => _handleCancel(context, ref),
+                        style: cancelButtonStyle,
+                        child: _isCancelling
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Text(context.l10n.actionDelete),
+                      ),
+                    ],
+                  ],
+                ),
             ],
           ],
         ),
@@ -395,7 +473,7 @@ class _BookingCard extends ConsumerWidget {
   Future<void> _handleModify(BuildContext context, WidgetRef ref) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => RescheduleBookingDialog(booking: booking),
+      builder: (ctx) => RescheduleBookingDialog(booking: widget.booking),
     );
 
     if (result == true && context.mounted) {
@@ -416,21 +494,27 @@ class _BookingCard extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(context.l10n.no),
+            child: Text(context.l10n.actionCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(context.l10n.yes),
+            child: Text(context.l10n.actionDelete),
           ),
         ],
       ),
     );
 
     if (confirm == true && context.mounted) {
+      setState(() => _isCancelling = true);
+      widget.onCancelLoadingChanged(true);
       final success = await ref
           .read(myBookingsProvider.notifier)
-          .cancelBooking(booking.locationId, booking.id);
+          .cancelBooking(widget.booking.locationId, widget.booking.id);
+      if (mounted) {
+        setState(() => _isCancelling = false);
+        widget.onCancelLoadingChanged(false);
+      }
 
       if (context.mounted) {
         if (success) {
