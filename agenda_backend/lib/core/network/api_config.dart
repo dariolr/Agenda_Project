@@ -6,6 +6,9 @@ class ApiConfig {
     defaultValue: 'https://api.romeolab.it',
   );
 
+  /// Verifica se siamo in ambiente staging
+  static bool get isStaging => baseUrl.contains('api-staging.romeolab.it');
+
   /// Location ID di default (per MVP single-location)
   static const int defaultLocationId = 1;
 
@@ -114,4 +117,21 @@ class ApiConfig {
   /// Slot disponibili per una data
   static String staffPlanningAvailability(int staffId) =>
       '/v1/staff/$staffId/planning-availability';
+
+  // ========== ADMIN BUSINESS SYNC ENDPOINTS ==========
+
+  /// Export business data (superadmin only)
+  static String businessExport(int businessId) =>
+      '/v1/admin/businesses/$businessId/export';
+
+  /// Export business data by slug (superadmin only)
+  static String businessExportBySlug(String slug) =>
+      '/v1/admin/businesses/by-slug/$slug/export';
+
+  /// Import business data (superadmin only, staging only)
+  static const String businessImport = '/v1/admin/businesses/import';
+
+  /// Sync from production (superadmin only, staging only)
+  static const String businessSyncFromProduction =
+      '/v1/admin/businesses/sync-from-production';
 }

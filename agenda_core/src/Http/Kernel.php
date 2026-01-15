@@ -22,6 +22,7 @@ use Agenda\Http\Controllers\StaffPlanningController;
 use Agenda\Http\Controllers\ResourcesController;
 use Agenda\Http\Controllers\TimeBlocksController;
 use Agenda\Http\Controllers\AppointmentsController;
+use Agenda\Http\Controllers\BusinessSyncController;
 use Agenda\Http\Middleware\AuthMiddleware;
 use Agenda\Http\Middleware\BusinessAccessMiddleware;
 use Agenda\Http\Middleware\CustomerAuthMiddleware;
@@ -72,6 +73,8 @@ use Agenda\UseCases\CustomerAuth\RequestCustomerPasswordReset;
 use Agenda\UseCases\CustomerAuth\ResetCustomerPassword;
 use Agenda\UseCases\CustomerAuth\UpdateCustomerProfile;
 use Agenda\UseCases\CustomerAuth\ChangeCustomerPassword;
+use Agenda\UseCases\Admin\ExportBusiness;
+use Agenda\UseCases\Admin\ImportBusiness;
 use Throwable;
 
 final class Kernel
@@ -118,6 +121,12 @@ final class Kernel
         $this->router->put('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'update', ['auth']);
         $this->router->delete('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'destroy', ['auth']);
         $this->router->post('/v1/admin/businesses/{id}/resend-invite', AdminBusinessesController::class, 'resendInvite', ['auth']);
+        
+        // Business Sync (per sincronizzazione prod → staging)
+        $this->router->get('/v1/admin/businesses/{id}/export', BusinessSyncController::class, 'export', ['auth']);
+        $this->router->get('/v1/admin/businesses/by-slug/{slug}/export', BusinessSyncController::class, 'exportBySlug', ['auth']);
+        $this->router->post('/v1/admin/businesses/import', BusinessSyncController::class, 'import', ['auth']);
+        $this->router->post('/v1/admin/businesses/sync-from-production', BusinessSyncController::class, 'syncFromProduction', ['auth']);
 
         // Businesses - Public endpoint for subdomain resolution
         $this->router->get('/v1/businesses/by-slug/{slug}', BusinessController::class, 'showBySlug');
@@ -337,6 +346,11 @@ final class Kernel
             ClientsController::class => new ClientsController($clientRepo, $businessUserRepo, $userRepo, $bookingRepo),
             AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo),
             AdminBusinessesController::class => new AdminBusinessesController($this->db, $businessRepo, $businessUserRepo, $userRepo),
+            BusinessSyncController::class => new BusinessSyncController(
+                new ExportBusiness($this->db),
+                new ImportBusiness($this->db),
+                $userRepo
+            ),
             BusinessUsersController::class => new BusinessUsersController($businessRepo, $businessUserRepo, $userRepo),
             BusinessInvitationsController::class => new BusinessInvitationsController($businessRepo, $businessUserRepo, $businessInvitationRepo, $userRepo),
             StaffAvailabilityExceptionController::class => new StaffAvailabilityExceptionController($staffExceptionRepo, $staffRepo, $businessUserRepo, $userRepo),

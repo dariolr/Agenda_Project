@@ -1661,4 +1661,37 @@ class ApiClient {
   Future<void> deleteStaffPlanning(int staffId, int planningId) async {
     await delete(ApiConfig.staffPlanning(staffId, planningId));
   }
+
+  // ========== ADMIN BUSINESS SYNC ==========
+
+  /// Export business data from production (superadmin only)
+  /// GET /v1/admin/businesses/{businessId}/export
+  Future<Map<String, dynamic>> exportBusiness(int businessId) async {
+    final response = await get(ApiConfig.businessExport(businessId));
+    return Map<String, dynamic>.from(response);
+  }
+
+  /// Export business data by slug from production (superadmin only)
+  /// GET /v1/admin/businesses/by-slug/{slug}/export
+  Future<Map<String, dynamic>> exportBusinessBySlug(String slug) async {
+    final response = await get(ApiConfig.businessExportBySlug(slug));
+    return Map<String, dynamic>.from(response);
+  }
+
+  /// Sync business from production to staging (superadmin only, staging only)
+  /// POST /v1/admin/businesses/sync-from-production
+  Future<Map<String, dynamic>> syncBusinessFromProduction({
+    int? businessId,
+    String? slug,
+  }) async {
+    final data = <String, dynamic>{};
+    if (businessId != null) data['business_id'] = businessId;
+    if (slug != null) data['slug'] = slug;
+
+    final response = await post(
+      ApiConfig.businessSyncFromProduction,
+      data: data,
+    );
+    return Map<String, dynamic>.from(response);
+  }
 }

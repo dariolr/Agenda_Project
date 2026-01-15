@@ -442,6 +442,96 @@ curl -I -X OPTIONS https://api.romeolab.it/v1/services \
 
 ---
 
+## 13. Deploy Staging Environment (17/01/2026)
+
+### Infrastruttura Staging
+
+| Componente | URL | Cartella SiteGround |
+|------------|-----|---------------------|
+| API Backend | https://api-staging.romeolab.it | `www/api-staging.romeolab.it/` |
+| Frontend Booking | https://prenota-staging.romeolab.it | `www/prenota-staging.romeolab.it/public_html/` |
+| Gestionale | https://gestionale-staging.romeolab.it | `www/gestionale-staging.romeolab.it/public_html/` |
+
+### Database Staging
+
+| Campo | Valore |
+|-------|--------|
+| Database | `dbax2noxh5jpyb` |
+| Host | localhost |
+| User | `ugucggguv4ij7` |
+| Password | `I0lqrdlr@##` |
+
+### Configurazione .env Staging
+
+```bash
+APP_ENV=staging
+DB_HOST=localhost
+DB_DATABASE=dbax2noxh5jpyb
+DB_USERNAME=ugucggguv4ij7
+DB_PASSWORD='I0lqrdlr@##'
+
+# Email inviate a questo indirizzo invece che ai clienti
+NOTIFICATION_TEST_MODE=true
+NOTIFICATION_TEST_EMAIL=dariolarosa@romeolab.it
+
+# Per funzionalità sync business da produzione
+PRODUCTION_API_URL=https://api.romeolab.it
+
+# CORS per staging
+CORS_ALLOWED_ORIGINS=https://prenota-staging.romeolab.it,https://gestionale-staging.romeolab.it,http://localhost:8080
+```
+
+### Comandi Deploy Staging
+
+```bash
+# 1️⃣ API Staging (agenda_core → api-staging.romeolab.it)
+rsync -avz public/ siteground:www/api-staging.romeolab.it/public_html/
+rsync -avz --delete src/ siteground:www/api-staging.romeolab.it/src/
+rsync -avz --delete vendor/ siteground:www/api-staging.romeolab.it/vendor/
+
+# 2️⃣ Frontend Staging (agenda_frontend → prenota-staging.romeolab.it)
+cd agenda_frontend
+flutter build web --release --dart-define=API_BASE_URL=https://api-staging.romeolab.it
+rsync -avz --delete build/web/ siteground:www/prenota-staging.romeolab.it/public_html/
+
+# 3️⃣ Gestionale Staging (agenda_backend → gestionale-staging.romeolab.it)
+cd agenda_backend
+flutter build web --release --dart-define=API_BASE_URL=https://api-staging.romeolab.it
+rsync -avz --delete build/web/ siteground:www/gestionale-staging.romeolab.it/public_html/
+```
+
+### Business Sync da Produzione a Staging
+
+Il gestionale staging ha la funzionalità "Sincronizza da Produzione" per copiare dati business.
+
+**Endpoint API (solo staging):**
+- `GET /v1/admin/businesses/{id}/export` - Esporta business completo da produzione
+- `POST /v1/admin/businesses/import` - Importa business in staging
+- `POST /v1/admin/businesses/sync-from-production` - Sync automatico (staging chiama produzione)
+
+**Uso da UI:**
+1. Accedi a gestionale-staging.romeolab.it come superadmin
+2. Nella lista business, clicca menu ⋮ → "Sincronizza da Produzione"
+3. Inserisci lo slug del business da copiare
+4. Il sistema copia: business, locations, staff, services, categories, clients, appointments
+
+**Limiti:**
+- NON copia: utenti (tranne mapping clienti), password, sessioni
+- Il business viene importato con nuovo ID auto-generato
+- Se esiste già un business con stesso slug, viene aggiornato
+
+### Script Pulizia Database Staging
+
+File: `scripts/clear_staging_db.sql`
+
+Svuota tutte le tabelle tranne l'utente superadmin (id=1):
+
+```bash
+ssh siteground "cd www/api-staging.romeolab.it && mysql -u ugucggguv4ij7 -p'I0lqrdlr@##' dbax2noxh5jpyb < /path/to/clear_staging_db.sql"
+```
+
+---
+
 ## Checklist Pre-Launch
 
 - [x] Database migrations applicate (0001-0014)
