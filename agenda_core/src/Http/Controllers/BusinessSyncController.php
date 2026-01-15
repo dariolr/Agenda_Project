@@ -72,31 +72,56 @@ final class BusinessSyncController
      * POST /v1/admin/businesses/import
      * Importa dati business da JSON export
      * 
-     * Body: { "data": { ...export JSON... } }
+     * Body: { 
+     *   "data": { ...export JSON... },
+     *   "skip_sessions_and_notifications": false  // Opzionale, default false
+     * }
+     * 
+     * Se skip_sessions_and_notifications=true, NON vengono importate:
+     * - notification_queue
+     * - auth_sessions
+     * - client_sessions
+     * Usato per sync Staging → Produzione
      */
     public function import(Request $request): Response
     {
+        $logFile = __DIR__ . '/../../../logs/import_debug.log';
+        
         $userId = $request->getAttribute('user_id');
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " Import: user_id=$userId\n", FILE_APPEND);
+        
         if (!$this->userRepo->isSuperadmin($userId)) {
             return Response::error('access_denied', 'Accesso riservato ai superadmin', 403);
         }
         
-        $body = $request->getParsedBody();
+        $body = $request->getBody();
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " Import: body keys=" . implode(',', array_keys($body ?? [])) . "\n", FILE_APPEND);
+        
         $exportData = $body['data'] ?? null;
+        $skipSessionsAndNotifications = (bool)($body['skip_sessions_and_notifications'] ?? false);
+        
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " Import: skip_sessions_and_notifications=$skipSessionsAndNotifications\n", FILE_APPEND);
         
         if (empty($exportData)) {
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " Import: exportData is empty\n", FILE_APPEND);
             return Response::error('invalid_request', 'Campo "data" richiesto con export JSON', 400);
         }
         
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " Import: business=" . ($exportData['business']['name'] ?? 'N/A') . "\n", FILE_APPEND);
+        
         try {
-            $stats = $this->importBusiness->execute($exportData);
+            $stats = $this->importBusiness->execute($exportData, $skipSessionsAndNotifications);
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " Import: SUCCESS\n", FILE_APPEND);
             return Response::success([
                 'message' => "Business '{$stats['business_name']}' importato con successo",
                 'stats' => $stats,
             ]);
         } catch (\InvalidArgumentException $e) {
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " Import InvalidArg: " . $e->getMessage() . "\n", FILE_APPEND);
             return Response::error('invalid_data', $e->getMessage(), 400);
         } catch (\Exception $e) {
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " Import ERROR: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine() . "\n", FILE_APPEND);
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " Trace: " . $e->getTraceAsString() . "\n", FILE_APPEND);
             return Response::error('import_failed', $e->getMessage(), 500);
         }
     }
@@ -120,7 +145,7 @@ final class BusinessSyncController
             return Response::error('invalid_environment', 'Questa funzione è disponibile solo in ambiente staging', 400);
         }
         
-        $body = $request->getParsedBody();
+        $body = $request->getBody();
         $businessId = $body['business_id'] ?? null;
         $slug = $body['slug'] ?? null;
         

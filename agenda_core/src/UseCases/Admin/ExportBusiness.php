@@ -33,12 +33,15 @@ final class ExportBusiness
             'exported_at' => date('Y-m-d H:i:s'),
             'business' => $business,
             'locations' => [],
-            'categories' => [],
+            'location_schedules' => [],
+            'service_categories' => [],
             'staff' => [],
             'staff_services' => [],
+            'staff_locations' => [],
             'staff_availability_exceptions' => [],
             'staff_planning' => [],
             'staff_planning_week_template' => [],
+            'staff_schedules' => [],
             'services' => [],
             'service_variants' => [],
             'clients' => [],
@@ -46,8 +49,7 @@ final class ExportBusiness
             'time_blocks' => [],
             'time_block_staff' => [],
             'bookings' => [],
-            'appointments' => [],
-            'appointment_services' => [],
+            'booking_items' => [],
             'users' => [],
             'business_users' => [],
         ];
@@ -58,10 +60,10 @@ final class ExportBusiness
         $export['locations'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         $locationIds = array_column($export['locations'], 'id');
         
-        // Categories
-        $stmt = $pdo->prepare('SELECT * FROM categories WHERE business_id = ?');
+        // Service Categories
+        $stmt = $pdo->prepare('SELECT * FROM service_categories WHERE business_id = ?');
         $stmt->execute([$businessId]);
-        $export['categories'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $export['service_categories'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         
         // Staff
         $stmt = $pdo->prepare('SELECT * FROM staff WHERE business_id = ?');
@@ -76,6 +78,11 @@ final class ExportBusiness
             $stmt = $pdo->prepare("SELECT * FROM staff_services WHERE staff_id IN ($placeholders)");
             $stmt->execute($staffIds);
             $export['staff_services'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            // Staff Locations
+            $stmt = $pdo->prepare("SELECT * FROM staff_locations WHERE staff_id IN ($placeholders)");
+            $stmt->execute($staffIds);
+            $export['staff_locations'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             
             // Staff Availability Exceptions
             $stmt = $pdo->prepare("SELECT * FROM staff_availability_exceptions WHERE staff_id IN ($placeholders)");
@@ -95,46 +102,41 @@ final class ExportBusiness
                 $export['staff_planning_week_template'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             }
             
-            // Appointments (per staff)
-            $stmt = $pdo->prepare("SELECT * FROM appointments WHERE staff_id IN ($placeholders)");
+            // Staff Schedules (legacy)
+            $stmt = $pdo->prepare("SELECT * FROM staff_schedules WHERE staff_id IN ($placeholders)");
             $stmt->execute($staffIds);
-            $export['appointments'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            $appointmentIds = array_column($export['appointments'], 'id');
+            $export['staff_schedules'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             
-            if (!empty($appointmentIds)) {
-                $placeholders3 = implode(',', array_fill(0, count($appointmentIds), '?'));
-                
-                // Appointment Services
-                $stmt = $pdo->prepare("SELECT * FROM appointment_services WHERE appointment_id IN ($placeholders3)");
-                $stmt->execute($appointmentIds);
-                $export['appointment_services'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            }
+            // Booking Items (ex appointments)
+            $stmt = $pdo->prepare("SELECT * FROM booking_items WHERE staff_id IN ($placeholders)");
+            $stmt->execute($staffIds);
+            $export['booking_items'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             
-            // Bookings (solo quelli con appointments di questo business)
-            $bookingIds = array_unique(array_filter(array_column($export['appointments'], 'booking_id')));
+            // Bookings (solo quelli con booking_items di questo business)
+            $bookingIds = array_values(array_unique(array_filter(array_column($export['booking_items'], 'booking_id'))));
             if (!empty($bookingIds)) {
-                $placeholders4 = implode(',', array_fill(0, count($bookingIds), '?'));
-                $stmt = $pdo->prepare("SELECT * FROM bookings WHERE id IN ($placeholders4)");
+                $placeholders3 = implode(',', array_fill(0, count($bookingIds), '?'));
+                $stmt = $pdo->prepare("SELECT * FROM bookings WHERE id IN ($placeholders3)");
                 $stmt->execute($bookingIds);
                 $export['bookings'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             }
         }
         
+        // Services (appartengono al business, non alla location)
+        $stmt = $pdo->prepare('SELECT * FROM services WHERE business_id = ?');
+        $stmt->execute([$businessId]);
+        $export['services'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $serviceIds = array_column($export['services'], 'id');
+        
+        if (!empty($serviceIds)) {
+            $placeholders2 = implode(',', array_fill(0, count($serviceIds), '?'));
+            $stmt = $pdo->prepare("SELECT * FROM service_variants WHERE service_id IN ($placeholders2)");
+            $stmt->execute(array_values($serviceIds));
+            $export['service_variants'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        }
+        
         if (!empty($locationIds)) {
             $placeholders = implode(',', array_fill(0, count($locationIds), '?'));
-            
-            // Services
-            $stmt = $pdo->prepare("SELECT * FROM services WHERE location_id IN ($placeholders)");
-            $stmt->execute($locationIds);
-            $export['services'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            $serviceIds = array_column($export['services'], 'id');
-            
-            if (!empty($serviceIds)) {
-                $placeholders2 = implode(',', array_fill(0, count($serviceIds), '?'));
-                $stmt = $pdo->prepare("SELECT * FROM service_variants WHERE service_id IN ($placeholders2)");
-                $stmt->execute($serviceIds);
-                $export['service_variants'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            }
             
             // Resources
             $stmt = $pdo->prepare("SELECT * FROM resources WHERE location_id IN ($placeholders)");
@@ -153,6 +155,11 @@ final class ExportBusiness
                 $stmt->execute($blockIds);
                 $export['time_block_staff'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             }
+            
+            // Location Schedules
+            $stmt = $pdo->prepare("SELECT * FROM location_schedules WHERE location_id IN ($placeholders)");
+            $stmt->execute($locationIds);
+            $export['location_schedules'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         }
         
         // Clients (senza password_hash per sicurezza)
@@ -161,6 +168,17 @@ final class ExportBusiness
                                FROM clients WHERE business_id = ?');
         $stmt->execute([$businessId]);
         $export['clients'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        
+        // Client Sessions (ultimi 90 giorni per i clienti del business)
+        $clientIds = array_column($export['clients'], 'id');
+        if (!empty($clientIds)) {
+            $placeholders = implode(',', array_fill(0, count($clientIds), '?'));
+            $stmt = $pdo->prepare("SELECT * FROM client_sessions 
+                                   WHERE client_id IN ($placeholders) 
+                                   AND created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)");
+            $stmt->execute($clientIds);
+            $export['client_sessions'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        }
         
         // Business Users
         $stmt = $pdo->prepare('SELECT * FROM business_users WHERE business_id = ?');
@@ -176,7 +194,33 @@ final class ExportBusiness
                                    FROM users WHERE id IN ($placeholders)");
             $stmt->execute($userIds);
             $export['users'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            // Auth Sessions (ultimi 90 giorni per gli utenti del business)
+            $stmt = $pdo->prepare("SELECT * FROM auth_sessions 
+                                   WHERE user_id IN ($placeholders) 
+                                   AND created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)");
+            $stmt->execute($userIds);
+            $export['auth_sessions'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         }
+        
+        // Notification Settings
+        $stmt = $pdo->prepare('SELECT * FROM notification_settings WHERE business_id = ?');
+        $stmt->execute([$businessId]);
+        $export['notification_settings'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        
+        // Notification Templates
+        $stmt = $pdo->prepare('SELECT * FROM notification_templates WHERE business_id = ?');
+        $stmt->execute([$businessId]);
+        $export['notification_templates'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        
+        // Notification Queue (tutte tranne 'sent' + 'sent' ultimi 90 giorni)
+        $stmt = $pdo->prepare('
+            SELECT * FROM notification_queue 
+            WHERE business_id = ? 
+            AND (status != ? OR (status = ? AND sent_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)))
+        ');
+        $stmt->execute([$businessId, 'sent', 'sent']);
+        $export['notification_queue'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         
         return $export;
     }

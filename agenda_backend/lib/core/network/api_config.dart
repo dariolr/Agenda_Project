@@ -120,6 +120,12 @@ class ApiConfig {
 
   // ========== ADMIN BUSINESS SYNC ENDPOINTS ==========
 
+  /// URL API Staging (per push da produzione)
+  static const String stagingApiUrl = 'https://api-staging.romeolab.it';
+
+  /// URL API Produzione (per push da staging)
+  static const String productionApiUrl = 'https://api.romeolab.it';
+
   /// Export business data (superadmin only)
   static String businessExport(int businessId) =>
       '/v1/admin/businesses/$businessId/export';
@@ -134,4 +140,12 @@ class ApiConfig {
   /// Sync from production (superadmin only, staging only)
   static const String businessSyncFromProduction =
       '/v1/admin/businesses/sync-from-production';
+
+  /// Push to staging - URL completo perché punta a staging anche da produzione
+  static const String businessPushToStaging =
+      '$stagingApiUrl/v1/admin/businesses/import';
+
+  /// Push to production - URL completo perché punta a prod anche da staging
+  static const String businessPushToProduction =
+      '$productionApiUrl/v1/admin/businesses/import';
 }

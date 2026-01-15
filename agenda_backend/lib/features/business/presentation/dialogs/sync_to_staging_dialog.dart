@@ -4,26 +4,38 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/business.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/api_config.dart';
 import '../../../../core/network/network_providers.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
 
-/// Dialog per sincronizzare i dati di un business da produzione a staging.
-/// DISPONIBILE SOLO SU STAGING.
-class SyncFromProductionDialog extends ConsumerStatefulWidget {
-  const SyncFromProductionDialog({super.key, required this.business});
+/// Dialog per copiare un business tra ambienti.
+/// Permette di scegliere la direzione: Produzione → Staging o Staging → Produzione.
+class SyncToStagingDialog extends ConsumerStatefulWidget {
+  const SyncToStagingDialog({super.key, required this.business});
 
   final Business business;
 
   @override
-  ConsumerState<SyncFromProductionDialog> createState() =>
-      _SyncFromProductionDialogState();
+  ConsumerState<SyncToStagingDialog> createState() =>
+      _SyncToStagingDialogState();
 }
 
-class _SyncFromProductionDialogState
-    extends ConsumerState<SyncFromProductionDialog> {
+enum SyncDirection { prodToStaging, stagingToProd }
+
+class _SyncToStagingDialogState extends ConsumerState<SyncToStagingDialog> {
   bool _isSyncing = false;
   String? _statusMessage;
   Map<String, dynamic>? _result;
+
+  // Default: se su staging → prod to staging, se su prod → prod to staging
+  late SyncDirection _direction;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default sempre prod → staging
+    _direction = SyncDirection.prodToStaging;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,12 +43,17 @@ class _SyncFromProductionDialogState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    final isProdToStaging = _direction == SyncDirection.prodToStaging;
+    final sourceEnv = isProdToStaging ? 'Produzione' : 'Staging';
+    final targetEnv = isProdToStaging ? 'Staging' : 'Produzione';
+    final targetColor = isProdToStaging ? Colors.orange : Colors.blue;
+
     return AlertDialog(
       title: const Row(
         children: [
-          Icon(Icons.sync, size: 24),
+          Icon(Icons.sync_alt, size: 24),
           SizedBox(width: 8),
-          Text('Sincronizza da Produzione'),
+          Text('Sincronizza Business'),
         ],
       ),
       content: SizedBox(
@@ -45,33 +62,74 @@ class _SyncFromProductionDialogState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Selezione direzione
+            Text(
+              'Direzione sincronizzazione:',
+              style: theme.textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _DirectionCard(
+                    selected: _direction == SyncDirection.prodToStaging,
+                    onTap: _isSyncing || _result != null
+                        ? null
+                        : () => setState(
+                            () => _direction = SyncDirection.prodToStaging,
+                          ),
+                    sourceLabel: 'Produzione',
+                    targetLabel: 'Staging',
+                    sourceIcon: Icons.business,
+                    targetIcon: Icons.science,
+                    color: Colors.orange,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _DirectionCard(
+                    selected: _direction == SyncDirection.stagingToProd,
+                    onTap: _isSyncing || _result != null
+                        ? null
+                        : () => setState(
+                            () => _direction = SyncDirection.stagingToProd,
+                          ),
+                    sourceLabel: 'Staging',
+                    targetLabel: 'Produzione',
+                    sourceIcon: Icons.science,
+                    targetIcon: Icons.business,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             // Avviso
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
+                color: targetColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                border: Border.all(color: targetColor.withValues(alpha: 0.3)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
                     Icons.warning_amber_rounded,
-                    color: Colors.orange.shade700,
+                    color: targetColor.shade700,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Questa operazione sovrascriverà TUTTI i dati del business '
-                      '"${widget.business.name}" su staging con i dati di produzione.\n\n'
-                      '• Tutti gli appuntamenti esistenti su staging saranno eliminati\n'
-                      '• Tutti i clienti, servizi, staff saranno sostituiti\n'
-                      '• Le sessioni di login NON saranno copiate\n'
-                      '• Le email andranno a dariolarosa@romeolab.it',
+                      'Questa operazione copierà i dati del business '
+                      '"${widget.business.name}" da $sourceEnv a $targetEnv.\n\n'
+                      '• Se esiste già su $targetEnv, verrà sovrascritto\n'
+                      '• Le sessioni di login NON saranno copiate'
+                      '${isProdToStaging ? '\n• Le email su staging andranno a dariolarosa@romeolab.it' : ''}',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.orange.shade900,
+                        color: targetColor.shade900,
                       ),
                     ),
                   ),
@@ -80,10 +138,7 @@ class _SyncFromProductionDialogState
             ),
             const SizedBox(height: 16),
             // Info business
-            Text(
-              'Business da sincronizzare:',
-              style: theme.textTheme.titleSmall,
-            ),
+            Text('Business da copiare:', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(12),
@@ -160,9 +215,11 @@ class _SyncFromProductionDialogState
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      _statusMessage ?? 'Sincronizzazione in corso...',
-                      style: theme.textTheme.bodyMedium,
+                    Expanded(
+                      child: Text(
+                        _statusMessage ?? 'Copia in corso...',
+                        style: theme.textTheme.bodyMedium,
+                      ),
                     ),
                   ],
                 ),
@@ -188,7 +245,11 @@ class _SyncFromProductionDialogState
         if (_result == null)
           FilledButton(
             onPressed: _isSyncing ? null : _startSync,
-            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+            style: FilledButton.styleFrom(
+              backgroundColor: _direction == SyncDirection.prodToStaging
+                  ? Colors.orange
+                  : Colors.blue,
+            ),
             child: _isSyncing
                 ? const SizedBox(
                     width: 20,
@@ -198,7 +259,11 @@ class _SyncFromProductionDialogState
                       color: Colors.white,
                     ),
                   )
-                : const Text('Sincronizza'),
+                : Text(
+                    _direction == SyncDirection.prodToStaging
+                        ? 'Copia su Staging'
+                        : 'Copia su Produzione',
+                  ),
           )
         else
           FilledButton(
@@ -222,7 +287,7 @@ class _SyncFromProductionDialogState
             Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
             const SizedBox(width: 8),
             Text(
-              'Sincronizzazione completata!',
+              'Copia completata!',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: Colors.green.shade700,
                 fontWeight: FontWeight.w600,
@@ -241,7 +306,7 @@ class _SyncFromProductionDialogState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Record importati:', style: theme.textTheme.titleSmall),
+              Text('Record copiati:', style: theme.textTheme.titleSmall),
               const SizedBox(height: 4),
               Wrap(
                 spacing: 8,
@@ -291,23 +356,81 @@ class _SyncFromProductionDialogState
   }
 
   Future<void> _startSync() async {
+    final isProdToStaging = _direction == SyncDirection.prodToStaging;
+    final sourceEnv = isProdToStaging ? 'produzione' : 'staging';
+    final targetEnv = isProdToStaging ? 'staging' : 'produzione';
+    final isOnStaging = ApiConfig.isStaging;
+
     setState(() {
       _isSyncing = true;
-      _statusMessage = 'Recupero dati da produzione...';
+      _statusMessage = 'Esportazione business da $sourceEnv...';
       _result = null;
     });
 
     try {
       final apiClient = ref.read(apiClientProvider);
+      Map<String, dynamic> exportData;
 
+      // 1. Export business dalla sorgente
       setState(() {
-        _statusMessage = 'Import dati su staging...';
+        _statusMessage = 'Esportazione dati da $sourceEnv...';
       });
 
-      // Chiama l'endpoint sync-from-production
-      final result = await apiClient.syncBusinessFromProduction(
-        businessId: widget.business.id,
-      );
+      if (isProdToStaging) {
+        // Prod → Staging
+        if (isOnStaging) {
+          // Siamo su staging, export da produzione
+          exportData = await apiClient.exportBusinessFromProduction(
+            widget.business.id,
+          );
+        } else {
+          // Siamo su produzione, export locale
+          exportData = await apiClient.exportBusiness(widget.business.id);
+        }
+      } else {
+        // Staging → Prod
+        if (isOnStaging) {
+          // Siamo su staging, export locale
+          exportData = await apiClient.exportBusiness(widget.business.id);
+        } else {
+          // Siamo su produzione, export da staging
+          exportData = await apiClient.exportBusinessFromStaging(
+            widget.business.id,
+          );
+        }
+      }
+
+      // 2. Import sul target
+      setState(() {
+        _statusMessage = 'Import su $targetEnv...';
+      });
+
+      Map<String, dynamic> result;
+      if (isProdToStaging) {
+        // Target: staging
+        if (isOnStaging) {
+          // Siamo su staging, import locale
+          result = await apiClient.importBusiness(exportData);
+        } else {
+          // Siamo su produzione, push a staging
+          result = await apiClient.pushBusinessToStaging(exportData);
+        }
+      } else {
+        // Target: produzione - skip sessioni e notifiche
+        if (isOnStaging) {
+          // Siamo su staging, push a produzione (skip sessioni/notifiche)
+          result = await apiClient.pushBusinessToProduction(
+            exportData,
+            skipSessionsAndNotifications: true,
+          );
+        } else {
+          // Siamo su produzione, import locale (skip sessioni/notifiche)
+          result = await apiClient.importBusiness(
+            exportData,
+            skipSessionsAndNotifications: true,
+          );
+        }
+      }
 
       setState(() {
         _isSyncing = false;
@@ -344,15 +467,83 @@ class _SyncFromProductionDialogState
   }
 }
 
-/// Mostra il dialog per sincronizzare un business da produzione.
-/// Ritorna `true` se la sincronizzazione è avvenuta con successo.
-Future<bool?> showSyncFromProductionDialog(
-  BuildContext context,
-  Business business,
-) {
+/// Card per selezionare la direzione della sincronizzazione
+class _DirectionCard extends StatelessWidget {
+  const _DirectionCard({
+    required this.selected,
+    required this.onTap,
+    required this.sourceLabel,
+    required this.targetLabel,
+    required this.sourceIcon,
+    required this.targetIcon,
+    required this.color,
+  });
+
+  final bool selected;
+  final VoidCallback? onTap;
+  final String sourceLabel;
+  final String targetLabel;
+  final IconData sourceIcon;
+  final IconData targetIcon;
+  final MaterialColor color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Material(
+      color: selected
+          ? color.withValues(alpha: 0.15)
+          : colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: selected ? color : Colors.transparent,
+              width: 2,
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(sourceIcon, size: 20, color: colorScheme.onSurface),
+                  const SizedBox(width: 4),
+                  Icon(Icons.arrow_forward, size: 16, color: color),
+                  const SizedBox(width: 4),
+                  Icon(targetIcon, size: 20, color: color),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$sourceLabel → $targetLabel',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                  color: selected ? color.shade700 : colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Mostra il dialog per copiare un business su staging.
+/// Ritorna `true` se la copia è avvenuta con successo.
+Future<bool?> showSyncToStagingDialog(BuildContext context, Business business) {
   return showDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => SyncFromProductionDialog(business: business),
+    builder: (context) => SyncToStagingDialog(business: business),
   );
 }

@@ -988,34 +988,50 @@ PRODUCTION_API_URL=https://api.romeolab.it
 CORS_ALLOWED_ORIGINS=https://prenota-staging.romeolab.it,https://gestionale-staging.romeolab.it,http://localhost:8080
 ```
 
-### Business Sync da Produzione
+### Business Sync Bidirezionale (15/01/2026)
 
-Endpoint per copiare business da produzione a staging:
+Sincronizzazione business tra produzione e staging in entrambe le direzioni.
+
+**Endpoint:**
 
 | Metodo | Endpoint | Descrizione |
 |--------|----------|-------------|
 | GET | `/v1/admin/businesses/{id}/export` | Esporta business completo (JSON) |
 | GET | `/v1/admin/businesses/by-slug/{slug}/export` | Esporta business per slug |
 | POST | `/v1/admin/businesses/import` | Importa business da JSON |
-| POST | `/v1/admin/businesses/sync-from-production` | Staging chiama produzione e importa |
+
+**Parametri Import:**
+
+```json
+POST /v1/admin/businesses/import
+{
+  "data": { ...export JSON... },
+  "skip_sessions_and_notifications": false  // Opzionale, default false
+}
+```
+
+**`skip_sessions_and_notifications`:**
+- Se `true`: NON importa `notification_queue`, `auth_sessions`, `client_sessions`
+- Usato per sync **Staging → Produzione** (evita sovrascrivere sessioni/notifiche di produzione)
+- Se `false` (default): importa tutte le tabelle (usato per **Produzione → Staging**)
 
 **File PHP:**
 - `src/UseCases/Admin/ExportBusiness.php`
-- `src/UseCases/Admin/ImportBusiness.php`
+- `src/UseCases/Admin/ImportBusiness.php` - parametro `$skipSessionsAndNotifications`
 - `src/Http/Controllers/BusinessSyncController.php`
 
 **Dati esportati:**
 - Business (info base)
 - Locations (tutte)
-- Staff (tutti con availability)
+- Staff (tutti con availability e planning)
 - Services e Categories
 - Clients
 - Appointments e Bookings
+- Auth sessions e Client sessions (se `skip_sessions_and_notifications=false`)
+- Notification queue (se `skip_sessions_and_notifications=false`)
 
-**Dati NON esportati:**
+**Dati MAI esportati:**
 - Password utenti (per sicurezza)
-- Sessioni auth
-- Notification queue
 
 ### Script Pulizia Database Staging
 
