@@ -894,6 +894,7 @@ final class CreateBooking
             }
 
             // Create booking (container)
+            $source = $staffId === null ? 'online' : 'onlinestaff';
             $bookingId = $this->bookingRepository->create([
                 'business_id' => $businessId,
                 'location_id' => $locationId,
@@ -902,7 +903,7 @@ final class CreateBooking
                 'user_id' => null, // Customer booking, no operator user
                 'notes' => $notes,
                 'status' => 'confirmed',
-                'source' => 'online',
+                'source' => $source,
                 'idempotency_key' => $idempotencyKey,
             ]);
 
