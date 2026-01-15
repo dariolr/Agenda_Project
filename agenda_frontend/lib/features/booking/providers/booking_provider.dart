@@ -259,39 +259,59 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     final serviceIds = services.map((s) => s.id).toList();
     if (locationId <= 0 || serviceIds.isEmpty) return;
 
-    final repository = ref.read(bookingRepositoryProvider);
-    final allStaff = await repository.getStaff(locationId);
+    state = state.copyWith(
+      isLoading: true,
+      currentStep: BookingStep.staff,
+      clearError: true,
+    );
 
-    // Per ogni servizio, trova gli operatori che possono erogarlo
-    final staffByService = <int, List<Staff>>{};
-    for (final service in services) {
-      staffByService[service.id] =
-          allStaff.where((s) => s.serviceIds.contains(service.id)).toList()
-            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    }
+    try {
+      final repository = ref.read(bookingRepositoryProvider);
+      final allStaff = await repository.getStaff(locationId);
 
-    // Pre-seleziona automaticamente gli operatori per servizi con un solo operatore
-    final autoSelected = <int, Staff?>{};
-    var allAutoSelected = true;
-    for (final service in services) {
-      final staffForService = staffByService[service.id] ?? [];
-      if (staffForService.length == 1) {
-        autoSelected[service.id] = staffForService.first;
-      } else {
-        autoSelected[service.id] = null;
-        allAutoSelected = false;
+      // Per ogni servizio, trova gli operatori che possono erogarlo
+      final staffByService = <int, List<Staff>>{};
+      for (final service in services) {
+        staffByService[service.id] =
+            allStaff.where((s) => s.serviceIds.contains(service.id)).toList()
+              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       }
-    }
 
-    // Se tutti i servizi hanno un solo operatore, auto-seleziona e mostra lo step
-    if (allAutoSelected && services.isNotEmpty) {
-      final isSingleService = services.length == 1;
-      final selectedStaff = isSingleService
-          ? autoSelected[services.first.id]
-          : null;
+      // Pre-seleziona automaticamente gli operatori per servizi con un solo operatore
+      final autoSelected = <int, Staff?>{};
+      var allAutoSelected = true;
+      for (final service in services) {
+        final staffForService = staffByService[service.id] ?? [];
+        if (staffForService.length == 1) {
+          autoSelected[service.id] = staffForService.first;
+        } else {
+          autoSelected[service.id] = null;
+          allAutoSelected = false;
+        }
+      }
+
+      // Se tutti i servizi hanno un solo operatore, auto-seleziona e mostra lo step
+      if (allAutoSelected && services.isNotEmpty) {
+        final isSingleService = services.length == 1;
+        final selectedStaff = isSingleService
+            ? autoSelected[services.first.id]
+            : null;
+        state = state.copyWith(
+          request: state.request.copyWith(
+            selectedStaff: selectedStaff,
+            selectedStaffByService: autoSelected,
+            clearSlot: true,
+            anyOperatorSelected: false,
+          ),
+          isStaffAutoSelected: false,
+          currentStep: BookingStep.staff,
+        );
+        return;
+      }
+
+      // Altrimenti mostra lo step staff con le pre-selezioni
       state = state.copyWith(
         request: state.request.copyWith(
-          selectedStaff: selectedStaff,
           selectedStaffByService: autoSelected,
           clearSlot: true,
           anyOperatorSelected: false,
@@ -299,19 +319,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         isStaffAutoSelected: false,
         currentStep: BookingStep.staff,
       );
-      return;
+    } finally {
+      state = state.copyWith(isLoading: false);
     }
-
-    // Altrimenti mostra lo step staff con le pre-selezioni
-    state = state.copyWith(
-      request: state.request.copyWith(
-        selectedStaffByService: autoSelected,
-        clearSlot: true,
-        anyOperatorSelected: false,
-      ),
-      isStaffAutoSelected: false,
-    );
-    state = state.copyWith(currentStep: BookingStep.staff);
   }
 
   /// Vai allo step precedente

@@ -8,6 +8,7 @@ use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use DateTimeImmutable;
+use DateTimeZone;
 
 /**
  * Queue booking confirmation email.
@@ -27,6 +28,17 @@ final class QueueBookingConfirmation
      */
     public function execute(array $booking): int
     {
+        // Don't send confirmation if appointment start time has already passed
+        // Use location timezone for accurate comparison
+        if (isset($booking['start_time'])) {
+            $locationTz = new DateTimeZone($booking['location_timezone'] ?? 'Europe/Rome');
+            $startTime = new DateTimeImmutable($booking['start_time'], $locationTz);
+            $now = new DateTimeImmutable('now', $locationTz);
+            if ($startTime < $now) {
+                return 0; // Appointment already started, no confirmation needed
+            }
+        }
+
         // Check if already sent (deduplication)
         if ($this->notificationRepo->wasRecentlySent('booking_confirmed', (int) $booking['booking_id'])) {
             return 0;

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class FormLoadingOverlay extends StatelessWidget {
+import '../../app/providers/global_loading_provider.dart';
+
+class FormLoadingOverlay extends StatefulWidget {
   const FormLoadingOverlay({
     super.key,
     required this.isLoading,
@@ -11,19 +14,50 @@ class FormLoadingOverlay extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    if (!isLoading) return child;
+  State<FormLoadingOverlay> createState() => _FormLoadingOverlayState();
+}
 
-    return Stack(
-      children: [
-        AbsorbPointer(child: child),
-        Positioned.fill(
-          child: Container(
-            color: const Color(0x33000000),
-            child: const Center(child: CircularProgressIndicator()),
-          ),
-        ),
-      ],
-    );
+class _FormLoadingOverlayState extends State<FormLoadingOverlay> {
+  bool _wasLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _wasLoading = widget.isLoading;
+    if (_wasLoading) {
+      _setGlobalLoading(true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant FormLoadingOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isLoading == widget.isLoading) return;
+
+    _wasLoading = widget.isLoading;
+    _setGlobalLoading(widget.isLoading);
+  }
+
+  @override
+  void dispose() {
+    if (_wasLoading) {
+      _setGlobalLoading(false);
+    }
+    super.dispose();
+  }
+
+  void _setGlobalLoading(bool isLoading) {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final notifier = container.read(globalLoadingProvider.notifier);
+    if (isLoading) {
+      notifier.show();
+    } else {
+      notifier.hide();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }

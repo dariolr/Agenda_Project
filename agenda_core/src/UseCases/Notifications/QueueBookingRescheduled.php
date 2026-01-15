@@ -8,6 +8,7 @@ use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use DateTimeImmutable;
+use DateTimeZone;
 
 /**
  * Queue booking rescheduled email.
@@ -27,6 +28,18 @@ final class QueueBookingRescheduled
      */
     public function execute(array $booking): int
     {
+        // Don't send rescheduled email if NEW appointment start time has already passed
+        // Use location timezone for accurate comparison
+        $newStartTimeString = $booking['new_start_time'] ?? $booking['start_time'] ?? null;
+        if ($newStartTimeString) {
+            $locationTz = new DateTimeZone($booking['location_timezone'] ?? 'Europe/Rome');
+            $newStartTime = new DateTimeImmutable($newStartTimeString, $locationTz);
+            $now = new DateTimeImmutable('now', $locationTz);
+            if ($newStartTime < $now) {
+                return 0; // New appointment time already passed, no email needed
+            }
+        }
+
         // Check if already sent (deduplication)
         // Note: use different key to allow multiple reschedules
         $deduplicationKey = ($booking['booking_id'] ?? 0) . '_' . ($booking['new_start_time'] ?? '');

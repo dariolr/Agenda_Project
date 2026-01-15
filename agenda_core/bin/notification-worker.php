@@ -226,18 +226,26 @@ function renderTemplate(string $channel, array $payload): array
         $variables['year'] = date('Y');
     }
     
+    // Get locale from variables, default to 'it'
+    $locale = $variables['locale'] ?? 'it';
+    
+    // Get template based on channel
     switch ($channel) {
         case 'booking_confirmed':
-            return EmailTemplateRenderer::bookingConfirmed($variables);
+            $template = EmailTemplateRenderer::bookingConfirmed($locale);
+            break;
             
         case 'booking_cancelled':
-            return EmailTemplateRenderer::bookingCancelled($variables);
+            $template = EmailTemplateRenderer::bookingCancelled($locale);
+            break;
             
         case 'booking_reminder':
-            return EmailTemplateRenderer::bookingReminder($variables);
+            $template = EmailTemplateRenderer::bookingReminder($locale);
+            break;
             
         case 'booking_rescheduled':
-            return EmailTemplateRenderer::bookingRescheduled($variables);
+            $template = EmailTemplateRenderer::bookingRescheduled($locale);
+            break;
             
         default:
             // Generic email with custom subject/body from payload
@@ -248,4 +256,11 @@ function renderTemplate(string $channel, array $payload): array
                 'text' => $variables['text_body'] ?? strip_tags($variables['body'] ?? ''),
             ];
     }
+    
+    // Render template with variables
+    return [
+        'subject' => EmailTemplateRenderer::render($template['subject'], $variables),
+        'html' => EmailTemplateRenderer::render($template['html'], $variables),
+        'text' => EmailTemplateRenderer::render($template['text'], $variables),
+    ];
 }
