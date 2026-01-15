@@ -7,16 +7,27 @@
 | **Nome progetto** | agenda_frontend |
 | **Scopo** | Prenotazioni online per CLIENTI |
 | **URL produzione** | **prenota**.romeolab.it |
-| **Cartella SiteGround** | `www/prenota.romeolab.it/public_html/` |
+| **URL staging** | **prenota-staging**.romeolab.it |
+| **Cartella SiteGround PROD** | `www/prenota.romeolab.it/public_html/` |
+| **Cartella SiteGround STAGING** | `www/prenota-staging.romeolab.it/public_html/` |
 | **NON confondere con** | agenda_backend (gestionale.romeolab.it) |
 
-### ⚠️ DEPLOY CORRETTO
+### ⚠️ DEPLOY PRODUZIONE
 
 ```bash
 # QUESTO PROGETTO VA SU prenota.romeolab.it
 cd agenda_frontend
 flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it
 rsync -avz --delete build/web/ siteground:www/prenota.romeolab.it/public_html/
+```
+
+### ⚠️ DEPLOY STAGING
+
+```bash
+# STAGING: prenota-staging.romeolab.it
+cd agenda_frontend
+flutter build web --release --dart-define=API_BASE_URL=https://api-staging.romeolab.it
+rsync -avz --delete build/web/ siteground:www/prenota-staging.romeolab.it/public_html/
 ```
 
 ❌ **MAI** deployare su `gestionale.romeolab.it` — quello è per agenda_backend!

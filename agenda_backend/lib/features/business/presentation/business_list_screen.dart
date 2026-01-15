@@ -6,12 +6,14 @@ import '../../../app/widgets/user_menu_button.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_config.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../providers/business_providers.dart';
 import '../providers/superadmin_selected_business_provider.dart';
 import 'dialogs/create_business_dialog.dart';
 import 'dialogs/edit_business_dialog.dart';
+import 'dialogs/sync_from_production_dialog.dart';
 
 /// Schermata lista business per superadmin.
 /// Mostra tutti i business con possibilità di selezionarne uno o crearne uno nuovo.
@@ -43,6 +45,10 @@ class BusinessListScreen extends ConsumerWidget {
               _showResendInviteDialog(context, ref, business),
           onSuspend: (business) => _showSuspendDialog(context, ref, business),
           onDelete: (business) => _showDeleteDialog(context, ref, business),
+          onSyncFromProduction: ApiConfig.isStaging
+              ? (business) =>
+                    _showSyncFromProductionDialog(context, ref, business)
+              : null,
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -347,7 +353,9 @@ class BusinessListScreen extends ConsumerWidget {
         await repository.deleteBusiness(business.id);
 
         if (context.mounted) {
-          final selectedBusinessId = ref.read(superadminSelectedBusinessProvider);
+          final selectedBusinessId = ref.read(
+            superadminSelectedBusinessProvider,
+          );
           if (selectedBusinessId == business.id) {
             ref
                 .read(superadminSelectedBusinessProvider.notifier)
@@ -358,28 +366,41 @@ class BusinessListScreen extends ConsumerWidget {
             title: 'Operazione completata',
             message: '${business.name} eliminato',
           );
-        // Refresh lista
-        ref.read(businessesRefreshProvider.notifier).refresh();
-      }
-    } on ApiException catch (e) {
-      if (context.mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: context.l10n.errorTitle,
-          message: e.message,
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: context.l10n.errorTitle,
-          message: e.toString(),
-        );
+          // Refresh lista
+          ref.read(businessesRefreshProvider.notifier).refresh();
+        }
+      } on ApiException catch (e) {
+        if (context.mounted) {
+          await FeedbackDialog.showError(
+            context,
+            title: context.l10n.errorTitle,
+            message: e.message,
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          await FeedbackDialog.showError(
+            context,
+            title: context.l10n.errorTitle,
+            message: e.toString(),
+          );
+        }
       }
     }
   }
-}
+
+  /// Mostra dialog per sincronizzare un business da produzione (solo staging)
+  Future<void> _showSyncFromProductionDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Business business,
+  ) async {
+    final synced = await showSyncFromProductionDialog(context, business);
+    if (synced == true && context.mounted) {
+      // Forza il refresh della lista
+      ref.read(businessesRefreshProvider.notifier).refresh();
+    }
+  }
 }
 
 class _BusinessList extends StatelessWidget {
@@ -390,6 +411,7 @@ class _BusinessList extends StatelessWidget {
     required this.onResendInvite,
     required this.onSuspend,
     required this.onDelete,
+    this.onSyncFromProduction,
   });
 
   final List<Business> businesses;
@@ -398,6 +420,7 @@ class _BusinessList extends StatelessWidget {
   final void Function(Business) onResendInvite;
   final void Function(Business) onSuspend;
   final void Function(Business) onDelete;
+  final void Function(Business)? onSyncFromProduction;
 
   @override
   Widget build(BuildContext context) {
@@ -460,6 +483,9 @@ class _BusinessList extends StatelessWidget {
               onResendInvite: () => onResendInvite(business),
               onSuspend: () => onSuspend(business),
               onDelete: () => onDelete(business),
+              onSyncFromProduction: onSyncFromProduction != null
+                  ? () => onSyncFromProduction!(business)
+                  : null,
             );
           },
         );
@@ -476,6 +502,7 @@ class _BusinessCard extends StatelessWidget {
     required this.onResendInvite,
     required this.onSuspend,
     required this.onDelete,
+    this.onSyncFromProduction,
   });
 
   final Business business;
@@ -484,6 +511,7 @@ class _BusinessCard extends StatelessWidget {
   final VoidCallback onResendInvite;
   final VoidCallback onSuspend;
   final VoidCallback onDelete;
+  final VoidCallback? onSyncFromProduction;
 
   @override
   Widget build(BuildContext context) {
@@ -626,6 +654,8 @@ class _BusinessCard extends StatelessWidget {
                       onSuspend();
                     case 'delete':
                       onDelete();
+                    case 'sync':
+                      onSyncFromProduction?.call();
                   }
                 },
                 itemBuilder: (context) => [
@@ -647,6 +677,17 @@ class _BusinessCard extends StatelessWidget {
                       dense: true,
                     ),
                   ),
+                  // Sincronizza da produzione (solo staging)
+                  if (onSyncFromProduction != null)
+                    const PopupMenuItem(
+                      value: 'sync',
+                      child: ListTile(
+                        leading: Icon(Icons.sync, color: Colors.blue),
+                        title: Text('Sincronizza da produzione'),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                    ),
                   PopupMenuItem(
                     value: 'suspend',
                     child: ListTile(
