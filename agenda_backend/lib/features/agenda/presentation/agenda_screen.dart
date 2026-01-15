@@ -159,6 +159,8 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     // Controlla se i dati sono ancora in caricamento
     final staffAsync = ref.watch(allStaffProvider);
     final locations = ref.watch(locationsProvider);
+    final locationsLoaded = ref.watch(locationsLoadedProvider);
+    final currentLocationId = ref.watch(currentLocationIdProvider);
     final appointmentsAsync = ref.watch(appointmentsProvider);
     final currentBusinessId = ref.watch(currentBusinessIdProvider);
 
@@ -180,9 +182,13 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     // 2. Locations vuote
     // 3. Appuntamenti in caricamento E non è polling automatico
     final hasLocations = locations.isNotEmpty;
+    final isWaitingForLocation =
+        currentBusinessId > 0 &&
+        (!locationsLoaded ||
+            (locations.isNotEmpty && currentLocationId == 0));
     final isLoading =
         (staffAsync.isLoading && !staffAsync.hasValue) ||
-        (!hasLocations && currentBusinessId == 0) ||
+        isWaitingForLocation ||
         (appointmentsAsync.isLoading && !_isPolling);
 
     final staffList = ref.watch(filteredStaffProvider);

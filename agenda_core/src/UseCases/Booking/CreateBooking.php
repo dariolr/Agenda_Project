@@ -299,7 +299,7 @@ final class CreateBooking
                 'user_id' => $userId,
                 'notes' => $notes,
                 'status' => 'confirmed',
-                'source' => 'online',
+                'source' => 'manual',
                 'idempotency_key' => $idempotencyKey,
             ]);
 
@@ -463,7 +463,7 @@ final class CreateBooking
                 'user_id' => $userId,
                 'notes' => $notes,
                 'status' => 'confirmed',
-                'source' => 'online',
+                'source' => 'manual',
                 'idempotency_key' => $idempotencyKey,
             ]);
 
@@ -947,6 +947,17 @@ final class CreateBooking
         }
 
         try {
+            $timezoneName = $location['timezone'] ?? 'Europe/Rome';
+            $locationTimezone = new DateTimeZone($timezoneName);
+            $startTimeValue = $booking['items'][0]['start_time'] ?? null;
+            if ($startTimeValue !== null) {
+                $startTime = new DateTimeImmutable($startTimeValue, $locationTimezone);
+                $nowLocal = new DateTimeImmutable('now', $locationTimezone);
+                if ($startTime <= $nowLocal) {
+                    return;
+                }
+            }
+
             // Get client email
             $client = $this->clientRepository->findById($clientId);
             if ($client === null || empty($client['email'])) {

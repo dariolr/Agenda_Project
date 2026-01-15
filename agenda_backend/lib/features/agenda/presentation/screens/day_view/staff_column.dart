@@ -601,15 +601,21 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
+    final useServiceColors = layoutConfig.useServiceColorsForAppointments;
     // 🔹 Watch fuori dal loop per evitare rebuild multipli
     final pendingDrop = ref.watch(pendingDropProvider);
-    final variants = layoutConfig.useServiceColorsForAppointments
-        ? (ref.watch(serviceVariantsProvider).value ?? [])
-        : <dynamic>[];
+    final variantsAsync = useServiceColors
+        ? ref.watch(serviceVariantsProvider)
+        : const AsyncData(<ServiceVariant>[]);
+    final variants = variantsAsync.value ?? const <ServiceVariant>[];
+    final isInitialVariantsLoading =
+        useServiceColors && variantsAsync.isLoading && !variantsAsync.hasValue;
+    final neutralServiceColor =
+        Theme.of(context).colorScheme.surfaceContainerHighest;
     // Pre-calcola la mappa dei colori dei servizi (da varianti)
     final serviceColorMap = <int, Color>{};
     for (final variant in variants) {
-      if (variant is ServiceVariant && variant.colorHex != null) {
+      if (variant.colorHex != null) {
         serviceColorMap[variant.serviceId] = ColorUtils.fromHex(
           variant.colorHex!,
         );
@@ -714,17 +720,21 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         );
 
         Color cardColor = widget.staff.color;
-        if (layoutConfig.useServiceColorsForAppointments) {
-          // Priorità: colore del servizio (configurabile dall'operatore).
-          final serviceColor = serviceColorMap[originalAppt.serviceId];
-          if (serviceColor != null) {
-            cardColor = serviceColor;
+        if (useServiceColors) {
+          if (isInitialVariantsLoading) {
+            cardColor = neutralServiceColor;
           } else {
-            final variant = ref.watch(
-              serviceVariantByIdProvider(originalAppt.serviceVariantId),
-            );
-            if (variant != null && variant.colorHex != null) {
-              cardColor = ColorUtils.fromHex(variant.colorHex!);
+            // Priorità: colore del servizio (configurabile dall'operatore).
+            final serviceColor = serviceColorMap[originalAppt.serviceId];
+            if (serviceColor != null) {
+              cardColor = serviceColor;
+            } else {
+              final variant = ref.watch(
+                serviceVariantByIdProvider(originalAppt.serviceVariantId),
+              );
+              if (variant != null && variant.colorHex != null) {
+                cardColor = ColorUtils.fromHex(variant.colorHex!);
+              }
             }
           }
         }
@@ -789,17 +799,21 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final cardWidth = math.max(widget.columnWidth - padding * 2, 0.0);
 
         Color cardColor = widget.staff.color;
-        if (layoutConfig.useServiceColorsForAppointments) {
-          // Priorità: colore del servizio (configurabile dall'operatore).
-          final serviceColor = serviceColorMap[originalAppt.serviceId];
-          if (serviceColor != null) {
-            cardColor = serviceColor;
+        if (useServiceColors) {
+          if (isInitialVariantsLoading) {
+            cardColor = neutralServiceColor;
           } else {
-            final variant = ref.watch(
-              serviceVariantByIdProvider(originalAppt.serviceVariantId),
-            );
-            if (variant != null && variant.colorHex != null) {
-              cardColor = ColorUtils.fromHex(variant.colorHex!);
+            // Priorità: colore del servizio (configurabile dall'operatore).
+            final serviceColor = serviceColorMap[originalAppt.serviceId];
+            if (serviceColor != null) {
+              cardColor = serviceColor;
+            } else {
+              final variant = ref.watch(
+                serviceVariantByIdProvider(originalAppt.serviceVariantId),
+              );
+              if (variant != null && variant.colorHex != null) {
+                cardColor = ColorUtils.fromHex(variant.colorHex!);
+              }
             }
           }
         }

@@ -310,6 +310,16 @@ final class UpdateBooking
 
             // Get new start time from booking items
             $newStartTime = $booking['items'][0]['start_time'] ?? null;
+            if ($newStartTime === null) {
+                return;
+            }
+            $timezoneName = $locationData['location_timezone'] ?? 'Europe/Rome';
+            $locationTimezone = new \DateTimeZone($timezoneName);
+            $startTime = new DateTimeImmutable($newStartTime, $locationTimezone);
+            $nowLocal = new DateTimeImmutable('now', $locationTimezone);
+            if ($startTime <= $nowLocal) {
+                return;
+            }
             
             $notificationData = [
                 'booking_id' => (int) $booking['id'],
@@ -354,6 +364,7 @@ final class UpdateBooking
                 l.address as location_address,
                 l.city as location_city,
                 l.phone as location_phone,
+                l.timezone as location_timezone,
                 b.name as business_name,
                 b.email as business_email
              FROM locations l

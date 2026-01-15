@@ -72,8 +72,7 @@ class Appointment {
     startTime: DateTime.parse(json['start_time'] as String),
     endTime: DateTime.parse(json['end_time'] as String),
     price: json['price'] != null ? (json['price'] as num).toDouble() : null,
-    bookingSource:
-        (json['booking_source'] ?? json['source']) as String?,
+    bookingSource: json['source'] as String?,
     extraMinutes: json['extra_minutes'] as int?,
     extraMinutesType: _extraMinutesTypeFromJson(
       json['extra_minutes_type'],
@@ -148,7 +147,7 @@ class Appointment {
       'start_time': startTime.toIso8601String(),
       'end_time': endTime.toIso8601String(),
       if (price != null) 'price': price,
-      if (bookingSource != null) 'booking_source': bookingSource,
+      if (bookingSource != null) 'source': bookingSource,
       if (legacyMinutes != null) 'extra_minutes': legacyMinutes,
       if (legacyType != null)
         'extra_minutes_type': _extraMinutesTypeToJson(legacyType),

@@ -2970,7 +2970,7 @@ Prenotazioni (contenitore di uno o più servizi).
 | client_name | VARCHAR(255) | Fallback se no client |
 | notes | TEXT | |
 | status | ENUM('pending','confirmed','completed','cancelled','no_show') DEFAULT 'confirmed' | |
-| source | ENUM('online','manual','import') DEFAULT 'manual' | |
+| source | ENUM('online','manual','import','onlinestaff') DEFAULT 'manual' | |
 | idempotency_key | VARCHAR(64) | Per idempotenza POST |
 | idempotency_expires_at | TIMESTAMP | TTL per cleanup |
 

@@ -79,6 +79,11 @@ class L10n {
     return Intl.message('Annulla', name: 'actionCancel', desc: '', args: []);
   }
 
+  /// `Cancella`
+  String get actionDelete {
+    return Intl.message('Cancella', name: 'actionDelete', desc: '', args: []);
+  }
+
   /// `Chiudi`
   String get actionClose {
     return Intl.message('Chiudi', name: 'actionClose', desc: '', args: []);
@@ -1603,40 +1608,40 @@ class L10n {
     return Intl.message('No', name: 'no', desc: '', args: []);
   }
 
-  /// `Annulla prenotazione`
+  /// `Cancella prenotazione`
   String get cancelBookingTitle {
     return Intl.message(
-      'Annulla prenotazione',
+      'Cancella prenotazione',
       name: 'cancelBookingTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sei sicuro di voler annullare questa prenotazione?`
+  /// `Sei sicuro di voler cancellare questa prenotazione?`
   String get cancelBookingConfirm {
     return Intl.message(
-      'Sei sicuro di voler annullare questa prenotazione?',
+      'Sei sicuro di voler cancellare questa prenotazione?',
       name: 'cancelBookingConfirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione annullata con successo`
+  /// `Prenotazione cancellata con successo`
   String get bookingCancelled {
     return Intl.message(
-      'Prenotazione annullata con successo',
+      'Prenotazione cancellata con successo',
       name: 'bookingCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore durante l'annullamento`
+  /// `Errore durante la cancellazione`
   String get bookingCancelFailed {
     return Intl.message(
-      'Errore durante l\'annullamento',
+      'Errore durante la cancellazione',
       name: 'bookingCancelFailed',
       desc: '',
       args: [],

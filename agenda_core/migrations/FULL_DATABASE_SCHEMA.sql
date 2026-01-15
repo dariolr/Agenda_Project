@@ -444,7 +444,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     notes TEXT DEFAULT NULL,
     status ENUM('pending', 'confirmed', 'completed', 'cancelled', 'no_show') 
         NOT NULL DEFAULT 'confirmed',
-    source ENUM('online', 'manual', 'import') NOT NULL DEFAULT 'manual',
+    source ENUM('online', 'manual', 'import','onlinestaff') NOT NULL DEFAULT 'manual',
     idempotency_key VARCHAR(64) DEFAULT NULL COMMENT 'Client-provided UUID for idempotent POST',
     idempotency_expires_at TIMESTAMP NULL DEFAULT NULL COMMENT 'Key expiration (24h TTL)',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
