@@ -1694,4 +1694,168 @@ class ApiClient {
     );
     return Map<String, dynamic>.from(response);
   }
+
+  /// Push business data to staging (superadmin only)
+  /// POST to staging API /v1/admin/businesses/import
+  /// Questa chiamata usa l'URL completo di staging, bypassando il baseUrl
+  Future<Map<String, dynamic>> pushBusinessToStaging(
+    Map<String, dynamic> exportData,
+  ) async {
+    // Chiamata diretta a staging API con URL completo
+    final stagingUrl = '${ApiConfig.stagingApiUrl}/v1/admin/businesses/import';
+
+    try {
+      final response = await _dio.post(
+        stagingUrl,
+        data: {
+          'data': exportData,
+        }, // Backend si aspetta { "data": { ...export... } }
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
+          },
+        ),
+      );
+
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data);
+      }
+      return {'success': true};
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Push business data to production (from staging)
+  /// skipSessionsAndNotifications: se true, NON importa notification_queue, auth_sessions, client_sessions
+  Future<Map<String, dynamic>> pushBusinessToProduction(
+    Map<String, dynamic> exportData, {
+    bool skipSessionsAndNotifications = true,
+  }) async {
+    // Chiamata diretta a production API con URL completo
+    final productionUrl =
+        '${ApiConfig.productionApiUrl}/v1/admin/businesses/import';
+
+    try {
+      final response = await _dio.post(
+        productionUrl,
+        data: {
+          'data': exportData,
+          'skip_sessions_and_notifications': skipSessionsAndNotifications,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
+          },
+        ),
+      );
+
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data);
+      }
+      return {'success': true};
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Export business data from production (when on staging)
+  Future<Map<String, dynamic>> exportBusinessFromProduction(
+    int businessId,
+  ) async {
+    final productionUrl =
+        '${ApiConfig.productionApiUrl}/v1/admin/businesses/$businessId/export';
+
+    try {
+      final response = await _dio.get(
+        productionUrl,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
+          },
+        ),
+      );
+
+      if (response.data is Map) {
+        final body = response.data as Map<String, dynamic>;
+        // Estrai 'data' dalla response wrappata {"success": true, "data": {...}}
+        if (body['success'] == true && body['data'] is Map) {
+          return Map<String, dynamic>.from(body['data']);
+        }
+        // Fallback: ritorna tutto se non wrappato
+        return Map<String, dynamic>.from(body);
+      }
+      throw const ApiException(
+        code: 'invalid_response',
+        message: 'Invalid export response',
+        statusCode: 500,
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Export business data from staging (when on production)
+  Future<Map<String, dynamic>> exportBusinessFromStaging(int businessId) async {
+    final stagingUrl =
+        '${ApiConfig.stagingApiUrl}/v1/admin/businesses/$businessId/export';
+
+    try {
+      final response = await _dio.get(
+        stagingUrl,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
+          },
+        ),
+      );
+
+      if (response.data is Map) {
+        final body = response.data as Map<String, dynamic>;
+        // Estrai 'data' dalla response wrappata {"success": true, "data": {...}}
+        if (body['success'] == true && body['data'] is Map) {
+          return Map<String, dynamic>.from(body['data']);
+        }
+        // Fallback: ritorna tutto se non wrappato
+        return Map<String, dynamic>.from(body);
+      }
+      throw const ApiException(
+        code: 'invalid_response',
+        message: 'Invalid export response',
+        statusCode: 500,
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Import business data locally
+  /// skipSessionsAndNotifications: se true, NON importa notification_queue, auth_sessions, client_sessions
+  Future<Map<String, dynamic>> importBusiness(
+    Map<String, dynamic> exportData, {
+    bool skipSessionsAndNotifications = false,
+  }) async {
+    try {
+      final response = await _dio.post(
+        ApiConfig.businessImport,
+        data: {
+          'data': exportData,
+          'skip_sessions_and_notifications': skipSessionsAndNotifications,
+        },
+      );
+
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data);
+      }
+      return {'success': true};
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
 }

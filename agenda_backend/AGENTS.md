@@ -318,7 +318,43 @@ features/business/
     ├── business_list_screen.dart     # Lista + provider selezione + reinvia invito
     └── dialogs/
         ├── create_business_dialog.dart  # Con campo admin_email
-        └── edit_business_dialog.dart    # Con campo admin_email
+        ├── edit_business_dialog.dart    # Con campo admin_email
+        └── sync_to_staging_dialog.dart  # Sync bidirezionale Prod ↔ Staging
+```
+
+### 🔄 Sync Business Prod ↔ Staging (15/01/2026)
+
+Il superadmin può sincronizzare un business tra produzione e staging in entrambe le direzioni.
+
+**Accesso:** Menu azioni business → "Copia su Staging"
+
+**Direzioni disponibili:**
+- **Produzione → Staging**: copia TUTTI i dati (incluse sessioni e notifiche)
+- **Staging → Produzione**: copia dati SENZA sessioni auth e notification queue
+
+**Comportamento `skip_sessions_and_notifications`:**
+| Direzione | Flag | Tabelle escluse |
+|-----------|------|-----------------|
+| Prod → Staging | `false` | Nessuna |
+| Staging → Prod | `true` | `notification_queue`, `auth_sessions`, `client_sessions` |
+
+**File Flutter:**
+- `lib/features/business/presentation/dialogs/sync_to_staging_dialog.dart` - UI con selezione direzione
+- `lib/core/network/api_client.dart` - metodi `exportBusinessFromProduction()`, `exportBusinessFromStaging()`, `pushBusinessToProduction()`, `pushBusinessToStaging()`, `importBusiness()`
+- `lib/core/network/api_config.dart` - `productionApiUrl`, `stagingApiUrl`
+
+**Metodi API Client:**
+```dart
+// Export da altro ambiente
+exportBusinessFromProduction(businessId)  // quando siamo su staging
+exportBusinessFromStaging(businessId)      // quando siamo su produzione
+
+// Import su altro ambiente
+pushBusinessToProduction(exportData, {skipSessionsAndNotifications: true})
+pushBusinessToStaging(exportData)
+
+// Import locale
+importBusiness(exportData, {skipSessionsAndNotifications: false})
 ```
 
 ### ⚠️ Provider invalidation su cambio business (01/01/2026)

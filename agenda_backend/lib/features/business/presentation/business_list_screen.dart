@@ -6,14 +6,13 @@ import '../../../app/widgets/user_menu_button.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
 import '../../../core/network/api_client.dart';
-import '../../../core/network/api_config.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../providers/business_providers.dart';
 import '../providers/superadmin_selected_business_provider.dart';
 import 'dialogs/create_business_dialog.dart';
 import 'dialogs/edit_business_dialog.dart';
-import 'dialogs/sync_from_production_dialog.dart';
+import 'dialogs/sync_to_staging_dialog.dart';
 
 /// Schermata lista business per superadmin.
 /// Mostra tutti i business con possibilità di selezionarne uno o crearne uno nuovo.
@@ -45,10 +44,8 @@ class BusinessListScreen extends ConsumerWidget {
               _showResendInviteDialog(context, ref, business),
           onSuspend: (business) => _showSuspendDialog(context, ref, business),
           onDelete: (business) => _showDeleteDialog(context, ref, business),
-          onSyncFromProduction: ApiConfig.isStaging
-              ? (business) =>
-                    _showSyncFromProductionDialog(context, ref, business)
-              : null,
+          onSyncToStaging: (business) =>
+              _showSyncToStagingDialog(context, ref, business),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -389,13 +386,13 @@ class BusinessListScreen extends ConsumerWidget {
     }
   }
 
-  /// Mostra dialog per sincronizzare un business da produzione (solo staging)
-  Future<void> _showSyncFromProductionDialog(
+  /// Mostra dialog per copiare un business su staging
+  Future<void> _showSyncToStagingDialog(
     BuildContext context,
     WidgetRef ref,
     Business business,
   ) async {
-    final synced = await showSyncFromProductionDialog(context, business);
+    final synced = await showSyncToStagingDialog(context, business);
     if (synced == true && context.mounted) {
       // Forza il refresh della lista
       ref.read(businessesRefreshProvider.notifier).refresh();
@@ -411,7 +408,7 @@ class _BusinessList extends StatelessWidget {
     required this.onResendInvite,
     required this.onSuspend,
     required this.onDelete,
-    this.onSyncFromProduction,
+    required this.onSyncToStaging,
   });
 
   final List<Business> businesses;
@@ -420,7 +417,7 @@ class _BusinessList extends StatelessWidget {
   final void Function(Business) onResendInvite;
   final void Function(Business) onSuspend;
   final void Function(Business) onDelete;
-  final void Function(Business)? onSyncFromProduction;
+  final void Function(Business) onSyncToStaging;
 
   @override
   Widget build(BuildContext context) {
@@ -483,9 +480,7 @@ class _BusinessList extends StatelessWidget {
               onResendInvite: () => onResendInvite(business),
               onSuspend: () => onSuspend(business),
               onDelete: () => onDelete(business),
-              onSyncFromProduction: onSyncFromProduction != null
-                  ? () => onSyncFromProduction!(business)
-                  : null,
+              onSyncToStaging: () => onSyncToStaging(business),
             );
           },
         );
@@ -502,7 +497,7 @@ class _BusinessCard extends StatelessWidget {
     required this.onResendInvite,
     required this.onSuspend,
     required this.onDelete,
-    this.onSyncFromProduction,
+    required this.onSyncToStaging,
   });
 
   final Business business;
@@ -511,7 +506,7 @@ class _BusinessCard extends StatelessWidget {
   final VoidCallback onResendInvite;
   final VoidCallback onSuspend;
   final VoidCallback onDelete;
-  final VoidCallback? onSyncFromProduction;
+  final VoidCallback onSyncToStaging;
 
   @override
   Widget build(BuildContext context) {
@@ -655,7 +650,7 @@ class _BusinessCard extends StatelessWidget {
                     case 'delete':
                       onDelete();
                     case 'sync':
-                      onSyncFromProduction?.call();
+                      onSyncToStaging();
                   }
                 },
                 itemBuilder: (context) => [
@@ -677,17 +672,19 @@ class _BusinessCard extends StatelessWidget {
                       dense: true,
                     ),
                   ),
-                  // Sincronizza da produzione (solo staging)
-                  if (onSyncFromProduction != null)
-                    const PopupMenuItem(
-                      value: 'sync',
-                      child: ListTile(
-                        leading: Icon(Icons.sync, color: Colors.blue),
-                        title: Text('Sincronizza da produzione'),
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
+                  // Copia su Staging
+                  const PopupMenuItem(
+                    value: 'sync',
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.cloud_upload_outlined,
+                        color: Colors.blue,
                       ),
+                      title: Text('Copia su Staging'),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
                     ),
+                  ),
                   PopupMenuItem(
                     value: 'suspend',
                     child: ListTile(
