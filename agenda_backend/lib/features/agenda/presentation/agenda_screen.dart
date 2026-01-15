@@ -178,18 +178,22 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     }
 
     // Mostra loading se:
-    // 1. Staff in caricamento iniziale (senza dati)
-    // 2. Locations vuote
-    // 3. Appuntamenti in caricamento E non è polling automatico
+    // 1. Business ID non ancora disponibile
+    // 2. Staff in caricamento iniziale (senza dati)
+    // 3. Locations non ancora caricate (locationsLoaded = false)
+    // 4. Location corrente non ancora selezionata (dopo che ci sono locations)
+    // 5. Appuntamenti in caricamento E non è polling automatico
     final hasLocations = locations.isNotEmpty;
-    final isWaitingForLocation =
-        currentBusinessId > 0 &&
-        (!locationsLoaded ||
-            (locations.isNotEmpty && currentLocationId == 0));
+    final isWaitingForBusiness = currentBusinessId <= 0;
+    final isWaitingForLocations = !locationsLoaded;
+    final isWaitingForLocationSelection =
+        locationsLoaded && hasLocations && currentLocationId == 0;
     final isLoading =
+        isWaitingForBusiness ||
         (staffAsync.isLoading && !staffAsync.hasValue) ||
-        isWaitingForLocation ||
-        (appointmentsAsync.isLoading && !_isPolling);
+        isWaitingForLocations ||
+        isWaitingForLocationSelection ||
+        (appointmentsAsync.isLoading && !_isPolling && !staffAsync.hasValue);
 
     final staffList = ref.watch(filteredStaffProvider);
     final staffFilterMode = ref.watch(staffFilterModeProvider);

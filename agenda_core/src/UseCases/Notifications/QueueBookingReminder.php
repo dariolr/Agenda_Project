@@ -43,6 +43,7 @@ final class QueueBookingReminder
         $recipientId = null;
         $recipientEmail = null;
         $clientName = $this->extractFirstName($booking['client_name'] ?? null);
+        $locale = $this->resolveLocale($booking);
         
         // Notifications go ONLY to clients, never to operators
         if (!isset($booking['client_id']) || empty($booking['client_id'])) {
@@ -83,19 +84,22 @@ final class QueueBookingReminder
         // Prepare variables
         $locationName = $booking['location_name'] ?? '';
         $locationAddress = $booking['location_address'] ?? '';
+        $strings = EmailTemplateRenderer::strings($locale);
         $hasMultipleLocations = $this->hasMultipleLocations((int) ($booking['business_id'] ?? 0));
         $locationBlockHtml = $hasMultipleLocations ? sprintf(
             '<tr>
                                     <td style="padding:5px 0;">
                                         <span style="color:#666;">📍 %s</span><br>
+                                        <strong style="color:#333;">%s</strong><br>
                                         <span style="color:#666;font-size:14px;">%s</span>
                                     </td>
                                 </tr>',
+            $strings['where_label'],
             $locationName,
             $locationAddress
         ) : '';
         $locationBlockText = $hasMultipleLocations
-            ? sprintf("📍 %s, %s\n", $locationName, $locationAddress)
+            ? sprintf("📍 %s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
             : '';
 
         $variables = [
@@ -108,7 +112,7 @@ final class QueueBookingReminder
             'sender_name' => $booking['sender_name'] ?? '',
             'location_address' => $locationAddress,
             'location_phone' => $booking['location_phone'] ?? '',
-            'date' => $startTime->format('d/m/Y'),
+            'date' => EmailTemplateRenderer::formatLongDate($startTime, $locale),
             'time' => $startTime->format('H:i'),
             'services' => $booking['services'] ?? '',
             'manage_url' => $booking['manage_url'] ?? '#',
@@ -116,12 +120,12 @@ final class QueueBookingReminder
             'location_block_text' => $locationBlockText,
         ];
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
-            $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
+            $variables['client_name'] = $recipientEmail['name'] ?? $strings['client_fallback'];
         } else {
             $variables['client_name'] = $this->extractFirstName($variables['client_name']);
         }
         
-        $template = EmailTemplateRenderer::bookingReminder();
+        $template = EmailTemplateRenderer::bookingReminder($locale);
         
         return $this->notificationRepo->queue([
             'type' => 'email',
@@ -193,6 +197,7 @@ final class QueueBookingReminder
         
         // Get frontend URL from env
         $frontendUrl = getenv('FRONTEND_URL') ?: 'https://prenota.romeolab.it';
+        $defaultLocale = getenv('DEFAULT_LOCALE') ?: 'it';
         
         // Process bookings to set client_name and manage_url properly
         foreach ($bookings as &$booking) {
@@ -202,6 +207,7 @@ final class QueueBookingReminder
             // Build manage_url from business slug
             $slug = $booking['business_slug'] ?? '';
             $booking['manage_url'] = $frontendUrl . '/' . $slug . '/my-bookings';
+            $booking['locale'] = $booking['locale'] ?? $defaultLocale;
         }
 
         $queued = 0;
@@ -247,5 +253,12 @@ final class QueueBookingReminder
         $stmt->execute([$businessId]);
 
         return (int) $stmt->fetchColumn() > 1;
+    }
+
+    private function resolveLocale(array $booking): string
+    {
+        return EmailTemplateRenderer::normalizeLocale(
+            $booking['locale'] ?? $booking['business_locale'] ?? null
+        );
     }
 }

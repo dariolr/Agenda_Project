@@ -45,6 +45,7 @@ final class QueueBookingRescheduled
         $recipientId = null;
         $recipientEmail = null;
         $clientName = $this->extractFirstName($booking['client_name'] ?? null);
+        $locale = $this->resolveLocale($booking);
         
         if (isset($booking['client_id']) && !empty($booking['client_id'])) {
             $recipientId = (int) $booking['client_id'];
@@ -77,12 +78,18 @@ final class QueueBookingRescheduled
         
         $locationName = $booking['location_name'] ?? '';
         $locationAddress = $booking['location_address'] ?? '';
+        $strings = EmailTemplateRenderer::strings($locale);
         $hasMultipleLocations = $this->hasMultipleLocations((int) ($booking['business_id'] ?? 0));
         $locationBlockHtml = $hasMultipleLocations
-            ? sprintf('📍 %s, %s<br>', $locationName, $locationAddress)
+            ? sprintf(
+                '<span style="color:#666;">📍 %s</span><br><strong style="color:#333;">%s</strong><br><span style="color:#666;font-size:14px;">%s</span><br>',
+                $strings['where_label'],
+                $locationName,
+                $locationAddress
+            )
             : '';
         $locationBlockText = $hasMultipleLocations
-            ? sprintf("📍 %s, %s\n", $locationName, $locationAddress)
+            ? sprintf("📍 %s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
             : '';
 
         $variables = [
@@ -96,11 +103,11 @@ final class QueueBookingRescheduled
             'location_address' => $locationAddress,
             'location_city' => $booking['location_city'] ?? '',
             'location_phone' => $booking['location_phone'] ?? '',
-            'old_date' => $oldStartTime ? $oldStartTime->format('d/m/Y') : '',
+            'old_date' => $oldStartTime ? EmailTemplateRenderer::formatLongDate($oldStartTime, $locale) : '',
             'old_time' => $oldStartTime ? $oldStartTime->format('H:i') : '',
-            'new_date' => $newStartTime->format('d/m/Y'),
+            'new_date' => EmailTemplateRenderer::formatLongDate($newStartTime, $locale),
             'new_time' => $newStartTime->format('H:i'),
-            'date' => $newStartTime->format('d/m/Y'),
+            'date' => EmailTemplateRenderer::formatLongDate($newStartTime, $locale),
             'time' => $newStartTime->format('H:i'),
             'services' => $booking['services'] ?? '',
             'manage_url' => $booking['manage_url'] ?? '#',
@@ -109,12 +116,12 @@ final class QueueBookingRescheduled
             'location_block_text' => $locationBlockText,
         ];
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
-            $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
+            $variables['client_name'] = $recipientEmail['name'] ?? $strings['client_fallback'];
         } else {
             $variables['client_name'] = $this->extractFirstName($variables['client_name']);
         }
         
-        $template = EmailTemplateRenderer::bookingRescheduled();
+        $template = EmailTemplateRenderer::bookingRescheduled($locale);
         
         return $this->notificationRepo->queue([
             'type' => 'email',
@@ -167,5 +174,12 @@ final class QueueBookingRescheduled
         $stmt->execute([$businessId]);
 
         return (int) $stmt->fetchColumn() > 1;
+    }
+
+    private function resolveLocale(array $booking): string
+    {
+        return EmailTemplateRenderer::normalizeLocale(
+            $booking['locale'] ?? $booking['business_locale'] ?? null
+        );
     }
 }

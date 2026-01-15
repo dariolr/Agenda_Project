@@ -5,8 +5,8 @@ import '../../../core/models/location.dart';
 import '../../../core/network/network_providers.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../business/providers/superadmin_selected_business_provider.dart';
 import '../../business/providers/locations_providers.dart';
+import '../../business/providers/superadmin_selected_business_provider.dart';
 
 ///
 /// 🔹 ELENCO LOCATIONS (da API)
@@ -55,7 +55,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
     }
 
     try {
-      ref.read(locationsLoadedProvider.notifier).setLoaded(false);
+      // NOTA: Non resettiamo locationsLoaded qui perché viene già gestito
+      // nel build() o nel chiamante. Questo evita flash di "nessuna sede".
       final business = ref.read(currentBusinessProvider);
       final repository = ref.read(locationsRepositoryProvider);
       final locations = await repository.getByBusinessId(business.id);
@@ -229,10 +230,9 @@ class LocationsLoadedNotifier extends Notifier<bool> {
   }
 }
 
-final locationsLoadedProvider =
-    NotifierProvider<LocationsLoadedNotifier, bool>(
-      LocationsLoadedNotifier.new,
-    );
+final locationsLoadedProvider = NotifierProvider<LocationsLoadedNotifier, bool>(
+  LocationsLoadedNotifier.new,
+);
 
 ///
 /// 🔹 LOCATION CORRENTE

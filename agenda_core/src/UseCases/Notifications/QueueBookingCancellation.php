@@ -65,6 +65,7 @@ final class QueueBookingCancellation
         $clientName = $this->extractFirstName($clientName);
 
         // Prepare template variables
+        $locale = $this->resolveLocale($booking);
         $startTime = new DateTimeImmutable($booking['start_time']);
         $variables = [
             'client_name' => $clientName,
@@ -76,18 +77,19 @@ final class QueueBookingCancellation
             'sender_name' => $booking['sender_name'] ?? '',
             'location_address' => $booking['location_address'] ?? '',
             'location_city' => $booking['location_city'] ?? '',
-            'date' => $startTime->format('d/m/Y'),
+            'date' => EmailTemplateRenderer::formatLongDate($startTime, $locale),
             'time' => $startTime->format('H:i'),
             'services' => $booking['services'] ?? '',
             'booking_url' => $booking['booking_url'] ?? '#',
         ];
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
-            $variables['client_name'] = $recipientEmail['name'] ?? 'Cliente';
+            $strings = EmailTemplateRenderer::strings($locale);
+            $variables['client_name'] = $recipientEmail['name'] ?? $strings['client_fallback'];
         } else {
             $variables['client_name'] = $this->extractFirstName($variables['client_name']);
         }
         
-        $template = EmailTemplateRenderer::bookingCancelled();
+        $template = EmailTemplateRenderer::bookingCancelled($locale);
         
         return $this->notificationRepo->queue([
             'type' => 'email',
@@ -126,5 +128,12 @@ final class QueueBookingCancellation
 
         $parts = preg_split('/\s+/', $name);
         return $parts[0] ?? $name;
+    }
+
+    private function resolveLocale(array $booking): string
+    {
+        return EmailTemplateRenderer::normalizeLocale(
+            $booking['locale'] ?? $booking['business_locale'] ?? null
+        );
     }
 }

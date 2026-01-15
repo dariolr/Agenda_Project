@@ -92,7 +92,8 @@ final class ResendAdminInvite
     private function sendWelcomeEmail(string $adminEmail, string $businessName, string $businessSlug, string $resetToken): void
     {
         try {
-            $template = EmailTemplateRenderer::businessAdminWelcome();
+            $locale = $_ENV['DEFAULT_LOCALE'] ?? 'it';
+            $template = EmailTemplateRenderer::businessAdminWelcome($locale);
             // Reset password va al GESTIONALE (backend), non al frontend prenotazioni
             $backendUrl = $_ENV['BACKEND_URL'] ?? 'https://gestionale.romeolab.it';
             $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it';
