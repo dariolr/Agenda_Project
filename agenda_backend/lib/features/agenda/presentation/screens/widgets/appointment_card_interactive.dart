@@ -560,9 +560,9 @@ class _AppointmentCardInteractiveState
                     client,
                     info,
                     showNotes: hasNotes && !forFeedback,
-                    showOnline:
-                        widget.appointment.bookingSource == 'online' &&
-                        !forFeedback,
+                    bookingSource: forFeedback
+                        ? ''
+                        : (widget.appointment.bookingSource ?? ''),
                     onNotesTap: hasNotes && !forFeedback
                         ? () => _showNotesDialog(
                             bookingNotes: hasBookingNotes ? bookingNotes : null,
@@ -604,16 +604,21 @@ class _AppointmentCardInteractiveState
     String client,
     String info, {
     required bool showNotes,
-    required bool showOnline,
+    required String bookingSource,
     VoidCallback? onNotesTap,
   }) {
     final trailingIcons = <Widget>[];
-    if (showOnline) {
+    final showSourceIcon =
+        bookingSource == 'online' || bookingSource == 'onlinestaff';
+    if (showSourceIcon) {
+      final sourceIcon = bookingSource == 'onlinestaff'
+          ? Icons.favorite_border
+          : Icons.cloud_outlined;
       trailingIcons.add(
-        const Padding(
-          padding: EdgeInsets.only(left: 4),
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
           child: Icon(
-            Icons.cloud_outlined,
+            sourceIcon,
             size: 14,
             color: Colors.black54,
           ),
