@@ -15,6 +15,7 @@ import '../core/models/location.dart';
 import '../core/widgets/adaptive_dropdown.dart';
 import '../core/widgets/app_bottom_sheet.dart';
 import '../core/widgets/app_buttons.dart';
+import '../core/widgets/global_loading_overlay.dart';
 import '../features/agenda/presentation/dialogs/add_block_dialog.dart';
 import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
 import '../features/agenda/presentation/widgets/booking_dialog.dart';
@@ -127,8 +128,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         return actions;
       }
 
-      return Scaffold(
-        appBar: AppBar(
+      return GlobalLoadingOverlay(
+        child: Scaffold(
+          appBar: AppBar(
           titleSpacing: isTablet && isAgenda
               ? 4
               : NavigationToolbar.kMiddleSpacing,
@@ -164,7 +166,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
             Expanded(child: navigationShell),
           ],
         ),
-      );
+      ),
+    );
     }
 
     final isTablet = formFactor == AppFormFactor.tablet;
@@ -195,7 +198,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       return actions;
     }
 
-    return Scaffold(
+    return GlobalLoadingOverlay(
+      child: Scaffold(
       appBar: AppBar(
         toolbarHeight: isTablet ? 76 : 64,
         titleSpacing: isAgenda ? 4 : NavigationToolbar.kMiddleSpacing,
@@ -242,6 +246,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

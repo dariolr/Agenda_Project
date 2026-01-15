@@ -109,6 +109,37 @@ Notifiche Email (M10):
 | `bookingCancelled` | client_name, business_name, location_address, location_city, date, time, services, booking_url |
 | `bookingRescheduled` | client_name, business_name, old_date, old_time, date, time, location_name, location_address, services, manage_url |
 
+**Template Email - Stile e Localizzazione (15/01/2026):**
+
+| Elemento | Valore |
+|----------|--------|
+| **Colore principale** | `#2196F3` (blu accent, come frontend) |
+| **Background body** | `#f5f5f5` |
+| **Background container** | `#ffffff` |
+| **Background box dati** | `#f8f9fa` con `border-radius: 8px` |
+
+**Ordine campi nel box dati (uniforme per tutti i template):**
+1. Location (sede) - `{{location_block_html}}`
+2. Data/Ora
+3. Cosa (servizi)
+4. Totale (solo in bookingConfirmed)
+
+**Localizzazione IT/EN:**
+| Campo | Italiano | English |
+|-------|----------|---------|
+| Label servizi | **Cosa** | **What** |
+| Footer | Il team di {{business_name}} | The {{business_name}} Team |
+
+**Validazione orario (15/01/2026):**
+Le email NON vengono inviate se l'orario di inizio appuntamento è già passato (timezone della location):
+- `QueueBookingConfirmation` - skip se start_time < now
+- `QueueBookingCancellation` - skip se start_time < now
+- `QueueBookingRescheduled` - skip se new_start_time < now
+- `QueueBookingReminder` - skip se start_time < now
+
+**URL "Gestisci Prenotazione":**
+Il pulsante nelle email punta a: `https://prenota.romeolab.it/{business_slug}/my-bookings`
+
 Cron Jobs (02/01/2026):
 | Job | Comando | Intervallo | Scopo |
 |-----|---------|------------|-------|

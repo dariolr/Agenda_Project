@@ -334,14 +334,15 @@ final class UpdateBooking
                 'location_address' => $locationData['location_address'] ?? '',
                 'location_city' => $locationData['location_city'] ?? '',
                 'location_phone' => $locationData['location_phone'] ?? '',
+                'location_timezone' => $locationData['location_timezone'] ?? 'Europe/Rome',
                 'sender_email' => $senderEmail,
                 'sender_name' => $senderName,
                 'old_start_time' => $oldStartTime,
                 'new_start_time' => $newStartTime,
                 'start_time' => $newStartTime,
                 'services' => implode(', ', array_column($booking['items'] ?? [], 'service_name')),
-                'manage_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/bookings',
-                'booking_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/booking',
+                'manage_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($locationData['business_slug'] ?? '') . '/my-bookings',
+                'booking_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($locationData['business_slug'] ?? '') . '/booking',
                 'locale' => $_ENV['DEFAULT_LOCALE'] ?? 'it',
             ];
 
@@ -367,7 +368,8 @@ final class UpdateBooking
                 l.phone as location_phone,
                 l.timezone as location_timezone,
                 b.name as business_name,
-                b.email as business_email
+                b.email as business_email,
+                b.slug as business_slug
              FROM locations l
              JOIN businesses b ON l.business_id = b.id
              WHERE l.id = ?'

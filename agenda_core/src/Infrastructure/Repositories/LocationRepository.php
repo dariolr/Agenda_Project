@@ -19,7 +19,8 @@ final class LocationRepository
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
                     l.allow_customer_choose_staff, l.is_default, l.is_active, l.created_at, l.updated_at,
                     b.name AS business_name,
-                    b.email AS business_email
+                    b.email AS business_email,
+                    b.slug AS business_slug
              FROM locations l
              JOIN businesses b ON l.business_id = b.id
              WHERE l.id = ? AND l.is_active = 1'

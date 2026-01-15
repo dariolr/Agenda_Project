@@ -8,6 +8,7 @@ use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use DateTimeImmutable;
+use DateTimeZone;
 
 /**
  * Queue booking reminder emails (scheduled for X hours before appointment).
@@ -72,12 +73,20 @@ final class QueueBookingReminder
         $recipientEmail['name'] = $this->extractFirstName($recipientEmail['name'] ?? null);
         $clientName = $this->extractFirstName($clientName);
 
-        // Calculate scheduled time
-        $startTime = new DateTimeImmutable($booking['start_time']);
+        // Calculate scheduled time using location timezone
+        $locationTz = new DateTimeZone($booking['location_timezone'] ?? 'Europe/Rome');
+        $startTime = new DateTimeImmutable($booking['start_time'], $locationTz);
+        $now = new DateTimeImmutable('now', $locationTz);
+        
+        // Don't send reminder if appointment has already passed
+        if ($startTime <= $now) {
+            return 0;
+        }
+        
         $scheduledAt = $startTime->modify("-{$hoursBefore} hours");
         
-        // Don't schedule if already past
-        if ($scheduledAt <= new DateTimeImmutable()) {
+        // Don't schedule if scheduled time is already past
+        if ($scheduledAt <= $now) {
             return 0;
         }
 
@@ -162,6 +171,7 @@ final class QueueBookingReminder
                 b.client_name,
                 b.status,
                 l.business_id,
+                l.timezone as location_timezone,
                 bus.name as business_name,
                 bus.email as business_email,
                 bus.slug as business_slug,

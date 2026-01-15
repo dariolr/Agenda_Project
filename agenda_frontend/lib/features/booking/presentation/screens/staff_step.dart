@@ -32,7 +32,7 @@ class _StaffStepState extends ConsumerState<StaffStep> {
     // Multi-staff UI solo se abilitata E più servizi selezionati
     final showMultiStaffUI =
         bookingConfig.allowMultiStaffBooking && services.length > 1;
-    final isLoading = staffAsync.isLoading;
+    final isLoading = staffAsync.isLoading || bookingState.isLoading;
 
     return Stack(
       children: [

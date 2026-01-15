@@ -984,14 +984,15 @@ final class CreateBooking
                 'location_address' => $location['address'] ?? '',
                 'location_city' => $location['city'] ?? '',
                 'location_phone' => $location['phone'] ?? '',
+                'location_timezone' => $location['timezone'] ?? 'Europe/Rome',
                 'sender_email' => $senderEmail,
                 'sender_name' => $senderName,
                 'start_time' => $booking['items'][0]['start_time'] ?? $booking['created_at'],
                 'services' => implode(', ', array_column($booking['items'] ?? [], 'service_name')),
                 'total_price' => $booking['total_price'] ?? 0,
                 'cancellation_hours' => $location['cancellation_hours'] ?? 24,
-                'manage_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/bookings',
-                'booking_url' => $_ENV['FRONTEND_URL'] ?? 'https://app.example.com' . '/booking',
+                'manage_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($location['business_slug'] ?? '') . '/my-bookings',
+                'booking_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($location['business_slug'] ?? '') . '/booking',
                 'locale' => $_ENV['DEFAULT_LOCALE'] ?? 'it',
             ];
 
