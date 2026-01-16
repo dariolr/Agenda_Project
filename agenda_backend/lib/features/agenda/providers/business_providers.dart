@@ -49,7 +49,7 @@ class CurrentBusinessId extends Notifier<int> {
   int build() {
     // ✅ Imposta come default il business selezionato (superadmin)
     // oppure il primo business disponibile.
-    final authState = ref.read(authProvider);
+    final authState = ref.watch(authProvider);
     final isSuperadmin = authState.user?.isSuperadmin ?? false;
 
     // Allinea al business selezionato quando cambia

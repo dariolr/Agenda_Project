@@ -19,11 +19,18 @@ class FormLoadingOverlay extends StatefulWidget {
 
 class _FormLoadingOverlayState extends State<FormLoadingOverlay> {
   bool _wasLoading = false;
+  ProviderContainer? _container;
 
   @override
   void initState() {
     super.initState();
     _wasLoading = widget.isLoading;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureContainer();
     if (_wasLoading) {
       _setGlobalLoading(true);
     }
@@ -46,8 +53,19 @@ class _FormLoadingOverlayState extends State<FormLoadingOverlay> {
     super.dispose();
   }
 
+  void _ensureContainer() {
+    if (_container != null) return;
+    try {
+      _container = ProviderScope.containerOf(context, listen: false);
+    } catch (_) {
+      _container = null;
+    }
+  }
+
   void _setGlobalLoading(bool isLoading) {
-    final container = ProviderScope.containerOf(context, listen: false);
+    _ensureContainer();
+    final container = _container;
+    if (container == null) return;
     final notifier = container.read(globalLoadingProvider.notifier);
     if (isLoading) {
       notifier.show();
