@@ -1571,13 +1571,7 @@ class ApiClient {
   /// Get all plannings for a staff member
   /// GET /v1/staff/{staffId}/plannings
   Future<List<Map<String, dynamic>>> getStaffPlannings(int staffId) async {
-    // ignore: avoid_print
-    print(
-      'DEBUG getStaffPlannings calling ${ApiConfig.staffPlannings(staffId)}',
-    );
     final response = await get(ApiConfig.staffPlannings(staffId));
-    // ignore: avoid_print
-    print('DEBUG getStaffPlannings raw response: $response');
     // _handleResponse wrappa le liste in {'_list': data}
     final plannings = response['_list'] as List<dynamic>? ?? [];
     return plannings.cast<Map<String, dynamic>>();

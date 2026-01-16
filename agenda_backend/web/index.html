@@ -31,8 +31,15 @@
 
   <title>agenda_backend</title>
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Versione app esposta a Flutter -->
+  <script>
+    window.appVersion = "20260116-3";
+  </script>
 </head>
 <body>
-  <script src="flutter_bootstrap.js?v=20260117-1" async></script></script>
+  <script>
+    document.write('<script src="flutter_bootstrap.js?v=' + window.appVersion + '" async><\/script>');
+  </script>
 </body>
 </html>

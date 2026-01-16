@@ -320,10 +320,6 @@ class _StaffAvailabilityScreenState
 
   /// Callback quando viene selezionato un planning
   void _onPlanningSelected(StaffPlanning? planning) {
-    // ignore: avoid_print
-    print(
-      'DEBUG _onPlanningSelected: planning=${planning?.id}, staffId=${planning?.staffId}',
-    );
     setState(() {
       _selectedPlanning = planning;
       if (planning != null) {
@@ -369,18 +365,9 @@ class _StaffAvailabilityScreenState
 
   /// Salva il planning corrente tramite API
   Future<void> _savePlanning(WidgetRef ref, int minutesPerSlot) async {
-    // ignore: avoid_print
-    print(
-      'DEBUG _savePlanning called: planningId=${_selectedPlanning?.id}, staffId=$_selectedStaffId',
-    );
     if (_selectedPlanning == null || _selectedStaffId == null) {
-      // ignore: avoid_print
-      print('DEBUG _savePlanning: ABORTED - planning or staff is null');
       return;
     }
-
-    // ignore: avoid_print
-    print('DEBUG _savePlanning: weeklySelections=$_weeklySelections');
 
     // Unifica le fasce orarie contigue
     final currentSchedule = WeeklySchedule.fromSlots(
@@ -538,81 +525,83 @@ class _StaffAvailabilityScreenState
           isLoading: isSaving,
           child: Column(
             children: [
-            // ── Toolbar azioni ───────────────────────────────
-            // Toolbar con selezione staff, planning e salvataggio
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(context.l10n.labelStaff),
-                  _StaffSelectorDropdown(
-                    staffList: staffList,
-                    selectedStaffId: _selectedStaffId,
-                    onSelected: (staffId) => _switchStaff(
-                      staffId,
-                      updateWeeklyState: _tabController.index == 0,
+              // ── Toolbar azioni ───────────────────────────────
+              // Toolbar con selezione staff, planning e salvataggio
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(context.l10n.labelStaff),
+                    _StaffSelectorDropdown(
+                      staffList: staffList,
+                      selectedStaffId: _selectedStaffId,
+                      onSelected: (staffId) => _switchStaff(
+                        staffId,
+                        updateWeeklyState: _tabController.index == 0,
+                      ),
                     ),
-                  ),
-                  // Planning selector (solo nella tab orario settimanale)
-                  AnimatedBuilder(
-                    animation: _tabController,
-                    builder: (context, _) {
-                      if (_tabController.index != 0 ||
-                          _selectedStaffId == null) {
-                        return const SizedBox.shrink();
-                      }
-                      return StaffPlanningSelector(
-                        staffId: _selectedStaffId!,
-                        selectedPlanningId: _selectedPlanning?.id,
-                        onPlanningSelected: _onPlanningSelected,
-                        onTemplateChanged: _onTemplateChanged,
-                      );
-                    },
-                  ),
-                  // Mostra pulsante salva solo nella tab orario settimanale
-                  AnimatedBuilder(
-                    animation: _tabController,
-                    builder: (context, _) {
-                      if (_tabController.index != 0) {
-                        return const SizedBox.shrink();
-                      }
-                      return FilledButton(
-                        onPressed:
-                            (_selectedStaffId == null ||
-                                _selectedPlanning == null ||
-                                isSaving)
-                            ? null
-                            : () => _savePlanning(ref, layout.minutesPerSlot),
-                        child: Text(context.l10n.availabilitySave),
-                      );
-                    },
-                  ),
-                ],
+                    // Planning selector (solo nella tab orario settimanale)
+                    AnimatedBuilder(
+                      animation: _tabController,
+                      builder: (context, _) {
+                        if (_tabController.index != 0 ||
+                            _selectedStaffId == null) {
+                          return const SizedBox.shrink();
+                        }
+                        return StaffPlanningSelector(
+                          staffId: _selectedStaffId!,
+                          selectedPlanningId: _selectedPlanning?.id,
+                          onPlanningSelected: _onPlanningSelected,
+                          onTemplateChanged: _onTemplateChanged,
+                        );
+                      },
+                    ),
+                    // Mostra pulsante salva solo nella tab orario settimanale
+                    AnimatedBuilder(
+                      animation: _tabController,
+                      builder: (context, _) {
+                        if (_tabController.index != 0) {
+                          return const SizedBox.shrink();
+                        }
+                        return FilledButton(
+                          onPressed:
+                              (_selectedStaffId == null ||
+                                  _selectedPlanning == null ||
+                                  isSaving)
+                              ? null
+                              : () => _savePlanning(ref, layout.minutesPerSlot),
+                          child: Text(context.l10n.availabilitySave),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            const Divider(height: 1),
+              const Divider(height: 1),
 
-            // ── TabBarView con editor settimanale ed eccezioni ────────────
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Tab 1: Editor orario settimanale
-                  _buildWeeklyScheduleTab(layout),
-                  // Tab 2: Calendario eccezioni
-                  if (_selectedStaffId != null)
-                    SingleChildScrollView(
-                      child: ExceptionCalendarView(staffId: _selectedStaffId!),
-                    )
-                  else
-                    const Center(child: CircularProgressIndicator()),
-                ],
+              // ── TabBarView con editor settimanale ed eccezioni ────────────
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // Tab 1: Editor orario settimanale
+                    _buildWeeklyScheduleTab(layout),
+                    // Tab 2: Calendario eccezioni
+                    if (_selectedStaffId != null)
+                      SingleChildScrollView(
+                        child: ExceptionCalendarView(
+                          staffId: _selectedStaffId!,
+                        ),
+                      )
+                    else
+                      const Center(child: CircularProgressIndicator()),
+                  ],
+                ),
               ),
-            ),
             ],
           ),
         ),

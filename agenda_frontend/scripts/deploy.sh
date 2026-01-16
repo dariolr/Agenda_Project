@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ###############################################################################
-# 1) Bump versione cache-busting in web/index.html (flutter_bootstrap.js?v=...)
+# 1) Bump versione in web/index.html (window.appVersion)
 ###############################################################################
 
 # Cartella in cui si trova questo script (script/)
@@ -19,10 +19,10 @@ fi
 
 today="$(date +%Y%m%d)"
 
-# Estrae l'attuale valore v=YYYYMMDD-N (se esiste)
+# Estrae l'attuale valore di window.appVersion (se esiste)
 current_v="$(
   perl -0777 -ne '
-    if (m/flutter_bootstrap\.js\?v=([0-9]{8}-[0-9]+)/) { print $1; }
+    if (m/window\.appVersion\s*=\s*"([0-9]{8}-[0-9]+)"/) { print $1; }
   ' "$INDEX_FILE" || true
 )"
 
@@ -44,23 +44,13 @@ fi
 
 new_v="${today}-${next_n}"
 
-# Aggiorna SOLO il tag script che punta a flutter_bootstrap.js
-# Se non c'è query, aggiunge ?v=...
+# Aggiorna window.appVersion
 NEW_V="$new_v" perl -0777 -i -pe '
   my $newv = $ENV{NEW_V};
-
-  s{
-    (<script\b[^>]*\bsrc=")                # group 1: inizio src="
-    (flutter_bootstrap\.js)                # group 2: file
-    (?:\?[^"]*)?                           # query attuale (opzionale)
-    ("[^>]*>\s*</script>)                  # group 3: chiusura src e tag
-  }{
-    my ($a,$b,$c) = ($1,$2,$3);
-    $a.$b."?v=".$newv.$c
-  }gex;
+  s{(window\.appVersion\s*=\s*")[0-9]{8}-[0-9]+(")}{\1$newv\2}g;
 ' "$INDEX_FILE"
 
-echo "OK: aggiornato $INDEX_FILE -> flutter_bootstrap.js?v=$new_v"
+echo "OK: aggiornato $INDEX_FILE -> window.appVersion = \"$new_v\""
 
 ###############################################################################
 # 2) Build Flutter Web (zsh)
@@ -77,7 +67,7 @@ fi
 cd "$ROOT_DIR"
 
 echo "Eseguo: $FLUTTER_BIN build web --release --no-tree-shake-icons --pwa-strategy=none --dart-define=API_BASE_URL=https://api.romeolab.it"
-"$FLUTTER_BIN" build web --release --no-tree-shake-icons --pwa-strategy=none --dart-define=API_BASE_URL=https://api.romeolab.it
+"$FLUTTER_BIN" build web --no-pub --release --no-tree-shake-icons --pwa-strategy=none --dart-define=API_BASE_URL=https://api.romeolab.it
 
 ###############################################################################
 # 3) Copia .htaccess nel build (necessario per SPA routing)

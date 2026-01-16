@@ -841,6 +841,35 @@ I permessi sono gestiti dalla tabella `business_users`:
 | API client | `lib/core/network/api_client.dart` |
 | Session listener | `lib/app/session_expired_listener.dart` |
 
+---
+
+## 🏷️ Versione App e Cache Busting (16/01/2026)
+
+### Singolo punto di configurazione
+La versione è definita **una sola volta** in `web/index.html`:
+
+```html
+<script>
+  window.appVersion = "YYYYMMDD-N";
+</script>
+```
+
+Questa variabile viene usata per:
+1. **Cache busting** — Il tag `flutter_bootstrap.js` viene generato dinamicamente con `?v=` dalla stessa variabile
+2. **Footer login** — Mostrato nella schermata di login come `vYYYYMMDD-N`
+
+### Come aggiornare la versione
+Modificare **solo** la riga:
+```javascript
+window.appVersion = "20260117-1";  // Formato: YYYYMMDD-N
+```
+
+### File di riferimento
+| File | Scopo |
+|------|-------|
+| `web/index.html` | Definizione `window.appVersion` |
+| `lib/core/utils/app_version.dart` | Utility `getAppVersion()` per leggere da JS |
+| `lib/features/auth/presentation/login_screen.dart` | Mostra versione nel footer |
 
 
 SOURCE OF TRUTH: STAFF_PLANNING_MODEL.md

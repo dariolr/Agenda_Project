@@ -62,19 +62,13 @@ class StaffPlanningsNotifier extends Notifier<StaffPlanningsState> {
 
   /// Carica i planning per uno staff specifico dall'API.
   Future<void> loadPlanningsForStaff(int staffId) async {
-    // ignore: avoid_print
-    print('DEBUG loadPlanningsForStaff staffId=$staffId');
     try {
       final api = ref.read(apiClientProvider);
       final planningsJson = await api.getStaffPlannings(staffId);
-      // ignore: avoid_print
-      print('DEBUG loadPlanningsForStaff response: $planningsJson');
 
       final plannings = planningsJson
           .map((json) => StaffPlanning.fromJson(json))
           .toList();
-      // ignore: avoid_print
-      print('DEBUG loadPlanningsForStaff parsed ${plannings.length} plannings');
 
       state = {...state, staffId: plannings};
     } catch (e, st) {
