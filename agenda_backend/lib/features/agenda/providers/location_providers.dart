@@ -55,7 +55,7 @@ final locationsAsyncProvider = FutureProvider<List<Location>>((ref) async {
 ///
 final locationsLoadedProvider = Provider<bool>((ref) {
   final asyncValue = ref.watch(locationsAsyncProvider);
-  return asyncValue.hasValue;
+  return asyncValue.hasValue || asyncValue.hasError;
 });
 
 ///
