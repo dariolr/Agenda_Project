@@ -12,6 +12,7 @@ import 'package:agenda_backend/features/agenda/providers/is_resizing_provider.da
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
+import 'package:agenda_backend/app/providers/global_loading_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -163,6 +164,8 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final currentLocationId = ref.watch(currentLocationIdProvider);
     final appointmentsAsync = ref.watch(appointmentsProvider);
     final currentBusinessId = ref.watch(currentBusinessIdProvider);
+    final globalLoadingCount = ref.watch(globalLoadingProvider);
+    final isGlobalLoading = globalLoadingCount > 0;
 
     // Ascolta cambi data per resettare il flag polling
     // (se l'utente cambia data durante il polling, deve mostrare loading)
@@ -295,7 +298,9 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
               Expanded(
                 child: isLoading
                     // Mostra loading indicator durante il caricamento
-                    ? const Center(child: CircularProgressIndicator())
+                    ? isGlobalLoading
+                        ? const SizedBox.shrink()
+                        : const Center(child: CircularProgressIndicator())
                     : !hasLocations
                     ? Center(
                         child: Text(
