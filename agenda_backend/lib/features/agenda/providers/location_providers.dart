@@ -9,71 +9,73 @@ import '../../business/providers/locations_providers.dart';
 import '../../business/providers/superadmin_selected_business_provider.dart';
 
 ///
-/// 🔹 ELENCO LOCATIONS (da API)
+/// 🔹 Provider per ottenere il business ID da usare per caricare le locations
+/// Restituisce null se non c'è un business valido da caricare
+///
+final businessIdForLocationsProvider = Provider<int?>((ref) {
+  final authState = ref.watch(authProvider);
+
+  // Non caricare se non autenticato
+  if (!authState.isAuthenticated) {
+    return null;
+  }
+
+  // Per superadmin: carica solo se ha selezionato un business
+  if (authState.user?.isSuperadmin ?? false) {
+    final selectedBusiness = ref.watch(superadminSelectedBusinessProvider);
+    return selectedBusiness; // null se non selezionato
+  }
+
+  // Per utente normale: usa il business da businessesProvider
+  final businessesAsync = ref.watch(businessesProvider);
+  return businessesAsync.whenOrNull(
+    data: (businesses) => businesses.isNotEmpty ? businesses.first.id : null,
+  );
+});
+
+///
+/// 🔹 ELENCO LOCATIONS (da API) - FutureProvider per caricamento asincrono
+///
+final locationsAsyncProvider = FutureProvider<List<Location>>((ref) async {
+  final businessId = ref.watch(businessIdForLocationsProvider);
+
+  // Se non c'è un business valido, ritorna lista vuota
+  if (businessId == null || businessId <= 0) {
+    return [];
+  }
+
+  final repository = ref.watch(locationsRepositoryProvider);
+  final locations = await repository.getByBusinessId(businessId);
+  // Filtra solo le location attive
+  return locations.where((l) => l.isActive).toList();
+});
+
+///
+/// 🔹 Provider per verificare se le locations sono caricate
+///
+final locationsLoadedProvider = Provider<bool>((ref) {
+  final asyncValue = ref.watch(locationsAsyncProvider);
+  return asyncValue.hasValue;
+});
+
+///
+/// 🔹 ELENCO LOCATIONS (sincrono per compatibilità)
 ///
 class LocationsNotifier extends Notifier<List<Location>> {
   @override
   List<Location> build() {
-    // Ascolta i cambiamenti dell'auth state
-    final authState = ref.watch(authProvider);
-
-    // Non caricare se non autenticato
-    if (!authState.isAuthenticated) {
-      ref.read(locationsLoadedProvider.notifier).setLoaded(false);
-      return [];
-    }
-
-    // Per superadmin: carica solo se ha selezionato un business
-    if (authState.user?.isSuperadmin ?? false) {
-      final selectedBusiness = ref.watch(superadminSelectedBusinessProvider);
-      if (selectedBusiness == null) {
-        // Superadmin nella lista business, non caricare locations
-        ref.read(locationsLoadedProvider.notifier).setLoaded(false);
-        return [];
-      }
-    }
-
-    // Verifica che ci sia un business ID valido (> 0) prima di caricare
-    final businessId = ref.watch(currentBusinessIdProvider);
-    if (businessId <= 0) {
-      // Business non ancora caricato, aspetta
-      ref.read(locationsLoadedProvider.notifier).setLoaded(false);
-      return [];
-    }
-
-    // Carica locations per utente normale o superadmin con business selezionato
-    _loadLocations();
-    return []; // Stato iniziale vuoto
-  }
-
-  Future<void> _loadLocations() async {
-    // Verifica autenticazione prima di chiamare API
-    final authState = ref.read(authProvider);
-    if (!authState.isAuthenticated) {
-      ref.read(locationsLoadedProvider.notifier).setLoaded(false);
-      return;
-    }
-
-    try {
-      // NOTA: Non resettiamo locationsLoaded qui perché viene già gestito
-      // nel build() o nel chiamante. Questo evita flash di "nessuna sede".
-      final business = ref.read(currentBusinessProvider);
-      final repository = ref.read(locationsRepositoryProvider);
-      final locations = await repository.getByBusinessId(business.id);
-      // Filtra solo le location attive
-      final activeLocations = locations.where((l) => l.isActive).toList();
-      state = activeLocations;
-    } catch (_) {
-      // In caso di errore, mantieni lo stato vuoto
-      state = [];
-    } finally {
-      ref.read(locationsLoadedProvider.notifier).setLoaded(true);
-    }
+    // Ascolta il FutureProvider
+    final asyncValue = ref.watch(locationsAsyncProvider);
+    return asyncValue.when(
+      data: (locations) => locations,
+      loading: () => [],
+      error: (_, __) => [],
+    );
   }
 
   /// Ricarica le locations dall'API
   Future<void> refresh() async {
-    await _loadLocations();
+    ref.invalidate(locationsAsyncProvider);
   }
 
   /// Crea una nuova location tramite API
@@ -220,66 +222,42 @@ final locationsProvider = NotifierProvider<LocationsNotifier, List<Location>>(
   LocationsNotifier.new,
 );
 
-class LocationsLoadedNotifier extends Notifier<bool> {
-  @override
-  bool build() => false;
-
-  void setLoaded(bool value) {
-    if (state == value) return;
-    state = value;
-  }
-}
-
-final locationsLoadedProvider = NotifierProvider<LocationsLoadedNotifier, bool>(
-  LocationsLoadedNotifier.new,
-);
-
 ///
 /// 🔹 LOCATION CORRENTE
 ///
 class CurrentLocationId extends Notifier<int> {
   @override
   int build() {
-    final businessId = ref.watch(currentBusinessIdProvider);
+    final businessId = ref.watch(businessIdForLocationsProvider);
+    final locations = ref.watch(locationsProvider);
 
-    // Aspetta che locationsProvider carichi i dati
-    ref.listen(locationsProvider, (previous, next) {
-      if (next.isNotEmpty && state == 0) {
-        // Carica da preferenze salvate (solo quando abbiamo businessId valido)
-        int? savedId;
-        if (businessId > 0) {
-          final prefs = ref.read(preferencesServiceProvider);
-          savedId = prefs.getCurrentLocationId(businessId);
-        }
+    // Se non abbiamo locations valide, ritorna 0
+    if (locations.isEmpty || businessId == null || businessId <= 0) {
+      return 0;
+    }
 
-        // Se c'è una preferenza salvata e la location esiste ancora, usala
-        if (savedId != null && next.any((l) => l.id == savedId)) {
-          state = savedId;
-        } else {
-          // Altrimenti usa la location di default
-          final defaultLocation = next.firstWhere(
-            (l) => l.isDefault,
-            orElse: () => next.first,
-          );
-          state = defaultLocation.id;
+    // Primo caricamento: prova a caricare da preferenze
+    final prefs = ref.read(preferencesServiceProvider);
+    final savedId = prefs.getCurrentLocationId(businessId);
 
-          // Se c'era un savedId non valido, aggiorna le preferenze
-          if (savedId != null && businessId > 0) {
-            ref
-                .read(preferencesServiceProvider)
-                .setCurrentLocationId(businessId, state);
-          }
-        }
-      }
-    });
-    return 0; // Inizializza a 0 per triggare il listen
+    // Se c'è una preferenza salvata e la location esiste ancora, usala
+    if (savedId != null && locations.any((l) => l.id == savedId)) {
+      return savedId;
+    }
+
+    // Altrimenti usa la location di default
+    final defaultLocation = locations.firstWhere(
+      (l) => l.isDefault,
+      orElse: () => locations.first,
+    );
+    return defaultLocation.id;
   }
 
   void set(int id) {
     state = id;
     // Salva in preferenze
-    final businessId = ref.read(currentBusinessIdProvider);
-    if (businessId > 0) {
+    final businessId = ref.read(businessIdForLocationsProvider);
+    if (businessId != null && businessId > 0) {
       ref.read(preferencesServiceProvider).setCurrentLocationId(businessId, id);
     }
   }

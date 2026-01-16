@@ -60,8 +60,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
-      debugPrint('🔀 ROUTER: extracted slug=$slug');
-
       // Estrae location ID dal query param (?location=4)
       final locationParam = state.uri.queryParameters['location'];
       final urlLocationId = locationParam != null
@@ -73,15 +71,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       Future.microtask(() {
         ref.read(routeSlugProvider.notifier).state = slug;
         ref.read(urlLocationIdProvider.notifier).state = urlLocationId;
-        debugPrint(
-          '🔀 ROUTER: routeSlugProvider updated to $slug, urlLocationId=$urlLocationId',
-        );
       });
 
       // Se siamo su /:slug senza sotto-path, redirect a /:slug/booking (mantieni query params)
       if (slug != null && pathSegments.length == 1) {
         final query = state.uri.query.isNotEmpty ? '?${state.uri.query}' : '';
-        debugPrint('🔀 ROUTER: redirecting to /$slug/booking$query');
         return '/$slug/booking$query';
       }
 
@@ -90,11 +84,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         final subPath = pathSegments.length > 1 ? pathSegments[1] : '';
 
         // Route protette che richiedono autenticazione
-        const protectedRoutes = {
-          'my-bookings',
-          'profile',
-          'change-password',
-        };
+        const protectedRoutes = {'my-bookings', 'profile', 'change-password'};
 
         // Se non autenticato e cerca di accedere a route protetta, redirect a login
         if (!isAuthenticated && protectedRoutes.contains(subPath)) {
@@ -300,9 +290,6 @@ class _AuthRefreshNotifier extends ChangeNotifier {
     _ref.listen(authProvider, (previous, next) {
       // Notifica solo quando lo status cambia (non per ogni cambio di state)
       if (previous?.status != next.status) {
-        debugPrint(
-          '🔀 ROUTER: auth status changed ${previous?.status} → ${next.status}',
-        );
         notifyListeners();
       }
     });

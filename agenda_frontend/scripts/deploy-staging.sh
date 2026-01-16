@@ -2,6 +2,10 @@
 set -euo pipefail
 
 ###############################################################################
+# DEPLOY STAGING - prenota-staging.romeolab.it
+###############################################################################
+
+###############################################################################
 # 1) Bump versione in web/index.html (window.appVersion)
 ###############################################################################
 
@@ -53,7 +57,7 @@ NEW_V="$new_v" perl -0777 -i -pe '
 echo "OK: aggiornato $INDEX_FILE -> window.appVersion = \"$new_v\""
 
 ###############################################################################
-# 2) Build Flutter Web (zsh)
+# 2) Build Flutter Web (zsh) - STAGING API
 ###############################################################################
 
 # Percorso assoluto a flutter, se necessario sovrascrivi FLUTTER_HOME
@@ -66,8 +70,8 @@ fi
 
 cd "$ROOT_DIR"
 
-echo "Eseguo: $FLUTTER_BIN build web --release --no-tree-shake-icons --pwa-strategy=none --dart-define=API_BASE_URL=https://api.romeolab.it"
-"$FLUTTER_BIN" build web --no-pub --release --no-tree-shake-icons --pwa-strategy=none --dart-define=API_BASE_URL=https://api.romeolab.it
+echo "Eseguo: $FLUTTER_BIN build web --release --no-tree-shake-icons --pwa-strategy=none --dart-define=API_BASE_URL=https://api-staging.romeolab.it"
+"$FLUTTER_BIN" build web --no-pub --release --no-tree-shake-icons --pwa-strategy=none --dart-define=API_BASE_URL=https://api-staging.romeolab.it
 
 ###############################################################################
 # 3) Copia .htaccess nel build (necessario per SPA routing)
@@ -83,6 +87,10 @@ else
   echo "WARN: .htaccess non trovato in web/, SPA routing potrebbe non funzionare"
 fi
 
-rsync -avz --delete "$ROOT_DIR/build/web/" siteground:www/gestionale.romeolab.it/public_html/
+###############################################################################
+# 4) Deploy su STAGING
+###############################################################################
 
-# Use the VSCode task named dart-analyze instead of running dart analyze directly.
+rsync -avz --delete "$ROOT_DIR/build/web/" siteground:www/prenota-staging.romeolab.it/public_html/
+
+echo "✅ Deploy STAGING completato: https://prenota-staging.romeolab.it"

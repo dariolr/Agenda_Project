@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 import '../../../core/models/user.dart';
 import '../../../core/network/api_client.dart';
 
@@ -22,8 +20,6 @@ class AuthRepository {
       email: email,
       password: password,
     );
-    debugPrint('LOGIN REPO: API response data=$data');
-    debugPrint('LOGIN REPO: client data=${data['client']}');
     return User.fromJson(data['client'] as Map<String, dynamic>);
   }
 

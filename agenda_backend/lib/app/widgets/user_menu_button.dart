@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/l10_extension.dart';
 import '../../core/models/user.dart';
+import '../../core/utils/app_version.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/business/providers/superadmin_selected_business_provider.dart';
 
@@ -160,6 +161,19 @@ class UserMenuButton extends ConsumerWidget {
               style: TextStyle(color: colorScheme.error),
             ),
           ],
+        ),
+      ),
+      const PopupMenuDivider(),
+      // Versione app
+      PopupMenuItem<String>(
+        enabled: false,
+        height: 32,
+        child: Text(
+          'v${getAppVersion()}',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            fontSize: 11,
+          ),
         ),
       ),
     ];

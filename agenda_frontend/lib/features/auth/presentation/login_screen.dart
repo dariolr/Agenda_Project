@@ -31,14 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.initState();
     // Pulisci eventuali errori residui quando si entra nella pagina
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('LOGIN initState - clearing error');
-      debugPrint(
-        'LOGIN initState - authState before clear: ${ref.read(authProvider)}',
-      );
       ref.read(authProvider.notifier).clearError();
-      debugPrint(
-        'LOGIN initState - authState after clear: ${ref.read(authProvider)}',
-      );
     });
   }
 
@@ -50,34 +43,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    debugPrint('LOGIN _handleLogin called');
-    debugPrint('LOGIN email: ${_emailController.text}');
-    debugPrint('LOGIN password length: ${_passwordController.text.length}');
-
     if (!_formKey.currentState!.validate()) {
-      debugPrint('LOGIN form validation FAILED');
       return;
     }
-    debugPrint('LOGIN form validation OK');
 
     // Attendi che il business sia caricato
     int? businessId = ref.read(currentBusinessIdProvider);
-    debugPrint('LOGIN businessId (sync): $businessId');
 
     if (businessId == null) {
       // Il business potrebbe non essere ancora caricato, aspettiamo
-      debugPrint('LOGIN waiting for business to load...');
       try {
         final business = await ref.read(currentBusinessProvider.future);
         businessId = business?.id;
-        debugPrint('LOGIN businessId (async): $businessId');
       } catch (e) {
         debugPrint('LOGIN business load failed: $e');
       }
     }
 
     if (businessId == null) {
-      debugPrint('LOGIN businessId is NULL - showing error');
       // Se non c'è un business, mostra errore
       if (mounted) {
         await FeedbackDialog.showError(
