@@ -12,6 +12,23 @@
       "type": "shell",
       "command": "lsof -t -iTCP:8081 -sTCP:LISTEN | xargs kill -9",
       "problemMatcher": []
+    },
+    {
+      "label": "Deploy agenda_backend",
+      "type": "shell",
+      "command": "zsh",
+      "args": [
+        "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_backend/scripts/deploy.sh"
+      ],
+      "options": {
+        "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_backend"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
     }
   ]
 }
