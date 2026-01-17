@@ -14,7 +14,7 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
-import '../../../../core/widgets/form_loading_overlay.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
@@ -453,7 +453,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-            child: FormLoadingOverlay(
+            child: LocalLoadingOverlay(
               isLoading: _isSaving,
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -510,7 +510,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         top: false,
         left: false,
         right: false,
-        child: FormLoadingOverlay(
+        child: LocalLoadingOverlay(
           isLoading: _isSaving,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1442,7 +1442,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             extraBlockedMinutes: blockedExtraMinutes,
             extraProcessingMinutes: processingExtraMinutes,
           );
-          ref.read(appointmentsProvider.notifier).updateAppointment(updated);
+          await ref
+              .read(appointmentsProvider.notifier)
+              .updateAppointment(updated);
           scrollTarget ??= updated;
         } else {
           // Crea nuovo appuntamento (aggiunto durante la modifica)

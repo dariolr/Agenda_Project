@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/staff.dart';
+import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
 
 class StaffStep extends ConsumerStatefulWidget {
@@ -34,13 +35,21 @@ class _StaffStepState extends ConsumerState<StaffStep> {
         bookingConfig.allowMultiStaffBooking && services.length > 1;
     final isLoading = staffAsync.isLoading || bookingState.isLoading;
 
+    if (staffAsync.hasError) {
+      return CenteredErrorView(
+        title: l10n.errorLoadingStaff,
+        onRetry: () => ref.refresh(staffProvider),
+        retryLabel: l10n.actionRetry,
+      );
+    }
+
     return Stack(
       children: [
         Column(
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -65,7 +74,7 @@ class _StaffStepState extends ConsumerState<StaffStep> {
             Expanded(
               child: staffAsync.when(
                 loading: () => const SizedBox.shrink(),
-                error: (e, _) => Center(child: Text(l10n.errorLoadingStaff)),
+                error: (e, _) => const SizedBox.shrink(),
                 data: (staffList) {
                   if (staffList.isEmpty) {
                     return Center(child: Text(l10n.staffEmpty));
@@ -287,11 +296,35 @@ class _StaffStepState extends ConsumerState<StaffStep> {
         ],
       ),
       child: SafeArea(
-        child: ElevatedButton(
-          onPressed: canProceed
-              ? () => ref.read(bookingFlowProvider.notifier).nextStep()
-              : null,
-          child: Text(l10n.actionNext),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Info selezione
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  l10n.servicesSelected(bookingState.request.services.length),
+                  style: theme.textTheme.bodyMedium,
+                ),
+                if (bookingState.request.services.isNotEmpty)
+                  Text(
+                    bookingState.request.formattedTotalPrice,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: canProceed
+                  ? () => ref.read(bookingFlowProvider.notifier).nextStep()
+                  : null,
+              child: Text(l10n.actionNext),
+            ),
+          ],
         ),
       ),
     );

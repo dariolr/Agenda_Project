@@ -36,10 +36,6 @@ class _ClientsSortDropdownState extends ConsumerState<ClientsSortDropdown> {
         return l10n.sortByLastNameAsc;
       case ClientSortOption.lastNameDesc:
         return l10n.sortByLastNameDesc;
-      case ClientSortOption.lastVisitDesc:
-        return l10n.sortByLastVisitDesc;
-      case ClientSortOption.lastVisitAsc:
-        return l10n.sortByLastVisitAsc;
       case ClientSortOption.createdAtDesc:
         return l10n.sortByCreatedAtDesc;
       case ClientSortOption.createdAtAsc:
@@ -78,14 +74,6 @@ class _ClientsSortDropdownState extends ConsumerState<ClientsSortDropdown> {
           AdaptiveDropdownItem(
             value: ClientSortOption.lastNameDesc,
             child: Text(l10n.sortByLastNameDesc),
-          ),
-          AdaptiveDropdownItem(
-            value: ClientSortOption.lastVisitDesc,
-            child: Text(l10n.sortByLastVisitDesc),
-          ),
-          AdaptiveDropdownItem(
-            value: ClientSortOption.lastVisitAsc,
-            child: Text(l10n.sortByLastVisitAsc),
           ),
           AdaptiveDropdownItem(
             value: ClientSortOption.createdAtDesc,

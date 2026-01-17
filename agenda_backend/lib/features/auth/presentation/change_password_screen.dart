@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/l10_extension.dart';
-import '../../../core/widgets/form_loading_overlay.dart';
+import '../../../core/widgets/local_loading_overlay.dart';
 import '../providers/auth_provider.dart';
 
 /// Schermata per cambiare la password dell'utente autenticato.
@@ -104,7 +104,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
-              child: FormLoadingOverlay(
+              child: LocalLoadingOverlay(
                 isLoading: _isLoading,
                 child: Form(
                   key: _formKey,

@@ -157,20 +157,6 @@ List<Client> _sortClients(List<Client> clients, ClientSortOption sort) {
           (a.lastName ?? '').toLowerCase(),
         ),
       );
-    case ClientSortOption.lastVisitDesc:
-      sorted.sort((a, b) {
-        if (a.lastVisit == null && b.lastVisit == null) return 0;
-        if (a.lastVisit == null) return 1;
-        if (b.lastVisit == null) return -1;
-        return b.lastVisit!.compareTo(a.lastVisit!);
-      });
-    case ClientSortOption.lastVisitAsc:
-      sorted.sort((a, b) {
-        if (a.lastVisit == null && b.lastVisit == null) return 0;
-        if (a.lastVisit == null) return 1;
-        if (b.lastVisit == null) return -1;
-        return a.lastVisit!.compareTo(b.lastVisit!);
-      });
     case ClientSortOption.createdAtDesc:
       sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     case ClientSortOption.createdAtAsc:

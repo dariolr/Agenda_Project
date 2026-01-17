@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/business.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../../core/widgets/form_loading_overlay.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../providers/business_providers.dart';
 
 /// Dialog per modificare un business esistente (solo superadmin).
@@ -107,7 +107,7 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
       title: const Text('Modifica Business'),
       content: SizedBox(
         width: 400,
-        child: FormLoadingOverlay(
+        child: LocalLoadingOverlay(
           isLoading: _isLoading,
           child: Form(
             key: _formKey,

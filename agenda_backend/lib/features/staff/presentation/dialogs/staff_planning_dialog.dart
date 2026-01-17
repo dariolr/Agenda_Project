@@ -4,7 +4,7 @@ import 'package:agenda_backend/core/models/staff_planning.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
-import 'package:agenda_backend/core/widgets/form_loading_overlay.dart';
+import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
 import 'package:agenda_backend/core/widgets/labeled_form_field.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:flutter/material.dart';
@@ -372,7 +372,7 @@ class _StaffPlanningDialogState extends ConsumerState<_StaffPlanningDialog> {
       ),
     ];
 
-    final loadingContent = FormLoadingOverlay(
+    final loadingContent = LocalLoadingOverlay(
       isLoading: _isSaving,
       child: content,
     );

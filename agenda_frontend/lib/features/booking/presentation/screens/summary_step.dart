@@ -35,7 +35,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -53,7 +53,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                   color: theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
             ],
           ),
         ),

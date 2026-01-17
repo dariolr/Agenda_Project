@@ -290,8 +290,6 @@
   "sortByNameDesc": "Name (Z-A)",
   "sortByLastNameAsc": "Last name (A-Z)",
   "sortByLastNameDesc": "Last name (Z-A)",
-  "sortByLastVisitDesc": "Last visit (recent)",
-  "sortByLastVisitAsc": "Last visit (oldest)",
   "sortByCreatedAtDesc": "Created (newest)",
   "sortByCreatedAtAsc": "Created (oldest)",
   "clientAppointmentsTitle": "{clientName}'s appointments",

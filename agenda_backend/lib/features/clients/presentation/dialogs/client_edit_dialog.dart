@@ -8,7 +8,7 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
-import '../../../../core/widgets/form_loading_overlay.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../domain/clients.dart';
 import '../../providers/clients_providers.dart';
 import '../widgets/client_form.dart';
@@ -71,7 +71,7 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
         insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-          child: FormLoadingOverlay(
+          child: LocalLoadingOverlay(
             isLoading: _isSaving,
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -267,7 +267,7 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-          return FormLoadingOverlay(
+          return LocalLoadingOverlay(
             isLoading: _isSaving,
             child: SizedBox(
               height: constraints.maxHeight,

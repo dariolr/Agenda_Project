@@ -12,12 +12,6 @@ enum ClientSortOption {
   /// Ordina per cognome (Z-A)
   lastNameDesc,
 
-  /// Ordina per ultima visita (più recenti prima)
-  lastVisitDesc,
-
-  /// Ordina per ultima visita (meno recenti prima)
-  lastVisitAsc,
-
   /// Ordina per data creazione (nuovi prima)
   createdAtDesc,
 

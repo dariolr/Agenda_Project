@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/models/time_slot.dart';
+import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
 
 class DateTimeStep extends ConsumerStatefulWidget {
@@ -105,6 +106,18 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
     final availableDates = availableDatesAsync.value ?? <DateTime>{};
     final isLoading = availableDatesAsync.isLoading || slotsAsync.isLoading;
 
+    if (availableDatesAsync.hasError || slotsAsync.hasError) {
+      return CenteredErrorView(
+        title: l10n.errorLoadingAvailability,
+        onRetry: () {
+          ref.read(availableDatesProvider.notifier).resetForNewSelection();
+          ref.invalidate(availableSlotsProvider);
+          ref.invalidate(firstAvailableDateProvider);
+        },
+        retryLabel: l10n.actionRetry,
+      );
+    }
+
     // Imposta automaticamente la prima data disponibile all'ingresso nello step
     _tryInitializeSelectedDate(firstDateAsync);
 
@@ -114,7 +127,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -152,8 +165,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                     if (!isLoading)
                       slotsAsync.when(
                         loading: () => const SizedBox.shrink(),
-                        error: (e, _) =>
-                            Center(child: Text(l10n.errorLoadingAvailability)),
+                        error: (e, _) => const SizedBox.shrink(),
                         data: (slots) => slots.isEmpty
                             ? Padding(
                                 padding: const EdgeInsets.all(32),
@@ -170,10 +182,11 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                                     Text(
                                       l10n.dateTimeNoSlots,
                                       textAlign: TextAlign.center,
-                                      style: theme.textTheme.bodyLarge?.copyWith(
-                                        color: theme.colorScheme.onSurface
-                                            .withOpacity(0.6),
-                                      ),
+                                      style: theme.textTheme.bodyLarge
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withOpacity(0.6),
+                                          ),
                                     ),
                                     const SizedBox(height: 36),
                                     _buildGoToAvailableDateButton(

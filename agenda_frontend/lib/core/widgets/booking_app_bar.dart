@@ -66,7 +66,7 @@ class BookingAppBar extends ConsumerWidget implements PreferredSizeWidget {
               icon: Icon(
                 Icons.arrow_back_ios_new,
                 size: 20,
-                color: colorScheme.onSurface,
+                color: colorScheme.primary,
               ),
               onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
               tooltip: MaterialLocalizations.of(context).backButtonTooltip,
@@ -232,13 +232,14 @@ class _MenuItemContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final color = isDestructive ? Colors.red : colorScheme.onSurface;
+    final iconColor = isDestructive ? colorScheme.error : colorScheme.primary;
+    final textColor = isDestructive ? colorScheme.error : colorScheme.onSurface;
 
     return Row(
       children: [
-        Icon(icon, size: 20, color: color),
+        Icon(icon, size: 20, color: iconColor),
         const SizedBox(width: 12),
-        Text(label, style: TextStyle(color: color)),
+        Text(label, style: TextStyle(color: textColor)),
       ],
     );
   }
@@ -278,7 +279,7 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
               icon: Icon(
                 Icons.arrow_back_ios_new,
                 size: 20,
-                color: colorScheme.onSurface,
+                color: colorScheme.primary,
               ),
               onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
             )

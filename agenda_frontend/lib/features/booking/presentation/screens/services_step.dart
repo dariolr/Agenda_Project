@@ -5,6 +5,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
 
 class ServicesStep extends ConsumerWidget {
@@ -19,13 +20,17 @@ class ServicesStep extends ConsumerWidget {
     final selectedServices = bookingState.request.services;
     final isLoading = servicesDataAsync.isLoading;
 
+    if (servicesDataAsync.hasError) {
+      return _buildErrorWidget(context, ref, servicesDataAsync.error!);
+    }
+
     return Stack(
       children: [
         Column(
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -50,7 +55,7 @@ class ServicesStep extends ConsumerWidget {
             Expanded(
               child: servicesDataAsync.when(
                 loading: () => const SizedBox.shrink(),
-                error: (e, _) => _buildErrorWidget(context, ref, e),
+                error: (e, _) => const SizedBox.shrink(),
                 data: (data) {
                   if (data.isEmpty) {
                     return _EmptyView(
@@ -376,49 +381,12 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = context.l10n;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 64,
-              color: theme.colorScheme.error.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (subtitle.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            if (onRetry != null) ...[
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: Text(l10n.actionRetry),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return CenteredErrorView(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      onRetry: onRetry,
+      retryLabel: context.l10n.actionRetry,
     );
   }
 }

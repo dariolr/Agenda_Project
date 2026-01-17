@@ -7,7 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/utils/app_version.dart';
 import '../../../core/widgets/feedback_dialog.dart';
-import '../../../core/widgets/form_loading_overlay.dart';
+import '../../../app/providers/global_loading_provider.dart';
+import '../../../core/widgets/global_loading_overlay.dart';
 import '../providers/auth_provider.dart';
 
 /// Schermata di login per il gestionale.
@@ -46,6 +47,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
+    ref.read(globalLoadingProvider.notifier).show();
 
     try {
       final success = await ref
@@ -65,15 +67,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       } else {
         setState(() {
           _errorMessage = context.l10n.authLoginFailed;
-          _isLoading = false;
         });
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _errorMessage = context.l10n.authLoginFailed;
-        _isLoading = false;
       });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      ref.read(globalLoadingProvider.notifier).hide();
     }
   }
 
@@ -90,15 +95,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: AutofillGroup(
-              child: FormLoadingOverlay(
-                isLoading: _isLoading,
+    return GlobalLoadingOverlay(
+      child: Scaffold(
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: AutofillGroup(
                 child: Form(
                   key: _formKey,
                   child: Column(

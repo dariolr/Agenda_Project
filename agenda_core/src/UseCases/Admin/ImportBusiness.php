@@ -179,6 +179,16 @@ final class ImportBusiness
             $stmt->execute([$businessId]);
             $stats['deleted']['password_reset_token_clients'] = $stmt->rowCount();
             
+            // Salva le password esistenti dei clienti PRIMA di eliminarli
+            $existingClientPasswords = [];
+            $stmt = $pdo->prepare('SELECT email, password_hash FROM clients WHERE business_id = ? AND password_hash IS NOT NULL');
+            $stmt->execute([$businessId]);
+            while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+                if (!empty($row['email']) && !empty($row['password_hash'])) {
+                    $existingClientPasswords[strtolower($row['email'])] = $row['password_hash'];
+                }
+            }
+            
             // Elimina client_sessions (solo se non skip)
             if (!$skipSessionsAndNotifications) {
                 $stmt = $pdo->prepare('
@@ -345,9 +355,15 @@ final class ImportBusiness
             }
             $stats['imported']['staff_planning_week_template'] = count($exportData['staff_planning_week_template'] ?? []);
             
-            // Clients (senza password)
+            // Clients (preserva password esistenti)
             foreach ($exportData['clients'] ?? [] as $row) {
-                $row['password_hash'] = null; // Non importiamo password
+                // Controlla se esiste una password salvata per questa email
+                $email = strtolower($row['email'] ?? '');
+                if (!empty($email) && isset($existingClientPasswords[$email])) {
+                    $row['password_hash'] = $existingClientPasswords[$email];
+                } else {
+                    $row['password_hash'] = null; // Non importiamo password da export
+                }
                 $this->insertRow($pdo, 'clients', $row);
             }
             $stats['imported']['clients'] = count($exportData['clients'] ?? []);

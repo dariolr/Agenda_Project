@@ -18,7 +18,7 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
-import '../../../../core/widgets/form_loading_overlay.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
@@ -378,7 +378,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-            child: FormLoadingOverlay(
+            child: LocalLoadingOverlay(
               isLoading: _isSaving,
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -436,7 +436,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return SafeArea(
       top: false,
-      child: FormLoadingOverlay(
+      child: LocalLoadingOverlay(
         isLoading: _isSaving,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

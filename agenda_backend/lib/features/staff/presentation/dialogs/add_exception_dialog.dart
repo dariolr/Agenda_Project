@@ -10,7 +10,7 @@ import '../../../../core/models/availability_exception.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
-import '../../../../core/widgets/form_loading_overlay.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../agenda/providers/layout_config_provider.dart';
 import '../../presentation/staff_availability_screen.dart';
 import '../../providers/availability_exceptions_provider.dart';
@@ -475,7 +475,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 500, maxWidth: 600),
-            child: FormLoadingOverlay(
+            child: LocalLoadingOverlay(
               isLoading: _isSaving,
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -518,7 +518,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
         builder: (context, constraints) {
           final isKeyboardOpen =
               MediaQuery.of(context).viewInsets.bottom > 0;
-          return FormLoadingOverlay(
+          return LocalLoadingOverlay(
             isLoading: _isSaving,
             child: SizedBox(
               height: constraints.maxHeight,

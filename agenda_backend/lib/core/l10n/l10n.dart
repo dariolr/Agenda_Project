@@ -1968,26 +1968,6 @@ class L10n {
     );
   }
 
-  /// `Ultima visita (recenti)`
-  String get sortByLastVisitDesc {
-    return Intl.message(
-      'Ultima visita (recenti)',
-      name: 'sortByLastVisitDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Ultima visita (meno recenti)`
-  String get sortByLastVisitAsc {
-    return Intl.message(
-      'Ultima visita (meno recenti)',
-      name: 'sortByLastVisitAsc',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Data creazione (nuovi)`
   String get sortByCreatedAtDesc {
     return Intl.message(

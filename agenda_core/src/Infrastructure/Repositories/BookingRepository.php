@@ -480,7 +480,7 @@ final class BookingRepository
 
         $stmt = $this->db->getPdo()->prepare(
             "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
-                    bi.start_time, bi.end_time, bi.extra_blocked_minutes, bi.extra_processing_minutes,
+                    bi.start_time, bi.end_time, bi.price, bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.created_at, bi.updated_at,
                     b.status AS booking_status, b.client_name, b.notes AS booking_notes, b.client_id, b.business_id, b.source,
                     c.first_name AS client_first_name, c.last_name AS client_last_name,
@@ -511,7 +511,7 @@ final class BookingRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
-                    bi.start_time, bi.end_time, bi.extra_blocked_minutes, bi.extra_processing_minutes,
+                    bi.start_time, bi.end_time, bi.price, bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.created_at, bi.updated_at,
                     b.status AS booking_status, b.client_name, b.notes AS booking_notes, b.client_id, b.business_id, b.source,
                     c.first_name AS client_first_name, c.last_name AS client_last_name,

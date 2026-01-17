@@ -755,12 +755,6 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "sortByLastNameAsc": MessageLookupByLibrary.simpleMessage("Cognome (A-Z)"),
     "sortByLastNameDesc": MessageLookupByLibrary.simpleMessage("Cognome (Z-A)"),
-    "sortByLastVisitAsc": MessageLookupByLibrary.simpleMessage(
-      "Ultima visita (meno recenti)",
-    ),
-    "sortByLastVisitDesc": MessageLookupByLibrary.simpleMessage(
-      "Ultima visita (recenti)",
-    ),
     "sortByNameAsc": MessageLookupByLibrary.simpleMessage("Nome (A-Z)"),
     "sortByNameDesc": MessageLookupByLibrary.simpleMessage("Nome (Z-A)"),
     "sortByTitle": MessageLookupByLibrary.simpleMessage("Ordina per"),
