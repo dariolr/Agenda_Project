@@ -94,14 +94,16 @@ class ClientCard extends ConsumerWidget {
             ),
             // Colonna destra: icone allineate verticalmente
             // Il delete button deve restare sempre allineato in alto a destra
-            Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _DeleteButton(client: client),
-                const SizedBox(height: 8),
-                _AppointmentsButton(client: client),
-              ],
+            IntrinsicWidth(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _DeleteButton(client: client),
+                  const SizedBox(height: 8),
+                  _AppointmentsButton(client: client),
+                ],
+              ),
             ),
           ],
         ),
@@ -192,38 +194,40 @@ class _AppointmentsButton extends ConsumerWidget {
     final past = appointments.length - upcoming;
     final total = appointments.length;
 
-    return InkWell(
-      onTap: () => showClientAppointmentsDialog(context, ref, client: client),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.calendar_month_outlined,
-              size: 18,
-              color: theme.colorScheme.primary.withOpacity(0.7),
-            ),
-            if (total > 0) ...[
-              const SizedBox(width: 6),
-              // Badge appuntamenti futuri (verde)
-              if (upcoming > 0)
-                _AppointmentBadge(
-                  count: upcoming,
-                  color: Colors.green,
-                  icon: Icons.arrow_upward,
-                ),
-              if (upcoming > 0 && past > 0) const SizedBox(width: 4),
-              // Badge appuntamenti passati (grigio)
-              if (past > 0)
-                _AppointmentBadge(
-                  count: past,
-                  color: theme.colorScheme.onSurfaceVariant,
-                  icon: Icons.arrow_downward,
-                ),
+    return SizedBox(
+      height: 32,
+      child: InkWell(
+        onTap: () => showClientAppointmentsDialog(context, ref, client: client),
+        borderRadius: BorderRadius.circular(8),
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.calendar_month_outlined,
+                size: 18,
+                color: theme.colorScheme.primary.withOpacity(0.7),
+              ),
+              if (total > 0) ...[
+                const SizedBox(width: 6),
+                // Badge appuntamenti futuri (verde)
+                if (upcoming > 0)
+                  _AppointmentBadge(
+                    count: upcoming,
+                    color: Colors.green,
+                    icon: Icons.arrow_upward,
+                  ),
+                if (upcoming > 0 && past > 0) const SizedBox(width: 4),
+                // Badge appuntamenti passati (grigio)
+                if (past > 0)
+                  _AppointmentBadge(
+                    count: past,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    icon: Icons.arrow_downward,
+                  ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -280,14 +284,17 @@ class _DeleteButton extends ConsumerWidget {
     return SizedBox(
       width: 32,
       height: 32,
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        iconSize: 18,
-        icon: Icon(
-          Icons.delete_outline,
-          color: theme.colorScheme.error.withOpacity(0.7),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          iconSize: 18,
+          icon: Icon(
+            Icons.delete_outline,
+            color: theme.colorScheme.error.withOpacity(0.7),
+          ),
+          onPressed: () => _onDelete(context, ref),
         ),
-        onPressed: () => _onDelete(context, ref),
       ),
     );
   }

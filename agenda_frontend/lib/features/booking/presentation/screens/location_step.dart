@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/location.dart';
+import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/locations_provider.dart';
 
@@ -31,13 +32,21 @@ class LocationStep extends ConsumerWidget {
     final selectedLocation = ref.watch(selectedLocationProvider);
     final isLoading = locationsAsync.isLoading;
 
+    if (locationsAsync.hasError) {
+      return CenteredErrorView(
+        title: l10n.errorGeneric,
+        onRetry: () => ref.read(locationsProvider.notifier).refresh(),
+        retryLabel: l10n.actionRetry,
+      );
+    }
+
     return Stack(
       children: [
         Column(
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -62,27 +71,7 @@ class LocationStep extends ConsumerWidget {
             Expanded(
               child: locationsAsync.when(
                 loading: () => const SizedBox.shrink(),
-                error: (e, _) => Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(l10n.errorGeneric),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: () =>
-                            ref.read(locationsProvider.notifier).refresh(),
-                        icon: const Icon(Icons.refresh),
-                        label: Text(l10n.actionRetry),
-                      ),
-                    ],
-                  ),
-                ),
+                error: (e, _) => const SizedBox.shrink(),
                 data: (locations) {
                   if (locations.isEmpty) {
                     return Center(

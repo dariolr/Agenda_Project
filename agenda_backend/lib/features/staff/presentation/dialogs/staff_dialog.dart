@@ -12,7 +12,7 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
-import '../../../../core/widgets/form_loading_overlay.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../agenda/providers/location_providers.dart';
 import '../../../services/presentation/widgets/service_eligibility_selector.dart';
@@ -506,7 +506,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-          child: FormLoadingOverlay(
+          child: LocalLoadingOverlay(
             isLoading: _isSaving,
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -544,7 +544,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-          return FormLoadingOverlay(
+          return LocalLoadingOverlay(
             isLoading: _isSaving,
             child: SizedBox(
               height: constraints.maxHeight,

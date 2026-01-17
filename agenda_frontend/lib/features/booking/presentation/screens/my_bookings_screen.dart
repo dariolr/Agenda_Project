@@ -77,15 +77,6 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Text(
-                        l10n.myBookings,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
                     Expanded(
                       child: TabBarView(
                         controller: _tabController,
@@ -435,14 +426,17 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                       ),
                       const SizedBox(width: 8),
                       OutlinedButton(
-                        onPressed:
-                            _isCancelling ? null : () => _handleCancel(context, ref),
+                        onPressed: _isCancelling
+                            ? null
+                            : () => _handleCancel(context, ref),
                         style: cancelButtonStyle,
                         child: _isCancelling
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : Text(context.l10n.actionDelete),
                       ),

@@ -305,7 +305,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
   }
 
   /// Aggiorna un appuntamento esistente (match per id)
-  void updateAppointment(Appointment updated) async {
+  Future<void> updateAppointment(Appointment updated) async {
     final currentList = state.value;
     if (currentList == null) return;
 

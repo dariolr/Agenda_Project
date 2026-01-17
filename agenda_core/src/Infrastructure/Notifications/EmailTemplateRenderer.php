@@ -970,7 +970,7 @@ TEXT,
                                 <strong style="color:#333;">{{business_name}}</strong>
                             </p>
                             <p style="margin:0 0 8px;color:#666;">
-                                <span style="color:#666;font-size:13px;">URL prenotazioni</span><br>
+                                <span style="color:#666;font-size:13px;">URL di prenotazione online per i propri clienti</span><br>
                                 <a href="{{booking_url}}" style="color:#6366f1;font-weight:500;">{{booking_url}}</a>
                             </p>
                             <p style="margin:15px 0 0;font-size:14px;color:#666;">

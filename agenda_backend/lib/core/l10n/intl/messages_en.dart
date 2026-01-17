@@ -704,12 +704,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "sortByLastNameDesc": MessageLookupByLibrary.simpleMessage(
       "Last name (Z-A)",
     ),
-    "sortByLastVisitAsc": MessageLookupByLibrary.simpleMessage(
-      "Last visit (oldest)",
-    ),
-    "sortByLastVisitDesc": MessageLookupByLibrary.simpleMessage(
-      "Last visit (recent)",
-    ),
     "sortByNameAsc": MessageLookupByLibrary.simpleMessage("Name (A-Z)"),
     "sortByNameDesc": MessageLookupByLibrary.simpleMessage("Name (Z-A)"),
     "sortByTitle": MessageLookupByLibrary.simpleMessage("Sort by"),

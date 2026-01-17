@@ -10,7 +10,7 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
-import '../../../../core/widgets/form_loading_overlay.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../utils/service_validators.dart';
@@ -162,7 +162,7 @@ Future<void> showCategoryDialog(
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-              child: FormLoadingOverlay(
+              child: LocalLoadingOverlay(
                 isLoading: isSaving,
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -196,7 +196,7 @@ Future<void> showCategoryDialog(
         child: LayoutBuilder(
           builder: (ctx, constraints) {
             final isKeyboardOpen = MediaQuery.of(ctx).viewInsets.bottom > 0;
-            return FormLoadingOverlay(
+            return LocalLoadingOverlay(
               isLoading: isSaving,
               child: SizedBox(
                 height: constraints.maxHeight,

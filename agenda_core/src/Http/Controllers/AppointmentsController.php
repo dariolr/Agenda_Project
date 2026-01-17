@@ -377,6 +377,7 @@ final class AppointmentsController
             'service_variant_id' => (int) $appointment['service_variant_id'],
             'start_time' => $appointment['start_time'],
             'end_time' => $appointment['end_time'],
+            'price' => isset($appointment['price']) ? (float) $appointment['price'] : null,
             'extra_blocked_minutes' => (int) ($appointment['extra_blocked_minutes'] ?? 0),
             'extra_processing_minutes' => (int) ($appointment['extra_processing_minutes'] ?? 0),
             'created_at' => $appointment['created_at'],

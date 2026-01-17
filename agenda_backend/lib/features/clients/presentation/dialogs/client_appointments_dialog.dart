@@ -19,6 +19,7 @@ Future<void> showClientAppointmentsDialog(
   required Client client,
 }) async {
   final formFactor = ref.read(formFactorProvider);
+  ref.invalidate(clientAppointmentsProvider(client.id));
 
   if (formFactor == AppFormFactor.desktop) {
     await showDialog(
@@ -214,12 +215,24 @@ class _AppointmentTile extends ConsumerWidget {
               ],
             ),
           ),
-          // Durata
-          Text(
-            '${appointment.totalDuration} min',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          // Durata + prezzo
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${appointment.totalDuration} min',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (appointment.formattedPrice.isNotEmpty)
+                Text(
+                  appointment.formattedPrice,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
           ),
         ],
       ),

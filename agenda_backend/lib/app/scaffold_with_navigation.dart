@@ -140,34 +140,34 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           actionsPadding: const EdgeInsets.only(right: 6),
           actions: buildActions(),
         ),
-        body: Row(
-          children: [
-            Theme(
-              data: Theme.of(context).copyWith(
-                splashColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-                hoverColor: Colors.transparent,
+          body: Row(
+            children: [
+              Theme(
+                data: Theme.of(context).copyWith(
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                ),
+                child: NavigationRail(
+                  selectedIndex: navigationShell.currentIndex,
+                  onDestinationSelected: (index) =>
+                      _handleNavTap(context, index, ref),
+                  labelType: NavigationRailLabelType.none,
+                  useIndicator: false, // disattiva highlight di sistema su tap
+                  // BusinessSelector rimosso - superadmin usa /businesses
+                  destinations: railDestinations,
+                ),
               ),
-              child: NavigationRail(
-                selectedIndex: navigationShell.currentIndex,
-                onDestinationSelected: (index) =>
-                    _handleNavTap(context, index, ref),
-                labelType: NavigationRailLabelType.none,
-                useIndicator: false, // disattiva highlight di sistema su tap
-                // BusinessSelector rimosso - superadmin usa /businesses
-                destinations: railDestinations,
+              _RailDivider(
+                topInset: layoutConfig.headerHeight,
+                color: dividerColor,
+                thickness: dividerThickness,
               ),
-            ),
-            _RailDivider(
-              topInset: layoutConfig.headerHeight,
-              color: dividerColor,
-              thickness: dividerThickness,
-            ),
-            Expanded(child: navigationShell),
-          ],
+              Expanded(child: navigationShell),
+            ],
+          ),
         ),
-      ),
-    );
+      );
     }
 
     final isTablet = formFactor == AppFormFactor.tablet;
@@ -200,7 +200,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
     return GlobalLoadingOverlay(
       child: Scaffold(
-      appBar: AppBar(
+        appBar: AppBar(
         toolbarHeight: isTablet ? 76 : 64,
         titleSpacing: isAgenda ? 4 : NavigationToolbar.kMiddleSpacing,
         title: isAgenda
@@ -209,44 +209,44 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         centerTitle: false,
         actionsPadding: const EdgeInsets.only(right: 6),
         actions: buildMobileActions(),
-      ),
-      body: navigationShell,
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (showBottomDateSwitcher) ...[
-            const AgendaHorizontalDivider(),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: const _MobileAgendaDateSwitcher(),
-            ),
-          ],
-          ColoredBox(
-            color: bottomNavColor,
-            child: SafeArea(
-              top: false,
-              left: false,
-              right: false,
-              minimum: const EdgeInsets.only(bottom: 15),
-              child: BottomNavigationBar(
-                currentIndex: navigationShell.currentIndex,
-                onTap: (index) => _handleNavTap(context, index, ref),
-                type: BottomNavigationBarType.fixed,
-                items: resolvedDestinations
-                    .map(
-                      (d) => BottomNavigationBarItem(
-                        icon: Icon(d.iconData),
-                        activeIcon: Icon(d.selectedIconData),
-                        label: d.label,
-                      ),
-                    )
-                    .toList(),
+        ),
+        body: navigationShell,
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showBottomDateSwitcher) ...[
+              const AgendaHorizontalDivider(),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: const _MobileAgendaDateSwitcher(),
+              ),
+            ],
+            ColoredBox(
+              color: bottomNavColor,
+              child: SafeArea(
+                top: false,
+                left: false,
+                right: false,
+                minimum: const EdgeInsets.only(bottom: 15),
+                child: BottomNavigationBar(
+                  currentIndex: navigationShell.currentIndex,
+                  onTap: (index) => _handleNavTap(context, index, ref),
+                  type: BottomNavigationBarType.fixed,
+                  items: resolvedDestinations
+                      .map(
+                        (d) => BottomNavigationBarItem(
+                          icon: Icon(d.iconData),
+                          activeIcon: Icon(d.selectedIconData),
+                          label: d.label,
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 

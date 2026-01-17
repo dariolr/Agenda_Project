@@ -8,7 +8,7 @@ import '../../../../core/models/location.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
-import '../../../../core/widgets/form_loading_overlay.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../../agenda/providers/location_providers.dart';
@@ -261,7 +261,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
         insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-          child: FormLoadingOverlay(
+          child: LocalLoadingOverlay(
             isLoading: _isLoading,
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -295,7 +295,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-          return FormLoadingOverlay(
+          return LocalLoadingOverlay(
             isLoading: _isLoading,
             child: SizedBox(
               height: constraints.maxHeight,

@@ -290,8 +290,6 @@
   "sortByNameDesc": "Nome (Z-A)",
   "sortByLastNameAsc": "Cognome (A-Z)",
   "sortByLastNameDesc": "Cognome (Z-A)",
-  "sortByLastVisitDesc": "Ultima visita (recenti)",
-  "sortByLastVisitAsc": "Ultima visita (meno recenti)",
   "sortByCreatedAtDesc": "Data creazione (nuovi)",
   "sortByCreatedAtAsc": "Data creazione (vecchi)",
   "clientAppointmentsTitle": "Appuntamenti di {clientName}",

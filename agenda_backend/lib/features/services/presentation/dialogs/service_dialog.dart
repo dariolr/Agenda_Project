@@ -18,7 +18,7 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
-import '../../../../core/widgets/form_loading_overlay.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../staff/providers/staff_providers.dart';
 import '../../providers/service_categories_provider.dart';
@@ -1024,7 +1024,7 @@ Future<void> showServiceDialog(
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-              child: FormLoadingOverlay(
+              child: LocalLoadingOverlay(
                 isLoading: isSaving,
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -1061,7 +1061,7 @@ Future<void> showServiceDialog(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-            return FormLoadingOverlay(
+            return LocalLoadingOverlay(
               isLoading: isSaving,
               child: SizedBox(
                 height: constraints.maxHeight,

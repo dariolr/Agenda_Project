@@ -14,7 +14,7 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
-import '../../../../core/widgets/form_loading_overlay.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../domain/config/layout_config.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
@@ -378,7 +378,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-            child: FormLoadingOverlay(
+            child: LocalLoadingOverlay(
               isLoading: _isSaving,
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -420,7 +420,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-          return FormLoadingOverlay(
+          return LocalLoadingOverlay(
             isLoading: _isSaving,
             child: SizedBox(
               height: constraints.maxHeight,

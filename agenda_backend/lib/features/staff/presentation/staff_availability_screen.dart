@@ -31,7 +31,7 @@ import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart';
 import 'package:agenda_backend/core/network/network_providers.dart';
 import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
-import 'package:agenda_backend/core/widgets/form_loading_overlay.dart';
+import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
 import 'package:agenda_backend/core/widgets/staff_picker_sheet.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
@@ -521,7 +521,7 @@ class _StaffAvailabilityScreenState
             ],
           ),
         ),
-        body: FormLoadingOverlay(
+        body: LocalLoadingOverlay(
           isLoading: isSaving,
           child: Column(
             children: [

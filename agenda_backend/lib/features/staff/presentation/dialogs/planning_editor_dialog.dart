@@ -17,7 +17,7 @@ import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
-import 'package:agenda_backend/core/widgets/form_loading_overlay.dart';
+import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/weekly_schedule_editor.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
@@ -693,7 +693,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
         SizedBox(height: MediaQuery.of(context).viewPadding.bottom + 16),
       ],
     );
-    final loadingContent = FormLoadingOverlay(
+    final loadingContent = LocalLoadingOverlay(
       isLoading: isBusy,
       child: content,
     );
