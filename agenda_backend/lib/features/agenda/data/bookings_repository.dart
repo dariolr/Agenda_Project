@@ -129,6 +129,8 @@ class BookingsRepository {
     String? clientNameSnapshot,
     int? extraBlockedMinutes,
     int? extraProcessingMinutes,
+    double? price,
+    bool priceExplicitlySet = false,
   }) async {
     return _api.updateAppointment(
       locationId: locationId,
@@ -144,6 +146,8 @@ class BookingsRepository {
       clientNameSnapshot: clientNameSnapshot,
       extraBlockedMinutes: extraBlockedMinutes,
       extraProcessingMinutes: extraProcessingMinutes,
+      price: price,
+      priceExplicitlySet: priceExplicitlySet,
     );
   }
 

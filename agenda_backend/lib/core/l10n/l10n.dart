@@ -3714,6 +3714,46 @@ class L10n {
   String get planningPast {
     return Intl.message('Passato', name: 'planningPast', desc: '', args: []);
   }
+
+  /// `Prezzo`
+  String get appointmentPriceLabel {
+    return Intl.message(
+      'Prezzo',
+      name: 'appointmentPriceLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prezzo personalizzato`
+  String get appointmentPriceHint {
+    return Intl.message(
+      'Prezzo personalizzato',
+      name: 'appointmentPriceHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ripristina prezzo del servizio`
+  String get appointmentPriceResetTooltip {
+    return Intl.message(
+      'Ripristina prezzo del servizio',
+      name: 'appointmentPriceResetTooltip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Gratuito`
+  String get appointmentPriceFree {
+    return Intl.message(
+      'Gratuito',
+      name: 'appointmentPriceFree',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

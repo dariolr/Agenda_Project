@@ -631,5 +631,10 @@
   },
   "planningActive": "Active",
   "planningFuture": "Future",
-  "planningPast": "Past"
+  "planningPast": "Past",
+
+  "appointmentPriceLabel": "Price",
+  "appointmentPriceHint": "Custom price",
+  "appointmentPriceResetTooltip": "Reset to service price",
+  "appointmentPriceFree": "Free"
 }

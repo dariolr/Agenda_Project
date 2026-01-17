@@ -631,5 +631,10 @@
   },
   "planningActive": "Attivo",
   "planningFuture": "Futuro",
-  "planningPast": "Passato"
+  "planningPast": "Passato",
+
+  "appointmentPriceLabel": "Prezzo",
+  "appointmentPriceHint": "Prezzo personalizzato",
+  "appointmentPriceResetTooltip": "Ripristina prezzo del servizio",
+  "appointmentPriceFree": "Gratuito"
 }

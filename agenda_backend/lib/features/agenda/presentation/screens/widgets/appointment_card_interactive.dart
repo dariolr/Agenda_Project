@@ -508,9 +508,6 @@ class _AppointmentCardInteractiveState
     if (widget.appointment.serviceName.isNotEmpty) {
       pieces.add(widget.appointment.serviceName);
     }
-    if (widget.appointment.formattedPrice.isNotEmpty) {
-      pieces.add(widget.appointment.formattedPrice);
-    }
     final info = pieces.join(' – ');
     final borderWidth = showThickBorder ? 2.5 : 1.0;
 
@@ -617,11 +614,7 @@ class _AppointmentCardInteractiveState
       trailingIcons.add(
         Padding(
           padding: const EdgeInsets.only(left: 4),
-          child: Icon(
-            sourceIcon,
-            size: 14,
-            color: Colors.black54,
-          ),
+          child: Icon(sourceIcon, size: 14, color: Colors.black54),
         ),
       );
     }

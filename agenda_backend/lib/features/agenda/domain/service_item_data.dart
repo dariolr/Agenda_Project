@@ -12,6 +12,7 @@ class ServiceItemData {
   final int durationMinutes;
   final int blockedExtraMinutes;
   final int processingExtraMinutes;
+  final double? price; // Prezzo personalizzato (null = usa prezzo variante)
 
   const ServiceItemData({
     required this.key,
@@ -23,6 +24,7 @@ class ServiceItemData {
     this.durationMinutes = 30,
     this.blockedExtraMinutes = 0,
     this.processingExtraMinutes = 0,
+    this.price,
   });
 
   /// Calcola l'orario di fine basato su startTime e durationMinutes
@@ -58,6 +60,7 @@ class ServiceItemData {
     int? durationMinutes,
     int? blockedExtraMinutes,
     int? processingExtraMinutes,
+    double? price,
   }) {
     return ServiceItemData(
       key: key ?? this.key,
@@ -70,6 +73,23 @@ class ServiceItemData {
       blockedExtraMinutes: blockedExtraMinutes ?? this.blockedExtraMinutes,
       processingExtraMinutes:
           processingExtraMinutes ?? this.processingExtraMinutes,
+      price: price ?? this.price,
+    );
+  }
+
+  /// Crea una copia azzerando il prezzo personalizzato
+  ServiceItemData copyWithPriceCleared() {
+    return ServiceItemData(
+      key: key,
+      appointmentId: appointmentId,
+      serviceId: serviceId,
+      serviceVariantId: serviceVariantId,
+      staffId: staffId,
+      startTime: startTime,
+      durationMinutes: durationMinutes,
+      blockedExtraMinutes: blockedExtraMinutes,
+      processingExtraMinutes: processingExtraMinutes,
+      price: null,
     );
   }
 
@@ -85,6 +105,7 @@ class ServiceItemData {
       durationMinutes: 30,
       blockedExtraMinutes: 0,
       processingExtraMinutes: 0,
+      price: null,
     );
   }
 
