@@ -164,6 +164,9 @@ final class AppointmentsController
         if (isset($body['client_name_snapshot'])) {
             $updates['client_name_snapshot'] = $body['client_name_snapshot'];
         }
+        if (array_key_exists('price', $body)) {
+            $updates['price'] = $body['price'] !== null ? (float) $body['price'] : null;
+        }
 
         // Update booking fields (client_id and client_name are on booking, not appointment)
         $bookingId = (int) $appointment['booking_id'];

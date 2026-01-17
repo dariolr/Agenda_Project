@@ -154,6 +154,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           durationMinutes: baseDuration,
           blockedExtraMinutes: blockedExtraMinutes,
           processingExtraMinutes: processingExtraMinutes,
+          price: appointment.price, // Prezzo personalizzato
         ),
       );
     }
@@ -523,8 +524,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   horizontalPadding,
                   12,
                 ),
-                child:
-                    Text(title, style: Theme.of(context).textTheme.titleLarge),
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
               ),
               Expanded(
                 child: Padding(
@@ -1400,9 +1403,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             : (extraMinutesType == ExtraMinutesType.processing
                   ? processingExtraMinutes
                   : 0);
-        final effectivePrice = selectedVariant.isFree
-            ? null
-            : selectedVariant.price;
+        // Usa prezzo personalizzato se presente, altrimenti prezzo variante
+        final effectivePrice =
+            item.price ??
+            (selectedVariant.isFree ? null : selectedVariant.price);
 
         final start = DateTime(
           _date.year,

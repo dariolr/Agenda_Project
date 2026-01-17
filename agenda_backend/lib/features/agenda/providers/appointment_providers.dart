@@ -344,6 +344,8 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
         clientNameSnapshot: updated.clientName,
         extraBlockedMinutes: updated.extraBlockedMinutes,
         extraProcessingMinutes: updated.extraProcessingMinutes,
+        price: updated.price,
+        priceExplicitlySet: true,
       );
     } catch (_) {
       // Rollback on error

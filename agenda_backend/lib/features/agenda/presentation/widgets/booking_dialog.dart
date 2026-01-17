@@ -1369,7 +1369,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         processingExtraMinutes: item.processingExtraMinutes > 0
             ? item.processingExtraMinutes
             : null,
-        // Note: price override not yet exposed in UI, could be added later
+        // Prezzo personalizzato (se impostato)
+        price: item.price,
       );
     }).toList();
 

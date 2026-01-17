@@ -478,6 +478,8 @@ class ApiClient {
     String? clientNameSnapshot,
     int? extraBlockedMinutes,
     int? extraProcessingMinutes,
+    double? price,
+    bool priceExplicitlySet = false,
   }) async {
     final data = <String, dynamic>{};
     if (startTime != null) data['start_time'] = startTime;
@@ -498,6 +500,9 @@ class ApiClient {
     }
     if (extraProcessingMinutes != null) {
       data['extra_processing_minutes'] = extraProcessingMinutes;
+    }
+    if (priceExplicitlySet) {
+      data['price'] = price;
     }
 
     try {

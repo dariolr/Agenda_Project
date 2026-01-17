@@ -540,7 +540,7 @@ final class BookingRepository
         $fields = [];
         $params = [];
 
-        foreach (['start_time', 'end_time', 'staff_id', 'service_id', 'service_variant_id', 'service_name_snapshot', 'client_name_snapshot', 'extra_blocked_minutes', 'extra_processing_minutes'] as $field) {
+        foreach (['start_time', 'end_time', 'staff_id', 'service_id', 'service_variant_id', 'service_name_snapshot', 'client_name_snapshot', 'extra_blocked_minutes', 'extra_processing_minutes', 'price'] as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "$field = ?";
                 $params[] = $data[$field];

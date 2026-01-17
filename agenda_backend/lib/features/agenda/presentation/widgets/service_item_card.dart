@@ -141,6 +141,11 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
         ? allStaff.where((s) => s.id == item.staffId).firstOrNull
         : null;
 
+    // Trova la variante corrente per mostrare il prezzo di default
+    final selectedVariant = item.serviceId != null
+        ? variants.where((v) => v.serviceId == item.serviceId).firstOrNull
+        : null;
+
     // Staff disponibili per la selezione: sempre tutto lo staff della location
     // eligibleStaff serve solo per la selezione automatica, non per filtrare la lista
     final availableStaff = allStaff;
@@ -175,6 +180,12 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
 
             // Orario
             _buildTimeSelector(context, l10n, theme),
+
+            // Prezzo (solo se servizio selezionato)
+            if (item.serviceId != null) ...[
+              const SizedBox(height: 12),
+              _buildPriceSelector(context, l10n, theme, selectedVariant),
+            ],
 
             if (availabilityWarningMessage != null) ...[
               const SizedBox(height: 12),
@@ -426,6 +437,172 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
         ),
       ],
     );
+  }
+
+  Widget _buildPriceSelector(
+    BuildContext context,
+    dynamic l10n,
+    ThemeData theme,
+    ServiceVariant? selectedVariant,
+  ) {
+    // Prezzo di default dalla variante
+    final defaultPrice = selectedVariant?.isFree == true
+        ? 0.0
+        : (selectedVariant?.price ?? 0.0);
+    // Prezzo corrente: personalizzato o default
+    final currentPrice = item.price ?? defaultPrice;
+    final hasCustomPrice = item.price != null;
+
+    return InkWell(
+      onTap: () => _showPriceEditor(context, l10n, currentPrice, defaultPrice),
+      borderRadius: BorderRadius.circular(4),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.appointmentPriceLabel,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 10,
+          ),
+          isDense: true,
+          suffixIcon: hasCustomPrice
+              ? IconButton(
+                  icon: const Icon(Icons.refresh, size: 18),
+                  tooltip: l10n.appointmentPriceResetTooltip,
+                  onPressed: () {
+                    // Resetta al prezzo di default
+                    onChanged(item.copyWithPriceCleared());
+                  },
+                )
+              : null,
+        ),
+        child: Text(
+          currentPrice == 0
+              ? l10n.appointmentPriceFree
+              : '€ ${currentPrice.toStringAsFixed(2)}',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: hasCustomPrice ? theme.colorScheme.primary : null,
+            fontWeight: hasCustomPrice ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPriceEditor(
+    BuildContext context,
+    dynamic l10n,
+    double currentPrice,
+    double defaultPrice,
+  ) {
+    final controller = TextEditingController(
+      text: currentPrice == 0 ? '' : currentPrice.toStringAsFixed(2),
+    );
+
+    if (formFactor != AppFormFactor.desktop) {
+      AppBottomSheet.show(
+        context: context,
+        padding: EdgeInsets.zero,
+        builder: (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.appointmentPriceLabel,
+                  style: Theme.of(
+                    ctx,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: l10n.appointmentPriceHint,
+                    prefixText: '€ ',
+                    border: const OutlineInputBorder(),
+                    helperText:
+                        'Prezzo servizio: €${defaultPrice.toStringAsFixed(2)}',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: Text(l10n.actionCancel),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () {
+                        final text = controller.text.trim().replaceAll(
+                          ',',
+                          '.',
+                        );
+                        final newPrice = text.isEmpty
+                            ? 0.0
+                            : (double.tryParse(text) ?? currentPrice);
+                        Navigator.of(ctx).pop();
+                        onChanged(item.copyWith(price: newPrice));
+                      },
+                      child: Text(l10n.actionConfirm),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.appointmentPriceLabel),
+          content: SizedBox(
+            width: 300,
+            child: TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: l10n.appointmentPriceHint,
+                prefixText: '€ ',
+                border: const OutlineInputBorder(),
+                helperText:
+                    'Prezzo servizio: €${defaultPrice.toStringAsFixed(2)}',
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(l10n.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                final text = controller.text.trim().replaceAll(',', '.');
+                final newPrice = text.isEmpty
+                    ? 0.0
+                    : (double.tryParse(text) ?? currentPrice);
+                Navigator.of(ctx).pop();
+                onChanged(item.copyWith(price: newPrice));
+              },
+              child: Text(l10n.actionConfirm),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   void _showStartTimePicker(BuildContext context) async {

@@ -181,6 +181,14 @@ class MessageLookup extends MessageLookupByLibrary {
       "Appointment note",
     ),
     "appointmentNotesTitle": MessageLookupByLibrary.simpleMessage("Notes"),
+    "appointmentPriceFree": MessageLookupByLibrary.simpleMessage("Free"),
+    "appointmentPriceHint": MessageLookupByLibrary.simpleMessage(
+      "Custom price",
+    ),
+    "appointmentPriceLabel": MessageLookupByLibrary.simpleMessage("Price"),
+    "appointmentPriceResetTooltip": MessageLookupByLibrary.simpleMessage(
+      "Reset to service price",
+    ),
     "atLeastOneServiceRequired": MessageLookupByLibrary.simpleMessage(
       "Add at least one service",
     ),
