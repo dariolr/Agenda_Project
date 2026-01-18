@@ -7,6 +7,7 @@ namespace Agenda\Http\Controllers;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\BookingRepository;
+use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
@@ -24,6 +25,7 @@ final class AppointmentsController
         private readonly LocationRepository $locationRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
+        private readonly ?BookingAuditRepository $auditRepo = null,
     ) {}
 
     /**
@@ -182,12 +184,25 @@ final class AppointmentsController
             return Response::badRequest('No fields to update', $request->traceId);
         }
 
+        // Capture before state for audit
+        $beforeState = $this->captureAppointmentState($appointment);
+
         // TODO: Add conflict detection before updating
         if (!empty($updates)) {
             $this->bookingRepo->updateAppointment($appointmentId, $updates);
         }
 
         $updated = $this->bookingRepo->getAppointmentById($appointmentId);
+        
+        // Create audit event for appointment_updated
+        $this->createAppointmentUpdatedEvent(
+            $bookingId,
+            $appointmentId,
+            $beforeState,
+            $this->captureAppointmentState($updated),
+            $userId,
+            $updates
+        );
 
         return Response::success($this->formatAppointment($updated));
     }
@@ -254,6 +269,9 @@ final class AppointmentsController
 
         // Fetch the newly created appointment
         $newAppointment = $this->bookingRepo->getAppointmentById($newItemId);
+        
+        // Create audit event for booking_item_added
+        $this->createBookingItemAddedEvent($bookingId, $newItemId, $itemData, $userId);
 
         return Response::success($this->formatAppointment($newAppointment));
     }
@@ -292,10 +310,17 @@ final class AppointmentsController
             return Response::forbidden('You do not have permission to cancel this appointment');
         }
 
+        // Capture booking state before cancellation
+        $bookingId = (int) $appointment['booking_id'];
+        $beforeState = $this->captureBookingState($booking);
+        
         // Update booking status to 'cancelled' to preserve history
-        $this->bookingRepo->updateBooking((int) $appointment['booking_id'], [
+        $this->bookingRepo->updateBooking($bookingId, [
             'status' => 'cancelled',
         ]);
+        
+        // Create audit event for booking_cancelled
+        $this->createBookingCancelledEvent($bookingId, $beforeState, $userId);
 
         return Response::success([
             'cancelled' => true,
@@ -348,17 +373,25 @@ final class AppointmentsController
             return Response::forbidden('You do not have permission to delete this appointment');
         }
 
+        // Capture item state before deletion
+        $deletedItemState = $this->captureAppointmentState($appointment);
+        
         // Delete the booking item
         $deleted = $this->bookingRepo->deleteBookingItem($itemId);
 
         if (!$deleted) {
             return Response::notFound('Appointment not found');
         }
+        
+        // Create audit event for booking_item_deleted
+        $this->createBookingItemDeletedEvent($bookingId, $itemId, $deletedItemState, $userId);
 
         // Check if booking is now empty and update status if so
         $remainingItems = $this->bookingRepo->countBookingItems($bookingId);
         if ($remainingItems === 0) {
             $this->bookingRepo->updateStatus($bookingId, 'cancelled');
+            // Also record booking_cancelled event when all items removed
+            $this->createBookingCancelledEvent($bookingId, ['reason' => 'all_items_deleted'], $userId);
         }
 
         return Response::success([
@@ -393,5 +426,179 @@ final class AppointmentsController
             'service_name' => $appointment['service_name'] ?? null,
             'staff_name' => $appointment['staff_name'] ?? null,
         ];
+    }
+
+    /**
+     * Capture appointment state for audit trail.
+     */
+    private function captureAppointmentState(array $appointment): array
+    {
+        return [
+            'id' => (int) $appointment['id'],
+            'staff_id' => (int) $appointment['staff_id'],
+            'service_id' => isset($appointment['service_id']) ? (int) $appointment['service_id'] : null,
+            'service_variant_id' => (int) $appointment['service_variant_id'],
+            'start_time' => $appointment['start_time'],
+            'end_time' => $appointment['end_time'],
+            'price' => isset($appointment['price']) ? (float) $appointment['price'] : null,
+            'extra_blocked_minutes' => (int) ($appointment['extra_blocked_minutes'] ?? 0),
+            'extra_processing_minutes' => (int) ($appointment['extra_processing_minutes'] ?? 0),
+        ];
+    }
+
+    /**
+     * Create an audit event for appointment_updated.
+     */
+    private function createAppointmentUpdatedEvent(
+        int $bookingId,
+        int $appointmentId,
+        array $beforeState,
+        array $afterState,
+        ?int $userId,
+        array $changedFields
+    ): void {
+        if ($this->auditRepo === null) {
+            return;
+        }
+
+        try {
+            $payload = [
+                'appointment_id' => $appointmentId,
+                'before' => $beforeState,
+                'after' => $afterState,
+                'changed_fields' => array_keys($changedFields),
+            ];
+
+            $this->auditRepo->createEvent(
+                $bookingId,
+                'appointment_updated',
+                'staff',
+                $userId,
+                $payload,
+                null
+            );
+        } catch (\Throwable $e) {
+            // Log error but don't fail the update
+            file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createAppointmentUpdatedEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+
+    /**
+     * Capture booking state for audit trail.
+     */
+    private function captureBookingState(?array $booking): array
+    {
+        if ($booking === null) {
+            return [];
+        }
+        
+        $items = $booking['items'] ?? [];
+        return [
+            'booking_id' => (int) $booking['id'],
+            'status' => $booking['status'] ?? null,
+            'location_id' => (int) ($booking['location_id'] ?? 0),
+            'client_id' => $booking['client_id'] !== null ? (int) $booking['client_id'] : null,
+            'notes' => $booking['notes'] ?? null,
+            'items' => array_map(fn($item) => [
+                'id' => (int) $item['id'],
+                'service_id' => (int) ($item['service_id'] ?? 0),
+                'staff_id' => (int) ($item['staff_id'] ?? 0),
+                'start_time' => $item['start_time'] ?? null,
+                'end_time' => $item['end_time'] ?? null,
+                'price' => (float) ($item['price'] ?? 0),
+            ], $items),
+            'total_price' => (float) ($booking['total_price'] ?? 0),
+        ];
+    }
+
+    /**
+     * Create an audit event for booking_item_added.
+     */
+    private function createBookingItemAddedEvent(int $bookingId, int $itemId, array $itemData, ?int $userId): void
+    {
+        if ($this->auditRepo === null) {
+            return;
+        }
+
+        try {
+            $payload = [
+                'item_id' => $itemId,
+                'item_data' => [
+                    'service_id' => $itemData['service_id'] ?? null,
+                    'staff_id' => $itemData['staff_id'] ?? null,
+                    'start_time' => $itemData['start_time'] ?? null,
+                    'end_time' => $itemData['end_time'] ?? null,
+                    'price' => $itemData['price'] ?? 0,
+                    'service_name_snapshot' => $itemData['service_name_snapshot'] ?? null,
+                ],
+            ];
+
+            $this->auditRepo->createEvent(
+                $bookingId,
+                'booking_item_added',
+                'staff',
+                $userId,
+                $payload,
+                null
+            );
+        } catch (\Throwable $e) {
+            file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createBookingItemAddedEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+
+    /**
+     * Create an audit event for booking_item_deleted.
+     */
+    private function createBookingItemDeletedEvent(int $bookingId, int $itemId, array $deletedItemState, ?int $userId): void
+    {
+        if ($this->auditRepo === null) {
+            return;
+        }
+
+        try {
+            $payload = [
+                'item_id' => $itemId,
+                'deleted_item' => $deletedItemState,
+            ];
+
+            $this->auditRepo->createEvent(
+                $bookingId,
+                'booking_item_deleted',
+                'staff',
+                $userId,
+                $payload,
+                null
+            );
+        } catch (\Throwable $e) {
+            file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createBookingItemDeletedEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+
+    /**
+     * Create an audit event for booking_cancelled.
+     */
+    private function createBookingCancelledEvent(int $bookingId, array $beforeState, ?int $userId): void
+    {
+        if ($this->auditRepo === null) {
+            return;
+        }
+
+        try {
+            $payload = [
+                'before' => $beforeState,
+                'reason' => $beforeState['reason'] ?? 'user_cancelled',
+            ];
+
+            $this->auditRepo->createEvent(
+                $bookingId,
+                'booking_cancelled',
+                'staff',
+                $userId,
+                $payload,
+                null
+            );
+        } catch (\Throwable $e) {
+            file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createBookingCancelledEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
     }
 }

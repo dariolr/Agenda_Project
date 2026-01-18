@@ -6,6 +6,7 @@ namespace Agenda\UseCases\Booking;
 
 use Agenda\Domain\Exceptions\BookingException;
 use Agenda\Infrastructure\Repositories\BookingRepository;
+use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Database\Connection;
@@ -24,6 +25,7 @@ final class UpdateBooking
         private readonly Connection $db,
         private readonly ?ClientRepository $clientRepo = null,
         private readonly ?NotificationRepository $notificationRepo = null,
+        private readonly ?BookingAuditRepository $auditRepo = null,
     ) {}
 
     /**
@@ -134,6 +136,9 @@ final class UpdateBooking
             }
         }
 
+        // Cattura stato booking PRIMA dell'update per audit
+        $beforeState = $this->captureBookingState($bookingId);
+
         // Gestione client_id: key_exists permette di distinguere "non inviato" da "inviato null"
         // Se client_id è presente nella request (anche se null), aggiorna il campo
         $clientId = null;
@@ -167,6 +172,18 @@ final class UpdateBooking
         if (!$updated) {
             throw BookingException::serverError('Failed to update booking');
         }
+
+        // Cattura stato DOPO l'update per audit
+        $afterState = $this->captureBookingState($bookingId);
+        
+        // Registra evento audit: booking_updated
+        $this->createBookingUpdatedEvent(
+            $bookingId,
+            $beforeState,
+            $afterState,
+            $isOperator ? 'staff' : ($isCustomer ? 'customer' : 'customer'),
+            $userId
+        );
 
         // Ritorna il booking aggiornato
         return $this->bookingRepo->findById($bookingId);
@@ -376,5 +393,67 @@ final class UpdateBooking
         );
         $stmt->execute([$locationId]);
         return $stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
+     * Cattura lo stato del booking per l'audit
+     */
+    private function captureBookingState(int $bookingId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, location_id, client_id, customer_name, status, notes, source
+             FROM bookings
+             WHERE id = ?'
+        );
+        $stmt->execute([$bookingId]);
+        $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+        
+        return $booking ?: [];
+    }
+
+    /**
+     * Registra evento booking_updated
+     */
+    private function createBookingUpdatedEvent(
+        int $bookingId,
+        array $before,
+        array $after,
+        string $actorType,
+        int $actorId
+    ): void {
+        if ($this->auditRepo === null || empty($before) || empty($after)) {
+            return;
+        }
+        
+        // Calcola campi modificati
+        $changedFields = [];
+        $fieldsToTrack = ['client_id', 'customer_name', 'status', 'notes'];
+        foreach ($fieldsToTrack as $field) {
+            if (($before[$field] ?? null) !== ($after[$field] ?? null)) {
+                $changedFields[] = $field;
+            }
+        }
+        
+        // Se nessun campo è cambiato, non registrare evento
+        if (empty($changedFields)) {
+            return;
+        }
+        
+        try {
+            $this->auditRepo->createEvent(
+                $bookingId,
+                'booking_updated',
+                $actorType,
+                $actorId,
+                [
+                    'booking_id' => $bookingId,
+                    'before' => $before,
+                    'after' => $after,
+                    'changed_fields' => $changedFields,
+                ]
+            );
+        } catch (\Throwable $e) {
+            error_log("Failed to create booking_updated event: " . $e->getMessage());
+        }
     }
 }

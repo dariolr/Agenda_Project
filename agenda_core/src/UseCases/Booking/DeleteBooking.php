@@ -6,6 +6,7 @@ namespace Agenda\UseCases\Booking;
 
 use Agenda\Domain\Exceptions\BookingException;
 use Agenda\Infrastructure\Repositories\BookingRepository;
+use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\UseCases\Notifications\QueueBookingCancellation;
@@ -22,6 +23,7 @@ final class DeleteBooking
         private readonly BookingRepository $bookingRepo,
         private readonly Connection $db,
         private readonly ?NotificationRepository $notificationRepo = null,
+        private readonly ?BookingAuditRepository $auditRepo = null,
     ) {}
 
     /**
@@ -68,12 +70,22 @@ final class DeleteBooking
         // Prepara i dati per la notifica prima di cancellare
         $notificationData = $this->prepareNotificationData($booking);
         
+        // Cattura stato booking per audit prima della cancellazione
+        $bookingStateForAudit = $this->captureBookingStateForAudit($bookingId);
+        
         // Cancella il booking (e i suoi items tramite il repository)
         $deleted = $this->bookingRepo->deleteBooking($bookingId);
 
         if (!$deleted) {
             throw BookingException::serverError('Failed to delete booking');
         }
+        
+        // Registra evento audit: booking_cancelled
+        $this->createBookingCancelledEvent(
+            $bookingStateForAudit,
+            $isOperator ? 'staff' : ($isCustomer ? 'customer' : 'customer'),
+            $userId
+        );
         
         // Invia notifica di cancellazione (non bloccante)
         $this->queueCancellationNotification($notificationData);
@@ -213,6 +225,78 @@ final class DeleteBooking
                 "Cannot cancel booking within {$cancellationHours} hours of appointment start time",
                 ['cancellation_deadline' => $deadline->format('c')]
             );
+        }
+    }
+
+    /**
+     * Cattura lo stato completo del booking per l'audit prima della cancellazione
+     */
+    private function captureBookingStateForAudit(int $bookingId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT b.id, b.business_id, b.location_id, b.client_id, b.status, b.notes, b.source
+             FROM bookings b
+             WHERE b.id = ?'
+        );
+        $stmt->execute([$bookingId]);
+        $booking = $stmt->fetch();
+        
+        if (!$booking) {
+            return [];
+        }
+        
+        // Get items
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT bi.id, bi.service_id, bi.staff_id, bi.start_time, bi.end_time, bi.price
+             FROM booking_items bi
+             WHERE bi.booking_id = ?
+             ORDER BY bi.start_time ASC'
+        );
+        $stmt->execute([$bookingId]);
+        $items = $stmt->fetchAll();
+        
+        $totalPrice = 0;
+        foreach ($items as $item) {
+            $totalPrice += (float) ($item['price'] ?? 0);
+        }
+        
+        return [
+            'booking_id' => $booking['id'],
+            'business_id' => $booking['business_id'],
+            'location_id' => $booking['location_id'],
+            'client_id' => $booking['client_id'],
+            'status' => $booking['status'],
+            'notes' => $booking['notes'],
+            'source' => $booking['source'],
+            'items' => $items,
+            'total_price' => $totalPrice,
+            'first_start_time' => $items[0]['start_time'] ?? null,
+            'last_end_time' => end($items)['end_time'] ?? null,
+        ];
+    }
+
+    /**
+     * Registra evento booking_cancelled
+     */
+    private function createBookingCancelledEvent(
+        array $bookingState,
+        string $actorType,
+        int $actorId
+    ): void {
+        if ($this->auditRepo === null || empty($bookingState)) {
+            return;
+        }
+        
+        try {
+            $this->auditRepo->createEvent(
+                (int) $bookingState['booking_id'],
+                'booking_cancelled',
+                $actorType,
+                $actorId,
+                $bookingState
+            );
+        } catch (\Throwable $e) {
+            error_log("Failed to create booking_cancelled event: " . $e->getMessage());
         }
     }
 }

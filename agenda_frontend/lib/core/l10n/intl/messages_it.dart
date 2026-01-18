@@ -241,7 +241,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Controlla i dati inseriti",
     ),
     "bookingRescheduled": MessageLookupByLibrary.simpleMessage(
-      "Prenotazione riprogrammata con successo",
+      "Prenotazione modificata con successo",
     ),
     "bookingStepDateTime": MessageLookupByLibrary.simpleMessage("Data e ora"),
     "bookingStepLocation": MessageLookupByLibrary.simpleMessage("Sede"),
@@ -250,6 +250,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingStepSummary": MessageLookupByLibrary.simpleMessage("Riepilogo"),
     "bookingTitle": MessageLookupByLibrary.simpleMessage(
       "Prenota appuntamento",
+    ),
+    "bookingUpdatedTitle": MessageLookupByLibrary.simpleMessage(
+      "Prenotazione aggiornata",
     ),
     "businessNotFound": MessageLookupByLibrary.simpleMessage(
       "Attività non trovata",
@@ -400,7 +403,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "priceFormat": m10,
     "profileTitle": MessageLookupByLibrary.simpleMessage("Profilo"),
     "rescheduleBookingTitle": MessageLookupByLibrary.simpleMessage(
-      "Riprogramma prenotazione",
+      "Modifica prenotazione",
     ),
     "selectDate": MessageLookupByLibrary.simpleMessage("Seleziona data"),
     "selectNewDate": MessageLookupByLibrary.simpleMessage(
@@ -424,6 +427,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "servicesTitle": MessageLookupByLibrary.simpleMessage("Scegli i servizi"),
     "servicesTotal": m14,
+    "slotNoLongerAvailable": MessageLookupByLibrary.simpleMessage(
+      "Lo slot non è più disponibile. La prenotazione originale è rimasta invariata.",
+    ),
     "staffAnyOperator": MessageLookupByLibrary.simpleMessage(
       "Qualsiasi operatore disponibile",
     ),

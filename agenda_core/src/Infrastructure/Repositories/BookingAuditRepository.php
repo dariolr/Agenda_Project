@@ -1,0 +1,178 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Agenda\Infrastructure\Repositories;
+
+use Agenda\Infrastructure\Database\Connection;
+use DateTimeImmutable;
+
+/**
+ * Repository for booking audit tables: booking_replacements and booking_events
+ */
+final class BookingAuditRepository
+{
+    public function __construct(
+        private readonly Connection $db,
+    ) {}
+
+    // ========================================================================
+    // booking_replacements
+    // ========================================================================
+
+    /**
+     * Create a booking replacement record.
+     * 
+     * @param int $originalBookingId The booking that was replaced
+     * @param int $newBookingId The booking that replaced it
+     * @param string $actorType 'customer', 'staff', or 'system'
+     * @param int|null $actorId Client ID for customer, User ID for staff
+     * @param string|null $reason Optional reason for the replacement
+     * @return int The created record ID
+     */
+    public function createReplacement(
+        int $originalBookingId,
+        int $newBookingId,
+        string $actorType,
+        ?int $actorId,
+        ?string $reason = null
+    ): int {
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO booking_replacements 
+             (original_booking_id, new_booking_id, actor_type, actor_id, reason, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())'
+        );
+        $stmt->execute([
+            $originalBookingId,
+            $newBookingId,
+            $actorType,
+            $actorId,
+            $reason,
+        ]);
+
+        return (int) $this->db->getPdo()->lastInsertId();
+    }
+
+    /**
+     * Find replacement record by original booking ID.
+     */
+    public function findByOriginalBookingId(int $originalBookingId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT * FROM booking_replacements WHERE original_booking_id = ?'
+        );
+        $stmt->execute([$originalBookingId]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
+    /**
+     * Find replacement record by new booking ID.
+     */
+    public function findByNewBookingId(int $newBookingId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT * FROM booking_replacements WHERE new_booking_id = ?'
+        );
+        $stmt->execute([$newBookingId]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
+    // ========================================================================
+    // booking_events
+    // ========================================================================
+
+    /**
+     * Create an immutable booking event.
+     * 
+     * @param int $bookingId The booking this event relates to
+     * @param string $eventType Event type (booking_created, booking_replaced, etc.)
+     * @param string $actorType 'customer', 'staff', or 'system'
+     * @param int|null $actorId Client ID for customer, User ID for staff
+     * @param array $payload Event-specific data (will be JSON encoded)
+     * @param string|null $correlationId Optional UUID to correlate related events
+     * @return int The created event ID
+     */
+    public function createEvent(
+        int $bookingId,
+        string $eventType,
+        string $actorType,
+        ?int $actorId,
+        array $payload,
+        ?string $correlationId = null
+    ): int {
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO booking_events 
+             (booking_id, event_type, actor_type, actor_id, payload_json, correlation_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW())'
+        );
+        $stmt->execute([
+            $bookingId,
+            $eventType,
+            $actorType,
+            $actorId,
+            json_encode($payload),
+            $correlationId,
+        ]);
+
+        return (int) $this->db->getPdo()->lastInsertId();
+    }
+
+    /**
+     * Get all events for a booking.
+     */
+    public function getEventsByBookingId(int $bookingId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT * FROM booking_events 
+             WHERE booking_id = ? 
+             ORDER BY created_at ASC'
+        );
+        $stmt->execute([$bookingId]);
+        
+        $events = $stmt->fetchAll();
+        foreach ($events as &$event) {
+            $event['payload'] = json_decode($event['payload_json'], true);
+        }
+        return $events;
+    }
+
+    /**
+     * Get events by correlation ID.
+     */
+    public function getEventsByCorrelationId(string $correlationId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT * FROM booking_events 
+             WHERE correlation_id = ? 
+             ORDER BY created_at ASC'
+        );
+        $stmt->execute([$correlationId]);
+        
+        $events = $stmt->fetchAll();
+        foreach ($events as &$event) {
+            $event['payload'] = json_decode($event['payload_json'], true);
+        }
+        return $events;
+    }
+
+    /**
+     * Get events by type for a booking.
+     */
+    public function getEventsByType(int $bookingId, string $eventType): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT * FROM booking_events 
+             WHERE booking_id = ? AND event_type = ?
+             ORDER BY created_at ASC'
+        );
+        $stmt->execute([$bookingId, $eventType]);
+        
+        $events = $stmt->fetchAll();
+        foreach ($events as &$event) {
+            $event['payload'] = json_decode($event['payload_json'], true);
+        }
+        return $events;
+    }
+}

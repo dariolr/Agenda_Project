@@ -8,6 +8,7 @@ use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\UseCases\Booking\CreateBooking;
 use Agenda\UseCases\Booking\GetMyBookings;
+use Agenda\UseCases\Booking\ReplaceBooking;
 use Agenda\Domain\Exceptions\BookingException;
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
@@ -25,7 +26,10 @@ final class BookingsController
         private readonly ?LocationRepository $locationRepo = null,
         private readonly ?BusinessUserRepository $businessUserRepo = null,
         private readonly ?UserRepository $userRepo = null,
+        private readonly ?ReplaceBooking $replaceBooking = null,
     ) {}
+
+    /**
 
     /**
      * Check if authenticated user has access to the given business.
@@ -677,6 +681,129 @@ final class BookingsController
 
         } catch (\Exception $e) {
             return Response::serverError($e->getMessage());
+        }
+    }
+
+    /**
+     * POST /v1/bookings/{booking_id}/replace
+     * Protected endpoint (staff) - replaces a booking with a new one.
+     * 
+     * This is the atomic replace pattern:
+     * - Original booking is marked as 'replaced' 
+     * - New booking is created and linked
+     * - Single "booking_modified" notification sent
+     * 
+     * Payload: same as store (items or service_ids format)
+     * Additional optional fields: reason
+     */
+    public function replace(Request $request): Response
+    {
+        $userId = $request->getAttribute('user_id');
+        $bookingId = (int) $request->getAttribute('booking_id');
+
+        if ($userId === null) {
+            return Response::error('Authentication required', 'unauthorized', 401);
+        }
+
+        if ($this->replaceBooking === null) {
+            return Response::serverError('ReplaceBooking use case not initialized');
+        }
+
+        // Get original booking to check permissions
+        $originalBooking = $this->bookingRepo->findById($bookingId);
+        if ($originalBooking === null) {
+            return Response::notFound('Booking not found', $request->traceId);
+        }
+
+        // Check user has access to this business
+        $businessId = (int) $originalBooking['business_id'];
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Booking not found', $request->traceId);
+        }
+
+        $body = $request->getBody();
+        $reason = $body['reason'] ?? null;
+
+        try {
+            $result = $this->replaceBooking->execute(
+                $bookingId,
+                $body,
+                'staff',
+                $userId,
+                $reason
+            );
+
+            return Response::success($result, 200);
+
+        } catch (BookingException $e) {
+            return Response::json([
+                'success' => false,
+                'error' => [
+                    'message' => $e->getMessage(),
+                    'code' => $e->getErrorCode(),
+                    'details' => $e->getDetails(),
+                ],
+            ], $e->getHttpStatus());
+        }
+    }
+
+    /**
+     * POST /v1/customer/bookings/{booking_id}/replace
+     * Customer endpoint - replaces own booking with a new one.
+     */
+    public function replaceCustomer(Request $request): Response
+    {
+        $clientId = $request->getAttribute('client_id');
+        $businessId = $request->getAttribute('business_id');
+        $bookingId = (int) $request->getAttribute('booking_id');
+
+        if ($clientId === null || $businessId === null) {
+            return Response::error('Customer authentication required', 'unauthorized', 401);
+        }
+
+        if ($this->replaceBooking === null) {
+            return Response::serverError('ReplaceBooking use case not initialized');
+        }
+
+        // Get original booking
+        $originalBooking = $this->bookingRepo->findById($bookingId);
+        if ($originalBooking === null) {
+            return Response::notFound('Booking not found', $request->traceId);
+        }
+
+        // Verify booking belongs to this business
+        if ((int) $originalBooking['business_id'] !== (int) $businessId) {
+            return Response::notFound('Booking not found', $request->traceId);
+        }
+
+        // Verify customer owns this booking
+        if ((int) ($originalBooking['client_id'] ?? 0) !== (int) $clientId) {
+            return Response::forbidden('You can only modify your own bookings', $request->traceId);
+        }
+
+        $body = $request->getBody();
+        $reason = $body['reason'] ?? null;
+
+        try {
+            $result = $this->replaceBooking->execute(
+                $bookingId,
+                $body,
+                'customer',
+                (int) $clientId,
+                $reason
+            );
+
+            return Response::success($result, 200);
+
+        } catch (BookingException $e) {
+            return Response::json([
+                'success' => false,
+                'error' => [
+                    'message' => $e->getMessage(),
+                    'code' => $e->getErrorCode(),
+                    'details' => $e->getDetails(),
+                ],
+            ], $e->getHttpStatus());
         }
     }
 

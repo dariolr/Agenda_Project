@@ -44,6 +44,7 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
         clientId: clientId,
         clientName: clientName,
         notes: notes,
+        status: 'confirmed',
       ),
     };
     return bookingId;
@@ -56,6 +57,9 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
     required int locationId,
     int? clientId,
     required String clientName,
+    String status = 'confirmed',
+    int? replacesBookingId,
+    int? replacedByBookingId,
   }) {
     final current = state;
     if (current.containsKey(bookingId)) return;
@@ -68,6 +72,9 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
         clientId: clientId,
         clientName: clientName,
         notes: null,
+        status: status,
+        replacesBookingId: replacesBookingId,
+        replacedByBookingId: replacedByBookingId,
       ),
     };
   }

@@ -25,6 +25,7 @@ final class BookingRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT b.id, b.business_id, b.location_id, b.client_id, b.user_id,
                     b.client_name, b.notes, b.status, b.source,
+                    b.replaces_booking_id, b.replaced_by_booking_id,
                     b.idempotency_key, b.created_at, b.updated_at,
                     c.first_name AS client_first_name, c.last_name AS client_last_name
              FROM bookings b
@@ -382,30 +383,46 @@ final class BookingRepository
     /**
      * Get occupied slots for a staff member in a date range.
      * Used by ComputeAvailability.
+     * 
+     * @param int $staffId
+     * @param int $locationId
+     * @param DateTimeImmutable $startDate
+     * @param DateTimeImmutable $endDate
+     * @param int|null $excludeBookingId Exclude this booking from conflicts (for edit mode)
+     * @return array
      */
     public function getOccupiedSlots(
         int $staffId,
         int $locationId,
         DateTimeImmutable $startDate,
-        DateTimeImmutable $endDate
+        DateTimeImmutable $endDate,
+        ?int $excludeBookingId = null
     ): array {
-        $stmt = $this->db->getPdo()->prepare(
-            "SELECT bi.start_time, bi.end_time
-             FROM booking_items bi
-             JOIN bookings b ON bi.booking_id = b.id
-             WHERE bi.staff_id = ?
-               AND bi.location_id = ?
-               AND b.status IN ('pending', 'confirmed')
-               AND bi.start_time >= ?
-               AND bi.end_time <= ?
-             ORDER BY bi.start_time ASC"
-        );
-        $stmt->execute([
+        $sql = "SELECT bi.start_time, bi.end_time
+                FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.id
+                WHERE bi.staff_id = ?
+                  AND bi.location_id = ?
+                  AND b.status IN ('pending', 'confirmed')
+                  AND bi.start_time >= ?
+                  AND bi.end_time <= ?";
+        
+        $params = [
             $staffId,
             $locationId,
             $startDate->format('Y-m-d H:i:s'),
             $endDate->format('Y-m-d H:i:s'),
-        ]);
+        ];
+        
+        if ($excludeBookingId !== null) {
+            $sql .= " AND b.id != ?";
+            $params[] = $excludeBookingId;
+        }
+        
+        $sql .= " ORDER BY bi.start_time ASC";
+
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
 
         return $stmt->fetchAll();
     }
@@ -436,7 +453,8 @@ final class BookingRepository
         int $locationId,
         string $date,
         ?int $staffId = null,
-        int $limit = 100
+        int $limit = 100,
+        bool $includeReplaced = false
     ): array {
         $startOfDay = $date . ' 00:00:00';
         $endOfDay = $date . ' 23:59:59';
@@ -449,6 +467,10 @@ final class BookingRepository
                   AND bi.start_time <= ?";
         
         $params = [$locationId, $startOfDay, $endOfDay];
+
+        if (!$includeReplaced) {
+            $sql .= " AND b.status != 'replaced'";
+        }
 
         if ($staffId !== null) {
             $sql .= ' AND bi.staff_id = ?';
@@ -472,17 +494,21 @@ final class BookingRepository
     /**
      * Get all appointments (booking_items) for a specific location and date.
      * Returns booking_items with joined booking and service info.
+     * Excludes bookings with status 'replaced' by default.
      */
-    public function getAppointmentsByLocationAndDate(int $locationId, string $date): array
+    public function getAppointmentsByLocationAndDate(int $locationId, string $date, bool $includeReplaced = false): array
     {
         $startOfDay = $date . ' 00:00:00';
         $endOfDay = $date . ' 23:59:59';
+
+        $statusFilter = $includeReplaced ? '' : "AND b.status != 'replaced'";
 
         $stmt = $this->db->getPdo()->prepare(
             "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
                     bi.start_time, bi.end_time, bi.price, bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.created_at, bi.updated_at,
                     b.status AS booking_status, b.client_name, b.notes AS booking_notes, b.client_id, b.business_id, b.source,
+                    b.replaces_booking_id, b.replaced_by_booking_id,
                     c.first_name AS client_first_name, c.last_name AS client_last_name,
                     NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), '') AS client_full_name,
                     s.name AS service_name,
@@ -497,6 +523,7 @@ final class BookingRepository
              WHERE bi.location_id = ?
                AND bi.start_time >= ?
                AND bi.start_time <= ?
+               $statusFilter
              ORDER BY bi.start_time ASC, bi.id ASC"
         );
         $stmt->execute([$locationId, $startOfDay, $endOfDay]);
@@ -557,6 +584,78 @@ final class BookingRepository
         $sql = 'UPDATE booking_items SET ' . implode(', ', $fields) . ' WHERE id = ?';
         $stmt = $this->db->getPdo()->prepare($sql);
         $stmt->execute($params);
+    }
+
+    /**
+     * Lock a booking row for update (SELECT ... FOR UPDATE).
+     * MUST be called inside a transaction.
+     */
+    public function lockForUpdate(int $bookingId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT b.*, 
+                    b.replaces_booking_id, b.replaced_by_booking_id
+             FROM bookings b
+             WHERE b.id = ?
+             FOR UPDATE'
+        );
+        $stmt->execute([$bookingId]);
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * Mark a booking as replaced.
+     */
+    public function markAsReplaced(int $bookingId, int $replacedByBookingId): void
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE bookings 
+             SET status = ?, replaced_by_booking_id = ?, updated_at = NOW()
+             WHERE id = ?'
+        );
+        $stmt->execute(['replaced', $replacedByBookingId, $bookingId]);
+    }
+
+    /**
+     * Set the replaces_booking_id on a new booking.
+     */
+    public function setReplacesBookingId(int $newBookingId, int $originalBookingId): void
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE bookings 
+             SET replaces_booking_id = ?, updated_at = NOW()
+             WHERE id = ?'
+        );
+        $stmt->execute([$originalBookingId, $newBookingId]);
+    }
+
+    /**
+     * Get booking with replace info.
+     */
+    public function findByIdWithReplaceInfo(int $bookingId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT b.id, b.business_id, b.location_id, b.client_id, b.user_id,
+                    b.client_name, b.notes, b.status, b.source,
+                    b.idempotency_key, b.created_at, b.updated_at,
+                    b.replaces_booking_id, b.replaced_by_booking_id,
+                    c.first_name AS client_first_name, c.last_name AS client_last_name
+             FROM bookings b
+             LEFT JOIN clients c ON b.client_id = c.id
+             WHERE b.id = ?'
+        );
+        $stmt->execute([$bookingId]);
+        $result = $stmt->fetch();
+
+        if (!$result) {
+            return null;
+        }
+
+        $result['items'] = $this->getBookingItems($bookingId);
+        $result['total_price'] = array_sum(array_column($result['items'], 'price'));
+        $result['total_duration_minutes'] = $this->calculateTotalDuration($result['items']);
+
+        return $result;
     }
 
     public function db(): Connection

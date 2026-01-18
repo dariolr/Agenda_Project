@@ -20,6 +20,8 @@ final class BookingException extends Exception
     public const UNAUTHORIZED = 'unauthorized';
     public const VALIDATION_ERROR = 'validation_error';
     public const SERVER_ERROR = 'internal_error';
+    public const ALREADY_REPLACED = 'already_replaced';
+    public const NOT_MODIFIABLE = 'not_modifiable';
 
     private string $errorCode;
     private array $details;
@@ -128,6 +130,26 @@ final class BookingException extends Exception
     public static function serverError(string $message = 'Internal server error'): self
     {
         return new self($message, self::SERVER_ERROR, 500);
+    }
+
+    public static function alreadyReplaced(int $bookingId, int $replacedByBookingId): self
+    {
+        return new self(
+            'This booking has already been replaced',
+            self::ALREADY_REPLACED,
+            409,
+            ['booking_id' => $bookingId, 'replaced_by_booking_id' => $replacedByBookingId]
+        );
+    }
+
+    public static function notModifiable(int $bookingId, string $reason): self
+    {
+        return new self(
+            'This booking cannot be modified: ' . $reason,
+            self::NOT_MODIFIABLE,
+            400,
+            ['booking_id' => $bookingId, 'reason' => $reason]
+        );
     }
 
     public function getErrorCode(): string

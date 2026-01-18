@@ -17,8 +17,11 @@ final class AvailabilityController
     ) {}
 
     /**
-     * GET /v1/availability?location_id=X&date=YYYY-MM-DD&service_ids=1,2,3&staff_id=X
+     * GET /v1/availability?location_id=X&date=YYYY-MM-DD&service_ids=1,2,3&staff_id=X&exclude_booking_id=Y
      * Public endpoint - returns available time slots.
+     * 
+     * Use exclude_booking_id when checking availability for editing an existing booking.
+     * This will exclude the original booking from conflict detection.
      */
     public function index(Request $request): Response
     {
@@ -34,6 +37,7 @@ final class AvailabilityController
         $date = $query['date'] ?? null;
         $serviceIdsParam = $query['service_ids'] ?? null;
         $staffId = isset($query['staff_id']) ? (int) $query['staff_id'] : null;
+        $excludeBookingId = isset($query['exclude_booking_id']) ? (int) $query['exclude_booking_id'] : null;
 
         if ($date === null) {
             return Response::error('Date parameter is required (YYYY-MM-DD)', 'validation_error', 400);
@@ -69,7 +73,9 @@ final class AvailabilityController
             $staffId,
             $totalDuration,
             $date,
-            $serviceIds
+            $serviceIds,
+            false, // keepStaffInfo
+            $excludeBookingId
         );
 
         return Response::success($result, 200);

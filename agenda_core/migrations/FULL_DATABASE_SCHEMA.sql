@@ -442,11 +442,13 @@ CREATE TABLE IF NOT EXISTS bookings (
     user_id INT UNSIGNED DEFAULT NULL COMMENT 'User who booked online',
     client_name VARCHAR(255) DEFAULT NULL COMMENT 'Fallback if no client',
     notes TEXT DEFAULT NULL,
-    status ENUM('pending', 'confirmed', 'completed', 'cancelled', 'no_show') 
+    status ENUM('pending', 'confirmed', 'completed', 'cancelled', 'no_show', 'replaced') 
         NOT NULL DEFAULT 'confirmed',
     source ENUM('online', 'manual', 'import','onlinestaff') NOT NULL DEFAULT 'manual',
     idempotency_key VARCHAR(64) DEFAULT NULL COMMENT 'Client-provided UUID for idempotent POST',
     idempotency_expires_at TIMESTAMP NULL DEFAULT NULL COMMENT 'Key expiration (24h TTL)',
+    replaces_booking_id INT UNSIGNED NULL COMMENT 'ID of booking this one replaces (for new booking)',
+    replaced_by_booking_id INT UNSIGNED NULL COMMENT 'ID of booking that replaced this (for original)',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -457,6 +459,8 @@ CREATE TABLE IF NOT EXISTS bookings (
     KEY idx_bookings_user (user_id),
     KEY idx_bookings_status (business_id, status),
     KEY idx_bookings_idempotency_expires (idempotency_expires_at),
+    KEY idx_bookings_replaces_booking_id (replaces_booking_id),
+    KEY idx_bookings_replaced_by_booking_id (replaced_by_booking_id),
     CONSTRAINT fk_bookings_business FOREIGN KEY (business_id) 
         REFERENCES businesses(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_bookings_location FOREIGN KEY (location_id) 
@@ -464,7 +468,11 @@ CREATE TABLE IF NOT EXISTS bookings (
     CONSTRAINT fk_bookings_client FOREIGN KEY (client_id) 
         REFERENCES clients(id) ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT fk_bookings_user FOREIGN KEY (user_id) 
-        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_bookings_replaces_booking_id FOREIGN KEY (replaces_booking_id)
+        REFERENCES bookings(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_bookings_replaced_by_booking_id FOREIGN KEY (replaced_by_booking_id)
+        REFERENCES bookings(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
@@ -503,6 +511,64 @@ CREATE TABLE IF NOT EXISTS booking_items (
     CONSTRAINT fk_booking_items_staff FOREIGN KEY (staff_id) 
         REFERENCES staff(id) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- booking_replacements: Audit table linking original bookings to replacements
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS booking_replacements (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    original_booking_id INT UNSIGNED NOT NULL 
+        COMMENT 'The booking that was replaced',
+    new_booking_id INT UNSIGNED NOT NULL 
+        COMMENT 'The booking that replaced the original',
+    actor_type VARCHAR(32) NOT NULL 
+        COMMENT 'customer, staff, or system',
+    actor_id INT UNSIGNED NULL 
+        COMMENT 'ID of the actor (client_id for customer, user_id for staff)',
+    reason VARCHAR(255) NULL 
+        COMMENT 'Optional reason for the modification',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_booking_replacements_original (original_booking_id),
+    UNIQUE KEY uk_booking_replacements_new (new_booking_id),
+    KEY idx_booking_replacements_created_at (created_at),
+    CONSTRAINT fk_booking_replacements_original
+        FOREIGN KEY (original_booking_id) REFERENCES bookings(id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_booking_replacements_new
+        FOREIGN KEY (new_booking_id) REFERENCES bookings(id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Audit table linking original bookings to their replacements';
+
+-- ----------------------------------------------------------------------------
+-- booking_events: Immutable audit trail for all booking events
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS booking_events (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    booking_id INT UNSIGNED NOT NULL 
+        COMMENT 'The booking this event relates to',
+    event_type VARCHAR(64) NOT NULL 
+        COMMENT 'Type: booking_created, booking_replaced, booking_created_by_replace, booking_cancelled, etc.',
+    actor_type VARCHAR(32) NOT NULL 
+        COMMENT 'customer, staff, or system',
+    actor_id INT UNSIGNED NULL 
+        COMMENT 'ID of the actor who caused the event',
+    correlation_id VARCHAR(64) NULL 
+        COMMENT 'UUID to correlate related events',
+    payload_json JSON NOT NULL 
+        COMMENT 'Event-specific data with before/after snapshots',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_booking_events_booking_id (booking_id),
+    KEY idx_booking_events_event_type (event_type),
+    KEY idx_booking_events_created_at (created_at),
+    KEY idx_booking_events_correlation_id (correlation_id),
+    CONSTRAINT fk_booking_events_booking
+        FOREIGN KEY (booking_id) REFERENCES bookings(id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Immutable audit trail for all booking events';
 
 -- ----------------------------------------------------------------------------
 -- time_blocks: Blocchi di non disponibilità (ferie, pause, riunioni)
