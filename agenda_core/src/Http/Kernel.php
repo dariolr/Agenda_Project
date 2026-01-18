@@ -64,6 +64,7 @@ use Agenda\UseCases\Booking\CreateBooking;
 use Agenda\UseCases\Booking\UpdateBooking;
 use Agenda\UseCases\Booking\DeleteBooking;
 use Agenda\UseCases\Booking\GetMyBookings;
+use Agenda\UseCases\Booking\ReplaceBooking;
 use Agenda\UseCases\CustomerAuth\LoginCustomer;
 use Agenda\UseCases\CustomerAuth\RegisterCustomer;
 use Agenda\UseCases\CustomerAuth\RefreshCustomerToken;
@@ -75,6 +76,7 @@ use Agenda\UseCases\CustomerAuth\UpdateCustomerProfile;
 use Agenda\UseCases\CustomerAuth\ChangeCustomerPassword;
 use Agenda\UseCases\Admin\ExportBusiness;
 use Agenda\UseCases\Admin\ImportBusiness;
+use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Throwable;
 
 final class Kernel
@@ -223,6 +225,9 @@ final class Kernel
         $this->router->post('/v1/locations/{location_id}/bookings', BookingsController::class, 'store', ['auth', 'location_path', 'idempotency']);
         $this->router->put('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'update', ['auth', 'location_path']);
         $this->router->delete('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'destroy', ['auth', 'location_path']);
+        
+        // Booking replace (atomic replace pattern)
+        $this->router->post('/v1/bookings/{booking_id}/replace', BookingsController::class, 'replace', ['auth']);
 
         // Time blocks (auth required)
         $this->router->get('/v1/locations/{location_id}/time-blocks', TimeBlocksController::class, 'index', ['auth']);
@@ -257,6 +262,9 @@ final class Kernel
         $this->router->get('/v1/customer/bookings', BookingsController::class, 'myCustomerBookings', ['customer_auth']);
         $this->router->put('/v1/customer/bookings/{booking_id}', BookingsController::class, 'updateCustomer', ['customer_auth']);
         $this->router->delete('/v1/customer/bookings/{booking_id}', BookingsController::class, 'destroyCustomer', ['customer_auth']);
+        
+        // Customer booking replace (atomic replace pattern)
+        $this->router->post('/v1/customer/bookings/{booking_id}/replace', BookingsController::class, 'replaceCustomer', ['customer_auth']);
     }
 
     private function registerMiddleware(): void
@@ -326,11 +334,13 @@ final class Kernel
         $changeCustomerPassword = new ChangeCustomerPassword($clientAuthRepo, $passwordHasher);
 
         // Booking Use Cases
+        $bookingAuditRepo = new BookingAuditRepository($this->db);
         $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo, $timeBlockRepo, $staffExceptionRepo);
-        $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo, $computeAvailability);
-        $updateBooking = new UpdateBooking($bookingRepo, $this->db, $clientRepo, $notificationRepo);
-        $deleteBooking = new DeleteBooking($bookingRepo, $this->db, $notificationRepo);
+        $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo, $computeAvailability, $bookingAuditRepo);
+        $updateBooking = new UpdateBooking($bookingRepo, $this->db, $clientRepo, $notificationRepo, $bookingAuditRepo);
+        $deleteBooking = new DeleteBooking($bookingRepo, $this->db, $notificationRepo, $bookingAuditRepo);
         $getMyBookings = new GetMyBookings($this->db);
+        $replaceBooking = new ReplaceBooking($this->db, $bookingRepo, $bookingAuditRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $notificationRepo, $computeAvailability);
 
         // Controllers
         $this->controllers = [
@@ -342,9 +352,9 @@ final class Kernel
             ServicesController::class => new ServicesController($serviceRepo, $locationRepo, $businessUserRepo, $userRepo),
             StaffController::class => new StaffController($staffRepo, $staffScheduleRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
-            BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo),
+            BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking),
             ClientsController::class => new ClientsController($clientRepo, $businessUserRepo, $userRepo, $bookingRepo),
-            AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo),
+            AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $bookingAuditRepo),
             AdminBusinessesController::class => new AdminBusinessesController($this->db, $businessRepo, $businessUserRepo, $userRepo),
             BusinessSyncController::class => new BusinessSyncController(
                 new ExportBusiness($this->db),

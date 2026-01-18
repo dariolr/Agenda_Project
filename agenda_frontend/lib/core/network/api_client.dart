@@ -407,6 +407,44 @@ class ApiClient {
     await delete(ApiConfig.customerDeleteBooking(bookingId));
   }
 
+  /// POST /v1/customer/bookings/{booking_id}/replace
+  /// Sostituisce una prenotazione esistente con una nuova (atomic replace pattern).
+  /// L'originale viene marcata 'replaced', la nuova viene creata con link bidirezionale.
+  Future<Map<String, dynamic>> customerReplaceBooking({
+    required int bookingId,
+    required String idempotencyKey,
+    required int locationId,
+    required List<int> serviceIds,
+    required String startTime,
+    int? staffId,
+    String? notes,
+    String? reason,
+    List<Map<String, dynamic>>? items,
+  }) async {
+    final data = <String, dynamic>{'location_id': locationId};
+    if (items != null) {
+      data['items'] = items;
+    } else {
+      data['service_ids'] = serviceIds;
+      data['start_time'] = startTime;
+      if (staffId != null) {
+        data['staff_id'] = staffId;
+      }
+    }
+    if (notes != null && notes.isNotEmpty) {
+      data['notes'] = notes;
+    }
+    if (reason != null && reason.isNotEmpty) {
+      data['reason'] = reason;
+    }
+
+    return post(
+      ApiConfig.customerReplaceBooking(bookingId),
+      data: data,
+      headers: {'X-Idempotency-Key': idempotencyKey},
+    );
+  }
+
   /// POST /v1/customer/{business_id}/bookings
   Future<Map<String, dynamic>> createCustomerBooking({
     required int businessId,
@@ -570,12 +608,13 @@ class ApiClient {
     return get(ApiConfig.staff, queryParameters: {'location_id': locationId});
   }
 
-  /// GET /v1/availability?location_id=X&date=YYYY-MM-DD&service_ids=1,2&staff_id=N
+  /// GET /v1/availability?location_id=X&date=YYYY-MM-DD&service_ids=1,2&staff_id=N&exclude_booking_id=N
   Future<Map<String, dynamic>> getAvailability({
     required int locationId,
     required String date,
     required List<int> serviceIds,
     int? staffId,
+    int? excludeBookingId,
   }) async {
     final params = <String, dynamic>{
       'location_id': locationId,
@@ -584,6 +623,9 @@ class ApiClient {
     };
     if (staffId != null) {
       params['staff_id'] = staffId;
+    }
+    if (excludeBookingId != null) {
+      params['exclude_booking_id'] = excludeBookingId;
     }
     return get(ApiConfig.availability, queryParameters: params);
   }

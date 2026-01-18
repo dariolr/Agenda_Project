@@ -14,6 +14,8 @@ class BookingResponse {
   final String createdAt;
   final String updatedAt;
   final List<BookingItemResponse> items;
+  final int? replacesBookingId;
+  final int? replacedByBookingId;
 
   const BookingResponse({
     required this.id,
@@ -30,7 +32,15 @@ class BookingResponse {
     required this.createdAt,
     required this.updatedAt,
     required this.items,
+    this.replacesBookingId,
+    this.replacedByBookingId,
   });
+
+  /// Indica se questa prenotazione è stata sostituita da un'altra
+  bool get isReplaced => status == 'replaced' || replacedByBookingId != null;
+
+  /// Indica se questa prenotazione sostituisce un'altra
+  bool get isReplacement => replacesBookingId != null;
 
   factory BookingResponse.fromJson(Map<String, dynamic> json) {
     final itemsList = json['items'] as List<dynamic>? ?? [];
@@ -51,6 +61,8 @@ class BookingResponse {
       items: itemsList
           .map((i) => BookingItemResponse.fromJson(i as Map<String, dynamic>))
           .toList(),
+      replacesBookingId: json['replaces_booking_id'] as int?,
+      replacedByBookingId: json['replaced_by_booking_id'] as int?,
     );
   }
 }

@@ -61,6 +61,10 @@ class ApiConfig {
   static String customerDeleteBooking(int bookingId) =>
       '/v1/customer/bookings/$bookingId';
 
+  /// POST /v1/customer/bookings/{booking_id}/replace
+  static String customerReplaceBooking(int bookingId) =>
+      '/v1/customer/bookings/$bookingId/replace';
+
   /// POST /v1/customer/{business_id}/bookings
   static String customerCreateBooking(int businessId) =>
       '/v1/customer/$businessId/bookings';

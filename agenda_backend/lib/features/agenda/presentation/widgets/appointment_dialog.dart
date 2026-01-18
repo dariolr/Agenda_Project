@@ -121,6 +121,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             locationId: appt.locationId,
             clientId: appt.clientId,
             clientName: appt.clientName,
+            // Note: status and replace fields not available from Appointment,
+            // they will be populated when booking is loaded from API
           );
     });
     // Leggi le note dalla Booking associata

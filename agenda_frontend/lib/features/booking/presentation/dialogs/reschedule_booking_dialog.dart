@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '/core/l10n/l10_extension.dart';
 import '/core/models/booking_item.dart';
@@ -59,10 +60,12 @@ class _RescheduleBookingDialogState
           ? widget.booking.serviceIds
           : [1]; // Fallback se non disponibili (backward compatibility)
 
+      // Passa exclude_booking_id per escludere la prenotazione originale dai conflitti
       final response = await apiClient.getAvailability(
         locationId: widget.booking.locationId,
         date: dateStr,
         serviceIds: serviceIds,
+        excludeBookingId: widget.booking.id,
       );
 
       final slots = response['slots'] as List<dynamic>? ?? [];
@@ -123,26 +126,39 @@ class _RescheduleBookingDialogState
 
     final newStartTime = newDateTime.toIso8601String();
 
-    final success = await ref
+    // Genera idempotency key per il replace
+    final idempotencyKey = const Uuid().v4();
+
+    // Usa il pattern atomic replace
+    final result = await ref
         .read(myBookingsProvider.notifier)
-        .rescheduleBooking(
+        .replaceBooking(
+          originalBookingId: widget.booking.id,
           locationId: widget.booking.locationId,
-          bookingId: widget.booking.id,
-          newStartTime: newStartTime,
+          serviceIds: widget.booking.serviceIds.isNotEmpty
+              ? widget.booking.serviceIds
+              : [1],
+          startTime: newStartTime,
+          idempotencyKey: idempotencyKey,
           notes: _notesController.text.isNotEmpty
               ? _notesController.text
               : null,
         );
 
     if (mounted) {
-      if (success) {
+      if (result.success) {
         Navigator.of(context).pop(true);
       } else {
         final bookingsState = ref.read(myBookingsProvider);
+        // Messaggio specifico per conflitto slot (spec C6)
+        final errorMessage =
+            bookingsState.error?.contains('slot_conflict') == true
+            ? context.l10n.slotNoLongerAvailable
+            : (bookingsState.error ?? context.l10n.errorGeneric);
         await FeedbackDialog.showError(
           context,
           title: context.l10n.errorTitle,
-          message: bookingsState.error ?? context.l10n.errorGeneric,
+          message: errorMessage,
         );
       }
     }

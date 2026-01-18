@@ -6,6 +6,7 @@ namespace Agenda\UseCases\Booking;
 
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Repositories\BookingRepository;
+use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
@@ -37,6 +38,7 @@ final class CreateBooking
         private readonly UserRepository $userRepository,
         private readonly ?NotificationRepository $notificationRepo = null,
         private readonly ?ComputeAvailability $computeAvailability = null,
+        private readonly ?BookingAuditRepository $auditRepository = null,
     ) {}
 
     /**
@@ -314,6 +316,9 @@ final class CreateBooking
             // Fetch and return created booking
             $booking = $this->bookingRepository->findById($bookingId);
             
+            // Create audit event for booking_created
+            $this->createBookingCreatedEvent($bookingId, 'staff', $userId, $booking);
+            
             // Queue notifications (async, non-blocking)
             $this->queueNotifications($booking, $location, $userId);
             
@@ -476,6 +481,10 @@ final class CreateBooking
             $this->db->commit();
 
             $booking = $this->bookingRepository->findById($bookingId);
+            
+            // Create audit event for booking_created
+            $this->createBookingCreatedEvent($bookingId, 'staff', $userId, $booking);
+            
             $this->queueNotifications($booking, $location, $userId);
 
             return $this->formatBookingResponse($booking);
@@ -772,6 +781,9 @@ final class CreateBooking
             // Fetch and return created booking
             $booking = $this->bookingRepository->findById($bookingId);
             
+            // Create audit event for booking_created (by customer)
+            $this->createBookingCreatedEvent($bookingId, 'customer', $clientId, $booking);
+            
             // Queue notifications
             $this->queueNotificationsForClient($booking, $location, $clientId);
             
@@ -917,6 +929,9 @@ final class CreateBooking
 
             // Fetch and return created booking
             $booking = $this->bookingRepository->findById($bookingId);
+            
+            // Create audit event for booking_created (by customer)
+            $this->createBookingCreatedEvent($bookingId, 'customer', $clientId, $booking);
 
             // Queue notifications
             $this->queueNotificationsForClient($booking, $location, $clientId);
@@ -1007,6 +1022,55 @@ final class CreateBooking
             file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " queueNotificationsForClient: reminder result=$reminderResult\n", FILE_APPEND);
         } catch (\Throwable $e) {
             file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " queueNotificationsForClient ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+
+    /**
+     * Create an audit event for booking_created.
+     *
+     * @param int $bookingId The created booking ID
+     * @param string $actorType 'customer' or 'staff'
+     * @param int|null $actorId Client ID for customer, User ID for staff
+     * @param array $booking The booking data
+     */
+    private function createBookingCreatedEvent(int $bookingId, string $actorType, ?int $actorId, array $booking): void
+    {
+        if ($this->auditRepository === null) {
+            return;
+        }
+
+        try {
+            $items = $booking['items'] ?? [];
+            $payload = [
+                'booking_id' => $bookingId,
+                'status' => $booking['status'] ?? 'confirmed',
+                'location_id' => (int) ($booking['location_id'] ?? 0),
+                'client_id' => $booking['client_id'] !== null ? (int) $booking['client_id'] : null,
+                'notes' => $booking['notes'] ?? null,
+                'source' => $booking['source'] ?? 'online',
+                'items' => array_map(fn($item) => [
+                    'service_id' => (int) ($item['service_id'] ?? 0),
+                    'staff_id' => (int) ($item['staff_id'] ?? 0),
+                    'start_time' => $item['start_time'] ?? null,
+                    'end_time' => $item['end_time'] ?? null,
+                    'price' => (float) ($item['price'] ?? 0),
+                ], $items),
+                'total_price' => (float) ($booking['total_price'] ?? 0),
+                'first_start_time' => !empty($items) ? ($items[0]['start_time'] ?? null) : null,
+                'last_end_time' => !empty($items) ? ($items[count($items) - 1]['end_time'] ?? null) : null,
+            ];
+
+            $this->auditRepository->createEvent(
+                $bookingId,
+                'booking_created',
+                $actorType,
+                $actorId,
+                $payload,
+                null // no correlation_id for initial creation
+            );
+        } catch (\Throwable $e) {
+            // Log error but don't fail the booking creation
+            file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createBookingCreatedEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
         }
     }
 }

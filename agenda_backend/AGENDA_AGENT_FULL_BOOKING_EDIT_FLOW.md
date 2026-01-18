@@ -156,6 +156,17 @@ Regole:
 * `payload_json` deve contenere snapshot before/after e riferimenti old/new.
 * Eventi non si aggiornano mai (immutabili). Vietare UPDATE applicativamente.
 
+### A4.1 EVENT TYPES IMPLEMENTATI (18/01/2026)
+
+| Event Type | Trigger | Actor Type | File |
+|------------|---------|------------|------|
+| `booking_created` | Nuova prenotazione (normale) | `staff` / `customer` | `CreateBooking.php` |
+| `booking_replaced` | Prenotazione originale sostituita | `staff` / `customer` | `ReplaceBooking.php` |
+| `booking_created_by_replace` | Nuova prenotazione da replace | `staff` / `customer` | `ReplaceBooking.php` |
+| `appointment_updated` | Modifica singolo item | `staff` | `AppointmentsController.php` |
+
+**Nota:** Gli eventi `booking_replaced` e `booking_created_by_replace` condividono lo stesso `correlation_id`.
+
 ### A5. BACKFILL / COMPATIBILITÀ
 
 * Non eseguire backfill di vecchi record.
@@ -242,6 +253,8 @@ Se uno qualunque degli step 4-9 fallisce:
 
 Scrivere eventi audit immutabili.
 
+**✅ IMPLEMENTATO (18/01/2026)**
+
 Scrivere SEMPRE:
 
 * su original booking:
@@ -250,6 +263,11 @@ Scrivere SEMPRE:
 * su new booking:
 
   * `event_type = booking_created_by_replace`
+
+**AGGIUNTO (18/01/2026):** Oltre agli eventi di replace, vengono registrati:
+
+* `booking_created` — per ogni nuova prenotazione (non da replace)
+* `appointment_updated` — per ogni modifica a un singolo appointment
 
 Payload minimo in `payload_json`:
 
@@ -466,17 +484,32 @@ Non includere dati sensibili nelle log line.
 
 ## CHECKLIST FINALE (IL LAVORO È DONE SOLO SE)
 
-* Esiste endpoint replace e funziona
-* Replace è atomico (rollback totale su errori)
-* Availability in edit esclude original_booking_id
-* Old booking non viene hard-deleted
-* Old booking è `replaced`
-* Relazione old↔new persistita (campi + tabella)
-* Audit events scritti con snapshot before/after
-* Notifica unica “booking modified”
-* Frontend riusa flow completo con prefill e CTA corretta
-* Backend/CRM mostra correttamente e non duplica in lista
-* Tutti i test obbligatori passano
+* ✅ Esiste endpoint replace e funziona — `ReplaceBooking.php`
+* ✅ Replace è atomico (rollback totale su errori)
+* ✅ Availability in edit esclude original_booking_id — parametro `exclude_booking_id`
+* ✅ Old booking non viene hard-deleted
+* ✅ Old booking è `replaced`
+* ✅ Relazione old↔new persistita (campi + tabella) — `booking_replacements`
+* ✅ Audit events scritti con snapshot before/after — `booking_events` (18/01/2026)
+* ⏳ Notifica unica "booking modified" — Da verificare
+* ⏳ Frontend riusa flow completo con prefill e CTA corretta — Parziale
+* ⏳ Backend/CRM mostra correttamente e non duplica in lista — Parziale
+* ⏳ Tutti i test obbligatori passano — Da completare
+
+### Stato Implementazione Audit (18/01/2026)
+
+| Componente | Stato | Note |
+|------------|-------|------|
+| Tabella `booking_events` | ✅ | Migrazione eseguita |
+| Tabella `booking_replacements` | ✅ | Migrazione eseguita |
+| `booking_created` event | ✅ | `CreateBooking.php` |
+| `booking_replaced` event | ✅ | `ReplaceBooking.php` |
+| `booking_created_by_replace` event | ✅ | `ReplaceBooking.php` |
+| `appointment_updated` event | ✅ | `AppointmentsController.php` |
+| `booking_item_added` event | ✅ | `AppointmentsController.php` |
+| `booking_item_deleted` event | ✅ | `AppointmentsController.php` |
+| `booking_updated` event | ✅ | `UpdateBooking.php` |
+| `booking_cancelled` event | ✅ | `DeleteBooking.php`, `AppointmentsController.php` |
 
 ---
 

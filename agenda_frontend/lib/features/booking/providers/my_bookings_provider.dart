@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '/core/models/location.dart';
 import '/core/models/booking_item.dart';
+import '/core/models/location.dart';
 import '/core/network/network_providers.dart';
 import '/features/booking/providers/business_provider.dart';
 import '/features/booking/providers/locations_provider.dart';
@@ -157,6 +157,73 @@ class MyBookings extends _$MyBookings {
     } catch (e) {
       state = state.copyWith(error: e.toString());
       return false;
+    }
+  }
+
+  /// Sostituisce una prenotazione (POST /v1/customer/bookings/{id}/replace)
+  /// Usa il pattern atomic replace: l'originale diventa 'replaced', viene creata una nuova
+  Future<({bool success, int? newBookingId})> replaceBooking({
+    required int originalBookingId,
+    required int locationId,
+    required List<int> serviceIds,
+    required String startTime,
+    required String idempotencyKey,
+    int? staffId,
+    String? notes,
+    String? reason,
+  }) async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.customerReplaceBooking(
+        bookingId: originalBookingId,
+        idempotencyKey: idempotencyKey,
+        locationId: locationId,
+        serviceIds: serviceIds,
+        startTime: startTime,
+        staffId: staffId,
+        notes: notes,
+        reason: reason,
+      );
+
+      final businessName =
+          ref.read(currentBusinessProvider).value?.name ?? '';
+      final locationsAsync = ref.read(locationsProvider);
+      final locationNames = <int, String>{};
+      final locations = locationsAsync.value ?? const <Location>[];
+      for (final location in locations) {
+        locationNames[location.id] = location.name;
+      }
+
+      final newBooking = _fromCustomerBooking(
+        response,
+        businessName: businessName,
+        locationNames: locationNames,
+      );
+
+      // Rimuovi la prenotazione originale dalla lista e aggiungi la nuova
+      final nextUpcoming = state.upcoming
+          .where((b) => b.id != originalBookingId)
+          .toList();
+      final nextPast = state.past
+          .where((b) => b.id != originalBookingId)
+          .toList();
+
+      if (newBooking.isUpcoming) {
+        nextUpcoming.insert(0, newBooking);
+      } else {
+        nextPast.insert(0, newBooking);
+      }
+
+      state = state.copyWith(
+        upcoming: nextUpcoming,
+        past: nextPast,
+        error: null,
+      );
+
+      return (success: true, newBookingId: newBooking.id);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return (success: false, newBookingId: null);
     }
   }
 }

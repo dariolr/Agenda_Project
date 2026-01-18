@@ -18,6 +18,9 @@ final class ComputeAvailability
     private const SLOT_INTERVAL_MINUTES = 15;
     private const DEFAULT_MAX_DAYS_AHEAD = 60;
     private const DEFAULT_MIN_NOTICE_HOURS = 1;
+    
+    /** @var int|null Booking ID to exclude from conflicts (for edit mode) */
+    private ?int $currentExcludeBookingId = null;
 
     public function __construct(
         private readonly BookingRepository $bookingRepository,
@@ -38,6 +41,7 @@ final class ComputeAvailability
      * @param string $date Date in Y-m-d format
      * @param array<int> $serviceIds Services requested (used to filter eligible staff)
      * @param bool $keepStaffInfo If true, keep staff_id even when deduplicating (for internal use)
+     * @param int|null $excludeBookingId Exclude this booking from conflicts (for edit mode)
      * @return array Available slots
      */
     public function execute(
@@ -47,8 +51,12 @@ final class ComputeAvailability
         int $durationMinutes,
         string $date,
         array $serviceIds,
-        bool $keepStaffInfo = false
+        bool $keepStaffInfo = false,
+        ?int $excludeBookingId = null
     ): array {
+        // Store excludeBookingId for use in computeStaffAvailability
+        $this->currentExcludeBookingId = $excludeBookingId;
+        
         // Get timezone and booking limits from location
         $location = $this->locationRepository->findById($locationId);
         if (!$location) {
@@ -178,7 +186,8 @@ final class ComputeAvailability
             $staffId,
             $locationId,
             $dayStart,
-            $dayEnd
+            $dayEnd,
+            $this->currentExcludeBookingId
         );
 
         // Get time blocks for this staff on this day

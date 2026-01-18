@@ -950,6 +950,146 @@ if ($staffId === null) {
 
 ---
 
+## 📋 Booking Audit System (18/01/2026)
+
+### Tabelle Audit
+
+| Tabella | Scopo |
+|---------|-------|
+| `booking_replacements` | Relazione tra booking originale e sostitutivo |
+| `booking_events` | Audit trail immutabile per tutti gli eventi booking |
+
+### Event Types Registrati
+
+| Event Type | Trigger | Actor Type | Use Case/Controller |
+|------------|---------|------------|---------------------|
+| `booking_created` | Creazione nuova prenotazione | `staff` o `customer` | `CreateBooking.php` |
+| `booking_replaced` | Prenotazione originale sostituita | `staff` o `customer` | `ReplaceBooking.php` |
+| `booking_created_by_replace` | Nuova prenotazione da replace | `staff` o `customer` | `ReplaceBooking.php` |
+| `appointment_updated` | Modifica singolo appuntamento (orario/staff/prezzo) | `staff` | `AppointmentsController.php` |
+| `booking_item_added` | Aggiunta servizio a booking esistente | `staff` | `AppointmentsController.php` |
+| `booking_item_deleted` | Rimozione servizio da booking | `staff` | `AppointmentsController.php` |
+| `booking_cancelled` | Cancellazione completa booking | `staff` o `customer` | `DeleteBooking.php`, `AppointmentsController.php` |
+| `booking_updated` | Modifica cliente/note/status booking | `staff` o `customer` | `UpdateBooking.php` |
+
+### Payload Evento `booking_created`
+
+```json
+{
+  "booking_id": 123,
+  "status": "confirmed",
+  "location_id": 1,
+  "client_id": 42,
+  "notes": "Prima visita",
+  "source": "online",
+  "items": [
+    {
+      "service_id": 1,
+      "staff_id": 3,
+      "start_time": "2026-01-20 10:00:00",
+      "end_time": "2026-01-20 10:30:00",
+      "price": 25.00
+    }
+  ],
+  "total_price": 25.00,
+  "first_start_time": "2026-01-20 10:00:00",
+  "last_end_time": "2026-01-20 10:30:00"
+}
+```
+
+### Payload Evento `appointment_updated`
+
+```json
+{
+  "appointment_id": 456,
+  "before": {
+    "id": 456,
+    "staff_id": 3,
+    "start_time": "2026-01-20 10:00:00",
+    "end_time": "2026-01-20 10:30:00",
+    "price": 25.00
+  },
+  "after": {
+    "id": 456,
+    "staff_id": 4,
+    "start_time": "2026-01-20 11:00:00",
+    "end_time": "2026-01-20 11:30:00",
+    "price": 25.00
+  },
+  "changed_fields": ["staff_id", "start_time", "end_time"]
+}
+```
+
+### Payload Evento `booking_updated`
+
+```json
+{
+  "booking_id": 123,
+  "before": {
+    "id": 123,
+    "client_id": 42,
+    "customer_name": "Mario Rossi",
+    "status": "confirmed",
+    "notes": null
+  },
+  "after": {
+    "id": 123,
+    "client_id": 43,
+    "customer_name": "Luigi Verdi",
+    "status": "confirmed",
+    "notes": "Cambio cliente"
+  },
+  "changed_fields": ["client_id", "customer_name", "notes"]
+}
+```
+
+### Payload Evento `booking_cancelled`
+
+```json
+{
+  "booking_id": 123,
+  "business_id": 1,
+  "location_id": 1,
+  "client_id": 42,
+  "status": "confirmed",
+  "notes": "Prima visita",
+  "source": "online",
+  "items": [
+    {
+      "id": 456,
+      "service_id": 1,
+      "staff_id": 3,
+      "start_time": "2026-01-20 10:00:00",
+      "end_time": "2026-01-20 10:30:00",
+      "price": 25.00
+    }
+  ],
+  "total_price": 25.00,
+  "first_start_time": "2026-01-20 10:00:00",
+  "last_end_time": "2026-01-20 10:30:00"
+}
+```
+
+### File PHP Coinvolti
+
+| File | Responsabilità |
+|------|----------------|
+| `BookingAuditRepository.php` | CRUD per `booking_replacements` e `booking_events` |
+| `CreateBooking.php` | Registra `booking_created` dopo ogni creazione |
+| `ReplaceBooking.php` | Registra `booking_replaced` e `booking_created_by_replace` |
+| `UpdateBooking.php` | Registra `booking_updated` per modifiche cliente/note/status |
+| `DeleteBooking.php` | Registra `booking_cancelled` prima della cancellazione |
+| `AppointmentsController.php` | Registra `appointment_updated`, `booking_item_added`, `booking_item_deleted`, `booking_cancelled` |
+
+### Regole Audit
+
+- Gli eventi sono **immutabili**: nessun UPDATE/DELETE applicativo
+- `correlation_id` (UUID) collega eventi correlati (es. replace genera 2 eventi con stesso correlation_id)
+- Gli errori di audit **non bloccano** l'operazione principale (logged e ignorati)
+- Actor types: `customer`, `staff`, `system`
+
+---
+
 ## 🌐 Ambiente Staging (17/01/2026)
 
 ### Scopo

@@ -237,7 +237,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Please check the entered data",
     ),
     "bookingRescheduled": MessageLookupByLibrary.simpleMessage(
-      "Booking rescheduled successfully",
+      "Booking modified successfully",
     ),
     "bookingStepDateTime": MessageLookupByLibrary.simpleMessage("Date & Time"),
     "bookingStepLocation": MessageLookupByLibrary.simpleMessage("Location"),
@@ -245,6 +245,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingStepStaff": MessageLookupByLibrary.simpleMessage("Staff"),
     "bookingStepSummary": MessageLookupByLibrary.simpleMessage("Summary"),
     "bookingTitle": MessageLookupByLibrary.simpleMessage("Book appointment"),
+    "bookingUpdatedTitle": MessageLookupByLibrary.simpleMessage(
+      "Booking updated",
+    ),
     "businessNotFound": MessageLookupByLibrary.simpleMessage(
       "Business not found",
     ),
@@ -259,7 +262,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Delete booking",
     ),
     "confirmReschedule": MessageLookupByLibrary.simpleMessage(
-      "Confirm reschedule",
+      "Confirm changes",
     ),
     "confirmationBookingId": m0,
     "confirmationGoHome": MessageLookupByLibrary.simpleMessage("Go to home"),
@@ -388,7 +391,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "priceFormat": m10,
     "profileTitle": MessageLookupByLibrary.simpleMessage("Profile"),
     "rescheduleBookingTitle": MessageLookupByLibrary.simpleMessage(
-      "Reschedule booking",
+      "Modify booking",
     ),
     "selectDate": MessageLookupByLibrary.simpleMessage("Select date"),
     "selectNewDate": MessageLookupByLibrary.simpleMessage("Select new date"),
@@ -408,6 +411,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "servicesTitle": MessageLookupByLibrary.simpleMessage("Choose services"),
     "servicesTotal": m14,
+    "slotNoLongerAvailable": MessageLookupByLibrary.simpleMessage(
+      "The time slot is no longer available. Your original booking remains unchanged.",
+    ),
     "staffAnyOperator": MessageLookupByLibrary.simpleMessage(
       "Any available staff",
     ),

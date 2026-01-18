@@ -1658,10 +1658,10 @@ class L10n {
     );
   }
 
-  /// `Riprogramma prenotazione`
+  /// `Modifica prenotazione`
   String get rescheduleBookingTitle {
     return Intl.message(
-      'Riprogramma prenotazione',
+      'Modifica prenotazione',
       name: 'rescheduleBookingTitle',
       desc: '',
       args: [],
@@ -1718,11 +1718,31 @@ class L10n {
     );
   }
 
-  /// `Prenotazione riprogrammata con successo`
+  /// `Prenotazione modificata con successo`
   String get bookingRescheduled {
     return Intl.message(
-      'Prenotazione riprogrammata con successo',
+      'Prenotazione modificata con successo',
       name: 'bookingRescheduled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Lo slot non è più disponibile. La prenotazione originale è rimasta invariata.`
+  String get slotNoLongerAvailable {
+    return Intl.message(
+      'Lo slot non è più disponibile. La prenotazione originale è rimasta invariata.',
+      name: 'slotNoLongerAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione aggiornata`
+  String get bookingUpdatedTitle {
+    return Intl.message(
+      'Prenotazione aggiornata',
+      name: 'bookingUpdatedTitle',
       desc: '',
       args: [],
     );

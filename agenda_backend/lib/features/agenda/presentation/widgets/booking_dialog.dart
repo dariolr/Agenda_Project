@@ -1391,6 +1391,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         locationId: bookingResponse.locationId,
         clientId: bookingResponse.clientId,
         clientName: bookingResponse.clientName ?? clientName,
+        status: bookingResponse.status,
+        replacesBookingId: bookingResponse.replacesBookingId,
+        replacedByBookingId: bookingResponse.replacedByBookingId,
       );
 
       // Refresh appointments per caricare i nuovi
