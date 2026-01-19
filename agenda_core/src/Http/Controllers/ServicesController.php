@@ -10,6 +10,7 @@ use Agenda\Infrastructure\Repositories\ServiceRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Repositories\ServicePackageRepository;
 
 final class ServicesController
 {
@@ -18,6 +19,7 @@ final class ServicesController
         private readonly LocationRepository $locationRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
+        private readonly ServicePackageRepository $packageRepo,
     ) {}
 
     /**
@@ -250,6 +252,7 @@ final class ServicesController
         }
 
         $this->serviceRepository->delete($serviceId);
+        $this->packageRepo->markBrokenByServiceId($serviceId);
 
         return Response::success(['message' => 'Service deleted successfully']);
     }
