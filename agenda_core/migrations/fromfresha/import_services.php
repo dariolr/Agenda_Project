@@ -1,11 +1,14 @@
 <?php
-require_once __DIR__ . '/vendor/autoload.php';
+$rootDir = __DIR__ . '/../../';
+require_once $rootDir . 'vendor/autoload.php';
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv = Dotenv\Dotenv::createImmutable($rootDir);
 $dotenv->load();
 
+$port = $_ENV['DB_PORT'] ?? 3306;
+$host = $_ENV['DB_HOST'] === 'localhost' ? '127.0.0.1' : $_ENV['DB_HOST'];
 $pdo = new PDO(
-    "mysql:host={$_ENV['DB_HOST']};dbname={$_ENV['DB_DATABASE']};charset=utf8mb4",
+    "mysql:host={$host};port={$port};dbname={$_ENV['DB_DATABASE']};charset=utf8mb4",
     $_ENV['DB_USERNAME'],
     $_ENV['DB_PASSWORD'],
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
@@ -66,6 +69,22 @@ print_r($categoryColorMap);
 
 // Cleanup
 echo "\nCleanup in corso...\n";
+// Prima elimina booking_items che referenziano service_variants (ignora se tabella non esiste)
+try {
+    $pdo->exec("DELETE bi FROM booking_items bi 
+                JOIN service_variants sv ON bi.service_variant_id = sv.id 
+                WHERE sv.location_id = $LOCATION_ID");
+} catch (PDOException $e) {
+    echo "  (booking_items skipped)\n";
+}
+// Poi elimina appointments che usano servizi di questo business (ignora se tabella non esiste)
+try {
+    $pdo->exec("DELETE a FROM appointments a 
+                JOIN services s ON a.service_id = s.id 
+                WHERE s.business_id = $BUSINESS_ID");
+} catch (PDOException $e) {
+    echo "  (appointments skipped)\n";
+}
 $pdo->exec("DELETE FROM service_variants WHERE location_id = $LOCATION_ID");
 $pdo->exec("DELETE FROM services WHERE business_id = $BUSINESS_ID");
 $pdo->exec("DELETE FROM service_categories WHERE business_id = $BUSINESS_ID");
@@ -91,8 +110,10 @@ function parseDuration($str) {
 
 // Funzione per estrarre tempo supplementare
 function parseProcessingTime($str) {
-    if (preg_match('/(\d+)m/', $str, $m)) return intval($m[1]);
-    return 0;
+    $minutes = 0;
+    if (preg_match('/(\d+)h/', $str, $m)) $minutes += intval($m[1]) * 60;
+    if (preg_match('/(\d+)m/', $str, $m)) $minutes += intval($m[1]);
+    return $minutes;
 }
 
 // Inserisci servizi
