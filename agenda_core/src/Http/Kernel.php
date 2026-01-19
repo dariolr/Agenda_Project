@@ -20,6 +20,7 @@ use Agenda\Http\Controllers\StaffController;
 use Agenda\Http\Controllers\StaffAvailabilityExceptionController;
 use Agenda\Http\Controllers\StaffPlanningController;
 use Agenda\Http\Controllers\ResourcesController;
+use Agenda\Http\Controllers\ServicePackagesController;
 use Agenda\Http\Controllers\TimeBlocksController;
 use Agenda\Http\Controllers\AppointmentsController;
 use Agenda\Http\Controllers\BusinessSyncController;
@@ -39,6 +40,7 @@ use Agenda\Infrastructure\Repositories\ClientAuthRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
+use Agenda\Infrastructure\Repositories\ServicePackageRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\StaffScheduleRepository;
 use Agenda\Infrastructure\Repositories\StaffAvailabilityExceptionRepository;
@@ -204,6 +206,15 @@ final class Kernel
         $this->router->delete('/v1/services/{id}', ServicesController::class, 'destroy', ['auth']);
         $this->router->post('/v1/services/reorder', ServicesController::class, 'reorderServices', ['auth']);
 
+        // Service Packages (public)
+        $this->router->get('/v1/locations/{location_id}/service-packages', ServicePackagesController::class, 'index', ['location_path']);
+        $this->router->get('/v1/locations/{location_id}/service-packages/{id}/expand', ServicePackagesController::class, 'expand', ['location_path']);
+
+        // Service Packages CRUD (auth required)
+        $this->router->post('/v1/locations/{location_id}/service-packages', ServicePackagesController::class, 'store', ['auth', 'location_path']);
+        $this->router->put('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'update', ['auth', 'location_path']);
+        $this->router->delete('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'destroy', ['auth', 'location_path']);
+
         // Service Categories CRUD (auth required)
         $this->router->get('/v1/businesses/{business_id}/categories', ServicesController::class, 'indexCategories', ['auth', 'business_access_route']);
         $this->router->post('/v1/businesses/{business_id}/categories', ServicesController::class, 'storeCategory', ['auth', 'business_access_route']);
@@ -301,6 +312,7 @@ final class Kernel
         $businessInvitationRepo = new BusinessInvitationRepository($this->db);
         $locationRepo = new LocationRepository($this->db);
         $serviceRepo = new ServiceRepository($this->db);
+        $servicePackageRepo = new ServicePackageRepository($this->db);
         $staffRepo = new StaffRepository($this->db);
         $staffScheduleRepo = new StaffScheduleRepository($this->db);
         $staffExceptionRepo = new StaffAvailabilityExceptionRepository($this->db);
@@ -355,7 +367,8 @@ final class Kernel
             CustomerAuthController::class => new CustomerAuthController($loginCustomer, $refreshCustomerToken, $logoutCustomer, $getCustomerMe, $registerCustomer, $requestCustomerPasswordReset, $resetCustomerPassword, $updateCustomerProfile, $changeCustomerPassword, $businessRepo),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo, $businessUserRepo, $userRepo),
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
-            ServicesController::class => new ServicesController($serviceRepo, $locationRepo, $businessUserRepo, $userRepo),
+            ServicesController::class => new ServicesController($serviceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo),
+            ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo),
             StaffController::class => new StaffController($staffRepo, $staffScheduleRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo),
