@@ -65,6 +65,10 @@ class ApiConfig {
   static String customerReplaceBooking(int bookingId) =>
       '/v1/customer/bookings/$bookingId/replace';
 
+  /// GET /v1/customer/bookings/{booking_id}/history
+  static String customerBookingHistory(int bookingId) =>
+      '/v1/customer/bookings/$bookingId/history';
+
   /// POST /v1/customer/{business_id}/bookings
   static String customerCreateBooking(int businessId) =>
       '/v1/customer/$businessId/bookings';

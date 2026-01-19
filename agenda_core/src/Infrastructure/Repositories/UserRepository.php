@@ -73,6 +73,22 @@ final class UserRepository
         // Could add: UPDATE users SET updated_at = NOW() WHERE id = ?
     }
 
+    /**
+     * Find user by ID including inactive users.
+     * Used for audit trail where we need to show deleted users.
+     */
+    public function findByIdUnfiltered(int $id): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, email, first_name, last_name, phone, email_verified_at, is_active, is_superadmin, created_at 
+             FROM users WHERE id = ?'
+        );
+        $stmt->execute([$id]);
+        $result = $stmt->fetch();
+        
+        return $result ?: null;
+    }
+
     public function updatePassword(int $userId, string $passwordHash): void
     {
         $stmt = $this->db->getPdo()->prepare(

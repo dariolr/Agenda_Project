@@ -1050,7 +1050,9 @@ final class CreateBooking
                 'source' => $booking['source'] ?? 'online',
                 'items' => array_map(fn($item) => [
                     'service_id' => (int) ($item['service_id'] ?? 0),
+                    'service_name' => $item['service_name'] ?? null,
                     'staff_id' => (int) ($item['staff_id'] ?? 0),
+                    'staff_name' => $item['staff_display_name'] ?? $item['staff_name'] ?? null,
                     'start_time' => $item['start_time'] ?? null,
                     'end_time' => $item['end_time'] ?? null,
                     'price' => (float) ($item['price'] ?? 0),
@@ -1060,13 +1062,17 @@ final class CreateBooking
                 'last_end_time' => !empty($items) ? ($items[count($items) - 1]['end_time'] ?? null) : null,
             ];
 
+            // Resolve actor name for denormalization
+            $actorName = $this->auditRepository->resolveActorName($actorType, $actorId);
+
             $this->auditRepository->createEvent(
                 $bookingId,
                 'booking_created',
                 $actorType,
                 $actorId,
                 $payload,
-                null // no correlation_id for initial creation
+                null, // no correlation_id for initial creation
+                $actorName
             );
         } catch (\Throwable $e) {
             // Log error but don't fail the booking creation

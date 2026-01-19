@@ -26,6 +26,7 @@ import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/layout_config_provider.dart';
 import '../../providers/staff_slot_availability_provider.dart';
+import '../dialogs/booking_history_dialog.dart';
 import 'service_item_card.dart';
 
 /// Show the Appointment dialog for editing an existing appointment.
@@ -194,6 +195,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           ),
         )
         .toList();
+  }
+
+  void _showHistory(BuildContext context) {
+    final bookingId = widget.initial.bookingId;
+    showBookingHistoryDialog(context, ref, bookingId: bookingId);
   }
 
   @override
@@ -464,9 +470,20 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.headlineSmall,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.history),
+                          tooltip: l10n.bookingHistoryTitle,
+                          onPressed: () => _showHistory(context),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Flexible(child: content),
@@ -526,9 +543,20 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   horizontalPadding,
                   12,
                 ),
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.history),
+                      tooltip: l10n.bookingHistoryTitle,
+                      onPressed: () => _showHistory(context),
+                    ),
+                  ],
                 ),
               ),
               Expanded(
@@ -1323,7 +1351,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       final initialClientId = widget.initial.clientId;
       final clientChanged = initialClientId != clientId;
 
-      // Se il cliente è cambiato, aggiorna il booking
+      // Se il cliente è cambiato, conferma l'applicazione a tutti gli appuntamenti
       if (clientChanged) {
         // Verifica se ci sono appuntamenti con staff diversi
         final currentStaffId = _serviceItems.isNotEmpty
@@ -1357,26 +1385,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             // Utente ha annullato, non salvare
             return;
           }
-        }
-
-        // Aggiorna il cliente su tutti gli appuntamenti della prenotazione
-        try {
-          await ref
-              .read(appointmentsProvider.notifier)
-              .updateClientForBooking(
-                bookingId: bookingId,
-                clientId: clientId,
-                clientName: clientName,
-              );
-        } catch (e) {
-          if (mounted) {
-            await FeedbackDialog.showError(
-              context,
-              title: l10n.errorTitle,
-              message: l10n.errorTitle,
-            );
-          }
-          return;
         }
       }
 

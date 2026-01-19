@@ -65,6 +65,10 @@ class ApiConfig {
   static String booking(int locationId, int bookingId) =>
       '/v1/locations/$locationId/bookings/$bookingId';
 
+  /// Storico booking endpoint
+  static String bookingHistory(int bookingId) =>
+      '/v1/bookings/$bookingId/history';
+
   // ========== BUSINESS USERS (OPERATORS) ENDPOINTS ==========
 
   /// Lista operatori di un business

@@ -26,7 +26,7 @@ final class BookingTest extends TestCase
     public function testMaxDaysAheadIs60(): void
     {
         $class = new \ReflectionClass(ComputeAvailability::class);
-        $constant = $class->getReflectionConstant('MAX_DAYS_AHEAD');
+        $constant = $class->getReflectionConstant('DEFAULT_MAX_DAYS_AHEAD');
         
         $this->assertEquals(60, $constant->getValue());
     }

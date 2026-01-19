@@ -44,12 +44,29 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
       return [];
     }
 
-    final appointments = await repository.getAppointments(
+    // Usa il nuovo metodo che ritorna anche i metadata dei booking (incluse le note)
+    final result = await repository.getAppointmentsWithMetadata(
       locationId: location.id,
       businessId: business.id,
       date: date,
     );
-    return appointments;
+
+    // Popola bookingsProvider con i metadata dei booking (incluse le note)
+    final bookingsNotifier = ref.read(bookingsProvider.notifier);
+    for (final entry in result.bookingMetadata.entries) {
+      final metadata = entry.value;
+      bookingsNotifier.ensureBooking(
+        bookingId: metadata.id,
+        businessId: metadata.businessId,
+        locationId: metadata.locationId,
+        clientId: metadata.clientId,
+        clientName: metadata.clientName ?? '',
+        notes: metadata.notes,
+        status: metadata.status ?? 'confirmed',
+      );
+    }
+
+    return result.appointments;
   }
 
   /// Restituisce gli appointments associati a un booking specifico,
@@ -296,6 +313,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
             locationId: bookingResponse.locationId,
             clientId: bookingResponse.clientId,
             clientName: bookingResponse.clientName ?? clientName,
+            notes: bookingResponse.notes,
             status: bookingResponse.status,
             replacesBookingId: bookingResponse.replacesBookingId,
             replacedByBookingId: bookingResponse.replacedByBookingId,

@@ -195,14 +195,20 @@ final class AppointmentsController
         $updated = $this->bookingRepo->getAppointmentById($appointmentId);
         
         // Create audit event for appointment_updated
-        $this->createAppointmentUpdatedEvent(
-            $bookingId,
-            $appointmentId,
-            $beforeState,
-            $this->captureAppointmentState($updated),
-            $userId,
-            $updates
-        );
+        // Only include fields that actually changed in value
+        $afterState = $this->captureAppointmentState($updated);
+        $actuallyChangedFields = $this->getActuallyChangedFields($beforeState, $afterState);
+        
+        if (!empty($actuallyChangedFields)) {
+            $this->createAppointmentUpdatedEvent(
+                $bookingId,
+                $appointmentId,
+                $beforeState,
+                $afterState,
+                $userId,
+                $actuallyChangedFields
+            );
+        }
 
         return Response::success($this->formatAppointment($updated));
     }
@@ -420,6 +426,7 @@ final class AppointmentsController
             'updated_at' => $appointment['updated_at'],
             // Include booking info if joined
             'booking_status' => $appointment['booking_status'] ?? null,
+            'booking_notes' => $appointment['booking_notes'] ?? null,
             'source' => $appointment['source'] ?? null,
             'client_id' => isset($appointment['client_id']) ? (int) $appointment['client_id'] : null,
             'client_name' => $appointment['client_name'] ?? null,
@@ -436,6 +443,7 @@ final class AppointmentsController
         return [
             'id' => (int) $appointment['id'],
             'staff_id' => (int) $appointment['staff_id'],
+            'staff_name' => $appointment['staff_name'] ?? null,
             'service_id' => isset($appointment['service_id']) ? (int) $appointment['service_id'] : null,
             'service_variant_id' => (int) $appointment['service_variant_id'],
             'start_time' => $appointment['start_time'],
@@ -444,6 +452,27 @@ final class AppointmentsController
             'extra_blocked_minutes' => (int) ($appointment['extra_blocked_minutes'] ?? 0),
             'extra_processing_minutes' => (int) ($appointment['extra_processing_minutes'] ?? 0),
         ];
+    }
+
+    /**
+     * Compare before and after states to find actually changed fields.
+     */
+    private function getActuallyChangedFields(array $before, array $after): array
+    {
+        $changed = [];
+        $fieldsToCompare = ['staff_id', 'service_id', 'service_variant_id', 'start_time', 'end_time', 'price', 'extra_blocked_minutes', 'extra_processing_minutes'];
+        
+        foreach ($fieldsToCompare as $field) {
+            $beforeVal = $before[$field] ?? null;
+            $afterVal = $after[$field] ?? null;
+            
+            // Normalize for comparison
+            if ($beforeVal !== $afterVal) {
+                $changed[$field] = $afterVal;
+            }
+        }
+        
+        return $changed;
     }
 
     /**
@@ -469,13 +498,17 @@ final class AppointmentsController
                 'changed_fields' => array_keys($changedFields),
             ];
 
+            // Resolve actor name for denormalization
+            $actorName = $this->auditRepo->resolveActorName('staff', $userId);
+
             $this->auditRepo->createEvent(
                 $bookingId,
                 'appointment_updated',
                 'staff',
                 $userId,
                 $payload,
-                null
+                null,
+                $actorName
             );
         } catch (\Throwable $e) {
             // Log error but don't fail the update
@@ -533,13 +566,17 @@ final class AppointmentsController
                 ],
             ];
 
+            // Resolve actor name for denormalization
+            $actorName = $this->auditRepo->resolveActorName('staff', $userId);
+
             $this->auditRepo->createEvent(
                 $bookingId,
                 'booking_item_added',
                 'staff',
                 $userId,
                 $payload,
-                null
+                null,
+                $actorName
             );
         } catch (\Throwable $e) {
             file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createBookingItemAddedEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
@@ -567,7 +604,8 @@ final class AppointmentsController
                 'staff',
                 $userId,
                 $payload,
-                null
+                null,
+                $this->auditRepo->resolveActorName('staff', $userId)
             );
         } catch (\Throwable $e) {
             file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createBookingItemDeletedEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
@@ -589,13 +627,17 @@ final class AppointmentsController
                 'reason' => $beforeState['reason'] ?? 'user_cancelled',
             ];
 
+            // Resolve actor name for denormalization
+            $actorName = $this->auditRepo->resolveActorName('staff', $userId);
+
             $this->auditRepo->createEvent(
                 $bookingId,
                 'booking_cancelled',
                 'staff',
                 $userId,
                 $payload,
-                null
+                null,
+                $actorName
             );
         } catch (\Throwable $e) {
             file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createBookingCancelledEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);

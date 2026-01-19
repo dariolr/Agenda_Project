@@ -369,14 +369,15 @@ final class BookingRepository
         return true;
     }
 
+    /**
+     * Soft delete a booking by setting status to 'cancelled'.
+     * The booking and its items remain in the database for audit purposes.
+     */
     public function deleteBooking(int $bookingId): bool
     {
-        // Delete booking items first (due to foreign key constraint)
-        $stmt = $this->db->getPdo()->prepare('DELETE FROM booking_items WHERE booking_id = ?');
-        $stmt->execute([$bookingId]);
-
-        // Then delete the booking
-        $stmt = $this->db->getPdo()->prepare('DELETE FROM bookings WHERE id = ?');
+        $stmt = $this->db->getPdo()->prepare(
+            "UPDATE bookings SET status = 'cancelled', updated_at = NOW() WHERE id = ?"
+        );
         return $stmt->execute([$bookingId]);
     }
 
@@ -494,14 +495,28 @@ final class BookingRepository
     /**
      * Get all appointments (booking_items) for a specific location and date.
      * Returns booking_items with joined booking and service info.
-     * Excludes bookings with status 'replaced' by default.
+     * 
+     * @param bool $includeReplaced Include bookings with status 'replaced'
+     * @param bool $includeCancelled Include bookings with status 'cancelled' (default false - cancelled appointments are hidden from calendar)
      */
-    public function getAppointmentsByLocationAndDate(int $locationId, string $date, bool $includeReplaced = false): array
+    public function getAppointmentsByLocationAndDate(int $locationId, string $date, bool $includeReplaced = false, bool $includeCancelled = false): array
     {
         $startOfDay = $date . ' 00:00:00';
         $endOfDay = $date . ' 23:59:59';
 
-        $statusFilter = $includeReplaced ? '' : "AND b.status != 'replaced'";
+        $excludedStatuses = [];
+        if (!$includeReplaced) {
+            $excludedStatuses[] = 'replaced';
+        }
+        if (!$includeCancelled) {
+            $excludedStatuses[] = 'cancelled';
+        }
+        
+        $statusFilter = '';
+        if (!empty($excludedStatuses)) {
+            $placeholders = implode(', ', array_fill(0, count($excludedStatuses), '?'));
+            $statusFilter = "AND b.status NOT IN ($placeholders)";
+        }
 
         $stmt = $this->db->getPdo()->prepare(
             "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
@@ -526,7 +541,12 @@ final class BookingRepository
                $statusFilter
              ORDER BY bi.start_time ASC, bi.id ASC"
         );
-        $stmt->execute([$locationId, $startOfDay, $endOfDay]);
+        
+        $params = [$locationId, $startOfDay, $endOfDay];
+        if (!empty($excludedStatuses)) {
+            $params = array_merge($params, $excludedStatuses);
+        }
+        $stmt->execute($params);
 
         return $stmt->fetchAll();
     }

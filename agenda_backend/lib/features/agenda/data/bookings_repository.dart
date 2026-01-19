@@ -3,6 +3,38 @@ import '../../../core/network/api_client.dart';
 import '../domain/booking_response.dart';
 import 'bookings_api.dart';
 
+/// Metadata di un booking estratto dalla risposta appointments
+class BookingMetadata {
+  final int id;
+  final int businessId;
+  final int locationId;
+  final int? clientId;
+  final String? clientName;
+  final String? notes;
+  final String? status;
+
+  const BookingMetadata({
+    required this.id,
+    required this.businessId,
+    required this.locationId,
+    this.clientId,
+    this.clientName,
+    this.notes,
+    this.status,
+  });
+}
+
+/// Risultato contenente appointments e metadata dei booking
+class AppointmentsWithMetadata {
+  final List<Appointment> appointments;
+  final Map<int, BookingMetadata> bookingMetadata;
+
+  const AppointmentsWithMetadata({
+    required this.appointments,
+    required this.bookingMetadata,
+  });
+}
+
 /// Repository per gestione Bookings
 /// Converte BookingResponse API in Appointment per uso interno
 class BookingsRepository {
@@ -18,19 +50,57 @@ class BookingsRepository {
     required DateTime date,
     int? staffId,
   }) async {
+    final result = await getAppointmentsWithMetadata(
+      locationId: locationId,
+      businessId: businessId,
+      date: date,
+      staffId: staffId,
+    );
+    return result.appointments;
+  }
+
+  /// Carica gli appuntamenti con i metadata dei booking (incluse le note)
+  Future<AppointmentsWithMetadata> getAppointmentsWithMetadata({
+    required int locationId,
+    required int businessId,
+    required DateTime date,
+    int? staffId,
+  }) async {
     final dateStr =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
     // Usa la nuova API appointments che ritorna direttamente gli appointment items
     try {
-      final appointments = await _api.fetchAppointments(
+      final rawAppointments = await _api.fetchAppointments(
         locationId: locationId,
         date: dateStr,
       );
 
-      return appointments
-          .map((item) => _appointmentFromJson(item, businessId))
-          .toList();
+      final appointments = <Appointment>[];
+      final bookingMetadata = <int, BookingMetadata>{};
+
+      for (final json in rawAppointments) {
+        appointments.add(_appointmentFromJson(json, businessId));
+
+        // Estrai booking metadata (una volta per booking)
+        final bookingId = json['booking_id'] as int;
+        if (!bookingMetadata.containsKey(bookingId)) {
+          bookingMetadata[bookingId] = BookingMetadata(
+            id: bookingId,
+            businessId: json['business_id'] as int? ?? businessId,
+            locationId: json['location_id'] as int,
+            clientId: json['client_id'] as int?,
+            clientName: json['client_name'] as String?,
+            notes: json['booking_notes'] as String?,
+            status: json['booking_status'] as String?,
+          );
+        }
+      }
+
+      return AppointmentsWithMetadata(
+        appointments: appointments,
+        bookingMetadata: bookingMetadata,
+      );
     } catch (e) {
       // Fallback: usa bookings API se appointments non disponibile
       final bookings = await _api.fetchBookings(
@@ -40,12 +110,29 @@ class BookingsRepository {
       );
 
       final appointments = <Appointment>[];
+      final bookingMetadata = <int, BookingMetadata>{};
+
       for (final booking in bookings) {
+        // Estrai booking metadata
+        bookingMetadata[booking.id] = BookingMetadata(
+          id: booking.id,
+          businessId: booking.businessId,
+          locationId: booking.locationId,
+          clientId: booking.clientId,
+          clientName: booking.clientName,
+          notes: booking.notes,
+          status: booking.status,
+        );
+
         for (final item in booking.items) {
           appointments.add(_toAppointment(booking, item, businessId));
         }
       }
-      return appointments;
+
+      return AppointmentsWithMetadata(
+        appointments: appointments,
+        bookingMetadata: bookingMetadata,
+      );
     }
   }
 

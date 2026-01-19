@@ -5,12 +5,14 @@
   "actionNext": "Avanti",
   "actionConfirm": "Conferma",
   "actionCancel": "Annulla",
-  "actionDelete": "Cancella",
+  "actionDelete": "Elimina",
   "actionClose": "Chiudi",
   "actionRetry": "Riprova",
   "actionLogin": "Accedi",
   "actionRegister": "Registrati",
   "actionLogout": "Esci",
+  
+  "sessionExpired": "Sessione scaduta. Effettua nuovamente l'accesso.",
   
   "errorTitle": "Errore",
   "errorGeneric": "Si è verificato un errore",
@@ -268,10 +270,10 @@
   "cancel": "Annulla",
   "yes": "Sì",
   "no": "No",
-  "cancelBookingTitle": "Cancella prenotazione",
-  "cancelBookingConfirm": "Sei sicuro di voler cancellare questa prenotazione?",
-  "bookingCancelled": "Prenotazione cancellata con successo",
-  "bookingCancelFailed": "Errore durante la cancellazione",
+  "cancelBookingTitle": "Elimina prenotazione",
+  "cancelBookingConfirm": "Sei sicuro di voler eliminare questa prenotazione?",
+  "bookingCancelled": "Prenotazione eliminata con successo",
+  "bookingCancelFailed": "Errore durante l'eliminazione della prenotazione. Riprova.",
   "modifyNotImplemented": "Funzione di modifica in sviluppo",
   "rescheduleBookingTitle": "Modifica prenotazione",
   "currentBooking": "Prenotazione attuale",
@@ -286,6 +288,33 @@
   "validationRequired": "Campo obbligatorio",
   "validationInvalidEmail": "Email non valida",
   "validationInvalidPhone": "Telefono non valido",
+
+  "bookingHistoryTitle": "Storico prenotazione",
+  "bookingHistoryEmpty": "Nessun evento registrato",
+  "bookingHistoryLoading": "Caricamento storico...",
+  "bookingHistoryError": "Errore nel caricamento dello storico",
+  "bookingHistoryEventCreated": "Prenotazione creata",
+  "bookingHistoryEventUpdated": "Prenotazione modificata",
+  "bookingHistoryEventCancelled": "Prenotazione eliminata",
+  "bookingHistoryEventItemAdded": "Servizio aggiunto",
+  "bookingHistoryEventItemDeleted": "Servizio rimosso",
+  "bookingHistoryEventAppointmentUpdated": "Appuntamento modificato",
+  "bookingHistoryEventTimeChanged": "Orario modificato",
+  "bookingHistoryEventStaffChanged": "Operatore cambiato",
+  "bookingHistoryEventPriceChanged": "Prezzo modificato",
+  "bookingHistoryEventDurationChanged": "Durata modificata",
+  "bookingHistoryEventReplaced": "Prenotazione sostituita",
+  "bookingHistoryActorCustomer": "Cliente",
+  "bookingHistoryActorStaff": "Staff",
+  "bookingHistoryActorSystem": "Sistema",
+  "bookingHistoryChangedFields": "Campi modificati: {fields}",
+  "@bookingHistoryChangedFields": {
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
+  },
+
+  "cancelledBadge": "ELIMINATA",
 
   "businessNotFound": "Attività non trovata",
   "businessNotFoundHint": "Verifica l'indirizzo o contatta direttamente l'attività."

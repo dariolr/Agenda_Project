@@ -636,5 +636,31 @@
   "appointmentPriceLabel": "Price",
   "appointmentPriceHint": "Custom price",
   "appointmentPriceResetTooltip": "Reset to service price",
-  "appointmentPriceFree": "Free"
+  "appointmentPriceFree": "Free",
+
+  "bookingHistoryTitle": "Booking history",
+  "bookingHistoryEmpty": "No events recorded",
+  "bookingHistoryLoading": "Loading history...",
+  "bookingHistoryError": "Error loading history",
+  "bookingHistoryEventCreated": "Booking created",
+  "bookingHistoryEventUpdated": "Booking updated",
+  "bookingHistoryEventCancelled": "Booking cancelled",
+  "bookingHistoryEventItemAdded": "Service added",
+  "bookingHistoryEventItemDeleted": "Service removed",
+  "bookingHistoryEventAppointmentUpdated": "Appointment updated",
+  "bookingHistoryEventTimeChanged": "Time changed",
+  "bookingHistoryEventStaffChanged": "Staff changed",
+  "bookingHistoryEventPriceChanged": "Price changed",
+  "bookingHistoryEventDurationChanged": "Duration changed",
+  "bookingHistoryEventReplaced": "Booking rescheduled",
+  "bookingHistoryActorStaff": "Staff",
+  "bookingHistoryActorCustomer": "Customer",
+  "bookingHistoryActorSystem": "System",
+  "bookingHistoryChangedFields": "Changed fields: {fields}",
+  "@bookingHistoryChangedFields": {
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
+  },
+  "cancelledBadge": "CANCELLED"
 }

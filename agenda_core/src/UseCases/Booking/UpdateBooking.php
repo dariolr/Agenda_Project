@@ -440,6 +440,9 @@ final class UpdateBooking
         }
         
         try {
+            // Resolve actor name for denormalization
+            $actorName = $this->auditRepo->resolveActorName($actorType, $actorId);
+            
             $this->auditRepo->createEvent(
                 $bookingId,
                 'booking_updated',
@@ -450,7 +453,9 @@ final class UpdateBooking
                     'before' => $before,
                     'after' => $after,
                     'changed_fields' => $changedFields,
-                ]
+                ],
+                null,
+                $actorName
             );
         } catch (\Throwable $e) {
             error_log("Failed to create booking_updated event: " . $e->getMessage());

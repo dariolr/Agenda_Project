@@ -554,6 +554,8 @@ CREATE TABLE IF NOT EXISTS booking_events (
         COMMENT 'customer, staff, or system',
     actor_id INT UNSIGNED NULL 
         COMMENT 'ID of the actor who caused the event',
+    actor_name VARCHAR(255) NULL 
+        COMMENT 'Denormalized actor name at event time (preserved even if actor deleted)',
     correlation_id VARCHAR(64) NULL 
         COMMENT 'UUID to correlate related events',
     payload_json JSON NOT NULL 

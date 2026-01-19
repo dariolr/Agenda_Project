@@ -79,9 +79,9 @@ class L10n {
     return Intl.message('Annulla', name: 'actionCancel', desc: '', args: []);
   }
 
-  /// `Cancella`
+  /// `Elimina`
   String get actionDelete {
-    return Intl.message('Cancella', name: 'actionDelete', desc: '', args: []);
+    return Intl.message('Elimina', name: 'actionDelete', desc: '', args: []);
   }
 
   /// `Chiudi`
@@ -112,6 +112,16 @@ class L10n {
   /// `Esci`
   String get actionLogout {
     return Intl.message('Esci', name: 'actionLogout', desc: '', args: []);
+  }
+
+  /// `Sessione scaduta. Effettua nuovamente l'accesso.`
+  String get sessionExpired {
+    return Intl.message(
+      'Sessione scaduta. Effettua nuovamente l\'accesso.',
+      name: 'sessionExpired',
+      desc: '',
+      args: [],
+    );
   }
 
   /// `Errore`
@@ -1608,40 +1618,40 @@ class L10n {
     return Intl.message('No', name: 'no', desc: '', args: []);
   }
 
-  /// `Cancella prenotazione`
+  /// `Elimina prenotazione`
   String get cancelBookingTitle {
     return Intl.message(
-      'Cancella prenotazione',
+      'Elimina prenotazione',
       name: 'cancelBookingTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sei sicuro di voler cancellare questa prenotazione?`
+  /// `Sei sicuro di voler eliminare questa prenotazione?`
   String get cancelBookingConfirm {
     return Intl.message(
-      'Sei sicuro di voler cancellare questa prenotazione?',
+      'Sei sicuro di voler eliminare questa prenotazione?',
       name: 'cancelBookingConfirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione cancellata con successo`
+  /// `Prenotazione eliminata con successo`
   String get bookingCancelled {
     return Intl.message(
-      'Prenotazione cancellata con successo',
+      'Prenotazione eliminata con successo',
       name: 'bookingCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore durante la cancellazione`
+  /// `Errore durante l'eliminazione della prenotazione. Riprova.`
   String get bookingCancelFailed {
     return Intl.message(
-      'Errore durante la cancellazione',
+      'Errore durante l\'eliminazione della prenotazione. Riprova.',
       name: 'bookingCancelFailed',
       desc: '',
       args: [],
@@ -1773,6 +1783,206 @@ class L10n {
     return Intl.message(
       'Telefono non valido',
       name: 'validationInvalidPhone',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Storico prenotazione`
+  String get bookingHistoryTitle {
+    return Intl.message(
+      'Storico prenotazione',
+      name: 'bookingHistoryTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun evento registrato`
+  String get bookingHistoryEmpty {
+    return Intl.message(
+      'Nessun evento registrato',
+      name: 'bookingHistoryEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Caricamento storico...`
+  String get bookingHistoryLoading {
+    return Intl.message(
+      'Caricamento storico...',
+      name: 'bookingHistoryLoading',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Errore nel caricamento dello storico`
+  String get bookingHistoryError {
+    return Intl.message(
+      'Errore nel caricamento dello storico',
+      name: 'bookingHistoryError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione creata`
+  String get bookingHistoryEventCreated {
+    return Intl.message(
+      'Prenotazione creata',
+      name: 'bookingHistoryEventCreated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione modificata`
+  String get bookingHistoryEventUpdated {
+    return Intl.message(
+      'Prenotazione modificata',
+      name: 'bookingHistoryEventUpdated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione eliminata`
+  String get bookingHistoryEventCancelled {
+    return Intl.message(
+      'Prenotazione eliminata',
+      name: 'bookingHistoryEventCancelled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizio aggiunto`
+  String get bookingHistoryEventItemAdded {
+    return Intl.message(
+      'Servizio aggiunto',
+      name: 'bookingHistoryEventItemAdded',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizio rimosso`
+  String get bookingHistoryEventItemDeleted {
+    return Intl.message(
+      'Servizio rimosso',
+      name: 'bookingHistoryEventItemDeleted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appuntamento modificato`
+  String get bookingHistoryEventAppointmentUpdated {
+    return Intl.message(
+      'Appuntamento modificato',
+      name: 'bookingHistoryEventAppointmentUpdated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Orario modificato`
+  String get bookingHistoryEventTimeChanged {
+    return Intl.message(
+      'Orario modificato',
+      name: 'bookingHistoryEventTimeChanged',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Operatore cambiato`
+  String get bookingHistoryEventStaffChanged {
+    return Intl.message(
+      'Operatore cambiato',
+      name: 'bookingHistoryEventStaffChanged',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prezzo modificato`
+  String get bookingHistoryEventPriceChanged {
+    return Intl.message(
+      'Prezzo modificato',
+      name: 'bookingHistoryEventPriceChanged',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Durata modificata`
+  String get bookingHistoryEventDurationChanged {
+    return Intl.message(
+      'Durata modificata',
+      name: 'bookingHistoryEventDurationChanged',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione sostituita`
+  String get bookingHistoryEventReplaced {
+    return Intl.message(
+      'Prenotazione sostituita',
+      name: 'bookingHistoryEventReplaced',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cliente`
+  String get bookingHistoryActorCustomer {
+    return Intl.message(
+      'Cliente',
+      name: 'bookingHistoryActorCustomer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Staff`
+  String get bookingHistoryActorStaff {
+    return Intl.message(
+      'Staff',
+      name: 'bookingHistoryActorStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sistema`
+  String get bookingHistoryActorSystem {
+    return Intl.message(
+      'Sistema',
+      name: 'bookingHistoryActorSystem',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Campi modificati: {fields}`
+  String bookingHistoryChangedFields(String fields) {
+    return Intl.message(
+      'Campi modificati: $fields',
+      name: 'bookingHistoryChangedFields',
+      desc: '',
+      args: [fields],
+    );
+  }
+
+  /// `ELIMINATA`
+  String get cancelledBadge {
+    return Intl.message(
+      'ELIMINATA',
+      name: 'cancelledBadge',
       desc: '',
       args: [],
     );
