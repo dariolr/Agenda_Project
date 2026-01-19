@@ -118,8 +118,8 @@
   "bookingDetails": "Dettagli prenotazione",
   "bookingNotes": "Note prenotazione",
   "appointmentNotesTitle": "Note",
-  "appointmentNoteLabel": "Nota appuntamento",
-  "clientNoteLabel": "Nota cliente",
+  "appointmentNoteLabel": "Nota sull'appuntamento",
+  "clientNoteLabel": "Nota sul cliente",
   "bookingItems": "Servizi",
   "bookingTotal": "Totale",
   "bookingUnavailableTimeWarningAppointment": "Attenzione: l’orario selezionato per l’appuntamento include fasce non disponibili per il team scelto.",
@@ -636,5 +636,31 @@
   "appointmentPriceLabel": "Prezzo",
   "appointmentPriceHint": "Prezzo personalizzato",
   "appointmentPriceResetTooltip": "Ripristina prezzo del servizio",
-  "appointmentPriceFree": "Gratuito"
+  "appointmentPriceFree": "Gratuito",
+
+  "bookingHistoryTitle": "Storico prenotazione",
+  "bookingHistoryEmpty": "Nessun evento registrato",
+  "bookingHistoryLoading": "Caricamento storico...",
+  "bookingHistoryError": "Errore nel caricamento dello storico",
+  "bookingHistoryEventCreated": "Prenotazione creata",
+  "bookingHistoryEventUpdated": "Prenotazione modificata",
+  "bookingHistoryEventCancelled": "Prenotazione cancellata",
+  "bookingHistoryEventItemAdded": "Servizio aggiunto",
+  "bookingHistoryEventItemDeleted": "Servizio rimosso",
+  "bookingHistoryEventAppointmentUpdated": "Appuntamento modificato",
+  "bookingHistoryEventTimeChanged": "Orario modificato",
+  "bookingHistoryEventStaffChanged": "Operatore cambiato",
+  "bookingHistoryEventPriceChanged": "Prezzo modificato",
+  "bookingHistoryEventDurationChanged": "Durata modificata",
+  "bookingHistoryEventReplaced": "Prenotazione riprogrammata",
+  "bookingHistoryActorStaff": "Operatore",
+  "bookingHistoryActorCustomer": "Cliente",
+  "bookingHistoryActorSystem": "Sistema",
+  "bookingHistoryChangedFields": "Campi modificati: {fields}",
+  "@bookingHistoryChangedFields": {
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
+  },
+  "cancelledBadge": "CANCELLATO"
 }

@@ -12,6 +12,8 @@
   "actionRegister": "Register",
   "actionLogout": "Logout",
   
+  "sessionExpired": "Session expired. Please log in again.",
+  
   "errorTitle": "Error",
   "errorGeneric": "An error occurred",
   "errorNotFound": "Page not found: {path}",
@@ -286,6 +288,33 @@
   "validationRequired": "Required field",
   "validationInvalidEmail": "Invalid email",
   "validationInvalidPhone": "Invalid phone",
+
+  "bookingHistoryTitle": "Booking history",
+  "bookingHistoryEmpty": "No events recorded",
+  "bookingHistoryLoading": "Loading history...",
+  "bookingHistoryError": "Error loading history",
+  "bookingHistoryEventCreated": "Booking created",
+  "bookingHistoryEventUpdated": "Booking updated",
+  "bookingHistoryEventCancelled": "Booking cancelled",
+  "bookingHistoryEventItemAdded": "Service added",
+  "bookingHistoryEventItemDeleted": "Service removed",
+  "bookingHistoryEventAppointmentUpdated": "Appointment updated",
+  "bookingHistoryEventTimeChanged": "Time changed",
+  "bookingHistoryEventStaffChanged": "Staff changed",
+  "bookingHistoryEventPriceChanged": "Price changed",
+  "bookingHistoryEventDurationChanged": "Duration changed",
+  "bookingHistoryEventReplaced": "Booking replaced",
+  "bookingHistoryActorCustomer": "Customer",
+  "bookingHistoryActorStaff": "Staff",
+  "bookingHistoryActorSystem": "System",
+  "bookingHistoryChangedFields": "Changed fields: {fields}",
+  "@bookingHistoryChangedFields": {
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
+  },
+
+  "cancelledBadge": "CANCELLED",
 
   "businessNotFound": "Business not found",
   "businessNotFoundHint": "Please check the URL or contact the business directly."

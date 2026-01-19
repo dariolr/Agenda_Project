@@ -607,6 +607,13 @@ class ApiClient {
     return get(ApiConfig.booking(locationId, bookingId));
   }
 
+  /// GET /v1/bookings/{booking_id}/history
+  Future<Map<String, dynamic>> getBookingHistory({
+    required int bookingId,
+  }) async {
+    return get(ApiConfig.bookingHistory(bookingId));
+  }
+
   /// POST /v1/locations/{location_id}/bookings
   Future<Map<String, dynamic>> createBooking({
     required int locationId,

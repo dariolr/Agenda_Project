@@ -288,12 +288,17 @@ final class DeleteBooking
         }
         
         try {
+            // Resolve actor name for denormalization
+            $actorName = $this->auditRepo->resolveActorName($actorType, $actorId);
+            
             $this->auditRepo->createEvent(
                 (int) $bookingState['booking_id'],
                 'booking_cancelled',
                 $actorType,
                 $actorId,
-                $bookingState
+                $bookingState,
+                null,
+                $actorName
             );
         } catch (\Throwable $e) {
             error_log("Failed to create booking_cancelled event: " . $e->getMessage());

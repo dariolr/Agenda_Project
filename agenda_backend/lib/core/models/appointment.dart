@@ -30,6 +30,7 @@ class Appointment {
   final DateTime endTime;
   final double? price; // prezzo applicato al singolo appuntamento
   final String? bookingSource;
+  final String? bookingStatus; // pending, confirmed, replaced, cancelled
   // Legacy single extra fields (kept for backward compatibility)
   final int? extraMinutes;
   final ExtraMinutesType? extraMinutesType;
@@ -52,11 +53,15 @@ class Appointment {
     required this.endTime,
     this.price,
     this.bookingSource,
+    this.bookingStatus,
     this.extraMinutes,
     this.extraMinutesType,
     this.extraBlockedMinutes,
     this.extraProcessingMinutes,
   });
+
+  /// Returns true if this appointment's booking was cancelled
+  bool get isCancelled => bookingStatus == 'cancelled';
 
   factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
     id: json['id'] as int,
@@ -73,10 +78,9 @@ class Appointment {
     endTime: DateTime.parse(json['end_time'] as String),
     price: json['price'] != null ? (json['price'] as num).toDouble() : null,
     bookingSource: json['source'] as String?,
+    bookingStatus: json['booking_status'] as String?,
     extraMinutes: json['extra_minutes'] as int?,
-    extraMinutesType: _extraMinutesTypeFromJson(
-      json['extra_minutes_type'],
-    ),
+    extraMinutesType: _extraMinutesTypeFromJson(json['extra_minutes_type']),
     extraBlockedMinutes: json['extra_blocked_minutes'] as int?,
     extraProcessingMinutes: json['extra_processing_minutes'] as int?,
   );
@@ -96,6 +100,7 @@ class Appointment {
     DateTime? endTime,
     double? price,
     String? bookingSource,
+    String? bookingStatus,
     int? extraMinutes,
     ExtraMinutesType? extraMinutesType,
     int? extraBlockedMinutes,
@@ -116,6 +121,7 @@ class Appointment {
       endTime: endTime ?? this.endTime,
       price: price ?? this.price,
       bookingSource: bookingSource ?? this.bookingSource,
+      bookingStatus: bookingStatus ?? this.bookingStatus,
       extraMinutes: extraMinutes ?? this.extraMinutes,
       extraMinutesType: extraMinutesType ?? this.extraMinutesType,
       extraBlockedMinutes: extraBlockedMinutes ?? this.extraBlockedMinutes,

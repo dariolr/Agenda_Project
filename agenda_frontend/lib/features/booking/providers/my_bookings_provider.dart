@@ -96,12 +96,8 @@ class MyBookings extends _$MyBookings {
       final apiClient = ref.read(apiClientProvider);
       await apiClient.customerDeleteBooking(bookingId);
 
-      state = state.copyWith(
-        upcoming: state.upcoming.where((b) => b.id != bookingId).toList(),
-        past: state.past.where((b) => b.id != bookingId).toList(),
-        error: null,
-      );
-      return true;
+      await loadBookings();
+      return state.error == null;
     } catch (e) {
       state = state.copyWith(error: e.toString());
       return false;

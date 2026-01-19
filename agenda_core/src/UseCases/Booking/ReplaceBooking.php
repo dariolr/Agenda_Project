@@ -455,6 +455,9 @@ final class ReplaceBooking
             'actor_id' => $actorId,
         ];
 
+        // Resolve actor name for denormalization
+        $actorName = $this->auditRepository->resolveActorName($actorType, $actorId);
+
         // Event on original booking: booking_replaced
         $this->auditRepository->createEvent(
             $originalBookingId,
@@ -462,7 +465,8 @@ final class ReplaceBooking
             $actorType,
             $actorId,
             $commonPayload,
-            $correlationId
+            $correlationId,
+            $actorName
         );
 
         // Event on new booking: booking_created_by_replace
@@ -472,7 +476,8 @@ final class ReplaceBooking
             $actorType,
             $actorId,
             $commonPayload,
-            $correlationId
+            $correlationId,
+            $actorName
         );
     }
 

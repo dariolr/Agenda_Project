@@ -4,10 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers/global_loading_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/utils/app_version.dart';
 import '../../../core/widgets/feedback_dialog.dart';
-import '../../../app/providers/global_loading_provider.dart';
 import '../../../core/widgets/global_loading_overlay.dart';
 import '../providers/auth_provider.dart';
 
@@ -142,8 +142,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         textCapitalization: TextCapitalization.none,
                         autocorrect: false,
                         enableSuggestions: true,
-                        // Rimosso autofillHints: Safari iOS gestisce meglio
-                        // l'autofill standard senza hint espliciti sul campo email
+                        // Email + username per miglior compatibilità autofill Safari iOS
+                        autofillHints: const [
+                          AutofillHints.email,
+                          AutofillHints.username,
+                        ],
                         decoration: InputDecoration(
                           labelText: l10n.authEmail,
                           prefixIcon: const Icon(Icons.email_outlined),

@@ -14,7 +14,36 @@ final class BookingAuditRepository
 {
     public function __construct(
         private readonly Connection $db,
+        private readonly ?UserRepository $userRepo = null,
+        private readonly ?ClientRepository $clientRepo = null,
     ) {}
+
+    /**
+     * Resolve actor name from actor_id and actor_type.
+     * Returns name at current time (for denormalization).
+     */
+    public function resolveActorName(string $actorType, ?int $actorId): ?string
+    {
+        if ($actorId === null) {
+            return null;
+        }
+
+        if ($actorType === 'staff' && $this->userRepo !== null) {
+            $user = $this->userRepo->findByIdUnfiltered($actorId);
+            if ($user !== null) {
+                $name = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+                return !empty($name) ? $name : ($user['email'] ?? null);
+            }
+        } elseif ($actorType === 'customer' && $this->clientRepo !== null) {
+            $client = $this->clientRepo->findByIdUnfiltered($actorId);
+            if ($client !== null) {
+                $name = trim(($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? ''));
+                return !empty($name) ? $name : ($client['email'] ?? null);
+            }
+        }
+
+        return null;
+    }
 
     // ========================================================================
     // booking_replacements
@@ -92,6 +121,7 @@ final class BookingAuditRepository
      * @param int|null $actorId Client ID for customer, User ID for staff
      * @param array $payload Event-specific data (will be JSON encoded)
      * @param string|null $correlationId Optional UUID to correlate related events
+     * @param string|null $actorName Denormalized actor name (preserved even if actor deleted)
      * @return int The created event ID
      */
     public function createEvent(
@@ -100,18 +130,20 @@ final class BookingAuditRepository
         string $actorType,
         ?int $actorId,
         array $payload,
-        ?string $correlationId = null
+        ?string $correlationId = null,
+        ?string $actorName = null
     ): int {
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO booking_events 
-             (booking_id, event_type, actor_type, actor_id, payload_json, correlation_id, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, NOW())'
+             (booking_id, event_type, actor_type, actor_id, actor_name, payload_json, correlation_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
         );
         $stmt->execute([
             $bookingId,
             $eventType,
             $actorType,
             $actorId,
+            $actorName,
             json_encode($payload),
             $correlationId,
         ]);

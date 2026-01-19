@@ -10,6 +10,7 @@ import '/core/widgets/booking_app_bar.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/booking/providers/locations_provider.dart';
 import '/features/booking/providers/my_bookings_provider.dart';
+import '../dialogs/booking_history_dialog.dart';
 import '../dialogs/reschedule_booking_dialog.dart';
 
 class MyBookingsScreen extends ConsumerStatefulWidget {
@@ -261,6 +262,37 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
+                // Badge CANCELLATO
+                if (booking.isCancelled)
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade600,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      context.l10n.cancelledBadge,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                // Pulsante storico
+                IconButton(
+                  icon: const Icon(Icons.history, size: 20),
+                  tooltip: context.l10n.bookingHistoryTitle,
+                  onPressed: () => showBookingHistoryDialog(
+                    context,
+                    ref,
+                    bookingId: booking.id,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 4),
@@ -351,7 +383,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.note, size: 18),
+                  const Icon(Icons.sticky_note_2_outlined, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -363,8 +395,8 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
               ),
             ],
 
-            // Badge e azioni per prenotazioni future
-            if (widget.isUpcoming) ...[
+            // Badge e azioni per prenotazioni future (non cancellate)
+            if (widget.isUpcoming && !booking.isCancelled) ...[
               const SizedBox(height: 16),
               if (formFactor == AppFormFactor.mobile)
                 Column(

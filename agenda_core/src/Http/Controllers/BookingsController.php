@@ -11,9 +11,11 @@ use Agenda\UseCases\Booking\GetMyBookings;
 use Agenda\UseCases\Booking\ReplaceBooking;
 use Agenda\Domain\Exceptions\BookingException;
 use Agenda\Infrastructure\Repositories\BookingRepository;
+use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Repositories\ClientRepository;
 
 final class BookingsController
 {
@@ -27,6 +29,8 @@ final class BookingsController
         private readonly ?BusinessUserRepository $businessUserRepo = null,
         private readonly ?UserRepository $userRepo = null,
         private readonly ?ReplaceBooking $replaceBooking = null,
+        private readonly ?BookingAuditRepository $auditRepo = null,
+        private readonly ?ClientRepository $clientRepo = null,
     ) {}
 
     /**
@@ -114,6 +118,128 @@ final class BookingsController
         }
 
         return Response::success($this->formatBooking($booking));
+    }
+
+    /**
+     * GET /v1/bookings/{booking_id}/history
+     * Protected endpoint - gets audit history for a booking.
+     */
+    public function history(Request $request): Response
+    {
+        $bookingId = (int) $request->getAttribute('booking_id');
+
+        if ($this->auditRepo === null) {
+            return Response::error('Audit repository not available', 'server_error', 500);
+        }
+
+        $booking = $this->bookingRepo->findById($bookingId);
+
+        if ($booking === null) {
+            return Response::notFound('Booking not found');
+        }
+
+        // Authorization check: verify user has access to the booking's business
+        $businessId = (int) $booking['business_id'];
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Booking not found');
+        }
+
+        $events = $this->auditRepo->getEventsByBookingId($bookingId);
+
+        // Format events for response (with actor name resolution)
+        $formattedEvents = array_map(fn($e) => $this->formatAuditEvent($e), $events);
+
+        return Response::success([
+            'booking_id' => $bookingId,
+            'events' => $formattedEvents,
+        ]);
+    }
+
+    /**
+     * GET /v1/customer/bookings/{booking_id}/history
+     * Customer endpoint - gets audit history for a booking owned by the customer.
+     */
+    public function historyCustomer(Request $request): Response
+    {
+        $clientId = $request->getAttribute('client_id');
+        $bookingId = (int) $request->getAttribute('booking_id');
+
+        if ($clientId === null) {
+            return Response::error('Customer authentication required', 'unauthorized', 401);
+        }
+
+        if ($this->auditRepo === null) {
+            return Response::error('Audit repository not available', 'server_error', 500);
+        }
+
+        $booking = $this->bookingRepo->findById($bookingId);
+
+        if ($booking === null) {
+            return Response::notFound('Booking not found');
+        }
+
+        // Authorization: customer can only see history of their own bookings
+        if (empty($booking['client_id']) || (int) $booking['client_id'] !== $clientId) {
+            return Response::notFound('Booking not found');
+        }
+
+        $events = $this->auditRepo->getEventsByBookingId($bookingId);
+
+        // Format events for response (with actor name resolution)
+        $formattedEvents = array_map(fn($e) => $this->formatAuditEvent($e), $events);
+
+        return Response::success([
+            'booking_id' => $bookingId,
+            'events' => $formattedEvents,
+        ]);
+    }
+
+    /**
+     * Format a single audit event for API response.
+     * Uses stored actor_name with fallback to dynamic lookup for old events.
+     */
+    private function formatAuditEvent(array $event): array
+    {
+        $actorType = $event['actor_type'];
+        $actorId = $event['actor_id'] ? (int) $event['actor_id'] : null;
+        
+        // Use stored actor_name if available (new events)
+        $actorName = $event['actor_name'] ?? null;
+
+        // Fallback to dynamic lookup for old events without stored actor_name
+        if ($actorName === null && $actorId !== null) {
+            if ($actorType === 'staff' && $this->userRepo !== null) {
+                // Staff = user from users table
+                $user = $this->userRepo->findByIdUnfiltered($actorId);
+                if ($user !== null) {
+                    $actorName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+                    if (empty($actorName)) {
+                        $actorName = $user['email'] ?? null;
+                    }
+                }
+            } elseif ($actorType === 'customer' && $this->clientRepo !== null) {
+                // Customer = client from clients table
+                $client = $this->clientRepo->findByIdUnfiltered($actorId);
+                if ($client !== null) {
+                    $actorName = trim(($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? ''));
+                    if (empty($actorName)) {
+                        $actorName = $client['email'] ?? null;
+                    }
+                }
+            }
+        }
+
+        return [
+            'id' => (int) $event['id'],
+            'booking_id' => (int) $event['booking_id'],
+            'event_type' => $event['event_type'],
+            'actor_type' => $actorType,
+            'actor_id' => $actorId,
+            'actor_name' => $actorName, // null only if actor deleted AND no stored name
+            'correlation_id' => $event['correlation_id'],
+            'payload' => json_decode($event['payload_json'], true),
+            'created_at' => $event['created_at'],
+        ];
     }
 
     /**

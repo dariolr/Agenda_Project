@@ -7,6 +7,14 @@
       "request": "launch",
       "deviceId": "chrome",
       "args": ["--web-port=8080", "--dart-define=API_BASE_URL=https://api.romeolab.it"]
+    },
+    {
+      "name": "LBackend",
+      "type": "dart",
+      "request": "launch",
+      "deviceId": "chrome",
+      "args": [    "-d", "chrome",
+      "--web-port=8081", "--dart-define=API_BASE_URL=http://localhost:8888"]
     }
 
     

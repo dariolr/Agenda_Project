@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Deploy agenda_frontend",
+      "type": "shell",
+      "command": "zsh",
+      "args": [
+        "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_frontend/scripts/deploy.sh"
+      ],
+      "options": {
+        "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_frontend"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    }
+  ]
+}
