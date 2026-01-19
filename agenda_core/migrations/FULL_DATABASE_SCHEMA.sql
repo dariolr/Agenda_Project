@@ -171,6 +171,7 @@ CREATE TABLE IF NOT EXISTS service_packages (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     business_id INT UNSIGNED NOT NULL,
     location_id INT UNSIGNED NOT NULL,
+    category_id INT UNSIGNED NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT DEFAULT NULL,
     override_price DECIMAL(10,2) DEFAULT NULL,
@@ -182,10 +183,13 @@ CREATE TABLE IF NOT EXISTS service_packages (
     PRIMARY KEY (id),
     KEY idx_service_packages_business_location (business_id, location_id),
     KEY idx_service_packages_location (location_id),
+    KEY idx_service_packages_category (category_id),
     CONSTRAINT fk_service_packages_business FOREIGN KEY (business_id)
         REFERENCES businesses(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_service_packages_location FOREIGN KEY (location_id)
-        REFERENCES locations(id) ON DELETE CASCADE ON UPDATE CASCADE
+        REFERENCES locations(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_service_packages_category FOREIGN KEY (category_id)
+        REFERENCES service_categories(id) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------

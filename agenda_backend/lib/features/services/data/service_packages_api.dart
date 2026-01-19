@@ -1,0 +1,89 @@
+import '../../../core/models/service_package.dart';
+import '../../../core/network/api_client.dart';
+
+class ServicePackagesApi {
+  final ApiClient _apiClient;
+
+  ServicePackagesApi({required ApiClient apiClient}) : _apiClient = apiClient;
+
+  Future<List<ServicePackage>> fetchPackages(int locationId) async {
+    final data = await _apiClient.getServicePackages(locationId);
+    final items = data['packages'] as List<dynamic>? ?? const [];
+    return items
+        .map((json) => ServicePackage.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<ServicePackage> createPackage({
+    required int locationId,
+    required String name,
+    required int categoryId,
+    required List<int> serviceIds,
+    String? description,
+    double? overridePrice,
+    int? overrideDurationMinutes,
+    bool isActive = true,
+  }) async {
+    final data = await _apiClient.createServicePackage(
+      locationId: locationId,
+      name: name,
+      categoryId: categoryId,
+      serviceIds: serviceIds,
+      description: description,
+      overridePrice: overridePrice,
+      overrideDurationMinutes: overrideDurationMinutes,
+      isActive: isActive,
+    );
+    return ServicePackage.fromJson(data['package'] as Map<String, dynamic>);
+  }
+
+  Future<ServicePackage> updatePackage({
+    required int locationId,
+    required int packageId,
+    String? name,
+    int? categoryId,
+    String? description,
+    double? overridePrice,
+    int? overrideDurationMinutes,
+    bool setOverridePriceNull = false,
+    bool setOverrideDurationNull = false,
+    bool? isActive,
+    List<int>? serviceIds,
+  }) async {
+    final data = await _apiClient.updateServicePackage(
+      locationId: locationId,
+      packageId: packageId,
+      name: name,
+      categoryId: categoryId,
+      description: description,
+      overridePrice: overridePrice,
+      overrideDurationMinutes: overrideDurationMinutes,
+      setOverridePriceNull: setOverridePriceNull,
+      setOverrideDurationNull: setOverrideDurationNull,
+      isActive: isActive,
+      serviceIds: serviceIds,
+    );
+    return ServicePackage.fromJson(data['package'] as Map<String, dynamic>);
+  }
+
+  Future<void> deletePackage({
+    required int locationId,
+    required int packageId,
+  }) async {
+    await _apiClient.deleteServicePackage(
+      locationId: locationId,
+      packageId: packageId,
+    );
+  }
+
+  Future<ServicePackageExpansion> expandPackage({
+    required int locationId,
+    required int packageId,
+  }) async {
+    final data = await _apiClient.expandServicePackage(
+      locationId: locationId,
+      packageId: packageId,
+    );
+    return ServicePackageExpansion.fromJson(data);
+  }
+}

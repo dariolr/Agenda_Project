@@ -7,18 +7,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
+import '../../../core/models/service_package.dart';
 import '../../../core/models/service_variant.dart';
 import '../../../core/utils/color_utils.dart';
 import '../../../core/widgets/app_dialogs.dart';
+import '../../../core/widgets/feedback_dialog.dart';
 import '../../../core/widgets/reorder_toggle_button.dart';
 import '../../../core/widgets/reorder_toggle_panel.dart';
 import '../providers/service_categories_provider.dart';
+import '../providers/service_packages_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/services_reorder_provider.dart';
 import '../providers/services_sorted_providers.dart';
 // utils e validators spostati nei dialog
 import 'dialogs/category_dialog.dart';
 import 'dialogs/service_dialog.dart';
+import 'dialogs/service_package_dialog.dart';
 import 'widgets/categories_list.dart';
 
 class ServicesScreen extends ConsumerStatefulWidget {
@@ -34,7 +38,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   final ScrollController _scrollController = ScrollController();
   Timer? _autoScrollTimer;
-
   /// Modalità di riordino (mutuamente esclusive)
   bool isReorderCategories = false;
   bool isReorderServices = false;
@@ -93,6 +96,11 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   void dispose() {
     _autoScrollTimer?.cancel();
     _scrollController.dispose();
@@ -103,6 +111,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   Widget build(BuildContext context) {
     final servicesAsync = ref.watch(servicesProvider);
     final allCategories = ref.watch(sortedCategoriesProvider);
+    ref.watch(servicePackagesProvider);
 
     // Mostriamo sempre tutte le categorie; i provider di sort sposteranno le vuote in coda.
     final categories = allCategories;
@@ -127,7 +136,32 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       }
     });
 
-    // Mostra loading mentre carica servizi
+    return Column(
+      children: [
+        Expanded(
+          child: _buildServicesTab(
+            context,
+            ref,
+            servicesAsync: servicesAsync,
+            categories: categories,
+            showReorderPanel: showReorderPanel,
+            isWide: isWide,
+            colorScheme: colorScheme,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildServicesTab(
+    BuildContext context,
+    WidgetRef ref, {
+    required AsyncValue<List<Service>> servicesAsync,
+    required List<ServiceCategory> categories,
+    required bool showReorderPanel,
+    required bool isWide,
+    required ColorScheme colorScheme,
+  }) {
     if (servicesAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -190,8 +224,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
               ),
             ),
           ],
-
-          // ---------- Corpo ----------
           Expanded(
             child: isReorderCategories
                 ? _buildReorderCategories(context, ref, categories)
@@ -222,9 +254,20 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
     // Partiziona categorie piene e vuote
     final services = ref.watch(servicesProvider).value ?? [];
+    final packagesByCategory = <int, int>{
+      for (final c in cats)
+        c.id: ref
+            .watch(servicePackagesByCategoryProvider(c.id))
+            .length,
+    };
     final isNonEmpty = <int, bool>{
       for (final c in cats) c.id: services.any((s) => s.categoryId == c.id),
     };
+    for (final entry in packagesByCategory.entries) {
+      if (entry.value > 0) {
+        isNonEmpty[entry.key] = true;
+      }
+    }
     final fullCats = [
       for (final c in cats)
         if (isNonEmpty[c.id]!) c,
@@ -560,6 +603,11 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         preselectedCategoryId: category.id,
         preselectedColor: mostUsedColorForCategory(category),
       ),
+      onAddPackage: (category) => _openPackageDialog(
+        context,
+        ref,
+        preselectedCategoryId: category.id,
+      ),
       onEditCategory: (category) =>
           showCategoryDialog(context, ref, category: category),
       onDeleteCategory: (categoryId) =>
@@ -579,6 +627,11 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         context,
         onConfirm: () async => servicesNotifier.deleteServiceApi(id),
       ),
+      onPackageOpen: (package) =>
+          _openPackageDialog(context, ref, package: package),
+      onPackageEdit: (package) =>
+          _openPackageDialog(context, ref, package: package),
+      onPackageDelete: (id) => _confirmDeletePackage(context, ref, id),
     );
   }
 
@@ -626,6 +679,58 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       preselectedColor: preselectedColor,
       duplicateFrom: duplicateFrom,
     ).then((_) => _selectedService.value = null);
+  }
+
+  Future<void> _openPackageDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    ServicePackage? package,
+    int? preselectedCategoryId,
+  }) {
+    final services = ref.read(servicesProvider).value ?? [];
+    final categories = ref.read(serviceCategoriesProvider);
+    return showServicePackageDialog(
+      context,
+      ref,
+      services: services,
+      categories: categories,
+      package: package,
+      preselectedCategoryId: preselectedCategoryId,
+    ).then((_) => _selectedService.value = null);
+  }
+
+  void _confirmDeletePackage(
+    BuildContext context,
+    WidgetRef ref,
+    int packageId,
+  ) {
+    showAppConfirmDialog(
+      context,
+      title: Text(context.l10n.servicePackageDeleteTitle),
+      content: Text(context.l10n.servicePackageDeleteMessage),
+      confirmLabel: context.l10n.actionDelete,
+      danger: true,
+      onConfirm: () async {
+        try {
+          await ref
+              .read(servicePackagesProvider.notifier)
+              .deletePackage(packageId);
+          if (!context.mounted) return;
+          FeedbackDialog.showSuccess(
+            context,
+            title: context.l10n.servicePackageDeletedTitle,
+            message: context.l10n.servicePackageDeletedMessage,
+          );
+        } catch (_) {
+          if (!context.mounted) return;
+          FeedbackDialog.showError(
+            context,
+            title: context.l10n.errorTitle,
+            message: context.l10n.servicePackageDeleteError,
+          );
+        }
+      },
+    );
   }
 
   void _confirmDelete(BuildContext context, {required VoidCallback onConfirm}) {

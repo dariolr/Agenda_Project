@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
+import '../../../../core/models/service_package.dart';
 import 'empty_state.dart';
 import 'services_list.dart';
 
@@ -10,11 +11,13 @@ import 'services_list.dart';
 class CategoryItem extends StatelessWidget {
   final ServiceCategory category;
   final List<Service> services;
+  final List<ServicePackage> packages;
   final bool isWide;
   final ColorScheme colorScheme;
   final ValueNotifier<int?> hoveredService;
   final ValueNotifier<int?> selectedService;
   final VoidCallback onAddService;
+  final VoidCallback onAddPackage;
   final VoidCallback onEditCategory;
   final VoidCallback onDeleteCategory;
   final VoidCallback onDeleteBlocked;
@@ -22,17 +25,22 @@ class CategoryItem extends StatelessWidget {
   final ValueChanged<Service> onServiceEdit;
   final ValueChanged<Service> onServiceDuplicate;
   final ValueChanged<int> onServiceDelete;
+  final ValueChanged<ServicePackage> onPackageOpen;
+  final ValueChanged<ServicePackage> onPackageEdit;
+  final ValueChanged<int> onPackageDelete;
   final bool addTopSpacing;
 
   const CategoryItem({
     super.key,
     required this.category,
     required this.services,
+    required this.packages,
     required this.isWide,
     required this.colorScheme,
     required this.hoveredService,
     required this.selectedService,
     required this.onAddService,
+    required this.onAddPackage,
     required this.onEditCategory,
     required this.onDeleteCategory,
     required this.onDeleteBlocked,
@@ -40,12 +48,15 @@ class CategoryItem extends StatelessWidget {
     required this.onServiceEdit,
     required this.onServiceDuplicate,
     required this.onServiceDelete,
+    required this.onPackageOpen,
+    required this.onPackageEdit,
+    required this.onPackageDelete,
     required this.addTopSpacing,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isEmptyCategory = services.isEmpty;
+    final isEmptyCategory = services.isEmpty && packages.isEmpty;
     return Container(
       margin: EdgeInsets.only(
         top: addTopSpacing ? 32 : 0,
@@ -128,6 +139,14 @@ class CategoryItem extends StatelessWidget {
                       onPressed: onAddService,
                     ),
                     IconButton(
+                      tooltip: context.l10n.servicePackageNewMenu,
+                      icon: Icon(
+                        Icons.widgets_outlined,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                      onPressed: onAddPackage,
+                    ),
+                    IconButton(
                       tooltip: context.l10n.actionEdit,
                       icon: Icon(
                         Icons.edit_outlined,
@@ -157,6 +176,7 @@ class CategoryItem extends StatelessWidget {
                 ? ServicesEmptyState(message: context.l10n.noServicesInCategory)
                 : ServicesList(
                     services: services,
+                    packages: packages,
                     isWide: isWide,
                     colorScheme: colorScheme,
                     hoveredService: hoveredService,
@@ -165,6 +185,9 @@ class CategoryItem extends StatelessWidget {
                     onEdit: onServiceEdit,
                     onDuplicate: onServiceDuplicate,
                     onDelete: onServiceDelete,
+                    onPackageOpen: onPackageOpen,
+                    onPackageEdit: onPackageEdit,
+                    onPackageDelete: onPackageDelete,
                   ),
           ),
         ],

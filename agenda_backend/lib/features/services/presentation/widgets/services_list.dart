@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/models/service.dart';
+import '../../../../core/models/service_package.dart';
 import 'service_item.dart';
+import 'service_package_item.dart';
 
 class ServicesList extends ConsumerWidget {
   final List<Service> services;
+  final List<ServicePackage> packages;
   final bool isWide;
   final ColorScheme colorScheme;
   final ValueNotifier<int?> hoveredService;
@@ -14,10 +17,14 @@ class ServicesList extends ConsumerWidget {
   final void Function(Service) onEdit;
   final void Function(Service) onDuplicate;
   final void Function(int id) onDelete;
+  final void Function(ServicePackage) onPackageOpen;
+  final void Function(ServicePackage) onPackageEdit;
+  final void Function(int id) onPackageDelete;
 
   const ServicesList({
     super.key,
     required this.services,
+    required this.packages,
     required this.isWide,
     required this.colorScheme,
     required this.hoveredService,
@@ -26,6 +33,9 @@ class ServicesList extends ConsumerWidget {
     required this.onEdit,
     required this.onDuplicate,
     required this.onDelete,
+    required this.onPackageOpen,
+    required this.onPackageEdit,
+    required this.onPackageDelete,
   });
 
   @override
@@ -57,7 +67,18 @@ class ServicesList extends ConsumerWidget {
                     onDuplicate: () => onDuplicate(services[i]),
                     onDelete: () => onDelete(services[i].id),
                   ),
-                if (services.isNotEmpty)
+                for (int i = 0; i < packages.length; i++)
+                  ServicePackageListItem(
+                    package: packages[i],
+                    isLast: i == packages.length - 1,
+                    isEvenRow: (services.length + i).isEven,
+                    isWide: isWide,
+                    colorScheme: colorScheme,
+                    onTap: () => onPackageOpen(packages[i]),
+                    onEdit: () => onPackageEdit(packages[i]),
+                    onDelete: () => onPackageDelete(packages[i].id),
+                  ),
+                if (services.isNotEmpty || packages.isNotEmpty)
                   Divider(
                     color: Colors.grey.withOpacity(0.2),
                     height: 1,

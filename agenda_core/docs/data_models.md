@@ -29,6 +29,25 @@
 - end_time
 - notes
 
+### ServicePackage
+- id
+- business_id
+- location_id
+- category_id
+- name
+- description
+- override_price
+- override_duration_minutes
+- is_active
+- is_broken
+- created_at
+- updated_at
+
+### ServicePackageItem
+- package_id
+- service_id
+- sort_order
+
 ---
 
 ## User & Auth Entities

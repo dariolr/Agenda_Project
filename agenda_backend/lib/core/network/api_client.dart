@@ -422,6 +422,83 @@ class ApiClient {
     );
   }
 
+  /// GET /v1/locations/{location_id}/service-packages
+  Future<Map<String, dynamic>> getServicePackages(int locationId) async {
+    return get(ApiConfig.servicePackages(locationId));
+  }
+
+  /// GET /v1/locations/{location_id}/service-packages/{id}/expand
+  Future<Map<String, dynamic>> expandServicePackage({
+    required int locationId,
+    required int packageId,
+  }) async {
+    return get(ApiConfig.servicePackageExpand(locationId, packageId));
+  }
+
+  /// POST /v1/locations/{location_id}/service-packages
+  Future<Map<String, dynamic>> createServicePackage({
+    required int locationId,
+    required String name,
+    required int categoryId,
+    required List<int> serviceIds,
+    String? description,
+    double? overridePrice,
+    int? overrideDurationMinutes,
+    bool isActive = true,
+  }) async {
+    return post(
+      ApiConfig.servicePackages(locationId),
+      data: {
+        'name': name,
+        'category_id': categoryId,
+        'service_ids': serviceIds,
+        if (description != null) 'description': description,
+        if (overridePrice != null) 'override_price': overridePrice,
+        if (overrideDurationMinutes != null)
+          'override_duration_minutes': overrideDurationMinutes,
+        'is_active': isActive,
+      },
+    );
+  }
+
+  /// PUT /v1/locations/{location_id}/service-packages/{id}
+  Future<Map<String, dynamic>> updateServicePackage({
+    required int locationId,
+    required int packageId,
+    String? name,
+    int? categoryId,
+    String? description,
+    double? overridePrice,
+    int? overrideDurationMinutes,
+    bool setOverridePriceNull = false,
+    bool setOverrideDurationNull = false,
+    bool? isActive,
+    List<int>? serviceIds,
+  }) async {
+    final data = <String, dynamic>{};
+    if (name != null) data['name'] = name;
+    if (categoryId != null) data['category_id'] = categoryId;
+    if (description != null) data['description'] = description;
+    if (overridePrice != null || setOverridePriceNull) {
+      data['override_price'] = overridePrice;
+    }
+    if (overrideDurationMinutes != null || setOverrideDurationNull) {
+      data['override_duration_minutes'] = overrideDurationMinutes;
+    }
+    if (isActive != null) data['is_active'] = isActive;
+    if (serviceIds != null) data['service_ids'] = serviceIds;
+
+    return put(ApiConfig.servicePackage(locationId, packageId), data: data);
+  }
+
+  /// DELETE /v1/locations/{location_id}/service-packages/{id}
+  Future<void> deleteServicePackage({
+    required int locationId,
+    required int packageId,
+  }) async {
+    await delete(ApiConfig.servicePackage(locationId, packageId));
+  }
+
   /// GET /v1/staff?location_id=X
   Future<Map<String, dynamic>> getStaff(int locationId) async {
     return get(ApiConfig.staff, queryParameters: {'location_id': locationId});

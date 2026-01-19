@@ -253,6 +253,7 @@ class _StaffStepState extends ConsumerState<StaffStep> {
     final theme = Theme.of(context);
     final bookingState = ref.watch(bookingFlowProvider);
     final staffAsync = ref.watch(staffProvider);
+    final totals = ref.watch(bookingTotalsProvider);
 
     // Logica semplificata: il pulsante è abilitato se:
     // 1. "Qualsiasi operatore" è selezionato (selectedStaff == null e anyOperatorSelected == true)
@@ -304,12 +305,12 @@ class _StaffStepState extends ConsumerState<StaffStep> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  l10n.servicesSelected(bookingState.request.services.length),
+                  l10n.servicesSelected(totals.selectedItemCount),
                   style: theme.textTheme.bodyMedium,
                 ),
                 if (bookingState.request.services.isNotEmpty)
                   Text(
-                    bookingState.request.formattedTotalPrice,
+                    _formatTotalPrice(context, totals.totalPrice),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.primary,
@@ -328,6 +329,12 @@ class _StaffStepState extends ConsumerState<StaffStep> {
         ),
       ),
     );
+  }
+
+  String _formatTotalPrice(BuildContext context, double totalPrice) {
+    final l10n = context.l10n;
+    if (totalPrice == 0) return l10n.servicesFree;
+    return '€${totalPrice.toStringAsFixed(2).replaceAll('.', ',')}';
   }
 }
 

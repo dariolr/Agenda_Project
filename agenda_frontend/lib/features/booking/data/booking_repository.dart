@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/models/location.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
+import '../../../core/models/service_package.dart';
 import '../../../core/models/staff.dart';
 import '../../../core/models/time_slot.dart';
 import '../../../core/network/api_client.dart';
@@ -76,6 +77,27 @@ class BookingRepository {
   Future<List<Service>> getServices(int locationId) async {
     final result = await getCategoriesWithServices(locationId);
     return result.services;
+  }
+
+  /// GET /v1/locations/{location_id}/service-packages
+  Future<List<ServicePackage>> getServicePackages(int locationId) async {
+    final data = await _apiClient.getServicePackages(locationId);
+    final packagesJson = data['packages'] as List<dynamic>? ?? [];
+    return packagesJson
+        .map((json) => ServicePackage.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// GET /v1/locations/{location_id}/service-packages/{id}/expand
+  Future<ServicePackageExpansion> expandServicePackage({
+    required int locationId,
+    required int packageId,
+  }) async {
+    final data = await _apiClient.expandServicePackage(
+      locationId: locationId,
+      packageId: packageId,
+    );
+    return ServicePackageExpansion.fromJson(data);
   }
 
   /// GET /v1/staff?location_id=X

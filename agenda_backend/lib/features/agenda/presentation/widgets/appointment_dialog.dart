@@ -19,14 +19,18 @@ import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
 import '../../../services/providers/service_categories_provider.dart';
+import '../../../services/providers/service_packages_provider.dart';
+import '../../../services/providers/service_packages_repository_provider.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../domain/service_item_data.dart';
 import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/layout_config_provider.dart';
+import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
 import '../dialogs/booking_history_dialog.dart';
+import 'service_package_picker_dialog.dart';
 import 'service_item_card.dart';
 
 /// Show the Appointment dialog for editing an existing appointment.
@@ -92,6 +96,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   bool _midnightWarningDismissed = false;
   int? _autoOpenServicePickerIndex;
   bool _isSaving = false;
+  bool _isAddingPackage = false;
 
   /// Stato iniziale per rilevare modifiche
   late DateTime _initialDate;
@@ -770,13 +775,25 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                     ),
                     const Spacer(),
                     AppOutlinedActionButton(
-                      onPressed: _addService,
+                      onPressed: _isAddingPackage ? null : _addService,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.add, size: 18),
                           const SizedBox(width: 8),
                           Text(context.l10n.addService),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    AppOutlinedActionButton(
+                      onPressed: _isAddingPackage ? null : _addPackage,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.widgets_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Text(context.l10n.addPackage),
                         ],
                       ),
                     ),
@@ -881,16 +898,33 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             if (isLast && item.serviceId != null && !canAddDefaultExtra) ...[
               Align(
                 alignment: Alignment.centerRight,
-                child: AppOutlinedActionButton(
-                  onPressed: _addService,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.add, size: 18),
-                      const SizedBox(width: 8),
-                      Text(context.l10n.addService),
-                    ],
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppOutlinedActionButton(
+                      onPressed: _isAddingPackage ? null : _addService,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add, size: 18),
+                          const SizedBox(width: 8),
+                          Text(context.l10n.addService),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    AppOutlinedActionButton(
+                      onPressed: _isAddingPackage ? null : _addPackage,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.widgets_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Text(context.l10n.addPackage),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
@@ -1122,6 +1156,112 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         ),
       );
       _autoOpenServicePickerIndex = newIndex;
+    });
+  }
+
+  Future<void> _addPackage() async {
+    if (_isAddingPackage) return;
+
+    final l10n = context.l10n;
+    final packages = ref.read(servicePackagesProvider).value ?? [];
+    if (packages.isEmpty) {
+      if (!context.mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: l10n.servicePackagesEmptyState,
+      );
+      return;
+    }
+
+    setState(() => _isAddingPackage = true);
+    final selected = await showServicePackagePickerDialog(
+      context,
+      packages: packages,
+    );
+    if (!context.mounted) return;
+    if (selected == null) {
+      setState(() => _isAddingPackage = false);
+      return;
+    }
+
+    try {
+      final locationId = ref.read(currentLocationProvider).id;
+      final repository = ref.read(servicePackagesRepositoryProvider);
+      final expansion = await repository.expandPackage(
+        locationId: locationId,
+        packageId: selected.id,
+      );
+      if (expansion.serviceIds.isEmpty) {
+        if (!mounted) return;
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.servicePackageExpandError,
+        );
+      } else {
+        _appendServicesFromPackage(expansion.serviceIds);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: l10n.servicePackageExpandError,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isAddingPackage = false);
+      }
+    }
+  }
+
+  void _appendServicesFromPackage(List<int> serviceIds) {
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
+
+    setState(() {
+      for (final serviceId in serviceIds) {
+        TimeOfDay nextStart;
+        if (_serviceItems.isEmpty) {
+      nextStart =
+          TimeOfDay.fromDateTime(widget.initial.startTime);
+        } else {
+          final lastItem = _serviceItems.last;
+          final lastStartMinutes =
+              lastItem.startTime.hour * 60 + lastItem.startTime.minute;
+          final lastEnd = _resolveServiceEndTime(lastItem, variants);
+          final lastEndMinutes = lastEnd.hour * 60 + lastEnd.minute;
+
+          if (lastEndMinutes < lastStartMinutes) {
+            _showMidnightWarning();
+            break;
+          }
+          nextStart = lastEnd;
+        }
+
+        final variant = variants
+            .where((v) => v.serviceId == serviceId)
+            .firstOrNull;
+        final duration = variant?.durationMinutes ?? 30;
+        final smartStaffId = _serviceItems.isNotEmpty
+            ? _serviceItems.last.staffId
+            : widget.initial.staffId;
+
+        _serviceItems.add(
+          ServiceItemData(
+            key: _nextItemKey(),
+            serviceId: serviceId,
+            serviceVariantId: variant?.id,
+            startTime: nextStart,
+            durationMinutes: duration,
+            staffId: smartStaffId,
+            blockedExtraMinutes: variant?.blockedTime ?? 0,
+            processingExtraMinutes: variant?.processingTime ?? 0,
+          ),
+        );
+      }
+
+      _clearMidnightWarningIfResolved(variants.cast());
     });
   }
 

@@ -49,6 +49,34 @@ I campi **vincolanti** (snake_case) NON possono essere rinominati.
 | endTime | DateTime | ✗ | `end_time` (ISO8601) |
 | staffId | int | ✓ | `staff_id` |
 
+### ServicePackage
+| Campo | Tipo | Nullable | JSON key (vincolante) |
+|-------|------|----------|----------------------|
+| id | int | ✗ | `id` |
+| businessId | int | ✗ | `business_id` |
+| locationId | int | ✗ | `location_id` |
+| categoryId | int | ✗ | `category_id` |
+| name | String | ✗ | `name` |
+| description | String | ✓ | `description` |
+| overridePrice | double | ✓ | `override_price` |
+| overrideDurationMinutes | int | ✓ | `override_duration_minutes` |
+| isActive | bool | ✗ | `is_active` |
+| isBroken | bool | ✗ | `is_broken` |
+| effectivePrice | double | ✗ | `effective_price` |
+| effectiveDurationMinutes | int | ✗ | `effective_duration_minutes` |
+| items | List<ServicePackageItem> | ✗ | `items` |
+
+### ServicePackageItem
+| Campo | Tipo | Nullable | JSON key (vincolante) |
+|-------|------|----------|----------------------|
+| serviceId | int | ✗ | `service_id` |
+| sortOrder | int | ✗ | `sort_order` |
+| name | String | ✓ | `name` |
+| durationMinutes | int | ✓ | `duration_minutes` |
+| price | double | ✓ | `price` |
+| serviceIsActive | bool | ✗ | `service_is_active` |
+| variantIsActive | bool | ✗ | `variant_is_active` |
+
 ### User
 | Campo | Tipo | Nullable | JSON key (vincolante) |
 |-------|------|----------|----------------------|

@@ -13,6 +13,7 @@ agenda_backend è il **pannello di amministrazione** della piattaforma Agenda. P
 - 📅 **Gestire appuntamenti** tramite vista calendario drag & drop
 - 👥 **Amministrare clienti** con anagrafica completa e storico
 - 💇 **Configurare servizi** per ogni location con prezzi e durate
+- 🧩 **Gestire pacchetti servizi** per categoria
 - 👤 **Organizzare staff** con disponibilità e skill
 - 🏢 **Multi-business/multi-location** supporto nativo
 
@@ -161,6 +162,7 @@ Vedere [agenda_core/docs/api_contract_v1.md](../agenda_core/docs/api_contract_v1
 - Durata e prezzo per location
 - Colori personalizzati per UI
 - Disponibilità online booking
+- Pacchetti servizi con ordinamento drag & drop
 
 ### 4. Staff Management
 - Configurazione disponibilità

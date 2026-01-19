@@ -90,6 +90,13 @@ class ApiConfig {
   static const String staff = '/v1/staff';
   static const String availability = '/v1/availability';
 
+  // ========== SERVICE PACKAGES ENDPOINTS ==========
+  static String servicePackages(int locationId) =>
+      '/v1/locations/$locationId/service-packages';
+
+  static String servicePackageExpand(int locationId, int packageId) =>
+      '/v1/locations/$locationId/service-packages/$packageId/expand';
+
   // ========== STAFF PLANNING ENDPOINTS (read-only) ==========
   /// GET /v1/staff/{id}/plannings - tutti i planning per uno staff
   static String staffPlannings(int staffId) => '/v1/staff/$staffId/plannings';

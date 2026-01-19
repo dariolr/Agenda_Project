@@ -94,23 +94,40 @@ final class ServicePackagesController
 
         $body = $request->getBody();
         $name = trim((string) ($body['name'] ?? ''));
+        $categoryId = (int) ($body['category_id'] ?? 0);
         $serviceIds = $this->normalizeServiceIds($body['service_ids'] ?? null);
 
         if ($name === '') {
             return Response::error('Name is required', 'validation_error', 422, $request->traceId);
         }
 
+        if ($categoryId <= 0) {
+            return Response::error('category_id is required', 'validation_error', 422, $request->traceId);
+        }
+
         if (empty($serviceIds)) {
             return Response::error('service_ids is required', 'validation_error', 422, $request->traceId);
         }
 
-        if (!$this->packageRepo->validateServices($serviceIds, $locationId, (int) $businessId)) {
+        if (!$this->packageRepo->validateCategory($categoryId, (int) $businessId)) {
+            return Response::error('Invalid category', 'invalid_category', 400, $request->traceId);
+        }
+
+        if (
+            !$this->packageRepo->validateServices(
+                $serviceIds,
+                $locationId,
+                (int) $businessId,
+                $categoryId,
+            )
+        ) {
             return Response::error('One or more services are invalid', 'invalid_service', 400, $request->traceId);
         }
 
         $packageId = $this->packageRepo->create([
             'business_id' => (int) $businessId,
             'location_id' => $locationId,
+            'category_id' => $categoryId,
             'name' => $name,
             'description' => $body['description'] ?? null,
             'override_price' => array_key_exists('override_price', $body) ? $body['override_price'] : null,
@@ -121,7 +138,7 @@ final class ServicePackagesController
             'is_broken' => 0,
         ], $serviceIds);
 
-        $created = $this->packageRepo->getExpanded($packageId, $locationId);
+        $created = $this->packageRepo->getDetailedById($packageId, $locationId);
 
         return Response::created([
             'package' => $created,
@@ -166,6 +183,17 @@ final class ServicePackagesController
             $updateData['description'] = $body['description'];
         }
 
+        if (array_key_exists('category_id', $body)) {
+            $categoryId = (int) $body['category_id'];
+            if ($categoryId <= 0) {
+                return Response::error('category_id is required', 'validation_error', 422, $request->traceId);
+            }
+            if (!$this->packageRepo->validateCategory($categoryId, (int) $existing['business_id'])) {
+                return Response::error('Invalid category', 'invalid_category', 400, $request->traceId);
+            }
+            $updateData['category_id'] = $categoryId;
+        }
+
         if (array_key_exists('override_price', $body)) {
             $updateData['override_price'] = $body['override_price'];
         }
@@ -185,7 +213,15 @@ final class ServicePackagesController
                 return Response::error('service_ids is required', 'validation_error', 422, $request->traceId);
             }
 
-            if (!$this->packageRepo->validateServices($serviceIds, $locationId, (int) $existing['business_id'])) {
+            $effectiveCategoryId = $updateData['category_id'] ?? (int) $existing['category_id'];
+            if (
+                !$this->packageRepo->validateServices(
+                    $serviceIds,
+                    $locationId,
+                    (int) $existing['business_id'],
+                    $effectiveCategoryId,
+                )
+            ) {
                 return Response::error('One or more services are invalid', 'invalid_service', 400, $request->traceId);
             }
 
@@ -198,7 +234,7 @@ final class ServicePackagesController
 
         $this->packageRepo->update($packageId, $updateData, $serviceIds);
 
-        $updated = $this->packageRepo->getExpanded($packageId, $locationId);
+        $updated = $this->packageRepo->getDetailedById($packageId, $locationId);
 
         return Response::success([
             'package' => $updated,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
+import '../../../../core/models/service_package.dart';
 import '../../providers/services_sorted_providers.dart';
 import 'category_item.dart';
 
@@ -14,6 +15,7 @@ class CategoriesList extends ConsumerWidget {
   final ValueNotifier<int?> hoveredService;
   final ValueNotifier<int?> selectedService;
   final ValueChanged<ServiceCategory> onAddService;
+  final ValueChanged<ServiceCategory> onAddPackage;
   final ValueChanged<ServiceCategory> onEditCategory;
   final ValueChanged<int> onDeleteCategory;
   final VoidCallback onDeleteCategoryBlocked;
@@ -21,6 +23,9 @@ class CategoriesList extends ConsumerWidget {
   final ValueChanged<Service> onServiceEdit;
   final ValueChanged<Service> onServiceDuplicate;
   final ValueChanged<int> onServiceDelete;
+  final ValueChanged<ServicePackage> onPackageOpen;
+  final ValueChanged<ServicePackage> onPackageEdit;
+  final ValueChanged<int> onPackageDelete;
   final ScrollController scrollController;
 
   const CategoriesList({
@@ -31,6 +36,7 @@ class CategoriesList extends ConsumerWidget {
     required this.hoveredService,
     required this.selectedService,
     required this.onAddService,
+    required this.onAddPackage,
     required this.onEditCategory,
     required this.onDeleteCategory,
     required this.onDeleteCategoryBlocked,
@@ -38,6 +44,9 @@ class CategoriesList extends ConsumerWidget {
     required this.onServiceEdit,
     required this.onServiceDuplicate,
     required this.onServiceDelete,
+    required this.onPackageOpen,
+    required this.onPackageEdit,
+    required this.onPackageDelete,
     required this.scrollController,
   });
 
@@ -52,16 +61,26 @@ class CategoriesList extends ConsumerWidget {
         final services = ref.watch(
           sortedServicesByCategoryProvider(category.id),
         );
+        final packages = ref.watch(
+          sortedServicePackagesByCategoryProvider(category.id),
+        );
         final hasPrev = index > 0;
         final prevIsNonEmpty = hasPrev
             ? ref
                   .watch(
                     sortedServicesByCategoryProvider(categories[index - 1].id),
                   )
-                  .isNotEmpty
+                  .isNotEmpty ||
+                ref
+                    .watch(
+                      sortedServicePackagesByCategoryProvider(
+                        categories[index - 1].id,
+                      ),
+                    )
+                    .isNotEmpty
             : false;
         final isFirstEmptyAfterNonEmpty =
-            services.isEmpty && (!hasPrev || prevIsNonEmpty);
+            services.isEmpty && packages.isEmpty && (!hasPrev || prevIsNonEmpty);
 
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
@@ -89,11 +108,13 @@ class CategoriesList extends ConsumerWidget {
             child: CategoryItem(
               category: category,
               services: services,
+              packages: packages,
               isWide: isWide,
               colorScheme: colorScheme,
               hoveredService: hoveredService,
               selectedService: selectedService,
               onAddService: () => onAddService(category),
+              onAddPackage: () => onAddPackage(category),
               onEditCategory: () => onEditCategory(category),
               onDeleteCategory: () => onDeleteCategory(category.id),
               onDeleteBlocked: onDeleteCategoryBlocked,
@@ -101,6 +122,9 @@ class CategoriesList extends ConsumerWidget {
               onServiceEdit: onServiceEdit,
               onServiceDuplicate: onServiceDuplicate,
               onServiceDelete: onServiceDelete,
+              onPackageOpen: onPackageOpen,
+              onPackageEdit: onPackageEdit,
+              onPackageDelete: onPackageDelete,
               addTopSpacing: isFirstEmptyAfterNonEmpty,
             ),
           ),

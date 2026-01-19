@@ -123,6 +123,7 @@ Dopo modifiche: `dart run intl_utils:generate`
 - ✅ Multi-business path-based URL (`/:slug/booking`)
 - ✅ Multi-location support (selezione sede)
 - ✅ Selezione servizi (multi-service)
+- ✅ Selezione pacchetti servizi per categoria (prezzo/durata effettivi)
 - ✅ Selezione staff (opzionale)
 - ✅ Calendario disponibilità
 - ✅ Riepilogo e conferma

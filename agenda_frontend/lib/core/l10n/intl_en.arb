@@ -106,6 +106,12 @@
   
   "servicesTitle": "Choose services",
   "servicesSubtitle": "You can select one or more services",
+  "servicePackagesTitle": "Packages",
+  "servicePackagesSubtitle": "Or pick a ready-made package",
+  "servicePackagesLoading": "Loading packages...",
+  "servicePackagesLoadError": "Unable to load packages.",
+  "servicePackageLabel": "Package",
+  "servicePackageExpandError": "Unable to expand the selected package.",
   "servicesSelected": "{count, plural, =0{No service selected} =1{1 service selected} other{{count} services selected}}",
   "@servicesSelected": {
     "placeholders": {

@@ -44,38 +44,34 @@ final class ServicePackageRepository
         $itemsByPackage = $this->getItemsForPackages($packageIds, $locationId);
         $totalsByPackage = $this->getTotalsForPackages($packageIds, $locationId);
 
-        return array_map(function (array $package) use ($itemsByPackage, $totalsByPackage) {
-            $packageId = (int) $package['id'];
-            $totals = $totalsByPackage[$packageId] ?? [
-                'total_duration' => 0,
-                'total_price' => 0.0,
-                'missing_count' => 0,
-            ];
+        return array_map(
+            fn(array $package) => $this->formatPackageRow(
+                $package,
+                $itemsByPackage,
+                $totalsByPackage,
+            ),
+            $packages,
+        );
+    }
 
-            $effectiveDuration = $package['override_duration_minutes'] !== null
-                ? (int) $package['override_duration_minutes']
-                : (int) $totals['total_duration'];
-            $effectivePrice = $package['override_price'] !== null
-                ? (float) $package['override_price']
-                : (float) $totals['total_price'];
+    public function getDetailedById(int $packageId, int $locationId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT *
+             FROM service_packages
+             WHERE id = ? AND location_id = ?'
+        );
+        $stmt->execute([$packageId, $locationId]);
+        $package = $stmt->fetch();
 
-            return [
-                'id' => $packageId,
-                'business_id' => (int) $package['business_id'],
-                'location_id' => (int) $package['location_id'],
-                'name' => $package['name'],
-                'description' => $package['description'],
-                'override_price' => $package['override_price'] !== null ? (float) $package['override_price'] : null,
-                'override_duration_minutes' => $package['override_duration_minutes'] !== null
-                    ? (int) $package['override_duration_minutes']
-                    : null,
-                'is_active' => (bool) $package['is_active'],
-                'is_broken' => $package['is_broken'] || $totals['missing_count'] > 0,
-                'effective_price' => $effectivePrice,
-                'effective_duration_minutes' => $effectiveDuration,
-                'items' => $itemsByPackage[$packageId] ?? [],
-            ];
-        }, $packages);
+        if (!$package) {
+            return null;
+        }
+
+        $itemsByPackage = $this->getItemsForPackages([$packageId], $locationId);
+        $totalsByPackage = $this->getTotalsForPackages([$packageId], $locationId);
+
+        return $this->formatPackageRow($package, $itemsByPackage, $totalsByPackage);
     }
 
     public function create(array $data, array $serviceIds): int
@@ -86,12 +82,13 @@ final class ServicePackageRepository
         try {
             $stmt = $pdo->prepare(
                 'INSERT INTO service_packages
-                    (business_id, location_id, name, description, override_price, override_duration_minutes, is_active, is_broken)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                    (business_id, location_id, category_id, name, description, override_price, override_duration_minutes, is_active, is_broken)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
                 $data['business_id'],
                 $data['location_id'],
+                $data['category_id'],
                 $data['name'],
                 $data['description'],
                 $data['override_price'],
@@ -152,7 +149,12 @@ final class ServicePackageRepository
         return $stmt->execute([$packageId]);
     }
 
-    public function validateServices(array $serviceIds, int $locationId, int $businessId): bool
+    public function validateServices(
+        array $serviceIds,
+        int $locationId,
+        int $businessId,
+        ?int $categoryId = null,
+    ): bool
     {
         if (empty($serviceIds)) {
             return false;
@@ -160,6 +162,11 @@ final class ServicePackageRepository
 
         $placeholders = implode(',', array_fill(0, count($serviceIds), '?'));
         $params = array_merge([$locationId], $serviceIds, [$businessId]);
+        $categorySql = '';
+        if ($categoryId !== null) {
+            $categorySql = ' AND s.category_id = ?';
+            $params[] = $categoryId;
+        }
 
         $stmt = $this->db->getPdo()->prepare(
             "SELECT COUNT(*) FROM services s
@@ -167,11 +174,21 @@ final class ServicePackageRepository
              WHERE s.id IN ({$placeholders})
                AND s.business_id = ?
                AND s.is_active = 1
-               AND sv.is_active = 1"
+               AND sv.is_active = 1{$categorySql}"
         );
         $stmt->execute($params);
 
         return (int) $stmt->fetchColumn() === count($serviceIds);
+    }
+
+    public function validateCategory(int $categoryId, int $businessId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) FROM service_categories WHERE id = ? AND business_id = ?'
+        );
+        $stmt->execute([$categoryId, $businessId]);
+
+        return (int) $stmt->fetchColumn() === 1;
     }
 
     public function getExpanded(int $packageId, int $locationId): ?array
@@ -336,5 +353,43 @@ final class ServicePackageRepository
         }
 
         return $totals;
+    }
+
+    private function formatPackageRow(
+        array $package,
+        array $itemsByPackage,
+        array $totalsByPackage,
+    ): array {
+        $packageId = (int) $package['id'];
+        $totals = $totalsByPackage[$packageId] ?? [
+            'total_duration' => 0,
+            'total_price' => 0.0,
+            'missing_count' => 0,
+        ];
+
+        $effectiveDuration = $package['override_duration_minutes'] !== null
+            ? (int) $package['override_duration_minutes']
+            : (int) $totals['total_duration'];
+        $effectivePrice = $package['override_price'] !== null
+            ? (float) $package['override_price']
+            : (float) $totals['total_price'];
+
+        return [
+            'id' => $packageId,
+            'business_id' => (int) $package['business_id'],
+            'location_id' => (int) $package['location_id'],
+            'category_id' => (int) $package['category_id'],
+            'name' => $package['name'],
+            'description' => $package['description'],
+            'override_price' => $package['override_price'] !== null ? (float) $package['override_price'] : null,
+            'override_duration_minutes' => $package['override_duration_minutes'] !== null
+                ? (int) $package['override_duration_minutes']
+                : null,
+            'is_active' => (bool) $package['is_active'],
+            'is_broken' => $package['is_broken'] || $totals['missing_count'] > 0,
+            'effective_price' => $effectivePrice,
+            'effective_duration_minutes' => $effectiveDuration,
+            'items' => $itemsByPackage[$packageId] ?? [],
+        ];
     }
 }

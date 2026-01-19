@@ -467,6 +467,20 @@ class MessageLookup extends MessageLookupByLibrary {
     "selectNewTime": MessageLookupByLibrary.simpleMessage(
       "Seleziona nuovo orario",
     ),
+    "servicePackageExpandError": MessageLookupByLibrary.simpleMessage(
+      "Impossibile espandere il pacchetto selezionato.",
+    ),
+    "servicePackageLabel": MessageLookupByLibrary.simpleMessage("Pacchetto"),
+    "servicePackagesLoadError": MessageLookupByLibrary.simpleMessage(
+      "Impossibile caricare i pacchetti.",
+    ),
+    "servicePackagesLoading": MessageLookupByLibrary.simpleMessage(
+      "Caricamento pacchetti...",
+    ),
+    "servicePackagesSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Oppure scegli un pacchetto pronto",
+    ),
+    "servicePackagesTitle": MessageLookupByLibrary.simpleMessage("Pacchetti"),
     "servicesDuration": m12,
     "servicesEmpty": MessageLookupByLibrary.simpleMessage(
       "Nessun servizio disponibile al momento",

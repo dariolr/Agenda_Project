@@ -126,6 +126,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "addClientToAppointment": MessageLookupByLibrary.simpleMessage(
       "Add a client to the appointment",
     ),
+    "addPackage": MessageLookupByLibrary.simpleMessage("Add package"),
     "addService": MessageLookupByLibrary.simpleMessage("Add service"),
     "addServiceTooltip": MessageLookupByLibrary.simpleMessage("Add service"),
     "additionalTimeOptionBlocked": MessageLookupByLibrary.simpleMessage(
@@ -543,6 +544,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "labelSelect": MessageLookupByLibrary.simpleMessage("Select"),
     "labelStaff": MessageLookupByLibrary.simpleMessage("Team:"),
     "lastVisitLabel": m14,
+    "minutesLabel": MessageLookupByLibrary.simpleMessage("min"),
     "moveAppointmentConfirmMessage": m15,
     "moveAppointmentConfirmTitle": MessageLookupByLibrary.simpleMessage(
       "Confirm move?",
@@ -687,6 +689,86 @@ class MessageLookup extends MessageLookupByLibrary {
     "serviceEligibleStaffNone": MessageLookupByLibrary.simpleMessage(
       "No eligible team members",
     ),
+    "servicePackageActiveLabel": MessageLookupByLibrary.simpleMessage(
+      "Package active",
+    ),
+    "servicePackageBrokenLabel": MessageLookupByLibrary.simpleMessage(
+      "Invalid",
+    ),
+    "servicePackageCreatedMessage": MessageLookupByLibrary.simpleMessage(
+      "The package has been created.",
+    ),
+    "servicePackageCreatedTitle": MessageLookupByLibrary.simpleMessage(
+      "Package created",
+    ),
+    "servicePackageDeleteError": MessageLookupByLibrary.simpleMessage(
+      "Failed to delete the package.",
+    ),
+    "servicePackageDeleteMessage": MessageLookupByLibrary.simpleMessage(
+      "This action cannot be undone.",
+    ),
+    "servicePackageDeleteTitle": MessageLookupByLibrary.simpleMessage(
+      "Delete package?",
+    ),
+    "servicePackageDeletedMessage": MessageLookupByLibrary.simpleMessage(
+      "The package has been deleted.",
+    ),
+    "servicePackageDeletedTitle": MessageLookupByLibrary.simpleMessage(
+      "Package deleted",
+    ),
+    "servicePackageDescriptionLabel": MessageLookupByLibrary.simpleMessage(
+      "Description",
+    ),
+    "servicePackageEditTitle": MessageLookupByLibrary.simpleMessage(
+      "Edit package",
+    ),
+    "servicePackageExpandError": MessageLookupByLibrary.simpleMessage(
+      "Unable to expand the selected package.",
+    ),
+    "servicePackageInactiveLabel": MessageLookupByLibrary.simpleMessage(
+      "Inactive",
+    ),
+    "servicePackageNameLabel": MessageLookupByLibrary.simpleMessage(
+      "Package name",
+    ),
+    "servicePackageNewMenu": MessageLookupByLibrary.simpleMessage(
+      "New package",
+    ),
+    "servicePackageNewTitle": MessageLookupByLibrary.simpleMessage(
+      "New package",
+    ),
+    "servicePackageNoServices": MessageLookupByLibrary.simpleMessage(
+      "No services selected",
+    ),
+    "servicePackageOrderLabel": MessageLookupByLibrary.simpleMessage(
+      "Service order",
+    ),
+    "servicePackageOverrideDurationLabel": MessageLookupByLibrary.simpleMessage(
+      "Package duration (min)",
+    ),
+    "servicePackageOverridePriceLabel": MessageLookupByLibrary.simpleMessage(
+      "Package price",
+    ),
+    "servicePackageSaveError": MessageLookupByLibrary.simpleMessage(
+      "Failed to save the package.",
+    ),
+    "servicePackageServicesLabel": MessageLookupByLibrary.simpleMessage(
+      "Included services",
+    ),
+    "servicePackageServicesRequired": MessageLookupByLibrary.simpleMessage(
+      "Select at least one service",
+    ),
+    "servicePackageUpdatedMessage": MessageLookupByLibrary.simpleMessage(
+      "The package has been updated.",
+    ),
+    "servicePackageUpdatedTitle": MessageLookupByLibrary.simpleMessage(
+      "Package updated",
+    ),
+    "servicePackagesEmptyState": MessageLookupByLibrary.simpleMessage(
+      "No packages available",
+    ),
+    "servicePackagesTabLabel": MessageLookupByLibrary.simpleMessage("Packages"),
+    "servicePackagesTitle": MessageLookupByLibrary.simpleMessage("Packages"),
     "serviceSeedCategoryBodyDescription": MessageLookupByLibrary.simpleMessage(
       "Services dedicated to body wellness",
     ),
@@ -727,10 +809,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "serviceStartsAfterMidnight": MessageLookupByLibrary.simpleMessage(
       "Cannot add service: the time exceeds midnight. Change the start time or staff member.",
     ),
+    "servicesLabel": MessageLookupByLibrary.simpleMessage("services"),
     "servicesNewServiceMenu": MessageLookupByLibrary.simpleMessage(
       "New service",
     ),
     "servicesSelectedCount": m31,
+    "servicesTabLabel": MessageLookupByLibrary.simpleMessage("Services"),
     "setPriceToEnable": MessageLookupByLibrary.simpleMessage(
       "Set a price to enable this option",
     ),
@@ -924,6 +1008,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamStaffSurnameLabel": MessageLookupByLibrary.simpleMessage("Last name"),
     "validationInvalidEmail": MessageLookupByLibrary.simpleMessage(
       "Invalid email",
+    ),
+    "validationInvalidNumber": MessageLookupByLibrary.simpleMessage(
+      "Invalid number",
     ),
     "validationInvalidPhone": MessageLookupByLibrary.simpleMessage(
       "Invalid phone",

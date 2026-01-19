@@ -449,6 +449,20 @@ class MessageLookup extends MessageLookupByLibrary {
     "selectDate": MessageLookupByLibrary.simpleMessage("Select date"),
     "selectNewDate": MessageLookupByLibrary.simpleMessage("Select new date"),
     "selectNewTime": MessageLookupByLibrary.simpleMessage("Select new time"),
+    "servicePackageExpandError": MessageLookupByLibrary.simpleMessage(
+      "Unable to expand the selected package.",
+    ),
+    "servicePackageLabel": MessageLookupByLibrary.simpleMessage("Package"),
+    "servicePackagesLoadError": MessageLookupByLibrary.simpleMessage(
+      "Unable to load packages.",
+    ),
+    "servicePackagesLoading": MessageLookupByLibrary.simpleMessage(
+      "Loading packages...",
+    ),
+    "servicePackagesSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Or pick a ready-made package",
+    ),
+    "servicePackagesTitle": MessageLookupByLibrary.simpleMessage("Packages"),
     "servicesDuration": m12,
     "servicesEmpty": MessageLookupByLibrary.simpleMessage(
       "No services available at the moment",

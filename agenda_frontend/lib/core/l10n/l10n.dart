@@ -904,6 +904,66 @@ class L10n {
     );
   }
 
+  /// `Pacchetti`
+  String get servicePackagesTitle {
+    return Intl.message(
+      'Pacchetti',
+      name: 'servicePackagesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Oppure scegli un pacchetto pronto`
+  String get servicePackagesSubtitle {
+    return Intl.message(
+      'Oppure scegli un pacchetto pronto',
+      name: 'servicePackagesSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Caricamento pacchetti...`
+  String get servicePackagesLoading {
+    return Intl.message(
+      'Caricamento pacchetti...',
+      name: 'servicePackagesLoading',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile caricare i pacchetti.`
+  String get servicePackagesLoadError {
+    return Intl.message(
+      'Impossibile caricare i pacchetti.',
+      name: 'servicePackagesLoadError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pacchetto`
+  String get servicePackageLabel {
+    return Intl.message(
+      'Pacchetto',
+      name: 'servicePackageLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile espandere il pacchetto selezionato.`
+  String get servicePackageExpandError {
+    return Intl.message(
+      'Impossibile espandere il pacchetto selezionato.',
+      name: 'servicePackageExpandError',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `{count, plural, =0{Nessun servizio selezionato} =1{1 servizio selezionato} other{{count} servizi selezionati}}`
   String servicesSelected(int count) {
     return Intl.plural(
