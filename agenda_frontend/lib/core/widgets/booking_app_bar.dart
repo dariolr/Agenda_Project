@@ -87,7 +87,7 @@ class BookingAppBar extends ConsumerWidget implements PreferredSizeWidget {
       actions: [
         if (showUserMenu && isAuthenticated && slug != null)
           _UserMenuButton(slug: slug),
-        const SizedBox(width: 4),
+        const SizedBox(width: 12),
       ],
       bottom: bottom,
     );

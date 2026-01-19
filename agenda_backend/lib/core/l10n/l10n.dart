@@ -729,20 +729,20 @@ class L10n {
     );
   }
 
-  /// `Nota appuntamento`
+  /// `Nota sull'appuntamento`
   String get appointmentNoteLabel {
     return Intl.message(
-      'Nota appuntamento',
+      'Nota sull\'appuntamento',
       name: 'appointmentNoteLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nota cliente`
+  /// `Nota sul cliente`
   String get clientNoteLabel {
     return Intl.message(
-      'Nota cliente',
+      'Nota sul cliente',
       name: 'clientNoteLabel',
       desc: '',
       args: [],
@@ -3750,6 +3750,206 @@ class L10n {
     return Intl.message(
       'Gratuito',
       name: 'appointmentPriceFree',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Storico prenotazione`
+  String get bookingHistoryTitle {
+    return Intl.message(
+      'Storico prenotazione',
+      name: 'bookingHistoryTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun evento registrato`
+  String get bookingHistoryEmpty {
+    return Intl.message(
+      'Nessun evento registrato',
+      name: 'bookingHistoryEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Caricamento storico...`
+  String get bookingHistoryLoading {
+    return Intl.message(
+      'Caricamento storico...',
+      name: 'bookingHistoryLoading',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Errore nel caricamento dello storico`
+  String get bookingHistoryError {
+    return Intl.message(
+      'Errore nel caricamento dello storico',
+      name: 'bookingHistoryError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione creata`
+  String get bookingHistoryEventCreated {
+    return Intl.message(
+      'Prenotazione creata',
+      name: 'bookingHistoryEventCreated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione modificata`
+  String get bookingHistoryEventUpdated {
+    return Intl.message(
+      'Prenotazione modificata',
+      name: 'bookingHistoryEventUpdated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione cancellata`
+  String get bookingHistoryEventCancelled {
+    return Intl.message(
+      'Prenotazione cancellata',
+      name: 'bookingHistoryEventCancelled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizio aggiunto`
+  String get bookingHistoryEventItemAdded {
+    return Intl.message(
+      'Servizio aggiunto',
+      name: 'bookingHistoryEventItemAdded',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizio rimosso`
+  String get bookingHistoryEventItemDeleted {
+    return Intl.message(
+      'Servizio rimosso',
+      name: 'bookingHistoryEventItemDeleted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appuntamento modificato`
+  String get bookingHistoryEventAppointmentUpdated {
+    return Intl.message(
+      'Appuntamento modificato',
+      name: 'bookingHistoryEventAppointmentUpdated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Orario modificato`
+  String get bookingHistoryEventTimeChanged {
+    return Intl.message(
+      'Orario modificato',
+      name: 'bookingHistoryEventTimeChanged',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Operatore cambiato`
+  String get bookingHistoryEventStaffChanged {
+    return Intl.message(
+      'Operatore cambiato',
+      name: 'bookingHistoryEventStaffChanged',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prezzo modificato`
+  String get bookingHistoryEventPriceChanged {
+    return Intl.message(
+      'Prezzo modificato',
+      name: 'bookingHistoryEventPriceChanged',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Durata modificata`
+  String get bookingHistoryEventDurationChanged {
+    return Intl.message(
+      'Durata modificata',
+      name: 'bookingHistoryEventDurationChanged',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione riprogrammata`
+  String get bookingHistoryEventReplaced {
+    return Intl.message(
+      'Prenotazione riprogrammata',
+      name: 'bookingHistoryEventReplaced',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Operatore`
+  String get bookingHistoryActorStaff {
+    return Intl.message(
+      'Operatore',
+      name: 'bookingHistoryActorStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cliente`
+  String get bookingHistoryActorCustomer {
+    return Intl.message(
+      'Cliente',
+      name: 'bookingHistoryActorCustomer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sistema`
+  String get bookingHistoryActorSystem {
+    return Intl.message(
+      'Sistema',
+      name: 'bookingHistoryActorSystem',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Campi modificati: {fields}`
+  String bookingHistoryChangedFields(String fields) {
+    return Intl.message(
+      'Campi modificati: $fields',
+      name: 'bookingHistoryChangedFields',
+      desc: '',
+      args: [fields],
+    );
+  }
+
+  /// `CANCELLATO`
+  String get cancelledBadge {
+    return Intl.message(
+      'CANCELLATO',
+      name: 'cancelledBadge',
       desc: '',
       args: [],
     );

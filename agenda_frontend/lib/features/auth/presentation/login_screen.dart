@@ -72,7 +72,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    debugPrint('LOGIN calling API...');
     final success = await ref
         .read(authProvider.notifier)
         .login(

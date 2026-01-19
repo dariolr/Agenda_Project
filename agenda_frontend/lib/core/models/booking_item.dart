@@ -106,6 +106,7 @@ class BookingItem {
 
   bool get isPast => endTime.isBefore(DateTime.now());
   bool get isUpcoming => !isPast;
+  bool get isCancelled => status == 'cancelled';
 
   /// Crea copia con nuovi valori (per update locale dopo reschedule)
   BookingItem copyWith({
