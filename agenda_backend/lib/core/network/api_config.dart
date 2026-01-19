@@ -69,6 +69,20 @@ class ApiConfig {
   static String bookingHistory(int bookingId) =>
       '/v1/bookings/$bookingId/history';
 
+  // ========== SERVICE PACKAGES ENDPOINTS ==========
+
+  /// Lista pacchetti servizi per location
+  static String servicePackages(int locationId) =>
+      '/v1/locations/$locationId/service-packages';
+
+  /// Singolo pacchetto servizi
+  static String servicePackage(int locationId, int packageId) =>
+      '/v1/locations/$locationId/service-packages/$packageId';
+
+  /// Espansione pacchetto servizi
+  static String servicePackageExpand(int locationId, int packageId) =>
+      '/v1/locations/$locationId/service-packages/$packageId/expand';
+
   // ========== BUSINESS USERS (OPERATORS) ENDPOINTS ==========
 
   /// Lista operatori di un business

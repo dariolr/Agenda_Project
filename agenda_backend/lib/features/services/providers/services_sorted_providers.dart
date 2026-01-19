@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
+import '../../../core/models/service_package.dart';
 import 'service_categories_provider.dart';
+import 'service_packages_provider.dart';
 import 'services_provider.dart';
 
 /// Liste ordinate con queste priorità:
@@ -15,7 +17,8 @@ final sortedCategoriesProvider = Provider<List<ServiceCategory>>((ref) {
   // Pre-calcolo: per ogni categoria verifichiamo se ha servizi.
   final hasServicesMap = <int, bool>{
     for (final c in cats)
-      c.id: ref.watch(servicesByCategoryProvider(c.id)).isNotEmpty,
+      c.id: ref.watch(servicesByCategoryProvider(c.id)).isNotEmpty ||
+          ref.watch(servicePackagesByCategoryProvider(c.id)).isNotEmpty,
   };
 
   final copy = [...cats];
@@ -44,3 +47,17 @@ final sortedServicesByCategoryProvider = Provider.family<List<Service>, int>((
   });
   return copy;
 });
+
+final servicePackagesByCategoryProvider =
+    Provider.family<List<ServicePackage>, int>((ref, categoryId) {
+      final packages = ref.watch(servicePackagesProvider).value ?? [];
+      return packages.where((p) => p.categoryId == categoryId).toList();
+    });
+
+final sortedServicePackagesByCategoryProvider =
+    Provider.family<List<ServicePackage>, int>((ref, categoryId) {
+      final packages = ref.watch(servicePackagesByCategoryProvider(categoryId));
+      final copy = [...packages];
+      copy.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      return copy;
+    });

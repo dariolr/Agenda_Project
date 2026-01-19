@@ -28,6 +28,8 @@ import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/clients/providers/clients_providers.dart';
 import '../features/services/presentation/dialogs/category_dialog.dart';
 import '../features/services/presentation/dialogs/service_dialog.dart';
+import '../features/services/presentation/dialogs/service_package_dialog.dart';
+import '../features/services/providers/service_categories_provider.dart';
 import '../features/services/providers/services_provider.dart';
 import '../features/services/providers/services_reorder_provider.dart';
 import '../features/staff/presentation/dialogs/location_dialog.dart';
@@ -565,6 +567,8 @@ class _ServicesAddAction extends ConsumerWidget {
         showLabel ||
         formFactor == AppFormFactor.tablet ||
         formFactor == AppFormFactor.desktop;
+    final services = ref.watch(servicesProvider).value ?? [];
+    final categories = ref.watch(serviceCategoriesProvider);
     const iconOnlyWidth = 46.0;
     final bool isIconOnly = !showLabelEffective;
     Widget buildActionLabel(IconData icon, String label) {
@@ -585,27 +589,29 @@ class _ServicesAddAction extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Tooltip(
-            message: l10n.reorderTitle,
-            child: SizedBox(
-              height: _actionButtonHeight,
-              width: isIconOnly ? iconOnlyWidth : null,
-              child: AppOutlinedActionButton(
-                onPressed: () {
-                  ref.read(servicesReorderPanelProvider.notifier).toggle();
-                },
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+          ...[
+            Tooltip(
+              message: l10n.reorderTitle,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: AppOutlinedActionButton(
+                  onPressed: () {
+                    ref.read(servicesReorderPanelProvider.notifier).toggle();
+                  },
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  borderColor: scheme.primary,
+                  foregroundColor: scheme.primary,
+                  child: buildActionLabel(Icons.sort, l10n.reorderTitle),
                 ),
-                borderRadius: BorderRadius.circular(8),
-                borderColor: scheme.primary,
-                foregroundColor: scheme.primary,
-                child: buildActionLabel(Icons.sort, l10n.reorderTitle),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
+          ],
           AdaptiveDropdown<String>(
             modalTitle: l10n.agendaAdd,
             alignment: AdaptiveDropdownAlignment.right,
@@ -622,12 +628,23 @@ class _ServicesAddAction extends ConsumerWidget {
                 value: 'service',
                 child: Text(l10n.servicesNewServiceMenu),
               ),
+              AdaptiveDropdownItem(
+                value: 'package',
+                child: Text(l10n.servicePackageNewMenu),
+              ),
             ],
             onSelected: (value) {
               if (value == 'category') {
                 showCategoryDialog(context, ref);
               } else if (value == 'service') {
                 showServiceDialog(context, ref, requireCategorySelection: true);
+              } else if (value == 'package') {
+                showServicePackageDialog(
+                  context,
+                  ref,
+                  services: services,
+                  categories: categories,
+                );
               }
             },
             child: Material(

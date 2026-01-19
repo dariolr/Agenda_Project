@@ -43,6 +43,10 @@ Response (200):
 }
 ```
 
+Note:
+- `category_id` è obbligatorio in creazione/aggiornamento pacchetto
+- tutti i `service_ids` devono appartenere alla stessa categoria
+
 ---
 
 ## Auth Endpoints (globale, no business context)
@@ -853,6 +857,71 @@ Response (200):
   }
 }
 ```
+
+---
+
+### GET /v1/locations/{location_id}/service-packages
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "location_id": 1,
+    "packages": [
+      {
+        "id": 10,
+        "business_id": 1,
+        "location_id": 1,
+        "category_id": 3,
+        "name": "Taglio + Piega",
+        "description": "Pacchetto promozionale",
+        "override_price": 45.00,
+        "override_duration_minutes": 75,
+        "is_active": true,
+        "is_broken": false,
+        "effective_price": 45.00,
+        "effective_duration_minutes": 75,
+        "items": [
+          {
+            "service_id": 1,
+            "sort_order": 0,
+            "name": "Taglio",
+            "duration_minutes": 30,
+            "price": 20.00,
+            "service_is_active": true,
+            "variant_is_active": true
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+---
+
+### GET /v1/locations/{location_id}/service-packages/{id}/expand
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "package_id": 10,
+    "location_id": 1,
+    "service_ids": [1, 2],
+    "effective_price": 45.00,
+    "effective_duration_minutes": 75,
+    "is_active": true,
+    "is_broken": false
+  }
+}
+```
+
+Errors:
+- `package_inactive` (409): Pacchetto non attivo
+- `package_broken` (409): Pacchetto contiene servizi non disponibili
 
 ---
 

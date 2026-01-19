@@ -624,6 +624,326 @@ class L10n {
     );
   }
 
+  /// `Servizi`
+  String get servicesTabLabel {
+    return Intl.message(
+      'Servizi',
+      name: 'servicesTabLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pacchetti`
+  String get servicePackagesTabLabel {
+    return Intl.message(
+      'Pacchetti',
+      name: 'servicePackagesTabLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pacchetti`
+  String get servicePackagesTitle {
+    return Intl.message(
+      'Pacchetti',
+      name: 'servicePackagesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun pacchetto disponibile`
+  String get servicePackagesEmptyState {
+    return Intl.message(
+      'Nessun pacchetto disponibile',
+      name: 'servicePackagesEmptyState',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nuovo pacchetto`
+  String get servicePackageNewMenu {
+    return Intl.message(
+      'Nuovo pacchetto',
+      name: 'servicePackageNewMenu',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nuovo pacchetto`
+  String get servicePackageNewTitle {
+    return Intl.message(
+      'Nuovo pacchetto',
+      name: 'servicePackageNewTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modifica pacchetto`
+  String get servicePackageEditTitle {
+    return Intl.message(
+      'Modifica pacchetto',
+      name: 'servicePackageEditTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nome pacchetto`
+  String get servicePackageNameLabel {
+    return Intl.message(
+      'Nome pacchetto',
+      name: 'servicePackageNameLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Descrizione`
+  String get servicePackageDescriptionLabel {
+    return Intl.message(
+      'Descrizione',
+      name: 'servicePackageDescriptionLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prezzo pacchetto`
+  String get servicePackageOverridePriceLabel {
+    return Intl.message(
+      'Prezzo pacchetto',
+      name: 'servicePackageOverridePriceLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Durata pacchetto (min)`
+  String get servicePackageOverrideDurationLabel {
+    return Intl.message(
+      'Durata pacchetto (min)',
+      name: 'servicePackageOverrideDurationLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pacchetto attivo`
+  String get servicePackageActiveLabel {
+    return Intl.message(
+      'Pacchetto attivo',
+      name: 'servicePackageActiveLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizi inclusi`
+  String get servicePackageServicesLabel {
+    return Intl.message(
+      'Servizi inclusi',
+      name: 'servicePackageServicesLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ordine servizi`
+  String get servicePackageOrderLabel {
+    return Intl.message(
+      'Ordine servizi',
+      name: 'servicePackageOrderLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun servizio selezionato`
+  String get servicePackageNoServices {
+    return Intl.message(
+      'Nessun servizio selezionato',
+      name: 'servicePackageNoServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona almeno un servizio`
+  String get servicePackageServicesRequired {
+    return Intl.message(
+      'Seleziona almeno un servizio',
+      name: 'servicePackageServicesRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pacchetto creato`
+  String get servicePackageCreatedTitle {
+    return Intl.message(
+      'Pacchetto creato',
+      name: 'servicePackageCreatedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il pacchetto è stato creato.`
+  String get servicePackageCreatedMessage {
+    return Intl.message(
+      'Il pacchetto è stato creato.',
+      name: 'servicePackageCreatedMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pacchetto aggiornato`
+  String get servicePackageUpdatedTitle {
+    return Intl.message(
+      'Pacchetto aggiornato',
+      name: 'servicePackageUpdatedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il pacchetto è stato aggiornato.`
+  String get servicePackageUpdatedMessage {
+    return Intl.message(
+      'Il pacchetto è stato aggiornato.',
+      name: 'servicePackageUpdatedMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Errore nel salvataggio del pacchetto.`
+  String get servicePackageSaveError {
+    return Intl.message(
+      'Errore nel salvataggio del pacchetto.',
+      name: 'servicePackageSaveError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Eliminare il pacchetto?`
+  String get servicePackageDeleteTitle {
+    return Intl.message(
+      'Eliminare il pacchetto?',
+      name: 'servicePackageDeleteTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questa azione non può essere annullata.`
+  String get servicePackageDeleteMessage {
+    return Intl.message(
+      'Questa azione non può essere annullata.',
+      name: 'servicePackageDeleteMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pacchetto eliminato`
+  String get servicePackageDeletedTitle {
+    return Intl.message(
+      'Pacchetto eliminato',
+      name: 'servicePackageDeletedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il pacchetto è stato eliminato.`
+  String get servicePackageDeletedMessage {
+    return Intl.message(
+      'Il pacchetto è stato eliminato.',
+      name: 'servicePackageDeletedMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Errore durante l'eliminazione del pacchetto.`
+  String get servicePackageDeleteError {
+    return Intl.message(
+      'Errore durante l\'eliminazione del pacchetto.',
+      name: 'servicePackageDeleteError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inattivo`
+  String get servicePackageInactiveLabel {
+    return Intl.message(
+      'Inattivo',
+      name: 'servicePackageInactiveLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Non valido`
+  String get servicePackageBrokenLabel {
+    return Intl.message(
+      'Non valido',
+      name: 'servicePackageBrokenLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `servizi`
+  String get servicesLabel {
+    return Intl.message('servizi', name: 'servicesLabel', desc: '', args: []);
+  }
+
+  /// `min`
+  String get minutesLabel {
+    return Intl.message('min', name: 'minutesLabel', desc: '', args: []);
+  }
+
+  /// `Aggiungi pacchetto`
+  String get addPackage {
+    return Intl.message(
+      'Aggiungi pacchetto',
+      name: 'addPackage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile espandere il pacchetto selezionato.`
+  String get servicePackageExpandError {
+    return Intl.message(
+      'Impossibile espandere il pacchetto selezionato.',
+      name: 'servicePackageExpandError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Numero non valido`
+  String get validationInvalidNumber {
+    return Intl.message(
+      'Numero non valido',
+      name: 'validationInvalidNumber',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Aggiungi`
   String get agendaAdd {
     return Intl.message('Aggiungi', name: 'agendaAdd', desc: '', args: []);
