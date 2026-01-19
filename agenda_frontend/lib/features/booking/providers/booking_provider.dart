@@ -6,6 +6,7 @@ import '../../../core/models/booking_request.dart';
 import '../../../core/models/location.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
+import '../../../core/models/service_package.dart';
 import '../../../core/models/staff.dart';
 import '../../../core/models/time_slot.dart';
 import '../../../core/network/api_client.dart';
@@ -154,6 +155,22 @@ class BookingFlowState {
     confirmedBookingId: confirmedBookingId ?? this.confirmedBookingId,
     isStaffAutoSelected: isStaffAutoSelected ?? this.isStaffAutoSelected,
   );
+}
+
+class BookingTotals {
+  final double totalPrice;
+  final int totalDurationMinutes;
+  final List<ServicePackage> selectedPackages;
+  final Set<int> coveredServiceIds;
+  final int selectedItemCount;
+
+  const BookingTotals({
+    required this.totalPrice,
+    required this.totalDurationMinutes,
+    required this.selectedPackages,
+    required this.coveredServiceIds,
+    required this.selectedItemCount,
+  });
 }
 
 /// Provider principale per il flow di prenotazione
@@ -484,6 +501,82 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
           );
 
     // Quando cambiano i servizi, resetta slot selezionato
+    state = state.copyWith(
+      request: state.request.copyWith(
+        services: currentServices,
+        selectedStaffByService: shouldClearStaff ? {} : updatedStaffByService,
+        clearStaff: shouldClearStaff,
+        clearAnyOperatorSelections: shouldClearStaff,
+        clearSlot: true,
+      ),
+      clearError: true,
+      isStaffAutoSelected: shouldClearStaff ? false : state.isStaffAutoSelected,
+    );
+  }
+
+  /// Aggiunge servizi in ordine (usato per pacchetti)
+  void addServicesFromPackage(List<Service> servicesInOrder) {
+    if (servicesInOrder.isEmpty) return;
+
+    final currentServices = List<Service>.from(state.request.services);
+    for (final service in servicesInOrder) {
+      if (!currentServices.any((s) => s.id == service.id)) {
+        currentServices.add(service);
+      }
+    }
+
+    final shouldClearStaff = !_config.allowStaffSelection;
+    final updatedStaffByService =
+        Map<int, Staff?>.from(state.request.selectedStaffByService)
+          ..removeWhere(
+            (serviceId, _) => !currentServices.any((s) => s.id == serviceId),
+          );
+
+    state = state.copyWith(
+      request: state.request.copyWith(
+        services: currentServices,
+        selectedStaffByService: shouldClearStaff ? {} : updatedStaffByService,
+        clearStaff: shouldClearStaff,
+        clearAnyOperatorSelections: shouldClearStaff,
+        clearSlot: true,
+      ),
+      clearError: true,
+      isStaffAutoSelected: shouldClearStaff ? false : state.isStaffAutoSelected,
+    );
+  }
+
+  /// Toggle pacchetto come selezione servizi
+  void togglePackageSelection(
+    ServicePackage package,
+    List<Service> availableServices,
+  ) {
+    final serviceIds = package.orderedServiceIds;
+    if (serviceIds.isEmpty) return;
+
+    final currentServices = List<Service>.from(state.request.services);
+    final hasAll = serviceIds.every(
+      (id) => currentServices.any((s) => s.id == id),
+    );
+
+    if (hasAll) {
+      currentServices.removeWhere((s) => serviceIds.contains(s.id));
+    } else {
+      final servicesById = {for (final s in availableServices) s.id: s};
+      for (final id in serviceIds) {
+        final service = servicesById[id];
+        if (service != null && !currentServices.any((s) => s.id == id)) {
+          currentServices.add(service);
+        }
+      }
+    }
+
+    final shouldClearStaff = !_config.allowStaffSelection;
+    final updatedStaffByService =
+        Map<int, Staff?>.from(state.request.selectedStaffByService)
+          ..removeWhere(
+            (serviceId, _) => !currentServices.any((s) => s.id == serviceId),
+          );
+
     state = state.copyWith(
       request: state.request.copyWith(
         services: currentServices,
@@ -833,6 +926,97 @@ final servicesDataProvider =
     StateNotifierProvider<ServicesDataNotifier, AsyncValue<ServicesData>>(
       (ref) => ServicesDataNotifier(ref),
     );
+
+/// Provider per i pacchetti di servizi
+class ServicePackagesNotifier
+    extends StateNotifier<AsyncValue<List<ServicePackage>>> {
+  final Ref _ref;
+  bool _hasFetched = false;
+  int? _lastLocationId;
+
+  ServicePackagesNotifier(this._ref) : super(const AsyncValue.loading()) {
+    _ref.listen(effectiveLocationIdProvider, (previous, next) {
+      if (next > 0 && next != _lastLocationId) {
+        _hasFetched = false;
+        _lastLocationId = next;
+        _loadData();
+      }
+    }, fireImmediately: true);
+  }
+
+  Future<void> _loadData() async {
+    if (_hasFetched) return;
+
+    final locationId = _ref.read(effectiveLocationIdProvider);
+    if (locationId <= 0) return;
+
+    _hasFetched = true;
+
+    try {
+      final repository = _ref.read(bookingRepositoryProvider);
+      final packages = await repository.getServicePackages(locationId);
+      state = AsyncValue.data(packages);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> refresh() async {
+    _hasFetched = false;
+    state = const AsyncValue.loading();
+    await _loadData();
+  }
+}
+
+final servicePackagesProvider = StateNotifierProvider<
+  ServicePackagesNotifier,
+  AsyncValue<List<ServicePackage>>
+>((ref) => ServicePackagesNotifier(ref));
+
+final bookingTotalsProvider = Provider<BookingTotals>((ref) {
+  final bookingState = ref.watch(bookingFlowProvider);
+  final services = bookingState.request.services;
+  final selectedServiceIds = services.map((s) => s.id).toSet();
+  final packages = ref.watch(servicePackagesProvider).value ?? [];
+
+  final selectedPackages = <ServicePackage>[];
+  final coveredServiceIds = <int>{};
+  for (final pkg in packages) {
+    if (!pkg.isActive || pkg.isBroken) continue;
+    final ids = pkg.orderedServiceIds;
+    if (ids.isEmpty) continue;
+    final isSelected = ids.every(selectedServiceIds.contains);
+    if (isSelected) {
+      selectedPackages.add(pkg);
+      coveredServiceIds.addAll(ids);
+    }
+  }
+
+  var totalPrice = 0.0;
+  var totalDuration = 0;
+  for (final pkg in selectedPackages) {
+    totalPrice += pkg.effectivePrice;
+    totalDuration += pkg.effectiveDurationMinutes;
+  }
+
+  final remainingServices = services
+      .where((s) => !coveredServiceIds.contains(s.id))
+      .toList();
+  for (final service in remainingServices) {
+    totalPrice += service.isFree ? 0 : service.price;
+    totalDuration += service.durationMinutes;
+  }
+
+  final selectedItemCount = selectedPackages.length + remainingServices.length;
+
+  return BookingTotals(
+    totalPrice: totalPrice,
+    totalDurationMinutes: totalDuration,
+    selectedPackages: selectedPackages,
+    coveredServiceIds: coveredServiceIds,
+    selectedItemCount: selectedItemCount,
+  );
+});
 
 /// Provider per le categorie (legacy - usa servicesDataProvider)
 final categoriesProvider = FutureProvider<List<ServiceCategory>>((ref) async {

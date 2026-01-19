@@ -31,6 +31,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     final theme = Theme.of(context);
     final bookingState = ref.watch(bookingFlowProvider);
     final request = bookingState.request;
+    final totals = ref.watch(bookingTotalsProvider);
 
     return Column(
       children: [
@@ -85,8 +86,65 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (totals.selectedPackages.isNotEmpty)
+                        ...totals.selectedPackages.map((package) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        package.name,
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        l10n.servicePackageLabel,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.6),
+                                        ),
+                                      ),
+                                      if (totals.selectedItemCount > 1)
+                                        Text(
+                                          l10n.durationMinutes(
+                                            package.effectiveDurationMinutes,
+                                          ),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withOpacity(0.6),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                if (totals.selectedItemCount > 1)
+                                  Text(
+                                    _formatTotalPrice(
+                                      context,
+                                      package.effectivePrice,
+                                    ).replaceFirst('€', '').trim(),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.6),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
                       ...request.services.map((service) {
                         final staff = request.staffForService(service.id);
+                        final isCovered =
+                            totals.coveredServiceIds.contains(service.id);
                         final operatorLabel = request.isAnyOperatorForService(
                                   service.id,
                                 )
@@ -118,7 +176,8 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                             .withOpacity(0.6),
                                       ),
                                     ),
-                                    if (request.services.length > 1)
+                                    if (totals.selectedItemCount > 1 &&
+                                        !isCovered)
                                       Text(
                                         l10n.durationMinutes(
                                           service.durationMinutes,
@@ -132,7 +191,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                   ],
                                 ),
                               ),
-                              if (request.services.length > 1)
+                              if (totals.selectedItemCount > 1 && !isCovered)
                                 Text(
                                   service.formattedPrice,
                                   style: theme.textTheme.bodySmall?.copyWith(
@@ -202,7 +261,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                               const SizedBox(width: 6),
                               Text(
                                 l10n.durationMinutes(
-                                  request.totalDurationMinutes,
+                                  totals.totalDurationMinutes,
                                 ),
                                 style: theme.textTheme.bodyMedium,
                               ),
@@ -217,7 +276,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                request.formattedTotalPrice
+                                _formatTotalPrice(context, totals.totalPrice)
                                     .replaceFirst('€', '')
                                     .trim(),
                                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -355,6 +414,12 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
         ),
       ),
     );
+  }
+
+  String _formatTotalPrice(BuildContext context, double totalPrice) {
+    final l10n = context.l10n;
+    if (totalPrice == 0) return l10n.servicesFree;
+    return '€${totalPrice.toStringAsFixed(2).replaceAll('.', ',')}';
   }
 
   String _resolveBookingErrorMessage(

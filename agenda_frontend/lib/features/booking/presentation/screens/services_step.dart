@@ -4,18 +4,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
+import '../../../../core/models/service_package.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
 
-class ServicesStep extends ConsumerWidget {
+class ServicesStep extends ConsumerStatefulWidget {
   const ServicesStep({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ServicesStep> createState() => _ServicesStepState();
+}
+
+class _ServicesStepState extends ConsumerState<ServicesStep> {
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final servicesDataAsync = ref.watch(servicesDataProvider);
+    final packagesAsync = ref.watch(servicePackagesProvider);
     final bookingState = ref.watch(bookingFlowProvider);
     final selectedServices = bookingState.request.services;
     final isLoading = servicesDataAsync.isLoading;
@@ -70,6 +77,7 @@ class ServicesStep extends ConsumerWidget {
                     data.categories,
                     data.bookableServices,
                     selectedServices,
+                    packagesAsync,
                   );
                 },
               ),
@@ -145,29 +153,56 @@ class ServicesStep extends ConsumerWidget {
     List<ServiceCategory> categories,
     List<Service> services,
     List<Service> selectedServices,
+    AsyncValue<List<ServicePackage>> packagesAsync,
   ) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: categories.length,
-      itemBuilder: (context, index) {
-        final category = categories[index];
-        final categoryServices =
-            services
-                .where((s) => s.categoryId == category.id && s.isBookableOnline)
-                .toList()
-              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final widgets = <Widget>[];
+    final packages = packagesAsync.value ?? [];
 
-        if (categoryServices.isEmpty) return const SizedBox.shrink();
+    if (packagesAsync.hasError) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Text(
+            context.l10n.servicePackagesLoadError,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        ),
+      );
+    }
 
-        return _CategorySection(
+    for (final category in categories) {
+      final categoryServices =
+          services
+              .where((s) => s.categoryId == category.id && s.isBookableOnline)
+              .toList()
+            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      final categoryPackages =
+          packages.where((p) => p.categoryId == category.id).toList()
+            ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+      if (categoryServices.isEmpty && categoryPackages.isEmpty) continue;
+
+      widgets.add(
+        _CategorySection(
           category: category,
           services: categoryServices,
+          packages: categoryPackages,
           selectedServices: selectedServices,
           onServiceTap: (service) {
             ref.read(bookingFlowProvider.notifier).toggleService(service);
           },
-        );
-      },
+          onPackageTap: (package) {
+            ref
+                .read(bookingFlowProvider.notifier)
+                .togglePackageSelection(package, services);
+          },
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: widgets,
     );
   }
 
@@ -179,6 +214,7 @@ class ServicesStep extends ConsumerWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final bookingState = ref.watch(bookingFlowProvider);
+    final totals = ref.watch(bookingTotalsProvider);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -202,12 +238,12 @@ class ServicesStep extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  l10n.servicesSelected(selectedServices.length),
+                  l10n.servicesSelected(totals.selectedItemCount),
                   style: theme.textTheme.bodyMedium,
                 ),
                 if (selectedServices.isNotEmpty)
                   Text(
-                    bookingState.request.formattedTotalPrice,
+                    _formatTotalPrice(context, totals.totalPrice),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.primary,
@@ -230,19 +266,30 @@ class ServicesStep extends ConsumerWidget {
       ),
     );
   }
+
+  String _formatTotalPrice(BuildContext context, double totalPrice) {
+    final l10n = context.l10n;
+    if (totalPrice == 0) return l10n.servicesFree;
+    return '€${totalPrice.toStringAsFixed(2).replaceAll('.', ',')}';
+  }
+
 }
 
 class _CategorySection extends StatelessWidget {
   final ServiceCategory category;
   final List<Service> services;
+  final List<ServicePackage> packages;
   final List<Service> selectedServices;
   final void Function(Service) onServiceTap;
+  final void Function(ServicePackage) onPackageTap;
 
   const _CategorySection({
     required this.category,
     required this.services,
+    required this.packages,
     required this.selectedServices,
     required this.onServiceTap,
+    required this.onPackageTap,
   });
 
   @override
@@ -261,6 +308,22 @@ class _CategorySection extends StatelessWidget {
             ),
           ),
         ),
+        ...packages.map((package) {
+          final packageServiceIds = package.orderedServiceIds.toSet();
+          final isSelectable = package.isActive && !package.isBroken;
+          final isSelected = isSelectable &&
+              packageServiceIds.isNotEmpty &&
+              packageServiceIds.every(
+                (id) => selectedServices.any((s) => s.id == id),
+              );
+          final disabled = !isSelectable;
+          return _PackageTile(
+            package: package,
+            isSelected: isSelected,
+            isDisabled: disabled,
+            onTap: disabled ? null : () => onPackageTap(package),
+          );
+        }),
         ...services.map((service) {
           final isSelected = selectedServices.any((s) => s.id == service.id);
           return _ServiceTile(
@@ -358,6 +421,124 @@ class _ServiceTile extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PackageTile extends StatelessWidget {
+  final ServicePackage package;
+  final bool isSelected;
+  final bool isDisabled;
+  final VoidCallback? onTap;
+
+  const _PackageTile({
+    required this.package,
+    required this.isSelected,
+    required this.isDisabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final price = package.effectivePrice;
+    final priceLabel =
+        price == 0 ? l10n.servicesFree : '€${price.toStringAsFixed(2).replaceAll('.', ',')}';
+
+    return Opacity(
+      opacity: isDisabled ? 0.5 : 1.0,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : Colors.transparent,
+                    border: Border.all(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check, size: 16, color: Colors.white)
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              package.name,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              l10n.servicePackageLabel,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSecondaryContainer,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.servicesDuration(package.effectiveDurationMinutes),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  priceLabel,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

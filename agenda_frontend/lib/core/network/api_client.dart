@@ -610,6 +610,19 @@ class ApiClient {
     );
   }
 
+  /// GET /v1/locations/{location_id}/service-packages
+  Future<Map<String, dynamic>> getServicePackages(int locationId) async {
+    return get(ApiConfig.servicePackages(locationId));
+  }
+
+  /// GET /v1/locations/{location_id}/service-packages/{id}/expand
+  Future<Map<String, dynamic>> expandServicePackage({
+    required int locationId,
+    required int packageId,
+  }) async {
+    return get(ApiConfig.servicePackageExpand(locationId, packageId));
+  }
+
   /// GET /v1/staff?location_id=X
   Future<Map<String, dynamic>> getStaff(int locationId) async {
     return get(ApiConfig.staff, queryParameters: {'location_id': locationId});
