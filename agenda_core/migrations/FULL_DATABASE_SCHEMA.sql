@@ -172,6 +172,7 @@ CREATE TABLE IF NOT EXISTS service_packages (
     business_id INT UNSIGNED NOT NULL,
     location_id INT UNSIGNED NOT NULL,
     category_id INT UNSIGNED NOT NULL,
+    sort_order INT UNSIGNED NOT NULL DEFAULT 0,
     name VARCHAR(255) NOT NULL,
     description TEXT DEFAULT NULL,
     override_price DECIMAL(10,2) DEFAULT NULL,
@@ -184,6 +185,7 @@ CREATE TABLE IF NOT EXISTS service_packages (
     KEY idx_service_packages_business_location (business_id, location_id),
     KEY idx_service_packages_location (location_id),
     KEY idx_service_packages_category (category_id),
+    KEY idx_service_packages_sort_order (sort_order),
     CONSTRAINT fk_service_packages_business FOREIGN KEY (business_id)
         REFERENCES businesses(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_service_packages_location FOREIGN KEY (location_id)

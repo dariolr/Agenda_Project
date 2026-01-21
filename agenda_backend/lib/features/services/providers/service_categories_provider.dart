@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
+import '../../../core/models/service_package.dart';
 import '../../agenda/providers/business_providers.dart';
+import 'service_packages_provider.dart';
 import 'services_provider.dart';
 import 'services_repository_provider.dart';
 
@@ -136,10 +138,25 @@ class ServiceCategoriesNotifier extends Notifier<List<ServiceCategory>> {
   ///
   /// Per evitare dipendenze circolari quando chiamata da ServicesNotifier,
   /// si può passare la lista servizi già aggiornata tramite [servicesOverride].
-  void bumpEmptyCategoriesToEnd({List<Service>? servicesOverride}) {
+  void bumpEmptyCategoriesToEnd({
+    List<Service>? servicesOverride,
+    List<ServicePackage>? packagesOverride,
+  }) {
     final List<Service> services =
         servicesOverride ?? (ref.read(servicesProvider).value ?? []);
+    final List<ServicePackage> packages =
+        packagesOverride ?? (ref.read(servicePackagesProvider).value ?? []);
+    final serviceById = {for (final s in services) s.id: s};
     final nonEmptyCatIds = <int>{for (final s in services) s.categoryId};
+    for (final p in packages) {
+      var categoryId = p.categoryId;
+      if (categoryId == 0 && p.items.isNotEmpty) {
+        categoryId = serviceById[p.items.first.serviceId]?.categoryId ?? 0;
+      }
+      if (categoryId != 0) {
+        nonEmptyCatIds.add(categoryId);
+      }
+    }
 
     int maxNonEmptySort = -1;
     for (final c in state) {

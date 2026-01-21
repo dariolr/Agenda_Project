@@ -113,14 +113,7 @@ final class ServicePackagesController
             return Response::error('Invalid category', 'invalid_category', 400, $request->traceId);
         }
 
-        if (
-            !$this->packageRepo->validateServices(
-                $serviceIds,
-                $locationId,
-                (int) $businessId,
-                $categoryId,
-            )
-        ) {
+        if (!$this->packageRepo->validateServices($serviceIds, $locationId, (int) $businessId)) {
             return Response::error('One or more services are invalid', 'invalid_service', 400, $request->traceId);
         }
 
@@ -213,15 +206,7 @@ final class ServicePackagesController
                 return Response::error('service_ids is required', 'validation_error', 422, $request->traceId);
             }
 
-            $effectiveCategoryId = $updateData['category_id'] ?? (int) $existing['category_id'];
-            if (
-                !$this->packageRepo->validateServices(
-                    $serviceIds,
-                    $locationId,
-                    (int) $existing['business_id'],
-                    $effectiveCategoryId,
-                )
-            ) {
+            if (!$this->packageRepo->validateServices($serviceIds, $locationId, (int) $existing['business_id'])) {
                 return Response::error('One or more services are invalid', 'invalid_service', 400, $request->traceId);
             }
 
@@ -262,6 +247,52 @@ final class ServicePackagesController
         $this->packageRepo->delete($packageId);
 
         return Response::success(['message' => 'Package deleted successfully']);
+    }
+
+    /**
+     * POST /v1/service-packages/reorder
+     * Batch update sort_order and category_id for multiple packages. Auth required.
+     *
+     * Payload:
+     * {
+     *   "packages": [{"id": 1, "category_id": 5, "sort_order": 0}, ...]
+     * }
+     */
+    public function reorder(Request $request): Response
+    {
+        $body = $request->getBody();
+        $packages = $body['packages'] ?? [];
+
+        if (empty($packages) || !is_array($packages)) {
+            return Response::error('packages array is required', 'validation_error', 400);
+        }
+
+        $firstPackageId = (int) $packages[0]['id'];
+        $existing = $this->packageRepo->findById($firstPackageId);
+        if (!$existing) {
+            return Response::notFound('Package not found', $request->traceId);
+        }
+
+        $businessId = (int) $existing['business_id'];
+
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+
+        $packageIds = array_map(fn($p) => (int) $p['id'], $packages);
+        if (!$this->packageRepo->allBelongToSameBusiness($packageIds, $businessId)) {
+            return Response::error('All packages must belong to the same business', 'validation_error', 400);
+        }
+
+        foreach ($packages as $pkg) {
+            $this->packageRepo->updateSortOrder(
+                (int) $pkg['id'],
+                isset($pkg['category_id']) ? (int) $pkg['category_id'] : null,
+                (int) $pkg['sort_order']
+            );
+        }
+
+        return Response::success(['message' => 'Packages reordered successfully']);
     }
 
     private function normalizeServiceIds($serviceIds): array

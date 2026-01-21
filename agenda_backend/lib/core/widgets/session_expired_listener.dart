@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../features/auth/providers/auth_provider.dart';
+import '../../app/router_provider.dart';
 import '../network/network_providers.dart';
 import 'app_dialogs.dart';
 
@@ -29,20 +29,20 @@ class SessionExpiredListener extends ConsumerWidget {
     ref.read(authProvider.notifier).logout(silent: true);
 
     // Mostra dialog informativo
-    if (context.mounted) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final navigatorKey = ref.read(rootNavigatorKeyProvider);
+      final dialogContext = navigatorKey.currentContext;
+      if (dialogContext == null) return;
       showAppInfoDialog(
-        context,
+        dialogContext,
         title: const Text('Sessione scaduta'),
         content: const Text(
           'La tua sessione è scaduta. Effettua nuovamente il login per continuare.',
         ),
         closeLabel: 'OK',
       ).then((_) {
-        // Redirect a login dopo chiusura dialog
-        if (context.mounted) {
-          context.go('/login');
-        }
+        ref.read(routerProvider).go('/login');
       });
-    }
+    });
   }
 }

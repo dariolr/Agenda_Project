@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_package.dart';
+import '../../providers/services_sorted_providers.dart';
 import 'service_item.dart';
 import 'service_package_item.dart';
 
 class ServicesList extends ConsumerWidget {
-  final List<Service> services;
-  final List<ServicePackage> packages;
+  final List<ServiceCategoryEntry> entries;
   final bool isWide;
   final ColorScheme colorScheme;
   final ValueNotifier<int?> hoveredService;
@@ -23,8 +23,7 @@ class ServicesList extends ConsumerWidget {
 
   const ServicesList({
     super.key,
-    required this.services,
-    required this.packages,
+    required this.entries,
     required this.isWide,
     required this.colorScheme,
     required this.hoveredService,
@@ -48,37 +47,39 @@ class ServicesList extends ConsumerWidget {
           builder: (context, selectedId, __) {
             return Column(
               children: [
-                for (int i = 0; i < services.length; i++)
-                  ServiceItem(
-                    service: services[i],
-                    isLast: i == services.length - 1,
-                    isEvenRow: i.isEven,
-                    isHovered: hoveredId == services[i].id,
-                    isSelected: selectedId == services[i].id,
-                    isWide: isWide,
-                    colorScheme: colorScheme,
-                    onTap: () {
-                      selectedService.value = services[i].id;
-                      onOpen(services[i]);
-                    },
-                    onEnter: () => hoveredService.value = services[i].id,
-                    onExit: () => hoveredService.value = null,
-                    onEdit: () => onEdit(services[i]),
-                    onDuplicate: () => onDuplicate(services[i]),
-                    onDelete: () => onDelete(services[i].id),
-                  ),
-                for (int i = 0; i < packages.length; i++)
-                  ServicePackageListItem(
-                    package: packages[i],
-                    isLast: i == packages.length - 1,
-                    isEvenRow: (services.length + i).isEven,
-                    isWide: isWide,
-                    colorScheme: colorScheme,
-                    onTap: () => onPackageOpen(packages[i]),
-                    onEdit: () => onPackageEdit(packages[i]),
-                    onDelete: () => onPackageDelete(packages[i].id),
-                  ),
-                if (services.isNotEmpty || packages.isNotEmpty)
+                for (int i = 0; i < entries.length; i++)
+                  if (entries[i].isService)
+                    ServiceItem(
+                      service: entries[i].service!,
+                      isLast: i == entries.length - 1,
+                      isEvenRow: i.isEven,
+                      isHovered: hoveredId == entries[i].service!.id,
+                      isSelected: selectedId == entries[i].service!.id,
+                      isWide: isWide,
+                      colorScheme: colorScheme,
+                      onTap: () {
+                        selectedService.value = entries[i].service!.id;
+                        onOpen(entries[i].service!);
+                      },
+                      onEnter: () =>
+                          hoveredService.value = entries[i].service!.id,
+                      onExit: () => hoveredService.value = null,
+                      onEdit: () => onEdit(entries[i].service!),
+                      onDuplicate: () => onDuplicate(entries[i].service!),
+                      onDelete: () => onDelete(entries[i].service!.id),
+                    )
+                  else
+                    ServicePackageListItem(
+                      package: entries[i].package!,
+                      isLast: i == entries.length - 1,
+                      isEvenRow: i.isEven,
+                      isWide: isWide,
+                      colorScheme: colorScheme,
+                      onTap: () => onPackageOpen(entries[i].package!),
+                      onEdit: () => onPackageEdit(entries[i].package!),
+                      onDelete: () => onPackageDelete(entries[i].package!.id),
+                    ),
+                if (entries.isNotEmpty)
                   Divider(
                     color: Colors.grey.withOpacity(0.2),
                     height: 1,

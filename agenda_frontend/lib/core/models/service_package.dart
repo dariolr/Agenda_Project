@@ -35,6 +35,7 @@ class ServicePackage {
   final int businessId;
   final int locationId;
   final int categoryId;
+  final int sortOrder;
   final String name;
   final String? description;
   final double? overridePrice;
@@ -50,6 +51,7 @@ class ServicePackage {
     required this.businessId,
     required this.locationId,
     required this.categoryId,
+    required this.sortOrder,
     required this.name,
     this.description,
     this.overridePrice,
@@ -73,6 +75,7 @@ class ServicePackage {
       businessId: json['business_id'] as int,
       locationId: json['location_id'] as int,
       categoryId: json['category_id'] as int? ?? 0,
+      sortOrder: json['sort_order'] as int? ?? 0,
       name: json['name'] as String,
       description: json['description'] as String?,
       overridePrice: (json['override_price'] as num?)?.toDouble(),

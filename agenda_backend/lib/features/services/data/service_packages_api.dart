@@ -76,6 +76,12 @@ class ServicePackagesApi {
     );
   }
 
+  Future<void> reorderPackages({
+    required List<Map<String, dynamic>> packages,
+  }) async {
+    await _apiClient.reorderServicePackages(packages: packages);
+  }
+
   Future<ServicePackageExpansion> expandPackage({
     required int locationId,
     required int packageId,
