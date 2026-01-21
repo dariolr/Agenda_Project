@@ -1114,6 +1114,13 @@ class ApiClient {
     return post('/v1/services/reorder', data: {'services': services});
   }
 
+  /// POST /v1/service-packages/reorder - Batch update packages sort_order and category_id
+  Future<Map<String, dynamic>> reorderServicePackages({
+    required List<Map<String, dynamic>> packages,
+  }) async {
+    return post('/v1/service-packages/reorder', data: {'packages': packages});
+  }
+
   /// POST /v1/categories/reorder - Batch update categories sort_order
   Future<Map<String, dynamic>> reorderCategories({
     required List<Map<String, dynamic>> categories,

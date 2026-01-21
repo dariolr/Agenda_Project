@@ -379,30 +379,32 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final reorder = ref.read(servicesReorderProvider.notifier);
 
-    // Flatten di tutti i servizi (solo delle categorie visualizzate)
-    final allServices = <Service>[];
-    final servicesByCategory = <int, List<Service>>{};
+    // Flatten di servizi e pacchetti (solo delle categorie visualizzate)
+    final allEntries = <ServiceCategoryEntry>[];
+    final entriesByCategory = <int, List<ServiceCategoryEntry>>{};
     for (final c in cats) {
-      final list = ref.watch(sortedServicesByCategoryProvider(c.id));
-      servicesByCategory[c.id] = list;
-      allServices.addAll(list);
+      final list = ref.watch(sortedCategoryEntriesProvider(c.id));
+      entriesByCategory[c.id] = list;
+      allEntries.addAll(list);
     }
 
-    // Costruisce la lista visuale con header categoria "fissi" e righe servizio.
-    // Gli header non hanno drag handle e non sono riordinabili; i servizi sì.
-    final rows = <({bool isHeader, Service? s, ServiceCategory? c})>[];
+    // Costruisce la lista visuale con header categoria "fissi" e righe elementi.
+    // Gli header non hanno drag handle e non sono riordinabili; i servizi/pacchetti sì.
+    final rows =
+        <({bool isHeader, ServiceCategoryEntry? entry, ServiceCategory? c})>[];
     for (final c in cats) {
-      final list = servicesByCategory[c.id] ?? const <Service>[];
+      final list = entriesByCategory[c.id] ?? const <ServiceCategoryEntry>[];
       // Sempre mostrare header, anche se vuota
-      rows.add((isHeader: true, s: null, c: c));
-      for (final s in list) {
-        rows.add((isHeader: false, s: s, c: null));
+      rows.add((isHeader: true, entry: null, c: c));
+      for (final entry in list) {
+        rows.add((isHeader: false, entry: entry, c: null));
       }
     }
 
-    int serviceFlatIndexFromRowsIndex(int rowsIndex) {
+    int entryFlatIndexFromRowsIndex(int rowsIndex, int oldIndex) {
       int count = 0;
       for (int i = 0; i < rowsIndex; i++) {
+        if (i == oldIndex) continue;
         if (!rows[i].isHeader) count++;
       }
       return count;
@@ -412,30 +414,29 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     // ritorna la coppia (categoryId, indexNellaCategoria) dove verrebbe inserito
     (int catId, int indexInCat) targetForFlatIndex(
       int flatIndex, {
-      required bool movingDown,
-      int? movingServiceId,
+      required List<ServiceCategoryEntry> entries,
+      required int fallbackCategoryId,
     }) {
       // Clamp e fallback
-      if (allServices.isEmpty) return (cats.first.id, 0);
-      final idx = flatIndex.clamp(0, allServices.length);
+      if (entries.isEmpty) return (fallbackCategoryId, 0);
+      final idx = flatIndex.clamp(0, entries.length);
 
       // Inserimento in coda assoluta
-      if (idx == allServices.length) {
-        final last = allServices.last;
-        final inCat = servicesByCategory[last.categoryId] ?? [];
+      if (idx == entries.length) {
+        final last = entries.last;
+        final inCat = entriesByCategory[last.categoryId] ?? [];
         return (last.categoryId, inCat.length);
       }
 
       // Pivot alla posizione globale idx
-      final pivot = allServices[idx];
+      final pivot = entries[idx];
       final pivotCatId = pivot.categoryId;
 
-      // Quanti elementi di quella categoria compaiono prima dell'indice globale,
-      // escludendo il servizio in movimento (per evitare off-by-one)
+      // Quanti elementi di quella categoria compaiono prima dell'indice globale
       int countBeforeInPivotCat = 0;
       for (int i = 0; i < idx; i++) {
-        final s = allServices[i];
-        if (s.categoryId == pivotCatId && s.id != movingServiceId) {
+        final entry = entries[i];
+        if (entry.categoryId == pivotCatId) {
           countBeforeInPivotCat++;
         }
       }
@@ -454,43 +455,89 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         proxyDecorator: (child, index, animation) => child,
         itemCount: rows.length,
         onReorder: (oldIndex, newIndex) {
-          // Normalizzazione Flutter Reorderable semantics
-          final movingDown = newIndex > oldIndex;
-          if (movingDown) newIndex -= 1;
+          // Usa newIndex raw: il mapping a flat index esclude gia' l'elemento trascinato.
 
-          // Indice e servizio originale (riga servizio)
-          final sOld = rows[oldIndex].s!;
-          final oldCatId = sOld.categoryId;
+          final entryOld = rows[oldIndex].entry;
+          if (entryOld == null) return;
+          final oldCatId = entryOld.categoryId;
+          final entriesWithoutMoving = [
+            for (final entry in allEntries)
+              if (entry.key != entryOld.key) entry,
+          ];
 
-          // Traduci newIndex della lista visuale in indice sulla lista servizi (saltando header)
-          final targetServiceFlatIndex = serviceFlatIndexFromRowsIndex(
+          final bool dropOnHeader =
+              newIndex < rows.length && rows[newIndex].isHeader;
+          int fallbackCategoryId = oldCatId;
+          final fallbackStartIndex = dropOnHeader
+              ? newIndex - 1
+              : (newIndex >= rows.length ? rows.length - 1 : newIndex);
+          for (int i = fallbackStartIndex; i >= 0; i--) {
+            final row = rows[i];
+            if (row.isHeader) {
+              fallbackCategoryId = row.c!.id;
+              break;
+            }
+          }
+
+          // Traduci newIndex della lista visuale in indice sulla lista elementi (saltando header)
+          final targetFlatIndex = entryFlatIndexFromRowsIndex(
             newIndex,
+            oldIndex,
           );
 
-          // Calcola destinazione (categoria e indice relativo nella categoria) sulla base della lista servizi "reale"
-          final (targetCatId, indexInTargetCat) = targetForFlatIndex(
-            targetServiceFlatIndex,
-            movingDown: movingDown,
-            movingServiceId: sOld.id,
-          );
+          // Se si rilascia su un header, inserisci in coda alla categoria precedente
+          final (targetCatId, indexInTargetCat) = dropOnHeader
+              ? (
+                  fallbackCategoryId,
+                  (entriesByCategory[fallbackCategoryId] ?? [])
+                      .where((e) => e.key != entryOld.key)
+                      .length,
+                )
+              : targetForFlatIndex(
+                  targetFlatIndex,
+                  entries: entriesWithoutMoving,
+                  fallbackCategoryId: fallbackCategoryId,
+                );
 
           if (targetCatId == oldCatId) {
             // stesso gruppo -> semplice riordino interno
-            reorder.reorderServices(
-              oldCatId,
-              // index relativo nella categoria di origine
-              (servicesByCategory[oldCatId] ?? []).indexWhere(
-                (e) => e.id == sOld.id,
-              ),
-              indexInTargetCat,
+            final updated = [
+              ...(entriesByCategory[oldCatId] ??
+                  const <ServiceCategoryEntry>[]),
+            ];
+            final oldIndexInCat = updated.indexWhere(
+              (e) => e.key == entryOld.key,
+            );
+            if (oldIndexInCat < 0) return;
+            final item = updated.removeAt(oldIndexInCat);
+            final targetIndex = indexInTargetCat.clamp(0, updated.length);
+            updated.insert(targetIndex, item);
+            reorder.reorderCategoryItems(
+              categoryId: oldCatId,
+              items: updated,
             );
           } else {
             // Cross-categoria -> sposta
-            reorder.moveServiceBetweenCategories(
-              oldCatId,
-              targetCatId,
-              sOld.id,
-              indexInTargetCat,
+            final oldItems = [
+              ...(entriesByCategory[oldCatId] ??
+                  const <ServiceCategoryEntry>[]),
+            ];
+            final newItems = [
+              ...(entriesByCategory[targetCatId] ??
+                  const <ServiceCategoryEntry>[]),
+            ];
+            final oldIndexInCat = oldItems.indexWhere(
+              (e) => e.key == entryOld.key,
+            );
+            if (oldIndexInCat < 0) return;
+            final movingItem = oldItems.removeAt(oldIndexInCat);
+            final targetIndex = indexInTargetCat.clamp(0, newItems.length);
+            newItems.insert(targetIndex, movingItem);
+            reorder.moveCategoryItemBetweenCategories(
+              oldCategoryId: oldCatId,
+              newCategoryId: targetCatId,
+              oldItems: oldItems,
+              newItems: newItems,
             );
           }
         },
@@ -519,7 +566,35 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
             );
           }
 
-          final s = row.s!;
+          final entry = row.entry!;
+          if (!entry.isService) {
+            final package = entry.package!;
+            return Container(
+              key: ValueKey('pkg-${package.id}'),
+              margin: const EdgeInsets.only(bottom: 6),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withOpacity(0.7),
+                ),
+              ),
+              child: ListTile(
+                leading: ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(Icons.drag_indicator),
+                ),
+                title: Text(package.name),
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+              ),
+            );
+          }
+
+          final s = entry.service!;
           return Container(
             key: ValueKey('svc-${s.id}'),
             margin: const EdgeInsets.only(bottom: 6),

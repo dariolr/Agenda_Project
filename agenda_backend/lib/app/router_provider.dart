@@ -19,6 +19,9 @@ import '../features/staff/presentation/team_screen.dart';
 import 'scaffold_with_navigation.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final rootNavigatorKeyProvider = Provider<GlobalKey<NavigatorState>>(
+  (ref) => _rootNavigatorKey,
+);
 
 /// Provider derivato che cambia SOLO quando cambia l'autenticazione effettiva
 /// NON quando cambia solo l'errorMessage (evita rebuild inutili del router)

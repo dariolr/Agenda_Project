@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_staff_eligibility.dart';
 import '../../../core/models/service_variant.dart';
+import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../staff/providers/staff_providers.dart';
@@ -29,6 +30,11 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
       return [];
     }
 
+    final businessId = ref.watch(currentBusinessIdProvider);
+    if (businessId <= 0) {
+      return [];
+    }
+
     final repository = ref.watch(servicesRepositoryProvider);
 
     // Carica servizi E categorie dall'API
@@ -37,9 +43,8 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     );
 
     // Popola le categorie nel provider dedicato
-    ref
-        .read(serviceCategoriesProvider.notifier)
-        .setCategories(result.categories);
+    final categories = await repository.getCategories(businessId);
+    ref.read(serviceCategoriesProvider.notifier).setCategories(categories);
 
     return result.services;
   }
@@ -57,6 +62,11 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
       return;
     }
 
+    final businessId = ref.read(currentBusinessIdProvider);
+    if (businessId <= 0) {
+      return;
+    }
+
     state = const AsyncLoading();
 
     try {
@@ -66,9 +76,8 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
       );
 
       // Popola le categorie nel provider dedicato
-      ref
-          .read(serviceCategoriesProvider.notifier)
-          .setCategories(result.categories);
+      final categories = await repository.getCategories(businessId);
+      ref.read(serviceCategoriesProvider.notifier).setCategories(categories);
 
       state = AsyncData(result.services);
     } catch (e, st) {

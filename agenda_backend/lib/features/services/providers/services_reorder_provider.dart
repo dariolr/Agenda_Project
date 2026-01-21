@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/l10n.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
+import '../../../core/models/service_package.dart';
 import '../../../core/network/network_providers.dart';
 import 'service_categories_provider.dart';
+import 'service_packages_provider.dart';
 import 'services_provider.dart';
+import 'services_sorted_providers.dart';
 
 /// Gestisce la modalità riordino e applica gli ordinamenti aggiornando sortOrder
 class ServicesReorderNotifier extends Notifier<bool> {
@@ -47,7 +50,9 @@ class ServicesReorderNotifier extends Notifier<bool> {
     final empty = <ServiceCategory>[];
     for (final c in allCats) {
       final hasServices = services.any((s) => s.categoryId == c.id);
-      if (hasServices) {
+      final hasPackages =
+          ref.read(servicePackagesByCategoryProvider(c.id)).isNotEmpty;
+      if (hasServices || hasPackages) {
         nonEmpty.add(c);
       } else {
         empty.add(c);
@@ -100,6 +105,76 @@ class ServicesReorderNotifier extends Notifier<bool> {
 
     // Persist to API - only services in this category
     await _persistServicesOrder(updatedByCat);
+  }
+
+  Future<void> reorderCategoryItems({
+    required int categoryId,
+    required List<ServiceCategoryEntry> items,
+  }) async {
+    await applyCategoryItemsOrder({categoryId: items});
+  }
+
+  Future<void> moveCategoryItemBetweenCategories({
+    required int oldCategoryId,
+    required int newCategoryId,
+    required List<ServiceCategoryEntry> oldItems,
+    required List<ServiceCategoryEntry> newItems,
+  }) async {
+    await applyCategoryItemsOrder({
+      oldCategoryId: oldItems,
+      newCategoryId: newItems,
+    });
+  }
+
+  Future<void> applyCategoryItemsOrder(
+    Map<int, List<ServiceCategoryEntry>> updatedByCategory,
+  ) async {
+    final servicesNotifier = ref.read(servicesProvider.notifier);
+    final packagesNotifier = ref.read(servicePackagesProvider.notifier);
+    final currentServices =
+        [...(ref.read(servicesProvider).value ?? const <Service>[])];
+    final currentPackages = [
+      ...(ref.read(servicePackagesProvider).value ??
+          const <ServicePackage>[]),
+    ];
+
+    final updatedServicesById = <int, Service>{};
+    final updatedPackagesById = <int, ServicePackage>{};
+
+    updatedByCategory.forEach((categoryId, items) {
+      for (int i = 0; i < items.length; i++) {
+        final entry = items[i];
+        if (entry.isService) {
+          final service = entry.service!;
+          updatedServicesById[service.id] = service.copyWith(
+            categoryId: categoryId,
+            sortOrder: i,
+          );
+        } else {
+          final package = entry.package!;
+          updatedPackagesById[package.id] = package.copyWith(
+            categoryId: categoryId,
+            sortOrder: i,
+          );
+        }
+      }
+    });
+
+    final updatedServices = [
+      for (final s in currentServices)
+        updatedServicesById[s.id] ?? s,
+    ];
+    final updatedPackages = [
+      for (final p in currentPackages)
+        updatedPackagesById[p.id] ?? p,
+    ];
+
+    servicesNotifier.setServices(updatedServices);
+    packagesNotifier.setPackages(updatedPackages);
+    ref.read(serviceCategoriesProvider.notifier).bumpEmptyCategoriesToEnd();
+
+    await _persistServicesOrder(updatedServicesById.values.toList());
+    await _persistPackagesOrder(updatedPackagesById.values.toList());
   }
 
   /// 🔄 Sposta un servizio da una categoria all'altra (drag cross-categoria)
@@ -159,6 +234,7 @@ class ServicesReorderNotifier extends Notifier<bool> {
 
   /// Persiste l'ordine dei servizi via API
   Future<void> _persistServicesOrder(List<Service> services) async {
+    if (services.isEmpty) return;
     try {
       final apiClient = ref.read(apiClientProvider);
       await apiClient.reorderServices(
@@ -192,6 +268,28 @@ class ServicesReorderNotifier extends Notifier<bool> {
       // Log error but don't revert UI - user can retry
       // ignore: avoid_print
       print('Error persisting categories order: $e');
+    }
+  }
+
+  Future<void> _persistPackagesOrder(List<ServicePackage> packages) async {
+    if (packages.isEmpty) return;
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.reorderServicePackages(
+        packages: packages
+            .map(
+              (p) => {
+                'id': p.id,
+                'category_id': p.categoryId,
+                'sort_order': p.sortOrder,
+              },
+            )
+            .toList(),
+      );
+    } catch (e) {
+      // Log error but don't revert UI - user can retry
+      // ignore: avoid_print
+      print('Error persisting packages order: $e');
     }
   }
 }

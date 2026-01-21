@@ -62,6 +62,10 @@ class ServicePackagesRepository {
     required int packageId,
   }) => _api.deletePackage(locationId: locationId, packageId: packageId);
 
+  Future<void> reorderPackages({
+    required List<Map<String, dynamic>> packages,
+  }) => _api.reorderPackages(packages: packages);
+
   Future<ServicePackageExpansion> expandPackage({
     required int locationId,
     required int packageId,

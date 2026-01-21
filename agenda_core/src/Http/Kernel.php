@@ -214,6 +214,7 @@ final class Kernel
         $this->router->post('/v1/locations/{location_id}/service-packages', ServicePackagesController::class, 'store', ['auth', 'location_path']);
         $this->router->put('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'update', ['auth', 'location_path']);
         $this->router->delete('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'destroy', ['auth', 'location_path']);
+        $this->router->post('/v1/service-packages/reorder', ServicePackagesController::class, 'reorder', ['auth']);
 
         // Service Categories CRUD (auth required)
         $this->router->get('/v1/businesses/{business_id}/categories', ServicesController::class, 'indexCategories', ['auth', 'business_access_route']);
