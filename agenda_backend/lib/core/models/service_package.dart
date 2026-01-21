@@ -35,6 +35,7 @@ class ServicePackage {
   final int businessId;
   final int locationId;
   final int categoryId;
+  final int sortOrder;
   final String name;
   final String? description;
   final double? overridePrice;
@@ -50,6 +51,7 @@ class ServicePackage {
     required this.businessId,
     required this.locationId,
     required this.categoryId,
+    required this.sortOrder,
     required this.name,
     this.description,
     this.overridePrice,
@@ -68,6 +70,40 @@ class ServicePackage {
     return ordered.map((item) => item.serviceId).toList();
   }
 
+  ServicePackage copyWith({
+    int? id,
+    int? businessId,
+    int? locationId,
+    int? categoryId,
+    int? sortOrder,
+    String? name,
+    String? description,
+    double? overridePrice,
+    int? overrideDurationMinutes,
+    bool? isActive,
+    bool? isBroken,
+    double? effectivePrice,
+    int? effectiveDurationMinutes,
+    List<ServicePackageItem>? items,
+  }) => ServicePackage(
+    id: id ?? this.id,
+    businessId: businessId ?? this.businessId,
+    locationId: locationId ?? this.locationId,
+    categoryId: categoryId ?? this.categoryId,
+    sortOrder: sortOrder ?? this.sortOrder,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    overridePrice: overridePrice ?? this.overridePrice,
+    overrideDurationMinutes:
+        overrideDurationMinutes ?? this.overrideDurationMinutes,
+    isActive: isActive ?? this.isActive,
+    isBroken: isBroken ?? this.isBroken,
+    effectivePrice: effectivePrice ?? this.effectivePrice,
+    effectiveDurationMinutes:
+        effectiveDurationMinutes ?? this.effectiveDurationMinutes,
+    items: items ?? this.items,
+  );
+
   factory ServicePackage.fromJson(Map<String, dynamic> json) {
     final itemsJson = json['items'] as List<dynamic>? ?? const [];
     return ServicePackage(
@@ -75,6 +111,7 @@ class ServicePackage {
       businessId: json['business_id'] as int,
       locationId: json['location_id'] as int,
       categoryId: json['category_id'] as int? ?? 0,
+      sortOrder: json['sort_order'] as int? ?? 0,
       name: json['name'] as String,
       description: json['description'] as String?,
       overridePrice: (json['override_price'] as num?)?.toDouble(),

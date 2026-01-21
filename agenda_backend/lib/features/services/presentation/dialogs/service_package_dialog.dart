@@ -123,17 +123,8 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isEditing = widget.package != null;
-    final selectedCategoryId = _selectedCategoryId;
-    final filteredCategories = selectedCategoryId == null
-        ? widget.categories
-        : widget.categories
-            .where((c) => c.id == selectedCategoryId)
-            .toList();
-    final filteredServices = selectedCategoryId == null
-        ? widget.services
-        : widget.services
-            .where((s) => s.categoryId == selectedCategoryId)
-            .toList();
+    final filteredCategories = widget.categories;
+    final filteredServices = widget.services;
 
     return LocalLoadingOverlay(
       isLoading: _isSaving,
@@ -180,13 +171,6 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
                   onChanged: (value) {
                     setState(() {
                       _selectedCategoryId = value;
-                      final allowedIds = widget.services
-                          .where((s) => s.categoryId == value)
-                          .map((s) => s.id)
-                          .toSet();
-                      _orderedServiceIds = _orderedServiceIds
-                          .where(allowedIds.contains)
-                          .toList();
                       _servicesError = null;
                     });
                   },
@@ -321,6 +305,17 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
           ),
         ),
         actions: [
+          if (isEditing)
+            SizedBox(
+              width: AppButtonStyles.dialogButtonWidth,
+              child: AppOutlinedActionButton(
+                onPressed: _isSaving
+                    ? null
+                    : () => _confirmDelete(context, l10n),
+                foregroundColor: Theme.of(context).colorScheme.error,
+                child: Text(l10n.actionDelete),
+              ),
+            ),
           SizedBox(
             width: AppButtonStyles.dialogButtonWidth,
             child: AppOutlinedActionButton(
@@ -350,25 +345,70 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
 
     final serviceMap = {for (final s in services) s.id: s};
 
-    return ReorderableListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      onReorder: (oldIndex, newIndex) {
-        setState(() {
-          if (newIndex > oldIndex) newIndex -= 1;
-          final moved = _orderedServiceIds.removeAt(oldIndex);
-          _orderedServiceIds.insert(newIndex, moved);
-        });
-      },
-      itemCount: _orderedServiceIds.length,
-      itemBuilder: (context, index) {
-        final serviceId = _orderedServiceIds[index];
-        final serviceName = serviceMap[serviceId]?.name ?? '#$serviceId';
-        return ListTile(
-          key: ValueKey('pkg-$serviceId'),
-          title: Text(serviceName),
-          leading: const Icon(Icons.drag_indicator),
-        );
+    return SizedBox(
+      height: 220,
+      child: ReorderableListView.builder(
+        physics: const ClampingScrollPhysics(),
+        onReorder: (oldIndex, newIndex) {
+          setState(() {
+            if (newIndex > oldIndex) newIndex -= 1;
+            final moved = _orderedServiceIds.removeAt(oldIndex);
+            _orderedServiceIds.insert(newIndex, moved);
+          });
+        },
+        itemCount: _orderedServiceIds.length,
+        itemBuilder: (context, index) {
+          final serviceId = _orderedServiceIds[index];
+          final serviceName = serviceMap[serviceId]?.name ?? '#$serviceId';
+          return ListTile(
+            key: ValueKey('pkg-$serviceId'),
+            title: Text(serviceName),
+            leading: const Icon(Icons.drag_indicator),
+          );
+        },
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, l10n) {
+    final packageId = widget.package?.id;
+    if (packageId == null) return;
+    showAppConfirmDialog(
+      context,
+      title: Text(l10n.servicePackageDeleteTitle),
+      content: Text(l10n.servicePackageDeleteMessage),
+      confirmLabel: l10n.actionDelete,
+      cancelLabel: l10n.actionCancel,
+      danger: true,
+      onConfirm: () async {
+        try {
+          if (mounted) {
+            setState(() => _isSaving = true);
+          }
+          await ref.read(servicePackagesProvider.notifier).deletePackage(
+                packageId,
+              );
+          if (!context.mounted) return;
+          await FeedbackDialog.showSuccess(
+            context,
+            title: l10n.servicePackageDeletedTitle,
+            message: l10n.servicePackageDeletedMessage,
+          );
+          if (context.mounted) {
+            Navigator.of(context, rootNavigator: true).pop();
+          }
+        } catch (_) {
+          if (!context.mounted) return;
+          await FeedbackDialog.showError(
+            context,
+            title: l10n.errorTitle,
+            message: l10n.servicePackageDeleteError,
+          );
+        } finally {
+          if (mounted) {
+            setState(() => _isSaving = false);
+          }
+        }
       },
     );
   }

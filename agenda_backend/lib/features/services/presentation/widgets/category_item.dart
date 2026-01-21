@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
-import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
+import '../../../../core/models/service.dart';
 import '../../../../core/models/service_package.dart';
+import '../../providers/services_sorted_providers.dart';
 import 'empty_state.dart';
 import 'services_list.dart';
 
 /// Item che rappresenta la card di una singola categoria (header + servizi).
 class CategoryItem extends StatelessWidget {
   final ServiceCategory category;
-  final List<Service> services;
-  final List<ServicePackage> packages;
+  final List<ServiceCategoryEntry> entries;
   final bool isWide;
   final ColorScheme colorScheme;
   final ValueNotifier<int?> hoveredService;
@@ -33,8 +33,7 @@ class CategoryItem extends StatelessWidget {
   const CategoryItem({
     super.key,
     required this.category,
-    required this.services,
-    required this.packages,
+    required this.entries,
     required this.isWide,
     required this.colorScheme,
     required this.hoveredService,
@@ -56,7 +55,7 @@ class CategoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isEmptyCategory = services.isEmpty && packages.isEmpty;
+    final isEmptyCategory = entries.isEmpty;
     return Container(
       margin: EdgeInsets.only(
         top: addTopSpacing ? 32 : 0,
@@ -175,8 +174,7 @@ class CategoryItem extends StatelessWidget {
             child: isEmptyCategory
                 ? ServicesEmptyState(message: context.l10n.noServicesInCategory)
                 : ServicesList(
-                    services: services,
-                    packages: packages,
+                    entries: entries,
                     isWide: isWide,
                     colorScheme: colorScheme,
                     hoveredService: hoveredService,

@@ -31,7 +31,7 @@ final class ServicePackageRepository
             'SELECT *
              FROM service_packages
              WHERE location_id = ?
-             ORDER BY name ASC, id ASC'
+             ORDER BY sort_order ASC, name ASC, id ASC'
         );
         $stmt->execute([$locationId]);
         $packages = $stmt->fetchAll();
@@ -80,15 +80,20 @@ final class ServicePackageRepository
         $pdo->beginTransaction();
 
         try {
+            $sortOrder = $data['sort_order'] ?? $this->getNextSortOrder(
+                (int) $data['category_id'],
+                (int) $data['location_id'],
+            );
             $stmt = $pdo->prepare(
                 'INSERT INTO service_packages
-                    (business_id, location_id, category_id, name, description, override_price, override_duration_minutes, is_active, is_broken)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                    (business_id, location_id, category_id, sort_order, name, description, override_price, override_duration_minutes, is_active, is_broken)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
                 $data['business_id'],
                 $data['location_id'],
                 $data['category_id'],
+                $sortOrder,
                 $data['name'],
                 $data['description'],
                 $data['override_price'],
@@ -149,12 +154,7 @@ final class ServicePackageRepository
         return $stmt->execute([$packageId]);
     }
 
-    public function validateServices(
-        array $serviceIds,
-        int $locationId,
-        int $businessId,
-        ?int $categoryId = null,
-    ): bool
+    public function validateServices(array $serviceIds, int $locationId, int $businessId): bool
     {
         if (empty($serviceIds)) {
             return false;
@@ -162,11 +162,6 @@ final class ServicePackageRepository
 
         $placeholders = implode(',', array_fill(0, count($serviceIds), '?'));
         $params = array_merge([$locationId], $serviceIds, [$businessId]);
-        $categorySql = '';
-        if ($categoryId !== null) {
-            $categorySql = ' AND s.category_id = ?';
-            $params[] = $categoryId;
-        }
 
         $stmt = $this->db->getPdo()->prepare(
             "SELECT COUNT(*) FROM services s
@@ -174,7 +169,7 @@ final class ServicePackageRepository
              WHERE s.id IN ({$placeholders})
                AND s.business_id = ?
                AND s.is_active = 1
-               AND sv.is_active = 1{$categorySql}"
+               AND sv.is_active = 1"
         );
         $stmt->execute($params);
 
@@ -189,6 +184,22 @@ final class ServicePackageRepository
         $stmt->execute([$categoryId, $businessId]);
 
         return (int) $stmt->fetchColumn() === 1;
+    }
+
+    public function allBelongToSameBusiness(array $packageIds, int $businessId): bool
+    {
+        if (empty($packageIds)) {
+            return false;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($packageIds), '?'));
+        $params = array_merge($packageIds, [$businessId]);
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT COUNT(*) FROM service_packages WHERE id IN ({$placeholders}) AND business_id = ?"
+        );
+        $stmt->execute($params);
+
+        return (int) $stmt->fetchColumn() === count($packageIds);
     }
 
     public function getExpanded(int $packageId, int $locationId): ?array
@@ -233,6 +244,21 @@ final class ServicePackageRepository
              WHERE spi.service_id = ?'
         );
         $stmt->execute([$serviceId]);
+    }
+
+    public function updateSortOrder(int $packageId, ?int $categoryId, int $sortOrder): void
+    {
+        if ($categoryId !== null) {
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE service_packages SET category_id = ?, sort_order = ?, updated_at = NOW() WHERE id = ?'
+            );
+            $stmt->execute([$categoryId, $sortOrder, $packageId]);
+        } else {
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE service_packages SET sort_order = ?, updated_at = NOW() WHERE id = ?'
+            );
+            $stmt->execute([$sortOrder, $packageId]);
+        }
     }
 
     private function replaceItems(int $packageId, array $serviceIds): void
@@ -379,6 +405,7 @@ final class ServicePackageRepository
             'business_id' => (int) $package['business_id'],
             'location_id' => (int) $package['location_id'],
             'category_id' => (int) $package['category_id'],
+            'sort_order' => (int) ($package['sort_order'] ?? 0),
             'name' => $package['name'],
             'description' => $package['description'],
             'override_price' => $package['override_price'] !== null ? (float) $package['override_price'] : null,
@@ -391,5 +418,20 @@ final class ServicePackageRepository
             'effective_duration_minutes' => $effectiveDuration,
             'items' => $itemsByPackage[$packageId] ?? [],
         ];
+    }
+
+    private function getNextSortOrder(int $categoryId, int $locationId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_sort
+             FROM (
+                 SELECT sort_order FROM services WHERE category_id = ?
+                 UNION ALL
+                 SELECT sort_order FROM service_packages WHERE category_id = ? AND location_id = ?
+             ) AS combined'
+        );
+        $stmt->execute([$categoryId, $categoryId, $locationId]);
+
+        return (int) $stmt->fetchColumn();
     }
 }

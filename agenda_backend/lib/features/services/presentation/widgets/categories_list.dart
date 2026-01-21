@@ -58,29 +58,19 @@ class CategoriesList extends ConsumerWidget {
       itemCount: categories.length,
       itemBuilder: (context, index) {
         final category = categories[index];
-        final services = ref.watch(
-          sortedServicesByCategoryProvider(category.id),
-        );
-        final packages = ref.watch(
-          sortedServicePackagesByCategoryProvider(category.id),
+        final entries = ref.watch(
+          sortedCategoryEntriesProvider(category.id),
         );
         final hasPrev = index > 0;
         final prevIsNonEmpty = hasPrev
             ? ref
                   .watch(
-                    sortedServicesByCategoryProvider(categories[index - 1].id),
+                    sortedCategoryEntriesProvider(categories[index - 1].id),
                   )
-                  .isNotEmpty ||
-                ref
-                    .watch(
-                      sortedServicePackagesByCategoryProvider(
-                        categories[index - 1].id,
-                      ),
-                    )
-                    .isNotEmpty
+                  .isNotEmpty
             : false;
         final isFirstEmptyAfterNonEmpty =
-            services.isEmpty && packages.isEmpty && (!hasPrev || prevIsNonEmpty);
+            entries.isEmpty && (!hasPrev || prevIsNonEmpty);
 
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
@@ -103,12 +93,11 @@ class CategoriesList extends ConsumerWidget {
           ),
           child: KeyedSubtree(
             key: ValueKey(
-              'cat-${category.id}-${services.isEmpty ? 'empty' : 'full'}',
+              'cat-${category.id}-${entries.isEmpty ? 'empty' : 'full'}',
             ),
             child: CategoryItem(
               category: category,
-              services: services,
-              packages: packages,
+              entries: entries,
               isWide: isWide,
               colorScheme: colorScheme,
               hoveredService: hoveredService,

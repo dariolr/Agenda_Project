@@ -157,6 +157,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
   ) {
     final widgets = <Widget>[];
     final packages = packagesAsync.value ?? [];
+    final serviceById = {for (final s in services) s.id: s};
 
     if (packagesAsync.hasError) {
       widgets.add(
@@ -177,16 +178,41 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
               .toList()
             ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       final categoryPackages =
-          packages.where((p) => p.categoryId == category.id).toList()
-            ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+          packages
+              .where((p) {
+                final effectiveCategoryId = p.categoryId != 0
+                    ? p.categoryId
+                    : (p.items.isNotEmpty
+                        ? serviceById[p.items.first.serviceId]?.categoryId
+                        : null);
+                return effectiveCategoryId == category.id;
+              })
+              .toList()
+            ..sort((a, b) {
+              final so = a.sortOrder.compareTo(b.sortOrder);
+              return so != 0
+                  ? so
+                  : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+            });
 
-      if (categoryServices.isEmpty && categoryPackages.isEmpty) continue;
+      final categoryEntries = <_CategoryEntry>[
+        for (final service in categoryServices)
+          _CategoryEntry.service(service),
+        for (final package in categoryPackages)
+          _CategoryEntry.package(package),
+      ]..sort((a, b) {
+        final so = a.sortOrder.compareTo(b.sortOrder);
+        return so != 0
+            ? so
+            : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+
+      if (categoryEntries.isEmpty) continue;
 
       widgets.add(
         _CategorySection(
           category: category,
-          services: categoryServices,
-          packages: categoryPackages,
+          entries: categoryEntries,
           selectedServices: selectedServices,
           onServiceTap: (service) {
             ref.read(bookingFlowProvider.notifier).toggleService(service);
@@ -277,16 +303,14 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
 
 class _CategorySection extends StatelessWidget {
   final ServiceCategory category;
-  final List<Service> services;
-  final List<ServicePackage> packages;
+  final List<_CategoryEntry> entries;
   final List<Service> selectedServices;
   final void Function(Service) onServiceTap;
   final void Function(ServicePackage) onPackageTap;
 
   const _CategorySection({
     required this.category,
-    required this.services,
-    required this.packages,
+    required this.entries,
     required this.selectedServices,
     required this.onServiceTap,
     required this.onPackageTap,
@@ -308,33 +332,41 @@ class _CategorySection extends StatelessWidget {
             ),
           ),
         ),
-        ...packages.map((package) {
-          final packageServiceIds = package.orderedServiceIds.toSet();
-          final isSelectable = package.isActive && !package.isBroken;
-          final isSelected = isSelectable &&
-              packageServiceIds.isNotEmpty &&
-              packageServiceIds.every(
-                (id) => selectedServices.any((s) => s.id == id),
-              );
-          final disabled = !isSelectable;
-          return _PackageTile(
-            package: package,
-            isSelected: isSelected,
-            isDisabled: disabled,
-            onTap: disabled ? null : () => onPackageTap(package),
-          );
-        }),
-        ...services.map((service) {
-          final isSelected = selectedServices.any((s) => s.id == service.id);
-          return _ServiceTile(
-            service: service,
-            isSelected: isSelected,
-            onTap: () => onServiceTap(service),
-          );
-        }),
+        for (final entry in entries)
+          if (entry.isPackage)
+            _PackageTile(
+              package: entry.package!,
+              isSelected: _isPackageSelected(entry.package!, selectedServices),
+              isDisabled: !entry.package!.isActive || entry.package!.isBroken,
+              onTap:
+                  (!entry.package!.isActive || entry.package!.isBroken)
+                      ? null
+                      : () => onPackageTap(entry.package!),
+            )
+          else
+            _ServiceTile(
+              service: entry.service!,
+              isSelected: selectedServices.any(
+                (s) => s.id == entry.service!.id,
+              ),
+              onTap: () => onServiceTap(entry.service!),
+            ),
         const SizedBox(height: 8),
       ],
     );
+  }
+
+  bool _isPackageSelected(
+    ServicePackage package,
+    List<Service> selectedServices,
+  ) {
+    final packageServiceIds = package.orderedServiceIds.toSet();
+    final isSelectable = package.isActive && !package.isBroken;
+    return isSelectable &&
+        packageServiceIds.isNotEmpty &&
+        packageServiceIds.every(
+          (id) => selectedServices.any((s) => s.id == id),
+        );
   }
 }
 
@@ -426,6 +458,24 @@ class _ServiceTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CategoryEntry {
+  final Service? service;
+  final ServicePackage? package;
+
+  const _CategoryEntry._({this.service, this.package});
+
+  const _CategoryEntry.service(Service service) : this._(service: service);
+
+  const _CategoryEntry.package(ServicePackage package)
+    : this._(package: package);
+
+  bool get isPackage => package != null;
+
+  int get sortOrder => service?.sortOrder ?? package!.sortOrder;
+
+  String get name => service?.name ?? package!.name;
 }
 
 class _PackageTile extends StatelessWidget {

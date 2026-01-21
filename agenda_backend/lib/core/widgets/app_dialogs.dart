@@ -57,13 +57,44 @@ class AppFormDialog extends StatelessWidget {
         },
         child: Focus(
           autofocus: true,
-          child: AlertDialog(
-            title: title,
-            content: SingleChildScrollView(
-              padding: contentPadding,
-              child: content,
+          child: Dialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 40,
+              vertical: 24,
             ),
-            actions: actions,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DefaultTextStyle(
+                      style: dialogTheme.textTheme.titleLarge ??
+                          base.textTheme.titleLarge ??
+                          const TextStyle(fontSize: 18),
+                      child: title,
+                    ),
+                    const SizedBox(height: 8),
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: SingleChildScrollView(
+                        padding: contentPadding,
+                        child: content,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    OverflowBar(
+                      alignment: MainAxisAlignment.end,
+                      spacing: 8,
+                      overflowSpacing: 4,
+                      children: actions,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),

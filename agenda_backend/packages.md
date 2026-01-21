@@ -73,7 +73,7 @@ CREATE TABLE service_package_items (
 - Override sostituisce il totale ma non modifica i servizi
 - Override non viene salvato nelle prenotazioni
 - Servizio disattivato/eliminato → pacchetto is_broken = 1
-- Il pacchetto ha una categoria e può includere solo servizi della stessa categoria
+- Il pacchetto ha una categoria per raggruppamento, ma può includere servizi di categorie diverse
 - Prenotazioni salvano solo booking_items
 
 ---

@@ -45,7 +45,7 @@ Response (200):
 
 Note:
 - `category_id` è obbligatorio in creazione/aggiornamento pacchetto
-- tutti i `service_ids` devono appartenere alla stessa categoria
+- i `service_ids` possono appartenere a categorie diverse
 
 ---
 
@@ -874,6 +874,7 @@ Response (200):
         "business_id": 1,
         "location_id": 1,
         "category_id": 3,
+        "sort_order": 4,
         "name": "Taglio + Piega",
         "description": "Pacchetto promozionale",
         "override_price": 45.00,
@@ -922,6 +923,35 @@ Response (200):
 Errors:
 - `package_inactive` (409): Pacchetto non attivo
 - `package_broken` (409): Pacchetto contiene servizi non disponibili
+
+---
+
+### POST /v1/service-packages/reorder
+
+Auth required. Batch update sort_order and category_id for packages.
+
+Request payload:
+```json
+{
+  "packages": [
+    {
+      "id": 10,
+      "category_id": 3,
+      "sort_order": 4
+    }
+  ]
+}
+```
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Packages reordered successfully"
+  }
+}
+```
 
 ---
 

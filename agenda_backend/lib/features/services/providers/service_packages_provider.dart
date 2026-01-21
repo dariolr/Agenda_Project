@@ -57,7 +57,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
 
     try {
       final repository = ref.read(servicePackagesRepositoryProvider);
-      final created = await repository.createPackage(
+      var created = await repository.createPackage(
         locationId: location.id,
         name: name,
         categoryId: categoryId,
@@ -67,6 +67,9 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
         overrideDurationMinutes: overrideDurationMinutes,
         isActive: isActive,
       );
+      if (created.categoryId == 0 && categoryId > 0) {
+        created = created.copyWith(categoryId: categoryId);
+      }
 
       final current = state.value ?? [];
       state = AsyncData([...current, created]);
@@ -94,7 +97,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
 
     try {
       final repository = ref.read(servicePackagesRepositoryProvider);
-      final updated = await repository.updatePackage(
+      var updated = await repository.updatePackage(
         locationId: location.id,
         packageId: packageId,
         name: name,
@@ -107,6 +110,9 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
         isActive: isActive,
         serviceIds: serviceIds,
       );
+      if (updated.categoryId == 0 && categoryId != null && categoryId > 0) {
+        updated = updated.copyWith(categoryId: categoryId);
+      }
 
       final current = state.value ?? [];
       final index = current.indexWhere((p) => p.id == packageId);
@@ -141,6 +147,10 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
     } catch (e, st) {
       state = AsyncError(e, st);
     }
+  }
+
+  void setPackages(List<ServicePackage> packages) {
+    state = AsyncData(packages);
   }
 }
 
