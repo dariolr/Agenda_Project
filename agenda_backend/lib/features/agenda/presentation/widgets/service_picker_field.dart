@@ -5,10 +5,12 @@ import '../../../../app/theme/extensions.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
+import '../../../../core/models/service_package.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_dividers.dart';
 
 /// A form field for selecting a service, with services grouped by category.
+/// Optionally shows packages in a dedicated section at the top.
 ///
 /// On mobile: opens a bottom sheet with grouped services.
 /// On desktop: opens a dialog with grouped services.
@@ -18,8 +20,10 @@ class ServicePickerField extends StatefulWidget {
     required this.services,
     required this.categories,
     required this.formFactor,
+    this.packages,
     this.value,
     this.onChanged,
+    this.onPackageSelected,
     this.onClear,
     this.validator,
     this.autovalidateMode = AutovalidateMode.disabled,
@@ -30,9 +34,18 @@ class ServicePickerField extends StatefulWidget {
 
   final List<Service> services;
   final List<ServiceCategory> categories;
+
+  /// Optional list of packages to show in the picker.
+  /// If provided, packages will appear in a dedicated section at the top.
+  final List<ServicePackage>? packages;
+
   final AppFormFactor formFactor;
   final int? value;
   final ValueChanged<int?>? onChanged;
+
+  /// Callback called when a package is selected.
+  /// The package is passed as parameter for expansion.
+  final ValueChanged<ServicePackage>? onPackageSelected;
 
   /// Callback chiamato quando l'utente preme l'icona di rimozione.
   /// Se null, l'icona non viene mostrata.
@@ -164,6 +177,7 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
       builder: (ctx) => _ServicePickerContent(
         services: widget.services,
         categories: widget.categories,
+        packages: widget.packages,
         selectedId: widget.value,
         onSelected: (id) {
           final wasAutoOpen = _autoOpenInProgress;
@@ -176,6 +190,17 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
             widget.onAutoOpenPickerCompleted?.call();
           }
         },
+        onPackageSelected: widget.onPackageSelected != null
+            ? (package) {
+                final wasAutoOpen = _autoOpenInProgress;
+                Navigator.of(ctx).pop();
+                widget.onPackageSelected!(package);
+                if (wasAutoOpen) {
+                  _autoOpenInProgress = false;
+                  widget.onAutoOpenPickerCompleted?.call();
+                }
+              }
+            : null,
       ),
     );
     _autoOpenInProgress = false;
@@ -195,6 +220,7 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
           child: _ServicePickerContent(
             services: widget.services,
             categories: widget.categories,
+            packages: widget.packages,
             selectedId: widget.value,
             onSelected: (id) {
               final wasAutoOpen = _autoOpenInProgress;
@@ -207,6 +233,17 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
                 widget.onAutoOpenPickerCompleted?.call();
               }
             },
+            onPackageSelected: widget.onPackageSelected != null
+                ? (package) {
+                    final wasAutoOpen = _autoOpenInProgress;
+                    Navigator.of(ctx).pop();
+                    widget.onPackageSelected!(package);
+                    if (wasAutoOpen) {
+                      _autoOpenInProgress = false;
+                      widget.onAutoOpenPickerCompleted?.call();
+                    }
+                  }
+                : null,
           ),
         ),
       ),
@@ -220,14 +257,18 @@ class _ServicePickerContent extends StatelessWidget {
   const _ServicePickerContent({
     required this.services,
     required this.categories,
+    this.packages,
     required this.selectedId,
     required this.onSelected,
+    this.onPackageSelected,
   });
 
   final List<Service> services;
   final List<ServiceCategory> categories;
+  final List<ServicePackage>? packages;
   final int? selectedId;
   final ValueChanged<int?> onSelected;
+  final ValueChanged<ServicePackage>? onPackageSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -257,6 +298,18 @@ class _ServicePickerContent extends StatelessWidget {
             : a.name.toLowerCase().compareTo(b.name.toLowerCase());
       });
 
+    // Filter active packages and sort by sortOrder
+    final activePackages =
+        (packages ?? []).where((p) => p.isActive && !p.isBroken).toList()
+          ..sort((a, b) {
+            final so = a.sortOrder.compareTo(b.sortOrder);
+            return so != 0
+                ? so
+                : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          });
+
+    final showPackages = activePackages.isNotEmpty && onPackageSelected != null;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -272,36 +325,166 @@ class _ServicePickerContent extends StatelessWidget {
           ),
         ),
         const AppBottomSheetDivider(),
-        // Service list
+        // Service and packages list
         Expanded(
-          child: ListView.builder(
+          child: ListView(
             shrinkWrap: true,
-            itemCount: sortedCategories.length,
-            itemBuilder: (ctx, index) {
-              final category = sortedCategories[index];
-              final categoryServices =
-                  (servicesByCategory[category.id] ?? []).toList()
-                    ..sort((a, b) {
-                      final so = a.sortOrder.compareTo(b.sortOrder);
-                      return so != 0
-                          ? so
-                          : a.name.toLowerCase().compareTo(b.name.toLowerCase());
-                    });
+            children: [
+              // Packages section (if available)
+              if (showPackages)
+                _PackagesSection(
+                  packages: activePackages,
+                  onSelected: onPackageSelected!,
+                ),
+              // Categories and services
+              for (final category in sortedCategories)
+                Builder(
+                  builder: (ctx) {
+                    final categoryServices =
+                        (servicesByCategory[category.id] ?? []).toList()
+                          ..sort((a, b) {
+                            final so = a.sortOrder.compareTo(b.sortOrder);
+                            return so != 0
+                                ? so
+                                : a.name.toLowerCase().compareTo(
+                                    b.name.toLowerCase(),
+                                  );
+                          });
 
-              if (categoryServices.isEmpty) {
-                return const SizedBox.shrink();
-              }
+                    if (categoryServices.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
 
-              return _CategorySection(
-                category: category,
-                services: categoryServices,
-                selectedId: selectedId,
-                onSelected: onSelected,
-              );
-            },
+                    return _CategorySection(
+                      category: category,
+                      services: categoryServices,
+                      selectedId: selectedId,
+                      onSelected: onSelected,
+                    );
+                  },
+                ),
+            ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A section showing packages in a dedicated section.
+class _PackagesSection extends StatelessWidget {
+  const _PackagesSection({required this.packages, required this.onSelected});
+
+  final List<ServicePackage> packages;
+  final ValueChanged<ServicePackage> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final interactionColors = theme.extension<AppInteractionColors>();
+    final evenBackgroundColor =
+        interactionColors?.alternatingRowFill ??
+        theme.colorScheme.onSurface.withOpacity(0.04);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Packages header with accent color
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          color: theme.colorScheme.secondary,
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.widgets_outlined,
+                  color: theme.colorScheme.onSecondary,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.servicePackagesTitle.toUpperCase(),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSecondary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Package items with alternating background
+        for (int i = 0; i < packages.length; i++)
+          _buildPackageTile(
+            context,
+            packages[i],
+            isEven: i.isEven,
+            evenBackgroundColor: evenBackgroundColor,
+            theme: theme,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPackageTile(
+    BuildContext context,
+    ServicePackage package, {
+    required bool isEven,
+    required Color evenBackgroundColor,
+    required ThemeData theme,
+  }) {
+    final priceStr = package.effectivePrice > 0
+        ? '€${package.effectivePrice.toStringAsFixed(2)}'
+        : null;
+
+    return Material(
+      color: isEven ? evenBackgroundColor : Colors.transparent,
+      child: InkWell(
+        onTap: () => onSelected(package),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.widgets_outlined,
+                color: theme.colorScheme.secondary,
+                size: 16,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      package.name,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    Text(
+                      '${package.serviceCount} ${package.serviceCount == 1 ? context.l10n.formService.toLowerCase() : context.l10n.bookingItems.toLowerCase()}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (priceStr != null)
+                Text(
+                  priceStr,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.secondary,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

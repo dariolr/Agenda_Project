@@ -7,6 +7,7 @@ import '../../../../core/l10n/date_time_formats.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
+import '../../../../core/models/service_package.dart';
 import '../../../../core/models/service_variant.dart';
 import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
@@ -43,6 +44,8 @@ class ServiceItemCard extends ConsumerStatefulWidget {
     required this.onStartTimeChanged,
     required this.onEndTimeChanged,
     required this.onDurationChanged,
+    this.packages,
+    this.onPackageSelected,
     this.suggestedStartTime,
     this.canRemove = true,
     this.isServiceRequired = true,
@@ -67,6 +70,13 @@ class ServiceItemCard extends ConsumerStatefulWidget {
   final ValueChanged<TimeOfDay> onStartTimeChanged;
   final ValueChanged<TimeOfDay> onEndTimeChanged;
   final ValueChanged<int> onDurationChanged;
+
+  /// Optional packages to show in the service picker.
+  final List<ServicePackage>? packages;
+
+  /// Callback when a package is selected from the picker.
+  final ValueChanged<ServicePackage>? onPackageSelected;
+
   final TimeOfDay? suggestedStartTime;
   final bool canRemove;
 
@@ -100,6 +110,9 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
   ValueChanged<TimeOfDay> get onStartTimeChanged => widget.onStartTimeChanged;
   ValueChanged<TimeOfDay> get onEndTimeChanged => widget.onEndTimeChanged;
   ValueChanged<int> get onDurationChanged => widget.onDurationChanged;
+  List<ServicePackage>? get packages => widget.packages;
+  ValueChanged<ServicePackage>? get onPackageSelected =>
+      widget.onPackageSelected;
   TimeOfDay? get suggestedStartTime => widget.suggestedStartTime;
   bool get canRemove => widget.canRemove;
   bool get isServiceRequired => widget.isServiceRequired;
@@ -209,6 +222,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
     return ServicePickerField(
       services: services,
       categories: categories,
+      packages: packages,
       formFactor: formFactor,
       value: item.serviceId,
       onChanged: (serviceId) {
@@ -231,6 +245,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
           );
         }
       },
+      onPackageSelected: onPackageSelected,
       // Mostra icona rimuovi solo se canRemove e servizio selezionato
       onClear: canRemove && item.serviceId != null ? onRemove : null,
       validator: isServiceRequired
