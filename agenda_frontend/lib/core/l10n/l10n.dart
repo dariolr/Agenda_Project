@@ -954,6 +954,16 @@ class L10n {
     );
   }
 
+  /// `Categoria {id}`
+  String servicesCategoryFallbackName(int id) {
+    return Intl.message(
+      'Categoria $id',
+      name: 'servicesCategoryFallbackName',
+      desc: '',
+      args: [id],
+    );
+  }
+
   /// `Impossibile espandere il pacchetto selezionato.`
   String get servicePackageExpandError {
     return Intl.message(

@@ -111,6 +111,12 @@
   "servicePackagesLoading": "Caricamento pacchetti...",
   "servicePackagesLoadError": "Impossibile caricare i pacchetti.",
   "servicePackageLabel": "Pacchetto",
+  "servicesCategoryFallbackName": "Categoria {id}",
+  "@servicesCategoryFallbackName": {
+    "placeholders": {
+      "id": { "type": "int" }
+    }
+  },
   "servicePackageExpandError": "Impossibile espandere il pacchetto selezionato.",
   "servicesSelected": "{count, plural, =0{Nessun servizio selezionato} =1{1 servizio selezionato} other{{count} servizi selezionati}}",
   "@servicesSelected": {

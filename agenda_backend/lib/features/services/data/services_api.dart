@@ -70,6 +70,8 @@ class ServicesApi {
     String? colorHex,
     bool isBookableOnline = true,
     bool isPriceStartingFrom = false,
+    int? processingTime,
+    int? blockedTime,
   }) async {
     final data = await _apiClient.createService(
       locationId: locationId,
@@ -81,6 +83,8 @@ class ServicesApi {
       colorHex: colorHex,
       isBookableOnline: isBookableOnline,
       isPriceStartingFrom: isPriceStartingFrom,
+      processingTime: processingTime,
+      blockedTime: blockedTime,
     );
     return Service.fromJson(data['service'] as Map<String, dynamic>);
   }
@@ -100,6 +104,8 @@ class ServicesApi {
     bool? isBookableOnline,
     bool? isPriceStartingFrom,
     int? sortOrder,
+    int? processingTime,
+    int? blockedTime,
   }) async {
     final data = await _apiClient.updateService(
       serviceId: serviceId,
@@ -114,6 +120,8 @@ class ServicesApi {
       isBookableOnline: isBookableOnline,
       isPriceStartingFrom: isPriceStartingFrom,
       sortOrder: sortOrder,
+      processingTime: processingTime,
+      blockedTime: blockedTime,
     );
     return Service.fromJson(data['service'] as Map<String, dynamic>);
   }

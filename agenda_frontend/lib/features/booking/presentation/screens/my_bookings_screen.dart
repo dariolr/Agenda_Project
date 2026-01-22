@@ -8,6 +8,8 @@ import '/core/l10n/l10_extension.dart';
 import '/core/models/booking_item.dart';
 import '/core/widgets/booking_app_bar.dart';
 import '/core/widgets/feedback_dialog.dart';
+import '/features/auth/domain/auth_state.dart';
+import '/features/auth/providers/auth_provider.dart';
 import '/features/booking/providers/locations_provider.dart';
 import '/features/booking/providers/my_bookings_provider.dart';
 import '../dialogs/booking_history_dialog.dart';
@@ -24,15 +26,12 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isCancellingBooking = false;
+  bool _hasRequestedLoad = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    // Carica prenotazioni all'avvio
-    Future.microtask(
-      () => ref.read(myBookingsProvider.notifier).loadBookings(),
-    );
   }
 
   @override
@@ -43,6 +42,27 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(
+      authProvider,
+      (previous, next) {
+        if (!next.isAuthenticated) {
+          _hasRequestedLoad = false;
+          return;
+        }
+        if (_hasRequestedLoad) return;
+        _hasRequestedLoad = true;
+        ref.read(myBookingsProvider.notifier).loadBookings();
+      },
+    );
+
+    final authState = ref.watch(authProvider);
+    if (authState.isAuthenticated && !_hasRequestedLoad) {
+      _hasRequestedLoad = true;
+      Future.microtask(
+        () => ref.read(myBookingsProvider.notifier).loadBookings(),
+      );
+    }
+
     final bookingsState = ref.watch(myBookingsProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;

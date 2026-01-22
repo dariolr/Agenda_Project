@@ -96,32 +96,28 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         package.name,
                                         style: theme.textTheme.bodyMedium
                                             ?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      Text(
-                                        l10n.servicePackageLabel,
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: theme.colorScheme.onSurface
-                                              .withOpacity(0.6),
-                                        ),
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                       ),
                                       if (totals.selectedItemCount > 1)
                                         Text(
-                                          l10n.durationMinutes(
+                                          context.localizedDurationLabel(
                                             package.effectiveDurationMinutes,
                                           ),
                                           style: theme.textTheme.bodySmall
                                               ?.copyWith(
-                                            color: theme.colorScheme.onSurface
-                                                .withOpacity(0.6),
-                                          ),
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.6),
+                                              ),
                                         ),
                                     ],
                                   ),
@@ -141,68 +137,82 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                             ),
                           );
                         }),
-                      ...request.services.map((service) {
-                        final staff = request.staffForService(service.id);
-                        final isCovered =
-                            totals.coveredServiceIds.contains(service.id);
-                        final operatorLabel = request.isAnyOperatorForService(
-                                  service.id,
-                                )
-                            ? l10n.staffAnyOperator
-                            : (staff != null
-                                ? staff.fullName
-                                : l10n.staffAnyOperator);
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      service.name,
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    Text(
-                                      operatorLabel,
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.colorScheme.onSurface
-                                            .withOpacity(0.6),
-                                      ),
-                                    ),
-                                    if (totals.selectedItemCount > 1 &&
-                                        !isCovered)
-                                      Text(
-                                        l10n.durationMinutes(
-                                          service.durationMinutes,
+                      ...request.services
+                          .where(
+                            (service) =>
+                                request.isServiceManuallySelected(service.id),
+                          )
+                          .map((service) {
+                            final staff = request.staffForService(service.id);
+                            final isCovered = totals.coveredServiceIds.contains(
+                              service.id,
+                            );
+                            final operatorLabel =
+                                request.isAnyOperatorForService(service.id)
+                                ? l10n.staffAnyOperator
+                                : (staff != null
+                                      ? staff.fullName
+                                      : l10n.staffAnyOperator);
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          service.name,
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                         ),
-                                        style:
-                                            theme.textTheme.bodySmall?.copyWith(
-                                          color: theme.colorScheme.onSurface
-                                              .withOpacity(0.6),
+                                        Text(
+                                          operatorLabel,
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.6),
+                                              ),
                                         ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              if (totals.selectedItemCount > 1 && !isCovered)
-                                Text(
-                                  service.formattedPrice,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface
-                                        .withOpacity(0.6),
+                                        if (totals.selectedItemCount > 1 &&
+                                            !isCovered)
+                                          Text(
+                                            context.localizedDurationLabel(
+                                              service.totalDurationMinutes,
+                                            ),
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withOpacity(0.6),
+                                                ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                            ],
-                          ),
-                        );
-                      }),
+                                  if (totals.selectedItemCount > 1 &&
+                                      !isCovered)
+                                    Text(
+                                      service.formattedPrice,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withOpacity(0.6),
+                                          ),
+                                    ),
+                                ],
+                              ),
+                            );
+                          }),
                       const SizedBox(height: 12),
                       LayoutBuilder(
                         builder: (context, constraints) {
@@ -255,12 +265,13 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                               Icon(
                                 Icons.schedule,
                                 size: 16,
-                                color: theme.colorScheme.onSurface
-                                    .withOpacity(0.7),
+                                color: theme.colorScheme.onSurface.withOpacity(
+                                  0.7,
+                                ),
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                l10n.durationMinutes(
+                                context.localizedDurationLabel(
                                   totals.totalDurationMinutes,
                                 ),
                                 style: theme.textTheme.bodyMedium,
@@ -276,9 +287,10 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                _formatTotalPrice(context, totals.totalPrice)
-                                    .replaceFirst('€', '')
-                                    .trim(),
+                                _formatTotalPrice(
+                                  context,
+                                  totals.totalPrice,
+                                ).replaceFirst('€', '').trim(),
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.w700,
                                   color: theme.colorScheme.primary,
@@ -334,8 +346,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
   ) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final isAuthenticated =
-        ref.watch(authProvider.select((state) => state.isAuthenticated));
+    final isAuthenticated = ref.watch(
+      authProvider.select((state) => state.isAuthenticated),
+    );
     final slug = ref.watch(routeSlugProvider);
 
     return Container(

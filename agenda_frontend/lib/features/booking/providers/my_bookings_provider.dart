@@ -2,6 +2,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '/core/models/booking_item.dart';
 import '/core/models/location.dart';
+import '/core/models/service_package.dart';
+import '/core/network/api_client.dart';
 import '/core/network/network_providers.dart';
 import '/features/booking/providers/business_provider.dart';
 import '/features/booking/providers/locations_provider.dart';
@@ -64,12 +66,18 @@ class MyBookings extends _$MyBookings {
       final upcomingJson = response['upcoming'] as List<dynamic>? ?? [];
       final pastJson = response['past'] as List<dynamic>? ?? [];
 
+      final packagesByLocation = await _loadPackagesByLocation(
+        apiClient,
+        [...upcomingJson, ...pastJson],
+      );
+
       final upcoming = upcomingJson
           .map(
             (json) => _fromCustomerBooking(
               json as Map<String, dynamic>,
               businessName: businessName,
               locationNames: locationNames,
+              packagesByLocation: packagesByLocation,
             ),
           )
           .toList();
@@ -80,6 +88,7 @@ class MyBookings extends _$MyBookings {
               json as Map<String, dynamic>,
               businessName: businessName,
               locationNames: locationNames,
+              packagesByLocation: packagesByLocation,
             ),
           )
           .toList();
@@ -128,10 +137,15 @@ class MyBookings extends _$MyBookings {
         locationNames[location.id] = location.name;
       }
 
+      final packagesByLocation = await _loadPackagesByLocation(
+        apiClient,
+        [updated],
+      );
       final updatedBooking = _fromCustomerBooking(
         updated,
         businessName: businessName,
         locationNames: locationNames,
+        packagesByLocation: packagesByLocation,
       );
 
       final nextUpcoming =
@@ -190,10 +204,15 @@ class MyBookings extends _$MyBookings {
         locationNames[location.id] = location.name;
       }
 
+      final packagesByLocation = await _loadPackagesByLocation(
+        apiClient,
+        [response],
+      );
       final newBooking = _fromCustomerBooking(
         response,
         businessName: businessName,
         locationNames: locationNames,
+        packagesByLocation: packagesByLocation,
       );
 
       // Rimuovi la prenotazione originale dalla lista e aggiungi la nuova
@@ -228,6 +247,7 @@ BookingItem _fromCustomerBooking(
   Map<String, dynamic> json, {
   required String businessName,
   required Map<int, String> locationNames,
+  required Map<int, List<ServicePackage>> packagesByLocation,
 }) {
   final items = (json['items'] as List<dynamic>? ?? [])
       .cast<Map<String, dynamic>>();
@@ -249,21 +269,57 @@ BookingItem _fromCustomerBooking(
       ? DateTime.parse(endTimeValue)
       : startTime;
 
-  final serviceNames = items
-      .map(
-        (item) =>
-            item['service_name'] ??
-            item['service_name_snapshot'] ??
-            '',
-      )
-      .whereType<String>()
-      .where((name) => name.isNotEmpty)
-      .toList();
-
   final serviceIds = items
       .map((item) => item['service_id'])
       .whereType<int>()
       .toList();
+
+  final serviceNameById = <int, String>{};
+  for (final item in items) {
+    final serviceId = item['service_id'];
+    if (serviceId is! int || serviceNameById.containsKey(serviceId)) {
+      continue;
+    }
+    final name = item['service_name'] ?? item['service_name_snapshot'];
+    if (name is String && name.isNotEmpty) {
+      serviceNameById[serviceId] = name;
+    }
+  }
+
+  final remainingServiceIds = serviceIds.toSet();
+  final packageNames = <String>[];
+  final packages = packagesByLocation[locationId] ?? const <ServicePackage>[];
+  final sortedPackages = [...packages]
+    ..sort(
+      (a, b) =>
+          b.orderedServiceIds.length.compareTo(a.orderedServiceIds.length),
+    );
+  for (final package in sortedPackages) {
+    if (!package.isActive || package.isBroken) continue;
+    final packageServiceIds = package.orderedServiceIds;
+    if (packageServiceIds.isEmpty) continue;
+    if (packageServiceIds.every(remainingServiceIds.contains)) {
+      packageNames.add(package.name);
+      for (final id in packageServiceIds) {
+        remainingServiceIds.remove(id);
+      }
+    }
+  }
+
+  final remainingServiceNames = <String>[];
+  for (final item in items) {
+    final serviceId = item['service_id'];
+    if (serviceId is! int || !remainingServiceIds.contains(serviceId)) {
+      continue;
+    }
+    final name = item['service_name'] ?? item['service_name_snapshot'];
+    if (name is String && name.isNotEmpty) {
+      remainingServiceNames.add(name);
+      remainingServiceIds.remove(serviceId);
+    }
+  }
+
+  final serviceNames = [...packageNames, ...remainingServiceNames];
 
   return BookingItem(
     id: json['id'] as int? ?? json['booking_id'] as int,
@@ -288,4 +344,35 @@ BookingItem _fromCustomerBooking(
         : null,
     status: json['status'] as String? ?? 'confirmed',
   );
+}
+
+Future<Map<int, List<ServicePackage>>> _loadPackagesByLocation(
+  ApiClient apiClient,
+  List<dynamic> bookingsJson,
+) async {
+  final locationIds = <int>{};
+  for (final entry in bookingsJson) {
+    if (entry is! Map<String, dynamic>) continue;
+    final items = (entry['items'] as List<dynamic>? ?? const [])
+        .cast<Map<String, dynamic>>();
+    final firstItem =
+        items.isNotEmpty ? items.first : const <String, dynamic>{};
+    final locationId =
+        entry['location_id'] as int? ?? firstItem['location_id'] as int? ?? 0;
+    if (locationId > 0) {
+      locationIds.add(locationId);
+    }
+  }
+
+  final packagesByLocation = <int, List<ServicePackage>>{};
+  for (final locationId in locationIds) {
+    final response = await apiClient.getServicePackages(locationId);
+    final packagesJson = response['packages'] as List<dynamic>? ?? [];
+    final packages = packagesJson
+        .map((json) => ServicePackage.fromJson(json as Map<String, dynamic>))
+        .toList();
+    packagesByLocation[locationId] = packages;
+  }
+
+  return packagesByLocation;
 }

@@ -38,6 +38,8 @@ TRUNCATE TABLE staff_locations;
 TRUNCATE TABLE staff;
 
 -- Services
+TRUNCATE TABLE service_package_items;
+TRUNCATE TABLE service_packages;
 TRUNCATE TABLE service_variant_resource_requirements;
 TRUNCATE TABLE service_variants;
 TRUNCATE TABLE services;
@@ -95,6 +97,8 @@ ALTER TABLE staff_planning AUTO_INCREMENT = 1;
 ALTER TABLE staff_availability_exceptions AUTO_INCREMENT = 1;
 ALTER TABLE staff_schedules AUTO_INCREMENT = 1;
 ALTER TABLE staff AUTO_INCREMENT = 1;
+ALTER TABLE service_package_items AUTO_INCREMENT = 1;
+ALTER TABLE service_packages AUTO_INCREMENT = 1;
 ALTER TABLE service_variants AUTO_INCREMENT = 1;
 ALTER TABLE services AUTO_INCREMENT = 1;
 ALTER TABLE service_categories AUTO_INCREMENT = 1;

@@ -31,6 +31,8 @@ class ServicesRepository {
     String? colorHex,
     bool isBookableOnline = true,
     bool isPriceStartingFrom = false,
+    int? processingTime,
+    int? blockedTime,
   }) => _api.createService(
     locationId: locationId,
     name: name,
@@ -41,6 +43,8 @@ class ServicesRepository {
     colorHex: colorHex,
     isBookableOnline: isBookableOnline,
     isPriceStartingFrom: isPriceStartingFrom,
+    processingTime: processingTime,
+    blockedTime: blockedTime,
   );
 
   /// Updates an existing service
@@ -57,6 +61,8 @@ class ServicesRepository {
     bool? isBookableOnline,
     bool? isPriceStartingFrom,
     int? sortOrder,
+    int? processingTime,
+    int? blockedTime,
   }) => _api.updateService(
     serviceId: serviceId,
     locationId: locationId,
@@ -70,6 +76,8 @@ class ServicesRepository {
     isBookableOnline: isBookableOnline,
     isPriceStartingFrom: isPriceStartingFrom,
     sortOrder: sortOrder,
+    processingTime: processingTime,
+    blockedTime: blockedTime,
   );
 
   /// Deletes a service

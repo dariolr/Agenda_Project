@@ -179,94 +179,33 @@ Future<void> _openPhone(String phone) async {
   await launchUrl(uri, mode: LaunchMode.externalApplication);
 }
 
-class _AppointmentsButton extends ConsumerWidget {
+/// Pulsante per aprire il dialog degli appuntamenti del cliente.
+/// Non carica i dati in anticipo per evitare troppe chiamate API simultanee.
+/// I dati vengono caricati solo all'apertura del dialog.
+class _AppointmentsButton extends StatelessWidget {
   const _AppointmentsButton({required this.client});
 
   final Client client;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final appointments = ref.watch(clientWithAppointmentsProvider(client.id));
-    final now = DateTime.now();
-
-    final upcoming = appointments.where((a) => a.startTime.isAfter(now)).length;
-    final past = appointments.length - upcoming;
-    final total = appointments.length;
 
     return SizedBox(
       height: 32,
-      child: InkWell(
-        onTap: () => showClientAppointmentsDialog(context, ref, client: client),
-        borderRadius: BorderRadius.circular(8),
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.calendar_month_outlined,
-                size: 18,
-                color: theme.colorScheme.primary.withOpacity(0.7),
-              ),
-              if (total > 0) ...[
-                const SizedBox(width: 6),
-                // Badge appuntamenti futuri (verde)
-                if (upcoming > 0)
-                  _AppointmentBadge(
-                    count: upcoming,
-                    color: Colors.green,
-                    icon: Icons.arrow_upward,
-                  ),
-                if (upcoming > 0 && past > 0) const SizedBox(width: 4),
-                // Badge appuntamenti passati (grigio)
-                if (past > 0)
-                  _AppointmentBadge(
-                    count: past,
-                    color: theme.colorScheme.onSurfaceVariant,
-                    icon: Icons.arrow_downward,
-                  ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AppointmentBadge extends StatelessWidget {
-  const _AppointmentBadge({
-    required this.count,
-    required this.color,
-    required this.icon,
-  });
-
-  final int count;
-  final Color color;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: color),
-          const SizedBox(width: 2),
-          Text(
-            count.toString(),
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: color,
+      child: Consumer(
+        builder: (context, ref, _) => InkWell(
+          onTap: () =>
+              showClientAppointmentsDialog(context, ref, client: client),
+          borderRadius: BorderRadius.circular(8),
+          child: Center(
+            child: Icon(
+              Icons.calendar_month_outlined,
+              size: 18,
+              color: theme.colorScheme.primary.withOpacity(0.7),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

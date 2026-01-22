@@ -64,7 +64,9 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
                 loading: () => const SizedBox.shrink(),
                 error: (e, _) => const SizedBox.shrink(),
                 data: (data) {
-                  if (data.isEmpty) {
+                  final packages =
+                      packagesAsync.value ?? const <ServicePackage>[];
+                  if (data.bookableServices.isEmpty && packages.isEmpty) {
                     return _EmptyView(
                       title: l10n.servicesEmpty,
                       subtitle: l10n.servicesEmptySubtitle,
@@ -76,6 +78,9 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
                     ref,
                     data.categories,
                     data.bookableServices,
+                    data.services,
+                    bookingState.request.selectedServiceIds,
+                    bookingState.request.selectedPackageIds,
                     selectedServices,
                     packagesAsync,
                   );
@@ -152,12 +157,16 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     WidgetRef ref,
     List<ServiceCategory> categories,
     List<Service> services,
+    List<Service> allServices,
+    Set<int> selectedServiceIds,
+    Set<int> selectedPackageIds,
     List<Service> selectedServices,
     AsyncValue<List<ServicePackage>> packagesAsync,
   ) {
     final widgets = <Widget>[];
     final packages = packagesAsync.value ?? [];
-    final serviceById = {for (final s in services) s.id: s};
+    final serviceById = {for (final s in allServices) s.id: s};
+    final l10n = context.l10n;
 
     if (packagesAsync.hasError) {
       widgets.add(
@@ -171,41 +180,71 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
       );
     }
 
-    for (final category in categories) {
+    final categoryIds = categories.map((c) => c.id).toSet();
+    final maxSortOrder = categories.fold<int>(
+      -1,
+      (max, c) => c.sortOrder > max ? c.sortOrder : max,
+    );
+    var extraIndex = 0;
+    final extraCategories = <ServiceCategory>[];
+    for (final package in packages) {
+      if (!package.isActive || package.isBroken) continue;
+      final packageCategoryId = package.categoryId;
+      if (packageCategoryId <= 0 || categoryIds.contains(packageCategoryId)) {
+        continue;
+      }
+      final name =
+          (package.categoryName != null &&
+              package.categoryName!.trim().isNotEmpty)
+          ? package.categoryName!
+          : l10n.servicesCategoryFallbackName(packageCategoryId);
+      extraCategories.add(
+        ServiceCategory(
+          id: packageCategoryId,
+          businessId: 0,
+          name: name,
+          sortOrder: maxSortOrder + 1 + extraIndex++,
+        ),
+      );
+      categoryIds.add(packageCategoryId);
+    }
+
+    final allCategories = [...categories, ...extraCategories]
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    for (final category in allCategories) {
       final categoryServices =
           services
               .where((s) => s.categoryId == category.id && s.isBookableOnline)
               .toList()
             ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       final categoryPackages =
-          packages
-              .where((p) {
-                final effectiveCategoryId = p.categoryId != 0
-                    ? p.categoryId
-                    : (p.items.isNotEmpty
-                        ? serviceById[p.items.first.serviceId]?.categoryId
-                        : null);
-                return effectiveCategoryId == category.id;
-              })
-              .toList()
-            ..sort((a, b) {
-              final so = a.sortOrder.compareTo(b.sortOrder);
-              return so != 0
-                  ? so
-                  : a.name.toLowerCase().compareTo(b.name.toLowerCase());
-            });
+          packages.where((p) {
+            final effectiveCategoryId = p.categoryId != 0
+                ? p.categoryId
+                : (p.items.isNotEmpty
+                      ? serviceById[p.items.first.serviceId]?.categoryId
+                      : null);
+            return effectiveCategoryId == category.id;
+          }).toList()..sort((a, b) {
+            final so = a.sortOrder.compareTo(b.sortOrder);
+            return so != 0
+                ? so
+                : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          });
 
-      final categoryEntries = <_CategoryEntry>[
-        for (final service in categoryServices)
-          _CategoryEntry.service(service),
-        for (final package in categoryPackages)
-          _CategoryEntry.package(package),
-      ]..sort((a, b) {
-        final so = a.sortOrder.compareTo(b.sortOrder);
-        return so != 0
-            ? so
-            : a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      });
+      final categoryEntries =
+          <_CategoryEntry>[
+            for (final service in categoryServices)
+              _CategoryEntry.service(service),
+            for (final package in categoryPackages)
+              _CategoryEntry.package(package),
+          ]..sort((a, b) {
+            final so = a.sortOrder.compareTo(b.sortOrder);
+            return so != 0
+                ? so
+                : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          });
 
       if (categoryEntries.isEmpty) continue;
 
@@ -213,6 +252,8 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
         _CategorySection(
           category: category,
           entries: categoryEntries,
+          selectedServiceIds: selectedServiceIds,
+          selectedPackageIds: selectedPackageIds,
           selectedServices: selectedServices,
           onServiceTap: (service) {
             ref.read(bookingFlowProvider.notifier).toggleService(service);
@@ -282,8 +323,8 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
             ElevatedButton(
               onPressed: bookingState.canGoNext
                   ? () => ref
-                      .read(bookingFlowProvider.notifier)
-                      .nextFromServicesWithAutoStaff()
+                        .read(bookingFlowProvider.notifier)
+                        .nextFromServicesWithAutoStaff()
                   : null,
               child: Text(l10n.actionNext),
             ),
@@ -298,12 +339,13 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     if (totalPrice == 0) return l10n.servicesFree;
     return '€${totalPrice.toStringAsFixed(2).replaceAll('.', ',')}';
   }
-
 }
 
 class _CategorySection extends StatelessWidget {
   final ServiceCategory category;
   final List<_CategoryEntry> entries;
+  final Set<int> selectedServiceIds;
+  final Set<int> selectedPackageIds;
   final List<Service> selectedServices;
   final void Function(Service) onServiceTap;
   final void Function(ServicePackage) onPackageTap;
@@ -311,6 +353,8 @@ class _CategorySection extends StatelessWidget {
   const _CategorySection({
     required this.category,
     required this.entries,
+    required this.selectedServiceIds,
+    required this.selectedPackageIds,
     required this.selectedServices,
     required this.onServiceTap,
     required this.onPackageTap,
@@ -336,37 +380,21 @@ class _CategorySection extends StatelessWidget {
           if (entry.isPackage)
             _PackageTile(
               package: entry.package!,
-              isSelected: _isPackageSelected(entry.package!, selectedServices),
+              isSelected: selectedPackageIds.contains(entry.package!.id),
               isDisabled: !entry.package!.isActive || entry.package!.isBroken,
-              onTap:
-                  (!entry.package!.isActive || entry.package!.isBroken)
-                      ? null
-                      : () => onPackageTap(entry.package!),
+              onTap: (!entry.package!.isActive || entry.package!.isBroken)
+                  ? null
+                  : () => onPackageTap(entry.package!),
             )
           else
             _ServiceTile(
               service: entry.service!,
-              isSelected: selectedServices.any(
-                (s) => s.id == entry.service!.id,
-              ),
+              isSelected: selectedServiceIds.contains(entry.service!.id),
               onTap: () => onServiceTap(entry.service!),
             ),
         const SizedBox(height: 8),
       ],
     );
-  }
-
-  bool _isPackageSelected(
-    ServicePackage package,
-    List<Service> selectedServices,
-  ) {
-    final packageServiceIds = package.orderedServiceIds.toSet();
-    final isSelectable = package.isActive && !package.isBroken;
-    return isSelectable &&
-        packageServiceIds.isNotEmpty &&
-        packageServiceIds.every(
-          (id) => selectedServices.any((s) => s.id == id),
-        );
   }
 }
 
@@ -384,7 +412,6 @@ class _ServiceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l10n = context.l10n;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -436,7 +463,7 @@ class _ServiceTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      l10n.servicesDuration(service.durationMinutes),
+                      context.localizedDurationLabel(service.totalDurationMinutes),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
@@ -496,8 +523,9 @@ class _PackageTile extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     final price = package.effectivePrice;
-    final priceLabel =
-        price == 0 ? l10n.servicesFree : '€${price.toStringAsFixed(2).replaceAll('.', ',')}';
+    final priceLabel = price == 0
+        ? l10n.servicesFree
+        : '€${price.toStringAsFixed(2).replaceAll('.', ',')}';
 
     return Opacity(
       opacity: isDisabled ? 0.5 : 1.0,
@@ -551,28 +579,13 @@ class _PackageTile extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.secondaryContainer,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              l10n.servicePackageLabel,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSecondaryContainer,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        l10n.servicesDuration(package.effectiveDurationMinutes),
+                        context.localizedDurationLabel(
+                          package.effectiveDurationMinutes,
+                        ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),

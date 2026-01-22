@@ -226,8 +226,8 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     state = BookingFlowState(currentStep: initialStep);
     // Reset anche la location selezionata
     ref.read(selectedLocationProvider.notifier).clear();
-    // Reset anche le date disponibili per forzare ricaricamento
-    ref.read(availableDatesProvider.notifier).resetForNewSelection();
+    // Note: availableDatesProvider si resetta automaticamente via listeners
+    // quando cambiano services/staff
   }
 
   /// Vai allo step successivo
@@ -363,6 +363,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     final updatedRequest = _resetRequestForStep(prevStep);
     final shouldClearSelectedDate = _shouldClearSelectedDate(prevStep);
     final shouldResetAutoStaff = _shouldResetAutoStaff(prevStep);
+    final shouldResetAvailability = _shouldResetAvailability(prevStep);
 
     state = state.copyWith(
       currentStep: prevStep,
@@ -373,8 +374,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
           : state.isStaffAutoSelected,
     );
 
-    if (_shouldResetAvailability(prevStep)) {
-      ref.read(availableDatesProvider.notifier).resetForNewSelection();
+    // Note: availableDatesProvider si resetta automaticamente via listeners
+    // quando cambiano services/staff. Resettiamo solo focusedMonth e selectedDate.
+    if (shouldResetAvailability) {
       ref.read(focusedMonthProvider.notifier).state = DateTime.now();
     }
 
@@ -393,6 +395,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       final updatedRequest = _resetRequestForStep(step);
       final shouldClearSelectedDate = _shouldClearSelectedDate(step);
       final shouldResetAutoStaff = _shouldResetAutoStaff(step);
+      final shouldResetAvailability = _shouldResetAvailability(step);
 
       state = state.copyWith(
         currentStep: step,
@@ -403,8 +406,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
             : state.isStaffAutoSelected,
       );
 
-      if (_shouldResetAvailability(step)) {
-        ref.read(availableDatesProvider.notifier).resetForNewSelection();
+      // Note: availableDatesProvider si resetta automaticamente via listeners
+      // quando cambiano services/staff. Resettiamo solo focusedMonth e selectedDate.
+      if (shouldResetAvailability) {
         ref.read(focusedMonthProvider.notifier).state = DateTime.now();
       }
 
@@ -486,11 +490,20 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
   /// Toggle selezione servizio
   void toggleService(Service service) {
     final currentServices = List<Service>.from(state.request.services);
+    final selectedServiceIds = Set<int>.from(state.request.selectedServiceIds);
+    final packageServiceIds = state.request.selectedPackageServiceIds;
 
-    if (currentServices.any((s) => s.id == service.id)) {
-      currentServices.removeWhere((s) => s.id == service.id);
+    final isSelected = selectedServiceIds.contains(service.id);
+    if (isSelected) {
+      selectedServiceIds.remove(service.id);
+      if (!packageServiceIds.contains(service.id)) {
+        currentServices.removeWhere((s) => s.id == service.id);
+      }
     } else {
-      currentServices.add(service);
+      selectedServiceIds.add(service.id);
+      if (!currentServices.any((s) => s.id == service.id)) {
+        currentServices.add(service);
+      }
     }
 
     final shouldClearStaff = !_config.allowStaffSelection;
@@ -504,6 +517,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     state = state.copyWith(
       request: state.request.copyWith(
         services: currentServices,
+        selectedServiceIds: selectedServiceIds,
         selectedStaffByService: shouldClearStaff ? {} : updatedStaffByService,
         clearStaff: shouldClearStaff,
         clearAnyOperatorSelections: shouldClearStaff,
@@ -554,17 +568,41 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     if (serviceIds.isEmpty) return;
 
     final currentServices = List<Service>.from(state.request.services);
-    final hasAll = serviceIds.every(
-      (id) => currentServices.any((s) => s.id == id),
+    final selectedPackageIds = Set<int>.from(state.request.selectedPackageIds);
+    final packageServicesByPackage = Map<int, List<int>>.from(
+      state.request.selectedPackageServiceIdsByPackage,
+    );
+    final selectedServiceIds = Set<int>.from(state.request.selectedServiceIds);
+
+    final servicesById = {for (final s in availableServices) s.id: s};
+    for (final item in package.items) {
+      servicesById.putIfAbsent(
+        item.serviceId,
+        () => _serviceFromPackageItem(package, item),
+      );
+    }
+    if (selectedPackageIds.contains(package.id)) {
+      selectedPackageIds.remove(package.id);
+      packageServicesByPackage.remove(package.id);
+    } else {
+      selectedPackageIds.add(package.id);
+      packageServicesByPackage[package.id] = List<int>.from(serviceIds);
+    }
+
+    final packageServiceIds = packageServicesByPackage.values
+        .expand((ids) => ids)
+        .toSet();
+
+    currentServices.removeWhere(
+      (s) =>
+          !selectedServiceIds.contains(s.id) &&
+          !packageServiceIds.contains(s.id),
     );
 
-    if (hasAll) {
-      currentServices.removeWhere((s) => serviceIds.contains(s.id));
-    } else {
-      final servicesById = {for (final s in availableServices) s.id: s};
-      for (final id in serviceIds) {
+    for (final id in packageServiceIds) {
+      if (!currentServices.any((s) => s.id == id)) {
         final service = servicesById[id];
-        if (service != null && !currentServices.any((s) => s.id == id)) {
+        if (service != null) {
           currentServices.add(service);
         }
       }
@@ -580,6 +618,8 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     state = state.copyWith(
       request: state.request.copyWith(
         services: currentServices,
+        selectedPackageIds: selectedPackageIds,
+        selectedPackageServiceIdsByPackage: packageServicesByPackage,
         selectedStaffByService: shouldClearStaff ? {} : updatedStaffByService,
         clearStaff: shouldClearStaff,
         clearAnyOperatorSelections: shouldClearStaff,
@@ -587,6 +627,25 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       ),
       clearError: true,
       isStaffAutoSelected: shouldClearStaff ? false : state.isStaffAutoSelected,
+    );
+  }
+
+  Service _serviceFromPackageItem(
+    ServicePackage package,
+    ServicePackageItem item,
+  ) {
+    final price = (item.price ?? 0).toDouble();
+    final categoryId = package.categoryId;
+    return Service(
+      id: item.serviceId,
+      businessId: _config.businessId,
+      categoryId: categoryId,
+      name: item.name ?? package.name,
+      durationMinutes: item.durationMinutes ?? 0,
+      price: price,
+      isFree: price == 0,
+      isBookableOnline: true,
+      isActive: item.serviceIsActive && item.variantIsActive,
     );
   }
 
@@ -707,7 +766,28 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
   /// - false: errore generico
   /// - Lancia TokenExpiredException se il token è scaduto (401)
   Future<bool> confirmBooking() async {
-    if (!state.request.isComplete) return false;
+    debugPrint('[confirmBooking] isComplete=${state.request.isComplete}');
+    debugPrint(
+      '[confirmBooking] services=${state.request.services.map((s) => s.id).toList()}',
+    );
+    debugPrint(
+      '[confirmBooking] selectedSlot=${state.request.selectedSlot?.startTime}',
+    );
+    debugPrint(
+      '[confirmBooking] selectedStaff=${state.request.selectedStaff?.id}',
+    );
+    debugPrint(
+      '[confirmBooking] selectedStaffByService=${state.request.selectedStaffByService}',
+    );
+    debugPrint(
+      '[confirmBooking] anyOperatorSelected=${state.request.anyOperatorSelected}',
+    );
+    debugPrint('[confirmBooking] singleStaffId=${state.request.singleStaffId}');
+
+    if (!state.request.isComplete) {
+      debugPrint('[confirmBooking] ABORT: request not complete');
+      return false;
+    }
 
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -758,11 +838,14 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       }
 
       final staffId = state.request.singleStaffId;
-      if (!shouldUseItems &&
-          services.length > 1 &&
-          !state.request.allServicesAnyOperatorSelected) {
-        state = state.copyWith(isLoading: false);
-        return false;
+      // Se ci sono più servizi senza selezione staff specifica,
+      // trattiamo come "qualsiasi operatore" (staffId = null)
+      // Questo è valido quando:
+      // - Lo step staff è stato saltato (allowStaffSelection = false)
+      // - L'utente ha selezionato "qualsiasi operatore"
+      // - Non c'è selezione per servizio
+      if (!shouldUseItems && services.length > 1) {
+        // OK: procedi con staffId (che sarà null per "qualsiasi operatore")
       }
 
       final result = await _repository.confirmBooking(
@@ -968,25 +1051,27 @@ class ServicePackagesNotifier
   }
 }
 
-final servicePackagesProvider = StateNotifierProvider<
-  ServicePackagesNotifier,
-  AsyncValue<List<ServicePackage>>
->((ref) => ServicePackagesNotifier(ref));
+final servicePackagesProvider =
+    StateNotifierProvider<
+      ServicePackagesNotifier,
+      AsyncValue<List<ServicePackage>>
+    >((ref) => ServicePackagesNotifier(ref));
 
 final bookingTotalsProvider = Provider<BookingTotals>((ref) {
   final bookingState = ref.watch(bookingFlowProvider);
   final services = bookingState.request.services;
   final selectedServiceIds = services.map((s) => s.id).toSet();
   final packages = ref.watch(servicePackagesProvider).value ?? [];
+  final selectedPackageIds = bookingState.request.selectedPackageIds;
 
   final selectedPackages = <ServicePackage>[];
   final coveredServiceIds = <int>{};
   for (final pkg in packages) {
     if (!pkg.isActive || pkg.isBroken) continue;
+    if (!selectedPackageIds.contains(pkg.id)) continue;
     final ids = pkg.orderedServiceIds;
     if (ids.isEmpty) continue;
-    final isSelected = ids.every(selectedServiceIds.contains);
-    if (isSelected) {
+    if (ids.every(selectedServiceIds.contains)) {
       selectedPackages.add(pkg);
       coveredServiceIds.addAll(ids);
     }
@@ -1004,7 +1089,8 @@ final bookingTotalsProvider = Provider<BookingTotals>((ref) {
       .toList();
   for (final service in remainingServices) {
     totalPrice += service.isFree ? 0 : service.price;
-    totalDuration += service.durationMinutes;
+    totalDuration +=
+        service.totalDurationMinutes; // Include processing_time + blocked_time
   }
 
   final selectedItemCount = selectedPackages.length + remainingServices.length;
@@ -1285,7 +1371,7 @@ final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
 
   final totalDuration = services.fold<int>(
     0,
-    (sum, service) => sum + service.durationMinutes,
+    (sum, service) => sum + service.totalDurationMinutes, // Include processing_time + blocked_time
   );
   final startSets = <int, Set<int>>{};
   for (final entry in slotsByService.entries) {
