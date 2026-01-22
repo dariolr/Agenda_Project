@@ -68,6 +68,8 @@ final class ServicesController
                 'name' => $service['name'],
                 'description' => $service['description'],
                 'duration_minutes' => (int) ($service['duration_minutes'] ?? 0),
+                'processing_time' => (int) ($service['processing_time'] ?? 0),
+                'blocked_time' => (int) ($service['blocked_time'] ?? 0),
                 'price' => (float) ($service['price'] ?? 0),
                 'color' => $service['color'],
                 'is_active' => (bool) ($service['is_active'] ?? true),
@@ -120,6 +122,8 @@ final class ServicesController
                 'name' => $s['name'],
                 'description' => $s['description'],
                 'duration_minutes' => (int) ($s['duration_minutes'] ?? 0),
+                'processing_time' => (int) ($s['processing_time'] ?? 0),
+                'blocked_time' => (int) ($s['blocked_time'] ?? 0),
                 'price' => (float) ($s['price'] ?? 0),
                 'color' => $s['color'],
                 'is_active' => (bool) ($s['is_active'] ?? true),
@@ -169,7 +173,9 @@ final class ServicesController
             price: (float) ($body['price'] ?? 0),
             colorHex: $body['color'] ?? $body['color_hex'] ?? null,
             isBookableOnline: (bool) ($body['is_bookable_online'] ?? true),
-            isPriceStartingFrom: (bool) ($body['is_price_starting_from'] ?? false)
+            isPriceStartingFrom: (bool) ($body['is_price_starting_from'] ?? false),
+            processingTime: isset($body['processing_time']) ? (int) $body['processing_time'] : null,
+            blockedTime: isset($body['blocked_time']) ? (int) $body['blocked_time'] : null
         );
 
         return Response::success(['service' => $this->formatService($service, $businessId)], 201);
@@ -209,6 +215,21 @@ final class ServicesController
             return Response::error('Invalid location_id', 'validation_error', 400);
         }
 
+        // Handle processing_time and blocked_time (can be set to 0 explicitly)
+        $processingTime = null;
+        $setProcessingTimeNull = false;
+        if (array_key_exists('processing_time', $body)) {
+            $processingTime = (int) $body['processing_time'];
+            $setProcessingTimeNull = $processingTime === 0;
+        }
+        
+        $blockedTime = null;
+        $setBlockedTimeNull = false;
+        if (array_key_exists('blocked_time', $body)) {
+            $blockedTime = (int) $body['blocked_time'];
+            $setBlockedTimeNull = $blockedTime === 0;
+        }
+
         $service = $this->serviceRepository->update(
             serviceId: $serviceId,
             locationId: $locationId,
@@ -220,7 +241,11 @@ final class ServicesController
             colorHex: $body['color'] ?? $body['color_hex'] ?? null,
             isBookableOnline: isset($body['is_bookable_online']) ? (bool) $body['is_bookable_online'] : null,
             isPriceStartingFrom: isset($body['is_price_starting_from']) ? (bool) $body['is_price_starting_from'] : null,
-            sortOrder: isset($body['sort_order']) ? (int) $body['sort_order'] : null
+            sortOrder: isset($body['sort_order']) ? (int) $body['sort_order'] : null,
+            processingTime: $processingTime,
+            blockedTime: $blockedTime,
+            setProcessingTimeNull: $setProcessingTimeNull,
+            setBlockedTimeNull: $setBlockedTimeNull
         );
 
         if (!$service) {
@@ -485,6 +510,8 @@ final class ServicesController
             'name' => $service['name'],
             'description' => $service['description'],
             'duration_minutes' => (int) ($service['duration_minutes'] ?? 0),
+            'processing_time' => (int) ($service['processing_time'] ?? 0),
+            'blocked_time' => (int) ($service['blocked_time'] ?? 0),
             'price' => (float) ($service['price'] ?? 0),
             'color' => $service['color'],
             'is_bookable_online' => (bool) ($service['is_bookable_online'] ?? true),

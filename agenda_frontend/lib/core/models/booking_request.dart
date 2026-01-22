@@ -5,6 +5,9 @@ import 'time_slot.dart';
 /// Modello per la richiesta di prenotazione
 class BookingRequest {
   final List<Service> services;
+  final Set<int> selectedServiceIds;
+  final Set<int> selectedPackageIds;
+  final Map<int, List<int>> selectedPackageServiceIdsByPackage;
   final Staff? selectedStaff;
   final Map<int, Staff?> selectedStaffByService;
   final bool anyOperatorSelected;
@@ -13,6 +16,9 @@ class BookingRequest {
 
   const BookingRequest({
     this.services = const [],
+    this.selectedServiceIds = const {},
+    this.selectedPackageIds = const {},
+    this.selectedPackageServiceIdsByPackage = const {},
     this.selectedStaff,
     this.selectedStaffByService = const {},
     this.anyOperatorSelected = false,
@@ -102,8 +108,21 @@ class BookingRequest {
 
   bool isAnyOperatorForService(int serviceId) => anyOperatorSelected;
 
+  bool isServiceManuallySelected(int serviceId) =>
+      selectedServiceIds.contains(serviceId);
+
+  bool isPackageSelected(int packageId) => selectedPackageIds.contains(packageId);
+
+  Set<int> get selectedPackageServiceIds =>
+      selectedPackageServiceIdsByPackage.values
+          .expand((ids) => ids)
+          .toSet();
+
   BookingRequest copyWith({
     List<Service>? services,
+    Set<int>? selectedServiceIds,
+    Set<int>? selectedPackageIds,
+    Map<int, List<int>>? selectedPackageServiceIdsByPackage,
     Staff? selectedStaff,
     Map<int, Staff?>? selectedStaffByService,
     bool? anyOperatorSelected,
@@ -116,6 +135,11 @@ class BookingRequest {
     bool clearNotes = false,
   }) => BookingRequest(
     services: services ?? this.services,
+    selectedServiceIds: selectedServiceIds ?? this.selectedServiceIds,
+    selectedPackageIds: selectedPackageIds ?? this.selectedPackageIds,
+    selectedPackageServiceIdsByPackage:
+        selectedPackageServiceIdsByPackage ??
+        this.selectedPackageServiceIdsByPackage,
     selectedStaff: clearStaff ? null : (selectedStaff ?? this.selectedStaff),
     selectedStaffByService: clearStaffSelections
         ? {}

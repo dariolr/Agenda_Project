@@ -6,6 +6,8 @@ class Service {
   final String? description;
   final int sortOrder; // 🔹 posizione nella categoria
   final int? durationMinutes; // da API
+  final int? processingTime; // tempo aggiuntivo processing (da API)
+  final int? blockedTime; // tempo aggiuntivo bloccato (da API)
   final double? price; // da API
   final String? color; // da API
   final bool isBookableOnline; // prenotabile online
@@ -20,6 +22,8 @@ class Service {
     this.description,
     this.sortOrder = 0,
     this.durationMinutes,
+    this.processingTime,
+    this.blockedTime,
     this.price,
     this.color,
     this.isBookableOnline = true,
@@ -35,6 +39,8 @@ class Service {
     String? description,
     int? sortOrder,
     int? durationMinutes,
+    int? processingTime,
+    int? blockedTime,
     double? price,
     String? color,
     bool? isBookableOnline,
@@ -48,6 +54,8 @@ class Service {
     description: description ?? this.description,
     sortOrder: sortOrder ?? this.sortOrder,
     durationMinutes: durationMinutes ?? this.durationMinutes,
+    processingTime: processingTime ?? this.processingTime,
+    blockedTime: blockedTime ?? this.blockedTime,
     price: price ?? this.price,
     color: color ?? this.color,
     isBookableOnline: isBookableOnline ?? this.isBookableOnline,
@@ -63,6 +71,8 @@ class Service {
     description: json['description'] as String?,
     sortOrder: json['sort_order'] as int? ?? 0,
     durationMinutes: json['duration_minutes'] as int?,
+    processingTime: json['processing_time'] as int?,
+    blockedTime: json['blocked_time'] as int?,
     price: (json['price'] as num?)?.toDouble(),
     color: json['color'] as String?,
     isBookableOnline: json['is_bookable_online'] as bool? ?? true,

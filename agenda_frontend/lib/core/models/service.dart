@@ -7,6 +7,8 @@ class Service {
   final String? description;
   final int sortOrder;
   final int durationMinutes;
+  final int processingTime;
+  final int blockedTime;
   final double price;
   final bool isFree;
   final bool isPriceStartingFrom;
@@ -21,12 +23,18 @@ class Service {
     this.description,
     this.sortOrder = 0,
     required this.durationMinutes,
+    this.processingTime = 0,
+    this.blockedTime = 0,
     required this.price,
     this.isFree = false,
     this.isPriceStartingFrom = false,
     this.isBookableOnline = true,
     this.isActive = true,
   });
+
+  /// Durata totale incluso tempo aggiuntivo (processing + blocked)
+  int get totalDurationMinutes =>
+      durationMinutes + processingTime + blockedTime;
 
   Service copyWith({
     int? id,
@@ -36,6 +44,8 @@ class Service {
     String? description,
     int? sortOrder,
     int? durationMinutes,
+    int? processingTime,
+    int? blockedTime,
     double? price,
     bool? isFree,
     bool? isPriceStartingFrom,
@@ -49,6 +59,8 @@ class Service {
     description: description ?? this.description,
     sortOrder: sortOrder ?? this.sortOrder,
     durationMinutes: durationMinutes ?? this.durationMinutes,
+    processingTime: processingTime ?? this.processingTime,
+    blockedTime: blockedTime ?? this.blockedTime,
     price: price ?? this.price,
     isFree: isFree ?? this.isFree,
     isPriceStartingFrom: isPriceStartingFrom ?? this.isPriceStartingFrom,
@@ -57,7 +69,7 @@ class Service {
   );
 
   factory Service.fromJson(Map<String, dynamic> json) => Service(
-        id: json['id'] as int,
+    id: json['id'] as int,
     // API può usare business_id o derivarlo dalla location
     businessId: json['business_id'] as int? ?? 0,
     // category_id può essere null per servizi non categorizzati
@@ -70,6 +82,8 @@ class Service {
         json['default_duration_minutes'] as int? ??
         json['duration_minutes'] as int? ??
         30,
+    processingTime: json['processing_time'] as int? ?? 0,
+    blockedTime: json['blocked_time'] as int? ?? 0,
     // API ritorna default_price o price
     price:
         (json['default_price'] as num?)?.toDouble() ??

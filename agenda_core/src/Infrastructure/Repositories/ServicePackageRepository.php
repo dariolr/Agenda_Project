@@ -28,10 +28,11 @@ final class ServicePackageRepository
     public function findByLocationId(int $locationId): array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT *
-             FROM service_packages
-             WHERE location_id = ?
-             ORDER BY sort_order ASC, name ASC, id ASC'
+            'SELECT sp.*, sc.name AS category_name
+             FROM service_packages sp
+             LEFT JOIN service_categories sc ON sc.id = sp.category_id
+             WHERE sp.location_id = ?
+             ORDER BY sp.sort_order ASC, sp.name ASC, sp.id ASC'
         );
         $stmt->execute([$locationId]);
         $packages = $stmt->fetchAll();
@@ -57,9 +58,10 @@ final class ServicePackageRepository
     public function getDetailedById(int $packageId, int $locationId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT *
-             FROM service_packages
-             WHERE id = ? AND location_id = ?'
+            'SELECT sp.*, sc.name AS category_name
+             FROM service_packages sp
+             LEFT JOIN service_categories sc ON sc.id = sp.category_id
+             WHERE sp.id = ? AND sp.location_id = ?'
         );
         $stmt->execute([$packageId, $locationId]);
         $package = $stmt->fetch();
@@ -305,6 +307,8 @@ final class ServicePackageRepository
                     s.name AS service_name,
                     s.is_active AS service_is_active,
                     sv.duration_minutes,
+                    sv.processing_time,
+                    sv.blocked_time,
                     sv.price,
                     sv.is_active AS variant_is_active
              FROM service_package_items spi
@@ -324,6 +328,8 @@ final class ServicePackageRepository
                 'sort_order' => (int) $row['sort_order'],
                 'name' => $row['service_name'],
                 'duration_minutes' => $row['duration_minutes'] !== null ? (int) $row['duration_minutes'] : null,
+                'processing_time' => $row['processing_time'] !== null ? (int) $row['processing_time'] : null,
+                'blocked_time' => $row['blocked_time'] !== null ? (int) $row['blocked_time'] : null,
                 'price' => $row['price'] !== null ? (float) $row['price'] : null,
                 'service_is_active' => $row['service_is_active'] !== null ? (bool) $row['service_is_active'] : false,
                 'variant_is_active' => $row['variant_is_active'] !== null ? (bool) $row['variant_is_active'] : false,
@@ -351,7 +357,7 @@ final class ServicePackageRepository
                     END) AS missing_count,
                     SUM(CASE
                         WHEN s.id IS NOT NULL AND s.is_active = 1 AND sv.id IS NOT NULL AND sv.is_active = 1
-                            THEN sv.duration_minutes
+                            THEN sv.duration_minutes + COALESCE(sv.processing_time, 0) + COALESCE(sv.blocked_time, 0)
                         ELSE 0
                     END) AS total_duration,
                     SUM(CASE
@@ -405,6 +411,7 @@ final class ServicePackageRepository
             'business_id' => (int) $package['business_id'],
             'location_id' => (int) $package['location_id'],
             'category_id' => (int) $package['category_id'],
+            'category_name' => $package['category_name'] ?? null,
             'sort_order' => (int) ($package['sort_order'] ?? 0),
             'name' => $package['name'],
             'description' => $package['description'],
