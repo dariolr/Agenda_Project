@@ -287,6 +287,67 @@ CREATE TABLE IF NOT EXISTS staff_schedules (
 COMMENT='Working hours schedule for each staff member. Multiple rows per day allowed for split shifts.';
 
 -- ----------------------------------------------------------------------------
+-- staff_planning: Piano di lavoro staff con validità temporale
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS staff_planning (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    staff_id INT UNSIGNED NOT NULL,
+    type ENUM('weekly','biweekly') NOT NULL DEFAULT 'weekly',
+    valid_from DATE NOT NULL,
+    valid_to DATE DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_staff_planning_staff_id (staff_id),
+    KEY idx_staff_planning_validity (staff_id, valid_from, valid_to),
+    KEY idx_staff_planning_valid_from (valid_from),
+    CONSTRAINT fk_staff_planning_staff FOREIGN KEY (staff_id) 
+        REFERENCES staff(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- staff_planning_week_template: Template settimanale per planning
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS staff_planning_week_template (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    staff_planning_id INT UNSIGNED NOT NULL,
+    week_label ENUM('A','B') NOT NULL DEFAULT 'A',
+    day_of_week TINYINT UNSIGNED NOT NULL COMMENT '1=Monday, 7=Sunday',
+    slots JSON NOT NULL COMMENT 'Array di slot [{start_time, end_time}]',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_planning_week_day (staff_planning_id, week_label, day_of_week),
+    KEY idx_week_template_planning_id (staff_planning_id),
+    CONSTRAINT fk_staff_planning_week_template_planning FOREIGN KEY (staff_planning_id) 
+        REFERENCES staff_planning(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT chk_planning_template_day_of_week CHECK (day_of_week >= 1 AND day_of_week <= 7)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- staff_availability_exceptions: Eccezioni disponibilità (ferie, permessi, turni extra)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS staff_availability_exceptions (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    staff_id INT UNSIGNED NOT NULL,
+    exception_date DATE NOT NULL COMMENT 'Data specifica dell eccezione',
+    start_time TIME DEFAULT NULL COMMENT 'Inizio fascia oraria (NULL = tutto il giorno)',
+    end_time TIME DEFAULT NULL COMMENT 'Fine fascia oraria (NULL = tutto il giorno)',
+    exception_type ENUM('available','unavailable') NOT NULL DEFAULT 'unavailable' 
+        COMMENT 'available = aggiunge disponibilità, unavailable = rimuove disponibilità',
+    reason_code VARCHAR(50) DEFAULT NULL 
+        COMMENT 'Codice motivo: vacation, medical_visit, extra_shift, personal, training, meeting',
+    reason VARCHAR(255) DEFAULT NULL COMMENT 'Motivo testuale libero',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_staff_exceptions_staff (staff_id),
+    KEY idx_staff_exceptions_date (exception_date),
+    KEY idx_staff_exceptions_staff_date (staff_id, exception_date),
+    CONSTRAINT fk_staff_exceptions_staff FOREIGN KEY (staff_id) 
+        REFERENCES staff(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Eccezioni alla disponibilità settimanale staff (ferie, permessi, turni extra)';
+
+-- ----------------------------------------------------------------------------
 -- clients: Clienti gestiti dal business (anagrafica gestionale)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS clients (
@@ -334,6 +395,26 @@ CREATE TABLE IF NOT EXISTS resources (
     CONSTRAINT fk_resources_location FOREIGN KEY (location_id) 
         REFERENCES locations(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- service_variant_resource_requirements: Requisiti risorse per variante servizio
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS service_variant_resource_requirements (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    service_variant_id INT UNSIGNED NOT NULL,
+    resource_id INT UNSIGNED NOT NULL,
+    quantity INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Quantità richiesta della risorsa',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_variant_resource (service_variant_id, resource_id),
+    KEY idx_svrr_variant (service_variant_id),
+    KEY idx_svrr_resource (resource_id),
+    CONSTRAINT fk_svrr_resource FOREIGN KEY (resource_id) 
+        REFERENCES resources(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_svrr_variant FOREIGN KEY (service_variant_id) 
+        REFERENCES service_variants(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Requisiti di risorse per ogni variante servizio';
 
 -- ============================================================================
 -- SECTION 2: AUTHENTICATION TABLES (from 0002_auth.sql)
@@ -399,6 +480,45 @@ CREATE TABLE IF NOT EXISTS password_reset_token_users (
     KEY idx_password_reset_expires (expires_at),
     CONSTRAINT fk_password_reset_user FOREIGN KEY (user_id) 
         REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- client_sessions: Sessioni refresh token per clienti (customer auth)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS client_sessions (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    client_id INT UNSIGNED NOT NULL,
+    refresh_token_hash VARCHAR(64) NOT NULL COMMENT 'SHA-256 hex of refresh token',
+    user_agent VARCHAR(500) DEFAULT NULL,
+    ip_address VARCHAR(45) DEFAULT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    last_used_at TIMESTAMP NULL DEFAULT NULL,
+    revoked_at TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_client_sessions_token (refresh_token_hash),
+    KEY idx_client_sessions_client (client_id),
+    KEY idx_client_sessions_expires (expires_at),
+    CONSTRAINT fk_client_sessions_client FOREIGN KEY (client_id) 
+        REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- password_reset_token_clients: Token reset password per clienti
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS password_reset_token_clients (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    client_id INT UNSIGNED NOT NULL,
+    token_hash VARCHAR(64) NOT NULL COMMENT 'SHA-256 hex of reset token',
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_client_password_reset_token (token_hash),
+    KEY idx_client_password_reset_client (client_id),
+    KEY idx_client_password_reset_expires (expires_at),
+    CONSTRAINT fk_client_password_reset_client FOREIGN KEY (client_id) 
+        REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Add FK from clients to users
