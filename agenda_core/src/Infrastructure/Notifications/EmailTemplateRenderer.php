@@ -143,7 +143,7 @@ final class EmailTemplateRenderer
                                 {{location_block_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;font-size:13px;">Data</span><br>
+                                        <span style="color:#666;font-size:13px;">Quando</span><br>
                                         <strong style="color:#333;">{{date}} alle {{time}}</strong>
                                     </td>
                                 </tr>
@@ -200,7 +200,7 @@ Ciao {{client_name}},
 La tua prenotazione presso {{business_name}} è stata confermata.
 
 {{location_block_text}}
-• Data: {{date}} alle {{time}}
+• Quando: {{date}} alle {{time}}
 • Cosa: {{services}}
 • Totale: €{{total_price}}
 
@@ -249,7 +249,7 @@ TEXT,
                                 {{location_block_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;font-size:13px;">Date</span><br>
+                                        <span style="color:#666;font-size:13px;">When</span><br>
                                         <strong style="color:#333;">{{date}} at {{time}}</strong>
                                     </td>
                                 </tr>
@@ -306,7 +306,7 @@ Hi {{client_name}},
 Your booking at {{business_name}} has been confirmed.
 
 {{location_block_text}}
-• Date: {{date}} at {{time}}
+• When: {{date}} at {{time}}
 • What: {{services}}
 • Total: €{{total_price}}
 
@@ -368,7 +368,7 @@ TEXT,
                                 {{location_block_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;font-size:13px;">Data</span><br>
+                                        <span style="color:#666;font-size:13px;">Quando</span><br>
                                         <strong style="color:#333;">{{date}} alle {{time}}</strong>
                                     </td>
                                 </tr>
@@ -417,7 +417,7 @@ Ciao {{client_name}},
 
 La tua prenotazione presso {{business_name}} è stata cancellata.
 
-{{location_block_text}}• Data: {{date}} alle {{time}}
+{{location_block_text}}• Quando: {{date}} alle {{time}}
 • Cosa: {{services}}
 
 Se desideri prenotare nuovamente: {{booking_url}}
@@ -462,7 +462,7 @@ TEXT,
                                 {{location_block_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;font-size:13px;">Date</span><br>
+                                        <span style="color:#666;font-size:13px;">When</span><br>
                                         <strong style="color:#333;">{{date}} at {{time}}</strong>
                                     </td>
                                 </tr>
@@ -511,7 +511,7 @@ Hi {{client_name}},
 
 Your booking at {{business_name}} has been cancelled.
 
-{{location_block_text}}• Date: {{date}} at {{time}}
+{{location_block_text}}• When: {{date}} at {{time}}
 • What: {{services}}
 
 If you would like to book again: {{booking_url}}
@@ -569,7 +569,7 @@ TEXT,
                                 {{location_block_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;font-size:13px;">Data</span><br>
+                                        <span style="color:#666;font-size:13px;">Quando</span><br>
                                         <strong style="color:#333;">{{date}} alle {{time}}</strong>
                                     </td>
                                 </tr>
@@ -617,7 +617,7 @@ Ciao {{client_name}},
 
 Ti ricordiamo che hai un appuntamento DOMANI presso {{business_name}}.
 
-{{location_block_text}}• Data: {{date}} alle {{time}}
+{{location_block_text}}• Quando: {{date}} alle {{time}}
 • Cosa: {{services}}
 
 Se non puoi presentarti, cancella la prenotazione: {{manage_url}}
@@ -661,7 +661,7 @@ TEXT,
                                 {{location_block_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;font-size:13px;">Date</span><br>
+                                        <span style="color:#666;font-size:13px;">When</span><br>
                                         <strong style="color:#333;">{{date}} at {{time}}</strong>
                                     </td>
                                 </tr>
@@ -709,7 +709,7 @@ Hi {{client_name}},
 
 This is a reminder that you have an appointment TOMORROW at {{business_name}}.
 
-{{location_block_text}}• Date: {{date}} at {{time}}
+{{location_block_text}}• When: {{date}} at {{time}}
 • What: {{services}}
 
 If you cannot make it, cancel your booking: {{manage_url}}
