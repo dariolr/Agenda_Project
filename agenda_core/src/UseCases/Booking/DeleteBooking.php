@@ -105,12 +105,14 @@ final class DeleteBooking
                 c.email as client_email,
                 c.first_name as client_first_name,
                 c.last_name as client_last_name,
+                l.id as location_id,
                 l.name as location_name,
                 l.address as location_address,
                 l.email as location_email,
                 l.timezone as location_timezone,
                 b.name as business_name,
-                b.email as business_email
+                b.email as business_email,
+                b.slug as business_slug
              FROM booking_items bi
              JOIN services s ON bi.service_id = s.id
              LEFT JOIN staff st ON bi.staff_id = st.id
@@ -134,11 +136,29 @@ final class DeleteBooking
             return [];
         }
         
+        // Get ALL service names for this booking
+        $stmtServices = $this->db->getPdo()->prepare(
+            'SELECT s.name as service_name
+             FROM booking_items bi
+             JOIN services s ON bi.service_id = s.id
+             WHERE bi.booking_id = ?
+             ORDER BY bi.start_time ASC'
+        );
+        $stmtServices->execute([$booking['id']]);
+        $allServices = $stmtServices->fetchAll(\PDO::FETCH_COLUMN);
+        $servicesString = implode(', ', $allServices);
+        
         // Priority: location email > business email
         $senderEmail = $details['location_email'] ?? $details['business_email'] ?? null;
         $senderName = $details['location_email'] 
             ? $details['location_name'] 
             : ($details['business_email'] ? $details['business_name'] : null);
+        
+        // Build booking URL for "Book again" button (with location pre-selected)
+        $bookingUrl = ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($details['business_slug'] ?? '') . '/booking';
+        if (!empty($details['location_id'])) {
+            $bookingUrl .= '?location=' . $details['location_id'];
+        }
         
         return [
             'booking_id' => $booking['id'],
@@ -147,6 +167,7 @@ final class DeleteBooking
             'client_name' => trim($details['client_first_name'] . ' ' . ($details['client_last_name'] ?? '')),
             'business_id' => $booking['business_id'] ?? null,
             'service_name' => $details['service_name'],
+            'services' => $servicesString,
             'start_time' => $details['start_time'],
             'staff_name' => trim(($details['staff_first_name'] ?? '') . ' ' . ($details['staff_last_name'] ?? '')),
             'date_time' => (new DateTimeImmutable($details['start_time']))->format('d/m/Y H:i'),
@@ -158,6 +179,7 @@ final class DeleteBooking
             'business_email' => $details['business_email'] ?? '',
             'sender_email' => $senderEmail,
             'sender_name' => $senderName,
+            'booking_url' => $bookingUrl,
             'locale' => $_ENV['DEFAULT_LOCALE'] ?? 'it',
         ];
     }

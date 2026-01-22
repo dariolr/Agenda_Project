@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '/app/providers/form_factor_provider.dart';
+import '/app/providers/route_slug_provider.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/booking_item.dart';
 import '/core/widgets/booking_app_bar.dart';
@@ -42,18 +43,15 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(
-      authProvider,
-      (previous, next) {
-        if (!next.isAuthenticated) {
-          _hasRequestedLoad = false;
-          return;
-        }
-        if (_hasRequestedLoad) return;
-        _hasRequestedLoad = true;
-        ref.read(myBookingsProvider.notifier).loadBookings();
-      },
-    );
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (!next.isAuthenticated) {
+        _hasRequestedLoad = false;
+        return;
+      }
+      if (_hasRequestedLoad) return;
+      _hasRequestedLoad = true;
+      ref.read(myBookingsProvider.notifier).loadBookings();
+    });
 
     final authState = ref.watch(authProvider);
     if (authState.isAuthenticated && !_hasRequestedLoad) {
@@ -67,11 +65,22 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
+    final canGoBack = context.canPop();
 
     return Scaffold(
       appBar: BookingAppBar(
         showBackButton: true,
-        onBackPressed: () => context.pop(),
+        // Se non c'è cronologia (arrivo da email), mostra icona "nuova prenotazione"
+        backIcon: canGoBack ? null : Icons.calendar_month,
+        backTooltip: canGoBack ? null : l10n.confirmationNewBooking,
+        onBackPressed: () {
+          if (canGoBack) {
+            context.pop();
+          } else {
+            final slug = ref.read(routeSlugProvider);
+            context.go('/$slug/booking');
+          }
+        },
         showUserMenu: false,
         title: l10n.myBookings,
         bottom: TabBar(

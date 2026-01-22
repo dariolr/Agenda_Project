@@ -19,6 +19,8 @@ class BookingAppBar extends ConsumerWidget implements PreferredSizeWidget {
     super.key,
     this.showBackButton = false,
     this.onBackPressed,
+    this.backIcon,
+    this.backTooltip,
     this.showUserMenu = true,
     this.bottom,
     this.title,
@@ -29,6 +31,12 @@ class BookingAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   /// Callback per il back button (se null, usa Navigator.pop)
   final VoidCallback? onBackPressed;
+
+  /// Icona personalizzata per il back button (default: arrow_back_ios_new)
+  final IconData? backIcon;
+
+  /// Tooltip personalizzato per il back button
+  final String? backTooltip;
 
   /// Se mostrare il menu utente per utenti autenticati
   final bool showUserMenu;
@@ -64,12 +72,14 @@ class BookingAppBar extends ConsumerWidget implements PreferredSizeWidget {
       leading: showBackButton
           ? IconButton(
               icon: Icon(
-                Icons.arrow_back_ios_new,
+                backIcon ?? Icons.arrow_back_ios_new,
                 size: 20,
                 color: colorScheme.primary,
               ),
               onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
-              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              tooltip:
+                  backTooltip ??
+                  MaterialLocalizations.of(context).backButtonTooltip,
             )
           : null,
       // Title: nome business con stile
