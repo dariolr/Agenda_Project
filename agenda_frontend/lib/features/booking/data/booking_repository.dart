@@ -49,12 +49,6 @@ class BookingRepository {
 
       for (final svcJson in servicesJson) {
         final svc = svcJson as Map<String, dynamic>;
-        if (!_isTruthy(svc['is_bookable_online'])) {
-          continue;
-        }
-        if (!_isTruthy(svc['is_active'])) {
-          continue;
-        }
         if (!svc.containsKey('category_id')) {
           svc['category_id'] = catId;
         }
@@ -265,14 +259,4 @@ class BookingRepository {
   /// Genera un nuovo idempotency key (UUID v4)
   String generateIdempotencyKey() => _uuid.v4();
 
-  bool _isTruthy(dynamic value) {
-    if (value == null) return true;
-    if (value is bool) return value;
-    if (value is num) return value == 1;
-    if (value is String) {
-      final normalized = value.toLowerCase();
-      return normalized == '1' || normalized == 'true';
-    }
-    return true;
-  }
 }

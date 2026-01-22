@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import 'api_config.dart';
 import 'token_storage.dart';
@@ -62,6 +63,9 @@ class ApiClient {
     _dio.options.receiveTimeout = ApiConfig.receiveTimeout;
     _dio.options.headers['Content-Type'] = 'application/json';
     _dio.options.headers['Accept'] = 'application/json';
+    if (kIsWeb) {
+      _dio.options.extra['withCredentials'] = true;
+    }
 
     // Interceptor per logging in debug
     // LogInterceptor rimosso per evitare log verbosi durante il booking flow.
@@ -114,18 +118,24 @@ class ApiClient {
   /// Tenta refresh del token (customer)
   Future<bool> _refreshToken() async {
     final refreshToken = await _tokenStorage.getRefreshToken();
-    if (refreshToken == null || _currentBusinessId == null) return false;
+    if (_currentBusinessId == null) return false;
+    if (refreshToken == null && !kIsWeb) return false;
 
     try {
       final response = await _dio.post(
         ApiConfig.customerRefresh(_currentBusinessId!),
-        data: {'refresh_token': refreshToken},
+        data: refreshToken != null
+            ? {'refresh_token': refreshToken}
+            : <String, dynamic>{},
       );
 
       if (response.data['success'] == true) {
         final data = response.data['data'];
         _accessToken = data['access_token'];
-        await _tokenStorage.saveRefreshToken(data['refresh_token']);
+        final nextRefreshToken = data['refresh_token'];
+        if (nextRefreshToken is String && nextRefreshToken.isNotEmpty) {
+          await _tokenStorage.saveRefreshToken(nextRefreshToken);
+        }
         return true;
       }
     } catch (_) {
@@ -139,23 +149,27 @@ class ApiClient {
   /// Richiede businessId per chiamare l'endpoint corretto
   Future<Map<String, dynamic>?> tryRestoreSession({int? businessId}) async {
     final refreshToken = await _tokenStorage.getRefreshToken();
-    if (refreshToken == null) return null;
-
     // Usa il businessId passato o quello salvato
     final effectiveBusinessId = businessId ?? _currentBusinessId;
     if (effectiveBusinessId == null) return null;
+    if (refreshToken == null && !kIsWeb) return null;
 
     try {
       final response = await _dio.post(
         ApiConfig.customerRefresh(effectiveBusinessId),
-        data: {'refresh_token': refreshToken},
+        data: refreshToken != null
+            ? {'refresh_token': refreshToken}
+            : <String, dynamic>{},
       );
 
       if (response.data['success'] == true) {
         final data = response.data['data'];
         _accessToken = data['access_token'];
         _currentBusinessId = effectiveBusinessId;
-        await _tokenStorage.saveRefreshToken(data['refresh_token']);
+        final nextRefreshToken = data['refresh_token'];
+        if (nextRefreshToken is String && nextRefreshToken.isNotEmpty) {
+          await _tokenStorage.saveRefreshToken(nextRefreshToken);
+        }
 
         // Fetch customer profile
         return await getCustomerMe();
@@ -277,7 +291,10 @@ class ApiClient {
 
     _accessToken = data['access_token'];
     _currentBusinessId = businessId;
-    await _tokenStorage.saveRefreshToken(data['refresh_token']);
+    final refreshToken = data['refresh_token'];
+    if (refreshToken is String && refreshToken.isNotEmpty) {
+      await _tokenStorage.saveRefreshToken(refreshToken);
+    }
     // Salva anche il business ID per restore session
     await _tokenStorage.saveBusinessId(businessId);
 
@@ -306,7 +323,10 @@ class ApiClient {
 
     _accessToken = data['access_token'];
     _currentBusinessId = businessId;
-    await _tokenStorage.saveRefreshToken(data['refresh_token']);
+    final refreshToken = data['refresh_token'];
+    if (refreshToken is String && refreshToken.isNotEmpty) {
+      await _tokenStorage.saveRefreshToken(refreshToken);
+    }
     await _tokenStorage.saveBusinessId(businessId);
 
     return data;
@@ -318,7 +338,9 @@ class ApiClient {
     try {
       await post(
         ApiConfig.customerLogout(businessId),
-        data: {'refresh_token': refreshToken},
+        data: refreshToken != null
+            ? {'refresh_token': refreshToken}
+            : <String, dynamic>{},
       );
     } finally {
       _accessToken = null;

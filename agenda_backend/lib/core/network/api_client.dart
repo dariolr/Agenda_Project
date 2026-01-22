@@ -60,6 +60,11 @@ class ApiClient {
             debugPrint('uri: ${error.requestOptions.uri}');
             debugPrint('statusCode: ${error.response?.statusCode}');
             debugPrint('Response: ${error.response?.data}');
+            debugPrint(
+              'hasAuthHeader: ${error.requestOptions.headers.containsKey('Authorization')}',
+            );
+            debugPrint('errorType: ${error.type}');
+            debugPrint('errorMessage: ${error.message}');
             handler.next(error);
           },
         ),
@@ -1002,6 +1007,8 @@ class ApiClient {
     String? colorHex,
     bool isBookableOnline = true,
     bool isPriceStartingFrom = false,
+    int? processingTime,
+    int? blockedTime,
   }) async {
     final response = await post(
       '/v1/locations/$locationId/services',
@@ -1015,6 +1022,8 @@ class ApiClient {
         if (colorHex != null && colorHex.isNotEmpty) 'color': colorHex,
         'is_bookable_online': isBookableOnline,
         'is_price_starting_from': isPriceStartingFrom,
+        if (processingTime != null) 'processing_time': processingTime,
+        if (blockedTime != null) 'blocked_time': blockedTime,
       },
     );
     return response;
@@ -1034,6 +1043,8 @@ class ApiClient {
     bool? isBookableOnline,
     bool? isPriceStartingFrom,
     int? sortOrder,
+    int? processingTime,
+    int? blockedTime,
   }) async {
     final response = await put(
       '/v1/services/$serviceId',
@@ -1052,6 +1063,8 @@ class ApiClient {
         if (isPriceStartingFrom != null)
           'is_price_starting_from': isPriceStartingFrom,
         if (sortOrder != null) 'sort_order': sortOrder,
+        if (processingTime != null) 'processing_time': processingTime,
+        if (blockedTime != null) 'blocked_time': blockedTime,
       },
     );
     return response;

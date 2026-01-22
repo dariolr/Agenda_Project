@@ -130,6 +130,9 @@ class _UserMenuButton extends ConsumerWidget {
                   .read(authProvider.notifier)
                   .logout(businessId: businessId);
             }
+            if (context.mounted) {
+              context.go('/$slug/login');
+            }
         }
       },
       itemBuilder: (context) => [

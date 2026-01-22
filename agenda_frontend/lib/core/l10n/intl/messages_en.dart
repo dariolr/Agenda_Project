@@ -47,14 +47,16 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m11(price) => "€${price}";
 
-  static String m12(duration) => "${duration} min";
+  static String m12(id) => "Category ${id}";
 
-  static String m13(price) => "from ${price}";
+  static String m13(duration) => "${duration} min";
 
-  static String m14(count) =>
+  static String m14(price) => "from ${price}";
+
+  static String m15(count) =>
       "${Intl.plural(count, zero: 'No service selected', one: '1 service selected', other: '${count} services selected')}";
 
-  static String m15(total) => "Total: ${total}";
+  static String m16(total) => "Total: ${total}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -463,7 +465,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "Or pick a ready-made package",
     ),
     "servicePackagesTitle": MessageLookupByLibrary.simpleMessage("Packages"),
-    "servicesDuration": m12,
+    "servicesCategoryFallbackName": m12,
+    "servicesDuration": m13,
     "servicesEmpty": MessageLookupByLibrary.simpleMessage(
       "No services available at the moment",
     ),
@@ -471,13 +474,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "There are no services available for online booking at this business",
     ),
     "servicesFree": MessageLookupByLibrary.simpleMessage("Free"),
-    "servicesPriceFrom": m13,
-    "servicesSelected": m14,
+    "servicesPriceFrom": m14,
+    "servicesSelected": m15,
     "servicesSubtitle": MessageLookupByLibrary.simpleMessage(
       "You can select one or more services",
     ),
     "servicesTitle": MessageLookupByLibrary.simpleMessage("Choose services"),
-    "servicesTotal": m15,
+    "servicesTotal": m16,
     "sessionExpired": MessageLookupByLibrary.simpleMessage(
       "Session expired. Please log in again.",
     ),

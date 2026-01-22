@@ -18,8 +18,8 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
-import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../staff/providers/staff_providers.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../providers/services_provider.dart';
@@ -392,6 +392,8 @@ Future<void> showServiceDialog(
           colorHex: ColorUtils.toHex(selectedColor),
           isBookableOnline: isBookableOnline,
           isPriceStartingFrom: finalIsPriceStartingFrom,
+          processingTime: processingToSave > 0 ? processingToSave : null,
+          blockedTime: blockedToSave > 0 ? blockedToSave : null,
         );
       } else {
         // Update existing service via API
@@ -407,6 +409,8 @@ Future<void> showServiceDialog(
           colorHex: ColorUtils.toHex(selectedColor),
           isBookableOnline: isBookableOnline,
           isPriceStartingFrom: finalIsPriceStartingFrom,
+          processingTime: processingToSave,
+          blockedTime: blockedToSave,
         );
       }
 
@@ -901,7 +905,10 @@ Future<void> showServiceDialog(
                   isDense: true,
                 ),
                 items: [
-                  for (final (minutes, label) in _bufferOptions(context))
+                  for (final (minutes, label) in _bufferOptions(
+                    context,
+                    additionalMinutes,
+                  ))
                     DropdownMenuItem(value: minutes, child: Text(label)),
                 ],
                 onChanged: (v) => setState(() {
@@ -1150,15 +1157,24 @@ Future<void> showServiceDialog(
 
 List<(int, String)> _durationOptions(BuildContext context) {
   final List<(int, String)> options = [];
-  for (int i = 5; i <= 240; i += 5) {
+  for (int i = 5; i <= 420; i += 5) {
     options.add((i, context.localizedDurationLabel(i)));
   }
   return options;
 }
 
-List<(int, String)> _bufferOptions(BuildContext context) {
+List<(int, String)> _bufferOptions(BuildContext context, [int? currentValue]) {
   final List<(int, String)> options = [];
-  final steps = <int>[0, 5, 10, 15, 20, 30, 45, 60];
+  final steps = <int>[0, 5, 10, 15, 20, 30, 45, 60, 90, 120];
+
+  // Se il valore corrente non è nella lista standard, aggiungilo
+  if (currentValue != null &&
+      currentValue > 0 &&
+      !steps.contains(currentValue)) {
+    steps.add(currentValue);
+    steps.sort();
+  }
+
   for (final m in steps) {
     options.add((m, context.localizedDurationLabel(m)));
   }

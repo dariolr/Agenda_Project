@@ -127,10 +127,12 @@ final class CreateBooking
             throw BookingException::invalidService($serviceIds);
         }
 
-        // Calculate total duration needed
+        // Calculate total duration needed (including processing_time and blocked_time)
         $totalDuration = 0;
         foreach ($services as $service) {
-            $totalDuration += (int) $service['duration_minutes'];
+            $totalDuration += (int) $service['duration_minutes']
+                + (int) ($service['processing_time'] ?? 0)
+                + (int) ($service['blocked_time'] ?? 0);
         }
 
         // If no staff specified, find first available staff for this slot
@@ -260,16 +262,24 @@ final class CreateBooking
             $itemsToCreate = [];
 
             foreach ($services as $service) {
-                $serviceDuration = (int) $service['duration_minutes'];
-                $serviceEndTime = $currentTime->modify("+{$serviceDuration} minutes");
+                // Display duration (what appears in gestionale) - only service time
+                $displayDuration = (int) $service['duration_minutes'];
+                // Blocked duration (for conflict check and next service start) - includes processing/blocked time
+                $blockedDuration = $displayDuration
+                    + (int) ($service['processing_time'] ?? 0)
+                    + (int) ($service['blocked_time'] ?? 0);
+                
+                $displayEndTime = $currentTime->modify("+{$displayDuration} minutes");
+                $blockedEndTime = $currentTime->modify("+{$blockedDuration} minutes");
 
                 // Check for conflicts using SELECT FOR UPDATE (skip for operators)
+                // Use blockedEndTime to ensure processing/blocked time is reserved
                 if (!$skipConflictCheck) {
                     $conflicts = $this->bookingRepository->checkConflicts(
                         $staffId,
                         $locationId,
                         $currentTime,
-                        $serviceEndTime
+                        $blockedEndTime
                     );
 
                     if (!empty($conflicts)) {
@@ -283,13 +293,14 @@ final class CreateBooking
                     'service_variant_id' => (int) $service['service_variant_id'],
                     'staff_id' => $staffId,
                     'start_time' => $currentTime->format('Y-m-d H:i:s'),
-                    'end_time' => $serviceEndTime->format('Y-m-d H:i:s'),
+                    'end_time' => $displayEndTime->format('Y-m-d H:i:s'), // Display duration only
                     'price' => (float) $service['price'],
                     'service_name_snapshot' => $service['name'],
                     'client_name_snapshot' => $clientName,
                 ];
 
-                $currentTime = $serviceEndTime;
+                // Next service starts after blocked time (not display time)
+                $currentTime = $blockedEndTime;
             }
 
             // Create booking (container)
@@ -651,10 +662,12 @@ final class CreateBooking
             throw BookingException::invalidService($serviceIds);
         }
 
-        // Calculate total duration
+        // Calculate total duration (including processing_time and blocked_time)
         $totalDuration = 0;
         foreach ($services as $service) {
-            $totalDuration += (int) $service['duration_minutes'];
+            $totalDuration += (int) $service['duration_minutes']
+                + (int) ($service['processing_time'] ?? 0)
+                + (int) ($service['blocked_time'] ?? 0);
         }
 
         // If no staff specified, find available staff using ComputeAvailability
@@ -727,15 +740,23 @@ final class CreateBooking
             $itemsToCreate = [];
 
             foreach ($services as $service) {
-                $serviceDuration = (int) $service['duration_minutes'];
-                $serviceEndTime = $currentTime->modify("+{$serviceDuration} minutes");
+                // Display duration (what appears in gestionale) - only service time
+                $displayDuration = (int) $service['duration_minutes'];
+                // Blocked duration (for conflict check and next service start) - includes processing/blocked time
+                $blockedDuration = $displayDuration
+                    + (int) ($service['processing_time'] ?? 0)
+                    + (int) ($service['blocked_time'] ?? 0);
+                
+                $displayEndTime = $currentTime->modify("+{$displayDuration} minutes");
+                $blockedEndTime = $currentTime->modify("+{$blockedDuration} minutes");
 
                 // Check for conflicts (customers ALWAYS check conflicts)
+                // Use blockedEndTime to ensure processing/blocked time is reserved
                 $conflicts = $this->bookingRepository->checkConflicts(
                     $staffId,
                     $locationId,
                     $currentTime,
-                    $serviceEndTime
+                    $blockedEndTime
                 );
 
                 if (!empty($conflicts)) {
@@ -748,13 +769,14 @@ final class CreateBooking
                     'service_variant_id' => (int) $service['service_variant_id'],
                     'staff_id' => $staffId,
                     'start_time' => $currentTime->format('Y-m-d H:i:s'),
-                    'end_time' => $serviceEndTime->format('Y-m-d H:i:s'),
+                    'end_time' => $displayEndTime->format('Y-m-d H:i:s'), // Display duration only
                     'price' => (float) $service['price'],
                     'service_name_snapshot' => $service['name'],
                     'client_name_snapshot' => $clientName,
                 ];
 
-                $currentTime = $serviceEndTime;
+                // Next service starts after blocked time (not display time)
+                $currentTime = $blockedEndTime;
             }
 
             // Create booking (container) - note: user_id is NULL for customer bookings
@@ -877,15 +899,23 @@ final class CreateBooking
                 }
                 $service = $services[0];
 
-                $serviceDuration = (int) $service['duration_minutes'];
-                $endTime = $startTime->modify("+{$serviceDuration} minutes");
+                // Display duration (what appears in gestionale) - only service time
+                $displayDuration = (int) $service['duration_minutes'];
+                // Blocked duration (for conflict check) - includes processing/blocked time
+                $blockedDuration = $displayDuration
+                    + (int) ($service['processing_time'] ?? 0)
+                    + (int) ($service['blocked_time'] ?? 0);
+                
+                $displayEndTime = $startTime->modify("+{$displayDuration} minutes");
+                $blockedEndTime = $startTime->modify("+{$blockedDuration} minutes");
 
                 // Check for conflicts (customers ALWAYS check conflicts)
+                // Use blockedEndTime to ensure processing/blocked time is reserved
                 $conflicts = $this->bookingRepository->checkConflicts(
                     $staffId,
                     $locationId,
                     $startTime,
-                    $endTime
+                    $blockedEndTime
                 );
 
                 if (!empty($conflicts)) {
@@ -898,7 +928,7 @@ final class CreateBooking
                     'service_variant_id' => (int) $service['service_variant_id'],
                     'staff_id' => $staffId,
                     'start_time' => $startTime->format('Y-m-d H:i:s'),
-                    'end_time' => $endTime->format('Y-m-d H:i:s'),
+                    'end_time' => $displayEndTime->format('Y-m-d H:i:s'), // Display duration only
                     'price' => (float) $service['price'],
                     'service_name_snapshot' => $service['name'],
                     'client_name_snapshot' => $clientName,

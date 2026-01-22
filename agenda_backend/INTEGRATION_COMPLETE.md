@@ -71,14 +71,15 @@ Tutte le richieste del documento AGENT_NEXT_STEPS sono state completate per il p
 
 **File verificati:**
 - ✅ [lib/features/services/data/services_api.dart](lib/features/services/data/services_api.dart)
-  - `fetchServices(locationId)` → `GET /v1/services?location_id=X`
+  - `fetchServicesWithCategories(locationId)` → `GET /v1/services?location_id=X`
+  - `fetchCategories(businessId)` → `GET /v1/businesses/{business_id}/categories`
 
 - ✅ [lib/features/services/data/services_repository.dart](lib/features/services/data/services_repository.dart)
   - `getServices({required int locationId})` → API reale
 
 - ✅ [lib/features/services/providers/services_provider.dart](lib/features/services/providers/services_provider.dart)
   - `ServicesNotifier extends AsyncNotifier<List<Service>>`
-  - `build()` chiama `repository.getServices(locationId)`
+  - `build()` chiama `repository.getServicesWithCategories(locationId)` + `repository.getCategories(businessId)`
 
 ---
 
@@ -168,6 +169,7 @@ flutter analyze
 | **Clients** | `/v1/clients` | POST | ✅ Integrato |
 | **Clients** | `/v1/clients/{id}` | PUT | ✅ Integrato |
 | **Clients** | `/v1/clients/{id}` | DELETE | ✅ Integrato |
+| **Categories** | `/v1/businesses/{business_id}/categories` | GET | ✅ Integrato |
 | **Services** | `/v1/services?location_id=X` | GET | ✅ Integrato |
 | **Staff** | `/v1/staff?location_id=X` | GET | ✅ Integrato |
 | **Appointments** | `/v1/locations/{id}/appointments` | GET | ✅ Integrato (NUOVO) |

@@ -42,7 +42,8 @@ final class ServiceRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT s.id, s.business_id, s.category_id, s.name, s.description, 
                     s.is_active, s.sort_order,
-                    sv.duration_minutes, sv.price, sv.color_hex AS color,
+                    sv.duration_minutes, sv.processing_time, sv.blocked_time,
+                    sv.price, sv.color_hex AS color,
                     sv.is_bookable_online, sv.is_price_starting_from AS is_price_from
              FROM services s
              LEFT JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
@@ -60,7 +61,8 @@ final class ServiceRepository
             'SELECT s.id, s.business_id, s.category_id, s.name, s.description, 
                     s.is_active, s.sort_order,
                     sv.id AS service_variant_id,
-                    sv.duration_minutes, sv.price, sv.color_hex AS color,
+                    sv.duration_minutes, sv.processing_time, sv.blocked_time,
+                    sv.price, sv.color_hex AS color,
                     sv.is_bookable_online, sv.is_price_starting_from AS is_price_from,
                     sc.name AS category_name
              FROM services s
@@ -86,7 +88,9 @@ final class ServiceRepository
         $stmt = $this->db->getPdo()->prepare(
             "SELECT s.id, s.business_id, s.category_id, s.name, s.description,
                     sv.id AS service_variant_id, sv.duration_minutes, sv.price, sv.color_hex AS color,
-                    sv.is_price_starting_from AS is_price_from
+                    sv.is_price_starting_from AS is_price_from,
+                    COALESCE(sv.processing_time, 0) AS processing_time,
+                    COALESCE(sv.blocked_time, 0) AS blocked_time
              FROM services s
              JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
              WHERE s.id IN ({$placeholders}) AND s.business_id = ? AND s.is_active = 1"
@@ -119,7 +123,7 @@ final class ServiceRepository
         $params = array_merge([$locationId], $serviceIds, [$businessId]);
 
         $stmt = $this->db->getPdo()->prepare(
-            "SELECT SUM(sv.duration_minutes) as total
+            "SELECT SUM(sv.duration_minutes + COALESCE(sv.processing_time, 0) + COALESCE(sv.blocked_time, 0)) as total
              FROM services s
              JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
              WHERE s.id IN ({$placeholders}) AND s.business_id = ? AND s.is_active = 1"
@@ -183,7 +187,9 @@ final class ServiceRepository
         float $price = 0.0,
         ?string $colorHex = null,
         bool $isBookableOnline = true,
-        bool $isPriceStartingFrom = false
+        bool $isPriceStartingFrom = false,
+        ?int $processingTime = null,
+        ?int $blockedTime = null
     ): array {
         $pdo = $this->db->getPdo();
         
@@ -204,13 +210,15 @@ final class ServiceRepository
 
             // Insert service_variant for the location
             $stmt = $pdo->prepare(
-                'INSERT INTO service_variants (service_id, location_id, duration_minutes, price, color_hex, is_bookable_online, is_price_starting_from, is_active, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, is_price_starting_from, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
             );
             $stmt->execute([
                 $serviceId,
                 $locationId,
                 $durationMinutes,
+                $processingTime ?? 0,
+                $blockedTime ?? 0,
                 $price,
                 $colorHex ?? '#CCCCCC',
                 $isBookableOnline ? 1 : 0,
@@ -241,7 +249,11 @@ final class ServiceRepository
         ?string $colorHex = null,
         ?bool $isBookableOnline = null,
         ?bool $isPriceStartingFrom = null,
-        ?int $sortOrder = null
+        ?int $sortOrder = null,
+        ?int $processingTime = null,
+        ?int $blockedTime = null,
+        bool $setProcessingTimeNull = false,
+        bool $setBlockedTimeNull = false
     ): ?array {
         $pdo = $this->db->getPdo();
 
@@ -298,6 +310,14 @@ final class ServiceRepository
                 $variantUpdates[] = 'is_price_starting_from = ?';
                 $variantParams[] = $isPriceStartingFrom ? 1 : 0;
             }
+            if ($processingTime !== null || $setProcessingTimeNull) {
+                $variantUpdates[] = 'processing_time = ?';
+                $variantParams[] = $setProcessingTimeNull ? 0 : $processingTime;
+            }
+            if ($blockedTime !== null || $setBlockedTimeNull) {
+                $variantUpdates[] = 'blocked_time = ?';
+                $variantParams[] = $setBlockedTimeNull ? 0 : $blockedTime;
+            }
 
             if (!empty($variantUpdates)) {
                 $variantParams[] = $serviceId;
@@ -308,7 +328,7 @@ final class ServiceRepository
                 $stmt->execute($variantParams);
             }
 
-            $pdo->commit();
+            $pdo->commit();;
 
             return $this->findById($serviceId, $locationId);
         } catch (\Throwable $e) {

@@ -101,6 +101,8 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     String? colorHex,
     bool isBookableOnline = true,
     bool isPriceStartingFrom = false,
+    int? processingTime,
+    int? blockedTime,
   }) async {
     final repository = ref.read(servicesRepositoryProvider);
     final location = ref.read(currentLocationProvider);
@@ -118,6 +120,8 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         colorHex: colorHex,
         isBookableOnline: isBookableOnline,
         isPriceStartingFrom: isPriceStartingFrom,
+        processingTime: processingTime,
+        blockedTime: blockedTime,
       );
 
       // Add to local state
@@ -148,6 +152,8 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     bool? isBookableOnline,
     bool? isPriceStartingFrom,
     int? sortOrder,
+    int? processingTime,
+    int? blockedTime,
   }) async {
     final repository = ref.read(servicesRepositoryProvider);
     final location = ref.read(currentLocationProvider);
@@ -168,6 +174,8 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         isBookableOnline: isBookableOnline,
         isPriceStartingFrom: isPriceStartingFrom,
         sortOrder: sortOrder,
+        processingTime: processingTime,
+        blockedTime: blockedTime,
       );
 
       // Update local state
@@ -362,8 +370,8 @@ class ServiceVariantsNotifier extends AsyncNotifier<List<ServiceVariant>> {
             isFree: (s.price ?? 0) == 0,
             isPriceStartingFrom: s.isPriceStartingFrom,
             resourceRequirements: const [],
-            processingTime: 0,
-            blockedTime: 0,
+            processingTime: s.processingTime ?? 0,
+            blockedTime: s.blockedTime ?? 0,
           ),
         )
         .toList();
