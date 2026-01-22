@@ -12,6 +12,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/booking.dart';
+import '../../../../core/models/service_package.dart';
 import '../../../../core/models/service_variant.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
@@ -37,8 +38,8 @@ import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
 import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
-import 'service_package_picker_dialog.dart';
 import 'service_item_card.dart';
+import 'service_package_picker_dialog.dart';
 
 /// Show the Booking dialog for creating a new multi-service booking.
 Future<void> showBookingDialog(
@@ -581,6 +582,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 canRemove: _serviceItems.length > 1,
                 // Obbligatorio solo se non ci sono altri servizi selezionati
                 isServiceRequired: selectedCount == 0,
+                packages: ref.read(servicePackagesProvider).value,
+                onPackageSelected: (package) =>
+                    _onPackageSelectedFromPicker(package, i),
                 onChanged: (updated) => _updateServiceItem(i, updated),
                 onRemove: () => _removeServiceItem(i),
                 onStartTimeChanged: (time) => _updateServiceStartTime(i, time),
@@ -1131,10 +1135,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       nextStart = lastEnd;
     }
 
-    // Smart staff selection:
-    // 1. Try initial staff if eligible
-    // 2. Leave null for user selection
-    int? smartStaffId = widget.initialStaffId;
+    // Smart staff selection: usa lo staff dell'ultimo servizio se presente
+    int? smartStaffId = _serviceItems.isNotEmpty
+        ? _serviceItems.last.staffId
+        : widget.initialStaffId;
 
     final newIndex = _serviceItems.length;
     setState(() {
@@ -1207,14 +1211,96 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     }
   }
 
-  void _appendServicesFromPackage(List<int> serviceIds) {
+  /// Called when a package is selected from the service picker.
+  /// This expands the package and replaces the current empty service slot.
+  Future<void> _onPackageSelectedFromPicker(
+    ServicePackage package,
+    int currentIndex,
+  ) async {
+    if (_isAddingPackage) return;
+
+    final l10n = context.l10n;
+    setState(() => _isAddingPackage = true);
+
+    try {
+      final locationId = ref.read(currentLocationProvider).id;
+      final repository = ref.read(servicePackagesRepositoryProvider);
+      final expansion = await repository.expandPackage(
+        locationId: locationId,
+        packageId: package.id,
+      );
+      if (expansion.serviceIds.isEmpty) {
+        if (!mounted) return;
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.servicePackageExpandError,
+        );
+      } else {
+        // Capture staff from current slot before removing it
+        int? staffIdFromSlot;
+        if (_serviceItems.isNotEmpty && currentIndex < _serviceItems.length) {
+          staffIdFromSlot = _serviceItems[currentIndex].staffId;
+        }
+        // Check if we need to remove empty slot
+        final shouldRemoveEmpty =
+            _serviceItems.isNotEmpty &&
+            currentIndex < _serviceItems.length &&
+            _serviceItems[currentIndex].serviceId == null;
+        // Pass the captured staff and removal index to do everything in one setState
+        _appendServicesFromPackage(
+          expansion.serviceIds,
+          overrideStaffId: staffIdFromSlot,
+          removeEmptyAtIndex: shouldRemoveEmpty ? currentIndex : null,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: l10n.servicePackageExpandError,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isAddingPackage = false);
+      }
+    }
+  }
+
+  /// Appends services from a package.
+  /// If [overrideStaffId] is provided, it will be used for ALL services.
+  /// Otherwise, uses smart staff selection (last item's staff or initial).
+  /// If [removeEmptyAtIndex] is provided, removes the empty slot at that index
+  /// before appending (all in one setState to avoid visual flash).
+  void _appendServicesFromPackage(
+    List<int> serviceIds, {
+    int? overrideStaffId,
+    int? removeEmptyAtIndex,
+  }) {
     final variants = ref.read(serviceVariantsProvider).value ?? [];
 
     setState(() {
+      // Remove empty slot first if requested (before calculating staff)
+      if (removeEmptyAtIndex != null &&
+          _serviceItems.isNotEmpty &&
+          removeEmptyAtIndex < _serviceItems.length &&
+          _serviceItems[removeEmptyAtIndex].serviceId == null) {
+        _serviceItems.removeAt(removeEmptyAtIndex);
+      }
+
+      // Calculate staff ONCE before the loop to use the same for all services
+      final staffIdForAll =
+          overrideStaffId ??
+          (_serviceItems.isNotEmpty
+              ? _serviceItems.last.staffId
+              : widget.initialStaffId);
+
       for (final serviceId in serviceIds) {
         TimeOfDay nextStart;
         if (_serviceItems.isEmpty) {
-          nextStart = widget.initialTime ?? const TimeOfDay(hour: 10, minute: 0);
+          nextStart =
+              widget.initialTime ?? const TimeOfDay(hour: 10, minute: 0);
         } else {
           final lastItem = _serviceItems.last;
           final lastStartMinutes =
@@ -1233,9 +1319,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
             .where((v) => v.serviceId == serviceId)
             .firstOrNull;
         final duration = variant?.durationMinutes ?? 30;
-        final smartStaffId = _serviceItems.isNotEmpty
-            ? _serviceItems.last.staffId
-            : widget.initialStaffId;
 
         _serviceItems.add(
           ServiceItemData(
@@ -1244,7 +1327,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
             serviceVariantId: variant?.id,
             startTime: nextStart,
             durationMinutes: duration,
-            staffId: smartStaffId,
+            staffId: staffIdForAll,
             blockedExtraMinutes: variant?.blockedTime ?? 0,
             processingExtraMinutes: variant?.processingTime ?? 0,
           ),
@@ -1271,6 +1354,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
   void _updateServiceItem(int index, ServiceItemData updated) {
     final variants = ref.read(serviceVariantsProvider).value ?? [];
+    final oldItem = _serviceItems[index];
 
     setState(() {
       _serviceItems[index] = updated;
@@ -1284,6 +1368,19 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         final newStaffId = _findBestStaff(updated.serviceId!);
         _serviceItems[index] = updated.copyWith(staffId: newStaffId);
       }
+
+      // Propagate staff to subsequent services that don't have a staff yet
+      // This is useful when user selects staff on first service of a package
+      if (updated.staffId != null && oldItem.staffId != updated.staffId) {
+        for (var i = index + 1; i < _serviceItems.length; i++) {
+          if (_serviceItems[i].staffId == null) {
+            _serviceItems[i] = _serviceItems[i].copyWith(
+              staffId: updated.staffId,
+            );
+          }
+        }
+      }
+
       _clearMidnightWarningIfResolved(variants.cast());
     });
   }
@@ -1371,10 +1468,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     List<ServiceVariant> variants,
   ) {
     final baseEnd = _baseEndTime(item, variants);
-    if (item.blockedExtraMinutes <= 0) {
+    final totalExtra = item.blockedExtraMinutes + item.processingExtraMinutes;
+    if (totalExtra <= 0) {
       return baseEnd;
     }
-    return _addMinutes(baseEnd, item.blockedExtraMinutes);
+    return _addMinutes(baseEnd, totalExtra);
   }
 
   ServiceItemData _applyAutoExtraStart(
