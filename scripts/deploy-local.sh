@@ -80,8 +80,9 @@ deploy_frontend() {
     cd "$PROJECT_ROOT/agenda_frontend"
     
     # Build con base-href corretto per sottocartella
+    # --pwa-strategy=offline-first cacha CanvasKit/font dopo primo caricamento
     print_step "Building Flutter web..."
-    flutter build web --release --base-href=/prenota/ --dart-define=API_BASE_URL=$API_BASE_URL
+    flutter build web --release --base-href=/prenota/ --dart-define=API_BASE_URL=$API_BASE_URL --pwa-strategy=offline-first
     
     # Crea cartella se non esiste
     mkdir -p "$FRONTEND_DEST"
@@ -104,8 +105,9 @@ deploy_backend() {
     cd "$PROJECT_ROOT/agenda_backend"
     
     # Build con base-href corretto per sottocartella
+    # --pwa-strategy=offline-first cacha CanvasKit/font dopo primo caricamento
     print_step "Building Flutter web..."
-    flutter build web --release --base-href=/gestionale/ --dart-define=API_BASE_URL=$API_BASE_URL
+    flutter build web --release --base-href=/gestionale/ --dart-define=API_BASE_URL=$API_BASE_URL --pwa-strategy=offline-first
     
     # Crea cartella se non esiste
     mkdir -p "$BACKEND_DEST"
