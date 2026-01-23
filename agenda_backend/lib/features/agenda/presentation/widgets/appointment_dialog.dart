@@ -27,10 +27,12 @@ import '../../domain/service_item_data.dart';
 import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/bookings_provider.dart';
+import '../../providers/bookings_repository_provider.dart';
 import '../../providers/layout_config_provider.dart';
 import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
 import '../dialogs/booking_history_dialog.dart';
+import '../dialogs/recurring_action_dialog.dart';
 import 'service_item_card.dart';
 import 'service_package_picker_dialog.dart';
 
@@ -279,6 +281,113 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Gestisce la cancellazione dell'appuntamento/prenotazione
+  /// Se l'appuntamento fa parte di una serie ricorrente, mostra un dialog
+  /// per scegliere lo scope dell'azione
+  Future<void> _handleDelete() async {
+    final l10n = context.l10n;
+    final appt = widget.initial;
+
+    // Verifica se è una prenotazione ricorrente
+    if (appt.isRecurring &&
+        appt.recurrenceRuleId != null &&
+        appt.recurrenceIndex != null &&
+        appt.recurrenceTotal != null) {
+      // Mostra il dialog per le prenotazioni ricorrenti
+      final result = await showRecurringDeleteDialog(
+        context,
+        currentIndex: appt.recurrenceIndex!,
+        totalCount: appt.recurrenceTotal!,
+      );
+
+      if (result == null) return; // Utente ha annullato
+
+      setState(() => _isSaving = true);
+      try {
+        final bookingsApi = ref.read(bookingsApiProvider);
+        final String scope;
+        int? fromIndex;
+
+        switch (result.scope) {
+          case RecurringActionScope.single:
+            // Cancella solo questo appuntamento con l'API standard
+            await ref
+                .read(bookingsProvider.notifier)
+                .deleteBooking(appt.bookingId);
+            if (mounted) Navigator.of(context).pop();
+            return;
+
+          case RecurringActionScope.thisAndFuture:
+            scope = 'this_and_future';
+            fromIndex = appt.recurrenceIndex;
+
+          case RecurringActionScope.all:
+            scope = 'all';
+        }
+
+        // Chiama l'API per cancellare la serie
+        await bookingsApi.cancelRecurringSeries(
+          ruleId: appt.recurrenceRuleId!,
+          scope: scope,
+          fromIndex: fromIndex,
+        );
+
+        // Ricarica gli appuntamenti
+        ref.invalidate(appointmentsProvider);
+
+        if (mounted) Navigator.of(context).pop();
+      } catch (e) {
+        if (mounted) {
+          await FeedbackDialog.showError(
+            context,
+            title: l10n.errorTitle,
+            message: e.toString(),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isSaving = false);
+      }
+    } else {
+      // Prenotazione non ricorrente - usa la logica esistente
+      final deleteTitle = _bookingHasSingleAppointment
+          ? l10n.deleteAppointmentConfirmTitle
+          : l10n.deleteBookingConfirmTitle;
+      final deleteMessage = _bookingHasSingleAppointment
+          ? l10n.deleteAppointmentConfirmMessage
+          : l10n.deleteBookingConfirmMessage;
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(deleteTitle),
+          content: Text(deleteMessage),
+          actions: [
+            AppOutlinedActionButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.actionCancel),
+            ),
+            AppDangerButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(l10n.actionDelete),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        setState(() => _isSaving = true);
+        try {
+          await ref
+              .read(bookingsProvider.notifier)
+              .deleteBooking(appt.bookingId);
+          if (mounted) Navigator.of(context).pop();
+        } finally {
+          if (mounted) setState(() => _isSaving = false);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -397,44 +506,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
     final actions = [
       AppAsyncDangerButton(
-        onPressed: _isSaving
-            ? null
-            : () async {
-                final deleteTitle = _bookingHasSingleAppointment
-                    ? l10n.deleteAppointmentConfirmTitle
-                    : l10n.deleteBookingConfirmTitle;
-                final deleteMessage = _bookingHasSingleAppointment
-                    ? l10n.deleteAppointmentConfirmMessage
-                    : l10n.deleteBookingConfirmMessage;
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: Text(deleteTitle),
-                    content: Text(deleteMessage),
-                    actions: [
-                      AppOutlinedActionButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: Text(l10n.actionCancel),
-                      ),
-                      AppDangerButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: Text(l10n.actionDelete),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmed == true) {
-                  setState(() => _isSaving = true);
-                  try {
-                    await ref
-                        .read(bookingsProvider.notifier)
-                        .deleteBooking(widget.initial.bookingId);
-                    if (context.mounted) Navigator.of(context).pop();
-                  } finally {
-                    if (mounted) setState(() => _isSaving = false);
-                  }
-                }
-              },
+        onPressed: _isSaving ? null : _handleDelete,
         padding: AppButtonStyles.dialogButtonPadding,
         disabled: _isSaving,
         showSpinner: false,

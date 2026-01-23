@@ -27,6 +27,8 @@ final class BookingRepository
                     b.client_name, b.notes, b.status, b.source,
                     b.replaces_booking_id, b.replaced_by_booking_id,
                     b.idempotency_key, b.created_at, b.updated_at,
+                    b.recurrence_rule_id, b.recurrence_index, 
+                    b.is_recurrence_parent, b.has_conflict,
                     c.first_name AS client_first_name, c.last_name AS client_last_name
              FROM bookings b
              LEFT JOIN clients c ON b.client_id = c.id
@@ -175,8 +177,10 @@ final class BookingRepository
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO bookings (business_id, location_id, client_id, user_id, 
                                    client_name, notes, status, source,
-                                   idempotency_key, idempotency_expires_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                                   idempotency_key, idempotency_expires_at,
+                                   recurrence_rule_id, recurrence_index, 
+                                   is_recurrence_parent, has_conflict)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         
         $idempotencyExpires = null;
@@ -195,6 +199,10 @@ final class BookingRepository
             $data['source'] ?? 'online',
             $data['idempotency_key'] ?? null,
             $idempotencyExpires,
+            $data['recurrence_rule_id'] ?? null,
+            $data['recurrence_index'] ?? null,
+            (int) ($data['is_recurrence_parent'] ?? 0),
+            (int) ($data['has_conflict'] ?? 0),
         ]);
 
         return (int) $this->db->getPdo()->lastInsertId();
@@ -428,6 +436,54 @@ final class BookingRepository
         return $stmt->fetchAll();
     }
 
+    /**
+     * Find booking items that conflict with the given time range.
+     *
+     * @param int $locationId Location ID
+     * @param int $staffId Staff ID
+     * @param string $startTime Start time (Y-m-d H:i:s)
+     * @param string $endTime End time (Y-m-d H:i:s)
+     * @param int|null $excludeBookingId Exclude this booking from conflicts
+     * @return array Conflicting booking items
+     */
+    public function findConflictingBookings(
+        int $locationId,
+        int $staffId,
+        string $startTime,
+        string $endTime,
+        ?int $excludeBookingId = null
+    ): array {
+        $sql = "SELECT bi.id, bi.booking_id, bi.start_time, bi.end_time
+                FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.id
+                WHERE bi.staff_id = ?
+                  AND bi.location_id = ?
+                  AND b.status IN ('pending', 'confirmed')
+                  AND (
+                      (bi.start_time < ? AND bi.end_time > ?)
+                      OR (bi.start_time >= ? AND bi.start_time < ?)
+                      OR (bi.end_time > ? AND bi.end_time <= ?)
+                  )";
+        
+        $params = [
+            $staffId,
+            $locationId,
+            $endTime, $startTime,       // Overlaps completely
+            $startTime, $endTime,       // Starts during
+            $startTime, $endTime,       // Ends during
+        ];
+        
+        if ($excludeBookingId !== null) {
+            $sql .= " AND b.id != ?";
+            $params[] = $excludeBookingId;
+        }
+
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
     public function findByClientId(int $clientId, int $limit = 50, int $offset = 0): array
     {
         $stmt = $this->db->getPdo()->prepare(
@@ -524,6 +580,8 @@ final class BookingRepository
                     bi.created_at, bi.updated_at,
                     b.status AS booking_status, b.client_name, b.notes AS booking_notes, b.client_id, b.business_id, b.source,
                     b.replaces_booking_id, b.replaced_by_booking_id,
+                    b.recurrence_rule_id, b.recurrence_index,
+                    (SELECT COUNT(*) FROM bookings b2 WHERE b2.recurrence_rule_id = b.recurrence_rule_id AND b2.status != 'cancelled') AS recurrence_total,
                     c.first_name AS client_first_name, c.last_name AS client_last_name,
                     NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), '') AS client_full_name,
                     s.name AS service_name,
@@ -561,6 +619,8 @@ final class BookingRepository
                     bi.start_time, bi.end_time, bi.price, bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.created_at, bi.updated_at,
                     b.status AS booking_status, b.client_name, b.notes AS booking_notes, b.client_id, b.business_id, b.source,
+                    b.recurrence_rule_id, b.recurrence_index,
+                    (SELECT COUNT(*) FROM bookings b2 WHERE b2.recurrence_rule_id = b.recurrence_rule_id AND b2.status != 'cancelled') AS recurrence_total,
                     c.first_name AS client_first_name, c.last_name AS client_last_name,
                     NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), '') AS client_full_name,
                     s.name AS service_name,
@@ -681,5 +741,165 @@ final class BookingRepository
     public function db(): Connection
     {
         return $this->db;
+    }
+
+    // ========================================
+    // RECURRING BOOKING METHODS
+    // ========================================
+
+    /**
+     * Trova tutte le booking di una serie ricorrente.
+     *
+     * @return array[] Lista di booking appartenenti alla stessa serie
+     */
+    public function findByRecurrenceRuleId(int $ruleId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT b.id, b.business_id, b.location_id, b.client_id, b.user_id,
+                    b.client_name, b.notes, b.status, b.source,
+                    b.recurrence_rule_id, b.recurrence_index, 
+                    b.is_recurrence_parent, b.has_conflict,
+                    b.created_at, b.updated_at,
+                    c.first_name AS client_first_name, c.last_name AS client_last_name
+             FROM bookings b
+             LEFT JOIN clients c ON b.client_id = c.id
+             WHERE b.recurrence_rule_id = ?
+             ORDER BY b.recurrence_index ASC'
+        );
+        $stmt->execute([$ruleId]);
+
+        $bookings = [];
+        while ($row = $stmt->fetch()) {
+            $row['items'] = $this->getBookingItems((int) $row['id']);
+            $row['total_price'] = array_sum(array_column($row['items'], 'price'));
+            $row['total_duration_minutes'] = $this->calculateTotalDuration($row['items']);
+            $bookings[] = $row;
+        }
+
+        return $bookings;
+    }
+
+    /**
+     * Trova la booking "parent" di una serie ricorrente.
+     */
+    public function findRecurrenceParent(int $ruleId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT b.id, b.business_id, b.location_id, b.client_id, b.user_id,
+                    b.client_name, b.notes, b.status, b.source,
+                    b.recurrence_rule_id, b.recurrence_index, 
+                    b.is_recurrence_parent, b.has_conflict,
+                    b.created_at, b.updated_at,
+                    c.first_name AS client_first_name, c.last_name AS client_last_name
+             FROM bookings b
+             LEFT JOIN clients c ON b.client_id = c.id
+             WHERE b.recurrence_rule_id = ? AND b.is_recurrence_parent = 1
+             LIMIT 1'
+        );
+        $stmt->execute([$ruleId]);
+        $result = $stmt->fetch();
+
+        if (!$result) {
+            return null;
+        }
+
+        $result['items'] = $this->getBookingItems((int) $result['id']);
+        $result['total_price'] = array_sum(array_column($result['items'], 'price'));
+        $result['total_duration_minutes'] = $this->calculateTotalDuration($result['items']);
+
+        return $result;
+    }
+
+    /**
+     * Conta le booking di una serie ricorrente.
+     */
+    public function countByRecurrenceRuleId(int $ruleId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) FROM bookings WHERE recurrence_rule_id = ?'
+        );
+        $stmt->execute([$ruleId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Conta le booking con conflitto in una serie.
+     */
+    public function countConflictsByRecurrenceRuleId(int $ruleId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) FROM bookings WHERE recurrence_rule_id = ? AND has_conflict = 1'
+        );
+        $stmt->execute([$ruleId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Cancella tutte le booking future di una serie (da un certo index in poi).
+     *
+     * @return int Numero di booking cancellate
+     */
+    public function cancelFutureRecurrences(int $ruleId, int $fromIndex): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE bookings 
+             SET status = \'cancelled\', updated_at = NOW()
+             WHERE recurrence_rule_id = ? AND recurrence_index >= ?'
+        );
+        $stmt->execute([$ruleId, $fromIndex]);
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Cancella tutte le booking di una serie.
+     *
+     * @return int Numero di booking cancellate
+     */
+    public function cancelAllRecurrences(int $ruleId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE bookings 
+             SET status = \'cancelled\', updated_at = NOW()
+             WHERE recurrence_rule_id = ?'
+        );
+        $stmt->execute([$ruleId]);
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Aggiorna il flag has_conflict per una booking.
+     */
+    public function setHasConflict(int $bookingId, bool $hasConflict): void
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE bookings 
+             SET has_conflict = ?, updated_at = NOW()
+             WHERE id = ?'
+        );
+        $stmt->execute([$hasConflict ? 1 : 0, $bookingId]);
+    }
+
+    /**
+     * Trova booking ricorrenti future per un client.
+     *
+     * @return array[] Lista di serie ricorrenti con booking future
+     */
+    public function findFutureRecurrencesByClientId(int $clientId, string $afterDate): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT DISTINCT b.recurrence_rule_id, 
+                    MIN(bi.start_time) as next_occurrence,
+                    COUNT(*) as remaining_occurrences
+             FROM bookings b
+             JOIN booking_items bi ON b.id = bi.booking_id
+             WHERE b.client_id = ? 
+               AND b.recurrence_rule_id IS NOT NULL
+               AND b.status != \'cancelled\'
+               AND bi.start_time > ?
+             GROUP BY b.recurrence_rule_id
+             ORDER BY next_occurrence ASC'
+        );
+        $stmt->execute([$clientId, $afterDate]);
+        return $stmt->fetchAll();
     }
 }
