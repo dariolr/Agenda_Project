@@ -286,6 +286,8 @@ final class ClientsController
             'staff_name' => $item['staff_name'] ?? '',
             'price' => (float) ($item['price'] ?? 0),
             'status' => $booking['status'] ?? 'confirmed',
+            'recurrence_rule_id' => $booking['recurrence_rule_id'] ? (int) $booking['recurrence_rule_id'] : null,
+            'recurrence_index' => $booking['recurrence_index'] ? (int) $booking['recurrence_index'] : null,
         ];
     }
 

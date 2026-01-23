@@ -695,5 +695,71 @@
       "fields": { "type": "String" }
     }
   },
-  "cancelledBadge": "CANCELLED"
+  "cancelledBadge": "CANCELLED",
+
+  "recurrenceRepeatBooking": "Repeat this appointment",
+  "recurrenceFrequency": "Frequency",
+  "recurrenceEvery": "Every",
+  "recurrenceDay": "day",
+  "recurrenceDays": "days",
+  "recurrenceWeek": "week",
+  "recurrenceWeeks": "weeks",
+  "recurrenceMonth": "month",
+  "recurrenceMonths": "months",
+  "recurrenceEnds": "Ends",
+  "recurrenceNever": "Never",
+  "recurrenceAfter": "After",
+  "recurrenceOccurrences": "occurrences",
+  "recurrenceOnDate": "On",
+  "recurrenceSelectDate": "Select date",
+  "recurrencePreviewTitle": "Scheduled dates",
+  "recurrencePreviewCount": "{count} appointments",
+  "@recurrencePreviewCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrenceSummaryTitle": "Series created",
+  "recurrenceSummaryCreated": "{count} appointments created",
+  "@recurrenceSummaryCreated": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrenceSummarySkipped": "{count} skipped due to conflicts",
+  "@recurrenceSummarySkipped": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrenceSummaryError": "Error creating series",
+  "recurrenceSeriesIcon": "Recurring appointment",
+  "recurrenceSeriesOf": "{index} of {total}",
+  "@recurrenceSeriesOf": {
+    "placeholders": {
+      "index": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "recurringDeleteTitle": "Delete recurring appointment",
+  "recurringDeleteMessage": "This is appointment {index} of {total} in the series.",
+  "@recurringDeleteMessage": {
+    "placeholders": {
+      "index": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "recurringDeleteChooseScope": "Which appointments do you want to delete?",
+  "recurringEditTitle": "Edit recurring appointment",
+  "recurringEditMessage": "This is appointment {index} of {total} in the series.",
+  "@recurringEditMessage": {
+    "placeholders": {
+      "index": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "recurringEditChooseScope": "Which appointments do you want to edit?",
+  "recurringScopeOnlyThis": "Only this one",
+  "recurringScopeThisAndFuture": "This and future",
+  "recurringScopeAll": "All"
 }

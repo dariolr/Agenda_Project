@@ -63,6 +63,8 @@ use Agenda\UseCases\Auth\ChangePassword;
 use Agenda\UseCases\Auth\UpdateProfile;
 use Agenda\UseCases\Booking\ComputeAvailability;
 use Agenda\UseCases\Booking\CreateBooking;
+use Agenda\UseCases\Booking\CreateRecurringBooking;
+use Agenda\UseCases\Booking\ModifyRecurringSeries;
 use Agenda\UseCases\Booking\UpdateBooking;
 use Agenda\UseCases\Booking\DeleteBooking;
 use Agenda\UseCases\Booking\GetMyBookings;
@@ -79,6 +81,7 @@ use Agenda\UseCases\CustomerAuth\ChangeCustomerPassword;
 use Agenda\UseCases\Admin\ExportBusiness;
 use Agenda\UseCases\Admin\ImportBusiness;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
+use Agenda\Infrastructure\Repositories\RecurrenceRuleRepository;
 use Throwable;
 
 final class Kernel
@@ -241,6 +244,12 @@ final class Kernel
         // Booking replace (atomic replace pattern)
         $this->router->post('/v1/bookings/{booking_id}/replace', BookingsController::class, 'replace', ['auth']);
         
+        // Recurring bookings (gestionale only)
+        $this->router->post('/v1/locations/{location_id}/bookings/recurring', BookingsController::class, 'storeRecurring', ['auth', 'location_path']);
+        $this->router->get('/v1/bookings/recurring/{recurrence_rule_id}', BookingsController::class, 'showRecurringSeries', ['auth']);
+        $this->router->patch('/v1/bookings/recurring/{recurrence_rule_id}', BookingsController::class, 'patchRecurringSeries', ['auth']);
+        $this->router->delete('/v1/bookings/recurring/{recurrence_rule_id}', BookingsController::class, 'cancelRecurringSeries', ['auth']);
+        
         // Booking history (audit trail)
         $this->router->get('/v1/bookings/{booking_id}/history', BookingsController::class, 'history', ['auth']);
 
@@ -354,8 +363,11 @@ final class Kernel
 
         // Booking Use Cases
         $bookingAuditRepo = new BookingAuditRepository($this->db, $userRepo, $clientRepo);
+        $recurrenceRuleRepo = new RecurrenceRuleRepository($this->db);
         $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo, $timeBlockRepo, $staffExceptionRepo);
         $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo, $computeAvailability, $bookingAuditRepo);
+        $createRecurringBooking = new CreateRecurringBooking($this->db, $bookingRepo, $recurrenceRuleRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $computeAvailability, $notificationRepo, $bookingAuditRepo);
+        $modifyRecurringSeries = new ModifyRecurringSeries($this->db, $bookingRepo, $recurrenceRuleRepo, $staffRepo, $bookingAuditRepo);
         $updateBooking = new UpdateBooking($bookingRepo, $this->db, $clientRepo, $notificationRepo, $bookingAuditRepo);
         $deleteBooking = new DeleteBooking($bookingRepo, $this->db, $notificationRepo, $bookingAuditRepo);
         $getMyBookings = new GetMyBookings($this->db);
@@ -372,7 +384,7 @@ final class Kernel
             ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo),
             StaffController::class => new StaffController($staffRepo, $staffScheduleRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
-            BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo),
+            BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries),
             ClientsController::class => new ClientsController($clientRepo, $businessUserRepo, $userRepo, $bookingRepo),
             AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $bookingAuditRepo),
             AdminBusinessesController::class => new AdminBusinessesController($this->db, $businessRepo, $businessUserRepo, $userRepo),

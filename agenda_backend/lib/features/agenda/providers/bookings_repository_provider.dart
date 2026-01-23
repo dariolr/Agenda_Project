@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/network/network_providers.dart';
+import '../data/bookings_api.dart';
 import '../data/bookings_repository.dart';
 
 part 'bookings_repository_provider.g.dart';
@@ -9,4 +10,10 @@ part 'bookings_repository_provider.g.dart';
 BookingsRepository bookingsRepository(Ref ref) {
   final apiClient = ref.watch(apiClientProvider);
   return BookingsRepository(apiClient: apiClient);
+}
+
+@Riverpod(keepAlive: true)
+BookingsApi bookingsApi(Ref ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return BookingsApi(apiClient: apiClient);
 }

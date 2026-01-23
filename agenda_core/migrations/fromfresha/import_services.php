@@ -14,8 +14,8 @@ $pdo = new PDO(
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
 );
 
-$BUSINESS_ID = 1;
-$LOCATION_ID = 4;
+$BUSINESS_ID = 2;
+$LOCATION_ID = 2;
 
 // Colori per categoria (palette ufficiale)
 $CATEGORY_COLORS = [
@@ -35,7 +35,7 @@ $CATEGORY_COLORS = [
 // Leggi CSV
 $csv = array_map(function($line) {
     return str_getcsv($line);
-}, file(__DIR__ . '/export_service_list_2026-01-01.csv'));
+}, file(__DIR__ . '/export_service_list.csv'));
 
 $header = array_shift($csv); // rimuovi header
 

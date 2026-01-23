@@ -804,7 +804,85 @@ Questo impatta:
 
 ---
 
-## 🔐 Autenticazione Operator (02/01/2026)
+## � Prenotazioni Ricorrenti (23/01/2026)
+
+### Funzionalità
+Gli operatori possono creare prenotazioni ricorrenti (settimanali, bisettimanali, mensili) per un cliente.
+
+### Modello Dati Flutter
+
+**Appointment** (`lib/core/models/appointment.dart`):
+```dart
+final int? recurrenceRuleId;   // ID regola ricorrenza (null se singolo)
+final int? recurrenceIndex;    // Posizione nella serie (1-based)
+final int? recurrenceTotal;    // Totale appuntamenti attivi nella serie
+
+bool get isRecurring => recurrenceRuleId != null;
+```
+
+### UI Visualizzazione
+
+**AppointmentCard** mostra:
+- Icona `Icons.repeat` per appuntamenti ricorrenti
+- Tooltip "X di Y" (es. "3 di 12")
+
+### Dialog Azioni Serie
+
+**File:** `lib/features/agenda/presentation/dialogs/recurring_action_dialog.dart`
+
+**Scope disponibili:**
+| Scope | Descrizione |
+|-------|-------------|
+| `single` | Solo questo appuntamento |
+| `thisAndFuture` | Questo e tutti i futuri |
+| `all` | Tutta la serie |
+
+**Funzioni:**
+- `showRecurringDeleteDialog()` → Restituisce `RecurringDeleteResult`
+- `showRecurringEditDialog()` → Restituisce `RecurringEditResult`
+
+### API Client
+
+**File:** `lib/features/agenda/data/bookings_api.dart`
+
+| Metodo | Endpoint |
+|--------|----------|
+| `createRecurringBooking()` | `POST /v1/locations/{id}/bookings/recurring` |
+| `getRecurringSeries()` | `GET /v1/bookings/recurring/{rule_id}` |
+| `modifyRecurringSeries()` | `PATCH /v1/bookings/recurring/{rule_id}` |
+| `cancelRecurringSeries()` | `DELETE /v1/bookings/recurring/{rule_id}` |
+
+### Integrazione con Dialog Appuntamento
+
+**File:** `lib/features/agenda/presentation/widgets/appointment_dialog.dart`
+
+Il metodo `_handleDelete()` verifica se l'appuntamento è ricorrente:
+- Se ricorrente → mostra `showRecurringDeleteDialog()`
+- Se singolo → procede con cancellazione diretta
+
+### Localizzazioni
+
+**Chiavi aggiunte** in `intl_it.arb` e `intl_en.arb`:
+- `recurrenceSeriesOf` — "X di Y"
+- `recurrenceSeriesIcon` — "Appuntamento ricorrente"
+- `recurringDeleteTitle` / `recurringEditTitle`
+- `recurringDeleteMessage` / `recurringEditMessage`
+- `recurringDeleteChooseScope` / `recurringEditChooseScope`
+- `recurringScopeOnlyThis` / `recurringScopeThisAndFuture` / `recurringScopeAll`
+
+### File di Riferimento
+
+| Concetto | File |
+|----------|------|
+| Modello Appointment | `lib/core/models/appointment.dart` |
+| Card appuntamento | `lib/features/agenda/presentation/screens/widgets/appointment_card_interactive.dart` |
+| Dialog azioni serie | `lib/features/agenda/presentation/dialogs/recurring_action_dialog.dart` |
+| Dialog appuntamento | `lib/features/agenda/presentation/widgets/appointment_dialog.dart` |
+| API bookings | `lib/features/agenda/data/bookings_api.dart` |
+
+---
+
+## �🔐 Autenticazione Operator (02/01/2026)
 
 ### ⚠️ IMPORTANTE: Il gestionale usa SOLO autenticazione Operator
 

@@ -37,6 +37,10 @@ class Appointment {
   // New split extras
   final int? extraBlockedMinutes;
   final int? extraProcessingMinutes;
+  // Campi ricorrenza (ereditati dal booking)
+  final int? recurrenceRuleId;
+  final int? recurrenceIndex;
+  final int? recurrenceTotal;
 
   const Appointment({
     required this.id,
@@ -58,10 +62,16 @@ class Appointment {
     this.extraMinutesType,
     this.extraBlockedMinutes,
     this.extraProcessingMinutes,
+    this.recurrenceRuleId,
+    this.recurrenceIndex,
+    this.recurrenceTotal,
   });
 
   /// Returns true if this appointment's booking was cancelled
   bool get isCancelled => bookingStatus == 'cancelled';
+
+  /// Returns true if this appointment is part of a recurring series
+  bool get isRecurring => recurrenceRuleId != null;
 
   factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
     id: json['id'] as int,
@@ -83,6 +93,9 @@ class Appointment {
     extraMinutesType: _extraMinutesTypeFromJson(json['extra_minutes_type']),
     extraBlockedMinutes: json['extra_blocked_minutes'] as int?,
     extraProcessingMinutes: json['extra_processing_minutes'] as int?,
+    recurrenceRuleId: json['recurrence_rule_id'] as int?,
+    recurrenceIndex: json['recurrence_index'] as int?,
+    recurrenceTotal: json['recurrence_total'] as int?,
   );
 
   Appointment copyWith({
@@ -105,6 +118,9 @@ class Appointment {
     ExtraMinutesType? extraMinutesType,
     int? extraBlockedMinutes,
     int? extraProcessingMinutes,
+    int? recurrenceRuleId,
+    int? recurrenceIndex,
+    int? recurrenceTotal,
   }) {
     return Appointment(
       id: id ?? this.id,
@@ -127,6 +143,9 @@ class Appointment {
       extraBlockedMinutes: extraBlockedMinutes ?? this.extraBlockedMinutes,
       extraProcessingMinutes:
           extraProcessingMinutes ?? this.extraProcessingMinutes,
+      recurrenceRuleId: recurrenceRuleId ?? this.recurrenceRuleId,
+      recurrenceIndex: recurrenceIndex ?? this.recurrenceIndex,
+      recurrenceTotal: recurrenceTotal ?? this.recurrenceTotal,
     );
   }
 

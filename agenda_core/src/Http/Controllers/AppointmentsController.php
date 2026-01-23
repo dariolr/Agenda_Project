@@ -432,6 +432,10 @@ final class AppointmentsController
             'client_name' => $appointment['client_name'] ?? null,
             'service_name' => $appointment['service_name'] ?? null,
             'staff_name' => $appointment['staff_name'] ?? null,
+            // Recurrence info
+            'recurrence_rule_id' => isset($appointment['recurrence_rule_id']) ? (int) $appointment['recurrence_rule_id'] : null,
+            'recurrence_index' => isset($appointment['recurrence_index']) ? (int) $appointment['recurrence_index'] : null,
+            'recurrence_total' => isset($appointment['recurrence_total']) ? (int) $appointment['recurrence_total'] : null,
         ];
     }
 

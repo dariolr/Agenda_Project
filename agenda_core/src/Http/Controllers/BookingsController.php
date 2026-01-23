@@ -7,11 +7,14 @@ namespace Agenda\Http\Controllers;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\UseCases\Booking\CreateBooking;
+use Agenda\UseCases\Booking\CreateRecurringBooking;
 use Agenda\UseCases\Booking\GetMyBookings;
+use Agenda\UseCases\Booking\ModifyRecurringSeries;
 use Agenda\UseCases\Booking\ReplaceBooking;
 use Agenda\Domain\Exceptions\BookingException;
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
+use Agenda\Infrastructure\Repositories\RecurrenceRuleRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
@@ -31,6 +34,9 @@ final class BookingsController
         private readonly ?ReplaceBooking $replaceBooking = null,
         private readonly ?BookingAuditRepository $auditRepo = null,
         private readonly ?ClientRepository $clientRepo = null,
+        private readonly ?CreateRecurringBooking $createRecurringBooking = null,
+        private readonly ?RecurrenceRuleRepository $recurrenceRuleRepo = null,
+        private readonly ?ModifyRecurringSeries $modifyRecurringSeries = null,
     ) {}
 
     /**
@@ -933,6 +939,286 @@ final class BookingsController
         }
     }
 
+    // ========================================
+    // RECURRING BOOKING METHODS
+    // ========================================
+
+    /**
+     * POST /v1/locations/{location_id}/bookings/recurring
+     * Create a recurring booking series.
+     */
+    public function storeRecurring(Request $request): Response
+    {
+        if ($this->createRecurringBooking === null) {
+            return Response::error('Recurring bookings not configured', 'not_configured', 500);
+        }
+
+        $userId = $request->getAttribute('user_id');
+        $locationId = $request->getAttribute('location_id');
+        $businessId = $request->getAttribute('business_id');
+
+        if ($userId === null) {
+            return Response::error('Authentication required', 'auth_required', 401);
+        }
+
+        if ($locationId === null) {
+            return Response::error('Location context required', 'missing_location', 400);
+        }
+
+        $data = $request->getBody();
+
+        // Validate required fields
+        if (!isset($data['service_ids']) || empty($data['service_ids'])) {
+            return Response::error('service_ids is required', 'validation_error', 400);
+        }
+
+        if (!isset($data['start_time'])) {
+            return Response::error('start_time is required', 'validation_error', 400);
+        }
+
+        if (!isset($data['client_id'])) {
+            return Response::error('client_id is required for recurring bookings', 'validation_error', 400);
+        }
+
+        if (!isset($data['recurrence']) || !isset($data['recurrence']['frequency'])) {
+            return Response::error('recurrence.frequency is required', 'validation_error', 400);
+        }
+
+        // Validate frequency
+        $validFrequencies = ['daily', 'weekly', 'monthly', 'custom'];
+        if (!in_array($data['recurrence']['frequency'], $validFrequencies)) {
+            return Response::error(
+                'Invalid frequency. Must be one of: ' . implode(', ', $validFrequencies),
+                'validation_error',
+                400
+            );
+        }
+
+        // Validate conflict_strategy if provided
+        if (isset($data['recurrence']['conflict_strategy'])) {
+            $validStrategies = ['skip', 'force'];
+            if (!in_array($data['recurrence']['conflict_strategy'], $validStrategies)) {
+                return Response::error(
+                    'Invalid conflict_strategy. Must be one of: ' . implode(', ', $validStrategies),
+                    'validation_error',
+                    400
+                );
+            }
+        }
+
+        try {
+            $result = $this->createRecurringBooking->execute(
+                userId: (int) $userId,
+                locationId: (int) $locationId,
+                businessId: (int) $businessId,
+                data: $data
+            );
+
+            return Response::json([
+                'success' => true,
+                'recurrence_rule_id' => $result['recurrence_rule_id'],
+                'total_requested' => $result['total_requested'],
+                'created_count' => $result['created_count'],
+                'skipped_count' => $result['skipped_count'],
+                'conflict_strategy' => $result['conflict_strategy'],
+                'bookings' => $result['bookings'],
+            ], 201);
+
+        } catch (BookingException $e) {
+            return Response::json([
+                'success' => false,
+                'error' => [
+                    'code' => $e->getCode(),
+                    'message' => $e->getMessage(),
+                    'details' => $e->getDetails(),
+                ],
+            ], $e->getHttpStatus());
+
+        } catch (\InvalidArgumentException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 400);
+
+        } catch (\Exception $e) {
+            error_log("Error creating recurring booking: " . $e->getMessage());
+            return Response::error('An error occurred while creating the recurring booking', 'internal_error', 500);
+        }
+    }
+
+    /**
+     * GET /v1/bookings/recurring/{recurrence_rule_id}
+     * Get all bookings in a recurring series.
+     */
+    public function showRecurringSeries(Request $request): Response
+    {
+        if ($this->recurrenceRuleRepo === null) {
+            return Response::error('Recurring bookings not configured', 'not_configured', 500);
+        }
+
+        $userId = $request->getAttribute('user_id');
+        $ruleId = (int) $request->getRouteParam('recurrence_rule_id');
+
+        if ($userId === null) {
+            return Response::error('Authentication required', 'auth_required', 401);
+        }
+
+        // Get recurrence rule
+        $rule = $this->recurrenceRuleRepo->findById($ruleId);
+        if ($rule === null) {
+            return Response::error('Recurrence rule not found', 'not_found', 404);
+        }
+
+        // Check business access
+        if (!$this->hasBusinessAccess($request, $rule->businessId)) {
+            return Response::error('Recurrence rule not found', 'not_found', 404);
+        }
+
+        // Get all bookings in the series
+        $bookings = $this->bookingRepo->findByRecurrenceRuleId($ruleId);
+
+        // Count conflicts
+        $conflictCount = $this->bookingRepo->countConflictsByRecurrenceRuleId($ruleId);
+
+        return Response::json([
+            'success' => true,
+            'recurrence_rule' => $rule->jsonSerialize(),
+            'total_bookings' => count($bookings),
+            'conflict_count' => $conflictCount,
+            'bookings' => array_map([$this, 'formatBooking'], $bookings),
+        ]);
+    }
+
+    /**
+     * DELETE /v1/bookings/recurring/{recurrence_rule_id}?scope=all|future&from_index=N
+     * Cancel recurring bookings.
+     */
+    public function cancelRecurringSeries(Request $request): Response
+    {
+        if ($this->recurrenceRuleRepo === null) {
+            return Response::error('Recurring bookings not configured', 'not_configured', 500);
+        }
+
+        $userId = $request->getAttribute('user_id');
+        $ruleId = (int) $request->getRouteParam('recurrence_rule_id');
+        $scope = $request->queryParam('scope', 'all'); // 'all' or 'future'
+        $fromIndex = (int) $request->queryParam('from_index', '0');
+
+        if ($userId === null) {
+            return Response::error('Authentication required', 'auth_required', 401);
+        }
+
+        // Get recurrence rule
+        $rule = $this->recurrenceRuleRepo->findById($ruleId);
+        if ($rule === null) {
+            return Response::error('Recurrence rule not found', 'not_found', 404);
+        }
+
+        // Check business access
+        if (!$this->hasBusinessAccess($request, $rule->businessId)) {
+            return Response::error('Recurrence rule not found', 'not_found', 404);
+        }
+
+        $cancelledCount = 0;
+
+        if ($scope === 'all') {
+            $cancelledCount = $this->bookingRepo->cancelAllRecurrences($ruleId);
+        } elseif ($scope === 'future') {
+            $cancelledCount = $this->bookingRepo->cancelFutureRecurrences($ruleId, $fromIndex);
+        } else {
+            return Response::error('Invalid scope. Must be "all" or "future"', 'validation_error', 400);
+        }
+
+        return Response::json([
+            'success' => true,
+            'cancelled_count' => $cancelledCount,
+            'scope' => $scope,
+            'from_index' => $scope === 'future' ? $fromIndex : null,
+        ]);
+    }
+
+    /**
+     * PATCH /v1/bookings/recurring/{recurrence_rule_id}
+     * Modify bookings in a recurring series.
+     * 
+     * Query params:
+     * - scope: 'all' (default) or 'future'
+     * - from_index: For scope='future', start from this index (default 0)
+     * 
+     * Body:
+     * - staff_id: Change staff for all/future bookings
+     * - notes: Update notes for all/future bookings
+     * - time: Change time (HH:MM) for all/future bookings
+     */
+    public function patchRecurringSeries(Request $request): Response
+    {
+        if ($this->modifyRecurringSeries === null || $this->recurrenceRuleRepo === null) {
+            return Response::error('Recurring bookings not configured', 'not_configured', 500);
+        }
+
+        $userId = $request->getAttribute('user_id');
+        $ruleId = (int) $request->getRouteParam('recurrence_rule_id');
+        $scope = $request->queryParam('scope', 'all');
+        $fromIndex = (int) $request->queryParam('from_index', '0');
+
+        if ($userId === null) {
+            return Response::error('Authentication required', 'auth_required', 401);
+        }
+
+        // Get recurrence rule
+        $rule = $this->recurrenceRuleRepo->findById($ruleId);
+        if ($rule === null) {
+            return Response::error('Recurrence rule not found', 'not_found', 404);
+        }
+
+        // Check business access
+        if (!$this->hasBusinessAccess($request, $rule->businessId)) {
+            return Response::error('Recurrence rule not found', 'not_found', 404);
+        }
+
+        // Parse request body
+        $body = $request->getBody() ?? [];
+        
+        // Build changes array
+        $changes = [];
+        if (isset($body['staff_id'])) {
+            $changes['staff_id'] = (int) $body['staff_id'];
+        }
+        if (array_key_exists('notes', $body)) {
+            $changes['notes'] = $body['notes'];
+        }
+        if (isset($body['time'])) {
+            $changes['time'] = $body['time'];
+        }
+
+        if (empty($changes)) {
+            return Response::error('No changes provided', 'validation_error', 400);
+        }
+
+        try {
+            $result = $this->modifyRecurringSeries->execute(
+                userId: $userId,
+                ruleId: $ruleId,
+                changes: $changes,
+                scope: $scope,
+                fromIndex: $fromIndex
+            );
+
+            return Response::json([
+                'success' => true,
+                'modified_count' => $result['modified_count'],
+                'scope' => $result['scope'],
+                'from_index' => $result['from_index'],
+                'changes_applied' => $result['changes_applied'],
+            ]);
+
+        } catch (BookingException $e) {
+            return Response::error($e->getMessage(), $e->getCode(), 400);
+        } catch (\InvalidArgumentException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 400);
+        } catch (\Exception $e) {
+            error_log("Error modifying recurring series: " . $e->getMessage());
+            return Response::error('An error occurred while modifying the recurring series', 'internal_error', 500);
+        }
+    }
+
     private function formatBooking(array $booking): array
     {
         return [
@@ -947,6 +1233,10 @@ final class BookingsController
             'source' => $booking['source'],
             'total_price' => (float) ($booking['total_price'] ?? 0),
             'total_duration_minutes' => (int) ($booking['total_duration_minutes'] ?? 0),
+            'recurrence_rule_id' => isset($booking['recurrence_rule_id']) ? (int) $booking['recurrence_rule_id'] : null,
+            'recurrence_index' => isset($booking['recurrence_index']) ? (int) $booking['recurrence_index'] : null,
+            'is_recurrence_parent' => (bool) ($booking['is_recurrence_parent'] ?? false),
+            'has_conflict' => (bool) ($booking['has_conflict'] ?? false),
             'created_at' => $booking['created_at'],
             'updated_at' => $booking['updated_at'],
             'items' => array_map(fn($item) => [
