@@ -2,21 +2,28 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Backend",
+      "name": "Backend (Prod API)",
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
       "args": ["--web-port=8080", "--dart-define=API_BASE_URL=https://api.romeolab.it"]
     },
     {
-      "name": "LBackend",
+      "name": "Backend (Local API)",
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
-      "args": [    "-d", "chrome",
-      "--web-port=8081", "--dart-define=API_BASE_URL=http://localhost:8888/api"]
+      "args": [
+        "--web-port=8081", 
+        "--dart-define=API_BASE_URL=http://localhost:8888/api"
+      ]
+    },
+    {
+      "name": "Open MAMP Build (offline)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:8888/gestionale/",
+      "webRoot": "${workspaceFolder}/build/web"
     }
-
-    
   ]
 }
