@@ -563,10 +563,10 @@ Questo impatta filtri agenda, sezione team e dialog staff.
 - Le operazioni di seed/migration vanno eseguite solo se l'utente lo richiede
 - In caso di dubbio, chiedere conferma prima di modificare dati in produzione
 
-⚠️ REGOLA DEPLOY AUTOMATICO:
-- **SEMPRE** eseguire deploy su SiteGround dopo ogni modifica ai file PHP di agenda_core
+⚠️ REGOLA DEPLOY PRODUZIONE:
+- **MAI** eseguire deploy in PRODUZIONE (`api.romeolab.it`) senza richiesta esplicita dell'utente
+- Il deploy in STAGING (`api-staging.romeolab.it`) può essere fatto autonomamente per test
 - Usare i comandi rsync documentati in DEPLOY.md sezione 12
-- Non attendere richiesta esplicita: il deploy è parte integrante della modifica
 
 ⚠️ REGOLA CRITICA DEPLOY:
 - **MAI** deployare l'intero progetto con un singolo rsync
