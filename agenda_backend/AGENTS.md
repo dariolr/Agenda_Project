@@ -251,7 +251,8 @@ Future<void> _onSave() async {
 
 ## 🚫 L'agente NON deve
 
-- **Eseguire deploy** (build + rsync) dei progetti Flutter senza richiesta esplicita dell'utente
+- **Eseguire deploy in PRODUZIONE** (build + rsync verso `gestionale.romeolab.it`) senza richiesta esplicita dell'utente
+- **Eseguire deploy in STAGING** può essere fatto autonomamente per test, ma chiedere conferma se non esplicitamente richiesto
 - **Avviare l'applicazione** (`flutter run`) senza richiesta esplicita dell'utente
 - Aggiungere dipendenze non richieste
 - Modificare indici route o `router.dart` senza richiesta esplicita
