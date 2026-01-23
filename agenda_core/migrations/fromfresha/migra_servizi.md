@@ -7,10 +7,10 @@ ESEGUIRE SOLO SU ESPLICITA RICHIESTA. Leggere il CSV servizi ed eseguire diretta
 ---
 
 ## INPUT
-1. File CSV servizi: `migra_servizi.csv` (nella stessa cartella)
+1. File CSV servizi: `export_service_list.csv` (nella stessa cartella)
 2. Parametri:
-   - BUSINESS_ID (default: 1)
-   - LOCATION_ID (default: 4)
+   - BUSINESS_ID (default: 2)
+   - LOCATION_ID (default: 2)
 
 ---
 

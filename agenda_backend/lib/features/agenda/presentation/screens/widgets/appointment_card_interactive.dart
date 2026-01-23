@@ -560,6 +560,9 @@ class _AppointmentCardInteractiveState
                     bookingSource: forFeedback
                         ? ''
                         : (widget.appointment.bookingSource ?? ''),
+                    isRecurring: widget.appointment.isRecurring,
+                    recurrenceIndex: widget.appointment.recurrenceIndex,
+                    recurrenceTotal: widget.appointment.recurrenceTotal,
                     onNotesTap: hasNotes && !forFeedback
                         ? () => _showNotesDialog(
                             bookingNotes: hasBookingNotes ? bookingNotes : null,
@@ -602,9 +605,29 @@ class _AppointmentCardInteractiveState
     String info, {
     required bool showNotes,
     required String bookingSource,
+    bool isRecurring = false,
+    int? recurrenceIndex,
+    int? recurrenceTotal,
     VoidCallback? onNotesTap,
   }) {
     final trailingIcons = <Widget>[];
+
+    // Icona ricorrenza
+    if (isRecurring) {
+      final tooltipText = recurrenceIndex != null && recurrenceTotal != null
+          ? context.l10n.recurrenceSeriesOf(recurrenceIndex, recurrenceTotal)
+          : context.l10n.recurrenceSeriesIcon;
+      trailingIcons.add(
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Tooltip(
+            message: tooltipText,
+            child: const Icon(Icons.repeat, size: 14, color: Colors.black54),
+          ),
+        ),
+      );
+    }
+
     final showSourceIcon =
         bookingSource == 'online' || bookingSource == 'onlinestaff';
     if (showSourceIcon) {

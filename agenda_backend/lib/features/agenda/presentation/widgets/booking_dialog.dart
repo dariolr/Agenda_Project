@@ -12,6 +12,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/booking.dart';
+import '../../../../core/models/recurrence_rule.dart';
 import '../../../../core/models/service_package.dart';
 import '../../../../core/models/service_variant.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
@@ -38,6 +39,9 @@ import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
 import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
+import '../dialogs/recurrence_summary_dialog.dart';
+import 'recurrence_picker.dart';
+import 'recurrence_preview.dart';
 import 'service_item_card.dart';
 import 'service_package_picker_dialog.dart';
 
@@ -132,6 +136,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   bool _midnightWarningDismissed = false;
   bool _isSaving = false;
   bool _isAddingPackage = false;
+
+  /// Configurazione ricorrenza (null = appuntamento singolo)
+  RecurrenceConfig? _recurrenceConfig;
 
   @override
   void initState() {
@@ -351,6 +358,26 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     textCapitalization: TextCapitalization.sentences,
                   ),
                 ),
+
+                // Ricorrenza (solo per nuovi appuntamenti)
+                if (!isEdit) ...[
+                  const SizedBox(height: AppSpacing.formRowSpacing),
+                  RecurrencePicker(
+                    startDate: _date,
+                    initialConfig: _recurrenceConfig,
+                    onChanged: (config) {
+                      setState(() => _recurrenceConfig = config);
+                    },
+                  ),
+                  if (_recurrenceConfig != null) ...[
+                    const SizedBox(height: 12),
+                    RecurrencePreview(
+                      startDate: _date,
+                      config: _recurrenceConfig!,
+                    ),
+                  ],
+                ],
+
                 const SizedBox(height: AppSpacing.formRowSpacing),
               ],
             ),
@@ -1583,6 +1610,47 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         ? (clientsById[_clientId]?.name ?? _customClientName)
         : _customClientName;
 
+    try {
+      // Se ricorrenza attiva, usa endpoint ricorrente
+      if (_recurrenceConfig != null) {
+        await _createRecurringBooking(
+          location: location,
+          validItems: validItems,
+          clientName: clientName,
+        );
+      } else {
+        await _createSingleBooking(
+          location: location,
+          validItems: validItems,
+          clientName: clientName,
+          bookingsNotifier: bookingsNotifier,
+          repository: repository,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.errorTitle,
+        );
+      }
+      return;
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _createSingleBooking({
+    required dynamic location,
+    required List<ServiceItemData> validItems,
+    required String clientName,
+    required dynamic bookingsNotifier,
+    required dynamic repository,
+  }) async {
     // Costruisci items per l'API (ogni servizio con il suo staff, start_time e override)
     final items = validItems.map((item) {
       final start = DateTime(
@@ -1610,57 +1678,108 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       );
     }).toList();
 
-    try {
-      // UNA singola chiamata API per creare UN booking con tutti i servizi
-      final bookingResponse = await repository.createBookingWithItems(
-        locationId: location.id,
-        idempotencyKey: const Uuid().v4(),
-        items: items,
-        clientId: _clientId,
-        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-      );
+    // UNA singola chiamata API per creare UN booking con tutti i servizi
+    final bookingResponse = await repository.createBookingWithItems(
+      locationId: location.id,
+      idempotencyKey: const Uuid().v4(),
+      items: items,
+      clientId: _clientId,
+      notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+    );
 
-      // Aggiorna booking metadata locale
-      bookingsNotifier.ensureBooking(
-        bookingId: bookingResponse.id,
-        businessId: bookingResponse.businessId,
-        locationId: bookingResponse.locationId,
-        clientId: bookingResponse.clientId,
-        clientName: bookingResponse.clientName ?? clientName,
-        notes: bookingResponse.notes,
-        status: bookingResponse.status,
-        replacesBookingId: bookingResponse.replacesBookingId,
-        replacedByBookingId: bookingResponse.replacedByBookingId,
-      );
+    // Aggiorna booking metadata locale
+    bookingsNotifier.ensureBooking(
+      bookingId: bookingResponse.id,
+      businessId: bookingResponse.businessId,
+      locationId: bookingResponse.locationId,
+      clientId: bookingResponse.clientId,
+      clientName: bookingResponse.clientName ?? clientName,
+      notes: bookingResponse.notes,
+      status: bookingResponse.status,
+      replacesBookingId: bookingResponse.replacesBookingId,
+      replacedByBookingId: bookingResponse.replacedByBookingId,
+    );
 
-      // Refresh appointments per caricare i nuovi
-      ref.invalidate(appointmentsProvider);
-      await ref.read(appointmentsProvider.future);
+    // Refresh appointments per caricare i nuovi
+    ref.invalidate(appointmentsProvider);
+    await ref.read(appointmentsProvider.future);
 
-      // Trova il primo appointment creato per lo scroll
-      final currentList = ref.read(appointmentsProvider).value ?? [];
-      final scrollTarget = currentList
-          .where((a) => a.bookingId == bookingResponse.id)
-          .firstOrNull;
+    // Trova il primo appointment creato per lo scroll
+    final currentList = ref.read(appointmentsProvider).value ?? [];
+    final scrollTarget = currentList
+        .where((a) => a.bookingId == bookingResponse.id)
+        .firstOrNull;
 
-      if (scrollTarget != null) {
-        ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
+    if (scrollTarget != null) {
+      ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
+    }
+  }
+
+  Future<void> _createRecurringBooking({
+    required dynamic location,
+    required List<ServiceItemData> validItems,
+    required String clientName,
+  }) async {
+    final bookingsApi = ref.read(bookingsApiProvider);
+
+    // Costruisci start_time dalla data + primo orario item
+    final firstItem = validItems.first;
+    final startTime = DateTime(
+      _date.year,
+      _date.month,
+      _date.day,
+      firstItem.startTime.hour,
+      firstItem.startTime.minute,
+    );
+
+    // Costruisci service_ids e staff_by_service
+    final serviceIds = validItems.map((i) => i.serviceId!).toList();
+
+    // Se tutti i servizi hanno lo stesso staff, usa staff_id singolo
+    // altrimenti usa staff_by_service
+    final allSameStaff = validItems.every(
+      (i) => i.staffId == validItems.first.staffId,
+    );
+
+    int? singleStaffId;
+    Map<String, int>? staffByService;
+
+    if (allSameStaff) {
+      singleStaffId = validItems.first.staffId;
+    } else {
+      staffByService = <String, int>{};
+      for (final item in validItems) {
+        staffByService[item.serviceId.toString()] = item.staffId!;
       }
-    } catch (_) {
-      if (mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: l10n.errorTitle,
-          message: l10n.errorTitle,
-        );
-      }
-      return;
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
 
-    if (!mounted) return;
-    Navigator.of(context).pop();
+    final request = RecurringBookingRequest(
+      serviceIds: serviceIds,
+      staffId: singleStaffId,
+      staffByService: staffByService,
+      startTime: startTime.toIso8601String(),
+      clientId: _clientId,
+      notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+      frequency: _recurrenceConfig!.frequency.value,
+      intervalValue: _recurrenceConfig!.intervalValue,
+      maxOccurrences: _recurrenceConfig!.maxOccurrences,
+      endDate: _recurrenceConfig!.endDate?.toIso8601String().split('T')[0],
+      conflictStrategy: _recurrenceConfig!.conflictStrategy.value,
+    );
+
+    final result = await bookingsApi.createRecurringBooking(
+      locationId: location.id,
+      request: request,
+    );
+
+    // Refresh appointments per caricare i nuovi
+    ref.invalidate(appointmentsProvider);
+
+    // Mostra dialog riepilogo
+    if (mounted) {
+      Navigator.of(context).pop(); // Chiudi booking dialog prima
+      await RecurrenceSummaryDialog.show(context, result);
+    }
   }
 }
 

@@ -6,17 +6,17 @@
  * Usage: php import_staff.php
  */
 
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
-// Carica .env
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+// Carica .env dalla root del progetto
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
 $dotenv->load();
 
 // Configurazione
-const BUSINESS_ID = 1;
-const LOCATION_ID = 4;
+const BUSINESS_ID = 2;
+const LOCATION_ID = 2;
 // CSV nella stessa directory dello script sul server
-const CSV_FILE = 'employees_export_2026-01-02.csv';
+const CSV_FILE = 'employees_export.csv';
 
 // Palette colori staff (36 colori, ordine dalla UI Flutter)
 const STAFF_COLORS = [
@@ -70,11 +70,12 @@ try {
     echo "Connessione DB OK\n\n";
     
     // Leggi CSV
-    if (!file_exists(CSV_FILE)) {
+    $csvPath = __DIR__ . '/' . CSV_FILE;
+    if (!file_exists($csvPath)) {
         throw new Exception("File CSV non trovato: " . CSV_FILE);
     }
     
-    $handle = fopen(CSV_FILE, 'r');
+    $handle = fopen($csvPath, 'r');
     $headers = fgetcsv($handle); // Prima riga = headers
     
     echo "Headers CSV: " . implode(', ', $headers) . "\n\n";

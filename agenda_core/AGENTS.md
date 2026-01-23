@@ -950,7 +950,119 @@ if ($staffId === null) {
 
 ---
 
-## 📋 Booking Audit System (18/01/2026)
+## � Prenotazioni Ricorrenti (23/01/2026)
+
+### Schema Database
+
+**Tabella `booking_recurrence_rules`:**
+```sql
+CREATE TABLE booking_recurrence_rules (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    business_id INT UNSIGNED NOT NULL,
+    location_id INT UNSIGNED NOT NULL,
+    frequency ENUM('daily', 'weekly', 'biweekly', 'monthly') NOT NULL,
+    interval_value INT UNSIGNED NOT NULL DEFAULT 1,
+    day_of_week TINYINT UNSIGNED NULL,      -- 0=domenica, 6=sabato
+    day_of_month TINYINT UNSIGNED NULL,     -- 1-31
+    start_date DATE NOT NULL,
+    end_date DATE NULL,                      -- NULL = infinito
+    occurrences INT UNSIGNED NULL,           -- NULL = infinito
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (business_id) REFERENCES businesses(id),
+    FOREIGN KEY (location_id) REFERENCES locations(id)
+);
+```
+
+**Colonne aggiunte a `bookings`:**
+```sql
+ALTER TABLE bookings ADD recurrence_rule_id INT UNSIGNED NULL;
+ALTER TABLE bookings ADD recurrence_index INT UNSIGNED NULL;
+ALTER TABLE bookings ADD is_recurrence_parent TINYINT(1) DEFAULT 0;
+ALTER TABLE bookings ADD has_conflict TINYINT(1) DEFAULT 0;
+```
+
+### Endpoint API (Solo Gestionale)
+
+| Metodo | Endpoint | Descrizione |
+|--------|----------|-------------|
+| POST | `/v1/locations/{location_id}/bookings/recurring` | Crea serie ricorrente |
+| GET | `/v1/bookings/recurring/{recurrence_rule_id}` | Ottieni serie completa |
+| PATCH | `/v1/bookings/recurring/{recurrence_rule_id}` | Modifica serie |
+| DELETE | `/v1/bookings/recurring/{recurrence_rule_id}` | Cancella serie |
+
+### Payload Creazione Serie Ricorrente
+
+```json
+POST /v1/locations/{location_id}/bookings/recurring
+{
+  "client_id": 42,
+  "service_variant_id": 1,
+  "staff_id": 3,
+  "start_time": "10:00",
+  "notes": "Appuntamento settimanale",
+  "frequency": "weekly",
+  "interval": 1,
+  "day_of_week": 1,
+  "start_date": "2026-02-01",
+  "end_date": "2026-06-30",
+  "occurrences": null,
+  "skip_conflicts": true
+}
+```
+
+### Query Params per Modifica/Cancellazione
+
+| Parametro | Valori | Descrizione |
+|-----------|--------|-------------|
+| `scope` | `single`, `this_and_future`, `all` | Quali booking modificare |
+| `from_index` | int | Indice di partenza (per `this_and_future`) |
+
+**Esempi:**
+```
+DELETE /v1/bookings/recurring/5?scope=single&from_index=3
+DELETE /v1/bookings/recurring/5?scope=this_and_future&from_index=3
+DELETE /v1/bookings/recurring/5?scope=all
+```
+
+### Campi Ritornati negli Appointments
+
+Tutti gli endpoint che ritornano appointments ora includono:
+
+```json
+{
+  "id": 123,
+  "booking_id": 456,
+  "recurrence_rule_id": 5,
+  "recurrence_index": 3,
+  "recurrence_total": 12
+}
+```
+
+- `recurrence_rule_id`: ID della regola di ricorrenza (null se non ricorrente)
+- `recurrence_index`: Posizione nella serie (1-based)
+- `recurrence_total`: Numero totale di booking attivi nella serie
+
+### File PHP Coinvolti
+
+| File | Responsabilità |
+|------|----------------|
+| `src/Domain/Booking/RecurrenceRule.php` | Modello dominio |
+| `src/Infrastructure/Repositories/RecurrenceRuleRepository.php` | CRUD regole |
+| `src/Infrastructure/Repositories/BookingRepository.php` | Query con campi recurrence |
+| `src/UseCases/Booking/CreateRecurringBooking.php` | Creazione serie |
+| `src/UseCases/Booking/ModifyRecurringSeries.php` | Modifica/cancella serie |
+| `src/Http/Controllers/BookingsController.php` | Endpoint recurring |
+| `src/Http/Controllers/AppointmentsController.php` | formatAppointment con recurrence |
+
+### Gestione Conflitti
+
+- `skip_conflicts: true` → crea booking senza conflitti, salta date con conflitto
+- `skip_conflicts: false` → fallisce se almeno una data ha conflitto
+- Booking con conflitto: `has_conflict = 1` (visibile in UI)
+
+---
+
+## �📋 Booking Audit System (18/01/2026)
 
 ### Tabelle Audit
 

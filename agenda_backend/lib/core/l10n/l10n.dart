@@ -4274,6 +4274,276 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Ripeti questo appuntamento`
+  String get recurrenceRepeatBooking {
+    return Intl.message(
+      'Ripeti questo appuntamento',
+      name: 'recurrenceRepeatBooking',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Frequenza`
+  String get recurrenceFrequency {
+    return Intl.message(
+      'Frequenza',
+      name: 'recurrenceFrequency',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ogni`
+  String get recurrenceEvery {
+    return Intl.message('Ogni', name: 'recurrenceEvery', desc: '', args: []);
+  }
+
+  /// `giorno`
+  String get recurrenceDay {
+    return Intl.message('giorno', name: 'recurrenceDay', desc: '', args: []);
+  }
+
+  /// `giorni`
+  String get recurrenceDays {
+    return Intl.message('giorni', name: 'recurrenceDays', desc: '', args: []);
+  }
+
+  /// `settimana`
+  String get recurrenceWeek {
+    return Intl.message(
+      'settimana',
+      name: 'recurrenceWeek',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `settimane`
+  String get recurrenceWeeks {
+    return Intl.message(
+      'settimane',
+      name: 'recurrenceWeeks',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `mese`
+  String get recurrenceMonth {
+    return Intl.message('mese', name: 'recurrenceMonth', desc: '', args: []);
+  }
+
+  /// `mesi`
+  String get recurrenceMonths {
+    return Intl.message('mesi', name: 'recurrenceMonths', desc: '', args: []);
+  }
+
+  /// `Termina`
+  String get recurrenceEnds {
+    return Intl.message('Termina', name: 'recurrenceEnds', desc: '', args: []);
+  }
+
+  /// `Mai`
+  String get recurrenceNever {
+    return Intl.message('Mai', name: 'recurrenceNever', desc: '', args: []);
+  }
+
+  /// `Dopo`
+  String get recurrenceAfter {
+    return Intl.message('Dopo', name: 'recurrenceAfter', desc: '', args: []);
+  }
+
+  /// `occorrenze`
+  String get recurrenceOccurrences {
+    return Intl.message(
+      'occorrenze',
+      name: 'recurrenceOccurrences',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il`
+  String get recurrenceOnDate {
+    return Intl.message('Il', name: 'recurrenceOnDate', desc: '', args: []);
+  }
+
+  /// `Seleziona data`
+  String get recurrenceSelectDate {
+    return Intl.message(
+      'Seleziona data',
+      name: 'recurrenceSelectDate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Date programmate`
+  String get recurrencePreviewTitle {
+    return Intl.message(
+      'Date programmate',
+      name: 'recurrencePreviewTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} appuntamenti`
+  String recurrencePreviewCount(int count) {
+    return Intl.message(
+      '$count appuntamenti',
+      name: 'recurrencePreviewCount',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Serie creata`
+  String get recurrenceSummaryTitle {
+    return Intl.message(
+      'Serie creata',
+      name: 'recurrenceSummaryTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} appuntamenti creati`
+  String recurrenceSummaryCreated(int count) {
+    return Intl.message(
+      '$count appuntamenti creati',
+      name: 'recurrenceSummaryCreated',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `{count} saltati per conflitto`
+  String recurrenceSummarySkipped(int count) {
+    return Intl.message(
+      '$count saltati per conflitto',
+      name: 'recurrenceSummarySkipped',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Errore nella creazione della serie`
+  String get recurrenceSummaryError {
+    return Intl.message(
+      'Errore nella creazione della serie',
+      name: 'recurrenceSummaryError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appuntamento ricorrente`
+  String get recurrenceSeriesIcon {
+    return Intl.message(
+      'Appuntamento ricorrente',
+      name: 'recurrenceSeriesIcon',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{index} di {total}`
+  String recurrenceSeriesOf(int index, int total) {
+    return Intl.message(
+      '$index di $total',
+      name: 'recurrenceSeriesOf',
+      desc: '',
+      args: [index, total],
+    );
+  }
+
+  /// `Elimina appuntamento ricorrente`
+  String get recurringDeleteTitle {
+    return Intl.message(
+      'Elimina appuntamento ricorrente',
+      name: 'recurringDeleteTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questo è l'appuntamento {index} di {total} nella serie.`
+  String recurringDeleteMessage(int index, int total) {
+    return Intl.message(
+      'Questo è l\'appuntamento $index di $total nella serie.',
+      name: 'recurringDeleteMessage',
+      desc: '',
+      args: [index, total],
+    );
+  }
+
+  /// `Quali appuntamenti vuoi eliminare?`
+  String get recurringDeleteChooseScope {
+    return Intl.message(
+      'Quali appuntamenti vuoi eliminare?',
+      name: 'recurringDeleteChooseScope',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modifica appuntamento ricorrente`
+  String get recurringEditTitle {
+    return Intl.message(
+      'Modifica appuntamento ricorrente',
+      name: 'recurringEditTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questo è l'appuntamento {index} di {total} nella serie.`
+  String recurringEditMessage(int index, int total) {
+    return Intl.message(
+      'Questo è l\'appuntamento $index di $total nella serie.',
+      name: 'recurringEditMessage',
+      desc: '',
+      args: [index, total],
+    );
+  }
+
+  /// `Quali appuntamenti vuoi modificare?`
+  String get recurringEditChooseScope {
+    return Intl.message(
+      'Quali appuntamenti vuoi modificare?',
+      name: 'recurringEditChooseScope',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Solo questo`
+  String get recurringScopeOnlyThis {
+    return Intl.message(
+      'Solo questo',
+      name: 'recurringScopeOnlyThis',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questo e futuri`
+  String get recurringScopeThisAndFuture {
+    return Intl.message(
+      'Questo e futuri',
+      name: 'recurringScopeThisAndFuture',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tutti`
+  String get recurringScopeAll {
+    return Intl.message('Tutti', name: 'recurringScopeAll', desc: '', args: []);
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

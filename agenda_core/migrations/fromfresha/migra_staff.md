@@ -7,10 +7,10 @@ ESEGUIRE SOLO SU ESPLICITA RICHIESTA. Leggere il CSV employees e inserire i dati
 ---
 
 ## INPUT
-1. File CSV: `employees_export_2026-01-02.csv` (nella stessa cartella)
+1. File CSV: `employees_export.csv` (nella stessa cartella)
 2. Parametri:
-   - BUSINESS_ID: 1
-   - LOCATION_ID: 4
+   - BUSINESS_ID: 2
+   - LOCATION_ID: 2
 
 ---
 
@@ -27,7 +27,7 @@ Record che NON soddisfano entrambi i criteri vengono IGNORATI.
 ### Tabella: staff
 | Campo DB | Campo CSV | Note |
 |----------|-----------|------|
-| business_id | - | Costante: 1 |
+| business_id | - | Costante: 2 |
 | name | First Name | - |
 | surname | Last Name | Default '' se vuoto |
 | color_hex | - | Assegnato in sequenza dalla palette staff (vedi sotto) |
@@ -99,7 +99,7 @@ Ogni staff viene associato alla LOCATION_ID specificata.
 ## REGOLE VINCOLANTI
 - ESEGUIRE le query sul database, NON generare file SQL
 - Usare dotenv per le credenziali DB
-- Associare ogni staff a location_id=4
+- Associare ogni staff a location_id=2
 - **GESTIRE staff esistenti** per il business_id PRIMA di inserire i nuovi:
   - Staff **con booking esistenti**: soft delete (is_active=0, is_bookable_online=0)
   - Staff **senza booking**: eliminazione fisica
@@ -141,5 +141,5 @@ $pdo = new PDO(
 );
 ```
 - Usare dotenv per le credenziali DB
-- Associare ogni staff a location_id=4
-- Associare ogni staff a TUTTI i servizi del business_id=1
+- Associare ogni staff a location_id=2
+- Associare ogni staff a TUTTI i servizi del business_id=2

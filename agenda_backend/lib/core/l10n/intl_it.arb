@@ -695,5 +695,71 @@
       "fields": { "type": "String" }
     }
   },
-  "cancelledBadge": "CANCELLATO"
+  "cancelledBadge": "CANCELLATO",
+
+  "recurrenceRepeatBooking": "Ripeti questo appuntamento",
+  "recurrenceFrequency": "Frequenza",
+  "recurrenceEvery": "Ogni",
+  "recurrenceDay": "giorno",
+  "recurrenceDays": "giorni",
+  "recurrenceWeek": "settimana",
+  "recurrenceWeeks": "settimane",
+  "recurrenceMonth": "mese",
+  "recurrenceMonths": "mesi",
+  "recurrenceEnds": "Termina",
+  "recurrenceNever": "Mai",
+  "recurrenceAfter": "Dopo",
+  "recurrenceOccurrences": "occorrenze",
+  "recurrenceOnDate": "Il",
+  "recurrenceSelectDate": "Seleziona data",
+  "recurrencePreviewTitle": "Date programmate",
+  "recurrencePreviewCount": "{count} appuntamenti",
+  "@recurrencePreviewCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrenceSummaryTitle": "Serie creata",
+  "recurrenceSummaryCreated": "{count} appuntamenti creati",
+  "@recurrenceSummaryCreated": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrenceSummarySkipped": "{count} saltati per conflitto",
+  "@recurrenceSummarySkipped": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrenceSummaryError": "Errore nella creazione della serie",
+  "recurrenceSeriesIcon": "Appuntamento ricorrente",
+  "recurrenceSeriesOf": "{index} di {total}",
+  "@recurrenceSeriesOf": {
+    "placeholders": {
+      "index": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "recurringDeleteTitle": "Elimina appuntamento ricorrente",
+  "recurringDeleteMessage": "Questo è l'appuntamento {index} di {total} nella serie.",
+  "@recurringDeleteMessage": {
+    "placeholders": {
+      "index": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "recurringDeleteChooseScope": "Quali appuntamenti vuoi eliminare?",
+  "recurringEditTitle": "Modifica appuntamento ricorrente",
+  "recurringEditMessage": "Questo è l'appuntamento {index} di {total} nella serie.",
+  "@recurringEditMessage": {
+    "placeholders": {
+      "index": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "recurringEditChooseScope": "Quali appuntamenti vuoi modificare?",
+  "recurringScopeOnlyThis": "Solo questo",
+  "recurringScopeThisAndFuture": "Questo e futuri",
+  "recurringScopeAll": "Tutti"
 }

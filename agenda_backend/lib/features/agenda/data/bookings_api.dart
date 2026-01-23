@@ -1,5 +1,52 @@
 import '../../../core/network/api_client.dart';
 import '../domain/booking_response.dart';
+import '../presentation/dialogs/recurrence_summary_dialog.dart';
+
+/// Request per creare una serie ricorrente
+class RecurringBookingRequest {
+  final List<int> serviceIds;
+  final int? staffId;
+  final Map<String, int>? staffByService;
+  final String startTime;
+  final int? clientId;
+  final String? notes;
+  final String frequency;
+  final int intervalValue;
+  final int? maxOccurrences;
+  final String? endDate;
+  final String conflictStrategy;
+
+  const RecurringBookingRequest({
+    required this.serviceIds,
+    this.staffId,
+    this.staffByService,
+    required this.startTime,
+    this.clientId,
+    this.notes,
+    required this.frequency,
+    this.intervalValue = 1,
+    this.maxOccurrences,
+    this.endDate,
+    this.conflictStrategy = 'skip',
+  });
+
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{
+      'service_ids': serviceIds,
+      'start_time': startTime,
+      'frequency': frequency,
+      'interval_value': intervalValue,
+      'conflict_strategy': conflictStrategy,
+    };
+    if (staffId != null) map['staff_id'] = staffId;
+    if (staffByService != null) map['staff_by_service'] = staffByService;
+    if (clientId != null) map['client_id'] = clientId;
+    if (notes != null) map['notes'] = notes;
+    if (maxOccurrences != null) map['max_occurrences'] = maxOccurrences;
+    if (endDate != null) map['end_date'] = endDate;
+    return map;
+  }
+}
 
 /// Request item per creazione booking con staff/orario per ogni servizio
 /// Include campi opzionali per override dei valori di default del servizio
@@ -249,5 +296,69 @@ class BookingsApi {
     required int itemId,
   }) async {
     await _apiClient.deleteBookingItem(bookingId: bookingId, itemId: itemId);
+  }
+
+  /// POST /v1/locations/{location_id}/bookings/recurring
+  /// Create a recurring booking series
+  Future<RecurringBookingResult> createRecurringBooking({
+    required int locationId,
+    required RecurringBookingRequest request,
+  }) async {
+    final data = await _apiClient.post(
+      '/v1/locations/$locationId/bookings/recurring',
+      data: request.toJson(),
+    );
+    return RecurringBookingResult.fromJson(data);
+  }
+
+  /// GET /v1/bookings/recurring/{rule_id}
+  /// Get all bookings in a recurring series
+  Future<Map<String, dynamic>> getRecurringSeries({required int ruleId}) async {
+    return _apiClient.get('/v1/bookings/recurring/$ruleId');
+  }
+
+  /// PATCH /v1/bookings/recurring/{rule_id}
+  /// Modify bookings in a recurring series
+  Future<Map<String, dynamic>> modifyRecurringSeries({
+    required int ruleId,
+    required String scope,
+    int? fromIndex,
+    int? staffId,
+    String? notes,
+    String? time,
+  }) async {
+    final queryParams = <String, String>{'scope': scope};
+    if (fromIndex != null) queryParams['from_index'] = fromIndex.toString();
+
+    final requestData = <String, dynamic>{};
+    if (staffId != null) requestData['staff_id'] = staffId;
+    if (notes != null) requestData['notes'] = notes;
+    if (time != null) requestData['time'] = time;
+
+    final queryString = queryParams.entries
+        .map((e) => '${e.key}=${e.value}')
+        .join('&');
+
+    return _apiClient.patch(
+      '/v1/bookings/recurring/$ruleId?$queryString',
+      data: requestData,
+    );
+  }
+
+  /// DELETE /v1/bookings/recurring/{rule_id}
+  /// Cancel bookings in a recurring series
+  Future<Map<String, dynamic>> cancelRecurringSeries({
+    required int ruleId,
+    required String scope,
+    int? fromIndex,
+  }) async {
+    final queryParams = <String, String>{'scope': scope};
+    if (fromIndex != null) queryParams['from_index'] = fromIndex.toString();
+
+    final queryString = queryParams.entries
+        .map((e) => '${e.key}=${e.value}')
+        .join('&');
+
+    return _apiClient.delete('/v1/bookings/recurring/$ruleId?$queryString');
   }
 }
