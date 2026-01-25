@@ -208,11 +208,15 @@ class RecurrenceConfig {
   /// Calcola le date delle occorrenze a partire da una data iniziale
   List<DateTime> calculateOccurrences(
     DateTime startDate, {
-    int maxPreview = 12,
+    int maxPreview = 365,
   }) {
     final dates = <DateTime>[startDate];
     var current = startDate;
+
+    // Se maxOccurrences è specificato, usa quello
+    // Altrimenti ("Mai"), calcola fino a 1 anno dalla data iniziale
     final limit = maxOccurrences ?? maxPreview;
+    final maxEndDate = endDate ?? startDate.add(const Duration(days: 365));
 
     while (dates.length < limit) {
       switch (frequency) {
@@ -229,8 +233,8 @@ class RecurrenceConfig {
           );
       }
 
-      // Verifica se superato end_date
-      if (endDate != null && current.isAfter(endDate!)) {
+      // Verifica se superato end_date (o limite 1 anno per "Mai")
+      if (current.isAfter(maxEndDate)) {
         break;
       }
 

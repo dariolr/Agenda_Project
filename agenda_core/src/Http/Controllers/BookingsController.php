@@ -8,6 +8,7 @@ use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\UseCases\Booking\CreateBooking;
 use Agenda\UseCases\Booking\CreateRecurringBooking;
+use Agenda\UseCases\Booking\PreviewRecurringBooking;
 use Agenda\UseCases\Booking\GetMyBookings;
 use Agenda\UseCases\Booking\ModifyRecurringSeries;
 use Agenda\UseCases\Booking\ReplaceBooking;
@@ -35,6 +36,7 @@ final class BookingsController
         private readonly ?BookingAuditRepository $auditRepo = null,
         private readonly ?ClientRepository $clientRepo = null,
         private readonly ?CreateRecurringBooking $createRecurringBooking = null,
+        private readonly ?PreviewRecurringBooking $previewRecurringBooking = null,
         private readonly ?RecurrenceRuleRepository $recurrenceRuleRepo = null,
         private readonly ?ModifyRecurringSeries $modifyRecurringSeries = null,
     ) {}
@@ -1022,6 +1024,7 @@ final class BookingsController
                 'skipped_count' => $result['skipped_count'],
                 'conflict_strategy' => $result['conflict_strategy'],
                 'bookings' => $result['bookings'],
+                'skipped_dates' => $result['skipped_dates'] ?? [],
             ], 201);
 
         } catch (BookingException $e) {
@@ -1040,6 +1043,80 @@ final class BookingsController
         } catch (\Exception $e) {
             error_log("Error creating recurring booking: " . $e->getMessage());
             return Response::error('An error occurred while creating the recurring booking', 'internal_error', 500);
+        }
+    }
+
+    /**
+     * POST /v1/locations/{location_id}/bookings/recurring/preview
+     * Preview a recurring booking series (without creating).
+     * Returns all dates with conflict information so user can review and exclude dates.
+     */
+    public function previewRecurring(Request $request): Response
+    {
+        if ($this->previewRecurringBooking === null) {
+            return Response::error('Recurring bookings not configured', 'not_configured', 500);
+        }
+
+        $userId = $request->getAttribute('user_id');
+        $locationId = $request->getAttribute('location_id');
+        $businessId = $request->getAttribute('business_id');
+
+        if ($userId === null) {
+            return Response::error('Authentication required', 'auth_required', 401);
+        }
+
+        if ($locationId === null) {
+            return Response::error('Location context required', 'missing_location', 400);
+        }
+
+        $data = $request->getBody();
+
+        // Validate required fields
+        if (!isset($data['service_ids']) || empty($data['service_ids'])) {
+            return Response::error('service_ids is required', 'validation_error', 400);
+        }
+
+        if (!isset($data['start_time'])) {
+            return Response::error('start_time is required', 'validation_error', 400);
+        }
+
+        if (!isset($data['client_id'])) {
+            return Response::error('client_id is required for recurring bookings', 'validation_error', 400);
+        }
+
+        if (!isset($data['recurrence']) || !isset($data['recurrence']['frequency'])) {
+            return Response::error('recurrence.frequency is required', 'validation_error', 400);
+        }
+
+        try {
+            $result = $this->previewRecurringBooking->execute(
+                locationId: (int) $locationId,
+                businessId: (int) $businessId,
+                data: $data
+            );
+
+            return Response::json([
+                'success' => true,
+                'total_dates' => $result['total_dates'],
+                'dates' => $result['dates'],
+            ], 200);
+
+        } catch (BookingException $e) {
+            return Response::json([
+                'success' => false,
+                'error' => [
+                    'code' => $e->getCode(),
+                    'message' => $e->getMessage(),
+                    'details' => $e->getDetails(),
+                ],
+            ], $e->getHttpStatus());
+
+        } catch (\InvalidArgumentException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 400);
+
+        } catch (\Exception $e) {
+            error_log("Error previewing recurring booking: " . $e->getMessage());
+            return Response::error('An error occurred while previewing the recurring booking', 'internal_error', 500);
         }
     }
 

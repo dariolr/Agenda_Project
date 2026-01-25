@@ -985,10 +985,46 @@ ALTER TABLE bookings ADD has_conflict TINYINT(1) DEFAULT 0;
 
 | Metodo | Endpoint | Descrizione |
 |--------|----------|-------------|
+| POST | `/v1/locations/{location_id}/bookings/recurring/preview` | Anteprima date con conflitti |
 | POST | `/v1/locations/{location_id}/bookings/recurring` | Crea serie ricorrente |
 | GET | `/v1/bookings/recurring/{recurrence_rule_id}` | Ottieni serie completa |
 | PATCH | `/v1/bookings/recurring/{recurrence_rule_id}` | Modifica serie |
 | DELETE | `/v1/bookings/recurring/{recurrence_rule_id}` | Cancella serie |
+
+### Preview Ricorrenza (24/01/2026)
+
+Prima di creare la serie, il client può richiedere un'anteprima delle date con indicazione dei conflitti:
+
+```json
+POST /v1/locations/{location_id}/bookings/recurring/preview
+{
+  "service_variant_id": 1,
+  "staff_id": 3,
+  "start_time": "10:00",
+  "frequency": "weekly",
+  "interval": 1,
+  "day_of_week": 1,
+  "start_date": "2026-02-01",
+  "end_date": "2026-06-30"
+}
+```
+
+**Response:**
+```json
+{
+  "dates": [
+    {"date": "2026-02-01", "has_conflict": false},
+    {"date": "2026-02-08", "has_conflict": true},
+    ...
+  ],
+  "total_count": 22,
+  "conflict_count": 3
+}
+```
+
+**File PHP:**
+- `src/UseCases/Booking/PreviewRecurringBooking.php` - genera date e verifica conflitti
+- `src/Http/Controllers/BookingsController.php` - metodo `previewRecurring()`
 
 ### Payload Creazione Serie Ricorrente
 
@@ -1049,6 +1085,7 @@ Tutti gli endpoint che ritornano appointments ora includono:
 | `src/Domain/Booking/RecurrenceRule.php` | Modello dominio |
 | `src/Infrastructure/Repositories/RecurrenceRuleRepository.php` | CRUD regole |
 | `src/Infrastructure/Repositories/BookingRepository.php` | Query con campi recurrence |
+| `src/UseCases/Booking/PreviewRecurringBooking.php` | Anteprima date con conflitti |
 | `src/UseCases/Booking/CreateRecurringBooking.php` | Creazione serie |
 | `src/UseCases/Booking/ModifyRecurringSeries.php` | Modifica/cancella serie |
 | `src/Http/Controllers/BookingsController.php` | Endpoint recurring |

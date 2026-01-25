@@ -847,10 +847,52 @@ bool get isRecurring => recurrenceRuleId != null;
 
 | Metodo | Endpoint |
 |--------|----------|
+| `previewRecurringBooking()` | `POST /v1/locations/{id}/bookings/recurring/preview` |
 | `createRecurringBooking()` | `POST /v1/locations/{id}/bookings/recurring` |
 | `getRecurringSeries()` | `GET /v1/bookings/recurring/{rule_id}` |
 | `modifyRecurringSeries()` | `PATCH /v1/bookings/recurring/{rule_id}` |
 | `cancelRecurringSeries()` | `DELETE /v1/bookings/recurring/{rule_id}` |
+
+### Preview Date Ricorrenti (24/01/2026)
+
+Prima di creare la serie ricorrente, l'operatore visualizza un'anteprima delle date con eventuali conflitti.
+
+**Dialog:** `RecurrencePreviewDialog` in `lib/features/agenda/presentation/dialogs/recurrence_summary_dialog.dart`
+
+**Flow:**
+1. Operatore configura ricorrenza nel `BookingDialog`
+2. `RecurrencePreviewDialog.show()` chiama API preview
+3. Mostra lista date con checkbox per escludere quelle con conflitti
+4. Ritorna `List<int>?` (indici esclusi) o `null` se annullato
+5. `BookingDialog._createRecurringBooking()` passa `excludedIndices` alla creazione
+
+**Payload Preview:**
+```json
+POST /v1/locations/{id}/bookings/recurring/preview
+{
+  "service_variant_id": 1,
+  "staff_id": 3,
+  "start_time": "10:00",
+  "frequency": "weekly",
+  "interval": 1,
+  "day_of_week": 1,
+  "start_date": "2026-02-01",
+  "end_date": "2026-06-30"
+}
+```
+
+**Response:**
+```json
+{
+  "dates": [
+    {"date": "2026-02-01", "has_conflict": false},
+    {"date": "2026-02-08", "has_conflict": true},
+    ...
+  ],
+  "total_count": 22,
+  "conflict_count": 3
+}
+```
 
 ### Integrazione con Dialog Appuntamento
 

@@ -12,7 +12,7 @@ $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
 $dotenv->load();
 
 // Configurazione
-const BUSINESS_ID = 2;
+const BUSINESS_ID = 3;
 const CSV_FILE = 'export_customer_list.csv';
 const SKIP_BLOCKED = false; // Se true, salta i clienti bloccati. Se false, li importa come is_archived=1
 

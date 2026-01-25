@@ -28,6 +28,43 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
   _EndType _endType = _EndType.count;
   int _occurrenceCount = 6;
   DateTime? _endDate;
+  ConflictStrategy _conflictStrategy = ConflictStrategy.skip;
+
+  /// Restituisce le opzioni di occorrenze in base alla frequenza e intervallo
+  List<int> _getOccurrenceOptions() {
+    // Calcola il massimo di occorrenze per stare entro 1 anno
+    final int maxOccurrences;
+    switch (_frequency) {
+      case RecurrenceFrequency.daily:
+        // Giornaliero: 365 / intervallo
+        maxOccurrences = (365 / _intervalValue).floor();
+      case RecurrenceFrequency.weekly:
+        // Settimanale: 52 / intervallo
+        maxOccurrences = (52 / _intervalValue).floor();
+      case RecurrenceFrequency.monthly:
+        // Mensile: 12 / intervallo
+        maxOccurrences = (12 / _intervalValue).floor();
+      case RecurrenceFrequency.custom:
+        maxOccurrences = (365 / _intervalValue).floor();
+    }
+    // Almeno 1 occorrenza
+    final max = maxOccurrences < 1 ? 1 : maxOccurrences;
+    return List.generate(max, (i) => i + 1);
+  }
+
+  /// Restituisce il valore di default per le occorrenze in base alla frequenza
+  int _getDefaultOccurrenceCount() {
+    switch (_frequency) {
+      case RecurrenceFrequency.daily:
+        return 30;
+      case RecurrenceFrequency.weekly:
+        return 12;
+      case RecurrenceFrequency.monthly:
+        return 6;
+      case RecurrenceFrequency.custom:
+        return 30;
+    }
+  }
 
   @override
   void initState() {
@@ -45,6 +82,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
       } else {
         _endType = _EndType.never;
       }
+      _conflictStrategy = widget.initialConfig!.conflictStrategy;
     }
   }
 
@@ -60,6 +98,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
         intervalValue: _intervalValue,
         maxOccurrences: _endType == _EndType.count ? _occurrenceCount : null,
         endDate: _endType == _EndType.date ? _endDate : null,
+        conflictStrategy: _conflictStrategy,
       ),
     );
   }
@@ -135,6 +174,10 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
 
                 // Termine
                 _buildEndSelector(context),
+                const SizedBox(height: 16),
+
+                // Gestione conflitti
+                _buildConflictSelector(context),
               ],
             ),
           ),
@@ -162,9 +205,10 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             Text(l10n.recurrenceEvery, style: theme.textTheme.bodyMedium),
             const SizedBox(width: 8),
             SizedBox(
-              width: 60,
+              width: 70,
               child: DropdownButtonFormField<int>(
                 value: _intervalValue,
+                isExpanded: true,
                 decoration: const InputDecoration(
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(
@@ -178,7 +222,14 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                     .toList(),
                 onChanged: (value) {
                   if (value != null) {
-                    setState(() => _intervalValue = value);
+                    setState(() {
+                      _intervalValue = value;
+                      // Reset occurrence count se supera il nuovo massimo
+                      final options = _getOccurrenceOptions();
+                      if (!options.contains(_occurrenceCount)) {
+                        _occurrenceCount = options.last;
+                      }
+                    });
                     _notifyChange();
                   }
                 },
@@ -188,6 +239,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             Expanded(
               child: DropdownButtonFormField<RecurrenceFrequency>(
                 value: _frequency,
+                isExpanded: true,
                 decoration: const InputDecoration(
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(
@@ -224,7 +276,14 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                 ],
                 onChanged: (value) {
                   if (value != null) {
-                    setState(() => _frequency = value);
+                    setState(() {
+                      _frequency = value;
+                      // Reset occurrence count se non è tra le opzioni valide
+                      final options = _getOccurrenceOptions();
+                      if (!options.contains(_occurrenceCount)) {
+                        _occurrenceCount = _getDefaultOccurrenceCount();
+                      }
+                    });
                     _notifyChange();
                   }
                 },
@@ -278,9 +337,10 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
               Text(l10n.recurrenceAfter),
               const SizedBox(width: 8),
               SizedBox(
-                width: 60,
+                width: 70,
                 child: DropdownButtonFormField<int>(
                   value: _occurrenceCount,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(
@@ -289,7 +349,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                     ),
                     border: OutlineInputBorder(),
                   ),
-                  items: [3, 4, 5, 6, 8, 10, 12, 24, 52]
+                  items: _getOccurrenceOptions()
                       .map((v) => DropdownMenuItem(value: v, child: Text('$v')))
                       .toList(),
                   onChanged: _endType == _EndType.count
@@ -303,7 +363,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(l10n.recurrenceOccurrences),
+              Flexible(child: Text(l10n.recurrenceOccurrences)),
             ],
           ),
           dense: true,
@@ -360,17 +420,71 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
   }
 
   Future<void> _pickEndDate(BuildContext context) async {
-    final now = DateTime.now();
+    final maxDate = widget.startDate.add(const Duration(days: 365));
     final picked = await showDatePicker(
       context: context,
       initialDate: _endDate ?? widget.startDate.add(const Duration(days: 90)),
       firstDate: widget.startDate,
-      lastDate: now.add(const Duration(days: 365 * 2)),
+      lastDate: maxDate,
     );
     if (picked != null) {
       setState(() => _endDate = picked);
       _notifyChange();
     }
+  }
+
+  Widget _buildConflictSelector(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.recurrenceConflictHandling,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        RadioListTile<ConflictStrategy>(
+          value: ConflictStrategy.skip,
+          groupValue: _conflictStrategy,
+          onChanged: (value) {
+            setState(() => _conflictStrategy = value!);
+            _notifyChange();
+          },
+          title: Text(l10n.recurrenceConflictSkip),
+          subtitle: Text(
+            l10n.recurrenceConflictSkipDescription,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          visualDensity: VisualDensity.compact,
+        ),
+        RadioListTile<ConflictStrategy>(
+          value: ConflictStrategy.force,
+          groupValue: _conflictStrategy,
+          onChanged: (value) {
+            setState(() => _conflictStrategy = value!);
+            _notifyChange();
+          },
+          title: Text(l10n.recurrenceConflictForce),
+          subtitle: Text(
+            l10n.recurrenceConflictForceDescription,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          visualDensity: VisualDensity.compact,
+        ),
+      ],
+    );
   }
 }
 

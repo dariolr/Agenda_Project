@@ -11,6 +11,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
 import '../../../../core/models/service_package.dart';
 import '../../../../core/models/service_variant.dart';
+import '../../../../core/utils/price_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
@@ -1029,6 +1030,70 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
+          ),
+        ),
+      );
+    }
+
+    // Riepilogo totali (solo se più di un servizio)
+    final selectedServices = _serviceItems
+        .where((s) => s.serviceId != null)
+        .toList();
+    if (selectedServices.length > 1) {
+      int totalDurationMinutes = 0;
+      double totalPrice = 0;
+
+      for (final item in selectedServices) {
+        final variant = variants.cast<ServiceVariant?>().firstWhere(
+          (v) => v?.serviceId == item.serviceId,
+          orElse: () => null,
+        );
+        if (variant != null) {
+          // Durata base + extra times
+          final baseDuration = item.durationMinutes > 0
+              ? item.durationMinutes
+              : variant.durationMinutes;
+          totalDurationMinutes +=
+              baseDuration +
+              item.blockedExtraMinutes +
+              item.processingExtraMinutes;
+          // Prezzo (usa price personalizzato o da variant)
+          totalPrice += item.price ?? variant.price;
+        }
+      }
+
+      final hours = totalDurationMinutes ~/ 60;
+      final minutes = totalDurationMinutes % 60;
+      final durationStr = hours > 0
+          ? (minutes > 0 ? '${hours}h ${minutes}min' : '${hours}h')
+          : '${minutes}min';
+
+      widgets.add(
+        Container(
+          margin: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                context.l10n.bookingTotalDuration(durationStr),
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+              Text(
+                context.l10n.bookingTotalPrice(
+                  PriceFormatter.format(
+                    context: context,
+                    amount: totalPrice,
+                    currencyCode: PriceFormatter.effectiveCurrency(ref),
+                  ),
+                ),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
           ),
         ),
       );

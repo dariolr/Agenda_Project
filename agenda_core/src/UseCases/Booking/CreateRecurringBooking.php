@@ -55,6 +55,7 @@ final class CreateRecurringBooking
      *   start_time: string (ISO8601),
      *   notes?: string,
      *   client_id: int,
+     *   excluded_indices?: int[] (indices to skip, from preview),
      *   recurrence: {
      *     frequency: 'daily'|'weekly'|'monthly'|'custom',
      *     interval_value?: int (default 1),
@@ -70,7 +71,8 @@ final class CreateRecurringBooking
      *   total_requested: int,
      *   created_count: int,
      *   skipped_count: int,
-     *   bookings: array[]
+     *   bookings: array[],
+     *   skipped_dates: array[]
      * }
      * @throws BookingException
      */
@@ -87,6 +89,7 @@ final class CreateRecurringBooking
         $clientId = $data['client_id'] ?? null;
         $recurrenceData = $data['recurrence'] ?? null;
         $notes = $data['notes'] ?? null;
+        $excludedIndices = $data['excluded_indices'] ?? [];
 
         if (empty($serviceIds)) {
             throw BookingException::invalidService([]);
@@ -170,10 +173,29 @@ final class CreateRecurringBooking
             $ruleId = $this->recurrenceRuleRepository->create($recurrenceRule);
 
             $createdBookings = [];
+            $skippedDates = [];
             $skippedCount = 0;
 
             foreach ($dates as $index => $date) {
-                $isParent = ($index === 0);
+                // Skip if user excluded this index in preview
+                if (in_array($index, $excludedIndices, true)) {
+                    $occurrenceStart = $date->setTime(
+                        (int) $startTime->format('H'),
+                        (int) $startTime->format('i'),
+                        0
+                    );
+                    $occurrenceEnd = $occurrenceStart->modify("+{$totalDuration} minutes");
+                    $skippedDates[] = [
+                        'recurrence_index' => $index,
+                        'start_time' => $occurrenceStart->format('Y-m-d H:i:s'),
+                        'end_time' => $occurrenceEnd->format('Y-m-d H:i:s'),
+                        'reason' => 'excluded',
+                    ];
+                    $skippedCount++;
+                    continue;
+                }
+
+                $isParent = (count($createdBookings) === 0); // First created is parent
 
                 // Calculate start and end time for this occurrence
                 $occurrenceStart = $date->setTime(
@@ -194,6 +216,12 @@ final class CreateRecurringBooking
                     );
 
                     if ($hasConflict) {
+                        $skippedDates[] = [
+                            'recurrence_index' => $index,
+                            'start_time' => $occurrenceStart->format('Y-m-d H:i:s'),
+                            'end_time' => $occurrenceEnd->format('Y-m-d H:i:s'),
+                            'reason' => 'conflict',
+                        ];
                         $skippedCount++;
                         continue; // Skip this occurrence
                     }
@@ -232,7 +260,7 @@ final class CreateRecurringBooking
                     $this->bookingRepository->addBookingItem($bookingId, [
                         'location_id' => $locationId,
                         'service_id' => $service['id'],
-                        'service_variant_id' => $service['variant_id'] ?? $service['id'],
+                        'service_variant_id' => $service['service_variant_id'] ?? $service['variant_id'] ?? $service['id'],
                         'staff_id' => $staffId,
                         'start_time' => $currentStart->format('Y-m-d H:i:s'),
                         'end_time' => $serviceEnd->format('Y-m-d H:i:s'),
@@ -285,6 +313,7 @@ final class CreateRecurringBooking
                 'skipped_count' => $skippedCount,
                 'conflict_strategy' => $recurrenceRule->conflictStrategy,
                 'bookings' => $createdBookings,
+                'skipped_dates' => $skippedDates,
             ];
 
         } catch (\Exception $e) {

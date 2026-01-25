@@ -14,8 +14,8 @@ $pdo = new PDO(
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
 );
 
-$BUSINESS_ID = 2;
-$LOCATION_ID = 2;
+$BUSINESS_ID = 3;
+$LOCATION_ID = 3;
 
 // Colori per categoria (palette ufficiale)
 $CATEGORY_COLORS = [

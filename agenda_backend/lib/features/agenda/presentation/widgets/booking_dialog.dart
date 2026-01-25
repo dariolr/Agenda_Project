@@ -15,6 +15,7 @@ import '../../../../core/models/booking.dart';
 import '../../../../core/models/recurrence_rule.dart';
 import '../../../../core/models/service_package.dart';
 import '../../../../core/models/service_variant.dart';
+import '../../../../core/utils/price_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
@@ -538,6 +539,18 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         .where((s) => s.serviceId != null)
         .length;
 
+    // Calcola i serviceIds dello staff preselezionato (se presente)
+    List<int>? preselectedStaffServiceIds;
+    if (widget.initialStaffId != null) {
+      final initialStaff = allStaff.cast<dynamic>().firstWhere(
+        (s) => s.id == widget.initialStaffId,
+        orElse: () => null,
+      );
+      if (initialStaff != null) {
+        preselectedStaffServiceIds = (initialStaff.serviceIds as List<int>);
+      }
+    }
+
     for (int i = 0; i < _serviceItems.length; i++) {
       final item = _serviceItems[i];
       final TimeOfDay? suggestedStartTime = i > 0
@@ -640,6 +653,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 staffEligibilityWarningMessage: isStaffIneligible
                     ? context.l10n.bookingStaffNotEligibleWarning
                     : null,
+                preselectedStaffServiceIds: preselectedStaffServiceIds,
               ),
             ),
             if (canAddDefaultExtra) ...[
@@ -850,6 +864,70 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
+          ),
+        ),
+      );
+    }
+
+    // Riepilogo totali (solo se più di un servizio)
+    final selectedServices = _serviceItems
+        .where((s) => s.serviceId != null)
+        .toList();
+    if (selectedServices.length > 1) {
+      int totalDurationMinutes = 0;
+      double totalPrice = 0;
+
+      for (final item in selectedServices) {
+        final variant = variants.cast<ServiceVariant?>().firstWhere(
+          (v) => v?.serviceId == item.serviceId,
+          orElse: () => null,
+        );
+        if (variant != null) {
+          // Durata base + extra times
+          final baseDuration = item.durationMinutes > 0
+              ? item.durationMinutes
+              : variant.durationMinutes;
+          totalDurationMinutes +=
+              baseDuration +
+              item.blockedExtraMinutes +
+              item.processingExtraMinutes;
+          // Prezzo (usa price personalizzato o da variant)
+          totalPrice += item.price ?? variant.price;
+        }
+      }
+
+      final hours = totalDurationMinutes ~/ 60;
+      final minutes = totalDurationMinutes % 60;
+      final durationStr = hours > 0
+          ? (minutes > 0 ? '${hours}h ${minutes}min' : '${hours}h')
+          : '${minutes}min';
+
+      widgets.add(
+        Container(
+          margin: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                context.l10n.bookingTotalDuration(durationStr),
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+              Text(
+                context.l10n.bookingTotalPrice(
+                  PriceFormatter.format(
+                    context: context,
+                    amount: totalPrice,
+                    currencyCode: PriceFormatter.effectiveCurrency(ref),
+                  ),
+                ),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
           ),
         ),
       );
@@ -1598,6 +1676,16 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       return;
     }
 
+    // Per gli appuntamenti ricorrenti è obbligatorio selezionare un cliente
+    if (_recurrenceConfig != null && _clientId == null) {
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: l10n.recurrenceClientRequired,
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     final clientsById = ref.read(clientsByIdProvider);
@@ -1767,18 +1855,54 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       conflictStrategy: _recurrenceConfig!.conflictStrategy.value,
     );
 
-    final result = await bookingsApi.createRecurringBooking(
+    // Prima mostra anteprima per permettere esclusione date
+    final preview = await bookingsApi.previewRecurringBooking(
       locationId: location.id,
       request: request,
     );
 
-    // Refresh appointments per caricare i nuovi
-    ref.invalidate(appointmentsProvider);
+    if (!mounted) return;
 
-    // Mostra dialog riepilogo
-    if (mounted) {
-      Navigator.of(context).pop(); // Chiudi booking dialog prima
-      await RecurrenceSummaryDialog.show(context, result);
+    // Mostra dialog anteprima con possibilità di escludere date
+    final excludedIndices = await RecurrencePreviewDialog.show(
+      context,
+      preview,
+    );
+
+    // Se utente ha annullato, esci
+    if (excludedIndices == null || !mounted) return;
+
+    // Crea la serie con le date escluse
+    setState(() => _isSaving = true);
+
+    try {
+      final createRequest = RecurringBookingRequest(
+        serviceIds: serviceIds,
+        staffId: singleStaffId,
+        staffByService: staffByService,
+        startTime: startTime.toIso8601String(),
+        clientId: _clientId,
+        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+        frequency: _recurrenceConfig!.frequency.value,
+        intervalValue: _recurrenceConfig!.intervalValue,
+        maxOccurrences: _recurrenceConfig!.maxOccurrences,
+        endDate: _recurrenceConfig!.endDate?.toIso8601String().split('T')[0],
+        conflictStrategy: _recurrenceConfig!.conflictStrategy.value,
+        excludedIndices: excludedIndices,
+      );
+
+      await bookingsApi.createRecurringBooking(
+        locationId: location.id,
+        request: createRequest,
+      );
+
+      // Refresh appointments (il pop viene fatto da _saveBooking)
+      ref.invalidate(appointmentsProvider);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+      rethrow;
     }
   }
 }

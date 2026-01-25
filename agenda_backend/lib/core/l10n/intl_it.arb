@@ -365,6 +365,9 @@
   "createNewClient": "Crea nuovo cliente",
   "noClientForAppointment": "Nessun cliente per l'appuntamento",
   "formServices": "Servizi",
+  "searchServices": "Cerca servizio...",
+  "showAllServices": "Mostra tutti i servizi",
+  "noServicesFound": "Nessun servizio trovato",
   "servicesSelectedCount": "{count, plural, =1{1 servizio selezionato} other{{count} servizi selezionati}}",
   "@servicesSelectedCount": {
     "placeholders": {
@@ -707,14 +710,33 @@
   "recurrenceMonth": "mese",
   "recurrenceMonths": "mesi",
   "recurrenceEnds": "Termina",
-  "recurrenceNever": "Mai",
+  "recurrenceNever": "Per un anno",
   "recurrenceAfter": "Dopo",
   "recurrenceOccurrences": "occorrenze",
   "recurrenceOnDate": "Il",
   "recurrenceSelectDate": "Seleziona data",
-  "recurrencePreviewTitle": "Date programmate",
+  "recurrencePreviewTitle": "Anteprima appuntamenti",
   "recurrencePreviewCount": "{count} appuntamenti",
   "@recurrencePreviewCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrencePreviewSelected": "{count} selezionati",
+  "@recurrencePreviewSelected": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrencePreviewConflicts": "{count} conflitti",
+  "@recurrencePreviewConflicts": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrencePreviewHint": "Deseleziona le date che non vuoi creare",
+  "recurrencePreviewConfirm": "Crea {count} appuntamenti",
+  "@recurrencePreviewConfirm": {
     "placeholders": {
       "count": { "type": "int" }
     }
@@ -733,6 +755,9 @@
     }
   },
   "recurrenceSummaryError": "Errore nella creazione della serie",
+  "recurrenceSummaryAppointments": "Appuntamenti:",
+  "recurrenceSummaryConflict": "Saltato per conflitto",
+  "recurrenceSummaryDeleted": "Eliminato",
   "recurrenceSeriesIcon": "Appuntamento ricorrente",
   "recurrenceSeriesOf": "{index} di {total}",
   "@recurrenceSeriesOf": {
@@ -761,5 +786,23 @@
   "recurringEditChooseScope": "Quali appuntamenti vuoi modificare?",
   "recurringScopeOnlyThis": "Solo questo",
   "recurringScopeThisAndFuture": "Questo e futuri",
-  "recurringScopeAll": "Tutti"
+  "recurringScopeAll": "Tutti",
+  "bookingTotalDuration": "Durata totale: {duration}",
+  "@bookingTotalDuration": {
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "bookingTotalPrice": "Totale: {price}",
+  "@bookingTotalPrice": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "recurrenceClientRequired": "È necessario selezionare un cliente per gli appuntamenti ricorrenti",
+  "recurrenceConflictHandling": "Sovrapposizioni",
+  "recurrenceConflictSkip": "Salta date con conflitti",
+  "recurrenceConflictSkipDescription": "Non crea appuntamenti se ci sono sovrapposizioni",
+  "recurrenceConflictForce": "Crea comunque",
+  "recurrenceConflictForceDescription": "Crea gli appuntamenti anche se ci sono sovrapposizioni"
 }

@@ -2628,6 +2628,36 @@ class L10n {
     return Intl.message('Servizi', name: 'formServices', desc: '', args: []);
   }
 
+  /// `Cerca servizio...`
+  String get searchServices {
+    return Intl.message(
+      'Cerca servizio...',
+      name: 'searchServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mostra tutti i servizi`
+  String get showAllServices {
+    return Intl.message(
+      'Mostra tutti i servizi',
+      name: 'showAllServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun servizio trovato`
+  String get noServicesFound {
+    return Intl.message(
+      'Nessun servizio trovato',
+      name: 'noServicesFound',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `{count, plural, =1{1 servizio selezionato} other{{count} servizi selezionati}}`
   String servicesSelectedCount(int count) {
     return Intl.plural(
@@ -4345,9 +4375,14 @@ class L10n {
     return Intl.message('Termina', name: 'recurrenceEnds', desc: '', args: []);
   }
 
-  /// `Mai`
+  /// `Per un anno`
   String get recurrenceNever {
-    return Intl.message('Mai', name: 'recurrenceNever', desc: '', args: []);
+    return Intl.message(
+      'Per un anno',
+      name: 'recurrenceNever',
+      desc: '',
+      args: [],
+    );
   }
 
   /// `Dopo`
@@ -4380,10 +4415,10 @@ class L10n {
     );
   }
 
-  /// `Date programmate`
+  /// `Anteprima appuntamenti`
   String get recurrencePreviewTitle {
     return Intl.message(
-      'Date programmate',
+      'Anteprima appuntamenti',
       name: 'recurrencePreviewTitle',
       desc: '',
       args: [],
@@ -4395,6 +4430,46 @@ class L10n {
     return Intl.message(
       '$count appuntamenti',
       name: 'recurrencePreviewCount',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `{count} selezionati`
+  String recurrencePreviewSelected(int count) {
+    return Intl.message(
+      '$count selezionati',
+      name: 'recurrencePreviewSelected',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `{count} conflitti`
+  String recurrencePreviewConflicts(int count) {
+    return Intl.message(
+      '$count conflitti',
+      name: 'recurrencePreviewConflicts',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Deseleziona le date che non vuoi creare`
+  String get recurrencePreviewHint {
+    return Intl.message(
+      'Deseleziona le date che non vuoi creare',
+      name: 'recurrencePreviewHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crea {count} appuntamenti`
+  String recurrencePreviewConfirm(int count) {
+    return Intl.message(
+      'Crea $count appuntamenti',
+      name: 'recurrencePreviewConfirm',
       desc: '',
       args: [count],
     );
@@ -4435,6 +4510,36 @@ class L10n {
     return Intl.message(
       'Errore nella creazione della serie',
       name: 'recurrenceSummaryError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appuntamenti:`
+  String get recurrenceSummaryAppointments {
+    return Intl.message(
+      'Appuntamenti:',
+      name: 'recurrenceSummaryAppointments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Saltato per conflitto`
+  String get recurrenceSummaryConflict {
+    return Intl.message(
+      'Saltato per conflitto',
+      name: 'recurrenceSummaryConflict',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Eliminato`
+  String get recurrenceSummaryDeleted {
+    return Intl.message(
+      'Eliminato',
+      name: 'recurrenceSummaryDeleted',
       desc: '',
       args: [],
     );
@@ -4543,6 +4648,86 @@ class L10n {
   /// `Tutti`
   String get recurringScopeAll {
     return Intl.message('Tutti', name: 'recurringScopeAll', desc: '', args: []);
+  }
+
+  /// `Durata totale: {duration}`
+  String bookingTotalDuration(String duration) {
+    return Intl.message(
+      'Durata totale: $duration',
+      name: 'bookingTotalDuration',
+      desc: '',
+      args: [duration],
+    );
+  }
+
+  /// `Totale: {price}`
+  String bookingTotalPrice(String price) {
+    return Intl.message(
+      'Totale: $price',
+      name: 'bookingTotalPrice',
+      desc: '',
+      args: [price],
+    );
+  }
+
+  /// `È necessario selezionare un cliente per gli appuntamenti ricorrenti`
+  String get recurrenceClientRequired {
+    return Intl.message(
+      'È necessario selezionare un cliente per gli appuntamenti ricorrenti',
+      name: 'recurrenceClientRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sovrapposizioni`
+  String get recurrenceConflictHandling {
+    return Intl.message(
+      'Sovrapposizioni',
+      name: 'recurrenceConflictHandling',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Salta date con conflitti`
+  String get recurrenceConflictSkip {
+    return Intl.message(
+      'Salta date con conflitti',
+      name: 'recurrenceConflictSkip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Non crea appuntamenti se ci sono sovrapposizioni`
+  String get recurrenceConflictSkipDescription {
+    return Intl.message(
+      'Non crea appuntamenti se ci sono sovrapposizioni',
+      name: 'recurrenceConflictSkipDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crea comunque`
+  String get recurrenceConflictForce {
+    return Intl.message(
+      'Crea comunque',
+      name: 'recurrenceConflictForce',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crea gli appuntamenti anche se ci sono sovrapposizioni`
+  String get recurrenceConflictForceDescription {
+    return Intl.message(
+      'Crea gli appuntamenti anche se ci sono sovrapposizioni',
+      name: 'recurrenceConflictForceDescription',
+      desc: '',
+      args: [],
+    );
   }
 }
 
