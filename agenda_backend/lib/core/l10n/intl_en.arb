@@ -365,6 +365,9 @@
   "createNewClient": "Create new client",
   "noClientForAppointment": "No client for the appointment",
   "formServices": "Services",
+  "searchServices": "Search service...",
+  "showAllServices": "Show all services",
+  "noServicesFound": "No services found",
   "servicesSelectedCount": "{count, plural, =1{1 service selected} other{{count} services selected}}",
   "@servicesSelectedCount": {
     "placeholders": {
@@ -707,14 +710,33 @@
   "recurrenceMonth": "month",
   "recurrenceMonths": "months",
   "recurrenceEnds": "Ends",
-  "recurrenceNever": "Never",
+  "recurrenceNever": "For one year",
   "recurrenceAfter": "After",
   "recurrenceOccurrences": "occurrences",
   "recurrenceOnDate": "On",
   "recurrenceSelectDate": "Select date",
-  "recurrencePreviewTitle": "Scheduled dates",
+  "recurrencePreviewTitle": "Appointment preview",
   "recurrencePreviewCount": "{count} appointments",
   "@recurrencePreviewCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrencePreviewSelected": "{count} selected",
+  "@recurrencePreviewSelected": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrencePreviewConflicts": "{count} conflicts",
+  "@recurrencePreviewConflicts": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recurrencePreviewHint": "Uncheck the dates you don't want to create",
+  "recurrencePreviewConfirm": "Create {count} appointments",
+  "@recurrencePreviewConfirm": {
     "placeholders": {
       "count": { "type": "int" }
     }
@@ -733,6 +755,9 @@
     }
   },
   "recurrenceSummaryError": "Error creating series",
+  "recurrenceSummaryAppointments": "Appointments:",
+  "recurrenceSummaryConflict": "Skipped due to conflict",
+  "recurrenceSummaryDeleted": "Deleted",
   "recurrenceSeriesIcon": "Recurring appointment",
   "recurrenceSeriesOf": "{index} of {total}",
   "@recurrenceSeriesOf": {
@@ -761,5 +786,23 @@
   "recurringEditChooseScope": "Which appointments do you want to edit?",
   "recurringScopeOnlyThis": "Only this one",
   "recurringScopeThisAndFuture": "This and future",
-  "recurringScopeAll": "All"
+  "recurringScopeAll": "All",
+  "bookingTotalDuration": "Total duration: {duration}",
+  "@bookingTotalDuration": {
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "bookingTotalPrice": "Total: {price}",
+  "@bookingTotalPrice": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "recurrenceClientRequired": "A client must be selected for recurring appointments",
+  "recurrenceConflictHandling": "Overlaps",
+  "recurrenceConflictSkip": "Skip conflicting dates",
+  "recurrenceConflictSkipDescription": "Don't create appointments if there are overlaps",
+  "recurrenceConflictForce": "Create anyway",
+  "recurrenceConflictForceDescription": "Create appointments even if there are overlaps"
 }

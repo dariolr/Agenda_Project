@@ -15,6 +15,7 @@ class RecurringBookingRequest {
   final int? maxOccurrences;
   final String? endDate;
   final String conflictStrategy;
+  final List<int>? excludedIndices;
 
   const RecurringBookingRequest({
     required this.serviceIds,
@@ -28,22 +29,28 @@ class RecurringBookingRequest {
     this.maxOccurrences,
     this.endDate,
     this.conflictStrategy = 'skip',
+    this.excludedIndices,
   });
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{
       'service_ids': serviceIds,
       'start_time': startTime,
-      'frequency': frequency,
-      'interval_value': intervalValue,
-      'conflict_strategy': conflictStrategy,
+      'recurrence': <String, dynamic>{
+        'frequency': frequency,
+        'interval_value': intervalValue,
+        'conflict_strategy': conflictStrategy,
+        if (maxOccurrences != null) 'max_occurrences': maxOccurrences,
+        if (endDate != null) 'end_date': endDate,
+      },
     };
     if (staffId != null) map['staff_id'] = staffId;
     if (staffByService != null) map['staff_by_service'] = staffByService;
     if (clientId != null) map['client_id'] = clientId;
     if (notes != null) map['notes'] = notes;
-    if (maxOccurrences != null) map['max_occurrences'] = maxOccurrences;
-    if (endDate != null) map['end_date'] = endDate;
+    if (excludedIndices != null && excludedIndices!.isNotEmpty) {
+      map['excluded_indices'] = excludedIndices;
+    }
     return map;
   }
 }
@@ -298,17 +305,33 @@ class BookingsApi {
     await _apiClient.deleteBookingItem(bookingId: bookingId, itemId: itemId);
   }
 
+  /// POST /v1/locations/{location_id}/bookings/recurring/preview
+  /// Preview a recurring booking series (without creating)
+  /// Returns all dates with conflict information so user can review and exclude dates.
+  Future<RecurringPreviewResult> previewRecurringBooking({
+    required int locationId,
+    required RecurringBookingRequest request,
+  }) async {
+    final response = await _apiClient.postRawResponse(
+      '/v1/locations/$locationId/bookings/recurring/preview',
+      data: request.toJson(),
+    );
+    return RecurringPreviewResult.fromJson(response);
+  }
+
   /// POST /v1/locations/{location_id}/bookings/recurring
   /// Create a recurring booking series
+  /// Note: This endpoint returns data at root level (not wrapped in 'data')
   Future<RecurringBookingResult> createRecurringBooking({
     required int locationId,
     required RecurringBookingRequest request,
   }) async {
-    final data = await _apiClient.post(
+    final response = await _apiClient.postRawResponse(
       '/v1/locations/$locationId/bookings/recurring',
       data: request.toJson(),
     );
-    return RecurringBookingResult.fromJson(data);
+    // Response has success, recurrence_rule_id, etc. at root level
+    return RecurringBookingResult.fromJson(response);
   }
 
   /// GET /v1/bookings/recurring/{rule_id}
