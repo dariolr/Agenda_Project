@@ -21,7 +21,7 @@ class RecurrencePreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final dates = config.calculateOccurrences(startDate, maxPreview: 12);
+    final dates = config.calculateOccurrences(startDate);
     final visibleDates = dates.take(maxVisible).toList();
     final hasMore = dates.length > maxVisible;
     final totalCount = config.maxOccurrences ?? dates.length;

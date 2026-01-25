@@ -30,6 +30,7 @@ class ServicePickerField extends StatefulWidget {
     this.autoOpenPicker = false,
     this.onAutoOpenPickerTriggered,
     this.onAutoOpenPickerCompleted,
+    this.preselectedStaffServiceIds,
   });
 
   final List<Service> services;
@@ -38,6 +39,11 @@ class ServicePickerField extends StatefulWidget {
   /// Optional list of packages to show in the picker.
   /// If provided, packages will appear in a dedicated section at the top.
   final List<ServicePackage>? packages;
+
+  /// Lista di service IDs che lo staff preselezionato può eseguire.
+  /// Se fornita, il picker mostrerà inizialmente solo questi servizi con
+  /// un checkbox per visualizzare tutti i servizi.
+  final List<int>? preselectedStaffServiceIds;
 
   final AppFormFactor formFactor;
   final int? value;
@@ -178,6 +184,7 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
         services: widget.services,
         categories: widget.categories,
         packages: widget.packages,
+        preselectedStaffServiceIds: widget.preselectedStaffServiceIds,
         selectedId: widget.value,
         onSelected: (id) {
           final wasAutoOpen = _autoOpenInProgress;
@@ -221,6 +228,7 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
             services: widget.services,
             categories: widget.categories,
             packages: widget.packages,
+            preselectedStaffServiceIds: widget.preselectedStaffServiceIds,
             selectedId: widget.value,
             onSelected: (id) {
               final wasAutoOpen = _autoOpenInProgress;
@@ -253,11 +261,12 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
 }
 
 /// Content widget for the service picker (used in both bottom sheet and popup).
-class _ServicePickerContent extends StatelessWidget {
+class _ServicePickerContent extends StatefulWidget {
   const _ServicePickerContent({
     required this.services,
     required this.categories,
     this.packages,
+    this.preselectedStaffServiceIds,
     required this.selectedId,
     required this.onSelected,
     this.onPackageSelected,
@@ -266,28 +275,78 @@ class _ServicePickerContent extends StatelessWidget {
   final List<Service> services;
   final List<ServiceCategory> categories;
   final List<ServicePackage>? packages;
+  final List<int>? preselectedStaffServiceIds;
   final int? selectedId;
   final ValueChanged<int?> onSelected;
   final ValueChanged<ServicePackage>? onPackageSelected;
+
+  @override
+  State<_ServicePickerContent> createState() => _ServicePickerContentState();
+}
+
+class _ServicePickerContentState extends State<_ServicePickerContent> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _showAllServices = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Se non c'è uno staff preselezionato, mostra tutti i servizi
+    _showAllServices =
+        widget.preselectedStaffServiceIds == null ||
+        widget.preselectedStaffServiceIds!.isEmpty;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Service> get _filteredServices {
+    var services = widget.services;
+
+    // Filtra per staff preselezionato (se presente e checkbox non attivo)
+    if (!_showAllServices &&
+        widget.preselectedStaffServiceIds != null &&
+        widget.preselectedStaffServiceIds!.isNotEmpty) {
+      services = services
+          .where((s) => widget.preselectedStaffServiceIds!.contains(s.id))
+          .toList();
+    }
+
+    // Filtra per query di ricerca
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      services = services
+          .where((s) => s.name.toLowerCase().contains(query))
+          .toList();
+    }
+
+    return services;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
 
+    final filteredServices = _filteredServices;
+
     final servicesByCategory = <int, List<Service>>{};
-    for (final service in services) {
+    for (final service in filteredServices) {
       (servicesByCategory[service.categoryId] ??= []).add(service);
     }
 
     final hasServicesMap = <int, bool>{
-      for (final category in categories)
+      for (final category in widget.categories)
         category.id: (servicesByCategory[category.id]?.isNotEmpty ?? false),
     };
 
     // Sort categories like services section:
     // 1) non-empty before empty, 2) sortOrder, 3) name
-    final sortedCategories = [...categories]
+    final sortedCategories = [...widget.categories]
       ..sort((a, b) {
         final aEmpty = !(hasServicesMap[a.id] ?? false);
         final bEmpty = !(hasServicesMap[b.id] ?? false);
@@ -299,8 +358,8 @@ class _ServicePickerContent extends StatelessWidget {
       });
 
     // Filter active packages and sort by sortOrder
-    final activePackages =
-        (packages ?? []).where((p) => p.isActive && !p.isBroken).toList()
+    var activePackages =
+        (widget.packages ?? []).where((p) => p.isActive && !p.isBroken).toList()
           ..sort((a, b) {
             final so = a.sortOrder.compareTo(b.sortOrder);
             return so != 0
@@ -308,7 +367,54 @@ class _ServicePickerContent extends StatelessWidget {
                 : a.name.toLowerCase().compareTo(b.name.toLowerCase());
           });
 
-    final showPackages = activePackages.isNotEmpty && onPackageSelected != null;
+    // Filtra packages per staff preselezionato (se presente e checkbox non attivo)
+    // Lo staff deve poter eseguire TUTTI i servizi inclusi nel pacchetto
+    if (!_showAllServices &&
+        widget.preselectedStaffServiceIds != null &&
+        widget.preselectedStaffServiceIds!.isNotEmpty) {
+      activePackages = activePackages.where((p) {
+        final packageServiceIds = p.orderedServiceIds;
+        return packageServiceIds.every(
+          (serviceId) => widget.preselectedStaffServiceIds!.contains(serviceId),
+        );
+      }).toList();
+    }
+
+    // Filtra packages per ricerca
+    final filteredPackages = _searchQuery.isEmpty
+        ? activePackages
+        : activePackages
+              .where(
+                (p) =>
+                    p.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+              )
+              .toList();
+
+    final showPackages =
+        filteredPackages.isNotEmpty && widget.onPackageSelected != null;
+
+    final hasStaffFilter =
+        widget.preselectedStaffServiceIds != null &&
+        widget.preselectedStaffServiceIds!.isNotEmpty;
+
+    // Mostra checkbox solo se lo staff non ha già tutti i servizi
+    final staffHasAllServices =
+        hasStaffFilter &&
+        widget.preselectedStaffServiceIds!.length >= widget.services.length;
+    final showAllServicesCheckbox = hasStaffFilter && !staffHasAllServices;
+
+    // Mostra il campo di ricerca solo se ci sono più di 10 servizi
+    // (conta i servizi dopo il filtro staff ma prima della ricerca)
+    final servicesBeforeSearch =
+        _showAllServices ||
+            widget.preselectedStaffServiceIds == null ||
+            widget.preselectedStaffServiceIds!.isEmpty
+        ? widget.services.length
+        : widget.services
+              .where((s) => widget.preselectedStaffServiceIds!.contains(s.id))
+              .length;
+    final showSearchField =
+        servicesBeforeSearch > 10 || _searchQuery.isNotEmpty;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -324,47 +430,125 @@ class _ServicePickerContent extends StatelessWidget {
             ),
           ),
         ),
+        // Campo di ricerca (solo se > 10 servizi)
+        if (showSearchField)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: l10n.searchServices,
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+          ),
+        // Checkbox "Mostra tutti i servizi" (solo se c'è filtro staff e non ha già tutti)
+        if (showAllServicesCheckbox) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: _showAllServices,
+                  onChanged: (value) {
+                    setState(() {
+                      _showAllServices = value ?? false;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showAllServices = !_showAllServices;
+                      });
+                    },
+                    child: Text(
+                      l10n.showAllServices,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
         const AppBottomSheetDivider(),
         // Service and packages list
         Expanded(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              // Packages section (if available)
-              if (showPackages)
-                _PackagesSection(
-                  packages: activePackages,
-                  onSelected: onPackageSelected!,
-                ),
-              // Categories and services
-              for (final category in sortedCategories)
-                Builder(
-                  builder: (ctx) {
-                    final categoryServices =
-                        (servicesByCategory[category.id] ?? []).toList()
-                          ..sort((a, b) {
-                            final so = a.sortOrder.compareTo(b.sortOrder);
-                            return so != 0
-                                ? so
-                                : a.name.toLowerCase().compareTo(
-                                    b.name.toLowerCase(),
-                                  );
-                          });
+          child: filteredServices.isEmpty && filteredPackages.isEmpty
+              ? Center(
+                  child: Text(
+                    l10n.noServicesFound,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              : ListView(
+                  shrinkWrap: true,
+                  children: [
+                    // Packages section (if available)
+                    if (showPackages)
+                      _PackagesSection(
+                        packages: filteredPackages,
+                        onSelected: widget.onPackageSelected!,
+                      ),
+                    // Categories and services
+                    for (final category in sortedCategories)
+                      Builder(
+                        builder: (ctx) {
+                          final categoryServices =
+                              (servicesByCategory[category.id] ?? []).toList()
+                                ..sort((a, b) {
+                                  final so = a.sortOrder.compareTo(b.sortOrder);
+                                  return so != 0
+                                      ? so
+                                      : a.name.toLowerCase().compareTo(
+                                          b.name.toLowerCase(),
+                                        );
+                                });
 
-                    if (categoryServices.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
+                          if (categoryServices.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
 
-                    return _CategorySection(
-                      category: category,
-                      services: categoryServices,
-                      selectedId: selectedId,
-                      onSelected: onSelected,
-                    );
-                  },
+                          return _CategorySection(
+                            category: category,
+                            services: categoryServices,
+                            selectedId: widget.selectedId,
+                            onSelected: widget.onSelected,
+                          );
+                        },
+                      ),
+                  ],
                 ),
-            ],
-          ),
         ),
       ],
     );

@@ -13,8 +13,8 @@ $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
 $dotenv->load();
 
 // Configurazione
-const BUSINESS_ID = 2;
-const LOCATION_ID = 2;
+const BUSINESS_ID = 3;
+const LOCATION_ID = 3;
 // CSV nella stessa directory dello script sul server
 const CSV_FILE = 'employees_export.csv';
 

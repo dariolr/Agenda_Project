@@ -66,14 +66,23 @@ final class RecurrenceRule implements JsonSerializable
         $count = 1;
 
         // Determina limite
-        $limit = $this->maxOccurrences ?? $maxLimit;
-        $limit = min($limit, $maxLimit); // Cap a 52 per sicurezza
+        // Se maxOccurrences è specificato, usa quello (con cap a maxLimit per sicurezza)
+        // Se non specificato (Mai), usa endDate o calcola fino a 1 anno dalla data iniziale
+        if ($this->maxOccurrences !== null) {
+            $limit = min($this->maxOccurrences, $maxLimit);
+        } else {
+            // "Mai" - calcola fino a 1 anno (o endDate se specificata)
+            $limit = 365; // Limite massimo di sicurezza per evitare loop infiniti
+        }
+        
+        // Calcola la data massima (1 anno dalla data iniziale se endDate non specificata)
+        $maxEndDate = $this->endDate ?? $startDate->modify('+1 year');
 
         while ($count < $limit) {
             $next = $this->getNextDate($current);
 
-            // Verifica end_date
-            if ($this->endDate !== null && $next > $this->endDate) {
+            // Verifica end_date (o limite 1 anno)
+            if ($next > $maxEndDate) {
                 break;
             }
 

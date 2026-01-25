@@ -55,6 +55,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
     this.onAutoOpenStaffPickerCompleted,
     this.availabilityWarningMessage,
     this.staffEligibilityWarningMessage,
+    this.preselectedStaffServiceIds,
   });
 
   final ServiceItemData item;
@@ -88,6 +89,10 @@ class ServiceItemCard extends ConsumerStatefulWidget {
   final VoidCallback? onAutoOpenStaffPickerCompleted;
   final String? availabilityWarningMessage;
   final String? staffEligibilityWarningMessage;
+
+  /// IDs dei servizi abilitati per lo staff preselezionato.
+  /// Se fornito, il picker mostrerà di default solo questi servizi.
+  final List<int>? preselectedStaffServiceIds;
 
   @override
   ConsumerState<ServiceItemCard> createState() => _ServiceItemCardState();
@@ -126,6 +131,8 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
   String? get availabilityWarningMessage => widget.availabilityWarningMessage;
   String? get staffEligibilityWarningMessage =>
       widget.staffEligibilityWarningMessage;
+  List<int>? get preselectedStaffServiceIds =>
+      widget.preselectedStaffServiceIds;
 
   @override
   void didUpdateWidget(covariant ServiceItemCard oldWidget) {
@@ -225,6 +232,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
       packages: packages,
       formFactor: formFactor,
       value: item.serviceId,
+      preselectedStaffServiceIds: preselectedStaffServiceIds,
       onChanged: (serviceId) {
         if (serviceId != null) {
           // Trova la variante di default per il servizio

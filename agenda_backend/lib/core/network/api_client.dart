@@ -238,6 +238,34 @@ class ApiClient {
     }
   }
 
+  /// Esegue richiesta POST e ritorna la risposta raw (senza estrarre 'data')
+  /// Usato per endpoint che non wrappano la risposta in 'data'
+  Future<Map<String, dynamic>> postRawResponse(
+    String path, {
+    Map<String, dynamic>? data,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      final response = await _dio.post(
+        path,
+        data: data,
+        options: headers != null ? Options(headers: headers) : null,
+      );
+      final body = response.data as Map<String, dynamic>;
+      if (body['success'] == true) {
+        return body;
+      }
+      throw ApiException(
+        code: body['error']?['code'] ?? 'unknown_error',
+        message: body['error']?['message'] ?? 'Unknown error',
+        statusCode: response.statusCode ?? 500,
+        details: body['error']?['details'],
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// Esegue richiesta PUT
   Future<Map<String, dynamic>> put(
     String path, {
