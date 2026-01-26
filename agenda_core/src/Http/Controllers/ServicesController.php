@@ -11,6 +11,7 @@ use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\ServicePackageRepository;
+use Agenda\Infrastructure\Repositories\PopularServiceRepository;
 
 final class ServicesController
 {
@@ -20,6 +21,7 @@ final class ServicesController
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
         private readonly ServicePackageRepository $packageRepo,
+        private readonly PopularServiceRepository $popularServiceRepo,
     ) {}
 
     /**
@@ -500,6 +502,66 @@ final class ServicesController
         }
 
         return Response::success(['message' => 'Categories reordered successfully']);
+    }
+
+    /**
+     * GET /v1/staff/{staff_id}/services/popular
+     * Returns most booked services for a staff member.
+     * Number of popular services is proportional to staff's enabled services:
+     * - 1 per 7 enabled services, max 5
+     * - 0 if less than 7 enabled services
+     */
+    public function popular(Request $request): Response
+    {
+        $staffId = (int) $request->getRouteParam('staff_id');
+        $businessId = $request->getAttribute('business_id');
+
+        // Authorization check
+        if ($businessId !== null && !$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+
+        // Count services enabled for this staff
+        $enabledServicesCount = $this->popularServiceRepo->getEnabledServicesCountForStaff($staffId);
+
+        // Calculate how many popular services to show: 1 per 7 services, max 5
+        // If less than 7 services, show none
+        $maxPopularToShow = min(5, intdiv($enabledServicesCount, 7));
+
+        if ($maxPopularToShow === 0) {
+            return Response::success([
+                'popular_services' => [],
+                'enabled_services_count' => $enabledServicesCount,
+                'show_popular_section' => false,
+            ]);
+        }
+
+        $popularServices = $this->popularServiceRepo->findByStaffId($staffId);
+        
+        // Limit to calculated max
+        $popularServices = array_slice($popularServices, 0, $maxPopularToShow);
+
+        // Check if all popular services belong to the same category
+        $categoryIds = array_unique(array_column($popularServices, 'category_id'));
+        $showCategoryLabel = count($categoryIds) > 1;
+
+        $formatted = array_map(fn($ps) => [
+            'rank' => (int) $ps['rank'],
+            'booking_count' => (int) $ps['booking_count'],
+            'service_id' => (int) $ps['service_id'],
+            'service_name' => $ps['service_name'],
+            'category_id' => $ps['category_id'] ? (int) $ps['category_id'] : null,
+            'category_name' => $showCategoryLabel ? $ps['category_name'] : null,
+            'price' => (float) ($ps['price'] ?? 0),
+            'duration_minutes' => (int) ($ps['duration_minutes'] ?? 0),
+            'color' => $ps['color'],
+        ], $popularServices);
+
+        return Response::success([
+            'popular_services' => $formatted,
+            'enabled_services_count' => $enabledServicesCount,
+            'show_popular_section' => !empty($formatted),
+        ]);
     }
 
     private function formatService(array $service, int $businessId): array

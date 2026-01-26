@@ -131,9 +131,12 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m49(count) =>
       "${Intl.plural(count, one: '1 ora', other: '${count} ore')}";
 
-  static String m50(selected, total) => "${selected} su ${total}";
+  static String m50(count) =>
+      "${Intl.plural(count, one: '1 minuto', other: '${count} minuti')}";
 
-  static String m51(hours) => "${hours} ore totale";
+  static String m51(selected, total) => "${selected} su ${total}";
+
+  static String m52(hours) => "${hours} ore totale";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -739,6 +742,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "planningWeekA": MessageLookupByLibrary.simpleMessage("Settimana A"),
     "planningWeekB": MessageLookupByLibrary.simpleMessage("Settimana B"),
     "planningWeeklyHours": m31,
+    "popularServicesTitle": MessageLookupByLibrary.simpleMessage(
+      "I più richiesti",
+    ),
     "priceNotAvailable": MessageLookupByLibrary.simpleMessage("N/D"),
     "priceStartingFromPrefix": MessageLookupByLibrary.simpleMessage(
       "a partire da",
@@ -1149,7 +1155,42 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationMinBookingNoticeLabel": MessageLookupByLibrary.simpleMessage(
       "Preavviso minimo prenotazione",
     ),
+    "teamLocationMinGapHint": MessageLookupByLibrary.simpleMessage(
+      "Non mostrare orari che lasciano meno di questo tempo libero",
+    ),
+    "teamLocationMinGapLabel": MessageLookupByLibrary.simpleMessage(
+      "Gap minimo accettabile",
+    ),
+    "teamLocationMinutes": m50,
     "teamLocationNameLabel": MessageLookupByLibrary.simpleMessage("Nome sede"),
+    "teamLocationSlotDisplayModeAll": MessageLookupByLibrary.simpleMessage(
+      "Massima disponibilità",
+    ),
+    "teamLocationSlotDisplayModeAllHint": MessageLookupByLibrary.simpleMessage(
+      "Mostra tutti gli orari disponibili",
+    ),
+    "teamLocationSlotDisplayModeLabel": MessageLookupByLibrary.simpleMessage(
+      "Modalità visualizzazione",
+    ),
+    "teamLocationSlotDisplayModeMinGap": MessageLookupByLibrary.simpleMessage(
+      "Riduci spazi vuoti",
+    ),
+    "teamLocationSlotDisplayModeMinGapHint":
+        MessageLookupByLibrary.simpleMessage(
+          "Nasconde orari che creerebbero buchi troppo piccoli",
+        ),
+    "teamLocationSlotIntervalHint": MessageLookupByLibrary.simpleMessage(
+      "Ogni quanti minuti mostrare un orario disponibile",
+    ),
+    "teamLocationSlotIntervalLabel": MessageLookupByLibrary.simpleMessage(
+      "Intervallo tra gli orari",
+    ),
+    "teamLocationSmartSlotDescription": MessageLookupByLibrary.simpleMessage(
+      "Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online",
+    ),
+    "teamLocationSmartSlotSection": MessageLookupByLibrary.simpleMessage(
+      "Fasce orarie intelligenti",
+    ),
     "teamLocationsLabel": MessageLookupByLibrary.simpleMessage("Sedi"),
     "teamNewLocationTitle": MessageLookupByLibrary.simpleMessage("Nuova sede"),
     "teamNewStaffTitle": MessageLookupByLibrary.simpleMessage(
@@ -1170,7 +1211,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamSelectedServicesButton": MessageLookupByLibrary.simpleMessage(
       "Servizi selezionati",
     ),
-    "teamSelectedServicesCount": m50,
+    "teamSelectedServicesCount": m51,
     "teamServicesLabel": MessageLookupByLibrary.simpleMessage("Servizi"),
     "teamStaffBookableOnlineLabel": MessageLookupByLibrary.simpleMessage(
       "Abilitato alle prenotazioni online",
@@ -1211,6 +1252,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "weeklyScheduleTitle": MessageLookupByLibrary.simpleMessage(
       "Orario settimanale",
     ),
-    "weeklyScheduleTotalHours": m51,
+    "weeklyScheduleTotalHours": m52,
   };
 }

@@ -455,6 +455,13 @@ class ApiClient {
     );
   }
 
+  /// GET /v1/staff/{staff_id}/services/popular
+  /// Ritorna i servizi più prenotati per uno staff.
+  /// Restituisce lista vuota se la location dello staff ha meno di 25 servizi.
+  Future<Map<String, dynamic>> getPopularServices(int staffId) async {
+    return get(ApiConfig.popularServices(staffId));
+  }
+
   /// GET /v1/locations/{location_id}/service-packages
   Future<Map<String, dynamic>> getServicePackages(int locationId) async {
     return get(ApiConfig.servicePackages(locationId));
@@ -988,6 +995,9 @@ class ApiClient {
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     bool? allowCustomerChooseStaff,
+    int? slotIntervalMinutes,
+    String? slotDisplayMode,
+    int? minGapMinutes,
     bool? isActive,
   }) async {
     final response = await put(
@@ -1004,6 +1014,10 @@ class ApiClient {
           'max_booking_advance_days': maxBookingAdvanceDays,
         if (allowCustomerChooseStaff != null)
           'allow_customer_choose_staff': allowCustomerChooseStaff,
+        if (slotIntervalMinutes != null)
+          'slot_interval_minutes': slotIntervalMinutes,
+        if (slotDisplayMode != null) 'slot_display_mode': slotDisplayMode,
+        if (minGapMinutes != null) 'min_gap_minutes': minGapMinutes,
         if (isActive != null) 'is_active': isActive,
       },
     );

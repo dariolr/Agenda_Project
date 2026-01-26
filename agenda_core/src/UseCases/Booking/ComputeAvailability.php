@@ -21,6 +21,9 @@ final class ComputeAvailability
     
     /** @var int|null Booking ID to exclude from conflicts (for edit mode) */
     private ?int $currentExcludeBookingId = null;
+    
+    /** @var array|null Location slot settings for current request */
+    private ?array $currentLocationSlotSettings = null;
 
     public function __construct(
         private readonly BookingRepository $bookingRepository,
@@ -42,6 +45,7 @@ final class ComputeAvailability
      * @param array<int> $serviceIds Services requested (used to filter eligible staff)
      * @param bool $keepStaffInfo If true, keep staff_id even when deduplicating (for internal use)
      * @param int|null $excludeBookingId Exclude this booking from conflicts (for edit mode)
+     * @param bool $isPublic If true, apply slot_display_mode filtering (for frontend booking)
      * @return array Available slots
      */
     public function execute(
@@ -52,7 +56,8 @@ final class ComputeAvailability
         string $date,
         array $serviceIds,
         bool $keepStaffInfo = false,
-        ?int $excludeBookingId = null
+        ?int $excludeBookingId = null,
+        bool $isPublic = false
     ): array {
         // Store excludeBookingId for use in computeStaffAvailability
         $this->currentExcludeBookingId = $excludeBookingId;
@@ -62,6 +67,13 @@ final class ComputeAvailability
         if (!$location) {
             return ['error' => 'Location not found'];
         }
+        
+        // Store slot settings for filtering
+        $this->currentLocationSlotSettings = [
+            'slot_interval_minutes' => (int) ($location['slot_interval_minutes'] ?? self::SLOT_INTERVAL_MINUTES),
+            'slot_display_mode' => $location['slot_display_mode'] ?? 'all',
+            'min_gap_minutes' => (int) ($location['min_gap_minutes'] ?? 30),
+        ];
         
         $timezoneStr = $location['timezone'] ?? 'Europe/Rome';
         $timezone = new DateTimeZone($timezoneStr);
@@ -146,10 +158,114 @@ final class ComputeAvailability
                     $uniqueSlots[] = $slot;
                 }
             }
+            
+            // Apply min_gap filtering for public requests
+            if ($isPublic) {
+                $uniqueSlots = $this->applyMinGapFilter($uniqueSlots, $durationMinutes, $timezone, $locationId);
+            }
+            
             return ['slots' => $uniqueSlots];
         }
 
-        return ['slots' => $allSlots];
+        $finalSlots = $allSlots;
+        
+        // Apply min_gap filtering for public requests
+        if ($isPublic) {
+            $finalSlots = $this->applyMinGapFilter($finalSlots, $durationMinutes, $timezone, $locationId);
+        }
+        
+        return ['slots' => $finalSlots];
+    }
+    
+    /**
+     * Apply min_gap filter to slots based on location settings.
+     * Removes slots that would create gaps smaller than min_gap_minutes.
+     * 
+     * @param array $slots Available slots
+     * @param int $durationMinutes Duration of the service
+     * @param DateTimeZone $timezone Location timezone
+     * @param int $locationId Location ID for fetching existing bookings
+     * @return array Filtered slots
+     */
+    private function applyMinGapFilter(array $slots, int $durationMinutes, DateTimeZone $timezone, int $locationId): array
+    {
+        // Check if min_gap mode is enabled
+        if ($this->currentLocationSlotSettings === null) {
+            return $slots;
+        }
+        
+        $displayMode = $this->currentLocationSlotSettings['slot_display_mode'];
+        if ($displayMode !== 'min_gap') {
+            return $slots;
+        }
+        
+        $minGapMinutes = $this->currentLocationSlotSettings['min_gap_minutes'];
+        
+        if (empty($slots) || $minGapMinutes <= 0) {
+            return $slots;
+        }
+        
+        // Get the date from first slot
+        $firstSlot = $slots[0];
+        $firstSlotTime = new DateTimeImmutable($firstSlot['start_time'], $timezone);
+        $dateStr = $firstSlotTime->format('Y-m-d');
+        $dayStart = $firstSlotTime->setTime(0, 0, 0);
+        $dayEnd = $firstSlotTime->setTime(23, 59, 59);
+        
+        // Get all occupied slots for this location on this date (all staff)
+        $occupiedSlots = $this->bookingRepository->getOccupiedSlotsForLocation(
+            $locationId,
+            $dayStart,
+            $dayEnd,
+            $this->currentExcludeBookingId
+        );
+        
+        // Convert occupied slots to DateTimeImmutable
+        $occupiedIntervals = array_map(fn($slot) => [
+            'start' => new DateTimeImmutable($slot['start_time'], $timezone),
+            'end' => new DateTimeImmutable($slot['end_time'], $timezone),
+        ], $occupiedSlots);
+        
+        // Filter slots
+        $filteredSlots = [];
+        
+        foreach ($slots as $slot) {
+            $slotStart = new DateTimeImmutable($slot['start_time'], $timezone);
+            $slotEnd = new DateTimeImmutable($slot['end_time'], $timezone);
+            
+            // Check if this slot creates a problematic gap
+            $createsSmallGap = false;
+            
+            foreach ($occupiedIntervals as $occupied) {
+                // Gap PRIMA dello slot: distanza tra fine occupied e inizio slot
+                // Se occupied finisce prima del nostro slot
+                if ($occupied['end'] <= $slotStart) {
+                    $gapMinutes = ($slotStart->getTimestamp() - $occupied['end']->getTimestamp()) / 60;
+                    // Gap piccolo ma non zero (gap zero = adiacente = ok)
+                    if ($gapMinutes > 0 && $gapMinutes < $minGapMinutes) {
+                        $createsSmallGap = true;
+                        break;
+                    }
+                }
+                
+                // Gap DOPO lo slot: distanza tra fine slot e inizio occupied
+                // Se occupied inizia dopo il nostro slot
+                if ($slotEnd <= $occupied['start']) {
+                    $gapMinutes = ($occupied['start']->getTimestamp() - $slotEnd->getTimestamp()) / 60;
+                    // Gap piccolo ma non zero (gap zero = adiacente = ok)
+                    if ($gapMinutes > 0 && $gapMinutes < $minGapMinutes) {
+                        $createsSmallGap = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!$createsSmallGap) {
+                $filteredSlots[] = $slot;
+            }
+        }
+        
+        return $filteredSlots;
     }
 
     private function computeStaffAvailability(

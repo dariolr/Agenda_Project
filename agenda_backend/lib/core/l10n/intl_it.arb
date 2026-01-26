@@ -108,6 +108,7 @@
   "servicesTabLabel": "Servizi",
   "servicePackagesTabLabel": "Pacchetti",
   "servicePackagesTitle": "Pacchetti",
+  "popularServicesTitle": "I più richiesti",
   "servicePackagesEmptyState": "Nessun pacchetto disponibile",
   "servicePackageNewMenu": "Nuovo pacchetto",
   "servicePackageNewTitle": "Nuovo pacchetto",
@@ -200,6 +201,23 @@
       "count": { "type": "int" }
     }
   },
+  "teamLocationMinutes": "{count, plural, =1{1 minuto} other{{count} minuti}}",
+  "@teamLocationMinutes": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teamLocationSmartSlotSection": "Fasce orarie intelligenti",
+  "teamLocationSmartSlotDescription": "Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online",
+  "teamLocationSlotIntervalLabel": "Intervallo tra gli orari",
+  "teamLocationSlotIntervalHint": "Ogni quanti minuti mostrare un orario disponibile",
+  "teamLocationSlotDisplayModeLabel": "Modalità visualizzazione",
+  "teamLocationSlotDisplayModeAll": "Massima disponibilità",
+  "teamLocationSlotDisplayModeMinGap": "Riduci spazi vuoti",
+  "teamLocationSlotDisplayModeAllHint": "Mostra tutti gli orari disponibili",
+  "teamLocationSlotDisplayModeMinGapHint": "Nasconde orari che creerebbero buchi troppo piccoli",
+  "teamLocationMinGapLabel": "Gap minimo accettabile",
+  "teamLocationMinGapHint": "Non mostrare orari che lasciano meno di questo tempo libero",
   "teamNewStaffTitle": "Nuovo membro del team",
   "teamEditStaffTitle": "Modifica membro del team",
   "teamStaffNameLabel": "Nome",

@@ -14,6 +14,9 @@ class Location {
   final int minBookingNoticeHours;
   final int maxBookingAdvanceDays;
   final bool allowCustomerChooseStaff;
+  final int slotIntervalMinutes;
+  final String slotDisplayMode;
+  final int minGapMinutes;
   final bool isDefault;
   final bool isActive;
   final int sortOrder;
@@ -34,6 +37,9 @@ class Location {
     this.minBookingNoticeHours = 1,
     this.maxBookingAdvanceDays = 90,
     this.allowCustomerChooseStaff = false,
+    this.slotIntervalMinutes = 15,
+    this.slotDisplayMode = 'all',
+    this.minGapMinutes = 30,
     this.isDefault = false,
     this.isActive = true,
     this.sortOrder = 0,
@@ -55,6 +61,9 @@ class Location {
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     bool? allowCustomerChooseStaff,
+    int? slotIntervalMinutes,
+    String? slotDisplayMode,
+    int? minGapMinutes,
     bool? isDefault,
     bool? isActive,
     int? sortOrder,
@@ -78,6 +87,9 @@ class Location {
           maxBookingAdvanceDays ?? this.maxBookingAdvanceDays,
       allowCustomerChooseStaff:
           allowCustomerChooseStaff ?? this.allowCustomerChooseStaff,
+      slotIntervalMinutes: slotIntervalMinutes ?? this.slotIntervalMinutes,
+      slotDisplayMode: slotDisplayMode ?? this.slotDisplayMode,
+      minGapMinutes: minGapMinutes ?? this.minGapMinutes,
       isDefault: isDefault ?? this.isDefault,
       isActive: isActive ?? this.isActive,
       sortOrder: sortOrder ?? this.sortOrder,
@@ -102,6 +114,9 @@ class Location {
       maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
       allowCustomerChooseStaff:
           json['allow_customer_choose_staff'] as bool? ?? false,
+      slotIntervalMinutes: json['slot_interval_minutes'] as int? ?? 15,
+      slotDisplayMode: json['slot_display_mode'] as String? ?? 'all',
+      minGapMinutes: json['min_gap_minutes'] as int? ?? 30,
       isDefault: json['is_default'] as bool? ?? false,
       isActive: json['is_active'] as bool? ?? true,
       sortOrder: json['sort_order'] as int? ?? 0,
@@ -125,6 +140,9 @@ class Location {
       'min_booking_notice_hours': minBookingNoticeHours,
       'max_booking_advance_days': maxBookingAdvanceDays,
       'allow_customer_choose_staff': allowCustomerChooseStaff,
+      'slot_interval_minutes': slotIntervalMinutes,
+      'slot_display_mode': slotDisplayMode,
+      'min_gap_minutes': minGapMinutes,
       'is_default': isDefault,
       'is_active': isActive,
     };

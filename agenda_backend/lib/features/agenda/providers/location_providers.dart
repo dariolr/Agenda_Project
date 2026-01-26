@@ -119,6 +119,9 @@ class LocationsNotifier extends Notifier<List<Location>> {
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     bool? allowCustomerChooseStaff,
+    int? slotIntervalMinutes,
+    String? slotDisplayMode,
+    int? minGapMinutes,
     bool? isActive,
   }) async {
     final repository = ref.read(locationsRepositoryProvider);
@@ -132,6 +135,9 @@ class LocationsNotifier extends Notifier<List<Location>> {
       minBookingNoticeHours: minBookingNoticeHours,
       maxBookingAdvanceDays: maxBookingAdvanceDays,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
+      slotIntervalMinutes: slotIntervalMinutes,
+      slotDisplayMode: slotDisplayMode,
+      minGapMinutes: minGapMinutes,
       isActive: isActive,
     );
     state = [

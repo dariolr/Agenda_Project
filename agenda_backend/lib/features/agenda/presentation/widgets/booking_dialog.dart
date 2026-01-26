@@ -3,10 +3,12 @@ import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/models/appointment.dart';
+import 'package:agenda_backend/core/models/popular_service.dart';
 import 'package:agenda_backend/core/widgets/labeled_form_field.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -25,6 +27,7 @@ import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
+import '../../../services/providers/popular_services_provider.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/service_packages_provider.dart';
 import '../../../services/providers/service_packages_repository_provider.dart';
@@ -244,6 +247,14 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final clientsById = ref.watch(clientsByIdProvider);
     final allStaff = ref.watch(staffForCurrentLocationProvider);
 
+    // Usa lo staffId del primo item per i servizi popolari
+    final firstStaffId = _serviceItems.isNotEmpty
+        ? _serviceItems.first.staffId
+        : null;
+    final popularServices = firstStaffId != null
+        ? ref.watch(popularServicesProvider(firstStaffId)).value
+        : null;
+
     // Deriva il nome del cliente dal provider se _clientId è impostato,
     // altrimenti usa il nome personalizzato (per clienti nuovi)
     final clientName = _clientId != null
@@ -341,6 +352,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                   showServiceWarnings: showServiceWarnings,
                   serviceWarningMessage:
                       l10n.bookingUnavailableTimeWarningService,
+                  popularServices: popularServices,
                 ),
 
                 const SizedBox(height: AppSpacing.formRowSpacing),
@@ -403,52 +415,66 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     ];
 
     if (isDialog) {
-      return DismissibleDialog(
-        child: Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 32,
-            vertical: 24,
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-            child: LocalLoadingOverlay(
-              isLoading: _isSaving,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Flexible(child: content),
-                    const SizedBox(height: AppSpacing.formToActionsSpacing),
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        bottom: AppSpacing.formFirstRowSpacing,
-                      ),
-                      child: _warningBanner(
-                        20,
-                        showAppointmentWarning,
-                        l10n.bookingUnavailableTimeWarningAppointment,
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+      return CallbackShortcuts(
+        bindings: {
+          // Ctrl+Enter o Cmd+Enter per salvare
+          const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
+            if (!_isSaving) _onSave();
+          },
+          const SingleActivator(LogicalKeyboardKey.enter, meta: true): () {
+            if (!_isSaving) _onSave();
+          },
+        },
+        child: Focus(
+          autofocus: true,
+          child: DismissibleDialog(
+            child: Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 24,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
+                child: LocalLoadingOverlay(
+                  isLoading: _isSaving,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        for (int i = 0; i < actions.length; i++) ...[
-                          if (i > 0) const SizedBox(width: 8),
-                          SizedBox(
-                            width: AppButtonStyles.dialogButtonWidth,
-                            child: actions[i],
+                        Text(
+                          title,
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        Flexible(child: content),
+                        const SizedBox(height: AppSpacing.formToActionsSpacing),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: AppSpacing.formFirstRowSpacing,
                           ),
-                        ],
+                          child: _warningBanner(
+                            20,
+                            showAppointmentWarning,
+                            l10n.bookingUnavailableTimeWarningAppointment,
+                          ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            for (int i = 0; i < actions.length; i++) ...[
+                              if (i > 0) const SizedBox(width: 8),
+                              SizedBox(
+                                width: AppButtonStyles.dialogButtonWidth,
+                                child: actions[i],
+                              ),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -531,6 +557,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     required List<bool> conflictFlags,
     required bool showServiceWarnings,
     required String serviceWarningMessage,
+    required PopularServicesResult? popularServices,
   }) {
     final widgets = <Widget>[];
 
@@ -623,6 +650,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 // Obbligatorio solo se non ci sono altri servizi selezionati
                 isServiceRequired: selectedCount == 0,
                 packages: ref.read(servicePackagesProvider).value,
+                popularServices: popularServices,
                 onPackageSelected: (package) =>
                     _onPackageSelectedFromPicker(package, i),
                 onChanged: (updated) => _updateServiceItem(i, updated),
@@ -2066,11 +2094,24 @@ class _ClientPickerSheet extends ConsumerStatefulWidget {
 
 class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-focus sul campo di ricerca dopo il primo build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _searchFocusNode.requestFocus();
+      }
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -2111,6 +2152,7 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                   const SizedBox(height: AppSpacing.formFirstRowSpacing),
                   TextField(
                     controller: _searchController,
+                    focusNode: _searchFocusNode,
                     decoration: InputDecoration(
                       hintText: l10n.searchClientPlaceholder,
                       prefixIcon: const Icon(Icons.search, size: 20),

@@ -654,6 +654,16 @@ class L10n {
     );
   }
 
+  /// `I più richiesti`
+  String get popularServicesTitle {
+    return Intl.message(
+      'I più richiesti',
+      name: 'popularServicesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Nessun pacchetto disponibile`
   String get servicePackagesEmptyState {
     return Intl.message(
@@ -1420,6 +1430,128 @@ class L10n {
       name: 'teamLocationDays',
       desc: '',
       args: [count],
+    );
+  }
+
+  /// `{count, plural, =1{1 minuto} other{{count} minuti}}`
+  String teamLocationMinutes(int count) {
+    return Intl.plural(
+      count,
+      one: '1 minuto',
+      other: '$count minuti',
+      name: 'teamLocationMinutes',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Fasce orarie intelligenti`
+  String get teamLocationSmartSlotSection {
+    return Intl.message(
+      'Fasce orarie intelligenti',
+      name: 'teamLocationSmartSlotSection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online`
+  String get teamLocationSmartSlotDescription {
+    return Intl.message(
+      'Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online',
+      name: 'teamLocationSmartSlotDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Intervallo tra gli orari`
+  String get teamLocationSlotIntervalLabel {
+    return Intl.message(
+      'Intervallo tra gli orari',
+      name: 'teamLocationSlotIntervalLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ogni quanti minuti mostrare un orario disponibile`
+  String get teamLocationSlotIntervalHint {
+    return Intl.message(
+      'Ogni quanti minuti mostrare un orario disponibile',
+      name: 'teamLocationSlotIntervalHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modalità visualizzazione`
+  String get teamLocationSlotDisplayModeLabel {
+    return Intl.message(
+      'Modalità visualizzazione',
+      name: 'teamLocationSlotDisplayModeLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Massima disponibilità`
+  String get teamLocationSlotDisplayModeAll {
+    return Intl.message(
+      'Massima disponibilità',
+      name: 'teamLocationSlotDisplayModeAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Riduci spazi vuoti`
+  String get teamLocationSlotDisplayModeMinGap {
+    return Intl.message(
+      'Riduci spazi vuoti',
+      name: 'teamLocationSlotDisplayModeMinGap',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mostra tutti gli orari disponibili`
+  String get teamLocationSlotDisplayModeAllHint {
+    return Intl.message(
+      'Mostra tutti gli orari disponibili',
+      name: 'teamLocationSlotDisplayModeAllHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nasconde orari che creerebbero buchi troppo piccoli`
+  String get teamLocationSlotDisplayModeMinGapHint {
+    return Intl.message(
+      'Nasconde orari che creerebbero buchi troppo piccoli',
+      name: 'teamLocationSlotDisplayModeMinGapHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Gap minimo accettabile`
+  String get teamLocationMinGapLabel {
+    return Intl.message(
+      'Gap minimo accettabile',
+      name: 'teamLocationMinGapLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Non mostrare orari che lasciano meno di questo tempo libero`
+  String get teamLocationMinGapHint {
+    return Intl.message(
+      'Non mostrare orari che lasciano meno di questo tempo libero',
+      name: 'teamLocationMinGapHint',
+      desc: '',
+      args: [],
     );
   }
 

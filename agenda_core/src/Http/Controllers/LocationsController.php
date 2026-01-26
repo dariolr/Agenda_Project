@@ -119,6 +119,9 @@ final class LocationsController
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
+            'slot_interval_minutes' => (int) ($row['slot_interval_minutes'] ?? 15),
+            'slot_display_mode' => $row['slot_display_mode'] ?? 'all',
+            'min_gap_minutes' => (int) ($row['min_gap_minutes'] ?? 30),
             'is_default' => (bool) $row['is_default'],
             'sort_order' => (int) ($row['sort_order'] ?? 0),
             'is_active' => (bool) $row['is_active'],
@@ -228,6 +231,28 @@ final class LocationsController
         }
         if (array_key_exists('max_booking_advance_days', $body)) {
             $updateData['max_booking_advance_days'] = (int) $body['max_booking_advance_days'];
+        }
+
+        // Handle smart slot display settings
+        if (array_key_exists('slot_interval_minutes', $body)) {
+            $interval = (int) $body['slot_interval_minutes'];
+            // Validate interval is reasonable (5-60 minutes)
+            if ($interval >= 5 && $interval <= 60) {
+                $updateData['slot_interval_minutes'] = $interval;
+            }
+        }
+        if (array_key_exists('slot_display_mode', $body)) {
+            $mode = $body['slot_display_mode'];
+            if (in_array($mode, ['all', 'min_gap'], true)) {
+                $updateData['slot_display_mode'] = $mode;
+            }
+        }
+        if (array_key_exists('min_gap_minutes', $body)) {
+            $gap = (int) $body['min_gap_minutes'];
+            // Validate gap is reasonable (0-120 minutes)
+            if ($gap >= 0 && $gap <= 120) {
+                $updateData['min_gap_minutes'] = $gap;
+            }
         }
 
         $this->locationRepo->update($locationId, $updateData);

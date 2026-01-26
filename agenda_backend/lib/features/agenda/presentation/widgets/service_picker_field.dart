@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../app/theme/extensions.dart';
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/popular_service.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service_package.dart';
@@ -21,6 +22,7 @@ class ServicePickerField extends StatefulWidget {
     required this.categories,
     required this.formFactor,
     this.packages,
+    this.popularServices,
     this.value,
     this.onChanged,
     this.onPackageSelected,
@@ -39,6 +41,10 @@ class ServicePickerField extends StatefulWidget {
   /// Optional list of packages to show in the picker.
   /// If provided, packages will appear in a dedicated section at the top.
   final List<ServicePackage>? packages;
+
+  /// Servizi più prenotati per questa location.
+  /// Se fornito e showPopularSection è true, mostra una sezione dedicata.
+  final PopularServicesResult? popularServices;
 
   /// Lista di service IDs che lo staff preselezionato può eseguire.
   /// Se fornita, il picker mostrerà inizialmente solo questi servizi con
@@ -184,6 +190,7 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
         services: widget.services,
         categories: widget.categories,
         packages: widget.packages,
+        popularServices: widget.popularServices,
         preselectedStaffServiceIds: widget.preselectedStaffServiceIds,
         selectedId: widget.value,
         onSelected: (id) {
@@ -228,6 +235,7 @@ class _ServicePickerFieldState extends State<ServicePickerField> {
             services: widget.services,
             categories: widget.categories,
             packages: widget.packages,
+            popularServices: widget.popularServices,
             preselectedStaffServiceIds: widget.preselectedStaffServiceIds,
             selectedId: widget.value,
             onSelected: (id) {
@@ -266,6 +274,7 @@ class _ServicePickerContent extends StatefulWidget {
     required this.services,
     required this.categories,
     this.packages,
+    this.popularServices,
     this.preselectedStaffServiceIds,
     required this.selectedId,
     required this.onSelected,
@@ -275,6 +284,7 @@ class _ServicePickerContent extends StatefulWidget {
   final List<Service> services;
   final List<ServiceCategory> categories;
   final List<ServicePackage>? packages;
+  final PopularServicesResult? popularServices;
   final List<int>? preselectedStaffServiceIds;
   final int? selectedId;
   final ValueChanged<int?> onSelected;
@@ -286,6 +296,8 @@ class _ServicePickerContent extends StatefulWidget {
 
 class _ServicePickerContentState extends State<_ServicePickerContent> {
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  final _scrollController = ScrollController();
   String _searchQuery = '';
   bool _showAllServices = false;
 
@@ -296,11 +308,20 @@ class _ServicePickerContentState extends State<_ServicePickerContent> {
     _showAllServices =
         widget.preselectedStaffServiceIds == null ||
         widget.preselectedStaffServiceIds!.isEmpty;
+
+    // Auto-focus sul campo di ricerca dopo il primo build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _searchFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -436,6 +457,7 @@ class _ServicePickerContentState extends State<_ServicePickerContent> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
               controller: _searchController,
+              focusNode: _searchFocusNode,
               decoration: InputDecoration(
                 hintText: l10n.searchServices,
                 prefixIcon: const Icon(Icons.search, size: 20),
@@ -512,13 +534,43 @@ class _ServicePickerContentState extends State<_ServicePickerContent> {
                   ),
                 )
               : ListView(
-                  shrinkWrap: true,
+                  controller: _scrollController,
                   children: [
                     // Packages section (if available)
                     if (showPackages)
                       _PackagesSection(
                         packages: filteredPackages,
                         onSelected: widget.onPackageSelected!,
+                      ),
+                    // Popular services section (if available and search empty)
+                    if (_searchQuery.isEmpty &&
+                        widget.popularServices != null &&
+                        widget.popularServices!.showPopularSection)
+                      Builder(
+                        builder: (context) {
+                          // Filtra servizi popolari per staff preselezionato
+                          var filteredPopular =
+                              widget.popularServices!.popularServices;
+                          if (!_showAllServices &&
+                              widget.preselectedStaffServiceIds != null &&
+                              widget.preselectedStaffServiceIds!.isNotEmpty) {
+                            filteredPopular = filteredPopular
+                                .where(
+                                  (ps) => widget.preselectedStaffServiceIds!
+                                      .contains(ps.serviceId),
+                                )
+                                .toList();
+                          }
+                          // Mostra sezione solo se ci sono servizi popolari dopo il filtro
+                          if (filteredPopular.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return _PopularServicesSection(
+                            popularServices: filteredPopular,
+                            selectedId: widget.selectedId,
+                            onSelected: widget.onSelected,
+                          );
+                        },
                       ),
                     // Categories and services
                     for (final category in sortedCategories)
@@ -665,6 +717,118 @@ class _PackagesSection extends StatelessWidget {
                     color: theme.colorScheme.secondary,
                   ),
                 ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A section showing the most popular (most booked) services.
+class _PopularServicesSection extends StatelessWidget {
+  const _PopularServicesSection({
+    required this.popularServices,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<PopularService> popularServices;
+  final int? selectedId;
+  final ValueChanged<int?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final interactionColors = theme.extension<AppInteractionColors>();
+    final evenBackgroundColor =
+        interactionColors?.alternatingRowFill ??
+        theme.colorScheme.onSurface.withOpacity(0.04);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Header with tertiary color (to distinguish from packages and categories)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          color: theme.colorScheme.tertiary,
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.trending_up,
+                  color: theme.colorScheme.onTertiary,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.popularServicesTitle.toUpperCase(),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onTertiary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Popular service items with alternating background
+        for (int i = 0; i < popularServices.length; i++)
+          _buildPopularServiceTile(
+            context,
+            popularServices[i],
+            isEven: i.isEven,
+            evenBackgroundColor: evenBackgroundColor,
+            theme: theme,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPopularServiceTile(
+    BuildContext context,
+    PopularService popularService, {
+    required bool isEven,
+    required Color evenBackgroundColor,
+    required ThemeData theme,
+  }) {
+    final isSelected = popularService.serviceId == selectedId;
+
+    return Material(
+      color: isEven ? evenBackgroundColor : Colors.transparent,
+      child: InkWell(
+        onTap: () => onSelected(popularService.serviceId),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      popularService.serviceName,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    // Mostra categoria solo se presente (significa che i servizi
+                    // popolari appartengono a categorie diverse)
+                    if (popularService.categoryName != null)
+                      Text(
+                        popularService.categoryName!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (isSelected)
+                Icon(Icons.check, color: theme.colorScheme.primary, size: 20),
             ],
           ),
         ),
