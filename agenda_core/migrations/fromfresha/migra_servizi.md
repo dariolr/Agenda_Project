@@ -27,7 +27,34 @@ ESEGUIRE SOLO SU ESPLICITA RICHIESTA. Leggere il CSV servizi ed eseguire diretta
 - NON cambiare l'ordine dei servizi rispetto al CSV
 - NON accorpare servizi
 - NON inventare dati non presenti nel CSV
-- **IMPORTARE SOLO** i servizi con campo "Risorsa" VALORIZZATO (non vuoto)
+- **IMPORTARE SOLO** i servizi con campo "Risorsa" / "Resource" VALORIZZATO (non vuoto)
+- **SUPPORTARE** file CSV sia in italiano che in inglese (vedi mappatura colonne)
+
+---
+
+## MAPPATURA COLONNE CSV (IT ↔ EN)
+
+Il file CSV può avere intestazioni in italiano o inglese. Usare la seguente mappatura:
+
+| Italiano | English | Campo DB |
+|----------|---------|----------|
+| Nome servizio | Service name | services.name |
+| Categoria | Category | service_categories.name |
+| Descrizione | Description | services.description |
+| Durata | Duration | service_variants.duration_minutes |
+| Tempo supplementare | Extra time | service_variants.processing_time |
+| Prezzo al dettaglio | Retail price | service_variants.price |
+| Prenotazione online | Online bookings | service_variants.is_bookable_online |
+| Risorsa | Resource | (filtro importazione) |
+
+---
+
+## MAPPATURA VALORI (IT ↔ EN)
+
+| Campo | Italiano | English | Valore DB |
+|-------|----------|---------|-----------|
+| Prenotazione online | Abilitati | Enabled | 1 |
+| Prenotazione online | Disabilitati / (altro) | Disabled / (other) | 0 |
 
 ---
 
@@ -53,7 +80,7 @@ Oppure usare un tool che supporta tunnel SSH diretto.
 - `business_id` = BUSINESS_ID
 - `category_id` = lookup su `service_categories` per nome categoria
 - `name` = nome servizio CSV **senza** suffisso `- From`
-- `description` = colonna CSV "Descrizione" (NULL se vuota)
+- `description` = colonna CSV "Descrizione" / "Description" (NULL se vuota)
 - `sort_order` = posizione del servizio nel CSV (0..N-1)
 - `is_active` = 1
 
@@ -65,13 +92,13 @@ Oppure usare un tool che supporta tunnel SSH diretto.
 ### service_variants (TUTTE LE COLONNE DEVONO ESSERE PRESENTI)
 - `service_id` = id del servizio appena inserito
 - `location_id` = LOCATION_ID
-- `duration_minutes` = da CSV "Durata" (convertire in minuti)
-- `processing_time` = da CSV "Tempo supplementare" (estrarre minuti, 0 se vuoto)
+- `duration_minutes` = da CSV "Durata" / "Duration" (convertire in minuti)
+- `processing_time` = da CSV "Tempo supplementare" / "Extra time" (estrarre minuti, 0 se vuoto)
 - `blocked_time` = 0
-- `price` = da CSV "Prezzo al dettaglio"
+- `price` = da CSV "Prezzo al dettaglio" / "Retail price"
 - `currency` = '€'
 - `color_hex` = colore assegnato per categoria (vedi tabella sotto)
-- `is_bookable_online` = 1 se CSV "Prenotazione online" = 'Abilitati', else 0
+- `is_bookable_online` = 1 se CSV "Prenotazione online" / "Online bookings" = 'Abilitati' o 'Enabled', else 0
 - `is_free` = 1 se price = 0, else 0
 - `is_price_starting_from` = 1 se nome contiene '- From', else 0
 - `is_active` = 1
@@ -107,10 +134,16 @@ Usare SOLO questi colori (palette ufficiale del sistema):
 ## REGOLE DI VALORIZZAZIONE
 
 ### duration_minutes
-Formati supportati: `2h 35m`, `1h`, `45m` → convertire in minuti totali
+Formati supportati: `2h 35m`, `1h`, `45m`, `2h 35min`, `1hr`, `45min` → convertire in minuti totali
 
 ### processing_time
-Estrarre da "Tempo supplementare" es. `50m tempo di attesa dopo il trattamento` → 50
+Estrarre da "Tempo supplementare" / "Extra time":
+- IT: `50m tempo di attesa dopo il trattamento` → 50
+- EN: `50m waiting time after treatment` → 50
+
+### is_bookable_online
+- `1` se valore = `Abilitati` (IT) oppure `Enabled` (EN)
+- `0` altrimenti
 
 ### is_price_starting_from
 `1` se il nome servizio CSV contiene `- From`, poi rimuovere il suffisso dal nome

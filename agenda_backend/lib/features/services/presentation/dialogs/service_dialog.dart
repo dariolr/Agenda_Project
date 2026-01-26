@@ -256,13 +256,15 @@ Future<void> showServiceDialog(
     text: service?.description ?? '',
   );
   final staffList = ref.read(staffForCurrentLocationProvider);
+  final staffNotifier = ref.read(allStaffProvider.notifier);
   final eligibilityNotifier = ref.read(
     serviceStaffEligibilityProvider.notifier,
   );
   final locationId = ref.read(currentLocationProvider).id;
-  Set<int> selectedStaffIds = service != null
+  final originalStaffIds = service != null
       ? ref.read(eligibleStaffForServiceProvider(service.id)).toSet()
       : <int>{};
+  Set<int> selectedStaffIds = {...originalStaffIds};
   bool isSelectingStaff = false;
 
   int? selectedCategory = requireCategorySelection
@@ -439,6 +441,35 @@ Future<void> showServiceDialog(
       );
 
       ref.read(serviceVariantsProvider.notifier).upsert(newVariant);
+
+      // Aggiorna le associazioni staff-servizio nel database
+      // Calcola quali staff sono stati aggiunti/rimossi
+      final addedStaffIds = selectedStaffIds.difference(originalStaffIds);
+      final removedStaffIds = originalStaffIds.difference(selectedStaffIds);
+
+      // Aggiorna ogni staff modificato nel database
+      final allStaff = ref.read(allStaffProvider).value ?? [];
+      final serviceId = savedService.id;
+      for (final staffId in addedStaffIds) {
+        final staff = allStaff.firstWhere((s) => s.id == staffId);
+        final newServiceIds = {...staff.serviceIds, serviceId}.toList();
+        await staffNotifier.updateStaffApi(
+          staffId: staffId,
+          serviceIds: newServiceIds,
+        );
+      }
+      for (final staffId in removedStaffIds) {
+        final staff = allStaff.firstWhere((s) => s.id == staffId);
+        final newServiceIds = staff.serviceIds
+            .where((id) => id != serviceId)
+            .toList();
+        await staffNotifier.updateStaffApi(
+          staffId: staffId,
+          serviceIds: newServiceIds,
+        );
+      }
+
+      // Aggiorna anche lo stato locale UI
       eligibilityNotifier.setEligibleStaffForService(
         serviceId: savedService.id,
         locationId: locationId,

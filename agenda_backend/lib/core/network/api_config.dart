@@ -35,6 +35,10 @@ class ApiConfig {
   static const String staff = '/v1/staff';
   static const String availability = '/v1/availability';
 
+  /// Servizi più prenotati per staff (gestionale)
+  static String popularServices(int staffId) =>
+      '/v1/staff/$staffId/services/popular';
+
   // ========== GESTIONALE ENDPOINTS ==========
   static const String clients = '/v1/clients';
 

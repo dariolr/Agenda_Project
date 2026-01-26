@@ -82,8 +82,10 @@ final class ServiceRepository
             return [];
         }
 
-        $placeholders = implode(',', array_fill(0, count($serviceIds), '?'));
-        $params = array_merge([$locationId], $serviceIds, [$businessId]);
+        // Get unique IDs for the query
+        $uniqueIds = array_unique($serviceIds);
+        $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
+        $params = array_merge([$locationId], $uniqueIds, [$businessId]);
 
         $stmt = $this->db->getPdo()->prepare(
             "SELECT s.id, s.business_id, s.category_id, s.name, s.description,
@@ -97,7 +99,23 @@ final class ServiceRepository
         );
         $stmt->execute($params);
 
-        return $stmt->fetchAll();
+        $results = $stmt->fetchAll();
+
+        // Index results by service ID for quick lookup
+        $servicesById = [];
+        foreach ($results as $service) {
+            $servicesById[(int) $service['id']] = $service;
+        }
+
+        // Return services in the original order, including duplicates
+        $orderedResults = [];
+        foreach ($serviceIds as $id) {
+            if (isset($servicesById[(int) $id])) {
+                $orderedResults[] = $servicesById[(int) $id];
+            }
+        }
+
+        return $orderedResults;
     }
 
     public function getCategories(int $businessId): array
@@ -119,18 +137,32 @@ final class ServiceRepository
             return 0;
         }
 
-        $placeholders = implode(',', array_fill(0, count($serviceIds), '?'));
-        $params = array_merge([$locationId], $serviceIds, [$businessId]);
+        // Count occurrences of each service ID to handle duplicates
+        $idCounts = array_count_values($serviceIds);
+        $uniqueIds = array_keys($idCounts);
+
+        $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
+        $params = array_merge([$locationId], $uniqueIds, [$businessId]);
 
         $stmt = $this->db->getPdo()->prepare(
-            "SELECT SUM(sv.duration_minutes + COALESCE(sv.processing_time, 0) + COALESCE(sv.blocked_time, 0)) as total
+            "SELECT s.id, (sv.duration_minutes + COALESCE(sv.processing_time, 0) + COALESCE(sv.blocked_time, 0)) as duration
              FROM services s
              JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
              WHERE s.id IN ({$placeholders}) AND s.business_id = ? AND s.is_active = 1"
         );
         $stmt->execute($params);
 
-        return (int) ($stmt->fetchColumn() ?? 0);
+        $results = $stmt->fetchAll();
+
+        // Calculate total considering duplicates
+        $total = 0;
+        foreach ($results as $row) {
+            $serviceId = (int) $row['id'];
+            $count = $idCounts[$serviceId] ?? 1;
+            $total += (int) $row['duration'] * $count;
+        }
+
+        return $total;
     }
 
     public function getTotalPrice(array $serviceIds, int $locationId, int $businessId): float
@@ -139,18 +171,32 @@ final class ServiceRepository
             return 0.0;
         }
 
-        $placeholders = implode(',', array_fill(0, count($serviceIds), '?'));
-        $params = array_merge([$locationId], $serviceIds, [$businessId]);
+        // Count occurrences of each service ID to handle duplicates
+        $idCounts = array_count_values($serviceIds);
+        $uniqueIds = array_keys($idCounts);
+
+        $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
+        $params = array_merge([$locationId], $uniqueIds, [$businessId]);
 
         $stmt = $this->db->getPdo()->prepare(
-            "SELECT SUM(sv.price) as total
+            "SELECT s.id, sv.price
              FROM services s
              JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
              WHERE s.id IN ({$placeholders}) AND s.business_id = ? AND s.is_active = 1"
         );
         $stmt->execute($params);
 
-        return (float) ($stmt->fetchColumn() ?? 0);
+        $results = $stmt->fetchAll();
+
+        // Calculate total considering duplicates
+        $total = 0.0;
+        foreach ($results as $row) {
+            $serviceId = (int) $row['id'];
+            $count = $idCounts[$serviceId] ?? 1;
+            $total += (float) $row['price'] * $count;
+        }
+
+        return $total;
     }
 
     public function allBelongToBusiness(array $serviceIds, int $locationId, int $businessId): bool
@@ -159,8 +205,10 @@ final class ServiceRepository
             return true;
         }
 
-        $placeholders = implode(',', array_fill(0, count($serviceIds), '?'));
-        $params = array_merge([$locationId], $serviceIds, [$businessId]);
+        // Use unique IDs - duplicates are allowed, we just need to verify each unique ID belongs to business
+        $uniqueIds = array_unique($serviceIds);
+        $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
+        $params = array_merge([$locationId], $uniqueIds, [$businessId]);
 
         $stmt = $this->db->getPdo()->prepare(
             "SELECT COUNT(*) FROM services s
@@ -169,7 +217,7 @@ final class ServiceRepository
         );
         $stmt->execute($params);
 
-        return (int) $stmt->fetchColumn() === count($serviceIds);
+        return (int) $stmt->fetchColumn() === count($uniqueIds);
     }
 
     // ===== CRUD Methods =====

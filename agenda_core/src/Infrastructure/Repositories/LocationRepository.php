@@ -18,6 +18,8 @@ final class LocationRepository
             'SELECT l.id, l.business_id, l.name, l.address, l.city, l.region, l.country,
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
                     l.allow_customer_choose_staff, l.is_default, l.is_active, l.created_at, l.updated_at,
+                    l.slot_interval_minutes, l.slot_display_mode, l.min_gap_minutes,
+                    l.min_booking_notice_hours, l.max_booking_advance_days,
                     b.name AS business_name,
                     b.email AS business_email,
                     b.slug AS business_slug
@@ -40,6 +42,7 @@ final class LocationRepository
         $sql = 'SELECT id, business_id, name, address, city, region, country, 
                     phone, email, latitude, longitude, currency, timezone,
                     allow_customer_choose_staff,
+                    slot_interval_minutes, slot_display_mode, min_gap_minutes,
                     is_default, sort_order, is_active, created_at, updated_at
              FROM locations
              WHERE business_id = ?';
@@ -186,10 +189,19 @@ final class LocationRepository
         }
 
         // Integer fields
-        foreach (['min_booking_notice_hours', 'max_booking_advance_days'] as $field) {
+        foreach (['min_booking_notice_hours', 'max_booking_advance_days', 'slot_interval_minutes', 'min_gap_minutes'] as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "{$field} = ?";
                 $values[] = (int) $data[$field];
+            }
+        }
+
+        // ENUM field: slot_display_mode
+        if (array_key_exists('slot_display_mode', $data)) {
+            $mode = $data['slot_display_mode'];
+            if (in_array($mode, ['all', 'min_gap'], true)) {
+                $fields[] = 'slot_display_mode = ?';
+                $values[] = $mode;
             }
         }
 

@@ -48,6 +48,9 @@ class LocationsRepository {
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     bool? allowCustomerChooseStaff,
+    int? slotIntervalMinutes,
+    String? slotDisplayMode,
+    int? minGapMinutes,
     bool? isActive,
   }) async {
     final data = await _apiClient.updateLocation(
@@ -60,6 +63,9 @@ class LocationsRepository {
       minBookingNoticeHours: minBookingNoticeHours,
       maxBookingAdvanceDays: maxBookingAdvanceDays,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
+      slotIntervalMinutes: slotIntervalMinutes,
+      slotDisplayMode: slotDisplayMode,
+      minGapMinutes: minGapMinutes,
       isActive: isActive,
     );
     return Location.fromJson(data);

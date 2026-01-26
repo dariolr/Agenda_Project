@@ -437,6 +437,49 @@ final class BookingRepository
     }
 
     /**
+     * Get all occupied time slots for a location on a given date range (all staff).
+     * Used for min_gap filtering in smart slot display.
+     *
+     * @param int $locationId Location ID
+     * @param DateTimeImmutable $startDate Start of date range
+     * @param DateTimeImmutable $endDate End of date range
+     * @param int|null $excludeBookingId Exclude this booking from conflicts (for edit mode)
+     * @return array
+     */
+    public function getOccupiedSlotsForLocation(
+        int $locationId,
+        DateTimeImmutable $startDate,
+        DateTimeImmutable $endDate,
+        ?int $excludeBookingId = null
+    ): array {
+        $sql = "SELECT bi.start_time, bi.end_time, bi.staff_id
+                FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.id
+                WHERE bi.location_id = ?
+                  AND b.status IN ('pending', 'confirmed')
+                  AND bi.start_time >= ?
+                  AND bi.end_time <= ?";
+        
+        $params = [
+            $locationId,
+            $startDate->format('Y-m-d H:i:s'),
+            $endDate->format('Y-m-d H:i:s'),
+        ];
+        
+        if ($excludeBookingId !== null) {
+            $sql .= " AND b.id != ?";
+            $params[] = $excludeBookingId;
+        }
+        
+        $sql .= " ORDER BY bi.start_time ASC";
+
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Find booking items that conflict with the given time range.
      *
      * @param int $locationId Location ID

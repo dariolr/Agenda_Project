@@ -75,7 +75,8 @@ final class AvailabilityController
             $date,
             $serviceIds,
             false, // keepStaffInfo
-            $excludeBookingId
+            $excludeBookingId,
+            true   // isPublic - apply slot display mode filtering
         );
 
         return Response::success($result, 200);

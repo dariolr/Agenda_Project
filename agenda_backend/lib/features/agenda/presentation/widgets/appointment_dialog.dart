@@ -2,6 +2,7 @@ import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
+import 'package:agenda_backend/core/models/popular_service.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
+import '../../../services/providers/popular_services_provider.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/service_packages_provider.dart';
 import '../../../services/providers/service_packages_repository_provider.dart';
@@ -401,6 +403,12 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final asyncClients = ref.watch(clientsProvider);
     final clients = asyncClients.value ?? [];
     final staff = ref.watch(staffForCurrentLocationProvider);
+    
+    // Usa lo staffId del primo item per i servizi popolari
+    final firstStaffId = _serviceItems.isNotEmpty ? _serviceItems.first.staffId : null;
+    final popularServices = firstStaffId != null
+        ? ref.watch(popularServicesProvider(firstStaffId)).value
+        : null;
 
     final title = l10n.appointmentDialogTitleEdit;
 
@@ -483,6 +491,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                 showServiceWarnings: showServiceWarnings,
                 serviceWarningMessage:
                     l10n.bookingUnavailableTimeWarningService,
+                popularServices: popularServices,
               ),
               const SizedBox(height: AppSpacing.formRowSpacing),
               // Notes field
@@ -719,6 +728,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     required List<bool> conflictFlags,
     required bool showServiceWarnings,
     required String serviceWarningMessage,
+    required PopularServicesResult? popularServices,
   }) {
     final widgets = <Widget>[];
 
@@ -726,6 +736,22 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final selectedCount = _serviceItems
         .where((s) => s.serviceId != null)
         .length;
+
+    // Calcola i serviceIds dello staff del primo appuntamento (se presente)
+    // Questo permette di filtrare i servizi mostrando prima quelli dello staff corrente
+    List<int>? preselectedStaffServiceIds;
+    final firstItemStaffId = _serviceItems.isNotEmpty
+        ? _serviceItems.first.staffId
+        : null;
+    if (firstItemStaffId != null) {
+      final selectedStaff = allStaff.cast<dynamic>().firstWhere(
+        (s) => s.id == firstItemStaffId,
+        orElse: () => null,
+      );
+      if (selectedStaff != null) {
+        preselectedStaffServiceIds = (selectedStaff.serviceIds as List<int>);
+      }
+    }
 
     for (int i = 0; i < _serviceItems.length; i++) {
       final item = _serviceItems[i];
@@ -818,8 +844,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                     ? context.l10n.bookingStaffNotEligibleWarning
                     : null,
                 packages: ref.read(servicePackagesProvider).value,
+                popularServices: popularServices,
                 onPackageSelected: (package) =>
                     _onPackageSelectedFromPicker(package, i),
+                preselectedStaffServiceIds: preselectedStaffServiceIds,
               ),
             ),
             if (canAddDefaultExtra) ...[

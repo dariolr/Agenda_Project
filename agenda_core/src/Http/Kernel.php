@@ -49,6 +49,7 @@ use Agenda\Infrastructure\Repositories\ResourceRepository;
 use Agenda\Infrastructure\Repositories\TimeBlockRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Repositories\PopularServiceRepository;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
 use Agenda\UseCases\Auth\GetMe;
@@ -201,6 +202,7 @@ final class Kernel
 
         // Public (business-scoped via query param)
         $this->router->get('/v1/services', ServicesController::class, 'index', ['location_query']);
+        $this->router->get('/v1/staff/{staff_id}/services/popular', ServicesController::class, 'popular', ['auth']);
         $this->router->get('/v1/staff', StaffController::class, 'index', ['location_query']);
         $this->router->get('/v1/availability', AvailabilityController::class, 'index', ['location_query']);
 
@@ -335,6 +337,7 @@ final class Kernel
         $clientRepo = new ClientRepository($this->db);
         $clientAuthRepo = new ClientAuthRepository($this->db);
         $notificationRepo = new NotificationRepository($this->db);
+        $popularServiceRepo = new PopularServiceRepository($this->db);
 
         // Services
         $jwtService = new JwtService();
@@ -383,7 +386,7 @@ final class Kernel
             CustomerAuthController::class => new CustomerAuthController($loginCustomer, $refreshCustomerToken, $logoutCustomer, $getCustomerMe, $registerCustomer, $requestCustomerPasswordReset, $resetCustomerPassword, $updateCustomerProfile, $changeCustomerPassword, $businessRepo),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo, $businessUserRepo, $userRepo),
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
-            ServicesController::class => new ServicesController($serviceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo),
+            ServicesController::class => new ServicesController($serviceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo),
             ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo),
             StaffController::class => new StaffController($staffRepo, $staffScheduleRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),

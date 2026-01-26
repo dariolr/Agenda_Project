@@ -146,6 +146,7 @@ Cron Jobs (02/01/2026):
 | notification-worker | `php bin/notification-worker.php` | `* * * * *` | Invia email dalla coda |
 | queue-reminders | `php bin/queue-reminders.php` | `0 * * * *` | Accoda reminder appuntamenti |
 | cleanup-sessions | `php bin/cleanup-sessions.php` | `0 3 1 * *` | Pulisce sessioni e log vecchi |
+| compute-popular-services | `php bin/compute-popular-services.php` | `0 4 * * 0` | Calcola top 5 servizi più prenotati |
 
 Formato comando cron SiteGround:
 ```
@@ -289,7 +290,7 @@ rsync -avz --delete vendor/ siteground:www/api-staging.romeolab.it/vendor/
 - [ ] Sono nella cartella CORRETTA del progetto?
 - [ ] Il nome cartella corrisponde al progetto giusto?
 - [ ] L'URL di destinazione è quello CORRETTO?
-- [ ] Ho incrementato `?v=YYYYMMDD-N` in `web/index.html`?
+- [ ] Ho incrementato `window.appVersion` in `web/index.html`? (vedi formato sotto)
 
 ---
 
@@ -330,15 +331,29 @@ rsync -avz --delete src/ siteground:www/api.romeolab.it/src/
 rsync -avz --delete vendor/ siteground:www/api.romeolab.it/vendor/
 ```
 
-⚠️ VERSIONE CACHE BUSTING (01/01/2026):
+⚠️ VERSIONE CACHE BUSTING (25/01/2026):
 
-**Prima di ogni deploy Flutter (frontend o backend)**, incrementare la versione in `web/index.html`:
-```html
-<script src="flutter_bootstrap.js?v=YYYYMMDD-N" async></script>
+**Formato versione Flutter:** `YYYYMMDD-N.P`
 ```
-- Formato: `?v=YYYYMMDD-N` dove N è un contatore giornaliero
-- Esempio: `?v=20260101-1`, `?v=20260101-2`, ecc.
-- Questo forza il browser a ricaricare il JavaScript aggiornato
+YYYYMMDD-N.P
+│        │ │
+│        │ └── P = Numero progressivo deploy PRODUZIONE (incrementa SOLO per deploy prod)
+│        └──── N = Contatore giornaliero modifiche
+└───────────── Data (anno, mese, giorno)
+```
+
+**Esempio:** `20260125-1.3` = prima modifica del 25/01/2026, terzo deploy in produzione
+
+**Prima di ogni deploy Flutter PRODUZIONE**, incrementare **P** in `web/index.html`:
+```html
+<script>
+  window.appVersion = "20260125-1.3";  // Incrementare P per ogni deploy PROD
+</script>
+```
+
+**Valore corrente P:** `3` (al 25/01/2026)
+
+⚠️ **REGOLA:** Il numero **P** incrementa SOLO per deploy PRODUZIONE, NON per staging/test/locale.
 
 ⚠️ STRUTTURA PROGETTO vs DEPLOY SITEGROUND (31/12/2025):
 
@@ -1332,6 +1347,176 @@ Svuota tutte le tabelle mantenendo solo l'utente superadmin (id=1).
 # Esecuzione
 ssh siteground "cd www/api-staging.romeolab.it && mysql -u ugucggguv4ij7 -p'I0lqrdlr@##' dbax2noxh5jpyb" < scripts/clear_staging_db.sql
 ```
+
+---
+
+## 📊 Servizi Popolari per Staff (26/01/2026)
+
+### Scopo
+Analizza i servizi più prenotati negli ultimi 90 giorni e memorizza i top 5 per ogni staff.
+Il gestionale mostra questi servizi in una sezione dedicata nel picker servizi, specifici per lo staff selezionato.
+
+### Numero di Servizi Popolari Mostrati
+Il numero è **proporzionale ai servizi abilitati** per lo staff:
+- 1 servizio popolare ogni 7 servizi abilitati
+- Massimo 5 servizi popolari
+- Se meno di 7 servizi abilitati → 0 popolari (sezione nascosta)
+
+| Servizi abilitati | Popolari mostrati |
+|-------------------|-------------------|
+| 0-6 | 0 |
+| 7-13 | 1 |
+| 14-20 | 2 |
+| 21-27 | 3 |
+| 28-34 | 4 |
+| 35+ | 5 |
+
+### Tabella Database
+```sql
+CREATE TABLE popular_services (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    staff_id INT UNSIGNED NOT NULL,
+    service_id INT UNSIGNED NOT NULL,
+    `rank` TINYINT UNSIGNED NOT NULL,  -- 1-5
+    booking_count INT UNSIGNED NOT NULL,
+    computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY (staff_id, `rank`),
+    UNIQUE KEY (staff_id, service_id),
+    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
+);
+```
+
+### Endpoint API
+`GET /v1/staff/{staff_id}/services/popular`
+
+**Response:**
+```json
+{
+  "popular_services": [
+    {
+      "rank": 1,
+      "booking_count": 45,
+      "service_id": 5,
+      "service_name": "Taglio uomo",
+      "category_id": 2,
+      "category_name": "Capelli",
+      "price": 18.00,
+      "duration_minutes": 30,
+      "color": "#4CAF50"
+    }
+  ],
+  "enabled_services_count": 32,
+  "show_popular_section": true
+}
+```
+
+### Cron Worker
+- **File:** `bin/compute-popular-services.php`
+- **Schedule:** `0 4 * * 0` (domenica alle 4:00)
+- **Opzioni:** `--verbose`, `--staff=ID`, `--help`
+
+**Configurazione SiteGround:**
+```
+0 4 * * 0 cd /home/u1251-kkefwq4fumer/www/api.romeolab.it && php bin/compute-popular-services.php >> logs/popular-services.log 2>&1
+```
+
+### File PHP
+| File | Responsabilità |
+|------|----------------|
+| `src/Infrastructure/Repositories/PopularServiceRepository.php` | CRUD, calcolo per staff, conteggio servizi abilitati |
+| `src/Http/Controllers/ServicesController.php` | Metodo `popular()` con logica proporzionale |
+| `bin/compute-popular-services.php` | Worker cron |
+| `migrations/0031_popular_services.sql` | Schema iniziale (location) |
+| `migrations/0032_popular_services_by_staff.sql` | Migrazione a staff |
+
+---
+
+## 🔄 Servizi Duplicati in Prenotazione (26/01/2026)
+
+### Comportamento
+Una prenotazione può contenere lo stesso servizio più volte (es. 2x "Taglio uomo").
+
+### Metodi Aggiornati in ServiceRepository
+- `findByIds()` - Restituisce servizi nell'ordine richiesto, inclusi duplicati
+- `getTotalDuration()` - Calcola durata totale considerando duplicati
+- `getTotalPrice()` - Calcola prezzo totale considerando duplicati
+- `allBelongToBusiness()` - Verifica solo ID unici (duplicati permessi)
+
+---
+
+## ⏰ Smart Time Slots - Fasce Orarie Intelligenti (27/01/2026)
+
+### Scopo
+Permette di configurare come vengono mostrati gli orari disponibili ai clienti che prenotano online, ottimizzando la gestione del tempo evitando "buchi" troppo piccoli.
+
+### Colonne Database (tabella `locations`)
+```sql
+slot_interval_minutes INT UNSIGNED DEFAULT 15  -- Intervallo tra slot mostrati
+slot_display_mode ENUM('all', 'min_gap') DEFAULT 'all'  -- Modalità visualizzazione
+min_gap_minutes INT UNSIGNED DEFAULT 30  -- Gap minimo accettabile
+```
+
+### Modalità Visualizzazione
+
+| Modalità | Descrizione | Comportamento |
+|----------|-------------|---------------|
+| `all` | Massima disponibilità | Mostra tutti gli slot disponibili |
+| `min_gap` | Riduci spazi vuoti | Nasconde slot che creerebbero gap < min_gap_minutes |
+
+### Come Funziona `min_gap`
+Quando `slot_display_mode = 'min_gap'`:
+1. Per ogni slot disponibile, calcola la distanza dagli appuntamenti esistenti
+2. Se la distanza è > 0 ma < `min_gap_minutes`, lo slot viene nascosto
+3. Slot adiacenti (gap = 0) sono sempre mostrati
+
+**Esempio:**
+- `min_gap_minutes = 30`
+- Appuntamento esistente: 10:00-10:45
+- Slot 11:00 crea gap di 15 min → **nascosto**
+- Slot 11:15 crea gap di 30 min → **mostrato**
+
+### API
+
+**GET `/v1/availability`** (endpoint pubblico per frontend booking)
+- Ora applica automaticamente il filtro `min_gap` se configurato
+- Parametro interno `isPublic=true` attiva il filtraggio
+
+**PUT `/v1/locations/{id}`** (endpoint gestionale)
+- Nuovi campi nel body:
+  - `slot_interval_minutes` (5-60)
+  - `slot_display_mode` ('all' | 'min_gap')
+  - `min_gap_minutes` (0-120)
+
+### File PHP Modificati
+
+| File | Modifiche |
+|------|-----------|
+| `migrations/0033_location_slot_settings.sql` | ALTER TABLE locations per nuove colonne |
+| `LocationRepository.php` | Query findById e update con nuovi campi |
+| `ComputeAvailability.php` | Logica filtro `min_gap`, metodo `applyMinGapFilter()` |
+| `BookingRepository.php` | Metodo `getOccupiedSlotsForLocation()` |
+| `AvailabilityController.php` | Passa `isPublic=true` |
+| `LocationsController.php` | Gestione nuovi campi in `update()` e `formatLocation()` |
+
+### File Flutter Modificati (agenda_backend)
+
+| File | Modifiche |
+|------|-----------|
+| `lib/core/models/location.dart` | Nuovi campi nel model |
+| `lib/core/network/api_client.dart` | Nuovi parametri in `updateLocation()` |
+| `lib/features/business/data/locations_repository.dart` | Passaggio nuovi parametri |
+| `lib/features/agenda/providers/location_providers.dart` | Metodo `updateLocation()` con nuovi parametri |
+| `lib/features/staff/presentation/dialogs/location_dialog.dart` | UI per configurazione smart slots |
+| `lib/core/l10n/intl_it.arb`, `intl_en.arb` | Chiavi localizzazione |
+
+### Localizzazioni Aggiunte
+- `teamLocationSmartSlotSection` - "Fasce orarie intelligenti"
+- `teamLocationSlotIntervalLabel` - "Intervallo tra gli orari"
+- `teamLocationSlotDisplayModeLabel` - "Modalità visualizzazione"
+- `teamLocationSlotDisplayModeAll` - "Massima disponibilità"
+- `teamLocationSlotDisplayModeMinGap` - "Riduci spazi vuoti"
+- `teamLocationMinGapLabel` - "Gap minimo accettabile"
+- `teamLocationMinutes` - "{count} minuti"
 
 ---
 
