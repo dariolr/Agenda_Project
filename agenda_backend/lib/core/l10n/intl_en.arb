@@ -108,6 +108,7 @@
   "servicesTabLabel": "Services",
   "servicePackagesTabLabel": "Packages",
   "servicePackagesTitle": "Packages",
+  "popularServicesTitle": "Most popular",
   "servicePackagesEmptyState": "No packages available",
   "servicePackageNewMenu": "New package",
   "servicePackageNewTitle": "New package",
@@ -200,6 +201,23 @@
       "count": { "type": "int" }
     }
   },
+  "teamLocationMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
+  "@teamLocationMinutes": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teamLocationSmartSlotSection": "Smart time slots",
+  "teamLocationSmartSlotDescription": "Configure how available times are shown to customers booking online",
+  "teamLocationSlotIntervalLabel": "Time slot interval",
+  "teamLocationSlotIntervalHint": "How many minutes between each available slot",
+  "teamLocationSlotDisplayModeLabel": "Display mode",
+  "teamLocationSlotDisplayModeAll": "Maximum availability",
+  "teamLocationSlotDisplayModeMinGap": "Reduce empty gaps",
+  "teamLocationSlotDisplayModeAllHint": "Show all available time slots",
+  "teamLocationSlotDisplayModeMinGapHint": "Hide slots that would create gaps too small to fill",
+  "teamLocationMinGapLabel": "Minimum acceptable gap",
+  "teamLocationMinGapHint": "Hide time slots that leave less than this time free",
   "teamNewStaffTitle": "New team member",
   "teamEditStaffTitle": "Edit team member",
   "teamStaffNameLabel": "First name",

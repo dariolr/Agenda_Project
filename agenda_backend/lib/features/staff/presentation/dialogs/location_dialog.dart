@@ -8,8 +8,8 @@ import '../../../../core/models/location.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
-import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../../agenda/providers/location_providers.dart';
 
@@ -57,9 +57,16 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   int _maxBookingAdvanceDays = 90;
   bool _allowCustomerChooseStaff = false;
 
+  // Smart Slot Display Settings
+  int _slotIntervalMinutes = 15;
+  String _slotDisplayMode = 'all';
+  int _minGapMinutes = 30;
+
   // Opzioni disponibili per i dropdown
   static const _noticeHoursOptions = [1, 2, 4, 6, 12, 24, 48];
   static const _advanceDaysOptions = [7, 14, 30, 60, 90, 180, 365];
+  static const _slotIntervalOptions = [5, 10, 15, 20, 30, 45, 60];
+  static const _minGapOptions = [15, 20, 30, 45, 60, 90, 120];
 
   @override
   void initState() {
@@ -72,6 +79,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       _minBookingNoticeHours = widget.initial!.minBookingNoticeHours;
       _maxBookingAdvanceDays = widget.initial!.maxBookingAdvanceDays;
       _allowCustomerChooseStaff = widget.initial!.allowCustomerChooseStaff;
+      _slotIntervalMinutes = widget.initial!.slotIntervalMinutes;
+      _slotDisplayMode = widget.initial!.slotDisplayMode;
+      _minGapMinutes = widget.initial!.minGapMinutes;
     } else {
       // Pre-popola con il nome del business per nuove sedi
       final businessName = ref.read(currentBusinessProvider).name;
@@ -243,6 +253,97 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
               },
             ),
           ),
+          const SizedBox(height: AppSpacing.formRowSpacing * 2),
+          // Sezione Smart Slot Display
+          Text(
+            l10n.teamLocationSmartSlotSection,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.teamLocationSmartSlotDescription,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Intervallo slot
+          LabeledFormField(
+            label: l10n.teamLocationSlotIntervalLabel,
+            child: DropdownButtonFormField<int>(
+              value: _slotIntervalMinutes,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                isDense: true,
+                helperText: l10n.teamLocationSlotIntervalHint,
+              ),
+              items: _slotIntervalOptions.map((minutes) {
+                return DropdownMenuItem(
+                  value: minutes,
+                  child: Text(l10n.teamLocationMinutes(minutes)),
+                );
+              }).toList(),
+              onChanged: (v) {
+                if (v != null) setState(() => _slotIntervalMinutes = v);
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          // Modalità visualizzazione slot
+          LabeledFormField(
+            label: l10n.teamLocationSlotDisplayModeLabel,
+            child: DropdownButtonFormField<String>(
+              value: _slotDisplayMode,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                isDense: true,
+                helperText: _slotDisplayMode == 'all'
+                    ? l10n.teamLocationSlotDisplayModeAllHint
+                    : l10n.teamLocationSlotDisplayModeMinGapHint,
+              ),
+              items: [
+                DropdownMenuItem(
+                  value: 'all',
+                  child: Text(l10n.teamLocationSlotDisplayModeAll),
+                ),
+                DropdownMenuItem(
+                  value: 'min_gap',
+                  child: Text(l10n.teamLocationSlotDisplayModeMinGap),
+                ),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _slotDisplayMode = v);
+              },
+            ),
+          ),
+          // Gap minimo (visibile solo se min_gap mode)
+          if (_slotDisplayMode == 'min_gap') ...[
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            LabeledFormField(
+              label: l10n.teamLocationMinGapLabel,
+              child: DropdownButtonFormField<int>(
+                value: _minGapMinutes,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  helperText: l10n.teamLocationMinGapHint,
+                ),
+                items: _minGapOptions.map((minutes) {
+                  return DropdownMenuItem(
+                    value: minutes,
+                    child: Text(l10n.teamLocationMinutes(minutes)),
+                  );
+                }).toList(),
+                onChanged: (v) {
+                  if (v != null) setState(() => _minGapMinutes = v);
+                },
+              ),
+            ),
+          ],
           if (_error != null) ...[
             const SizedBox(height: AppSpacing.formRowSpacing),
             Text(
@@ -386,6 +487,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           minBookingNoticeHours: _minBookingNoticeHours,
           maxBookingAdvanceDays: _maxBookingAdvanceDays,
           allowCustomerChooseStaff: _allowCustomerChooseStaff,
+          slotIntervalMinutes: _slotIntervalMinutes,
+          slotDisplayMode: _slotDisplayMode,
+          minGapMinutes: _minGapMinutes,
         );
       } else {
         // Crea nuova location

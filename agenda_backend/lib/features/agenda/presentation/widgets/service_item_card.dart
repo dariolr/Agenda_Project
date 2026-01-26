@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/date_time_formats.dart';
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/popular_service.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service_package.dart';
@@ -45,6 +46,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
     required this.onEndTimeChanged,
     required this.onDurationChanged,
     this.packages,
+    this.popularServices,
     this.onPackageSelected,
     this.suggestedStartTime,
     this.canRemove = true,
@@ -74,6 +76,9 @@ class ServiceItemCard extends ConsumerStatefulWidget {
 
   /// Optional packages to show in the service picker.
   final List<ServicePackage>? packages;
+
+  /// Servizi più prenotati (top 5) per la location corrente.
+  final PopularServicesResult? popularServices;
 
   /// Callback when a package is selected from the picker.
   final ValueChanged<ServicePackage>? onPackageSelected;
@@ -116,6 +121,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
   ValueChanged<TimeOfDay> get onEndTimeChanged => widget.onEndTimeChanged;
   ValueChanged<int> get onDurationChanged => widget.onDurationChanged;
   List<ServicePackage>? get packages => widget.packages;
+  PopularServicesResult? get popularServices => widget.popularServices;
   ValueChanged<ServicePackage>? get onPackageSelected =>
       widget.onPackageSelected;
   TimeOfDay? get suggestedStartTime => widget.suggestedStartTime;
@@ -230,6 +236,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
       services: services,
       categories: categories,
       packages: packages,
+      popularServices: popularServices,
       formFactor: formFactor,
       value: item.serviceId,
       preselectedStaffServiceIds: preselectedStaffServiceIds,
@@ -1204,7 +1211,8 @@ class _TimeGridPicker extends StatefulWidget {
 class _TimeGridPickerState extends State<_TimeGridPicker> {
   late final ScrollController _scrollController;
   late final List<TimeOfDay?> _entries;
-  late final int _scrollToIndex;
+  late int _scrollToIndex;
+  int? _selectedIndex; // Index dell'orario da evidenziare (null se nessuno)
 
   @override
   void initState() {
@@ -1218,15 +1226,45 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
       _entries.add(TimeOfDay(hour: h, minute: mm));
     }
 
-    _scrollToIndex = _ensureTimeInEntries(widget.initial);
+    // Determina l'orario verso cui scrollare e se evidenziare
+    final hasValidInitial =
+        widget.initial.hour != 0 || widget.initial.minute != 0;
+    final targetTime = _getTargetScrollTime();
+    _scrollToIndex = _ensureTimeInEntries(targetTime);
+
+    // Evidenzia solo se l'orario iniziale è valido (non 00:00)
+    _selectedIndex = hasValidInitial ? _scrollToIndex : null;
+
     if (widget.includeTime != null &&
-        !_isSameTime(widget.includeTime!, widget.initial)) {
+        !_isSameTime(widget.includeTime!, targetTime)) {
       _ensureTimeInEntries(widget.includeTime!);
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToSelected();
     });
+  }
+
+  /// Determina l'orario verso cui scrollare
+  TimeOfDay _getTargetScrollTime() {
+    // Se l'orario iniziale è diverso da 00:00, usalo
+    if (widget.initial.hour != 0 || widget.initial.minute != 0) {
+      return widget.initial;
+    }
+
+    // Altrimenti usa l'orario attuale arrotondato al prossimo step
+    final now = TimeOfDay.now();
+    final totalMinutes = now.hour * 60 + now.minute;
+    final roundedMinutes =
+        ((totalMinutes + widget.stepMinutes - 1) ~/ widget.stepMinutes) *
+        widget.stepMinutes;
+
+    // Limita a 23:45 massimo (o ultimo step valido)
+    final maxMinutes =
+        (LayoutConfig.hoursInDay - 1) * 60 + (60 - widget.stepMinutes);
+    final clampedMinutes = roundedMinutes.clamp(0, maxMinutes);
+
+    return TimeOfDay(hour: clampedMinutes ~/ 60, minute: clampedMinutes % 60);
   }
 
   bool _isSameTime(TimeOfDay a, TimeOfDay b) =>
@@ -1327,7 +1365,8 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
                 if (t == null) {
                   return const SizedBox.shrink();
                 }
-                final isSelected = index == _scrollToIndex;
+                final isSelected =
+                    _selectedIndex != null && index == _selectedIndex;
                 return OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     backgroundColor: isSelected

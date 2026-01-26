@@ -971,18 +971,38 @@ La versione è definita **una sola volta** in `web/index.html`:
 
 ```html
 <script>
-  window.appVersion = "YYYYMMDD-N";
+  window.appVersion = "YYYYMMDD-N.P";
 </script>
 ```
 
 Questa variabile viene usata per:
 1. **Cache busting** — Il tag `flutter_bootstrap.js` viene generato dinamicamente con `?v=` dalla stessa variabile
-2. **Footer login** — Mostrato nella schermata di login come `vYYYYMMDD-N`
+2. **Footer login** — Mostrato nella schermata di login come `vYYYYMMDD-N.P`
+
+### Formato versione
+
+```
+YYYYMMDD-N.P
+│        │ │
+│        │ └── P = Numero progressivo deploy PRODUZIONE (incrementa solo per deploy prod)
+│        └──── N = Contatore giornaliero modifiche
+└───────────── Data (anno, mese, giorno)
+```
+
+**Esempio:** `20260125-1.3` = prima modifica del 25/01/2026, terzo deploy in produzione
+
+### ⚠️ Regola CRITICA per deploy PRODUZIONE
+
+Il numero progressivo **P** deve essere incrementato **SOLO** per deploy in produzione:
+- **Deploy PRODUZIONE**: incrementare P (es. da `.3` a `.4`)
+- **Deploy staging/test/locale**: NON incrementare P, aggiornare solo YYYYMMDD-N se necessario
+
+**Valore corrente P:** `4` (al 26/01/2026)
 
 ### Come aggiornare la versione
 Modificare **solo** la riga:
 ```javascript
-window.appVersion = "20260117-1";  // Formato: YYYYMMDD-N
+window.appVersion = "20260126-1.4";  // Formato: YYYYMMDD-N.P
 ```
 
 ### File di riferimento
@@ -991,6 +1011,102 @@ window.appVersion = "20260117-1";  // Formato: YYYYMMDD-N
 | `web/index.html` | Definizione `window.appVersion` |
 | `lib/core/utils/app_version.dart` | Utility `getAppVersion()` per leggere da JS |
 | `lib/features/auth/presentation/login_screen.dart` | Mostra versione nel footer |
+
+---
+
+## 📊 Servizi Popolari nel Picker (26/01/2026)
+
+### Funzionalità
+Quando l'operatore crea/modifica una prenotazione, il picker servizi mostra in cima una sezione "Più richiesti" con i servizi più prenotati **per quello staff** negli ultimi 90 giorni.
+
+### Numero di Servizi Popolari Mostrati
+Il numero è **proporzionale ai servizi abilitati** per lo staff:
+- 1 servizio popolare ogni 7 servizi abilitati
+- Massimo 5 servizi popolari
+- Se meno di 7 servizi abilitati → sezione nascosta
+
+| Servizi abilitati | Popolari mostrati |
+|-------------------|-------------------|
+| 0-6 | 0 (nascosto) |
+| 7-13 | 1 |
+| 14-20 | 2 |
+| 21-27 | 3 |
+| 28-34 | 4 |
+| 35+ | 5 |
+
+### Come funziona
+- I servizi popolari sono calcolati **per staff**, non per location
+- Quando si clicca su uno slot di uno staff, vengono caricati i servizi popolari di quello staff specifico
+- Se lo staff del primo servizio cambia, vengono ricaricati i servizi popolari del nuovo staff
+
+### Regole di visualizzazione
+- **Categoria mostrata** solo se i servizi popolari appartengono a categorie diverse
+- **Filtro staff abilitati**: se presente, mostra solo i servizi popolari che lo staff può erogare
+- **Checkbox "Mostra tutti"**: se attivo, mostra tutti i servizi indipendentemente dall'abilitazione
+
+### File Flutter
+| File | Responsabilità |
+|------|----------------|
+| `lib/core/models/popular_service.dart` | Modello `PopularService` e `PopularServicesResult` |
+| `lib/features/services/providers/popular_services_provider.dart` | FutureProvider.family per staffId |
+| `lib/features/agenda/presentation/widgets/service_picker_field.dart` | Sezione `_PopularServicesSection` |
+| `lib/features/agenda/presentation/widgets/booking_dialog.dart` | Passa staffId del primo item |
+| `lib/features/agenda/presentation/widgets/appointment_dialog.dart` | Passa staffId del primo item |
+| `lib/core/network/api_client.dart` | Metodo `getPopularServices(staffId)` |
+
+### Localizzazioni
+- `popularServicesTitle` — "Più richiesti" (IT) / "Most Popular" (EN)
+
+---
+
+## ⏰ Smart Time Slots - Configurazione Fasce Orarie (27/01/2026)
+
+### Funzionalità
+Gli operatori possono configurare come vengono mostrati gli orari disponibili ai clienti che prenotano online tramite il dialog delle sedi.
+
+### Campi Configurabili (tabella `locations`)
+| Campo | Tipo | Default | Descrizione |
+|-------|------|---------|-------------|
+| `slot_interval_minutes` | INT | 15 | Intervallo tra gli slot mostrati (5-60 min) |
+| `slot_display_mode` | ENUM | 'all' | Modalità visualizzazione |
+| `min_gap_minutes` | INT | 30 | Gap minimo accettabile (0-120 min) |
+
+### Modalità Visualizzazione
+
+| Modalità | Label UI | Descrizione |
+|----------|----------|-------------|
+| `all` | "Massima disponibilità" | Mostra tutti gli slot disponibili |
+| `min_gap` | "Riduci spazi vuoti" | Nasconde slot che creerebbero gap < min_gap_minutes |
+
+### UI nel Dialog Sede
+
+La sezione "Fasce orarie intelligenti" appare nel dialog di modifica sede con:
+1. **Dropdown intervallo** — 5, 10, 15, 20, 30, 45, 60 minuti
+2. **Dropdown modalità** — "Massima disponibilità" / "Riduci spazi vuoti"
+3. **Dropdown gap minimo** — 15, 30, 45, 60, 90, 120 minuti (visibile solo se mode='min_gap')
+
+### File Flutter (agenda_backend)
+| File | Responsabilità |
+|------|----------------|
+| `lib/core/models/location.dart` | Campi `slotIntervalMinutes`, `slotDisplayMode`, `minGapMinutes` |
+| `lib/core/network/api_client.dart` | Parametri in `updateLocation()` |
+| `lib/features/business/data/locations_repository.dart` | Passaggio parametri API |
+| `lib/features/agenda/providers/location_providers.dart` | Metodo `updateLocation()` |
+| `lib/features/staff/presentation/dialogs/location_dialog.dart` | UI configurazione |
+
+### Localizzazioni
+- `teamLocationSmartSlotSection` — "Fasce orarie intelligenti"
+- `teamLocationSlotIntervalLabel` — "Intervallo tra gli orari"
+- `teamLocationSlotDisplayModeLabel` — "Modalità visualizzazione"
+- `teamLocationSlotDisplayModeAll` — "Massima disponibilità"
+- `teamLocationSlotDisplayModeMinGap` — "Riduci spazi vuoti"
+- `teamLocationMinGapLabel` — "Gap minimo accettabile"
+- `teamLocationMinutes` — "{count} minuti"
+
+### Note Importanti
+- Il filtraggio avviene **solo** nel frontend prenotazioni (agenda_frontend)
+- Il gestionale mostra sempre tutti gli slot disponibili
+- La logica di filtraggio è implementata in `ComputeAvailability` (agenda_core)
 
 
 SOURCE OF TRUTH: STAFF_PLANNING_MODEL.md
