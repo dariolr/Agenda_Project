@@ -140,6 +140,7 @@ class MessageLookup extends MessageLookupByLibrary {
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+    "actionApply": MessageLookupByLibrary.simpleMessage("Applica"),
     "actionCancel": MessageLookupByLibrary.simpleMessage("Annulla"),
     "actionClose": MessageLookupByLibrary.simpleMessage("Chiudi"),
     "actionConfirm": MessageLookupByLibrary.simpleMessage("Conferma"),
@@ -147,12 +148,17 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionDeleteBooking": MessageLookupByLibrary.simpleMessage(
       "Elimina prenotazione",
     ),
+    "actionDeselectAll": MessageLookupByLibrary.simpleMessage(
+      "Deseleziona tutti",
+    ),
     "actionDiscard": MessageLookupByLibrary.simpleMessage("Annulla"),
     "actionEdit": MessageLookupByLibrary.simpleMessage("Modifica"),
     "actionKeepEditing": MessageLookupByLibrary.simpleMessage(
       "Continua a modificare",
     ),
+    "actionRefresh": MessageLookupByLibrary.simpleMessage("Aggiorna"),
     "actionSave": MessageLookupByLibrary.simpleMessage("Salva"),
+    "actionSelectAll": MessageLookupByLibrary.simpleMessage("Seleziona tutti"),
     "addClientToAppointment": MessageLookupByLibrary.simpleMessage(
       "Aggiungi un cliente all\'appuntamento",
     ),
@@ -413,12 +419,19 @@ class MessageLookup extends MessageLookupByLibrary {
       "Crea nuovo cliente",
     ),
     "currentWeek": MessageLookupByLibrary.simpleMessage("Settimana corrente"),
+    "dayFriday": MessageLookupByLibrary.simpleMessage("Venerdì"),
     "dayFridayFull": MessageLookupByLibrary.simpleMessage("venerdì"),
+    "dayMonday": MessageLookupByLibrary.simpleMessage("Lunedì"),
     "dayMondayFull": MessageLookupByLibrary.simpleMessage("lunedì"),
+    "daySaturday": MessageLookupByLibrary.simpleMessage("Sabato"),
     "daySaturdayFull": MessageLookupByLibrary.simpleMessage("sabato"),
+    "daySunday": MessageLookupByLibrary.simpleMessage("Domenica"),
     "daySundayFull": MessageLookupByLibrary.simpleMessage("domenica"),
+    "dayThursday": MessageLookupByLibrary.simpleMessage("Giovedì"),
     "dayThursdayFull": MessageLookupByLibrary.simpleMessage("giovedì"),
+    "dayTuesday": MessageLookupByLibrary.simpleMessage("Martedì"),
     "dayTuesdayFull": MessageLookupByLibrary.simpleMessage("martedì"),
+    "dayWednesday": MessageLookupByLibrary.simpleMessage("Mercoledì"),
     "dayWednesdayFull": MessageLookupByLibrary.simpleMessage("mercoledì"),
     "deleteAppointmentConfirmMessage": MessageLookupByLibrary.simpleMessage(
       "L\'appuntamento verrà rimosso. L\'operazione non può essere annullata.",
@@ -852,6 +865,81 @@ class MessageLookup extends MessageLookupByLibrary {
     "reorderTitle": MessageLookupByLibrary.simpleMessage(
       "Modifica ordinamento",
     ),
+    "reportsByDayOfWeek": MessageLookupByLibrary.simpleMessage(
+      "Per giorno della settimana",
+    ),
+    "reportsByHour": MessageLookupByLibrary.simpleMessage("Per fascia oraria"),
+    "reportsByLocation": MessageLookupByLibrary.simpleMessage("Per sede"),
+    "reportsByPeriod": MessageLookupByLibrary.simpleMessage("Per periodo"),
+    "reportsByService": MessageLookupByLibrary.simpleMessage("Per servizio"),
+    "reportsByStaff": MessageLookupByLibrary.simpleMessage("Per operatore"),
+    "reportsColAppointments": MessageLookupByLibrary.simpleMessage(
+      "Appuntamenti",
+    ),
+    "reportsColAvgDuration": MessageLookupByLibrary.simpleMessage(
+      "Durata media",
+    ),
+    "reportsColAvgRevenue": MessageLookupByLibrary.simpleMessage("Media"),
+    "reportsColCategory": MessageLookupByLibrary.simpleMessage("Categoria"),
+    "reportsColDay": MessageLookupByLibrary.simpleMessage("Giorno"),
+    "reportsColHour": MessageLookupByLibrary.simpleMessage("Ora"),
+    "reportsColHours": MessageLookupByLibrary.simpleMessage("Ore"),
+    "reportsColLocation": MessageLookupByLibrary.simpleMessage("Sede"),
+    "reportsColPercentage": MessageLookupByLibrary.simpleMessage("%"),
+    "reportsColPeriod": MessageLookupByLibrary.simpleMessage("Periodo"),
+    "reportsColRevenue": MessageLookupByLibrary.simpleMessage("Incasso"),
+    "reportsColService": MessageLookupByLibrary.simpleMessage("Servizio"),
+    "reportsColStaff": MessageLookupByLibrary.simpleMessage("Operatore"),
+    "reportsFilterLocations": MessageLookupByLibrary.simpleMessage("Sedi"),
+    "reportsFilterServices": MessageLookupByLibrary.simpleMessage("Servizi"),
+    "reportsFilterStaff": MessageLookupByLibrary.simpleMessage("Staff"),
+    "reportsFilterStatus": MessageLookupByLibrary.simpleMessage("Stato"),
+    "reportsFullPeriodToggle": MessageLookupByLibrary.simpleMessage(
+      "Includi intero periodo (anche futuro)",
+    ),
+    "reportsNoData": MessageLookupByLibrary.simpleMessage(
+      "Nessun dato disponibile",
+    ),
+    "reportsOccupancyPercentage": MessageLookupByLibrary.simpleMessage(
+      "Occupazione",
+    ),
+    "reportsPresetCustom": MessageLookupByLibrary.simpleMessage(
+      "Scegli periodo",
+    ),
+    "reportsPresetLast3Months": MessageLookupByLibrary.simpleMessage(
+      "Ultimi 3 mesi",
+    ),
+    "reportsPresetLast6Months": MessageLookupByLibrary.simpleMessage(
+      "Ultimi 6 mesi",
+    ),
+    "reportsPresetLastMonth": MessageLookupByLibrary.simpleMessage(
+      "Mese scorso",
+    ),
+    "reportsPresetLastYear": MessageLookupByLibrary.simpleMessage(
+      "Anno precedente",
+    ),
+    "reportsPresetMonth": MessageLookupByLibrary.simpleMessage("Mese corrente"),
+    "reportsPresetQuarter": MessageLookupByLibrary.simpleMessage(
+      "Trimestre corrente",
+    ),
+    "reportsPresetSemester": MessageLookupByLibrary.simpleMessage(
+      "Semestre corrente",
+    ),
+    "reportsPresetToday": MessageLookupByLibrary.simpleMessage("Oggi"),
+    "reportsPresetWeek": MessageLookupByLibrary.simpleMessage(
+      "Questa settimana",
+    ),
+    "reportsPresetYear": MessageLookupByLibrary.simpleMessage("Anno corrente"),
+    "reportsPresets": MessageLookupByLibrary.simpleMessage("Preset periodo"),
+    "reportsTitle": MessageLookupByLibrary.simpleMessage("Report"),
+    "reportsTotalAppointments": MessageLookupByLibrary.simpleMessage(
+      "Appuntamenti",
+    ),
+    "reportsTotalHours": MessageLookupByLibrary.simpleMessage("Ore lavorate"),
+    "reportsTotalRevenue": MessageLookupByLibrary.simpleMessage("Incasso"),
+    "reportsUniqueClients": MessageLookupByLibrary.simpleMessage(
+      "Clienti unici",
+    ),
     "searchClientPlaceholder": MessageLookupByLibrary.simpleMessage(
       "Cerca cliente...",
     ),
@@ -1075,6 +1163,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "staffScreenPlaceholder": MessageLookupByLibrary.simpleMessage(
       "Schermata Team",
     ),
+    "statusCancelled": MessageLookupByLibrary.simpleMessage("Cancellato"),
+    "statusCompleted": MessageLookupByLibrary.simpleMessage("Completato"),
+    "statusConfirmed": MessageLookupByLibrary.simpleMessage("Confermato"),
     "switchBusiness": MessageLookupByLibrary.simpleMessage("Cambia"),
     "teamAddStaff": MessageLookupByLibrary.simpleMessage("Aggiungi membro"),
     "teamChooseLocationSingleButton": MessageLookupByLibrary.simpleMessage(

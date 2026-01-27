@@ -254,6 +254,7 @@ Future<void> _onSave() async {
 - **Eseguire deploy in PRODUZIONE** (build + rsync verso `gestionale.romeolab.it`) senza richiesta esplicita dell'utente
 - **Eseguire deploy in STAGING** può essere fatto autonomamente per test, ma chiedere conferma se non esplicitamente richiesto
 - **Avviare l'applicazione** (`flutter run`) senza richiesta esplicita dell'utente
+- **Suggerire "hot reload"** — l'utente sa già quando fare reload, non serve dirgli nulla
 - Aggiungere dipendenze non richieste
 - Modificare indici route o `router.dart` senza richiesta esplicita
 - Produrre snippet parziali invece di file completi
@@ -1107,6 +1108,64 @@ La sezione "Fasce orarie intelligenti" appare nel dialog di modifica sede con:
 - Il filtraggio avviene **solo** nel frontend prenotazioni (agenda_frontend)
 - Il gestionale mostra sempre tutti gli slot disponibili
 - La logica di filtraggio è implementata in `ComputeAvailability` (agenda_core)
+
+---
+
+## 📊 Reports - Statistiche Appuntamenti (27/01/2026)
+
+### Funzionalità
+Sezione dedicata alle statistiche con filtri avanzati per periodo, sede, staff, servizi e stato appuntamenti.
+
+### Filtri Periodo Predefiniti
+
+| Preset | Descrizione |
+|--------|-------------|
+| `custom` | Scegli periodo (apre date picker) |
+| `today` | Oggi |
+| `month` | Mese corrente (1° - ultimo giorno) |
+| `quarter` | Trimestre corrente |
+| `semester` | Semestre corrente |
+| `year` | Anno corrente (1 gen - 31 dic) |
+| `last_month` | Mese scorso |
+| `last_3_months` | Ultimi 3 mesi (fino a fine mese scorso) |
+| `last_6_months` | Ultimi 6 mesi (fino a fine mese scorso) |
+| `last_year` | Anno precedente |
+
+### Toggle "Includi intero periodo"
+
+Per i preset "correnti" (mese, trimestre, semestre, anno) è disponibile uno switch:
+- **OFF (default)**: il periodo arriva fino alla data odierna
+- **ON**: il periodo copre l'intero arco temporale (anche futuro)
+
+Lo switch NON appare per: `custom`, `today`, `last_month`, `last_3_months`, `last_6_months`, `last_year`.
+
+### Sezioni Report
+
+| Sezione | Colonne |
+|---------|----------|
+| **Riepilogo** | Card con totali (appuntamenti, fatturato, media, tasso occupazione) |
+| **Per operatore** | Staff, Appuntamenti, Fatturato, Media/app, % |
+| **Per sede** | Sede, Appuntamenti, Fatturato, Ore, % |
+| **Per servizio** | Servizio, Categoria, Appuntamenti, Fatturato |
+| **Per fascia oraria** | Ora, Appuntamenti, Fatturato, % |
+| **Per periodo** | Periodo, Appuntamenti, Fatturato |
+
+### File Flutter
+
+| File | Responsabilità |
+|------|----------------|
+| `lib/features/reports/presentation/reports_screen.dart` | Schermata principale con filtri e tabelle |
+| `lib/features/reports/providers/reports_provider.dart` | Provider per fetch dati da API |
+| `lib/features/reports/domain/report_models.dart` | Modelli dati report |
+
+### Localizzazioni Principali
+- `reportsPresetCustom` — "Scegli periodo"
+- `reportsPresetMonth` — "Mese corrente"
+- `reportsPresetQuarter` — "Trimestre corrente"
+- `reportsPresetSemester` — "Semestre corrente"
+- `reportsPresetYear` — "Anno corrente"
+- `reportsFullPeriodToggle` — "Includi intero periodo (anche futuro)"
+- `actionApply` — "Applica" (pulsante date picker)
 
 
 SOURCE OF TRUTH: STAFF_PLANNING_MODEL.md
