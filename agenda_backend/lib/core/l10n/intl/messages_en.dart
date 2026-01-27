@@ -580,6 +580,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "navAgenda": MessageLookupByLibrary.simpleMessage("Agenda"),
     "navClients": MessageLookupByLibrary.simpleMessage("Clients"),
+    "navMore": MessageLookupByLibrary.simpleMessage("More"),
     "navProfile": MessageLookupByLibrary.simpleMessage("Profile"),
     "navServices": MessageLookupByLibrary.simpleMessage("Services"),
     "navStaff": MessageLookupByLibrary.simpleMessage("Team"),
