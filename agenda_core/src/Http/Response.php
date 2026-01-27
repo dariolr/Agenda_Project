@@ -48,6 +48,17 @@ final class Response
         return self::error($message, 'unauthorized', 401);
     }
 
+    public static function badRequest(array $data, ?string $traceId = null): self
+    {
+        $message = $data['error'] ?? 'Bad request';
+        return self::error($message, 'bad_request', 400, $traceId);
+    }
+
+    public static function ok(array $data): self
+    {
+        return self::success($data, 200);
+    }
+
     public static function forbidden(string $message, ?string $traceId = null): self
     {
         return self::error($message, 'forbidden', 403);

@@ -13,6 +13,7 @@ import '../features/auth/providers/auth_provider.dart';
 import '../features/business/presentation/business_list_screen.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
 import '../features/clients/presentation/clients_screen.dart';
+import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_week_overview_screen.dart';
 import '../features/staff/presentation/team_screen.dart';
@@ -186,6 +187,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 name: 'staff',
                 builder: (BuildContext context, GoRouterState state) =>
                     const TeamScreen(),
+              ),
+            ],
+          ),
+
+          // --- Ramo 4: Report ---
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/report',
+                name: 'report',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const ReportsScreen(),
               ),
             ],
           ),

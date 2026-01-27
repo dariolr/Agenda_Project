@@ -222,17 +222,17 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
 
     // Su mobile, mappa l'indice corrente a quello compatto
-    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Profile
+    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Profile
     // Mobile:  0=Agenda, 1=Clienti, 2=Profile, 3=Altro
     int mobileCurrentIndex;
     if (navigationShell.currentIndex <= 1) {
       // Agenda o Clienti
       mobileCurrentIndex = navigationShell.currentIndex;
-    } else if (navigationShell.currentIndex <= 3) {
-      // Servizi o Staff → evidenzia "Altro"
+    } else if (navigationShell.currentIndex <= 4) {
+      // Servizi, Staff o Report → evidenzia "Altro"
       mobileCurrentIndex = 3;
     } else {
-      // Profile (index 4 → 2 su mobile)
+      // Profile (index 5 → 2 su mobile)
       mobileCurrentIndex = 2;
     }
 
@@ -326,9 +326,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
   }
 
-  /// Gestisce tap su navigation: se è index 4, mostra menu utente
+  /// Gestisce tap su navigation: se è index 5, mostra menu utente
   void _handleNavTap(BuildContext context, int index, WidgetRef ref) {
-    if (index == 4) {
+    if (index == 5) {
       _showUserMenu(context, ref);
     } else {
       _goBranch(index, ref);
@@ -338,7 +338,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   /// Gestisce tap su navigation mobile:
   /// - Index 0, 1: navigazione normale (Agenda, Clienti)
   /// - Index 2: menu utente (Profilo)
-  /// - Index 3: mostra BottomSheet "Altro" (Servizi, Team)
+  /// - Index 3: mostra BottomSheet "Altro" (Servizi, Team, Report)
   void _handleMobileNavTap(
     BuildContext context,
     int mobileIndex,
@@ -358,7 +358,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
   }
 
-  /// Mostra BottomSheet con le voci Servizi e Team
+  /// Mostra BottomSheet con le voci Servizi, Team e Report
   void _showMoreBottomSheet(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
@@ -436,9 +436,6 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(16),
-                  ),
                   onTap: () {
                     Navigator.of(ctx).pop();
                     _goBranch(3, ref);
@@ -457,6 +454,40 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                         ),
                         const SizedBox(width: 16),
                         Text(l10n.navStaff, style: theme.textTheme.titleMedium),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
+              // Report
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(16),
+                  ),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _goBranch(4, ref);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.bar_chart,
+                          color: colorScheme.primary,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 16),
+                        Text(
+                          l10n.reportsTitle,
+                          style: theme.textTheme.titleMedium,
+                        ),
                       ],
                     ),
                   ),
@@ -499,6 +530,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         UserMenuButton.handleLogout(context, ref);
       } else if (value == 'profile') {
         context.push('/profilo');
+      } else if (value == 'report') {
+        context.push('/report');
       } else if (value == 'change_password') {
         context.push('/change-password');
       } else if (value == 'switch_business') {
@@ -1142,6 +1175,11 @@ class _ScaffoldWithNavigationHelpers {
         iconData: Icons.badge_outlined,
         selectedIconData: Icons.badge,
         label: l10n.navStaff,
+      ),
+      NavigationDestination(
+        iconData: Icons.bar_chart_outlined,
+        selectedIconData: Icons.bar_chart,
+        label: l10n.reportsTitle,
       ),
       NavigationDestination(
         iconData: Icons.account_circle_outlined,
