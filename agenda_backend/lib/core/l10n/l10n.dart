@@ -89,6 +89,11 @@ class L10n {
     return Intl.message('Profilo', name: 'navProfile', desc: '', args: []);
   }
 
+  /// `Altro`
+  String get navMore {
+    return Intl.message('Altro', name: 'navMore', desc: '', args: []);
+  }
+
   /// `Elenco Clienti`
   String get clientsTitle {
     return Intl.message(

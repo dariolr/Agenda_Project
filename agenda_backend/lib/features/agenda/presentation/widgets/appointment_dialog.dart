@@ -403,9 +403,13 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final asyncClients = ref.watch(clientsProvider);
     final clients = asyncClients.value ?? [];
     final staff = ref.watch(staffForCurrentLocationProvider);
-    
+    final hasPackages =
+        (ref.watch(servicePackagesProvider).value ?? []).isNotEmpty;
+
     // Usa lo staffId del primo item per i servizi popolari
-    final firstStaffId = _serviceItems.isNotEmpty ? _serviceItems.first.staffId : null;
+    final firstStaffId = _serviceItems.isNotEmpty
+        ? _serviceItems.first.staffId
+        : null;
     final popularServices = firstStaffId != null
         ? ref.watch(popularServicesProvider(firstStaffId)).value
         : null;
@@ -492,6 +496,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                 serviceWarningMessage:
                     l10n.bookingUnavailableTimeWarningService,
                 popularServices: popularServices,
+                hasPackages: hasPackages,
               ),
               const SizedBox(height: AppSpacing.formRowSpacing),
               // Notes field
@@ -729,6 +734,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     required bool showServiceWarnings,
     required String serviceWarningMessage,
     required PopularServicesResult? popularServices,
+    required bool hasPackages,
   }) {
     final widgets = <Widget>[];
 
@@ -890,18 +896,20 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    AppOutlinedActionButton(
-                      onPressed: _isAddingPackage ? null : _addPackage,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.widgets_outlined, size: 18),
-                          const SizedBox(width: 8),
-                          Text(context.l10n.addPackage),
-                        ],
+                    if (hasPackages) ...[
+                      const SizedBox(width: 8),
+                      AppOutlinedActionButton(
+                        onPressed: _isAddingPackage ? null : _addPackage,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.widgets_outlined, size: 18),
+                            const SizedBox(width: 8),
+                            Text(context.l10n.addPackage),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 )
               else
@@ -1017,18 +1025,20 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    AppOutlinedActionButton(
-                      onPressed: _isAddingPackage ? null : _addPackage,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.widgets_outlined, size: 18),
-                          const SizedBox(width: 8),
-                          Text(context.l10n.addPackage),
-                        ],
+                    if (hasPackages) ...[
+                      const SizedBox(width: 8),
+                      AppOutlinedActionButton(
+                        onPressed: _isAddingPackage ? null : _addPackage,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.widgets_outlined, size: 18),
+                            const SizedBox(width: 8),
+                            Text(context.l10n.addPackage),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

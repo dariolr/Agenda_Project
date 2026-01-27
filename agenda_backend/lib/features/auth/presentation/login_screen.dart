@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/global_loading_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
+import '../../../core/services/credentials_provider.dart';
 import '../../../core/utils/app_version.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../../core/widgets/global_loading_overlay.dart';
@@ -22,16 +23,45 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(
-    text: kDebugMode ? 'dariolarosa@hotmail.com' : null,
-  );
-  final _passwordController = TextEditingController(
-    text: kDebugMode ? 'Abc123@@' : null,
-  );
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = true;
   bool _isLoading = false;
+  bool _credentialsLoaded = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    // In debug mode, usa credenziali di test se non ci sono credenziali salvate
+    if (kDebugMode && !_credentialsLoaded) {
+      _emailController.text = 'dariolarosa@hotmail.com';
+      _passwordController.text = 'Abc123@@';
+    }
+
+    try {
+      final storage = ref.read(credentialsStorageProvider);
+      final credentials = await storage.getSavedCredentials();
+
+      if (credentials.email != null && credentials.password != null) {
+        if (mounted) {
+          setState(() {
+            _emailController.text = credentials.email!;
+            _passwordController.text = credentials.password!;
+            _rememberMe = true;
+            _credentialsLoaded = true;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading saved credentials: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -49,17 +79,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
     ref.read(globalLoadingProvider.notifier).show();
 
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
     try {
       final success = await ref
           .read(authProvider.notifier)
-          .login(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
+          .login(email: email, password: password);
 
       if (!mounted) return;
 
       if (success) {
+        // Salva o cancella le credenziali in base alla scelta dell'utente
+        final storage = ref.read(credentialsStorageProvider);
+        if (_rememberMe) {
+          await storage.saveCredentials(email, password);
+        } else {
+          await storage.clearCredentials();
+        }
+
+        if (!mounted) return;
+
         // Segnala al browser che l'autofill è completato con successo
         // Questo triggera la richiesta di salvataggio credenziali
         TextInput.finishAutofillContext();
