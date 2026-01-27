@@ -4866,6 +4866,496 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Report`
+  String get reportsTitle {
+    return Intl.message('Report', name: 'reportsTitle', desc: '', args: []);
+  }
+
+  /// `Nessun dato disponibile`
+  String get reportsNoData {
+    return Intl.message(
+      'Nessun dato disponibile',
+      name: 'reportsNoData',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Aggiorna`
+  String get actionRefresh {
+    return Intl.message('Aggiorna', name: 'actionRefresh', desc: '', args: []);
+  }
+
+  /// `Preset periodo`
+  String get reportsPresets {
+    return Intl.message(
+      'Preset periodo',
+      name: 'reportsPresets',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Scegli periodo`
+  String get reportsPresetCustom {
+    return Intl.message(
+      'Scegli periodo',
+      name: 'reportsPresetCustom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Oggi`
+  String get reportsPresetToday {
+    return Intl.message('Oggi', name: 'reportsPresetToday', desc: '', args: []);
+  }
+
+  /// `Questa settimana`
+  String get reportsPresetWeek {
+    return Intl.message(
+      'Questa settimana',
+      name: 'reportsPresetWeek',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mese corrente`
+  String get reportsPresetMonth {
+    return Intl.message(
+      'Mese corrente',
+      name: 'reportsPresetMonth',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mese scorso`
+  String get reportsPresetLastMonth {
+    return Intl.message(
+      'Mese scorso',
+      name: 'reportsPresetLastMonth',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Trimestre corrente`
+  String get reportsPresetQuarter {
+    return Intl.message(
+      'Trimestre corrente',
+      name: 'reportsPresetQuarter',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Semestre corrente`
+  String get reportsPresetSemester {
+    return Intl.message(
+      'Semestre corrente',
+      name: 'reportsPresetSemester',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Anno corrente`
+  String get reportsPresetYear {
+    return Intl.message(
+      'Anno corrente',
+      name: 'reportsPresetYear',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ultimi 3 mesi`
+  String get reportsPresetLast3Months {
+    return Intl.message(
+      'Ultimi 3 mesi',
+      name: 'reportsPresetLast3Months',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ultimi 6 mesi`
+  String get reportsPresetLast6Months {
+    return Intl.message(
+      'Ultimi 6 mesi',
+      name: 'reportsPresetLast6Months',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Anno precedente`
+  String get reportsPresetLastYear {
+    return Intl.message(
+      'Anno precedente',
+      name: 'reportsPresetLastYear',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Includi intero periodo (anche futuro)`
+  String get reportsFullPeriodToggle {
+    return Intl.message(
+      'Includi intero periodo (anche futuro)',
+      name: 'reportsFullPeriodToggle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sedi`
+  String get reportsFilterLocations {
+    return Intl.message(
+      'Sedi',
+      name: 'reportsFilterLocations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Staff`
+  String get reportsFilterStaff {
+    return Intl.message(
+      'Staff',
+      name: 'reportsFilterStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizi`
+  String get reportsFilterServices {
+    return Intl.message(
+      'Servizi',
+      name: 'reportsFilterServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Stato`
+  String get reportsFilterStatus {
+    return Intl.message(
+      'Stato',
+      name: 'reportsFilterStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confermato`
+  String get statusConfirmed {
+    return Intl.message(
+      'Confermato',
+      name: 'statusConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Completato`
+  String get statusCompleted {
+    return Intl.message(
+      'Completato',
+      name: 'statusCompleted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancellato`
+  String get statusCancelled {
+    return Intl.message(
+      'Cancellato',
+      name: 'statusCancelled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona tutti`
+  String get actionSelectAll {
+    return Intl.message(
+      'Seleziona tutti',
+      name: 'actionSelectAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Deseleziona tutti`
+  String get actionDeselectAll {
+    return Intl.message(
+      'Deseleziona tutti',
+      name: 'actionDeselectAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Applica`
+  String get actionApply {
+    return Intl.message('Applica', name: 'actionApply', desc: '', args: []);
+  }
+
+  /// `Appuntamenti`
+  String get reportsTotalAppointments {
+    return Intl.message(
+      'Appuntamenti',
+      name: 'reportsTotalAppointments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Incasso`
+  String get reportsTotalRevenue {
+    return Intl.message(
+      'Incasso',
+      name: 'reportsTotalRevenue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ore lavorate`
+  String get reportsTotalHours {
+    return Intl.message(
+      'Ore lavorate',
+      name: 'reportsTotalHours',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Occupazione`
+  String get reportsOccupancyPercentage {
+    return Intl.message(
+      'Occupazione',
+      name: 'reportsOccupancyPercentage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clienti unici`
+  String get reportsUniqueClients {
+    return Intl.message(
+      'Clienti unici',
+      name: 'reportsUniqueClients',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per operatore`
+  String get reportsByStaff {
+    return Intl.message(
+      'Per operatore',
+      name: 'reportsByStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per sede`
+  String get reportsByLocation {
+    return Intl.message(
+      'Per sede',
+      name: 'reportsByLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per servizio`
+  String get reportsByService {
+    return Intl.message(
+      'Per servizio',
+      name: 'reportsByService',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per giorno della settimana`
+  String get reportsByDayOfWeek {
+    return Intl.message(
+      'Per giorno della settimana',
+      name: 'reportsByDayOfWeek',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per periodo`
+  String get reportsByPeriod {
+    return Intl.message(
+      'Per periodo',
+      name: 'reportsByPeriod',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per fascia oraria`
+  String get reportsByHour {
+    return Intl.message(
+      'Per fascia oraria',
+      name: 'reportsByHour',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Operatore`
+  String get reportsColStaff {
+    return Intl.message(
+      'Operatore',
+      name: 'reportsColStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appuntamenti`
+  String get reportsColAppointments {
+    return Intl.message(
+      'Appuntamenti',
+      name: 'reportsColAppointments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Incasso`
+  String get reportsColRevenue {
+    return Intl.message(
+      'Incasso',
+      name: 'reportsColRevenue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ore`
+  String get reportsColHours {
+    return Intl.message('Ore', name: 'reportsColHours', desc: '', args: []);
+  }
+
+  /// `Media`
+  String get reportsColAvgRevenue {
+    return Intl.message(
+      'Media',
+      name: 'reportsColAvgRevenue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `%`
+  String get reportsColPercentage {
+    return Intl.message('%', name: 'reportsColPercentage', desc: '', args: []);
+  }
+
+  /// `Sede`
+  String get reportsColLocation {
+    return Intl.message('Sede', name: 'reportsColLocation', desc: '', args: []);
+  }
+
+  /// `Servizio`
+  String get reportsColService {
+    return Intl.message(
+      'Servizio',
+      name: 'reportsColService',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Categoria`
+  String get reportsColCategory {
+    return Intl.message(
+      'Categoria',
+      name: 'reportsColCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Durata media`
+  String get reportsColAvgDuration {
+    return Intl.message(
+      'Durata media',
+      name: 'reportsColAvgDuration',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Giorno`
+  String get reportsColDay {
+    return Intl.message('Giorno', name: 'reportsColDay', desc: '', args: []);
+  }
+
+  /// `Periodo`
+  String get reportsColPeriod {
+    return Intl.message(
+      'Periodo',
+      name: 'reportsColPeriod',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ora`
+  String get reportsColHour {
+    return Intl.message('Ora', name: 'reportsColHour', desc: '', args: []);
+  }
+
+  /// `Lunedì`
+  String get dayMonday {
+    return Intl.message('Lunedì', name: 'dayMonday', desc: '', args: []);
+  }
+
+  /// `Martedì`
+  String get dayTuesday {
+    return Intl.message('Martedì', name: 'dayTuesday', desc: '', args: []);
+  }
+
+  /// `Mercoledì`
+  String get dayWednesday {
+    return Intl.message('Mercoledì', name: 'dayWednesday', desc: '', args: []);
+  }
+
+  /// `Giovedì`
+  String get dayThursday {
+    return Intl.message('Giovedì', name: 'dayThursday', desc: '', args: []);
+  }
+
+  /// `Venerdì`
+  String get dayFriday {
+    return Intl.message('Venerdì', name: 'dayFriday', desc: '', args: []);
+  }
+
+  /// `Sabato`
+  String get daySaturday {
+    return Intl.message('Sabato', name: 'daySaturday', desc: '', args: []);
+  }
+
+  /// `Domenica`
+  String get daySunday {
+    return Intl.message('Domenica', name: 'daySunday', desc: '', args: []);
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

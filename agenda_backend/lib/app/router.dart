@@ -8,6 +8,7 @@ import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
+import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_week_overview_screen.dart';
 import '../features/staff/presentation/team_screen.dart';
@@ -118,6 +119,14 @@ final GoRouter appRouter = GoRouter(
         final token = state.pathParameters['token']!;
         return ResetPasswordScreen(token: token);
       },
+    ),
+    // Route per report
+    GoRoute(
+      path: '/report',
+      name: 'report',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (BuildContext context, GoRouterState state) =>
+          const ReportsScreen(),
     ),
   ],
 );

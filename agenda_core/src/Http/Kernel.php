@@ -24,6 +24,7 @@ use Agenda\Http\Controllers\ServicePackagesController;
 use Agenda\Http\Controllers\TimeBlocksController;
 use Agenda\Http\Controllers\AppointmentsController;
 use Agenda\Http\Controllers\BusinessSyncController;
+use Agenda\Http\Controllers\ReportsController;
 use Agenda\Http\Middleware\AuthMiddleware;
 use Agenda\Http\Middleware\BusinessAccessMiddleware;
 use Agenda\Http\Middleware\CustomerAuthMiddleware;
@@ -257,6 +258,9 @@ final class Kernel
         // Booking history (audit trail)
         $this->router->get('/v1/bookings/{booking_id}/history', BookingsController::class, 'history', ['auth']);
 
+        // Reports (admin/owner only)
+        $this->router->get('/v1/reports/appointments', ReportsController::class, 'appointments', ['auth']);
+
         // Time blocks (auth required)
         $this->router->get('/v1/locations/{location_id}/time-blocks', TimeBlocksController::class, 'index', ['auth']);
         $this->router->post('/v1/locations/{location_id}/time-blocks', TimeBlocksController::class, 'store', ['auth']);
@@ -405,6 +409,7 @@ final class Kernel
             StaffPlanningController::class => new StaffPlanningController($staffPlanningRepo, $staffRepo, $businessUserRepo, $userRepo),
             ResourcesController::class => new ResourcesController($resourceRepo, $locationRepo, $businessUserRepo, $userRepo),
             TimeBlocksController::class => new TimeBlocksController($timeBlockRepo, $locationRepo, $businessUserRepo, $userRepo),
+            ReportsController::class => new ReportsController($this->db, $businessUserRepo, $userRepo),
         ];
     }
 
