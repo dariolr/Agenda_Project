@@ -91,6 +91,13 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       isSuperadmin: isSuperadmin,
     );
 
+    // Per mobile usiamo destinazioni compatte con "Altro"
+    final mobileDestinations =
+        _ScaffoldWithNavigationHelpers.getMobileDestinations(
+          context,
+          isSuperadmin: isSuperadmin,
+        );
+
     // Quando non siamo su oggi, mostra freccia per tornare a oggi
     // Freccia destra se nel passato (vai avanti), sinistra se nel futuro (torna indietro)
     final resolvedDestinations = isAgenda && !isToday
@@ -103,6 +110,18 @@ class ScaffoldWithNavigation extends ConsumerWidget {
             ...destinations.skip(1),
           ]
         : destinations;
+
+    // Destinazioni mobile risolte (con freccia per oggi se necessario)
+    final resolvedMobileDestinations = isAgenda && !isToday
+        ? [
+            NavigationDestination(
+              iconData: isPast ? Icons.arrow_forward : Icons.arrow_back,
+              selectedIconData: isPast ? Icons.arrow_forward : Icons.arrow_back,
+              label: context.l10n.agendaToday,
+            ),
+            ...mobileDestinations.skip(1),
+          ]
+        : mobileDestinations;
 
     if (formFactor == AppFormFactor.desktop) {
       final layoutConfig = ref.watch(layoutConfigProvider);
@@ -133,15 +152,17 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       return GlobalLoadingOverlay(
         child: Scaffold(
           appBar: AppBar(
-          titleSpacing: isTablet && isAgenda
-              ? 4
-              : NavigationToolbar.kMiddleSpacing,
-          title: isAgenda ? const AgendaTopControls() : const SizedBox.shrink(),
-          centerTitle: false,
-          toolbarHeight: 76,
-          actionsPadding: const EdgeInsets.only(right: 6),
-          actions: buildActions(),
-        ),
+            titleSpacing: isTablet && isAgenda
+                ? 4
+                : NavigationToolbar.kMiddleSpacing,
+            title: isAgenda
+                ? const AgendaTopControls()
+                : const SizedBox.shrink(),
+            centerTitle: false,
+            toolbarHeight: 76,
+            actionsPadding: const EdgeInsets.only(right: 6),
+            actions: buildActions(),
+          ),
           body: Row(
             children: [
               Theme(
@@ -200,17 +221,32 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       return actions;
     }
 
+    // Su mobile, mappa l'indice corrente a quello compatto
+    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Profile
+    // Mobile:  0=Agenda, 1=Clienti, 2=Profile, 3=Altro
+    int mobileCurrentIndex;
+    if (navigationShell.currentIndex <= 1) {
+      // Agenda o Clienti
+      mobileCurrentIndex = navigationShell.currentIndex;
+    } else if (navigationShell.currentIndex <= 3) {
+      // Servizi o Staff → evidenzia "Altro"
+      mobileCurrentIndex = 3;
+    } else {
+      // Profile (index 4 → 2 su mobile)
+      mobileCurrentIndex = 2;
+    }
+
     return GlobalLoadingOverlay(
       child: Scaffold(
         appBar: AppBar(
-        toolbarHeight: isTablet ? 76 : 64,
-        titleSpacing: isAgenda ? 4 : NavigationToolbar.kMiddleSpacing,
-        title: isAgenda
-            ? const AgendaTopControls(compact: true)
-            : const SizedBox.shrink(),
-        centerTitle: false,
-        actionsPadding: const EdgeInsets.only(right: 6),
-        actions: buildMobileActions(),
+          toolbarHeight: isTablet ? 76 : 64,
+          titleSpacing: isAgenda ? 4 : NavigationToolbar.kMiddleSpacing,
+          title: isAgenda
+              ? const AgendaTopControls(compact: true)
+              : const SizedBox.shrink(),
+          centerTitle: false,
+          actionsPadding: const EdgeInsets.only(right: 6),
+          actions: buildMobileActions(),
         ),
         body: navigationShell,
         bottomNavigationBar: Column(
@@ -231,10 +267,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 right: false,
                 minimum: const EdgeInsets.only(bottom: 15),
                 child: BottomNavigationBar(
-                  currentIndex: navigationShell.currentIndex,
-                  onTap: (index) => _handleNavTap(context, index, ref),
+                  currentIndex: mobileCurrentIndex,
+                  onTap: (index) => _handleMobileNavTap(context, index, ref),
                   type: BottomNavigationBarType.fixed,
-                  items: resolvedDestinations
+                  items: resolvedMobileDestinations
                       .map(
                         (d) => BottomNavigationBarItem(
                           icon: Icon(d.iconData),
@@ -297,6 +333,140 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     } else {
       _goBranch(index, ref);
     }
+  }
+
+  /// Gestisce tap su navigation mobile:
+  /// - Index 0, 1: navigazione normale (Agenda, Clienti)
+  /// - Index 2: menu utente (Profilo)
+  /// - Index 3: mostra BottomSheet "Altro" (Servizi, Team)
+  void _handleMobileNavTap(
+    BuildContext context,
+    int mobileIndex,
+    WidgetRef ref,
+  ) {
+    switch (mobileIndex) {
+      case 0: // Agenda
+      case 1: // Clienti
+        _goBranch(mobileIndex, ref);
+        break;
+      case 2: // Profile → menu utente
+        _showUserMenu(context, ref);
+        break;
+      case 3: // Altro → mostra BottomSheet
+        _showMoreBottomSheet(context, ref);
+        break;
+    }
+  }
+
+  /// Mostra BottomSheet con le voci Servizi e Team
+  void _showMoreBottomSheet(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // Calcola l'altezza della bottom nav per posizionare il bottomsheet sopra
+    final bottomNavHeight =
+        kBottomNavigationBarHeight +
+        MediaQuery.of(context).padding.bottom +
+        15; // 15 = minimum SafeArea
+
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black26,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: bottomNavHeight),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 12,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.outline.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              // Servizi
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _goBranch(2, ref);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.cut, color: colorScheme.primary, size: 24),
+                        const SizedBox(width: 16),
+                        Text(
+                          l10n.navServices,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
+              // Team
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(16),
+                  ),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _goBranch(3, ref);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.badge_outlined,
+                          color: colorScheme.primary,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 16),
+                        Text(l10n.navStaff, style: theme.textTheme.titleMedium),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Mostra il menu utente (profilo, cambia password, logout)
@@ -946,6 +1116,7 @@ class _MobileAgendaDateSwitcher extends ConsumerWidget {
 }
 
 class _ScaffoldWithNavigationHelpers {
+  /// Destinazioni per desktop/tablet (tutte le voci visibili)
   static List<NavigationDestination> getDestinations(
     BuildContext context, {
     bool isSuperadmin = false,
@@ -976,6 +1147,36 @@ class _ScaffoldWithNavigationHelpers {
         iconData: Icons.account_circle_outlined,
         selectedIconData: Icons.account_circle,
         label: l10n.navProfile,
+      ),
+    ];
+  }
+
+  /// Destinazioni per mobile (Servizi e Team raggruppati in "Altro")
+  static List<NavigationDestination> getMobileDestinations(
+    BuildContext context, {
+    bool isSuperadmin = false,
+  }) {
+    final l10n = context.l10n;
+    return [
+      NavigationDestination(
+        iconData: Icons.calendar_month_outlined,
+        selectedIconData: Icons.calendar_month,
+        label: l10n.navAgenda,
+      ),
+      NavigationDestination(
+        iconData: Icons.people_outline,
+        selectedIconData: Icons.people,
+        label: l10n.navClients,
+      ),
+      NavigationDestination(
+        iconData: Icons.account_circle_outlined,
+        selectedIconData: Icons.account_circle,
+        label: l10n.navProfile,
+      ),
+      NavigationDestination(
+        iconData: Icons.more_horiz_outlined,
+        selectedIconData: Icons.more_horiz,
+        label: l10n.navMore,
       ),
     ];
   }

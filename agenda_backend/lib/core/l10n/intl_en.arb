@@ -6,6 +6,7 @@
   "navServices": "Services",
   "navStaff": "Team",
   "navProfile": "Profile",
+  "navMore": "More",
   "clientsTitle": "Clients List",
   "errorFormFactorBuilderRequired": "Specify at least one builder for form factor",
   "errorFormFactorBuilderMissing": "No builder available for {factor}",
