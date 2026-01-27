@@ -509,6 +509,16 @@ class L10n {
     );
   }
 
+  /// `Impossibile caricare le informazioni del business. Riprova.`
+  String get authBusinessNotFound {
+    return Intl.message(
+      'Impossibile caricare le informazioni del business. Riprova.',
+      name: 'authBusinessNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Questa email è già registrata. Prova ad accedere.`
   String get authEmailAlreadyRegistered {
     return Intl.message(
@@ -784,6 +794,26 @@ class L10n {
     return Intl.message(
       'Cambia password',
       name: 'authChangePassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per visualizzare i tuoi appuntamenti, accedi con il tuo account o registrati se non ne hai ancora uno.`
+  String get authRedirectFromMyBookings {
+    return Intl.message(
+      'Per visualizzare i tuoi appuntamenti, accedi con il tuo account o registrati se non ne hai ancora uno.',
+      name: 'authRedirectFromMyBookings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per prenotare un appuntamento, accedi con il tuo account o registrati se non ne hai ancora uno.`
+  String get authRedirectFromBooking {
+    return Intl.message(
+      'Per prenotare un appuntamento, accedi con il tuo account o registrati se non ne hai ancora uno.',
+      name: 'authRedirectFromBooking',
       desc: '',
       args: [],
     );

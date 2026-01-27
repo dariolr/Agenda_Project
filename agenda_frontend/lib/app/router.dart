@@ -84,11 +84,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         final subPath = pathSegments.length > 1 ? pathSegments[1] : '';
 
         // Route protette che richiedono autenticazione
-        const protectedRoutes = {'my-bookings', 'profile', 'change-password'};
+        const protectedRoutes = {
+          'booking',
+          'my-bookings',
+          'profile',
+          'change-password',
+        };
 
         // Se non autenticato e cerca di accedere a route protetta, redirect a login
+        // Passa ?from per mostrare messaggio contestuale nella pagina login
         if (!isAuthenticated && protectedRoutes.contains(subPath)) {
-          return '/$slug/login';
+          return '/$slug/login?from=$subPath';
         }
 
         // Se autenticato e cerca di accedere a login/register, redirect a booking
@@ -137,7 +143,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/:slug/login',
         name: 'business-login',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) {
+          final from = state.uri.queryParameters['from'];
+          return LoginScreen(redirectFrom: from);
+        },
       ),
 
       /// Registrazione con context business
@@ -146,7 +155,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'business-register',
         builder: (context, state) {
           final email = state.uri.queryParameters['email'];
-          return RegisterScreen(initialEmail: email);
+          final from = state.uri.queryParameters['from'];
+          return RegisterScreen(initialEmail: email, redirectFrom: from);
         },
       ),
 

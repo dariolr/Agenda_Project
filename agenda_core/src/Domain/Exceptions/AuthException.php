@@ -17,6 +17,7 @@ final class AuthException extends Exception
     public const WEAK_PASSWORD = 'weak_password';
     public const INVALID_RESET_TOKEN = 'invalid_reset_token';
     public const RESET_TOKEN_EXPIRED = 'reset_token_expired';
+    public const INVALID_REFRESH_TOKEN = 'invalid_refresh_token';
 
     private string $errorCode;
 
@@ -69,6 +70,11 @@ final class AuthException extends Exception
     public static function resetTokenExpired(): self
     {
         return new self('Password reset token has expired', self::RESET_TOKEN_EXPIRED, 400);
+    }
+
+    public static function invalidRefreshToken(): self
+    {
+        return new self('Invalid or expired refresh token', self::INVALID_REFRESH_TOKEN, 401);
     }
 
     public function getErrorCode(): string

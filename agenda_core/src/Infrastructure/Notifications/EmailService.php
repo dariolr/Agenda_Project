@@ -85,10 +85,10 @@ final class EmailService
         return new SmtpProvider(
             host: $_ENV['SMTP_HOST'] ?? $_ENV['MAIL_HOST'] ?? 'localhost',
             port: (int) ($_ENV['SMTP_PORT'] ?? $_ENV['MAIL_PORT'] ?? 587),
-            username: $_ENV['SMTP_USER'] ?? $_ENV['MAIL_USERNAME'] ?? '',
-            password: $_ENV['SMTP_PASS'] ?? $_ENV['MAIL_PASSWORD'] ?? '',
+            username: $_ENV['SMTP_USERNAME'] ?? $_ENV['SMTP_USER'] ?? $_ENV['MAIL_USERNAME'] ?? '',
+            password: $_ENV['SMTP_PASSWORD'] ?? $_ENV['SMTP_PASS'] ?? $_ENV['MAIL_PASSWORD'] ?? '',
             encryption: $_ENV['SMTP_ENCRYPTION'] ?? $_ENV['MAIL_ENCRYPTION'] ?? 'tls',
-            defaultFromEmail: $_ENV['MAIL_FROM_ADDRESS'] ?? $_ENV['SMTP_USER'] ?? '',
+            defaultFromEmail: $_ENV['MAIL_FROM_ADDRESS'] ?? $_ENV['SMTP_USERNAME'] ?? $_ENV['SMTP_USER'] ?? '',
             defaultFromName: $_ENV['MAIL_FROM_NAME'] ?? 'Agenda',
         );
     }

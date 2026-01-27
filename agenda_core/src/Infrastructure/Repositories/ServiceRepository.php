@@ -37,19 +37,27 @@ final class ServiceRepository
         return $result ?: null;
     }
 
-    public function findById(int $serviceId, int $locationId): ?array
+    public function findById(int $serviceId, int $locationId, ?int $businessId = null): ?array
     {
-        $stmt = $this->db->getPdo()->prepare(
-            'SELECT s.id, s.business_id, s.category_id, s.name, s.description, 
+        $sql = 'SELECT s.id, s.business_id, s.category_id, s.name, s.description, 
                     s.is_active, s.sort_order,
+                    sv.id AS variant_id,
                     sv.duration_minutes, sv.processing_time, sv.blocked_time,
                     sv.price, sv.color_hex AS color,
                     sv.is_bookable_online, sv.is_price_starting_from AS is_price_from
              FROM services s
              LEFT JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
-             WHERE s.id = ? AND s.is_active = 1'
-        );
-        $stmt->execute([$locationId, $serviceId]);
+             WHERE s.id = ? AND s.is_active = 1';
+        
+        $params = [$locationId, $serviceId];
+        
+        if ($businessId !== null) {
+            $sql .= ' AND s.business_id = ?';
+            $params[] = $businessId;
+        }
+        
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
         $result = $stmt->fetch();
 
         return $result ?: null;
@@ -89,7 +97,8 @@ final class ServiceRepository
 
         $stmt = $this->db->getPdo()->prepare(
             "SELECT s.id, s.business_id, s.category_id, s.name, s.description,
-                    sv.id AS service_variant_id, sv.duration_minutes, sv.price, sv.color_hex AS color,
+                    sv.id AS variant_id, sv.id AS service_variant_id,
+                    sv.duration_minutes, sv.price, sv.color_hex AS color,
                     sv.is_price_starting_from AS is_price_from,
                     COALESCE(sv.processing_time, 0) AS processing_time,
                     COALESCE(sv.blocked_time, 0) AS blocked_time

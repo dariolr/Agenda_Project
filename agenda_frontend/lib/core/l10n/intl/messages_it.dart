@@ -71,6 +71,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionRegister": MessageLookupByLibrary.simpleMessage("Registrati"),
     "actionRetry": MessageLookupByLibrary.simpleMessage("Riprova"),
     "appTitle": MessageLookupByLibrary.simpleMessage("Prenota Online"),
+    "authBusinessNotFound": MessageLookupByLibrary.simpleMessage(
+      "Impossibile caricare le informazioni del business. Riprova.",
+    ),
     "authChangePassword": MessageLookupByLibrary.simpleMessage(
       "Cambia password",
     ),
@@ -161,6 +164,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Password troppo corta (min. 8 caratteri)",
     ),
     "authPhone": MessageLookupByLibrary.simpleMessage("Telefono"),
+    "authRedirectFromBooking": MessageLookupByLibrary.simpleMessage(
+      "Per prenotare un appuntamento, accedi con il tuo account o registrati se non ne hai ancora uno.",
+    ),
+    "authRedirectFromMyBookings": MessageLookupByLibrary.simpleMessage(
+      "Per visualizzare i tuoi appuntamenti, accedi con il tuo account o registrati se non ne hai ancora uno.",
+    ),
     "authRegisterFailed": MessageLookupByLibrary.simpleMessage(
       "Registrazione fallita",
     ),

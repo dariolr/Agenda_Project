@@ -12,7 +12,10 @@ import '../providers/auth_provider.dart';
 class RegisterScreen extends ConsumerStatefulWidget {
   final String? initialEmail;
 
-  const RegisterScreen({super.key, this.initialEmail});
+  /// Route da cui l'utente è stato reindirizzato (es. 'my-bookings')
+  final String? redirectFrom;
+
+  const RegisterScreen({super.key, this.initialEmail, this.redirectFrom});
 
   @override
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
@@ -28,10 +31,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _hasAttemptedRegister = false;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    // Pulisci errori residui dopo che il widget è montato
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authProvider.notifier).clearError();
+      if (mounted) {
+        setState(() => _isInitialized = true);
+      }
+    });
     // Pre-compila l'email se passata dal login
     _initEmail();
   }
@@ -83,14 +95,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Ottieni il businessId dal provider
-    final businessId = ref.read(currentBusinessIdProvider);
+    setState(() => _hasAttemptedRegister = true);
+
+    // Ottieni il businessId - prima prova il provider sincrono
+    var businessId = ref.read(currentBusinessIdProvider);
+
+    // Se null, attendi che il business sia caricato (necessario quando
+    // l'utente arriva direttamente sulla pagina via URL)
+    if (businessId == null) {
+      final businessAsync = await ref.read(currentBusinessProvider.future);
+      businessId = businessAsync?.id;
+    }
+
     if (businessId == null) {
       if (mounted) {
         await FeedbackDialog.showError(
           context,
           title: context.l10n.errorTitle,
-          message: context.l10n.authLoginFailed,
+          message: context.l10n.authBusinessNotFound,
         );
       }
       return;
@@ -113,6 +135,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       // Segnala al browser che l'autofill è completato con successo
       TextInput.finishAutofillContext();
       final slug = ref.read(routeSlugProvider);
+
+      // Se l'utente voleva vedere my-bookings, portalo lì
+      if (widget.redirectFrom == 'my-bookings') {
+        context.go('/$slug/my-bookings');
+        return;
+      }
+
       context.go('/$slug/booking');
     }
   }
@@ -306,8 +335,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Errore
-                  if (authState.errorMessage != null) ...[
+                  // Errore (mostrato solo dopo un tentativo di registrazione e dopo init)
+                  if (_isInitialized &&
+                      _hasAttemptedRegister &&
+                      authState.errorMessage != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(

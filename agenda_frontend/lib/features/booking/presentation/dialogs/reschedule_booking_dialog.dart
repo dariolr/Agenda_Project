@@ -29,6 +29,17 @@ class _RescheduleBookingDialogState
   String? _error;
   final _notesController = TextEditingController();
 
+  /// Parse una stringa ISO8601 estraendo solo l'orario,
+  /// ignorando il timezone offset. Mostra l'orario della location,
+  /// non convertito al timezone dell'utente.
+  static DateTime _parseAsLocationTime(String isoString) {
+    // Rimuovi offset timezone: "2026-01-10T10:00:00+01:00" -> "2026-01-10T10:00:00"
+    final withoutOffset = isoString.replaceAll(RegExp(r'[+-]\d{2}:\d{2}$'), '');
+    // Rimuovi anche eventuale 'Z' per UTC
+    final cleaned = withoutOffset.replaceAll('Z', '');
+    return DateTime.parse(cleaned);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -56,16 +67,36 @@ class _RescheduleBookingDialogState
       final dateStr = DateFormat('yyyy-MM-dd').format(date);
 
       // Recupera service IDs dalla prenotazione corrente
-      final serviceIds = widget.booking.serviceIds.isNotEmpty
-          ? widget.booking.serviceIds
-          : [1]; // Fallback se non disponibili (backward compatibility)
+      final serviceIds = widget.booking.serviceIds;
+      final staffId = widget.booking.staffId;
+
+      // Debug info
+      debugPrint('RESCHEDULE - locationId: ${widget.booking.locationId}');
+      debugPrint('RESCHEDULE - serviceIds: $serviceIds');
+      debugPrint('RESCHEDULE - staffId: $staffId');
+      debugPrint('RESCHEDULE - bookingId: ${widget.booking.id}');
+      debugPrint('RESCHEDULE - date: $dateStr');
+
+      if (serviceIds.isEmpty) {
+        setState(() {
+          _error = 'Impossibile recuperare i servizi della prenotazione';
+          _isLoadingSlots = false;
+        });
+        return;
+      }
 
       // Passa exclude_booking_id per escludere la prenotazione originale dai conflitti
+      // Passa staffId per mostrare solo slot disponibili per quello specifico operatore
       final response = await apiClient.getAvailability(
         locationId: widget.booking.locationId,
         date: dateStr,
         serviceIds: serviceIds,
+        staffId: staffId,
         excludeBookingId: widget.booking.id,
+      );
+
+      debugPrint(
+        'RESCHEDULE - response slots count: ${(response['slots'] as List?)?.length ?? 0}',
       );
 
       final slots = response['slots'] as List<dynamic>? ?? [];
@@ -73,7 +104,8 @@ class _RescheduleBookingDialogState
         _availableSlots = slots
             .map((slot) {
               final startTime = slot['start_time'] as String;
-              final dt = DateTime.parse(startTime);
+              // Estrai orario ignorando timezone (orario della location, non locale utente)
+              final dt = _parseAsLocationTime(startTime);
               return DateFormat('HH:mm').format(dt);
             })
             .toList()
@@ -81,6 +113,7 @@ class _RescheduleBookingDialogState
         _isLoadingSlots = false;
       });
     } catch (e) {
+      debugPrint('RESCHEDULE - error: $e');
       setState(() {
         _error = e.toString();
         _isLoadingSlots = false;
@@ -114,6 +147,16 @@ class _RescheduleBookingDialogState
       return;
     }
 
+    final serviceIds = widget.booking.serviceIds;
+    if (serviceIds.isEmpty) {
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: 'Impossibile recuperare i servizi della prenotazione',
+      );
+      return;
+    }
+
     // Costruisci nuovo start_time ISO8601
     final timeParts = _selectedTimeSlot!.split(':');
     final newDateTime = DateTime(
@@ -135,9 +178,7 @@ class _RescheduleBookingDialogState
         .replaceBooking(
           originalBookingId: widget.booking.id,
           locationId: widget.booking.locationId,
-          serviceIds: widget.booking.serviceIds.isNotEmpty
-              ? widget.booking.serviceIds
-              : [1],
+          serviceIds: serviceIds,
           startTime: newStartTime,
           idempotencyKey: idempotencyKey,
           notes: _notesController.text.isNotEmpty

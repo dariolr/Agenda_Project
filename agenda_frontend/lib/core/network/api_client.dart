@@ -310,6 +310,10 @@ class ApiClient {
     required String lastName,
     String? phone,
   }) async {
+    debugPrint('=== API customerRegister ===');
+    debugPrint('businessId: $businessId, email: $email');
+    debugPrint('endpoint: ${ApiConfig.customerRegister(businessId)}');
+
     final data = await post(
       ApiConfig.customerRegister(businessId),
       data: {
@@ -320,6 +324,8 @@ class ApiClient {
         if (phone != null) 'phone': phone,
       },
     );
+
+    debugPrint('API response: $data');
 
     _accessToken = data['access_token'];
     _currentBusinessId = businessId;
