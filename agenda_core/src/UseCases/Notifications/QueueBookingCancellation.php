@@ -79,20 +79,44 @@ final class QueueBookingCancellation
         // Prepare template variables
         $locale = $this->resolveLocale($booking);
         $startTime = new DateTimeImmutable($booking['start_time']);
+        
+        // Location block for multi-location businesses
+        $locationName = $booking['location_name'] ?? '';
+        $locationAddress = $booking['location_address'] ?? '';
+        $strings = EmailTemplateRenderer::strings($locale);
+        $hasMultipleLocations = $this->hasMultipleLocations((int) ($booking['business_id'] ?? 0));
+        $locationBlockHtml = $hasMultipleLocations ? sprintf(
+            '<tr>
+                                    <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                                        <span style="color:#666;">📍 %s</span><br>
+                                        <strong style="color:#333;">%s</strong><br>
+                                        <span style="color:#666;font-size:14px;">%s</span>
+                                    </td>
+                                </tr>',
+            $strings['where_label'],
+            $locationName,
+            $locationAddress
+        ) : '';
+        $locationBlockText = $hasMultipleLocations
+            ? sprintf("📍 %s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
+            : '';
+
         $variables = [
             'client_name' => $clientName,
             'business_name' => $booking['business_name'] ?? '',
             'business_email' => $booking['business_email'] ?? '',
-            'location_name' => $booking['location_name'] ?? '',
+            'location_name' => $locationName,
             'location_email' => $booking['location_email'] ?? '',
             'sender_email' => $booking['sender_email'] ?? '',
             'sender_name' => $booking['sender_name'] ?? '',
-            'location_address' => $booking['location_address'] ?? '',
+            'location_address' => $locationAddress,
             'location_city' => $booking['location_city'] ?? '',
             'date' => EmailTemplateRenderer::formatLongDate($startTime, $locale),
             'time' => $startTime->format('H:i'),
             'services' => $booking['services'] ?? '',
             'booking_url' => $booking['booking_url'] ?? '#',
+            'location_block_html' => $locationBlockHtml,
+            'location_block_text' => $locationBlockText,
         ];
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
             $strings = EmailTemplateRenderer::strings($locale);
@@ -147,5 +171,17 @@ final class QueueBookingCancellation
         return EmailTemplateRenderer::normalizeLocale(
             $booking['locale'] ?? $booking['business_locale'] ?? null
         );
+    }
+
+    private function hasMultipleLocations(int $businessId): bool
+    {
+        if ($businessId <= 0) {
+            return false;
+        }
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) FROM locations WHERE business_id = :business_id AND is_active = 1'
+        );
+        $stmt->execute(['business_id' => $businessId]);
+        return (int) $stmt->fetchColumn() > 1;
     }
 }

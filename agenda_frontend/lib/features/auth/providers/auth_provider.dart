@@ -97,6 +97,10 @@ class AuthNotifier extends Notifier<AuthState> {
     required String lastName,
     String? phone,
   }) async {
+    debugPrint('=== REGISTER START ===');
+    debugPrint(
+      'Current state before register: errorCode=${state.errorCode}, errorMessage=${state.errorMessage}',
+    );
     state = AuthState.loading();
     try {
       debugPrint(
@@ -110,14 +114,15 @@ class AuthNotifier extends Notifier<AuthState> {
         lastName: lastName,
         phone: phone,
       );
+      debugPrint('Register SUCCESS: user=${user.email}');
       state = AuthState.authenticated(user);
       return true;
     } on ApiException catch (e) {
-      debugPrint('Register ApiException: ${e.message}');
+      debugPrint('Register ApiException: code=${e.code}, message=${e.message}');
       state = AuthState.error(e.message, code: e.code);
       return false;
     } catch (e, st) {
-      debugPrint('Register error: $e');
+      debugPrint('Register generic error: $e');
       debugPrint('Stack trace: $st');
       state = AuthState.error(e.toString());
       return false;

@@ -9,6 +9,7 @@ class BookingItem {
   final String? locationCity;
   final List<String> serviceNames;
   final List<int> serviceIds;
+  final int? staffId;
   final String? staffName;
   final DateTime startTime;
   final DateTime endTime;
@@ -28,6 +29,7 @@ class BookingItem {
     this.locationCity,
     required this.serviceNames,
     this.serviceIds = const [],
+    this.staffId,
     this.staffName,
     required this.startTime,
     required this.endTime,
@@ -58,6 +60,7 @@ class BookingItem {
           location?['city'] as String? ?? json['location_city'] as String?,
       serviceNames: _parseServiceNames(json),
       serviceIds: _parseServiceIds(json),
+      staffId: json['staff_id'] as int?,
       staffName: json['staff_name'] as String?,
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
@@ -127,6 +130,7 @@ class BookingItem {
       locationCity: locationCity,
       serviceNames: serviceNames,
       serviceIds: serviceIds,
+      staffId: staffId,
       staffName: staffName,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,

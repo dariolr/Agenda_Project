@@ -592,7 +592,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           _buildBreakdownSection(
             context,
             title: context.l10n.reportsByService,
-            child: _buildServiceTable(context, report.byService),
+            child: _buildServiceTable(
+              context,
+              report.byService,
+              report.summary,
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -610,7 +614,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           _buildBreakdownSection(
             context,
             title: context.l10n.reportsByPeriod,
-            child: _buildPeriodTable(context, report.byPeriod),
+            child: _buildPeriodTable(context, report.byPeriod, report.summary),
           ),
           const SizedBox(height: 16),
 
@@ -851,7 +855,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       DataCell(Text(row.appointments.toString())),
                       DataCell(Text('€${row.revenue.toStringAsFixed(2)}')),
                       DataCell(Text('€${row.avgRevenue.toStringAsFixed(2)}')),
-                      DataCell(Text('${percentage.toStringAsFixed(1)}%')),
+                      DataCell(_buildPercentageBar(context, percentage)),
                     ],
                   );
                 }).toList(),
@@ -918,7 +922,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       DataCell(Text(row.appointments.toString())),
                       DataCell(Text('€${row.revenue.toStringAsFixed(2)}')),
                       DataCell(Text('${row.hours.toStringAsFixed(1)}h')),
-                      DataCell(Text('${percentage.toStringAsFixed(1)}%')),
+                      DataCell(_buildPercentageBar(context, percentage)),
                     ],
                   );
                 }).toList(),
@@ -930,7 +934,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildServiceTable(BuildContext context, List<ServiceReportRow> data) {
+  Widget _buildServiceTable(
+    BuildContext context,
+    List<ServiceReportRow> data,
+    ReportSummary summary,
+  ) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -965,14 +973,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     label: Text(l10n.reportsColRevenue),
                     numeric: true,
                   ),
+                  DataColumn(
+                    label: Text(l10n.reportsColPercentage),
+                    numeric: true,
+                  ),
                 ],
                 rows: data.map((row) {
+                  final percentage = summary.totalAppointments > 0
+                      ? (row.appointments / summary.totalAppointments * 100)
+                      : 0.0;
                   return DataRow(
                     cells: [
                       DataCell(Text(row.serviceName)),
                       DataCell(Text(row.categoryName ?? '-')),
                       DataCell(Text(row.appointments.toString())),
                       DataCell(Text('€${row.revenue.toStringAsFixed(2)}')),
+                      DataCell(_buildPercentageBar(context, percentage)),
                     ],
                   );
                 }).toList(),
@@ -1063,7 +1079,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildPeriodTable(BuildContext context, PeriodBreakdown breakdown) {
+  Widget _buildPeriodTable(
+    BuildContext context,
+    PeriodBreakdown breakdown,
+    ReportSummary summary,
+  ) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
     final data = breakdown.data;
@@ -1105,6 +1125,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     label: Text(l10n.reportsColRevenue),
                     numeric: true,
                   ),
+                  DataColumn(
+                    label: Text(l10n.reportsColPercentage),
+                    numeric: true,
+                  ),
                 ],
                 rows: data.map((row) {
                   String periodLabel = dateFormat.format(row.periodStart);
@@ -1115,11 +1139,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     periodLabel =
                         '${dateFormat.format(row.periodStart)} - ${dateFormat.format(endOfWeek)}';
                   }
+                  final percentage = summary.totalAppointments > 0
+                      ? (row.appointments / summary.totalAppointments * 100)
+                      : 0.0;
                   return DataRow(
                     cells: [
                       DataCell(Text(periodLabel)),
                       DataCell(Text(row.appointments.toString())),
                       DataCell(Text('€${row.revenue.toStringAsFixed(2)}')),
+                      DataCell(_buildPercentageBar(context, percentage)),
                     ],
                   );
                 }).toList(),

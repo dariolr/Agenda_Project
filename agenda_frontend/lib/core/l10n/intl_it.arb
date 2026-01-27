@@ -62,6 +62,7 @@
   "authRegisterSuccess": "Registrazione completata",
   "authLoginFailed": "Credenziali non valide",
   "authRegisterFailed": "Registrazione fallita",
+  "authBusinessNotFound": "Impossibile caricare le informazioni del business. Riprova.",
   "authEmailAlreadyRegistered": "Questa email è già registrata. Prova ad accedere.",
   "authErrorInvalidCredentials": "Email o password non valide",
   "authErrorAccountDisabled": "Il tuo account è disabilitato",
@@ -90,6 +91,8 @@
   "authPasswordTooShort": "Password troppo corta (min. 8 caratteri)",
   "authPasswordRequirements": "La password deve contenere: maiuscola, minuscola, numero",
   "authChangePassword": "Cambia password",
+  "authRedirectFromMyBookings": "Per visualizzare i tuoi appuntamenti, accedi con il tuo account o registrati se non ne hai ancora uno.",
+  "authRedirectFromBooking": "Per prenotare un appuntamento, accedi con il tuo account o registrati se non ne hai ancora uno.",
   
   "profileTitle": "Profilo",
   

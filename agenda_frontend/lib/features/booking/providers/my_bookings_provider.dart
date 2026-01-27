@@ -54,8 +54,7 @@ class MyBookings extends _$MyBookings {
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.getCustomerBookings();
 
-      final businessName =
-          ref.read(currentBusinessProvider).value?.name ?? '';
+      final businessName = ref.read(currentBusinessProvider).value?.name ?? '';
       final locationsAsync = ref.read(locationsProvider);
       final locationNames = <int, String>{};
       final locations = locationsAsync.value ?? const <Location>[];
@@ -66,10 +65,10 @@ class MyBookings extends _$MyBookings {
       final upcomingJson = response['upcoming'] as List<dynamic>? ?? [];
       final pastJson = response['past'] as List<dynamic>? ?? [];
 
-      final packagesByLocation = await _loadPackagesByLocation(
-        apiClient,
-        [...upcomingJson, ...pastJson],
-      );
+      final packagesByLocation = await _loadPackagesByLocation(apiClient, [
+        ...upcomingJson,
+        ...pastJson,
+      ]);
 
       final upcoming = upcomingJson
           .map(
@@ -105,11 +104,63 @@ class MyBookings extends _$MyBookings {
       final apiClient = ref.read(apiClientProvider);
       await apiClient.customerDeleteBooking(bookingId);
 
-      await loadBookings();
-      return state.error == null;
+      // Ricarica le prenotazioni - NON usiamo loadBookings() che setta isLoading
+      // perché il widget ha già il suo indicatore di loading per la cancellazione
+      await _refreshBookingsAfterChange();
+      return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(isLoading: false, error: e.toString());
       return false;
+    }
+  }
+
+  /// Ricarica le prenotazioni senza mostrare loading globale
+  Future<void> _refreshBookingsAfterChange() async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.getCustomerBookings();
+
+      final businessName = ref.read(currentBusinessProvider).value?.name ?? '';
+      final locationsAsync = ref.read(locationsProvider);
+      final locationNames = <int, String>{};
+      final locations = locationsAsync.value ?? const <Location>[];
+      for (final location in locations) {
+        locationNames[location.id] = location.name;
+      }
+
+      final upcomingJson = response['upcoming'] as List<dynamic>? ?? [];
+      final pastJson = response['past'] as List<dynamic>? ?? [];
+
+      final packagesByLocation = await _loadPackagesByLocation(apiClient, [
+        ...upcomingJson,
+        ...pastJson,
+      ]);
+
+      final upcoming = upcomingJson
+          .map(
+            (json) => _fromCustomerBooking(
+              json as Map<String, dynamic>,
+              businessName: businessName,
+              locationNames: locationNames,
+              packagesByLocation: packagesByLocation,
+            ),
+          )
+          .toList();
+
+      final past = pastJson
+          .map(
+            (json) => _fromCustomerBooking(
+              json as Map<String, dynamic>,
+              businessName: businessName,
+              locationNames: locationNames,
+              packagesByLocation: packagesByLocation,
+            ),
+          )
+          .toList();
+
+      state = MyBookingsState(upcoming: upcoming, past: past, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -128,8 +179,7 @@ class MyBookings extends _$MyBookings {
         notes: notes,
       );
 
-      final businessName =
-          ref.read(currentBusinessProvider).value?.name ?? '';
+      final businessName = ref.read(currentBusinessProvider).value?.name ?? '';
       final locationsAsync = ref.read(locationsProvider);
       final locationNames = <int, String>{};
       final locations = locationsAsync.value ?? const <Location>[];
@@ -137,10 +187,9 @@ class MyBookings extends _$MyBookings {
         locationNames[location.id] = location.name;
       }
 
-      final packagesByLocation = await _loadPackagesByLocation(
-        apiClient,
-        [updated],
-      );
+      final packagesByLocation = await _loadPackagesByLocation(apiClient, [
+        updated,
+      ]);
       final updatedBooking = _fromCustomerBooking(
         updated,
         businessName: businessName,
@@ -148,8 +197,9 @@ class MyBookings extends _$MyBookings {
         packagesByLocation: packagesByLocation,
       );
 
-      final nextUpcoming =
-          state.upcoming.where((b) => b.id != bookingId).toList();
+      final nextUpcoming = state.upcoming
+          .where((b) => b.id != bookingId)
+          .toList();
       final nextPast = state.past.where((b) => b.id != bookingId).toList();
 
       if (updatedBooking.isUpcoming) {
@@ -195,8 +245,11 @@ class MyBookings extends _$MyBookings {
         reason: reason,
       );
 
-      final businessName =
-          ref.read(currentBusinessProvider).value?.name ?? '';
+      // L'API restituisce { status, original_booking_id, new_booking_id, booking: {...} }
+      final bookingData =
+          response['booking'] as Map<String, dynamic>? ?? response;
+
+      final businessName = ref.read(currentBusinessProvider).value?.name ?? '';
       final locationsAsync = ref.read(locationsProvider);
       final locationNames = <int, String>{};
       final locations = locationsAsync.value ?? const <Location>[];
@@ -204,12 +257,11 @@ class MyBookings extends _$MyBookings {
         locationNames[location.id] = location.name;
       }
 
-      final packagesByLocation = await _loadPackagesByLocation(
-        apiClient,
-        [response],
-      );
+      final packagesByLocation = await _loadPackagesByLocation(apiClient, [
+        bookingData,
+      ]);
       final newBooking = _fromCustomerBooking(
-        response,
+        bookingData,
         businessName: businessName,
         locationNames: locationNames,
         packagesByLocation: packagesByLocation,
@@ -331,6 +383,7 @@ BookingItem _fromCustomerBooking(
     locationCity: json['location_city'] as String?,
     serviceNames: serviceNames,
     serviceIds: serviceIds,
+    staffId: items.isNotEmpty ? items.first['staff_id'] as int? : null,
     staffName: items.isNotEmpty
         ? items.first['staff_display_name'] as String?
         : null,
@@ -355,8 +408,9 @@ Future<Map<int, List<ServicePackage>>> _loadPackagesByLocation(
     if (entry is! Map<String, dynamic>) continue;
     final items = (entry['items'] as List<dynamic>? ?? const [])
         .cast<Map<String, dynamic>>();
-    final firstItem =
-        items.isNotEmpty ? items.first : const <String, dynamic>{};
+    final firstItem = items.isNotEmpty
+        ? items.first
+        : const <String, dynamic>{};
     final locationId =
         entry['location_id'] as int? ?? firstItem['location_id'] as int? ?? 0;
     if (locationId > 0) {
