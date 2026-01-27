@@ -65,21 +65,17 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
-    final canGoBack = context.canPop();
 
     return Scaffold(
       appBar: BookingAppBar(
         showBackButton: true,
-        // Se non c'è cronologia (arrivo da email), mostra icona "nuova prenotazione"
-        backIcon: canGoBack ? null : Icons.calendar_month,
-        backTooltip: canGoBack ? null : l10n.confirmationNewBooking,
+        // Mostra sempre icona calendario per navigare a nuova prenotazione
+        backIcon: Icons.calendar_month,
+        backTooltip: l10n.confirmationNewBooking,
         onBackPressed: () {
-          if (canGoBack) {
-            context.pop();
-          } else {
-            final slug = ref.read(routeSlugProvider);
-            context.go('/$slug/booking');
-          }
+          // Naviga sempre alla pagina di prenotazione (più affidabile su web)
+          final slug = ref.read(routeSlugProvider);
+          context.go('/$slug/booking');
         },
         showUserMenu: false,
         title: l10n.myBookings,

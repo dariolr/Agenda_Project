@@ -62,6 +62,7 @@
   "authRegisterSuccess": "Registration completed",
   "authLoginFailed": "Invalid credentials",
   "authRegisterFailed": "Registration failed",
+  "authBusinessNotFound": "Unable to load business information. Please try again.",
   "authEmailAlreadyRegistered": "This email is already registered. Try logging in.",
   "authErrorInvalidCredentials": "Invalid email or password",
   "authErrorAccountDisabled": "Your account is disabled",
@@ -90,6 +91,8 @@
   "authPasswordTooShort": "Password too short (min. 8 characters)",
   "authPasswordRequirements": "Password must contain: uppercase, lowercase, number",
   "authChangePassword": "Change password",
+  "authRedirectFromMyBookings": "To view your appointments, log in with your account or register if you don't have one yet.",
+  "authRedirectFromBooking": "To book an appointment, log in with your account or register if you don't have one yet.",
   
   "profileTitle": "Profile",
   

@@ -14,7 +14,10 @@ import '../domain/auth_state.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.redirectFrom});
+
+  /// Route da cui l'utente è stato reindirizzato (es. 'my-bookings')
+  final String? redirectFrom;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -61,12 +64,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     if (businessId == null) {
-      // Se non c'è un business, mostra errore
+      // Se non c'è un business, mostra errore appropriato
       if (mounted) {
         await FeedbackDialog.showError(
           context,
           title: context.l10n.errorTitle,
-          message: context.l10n.authLoginFailed,
+          message: context.l10n.authBusinessNotFound,
         );
       }
       return;
@@ -103,7 +106,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         }
       }
 
-      // Nessuna prenotazione in sospeso - vai al booking normale
+      // Se l'utente voleva vedere my-bookings, portalo lì
+      if (widget.redirectFrom == 'my-bookings' && mounted) {
+        context.go('/$slug/my-bookings');
+        return;
+      }
+
+      // Altrimenti vai al booking (default o se veniva da booking)
       if (mounted) {
         context.go('/$slug/booking');
       }
@@ -187,6 +196,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     color: theme.colorScheme.primary,
                   ),
                   const SizedBox(height: 32),
+
+                  // Messaggio contestuale se redirect da route protetta
+                  if (widget.redirectFrom == 'my-bookings' ||
+                      widget.redirectFrom == 'booking') ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colorScheme.primary.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: colorScheme.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              widget.redirectFrom == 'my-bookings'
+                                  ? l10n.authRedirectFromMyBookings
+                                  : l10n.authRedirectFromBooking,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
                   // Email
                   TextFormField(
@@ -314,13 +360,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onPressed: () {
                           final slug = ref.read(routeSlugProvider);
                           final email = _emailController.text.trim();
+                          final params = <String, String>{};
                           if (email.isNotEmpty) {
-                            context.go(
-                              '/$slug/register?email=${Uri.encodeComponent(email)}',
-                            );
-                          } else {
-                            context.go('/$slug/register');
+                            params['email'] = email;
                           }
+                          if (widget.redirectFrom != null) {
+                            params['from'] = widget.redirectFrom!;
+                          }
+                          final query = params.entries
+                              .map(
+                                (e) =>
+                                    '${e.key}=${Uri.encodeComponent(e.value)}',
+                              )
+                              .join('&');
+                          context.go(
+                            '/$slug/register${query.isNotEmpty ? '?$query' : ''}',
+                          );
                         },
                         child: Text(l10n.actionRegister),
                       ),

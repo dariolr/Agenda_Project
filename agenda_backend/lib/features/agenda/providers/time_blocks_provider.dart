@@ -17,22 +17,22 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
 
     final apiClient = ref.watch(apiClientProvider);
     final location = ref.watch(currentLocationProvider);
+    final agendaDate = ref.watch(agendaDateProvider);
 
     // Non caricare se location non è ancora valida
     if (location.id <= 0) {
       return [];
     }
 
-    // Carica blocchi per il mese corrente ± 1 mese
-    final now = DateTime.now();
-    final fromDate = DateTime(now.year, now.month - 1, 1);
-    final toDate = DateTime(now.year, now.month + 2, 0);
+    // Carica blocchi per la data corrente dell'agenda (stesso pattern degli appuntamenti)
+    final dayStart = DateUtils.dateOnly(agendaDate);
+    final dayEnd = dayStart.add(const Duration(days: 1));
 
     try {
       final data = await apiClient.getTimeBlocks(
         location.id,
-        fromDate: _formatDateTime(fromDate),
-        toDate: _formatDateTime(toDate),
+        fromDate: _formatDateTime(dayStart),
+        toDate: _formatDateTime(dayEnd),
       );
       return data.map(_parseTimeBlock).toList();
     } catch (_) {
@@ -59,35 +59,8 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
   }
 
   Future<void> refresh() async {
-    final authState = ref.read(authProvider);
-    if (!authState.isAuthenticated) {
-      state = const AsyncData([]);
-      return;
-    }
-
-    final location = ref.read(currentLocationProvider);
-    if (location.id <= 0) {
-      return;
-    }
-
-    state = const AsyncLoading();
-
-    // Carica blocchi per il mese corrente ± 1 mese
-    final now = DateTime.now();
-    final fromDate = DateTime(now.year, now.month - 1, 1);
-    final toDate = DateTime(now.year, now.month + 2, 0);
-
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      final data = await apiClient.getTimeBlocks(
-        location.id,
-        fromDate: _formatDateTime(fromDate),
-        toDate: _formatDateTime(toDate),
-      );
-      state = AsyncData(data.map(_parseTimeBlock).toList());
-    } catch (e, st) {
-      state = AsyncError(e, st);
-    }
+    // Invalida il provider per forzare un rebuild con la data corrente
+    ref.invalidateSelf();
   }
 
   /// Aggiunge un nuovo blocco di non disponibilità.
@@ -180,20 +153,16 @@ final timeBlocksProvider =
     );
 
 /// Blocchi filtrati per la sede corrente e la data corrente dell'agenda.
+/// Il provider principale già carica solo i blocchi per la data dell'agenda,
+/// quindi qui filtriamo solo per location (in caso di blocchi multi-location).
 final timeBlocksForCurrentLocationProvider = Provider<List<TimeBlock>>((ref) {
   final location = ref.watch(currentLocationProvider);
-  final currentDate = ref.watch(agendaDateProvider);
-  final dayStart = DateUtils.dateOnly(currentDate);
-  final dayEnd = dayStart.add(const Duration(days: 1));
   final blocksAsync = ref.watch(timeBlocksProvider);
   final blocks = blocksAsync.value ?? [];
 
   return [
     for (final block in blocks)
-      if (block.locationId == location.id &&
-          !block.endTime.isBefore(dayStart) &&
-          block.startTime.isBefore(dayEnd))
-        block,
+      if (block.locationId == location.id) block,
   ];
 });
 
