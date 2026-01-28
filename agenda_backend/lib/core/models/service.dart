@@ -1,3 +1,5 @@
+import 'service_variant_resource_requirement.dart';
+
 class Service {
   final int id;
   final int businessId;
@@ -13,6 +15,8 @@ class Service {
   final bool isBookableOnline; // prenotabile online
   final bool isPriceStartingFrom; // "a partire da" flag
   final int? serviceVariantId; // ID della variante per location (da API)
+  final List<ServiceVariantResourceRequirement>
+  resourceRequirements; // risorse richieste
 
   const Service({
     required this.id,
@@ -29,6 +33,7 @@ class Service {
     this.isBookableOnline = true,
     this.isPriceStartingFrom = false,
     this.serviceVariantId,
+    this.resourceRequirements = const [],
   });
 
   Service copyWith({
@@ -46,6 +51,7 @@ class Service {
     bool? isBookableOnline,
     bool? isPriceStartingFrom,
     int? serviceVariantId,
+    List<ServiceVariantResourceRequirement>? resourceRequirements,
   }) => Service(
     id: id ?? this.id,
     businessId: businessId ?? this.businessId,
@@ -61,24 +67,38 @@ class Service {
     isBookableOnline: isBookableOnline ?? this.isBookableOnline,
     isPriceStartingFrom: isPriceStartingFrom ?? this.isPriceStartingFrom,
     serviceVariantId: serviceVariantId ?? this.serviceVariantId,
+    resourceRequirements: resourceRequirements ?? this.resourceRequirements,
   );
 
-  factory Service.fromJson(Map<String, dynamic> json) => Service(
-    id: json['id'] as int,
-    businessId: json['business_id'] as int? ?? 1,
-    categoryId: json['category_id'] as int? ?? 0,
-    name: json['name'] as String,
-    description: json['description'] as String?,
-    sortOrder: json['sort_order'] as int? ?? 0,
-    durationMinutes: json['duration_minutes'] as int?,
-    processingTime: json['processing_time'] as int?,
-    blockedTime: json['blocked_time'] as int?,
-    price: (json['price'] as num?)?.toDouble(),
-    color: json['color'] as String?,
-    isBookableOnline: json['is_bookable_online'] as bool? ?? true,
-    isPriceStartingFrom: json['is_price_starting_from'] as bool? ?? false,
-    serviceVariantId: json['service_variant_id'] as int?,
-  );
+  factory Service.fromJson(Map<String, dynamic> json) {
+    final resourceRequirementsJson =
+        json['resource_requirements'] as List<dynamic>? ?? [];
+    final resourceRequirements = resourceRequirementsJson
+        .map(
+          (r) => ServiceVariantResourceRequirement.fromJson(
+            r as Map<String, dynamic>,
+          ),
+        )
+        .toList();
+
+    return Service(
+      id: json['id'] as int,
+      businessId: json['business_id'] as int? ?? 1,
+      categoryId: json['category_id'] as int? ?? 0,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      sortOrder: json['sort_order'] as int? ?? 0,
+      durationMinutes: json['duration_minutes'] as int?,
+      processingTime: json['processing_time'] as int?,
+      blockedTime: json['blocked_time'] as int?,
+      price: (json['price'] as num?)?.toDouble(),
+      color: json['color'] as String?,
+      isBookableOnline: json['is_bookable_online'] as bool? ?? true,
+      isPriceStartingFrom: json['is_price_starting_from'] as bool? ?? false,
+      serviceVariantId: json['service_variant_id'] as int?,
+      resourceRequirements: resourceRequirements,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,

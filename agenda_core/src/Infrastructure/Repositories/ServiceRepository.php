@@ -41,7 +41,7 @@ final class ServiceRepository
     {
         $sql = 'SELECT s.id, s.business_id, s.category_id, s.name, s.description, 
                     s.is_active, s.sort_order,
-                    sv.id AS variant_id,
+                    sv.id AS service_variant_id,
                     sv.duration_minutes, sv.processing_time, sv.blocked_time,
                     sv.price, sv.color_hex AS color,
                     sv.is_bookable_online, sv.is_price_starting_from AS is_price_from
@@ -229,6 +229,48 @@ final class ServiceRepository
         return (int) $stmt->fetchColumn() === count($uniqueIds);
     }
 
+    /**
+     * Get service_variant_ids for given service_ids at a specific location.
+     * 
+     * @param array $serviceIds Service IDs (may contain duplicates)
+     * @param int $locationId
+     * @return array Service variant IDs (maintains order and duplicates from input)
+     */
+    public function getVariantIdsByServiceIds(array $serviceIds, int $locationId): array
+    {
+        if (empty($serviceIds)) {
+            return [];
+        }
+
+        $uniqueIds = array_unique($serviceIds);
+        $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
+        $params = array_merge([$locationId], $uniqueIds);
+
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT s.id AS service_id, sv.id AS variant_id
+             FROM services s
+             JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
+             WHERE s.id IN ({$placeholders}) AND s.is_active = 1 AND sv.is_active = 1"
+        );
+        $stmt->execute($params);
+
+        // Create lookup map
+        $variantByServiceId = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $variantByServiceId[(int)$row['service_id']] = (int)$row['variant_id'];
+        }
+
+        // Return variant IDs in same order as input (including duplicates)
+        $result = [];
+        foreach ($serviceIds as $serviceId) {
+            if (isset($variantByServiceId[(int)$serviceId])) {
+                $result[] = $variantByServiceId[(int)$serviceId];
+            }
+        }
+
+        return $result;
+    }
+
     // ===== CRUD Methods =====
 
     /**
@@ -285,7 +327,7 @@ final class ServiceRepository
 
             $pdo->commit();
 
-            return $this->findById($serviceId, $locationId) + ['service_variant_id' => $variantId];
+            return $this->findById($serviceId, $locationId);
         } catch (\Throwable $e) {
             $pdo->rollBack();
             throw $e;

@@ -18,6 +18,7 @@ class LocationItem extends StatelessWidget {
     required this.onEditStaff,
     required this.onDuplicateStaff,
     required this.onDeleteStaff,
+    this.onManageResources,
     this.headerTrailing,
     this.staffListOverride,
     this.showDefaultActions = true,
@@ -32,6 +33,7 @@ class LocationItem extends StatelessWidget {
   final ValueChanged<Staff> onEditStaff;
   final ValueChanged<Staff> onDuplicateStaff;
   final ValueChanged<Staff> onDeleteStaff;
+  final VoidCallback? onManageResources;
   final Widget? headerTrailing;
   final Widget? staffListOverride;
   final bool showDefaultActions;
@@ -140,6 +142,15 @@ class LocationItem extends StatelessWidget {
                         ),
                         onPressed: onAddStaff,
                       ),
+                      if (onManageResources != null)
+                        IconButton(
+                          tooltip: context.l10n.resourcesTitle,
+                          icon: Icon(
+                            Icons.inventory_2_outlined,
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                          onPressed: onManageResources,
+                        ),
                       IconButton(
                         tooltip: context.l10n.actionEdit,
                         icon: Icon(

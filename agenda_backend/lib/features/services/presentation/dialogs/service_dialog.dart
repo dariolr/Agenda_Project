@@ -1,6 +1,7 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/resource_providers.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,8 +9,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/resource.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_variant.dart';
+import '../../../../core/network/network_providers.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/price_utils.dart';
 import '../../../../core/utils/string_utils.dart';
@@ -25,6 +28,14 @@ import '../../providers/service_categories_provider.dart';
 import '../../providers/services_provider.dart';
 import '../../utils/service_seed_texts.dart';
 import '../../utils/service_validators.dart';
+
+bool _mapEquals<K, V>(Map<K, V> a, Map<K, V> b) {
+  if (a.length != b.length) return false;
+  for (final key in a.keys) {
+    if (!b.containsKey(key) || a[key] != b[key]) return false;
+  }
+  return true;
+}
 
 enum _AdditionalTimeSelection { none, processing, blocked }
 
@@ -172,6 +183,140 @@ class _SelectableRow extends StatelessWidget {
   }
 }
 
+class _ResourceQuantityRow extends StatelessWidget {
+  const _ResourceQuantityRow({
+    required this.resource,
+    required this.quantity,
+    required this.onQuantityChanged,
+    required this.colorScheme,
+    required this.textTheme,
+    required this.l10n,
+  });
+
+  final Resource resource;
+  final int quantity;
+  final ValueChanged<int> onQuantityChanged;
+  final ColorScheme colorScheme;
+  final TextTheme textTheme;
+  final dynamic l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = quantity > 0;
+    final maxQuantity = resource.quantity;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // Toggle selezione: se non selezionato, imposta 1; se selezionato, rimuovi
+          onQuantityChanged(isSelected ? 0 : 1);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Row(
+            children: [
+              // Checkbox visiva
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: isSelected ? colorScheme.primary : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.outline,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: isSelected
+                    ? Icon(Icons.check, size: 16, color: colorScheme.onPrimary)
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              // Nome risorsa e quantità disponibile
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(resource.name, style: textTheme.bodyLarge),
+                    Text(
+                      '${l10n.resourceQuantityLabel}: ${resource.quantity}',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.outline,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Selettore quantità (visibile solo se selezionato E la risorsa ha più di 1 unità)
+              if (isSelected && maxQuantity > 1) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  // Impedisce la propagazione del tap all'InkWell esterno
+                  onTap: () {},
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Pulsante -
+                        IconButton(
+                          onPressed: quantity > 1
+                              ? () => onQuantityChanged(quantity - 1)
+                              : null,
+                          icon: const Icon(Icons.remove, size: 18),
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          color: colorScheme.primary,
+                          disabledColor: colorScheme.outline.withOpacity(0.5),
+                        ),
+                        // Quantità
+                        Container(
+                          constraints: const BoxConstraints(minWidth: 32),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$quantity',
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                        // Pulsante +
+                        IconButton(
+                          onPressed: quantity < maxQuantity
+                              ? () => onQuantityChanged(quantity + 1)
+                              : null,
+                          icon: const Icon(Icons.add, size: 18),
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          color: colorScheme.primary,
+                          disabledColor: colorScheme.outline.withOpacity(0.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 Future<void> showServiceDialog(
   BuildContext context,
   WidgetRef ref, {
@@ -266,6 +411,16 @@ Future<void> showServiceDialog(
       : <int>{};
   Set<int> selectedStaffIds = {...originalStaffIds};
   bool isSelectingStaff = false;
+
+  // Risorse richieste (Map: resourceId -> quantity)
+  final locationResources = ref.read(locationResourcesProvider(locationId));
+  final existingResourceRequirements =
+      existingVariant?.resourceRequirements ?? const [];
+  final originalResourceQuantities = <int, int>{
+    for (final r in existingResourceRequirements) r.resourceId: r.unitsRequired,
+  };
+  Map<int, int> selectedResourceQuantities = {...originalResourceQuantities};
+  bool isSelectingResources = false;
 
   int? selectedCategory = requireCategorySelection
       ? (service?.categoryId ?? preselectedCategoryId)
@@ -476,6 +631,24 @@ Future<void> showServiceDialog(
         staffIds: selectedStaffIds,
       );
 
+      // Aggiorna le risorse richieste per il service variant
+      final variantId = savedService.serviceVariantId;
+      final resourcesChanged = !_mapEquals(
+        selectedResourceQuantities,
+        originalResourceQuantities,
+      );
+      if (variantId != null && resourcesChanged) {
+        final apiClient = ref.read(apiClientProvider);
+        final resourcesList = [
+          for (final entry in selectedResourceQuantities.entries)
+            {'resource_id': entry.key, 'quantity': entry.value},
+        ];
+        await apiClient.setServiceVariantResources(
+          serviceVariantId: variantId,
+          resources: resourcesList,
+        );
+      }
+
       if (context.mounted) {
         Navigator.of(context, rootNavigator: true).pop();
       }
@@ -652,6 +825,177 @@ Future<void> showServiceDialog(
       });
     }
 
+    Future<void> openResourceSelector() async {
+      if (isSelectingResources) return;
+      setState(() => isSelectingResources = true);
+      final l10n = context.l10n;
+      final formFactor = ref.read(formFactorProvider);
+      Map<int, int> current = {...selectedResourceQuantities};
+
+      Widget buildResourceRows(void Function(VoidCallback) setStateLocal) {
+        if (locationResources.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              l10n.resourceNoneLabel,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).textTheme.bodySmall?.color,
+              ),
+            ),
+          );
+        }
+        final colorScheme = Theme.of(context).colorScheme;
+        final textTheme = Theme.of(context).textTheme;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final resource in locationResources)
+              _ResourceQuantityRow(
+                resource: resource,
+                quantity: current[resource.id] ?? 0,
+                onQuantityChanged: (qty) {
+                  if (qty == 0) {
+                    current.remove(resource.id);
+                  } else {
+                    current[resource.id] = qty;
+                  }
+                  setStateLocal(() {});
+                },
+                colorScheme: colorScheme,
+                textTheme: textTheme,
+                l10n: l10n,
+              ),
+          ],
+        );
+      }
+
+      Future<void> openResourceDialog(BuildContext ctx) async {
+        await showDialog<void>(
+          context: ctx,
+          builder: (dialogCtx) => StatefulBuilder(
+            builder: (context, setStateLocal) {
+              return Dialog(
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 520,
+                    maxWidth: 680,
+                    maxHeight: 520,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                        child: Text(
+                          l10n.serviceRequiredResourcesLabel,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: buildResourceRows(setStateLocal),
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            AppOutlinedActionButton(
+                              onPressed: () => Navigator.of(dialogCtx).pop(),
+                              padding: AppButtonStyles.dialogButtonPadding,
+                              child: Text(l10n.actionCancel),
+                            ),
+                            const SizedBox(width: 12),
+                            AppFilledButton(
+                              onPressed: () => Navigator.of(dialogCtx).pop(),
+                              padding: AppButtonStyles.dialogButtonPadding,
+                              child: Text(l10n.actionConfirm),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      }
+
+      Future<void> openResourceSheet(BuildContext ctx) async {
+        await AppBottomSheet.show<void>(
+          context: ctx,
+          heightFactor: AppBottomSheet.defaultHeightFactor,
+          padding: EdgeInsets.zero,
+          builder: (sheetCtx) => StatefulBuilder(
+            builder: (context, setStateLocal) {
+              return SafeArea(
+                top: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Text(
+                        l10n.serviceRequiredResourcesLabel,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: buildResourceRows(setStateLocal),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          AppOutlinedActionButton(
+                            onPressed: () => Navigator.of(sheetCtx).pop(),
+                            padding: AppButtonStyles.dialogButtonPadding,
+                            child: Text(l10n.actionCancel),
+                          ),
+                          const SizedBox(width: 12),
+                          AppFilledButton(
+                            onPressed: () => Navigator.of(sheetCtx).pop(),
+                            padding: AppButtonStyles.dialogButtonPadding,
+                            child: Text(l10n.actionConfirm),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      }
+
+      if (formFactor == AppFormFactor.desktop) {
+        await openResourceDialog(context);
+      } else {
+        await openResourceSheet(context);
+      }
+
+      setState(() {
+        selectedResourceQuantities = {...current};
+        isSelectingResources = false;
+      });
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -734,6 +1078,43 @@ Future<void> showServiceDialog(
             ],
           ),
         ),
+        if (locationResources.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          AppOutlinedActionButton(
+            onPressed: openResourceSelector,
+            expand: true,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(context.l10n.serviceRequiredResourcesLabel),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${selectedResourceQuantities.length}/${locationResources.length}',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.formRowSpacing),
         LabeledFormField(
           label: context.l10n.serviceColorLabel,

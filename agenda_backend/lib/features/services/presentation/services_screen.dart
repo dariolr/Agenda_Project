@@ -14,6 +14,7 @@ import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../../core/widgets/reorder_toggle_button.dart';
 import '../../../core/widgets/reorder_toggle_panel.dart';
+import '../../agenda/providers/resource_providers.dart';
 import '../providers/service_categories_provider.dart';
 import '../providers/service_packages_provider.dart';
 import '../providers/services_provider.dart';
@@ -38,6 +39,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   final ScrollController _scrollController = ScrollController();
   Timer? _autoScrollTimer;
+
   /// Modalità di riordino (mutuamente esclusive)
   bool isReorderCategories = false;
   bool isReorderServices = false;
@@ -112,6 +114,8 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final servicesAsync = ref.watch(servicesProvider);
     final allCategories = ref.watch(sortedCategoriesProvider);
     ref.watch(servicePackagesProvider);
+    // Pre-carica le risorse per averle disponibili nel service dialog
+    ref.watch(resourcesProvider);
 
     // Mostriamo sempre tutte le categorie; i provider di sort sposteranno le vuote in coda.
     final categories = allCategories;
@@ -256,9 +260,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final services = ref.watch(servicesProvider).value ?? [];
     final packagesByCategory = <int, int>{
       for (final c in cats)
-        c.id: ref
-            .watch(servicePackagesByCategoryProvider(c.id))
-            .length,
+        c.id: ref.watch(servicePackagesByCategoryProvider(c.id)).length,
     };
     final isNonEmpty = <int, bool>{
       for (final c in cats) c.id: services.any((s) => s.categoryId == c.id),
@@ -512,10 +514,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
             final item = updated.removeAt(oldIndexInCat);
             final targetIndex = indexInTargetCat.clamp(0, updated.length);
             updated.insert(targetIndex, item);
-            reorder.reorderCategoryItems(
-              categoryId: oldCatId,
-              items: updated,
-            );
+            reorder.reorderCategoryItems(categoryId: oldCatId, items: updated);
           } else {
             // Cross-categoria -> sposta
             final oldItems = [
@@ -678,11 +677,8 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         preselectedCategoryId: category.id,
         preselectedColor: mostUsedColorForCategory(category),
       ),
-      onAddPackage: (category) => _openPackageDialog(
-        context,
-        ref,
-        preselectedCategoryId: category.id,
-      ),
+      onAddPackage: (category) =>
+          _openPackageDialog(context, ref, preselectedCategoryId: category.id),
       onEditCategory: (category) =>
           showCategoryDialog(context, ref, category: category),
       onDeleteCategory: (categoryId) =>

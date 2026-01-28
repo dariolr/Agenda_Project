@@ -20,7 +20,7 @@ final class ResourceRepository
      */
     public function findByLocationId(int $locationId): array
     {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             SELECT id, location_id, name, type, quantity, note, is_active, sort_order,
                    created_at, updated_at
             FROM resources
@@ -36,7 +36,7 @@ final class ResourceRepository
      */
     public function findByBusinessId(int $businessId): array
     {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             SELECT r.id, r.location_id, r.name, r.type, r.quantity, r.note, 
                    r.is_active, r.sort_order, r.created_at, r.updated_at
             FROM resources r
@@ -53,7 +53,7 @@ final class ResourceRepository
      */
     public function findById(int $id): ?array
     {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             SELECT r.id, r.location_id, r.name, r.type, r.quantity, r.note,
                    r.is_active, r.sort_order, r.created_at, r.updated_at,
                    l.business_id
@@ -71,7 +71,7 @@ final class ResourceRepository
      */
     public function create(array $data): int
     {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             INSERT INTO resources (location_id, name, type, quantity, note, is_active, sort_order)
             VALUES (:location_id, :name, :type, :quantity, :note, :is_active, :sort_order)
         ');
@@ -84,7 +84,7 @@ final class ResourceRepository
             'is_active' => $data['is_active'] ?? 1,
             'sort_order' => $data['sort_order'] ?? 0,
         ]);
-        return (int) $this->db->pdo()->lastInsertId();
+        return (int) $this->db->getPdo()->lastInsertId();
     }
 
     /**
@@ -107,7 +107,7 @@ final class ResourceRepository
         }
 
         $sql = 'UPDATE resources SET ' . implode(', ', $fields) . ' WHERE id = :id';
-        $stmt = $this->db->pdo()->prepare($sql);
+        $stmt = $this->db->getPdo()->prepare($sql);
         return $stmt->execute($params);
     }
 
@@ -116,7 +116,7 @@ final class ResourceRepository
      */
     public function delete(int $id): bool
     {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             UPDATE resources SET is_active = 0 WHERE id = :id
         ');
         return $stmt->execute(['id' => $id]);
@@ -127,7 +127,7 @@ final class ResourceRepository
      */
     public function getBusinessIdForResource(int $resourceId): ?int
     {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             SELECT l.business_id
             FROM resources r
             JOIN locations l ON r.location_id = l.id
@@ -143,7 +143,7 @@ final class ResourceRepository
      */
     public function getLocationIdForResource(int $resourceId): ?int
     {
-        $stmt = $this->db->pdo()->prepare('
+        $stmt = $this->db->getPdo()->prepare('
             SELECT location_id FROM resources WHERE id = :id
         ');
         $stmt->execute(['id' => $resourceId]);

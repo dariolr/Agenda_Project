@@ -420,7 +420,11 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.cut, color: colorScheme.primary, size: 24),
+                        Icon(
+                          Icons.category_outlined,
+                          color: colorScheme.primary,
+                          size: 24,
+                        ),
                         const SizedBox(width: 16),
                         Text(
                           l10n.navServices,

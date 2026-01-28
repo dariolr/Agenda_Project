@@ -9,6 +9,8 @@ use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\StaffPlanningRepository;
 use Agenda\Infrastructure\Repositories\TimeBlockRepository;
 use Agenda\Infrastructure\Repositories\StaffAvailabilityExceptionRepository;
+use Agenda\Infrastructure\Repositories\ServiceVariantResourceRepository;
+use Agenda\Infrastructure\Repositories\ServiceRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use DateInterval;
@@ -32,6 +34,8 @@ final class ComputeAvailability
         private readonly StaffPlanningRepository $staffPlanningRepository,
         private readonly TimeBlockRepository $timeBlockRepository,
         private readonly StaffAvailabilityExceptionRepository $staffExceptionRepository,
+        private readonly ?ServiceVariantResourceRepository $resourceRequirementRepository = null,
+        private readonly ?ServiceRepository $serviceRepository = null,
     ) {}
 
     /**
@@ -81,6 +85,19 @@ final class ComputeAvailability
         // Get booking limits from location (with defaults)
         $maxDaysAhead = (int) ($location['max_booking_advance_days'] ?? self::DEFAULT_MAX_DAYS_AHEAD);
         $minNoticeHours = (int) ($location['min_booking_notice_hours'] ?? self::DEFAULT_MIN_NOTICE_HOURS);
+        
+        // Get resource requirements for requested services (if repository is available)
+        $resourceRequirements = [];
+        $resourceCapacities = [];
+        if ($this->resourceRequirementRepository !== null && $this->serviceRepository !== null) {
+            $variantIds = $this->serviceRepository->getVariantIdsByServiceIds($serviceIds, $locationId);
+            if (!empty($variantIds)) {
+                $resourceRequirements = $this->resourceRequirementRepository->getAggregatedRequirements($variantIds);
+                if (!empty($resourceRequirements)) {
+                    $resourceCapacities = $this->resourceRequirementRepository->getResourceCapacities($locationId);
+                }
+            }
+        }
         
         try {
             $targetDate = new DateTimeImmutable($date, $timezone);
@@ -142,6 +159,18 @@ final class ComputeAvailability
 
         // Sort by start time
         usort($allSlots, fn($a, $b) => $a['start_time'] <=> $b['start_time']);
+
+        // Filter slots by resource availability
+        if (!empty($resourceRequirements) && !empty($resourceCapacities)) {
+            $allSlots = $this->filterByResourceAvailability(
+                $allSlots,
+                $resourceRequirements,
+                $resourceCapacities,
+                $locationId,
+                $timezone,
+                $durationMinutes
+            );
+        }
 
         // Se staffId non è specificato ("qualsiasi operatore"), deduplica per orario
         // Mostra ogni orario una sola volta (con il primo staff disponibile)
@@ -573,5 +602,81 @@ final class ComputeAvailability
             'start' => $date->setTime($startHour, $startMin),
             'end' => $date->setTime($endHour, $endMin),
         ];
+    }
+
+    /**
+     * Filter slots by resource availability.
+     * Removes slots where required resources are not available.
+     * 
+     * @param array $slots Available slots to filter
+     * @param array $resourceRequirements Resources needed (resource_id => quantity)
+     * @param array $resourceCapacities Total capacity per resource (resource_id => total)
+     * @param int $locationId Location ID
+     * @param DateTimeZone $timezone Timezone for the location
+     * @param int $durationMinutes Duration of the booking
+     * @return array Filtered slots
+     */
+    private function filterByResourceAvailability(
+        array $slots,
+        array $resourceRequirements,
+        array $resourceCapacities,
+        int $locationId,
+        DateTimeZone $timezone,
+        int $durationMinutes
+    ): array {
+        if (empty($slots) || empty($resourceRequirements) || $this->resourceRequirementRepository === null) {
+            return $slots;
+        }
+
+        // Get date range from slots
+        $firstSlotTime = new DateTimeImmutable($slots[0]['start_time'], $timezone);
+        $lastSlotTime = new DateTimeImmutable($slots[count($slots) - 1]['end_time'], $timezone);
+        
+        // Get all resource usage for the date range
+        $resourceUsage = $this->resourceRequirementRepository->getResourceUsageInRange(
+            $locationId,
+            $firstSlotTime->modify('-1 hour'), // Buffer for overlapping bookings
+            $lastSlotTime->modify('+1 hour'),
+            $this->currentExcludeBookingId
+        );
+
+        $filteredSlots = [];
+
+        foreach ($slots as $slot) {
+            $slotStart = new DateTimeImmutable($slot['start_time'], $timezone);
+            $slotEnd = new DateTimeImmutable($slot['end_time'], $timezone);
+
+            // Calculate resource usage during this slot
+            $usageDuringSlot = [];
+            foreach ($resourceUsage as $usage) {
+                $usageStart = new DateTimeImmutable($usage['start_time'], $timezone);
+                $usageEnd = new DateTimeImmutable($usage['end_time'], $timezone);
+
+                // Check if usage overlaps with slot
+                if ($usageStart < $slotEnd && $usageEnd > $slotStart) {
+                    $resourceId = (int) $usage['resource_id'];
+                    $usageDuringSlot[$resourceId] = ($usageDuringSlot[$resourceId] ?? 0) + (int) $usage['quantity_used'];
+                }
+            }
+
+            // Check if all required resources are available
+            $resourcesAvailable = true;
+            foreach ($resourceRequirements as $resourceId => $requiredQty) {
+                $totalCapacity = $resourceCapacities[$resourceId] ?? 0;
+                $currentUsage = $usageDuringSlot[$resourceId] ?? 0;
+                $available = $totalCapacity - $currentUsage;
+
+                if ($available < $requiredQty) {
+                    $resourcesAvailable = false;
+                    break;
+                }
+            }
+
+            if ($resourcesAvailable) {
+                $filteredSlots[] = $slot;
+            }
+        }
+
+        return $filteredSlots;
     }
 }
