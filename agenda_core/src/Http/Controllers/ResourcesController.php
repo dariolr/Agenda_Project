@@ -10,6 +10,7 @@ use Agenda\Infrastructure\Repositories\ResourceRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Repositories\ServiceVariantResourceRepository;
 
 /**
  * Controller for resources (rooms, stations, equipment).
@@ -28,6 +29,7 @@ final class ResourcesController
         private readonly LocationRepository $locationRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
+        private readonly ServiceVariantResourceRepository $svrRepo,
     ) {}
 
     /**
@@ -150,6 +152,15 @@ final class ResourcesController
 
         if (!empty($updateData)) {
             $this->resourceRepo->update($resourceId, $updateData);
+            
+            // If quantity was reduced, cap service variant requirements
+            if (isset($updateData['quantity'])) {
+                $newQuantity = (int) $updateData['quantity'];
+                $oldQuantity = (int) $resource['quantity'];
+                if ($newQuantity < $oldQuantity) {
+                    $this->svrRepo->capQuantityForResource($resourceId, $newQuantity);
+                }
+            }
         }
 
         $updated = $this->resourceRepo->findById($resourceId);

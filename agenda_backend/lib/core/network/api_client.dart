@@ -1183,6 +1183,64 @@ class ApiClient {
     return post('/v1/categories/reorder', data: {'categories': categories});
   }
 
+  // ========== SERVICE VARIANT RESOURCES ==========
+
+  /// GET /v1/service-variants/{id}/resources
+  Future<Map<String, dynamic>> getServiceVariantResources(
+    int serviceVariantId,
+  ) async {
+    return get('/v1/service-variants/$serviceVariantId/resources');
+  }
+
+  /// PUT /v1/service-variants/{id}/resources - Replace all resource requirements
+  Future<Map<String, dynamic>> setServiceVariantResources({
+    required int serviceVariantId,
+    required List<Map<String, dynamic>> resources,
+  }) async {
+    return put(
+      '/v1/service-variants/$serviceVariantId/resources',
+      data: {'resources': resources},
+    );
+  }
+
+  /// POST /v1/service-variants/{id}/resources - Add single resource requirement
+  Future<Map<String, dynamic>> addServiceVariantResource({
+    required int serviceVariantId,
+    required int resourceId,
+    int quantity = 1,
+  }) async {
+    return post(
+      '/v1/service-variants/$serviceVariantId/resources',
+      data: {'resource_id': resourceId, 'quantity': quantity},
+    );
+  }
+
+  /// DELETE /v1/service-variants/{id}/resources/{resource_id}
+  Future<void> removeServiceVariantResource({
+    required int serviceVariantId,
+    required int resourceId,
+  }) async {
+    await delete(
+      '/v1/service-variants/$serviceVariantId/resources/$resourceId',
+    );
+  }
+
+  /// GET /v1/resources/{id}/services - Get services that require this resource
+  Future<Map<String, dynamic>> getResourceServices(int resourceId) async {
+    return get('/v1/resources/$resourceId/services');
+  }
+
+  /// PUT /v1/resources/{id}/services - Set services that require this resource
+  Future<Map<String, dynamic>> setResourceServices({
+    required int resourceId,
+    required List<Map<String, dynamic>> services,
+  }) async {
+    return put(
+      '/v1/resources/$resourceId/services',
+      data: {'services': services},
+    );
+  }
+
   // ========== STAFF CRUD ==========
 
   /// GET /v1/businesses/{business_id}/staff

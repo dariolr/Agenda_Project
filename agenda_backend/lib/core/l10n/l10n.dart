@@ -5356,6 +5356,201 @@ class L10n {
   String get daySunday {
     return Intl.message('Domenica', name: 'daySunday', desc: '', args: []);
   }
+
+  /// `Risorse richieste`
+  String get serviceRequiredResourcesLabel {
+    return Intl.message(
+      'Risorse richieste',
+      name: 'serviceRequiredResourcesLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna risorsa richiesta`
+  String get resourceNoneLabel {
+    return Intl.message(
+      'Nessuna risorsa richiesta',
+      name: 'resourceNoneLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona risorse`
+  String get resourceSelectLabel {
+    return Intl.message(
+      'Seleziona risorse',
+      name: 'resourceSelectLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Risorse`
+  String get resourcesTitle {
+    return Intl.message('Risorse', name: 'resourcesTitle', desc: '', args: []);
+  }
+
+  /// `Nessuna risorsa configurata per questa sede`
+  String get resourcesEmpty {
+    return Intl.message(
+      'Nessuna risorsa configurata per questa sede',
+      name: 'resourcesEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Le risorse sono attrezzature o spazi (es. cabine, lettini) che possono essere associati ai servizi`
+  String get resourcesEmptyHint {
+    return Intl.message(
+      'Le risorse sono attrezzature o spazi (es. cabine, lettini) che possono essere associati ai servizi',
+      name: 'resourcesEmptyHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nuova risorsa`
+  String get resourceNew {
+    return Intl.message(
+      'Nuova risorsa',
+      name: 'resourceNew',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modifica risorsa`
+  String get resourceEdit {
+    return Intl.message(
+      'Modifica risorsa',
+      name: 'resourceEdit',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nome risorsa`
+  String get resourceNameLabel {
+    return Intl.message(
+      'Nome risorsa',
+      name: 'resourceNameLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Quantità disponibile`
+  String get resourceQuantityLabel {
+    return Intl.message(
+      'Quantità disponibile',
+      name: 'resourceQuantityLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo (opzionale)`
+  String get resourceTypeLabel {
+    return Intl.message(
+      'Tipo (opzionale)',
+      name: 'resourceTypeLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Note (opzionale)`
+  String get resourceNoteLabel {
+    return Intl.message(
+      'Note (opzionale)',
+      name: 'resourceNoteLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Eliminare questa risorsa?`
+  String get resourceDeleteConfirm {
+    return Intl.message(
+      'Eliminare questa risorsa?',
+      name: 'resourceDeleteConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `I servizi che usano questa risorsa non saranno più vincolati alla sua disponibilità`
+  String get resourceDeleteWarning {
+    return Intl.message(
+      'I servizi che usano questa risorsa non saranno più vincolati alla sua disponibilità',
+      name: 'resourceDeleteWarning',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizi che usano questa risorsa`
+  String get resourceServicesLabel {
+    return Intl.message(
+      'Servizi che usano questa risorsa',
+      name: 'resourceServicesLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun servizio associato`
+  String get resourceNoServicesSelected {
+    return Intl.message(
+      'Nessun servizio associato',
+      name: 'resourceNoServicesSelected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona servizi`
+  String get resourceSelectServices {
+    return Intl.message(
+      'Seleziona servizi',
+      name: 'resourceSelectServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `1 servizio`
+  String get resourceServiceCountSingular {
+    return Intl.message(
+      '1 servizio',
+      name: 'resourceServiceCountSingular',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} servizi`
+  String resourceServiceCountPlural(int count) {
+    return Intl.message(
+      '$count servizi',
+      name: 'resourceServiceCountPlural',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Qtà richiesta`
+  String get resourceQuantityRequired {
+    return Intl.message(
+      'Qtà richiesta',
+      name: 'resourceQuantityRequired',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

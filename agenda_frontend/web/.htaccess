@@ -1,4 +1,3 @@
-
 <IfModule mod_headers.c>
   <Files "index.html">
     Header set Cache-Control "no-cache, max-age=0, must-revalidate"
@@ -10,20 +9,13 @@
 </IfModule>
 
 <IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /
+  RewriteEngine On
+  RewriteBase /
 
-    # Don't rewrite files or directories
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+  # Don't rewrite files or directories
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
 
-    # Rewrite everything else to index.html while preserving the URL
-    # The [QSA,L] flags preserve query string and stop processing
-    RewriteRule ^(.*)$ index.html [QSA,L]
-</IfModule>
-
-# Ensure proper MIME types
-<IfModule mod_mime.c>
-    AddType application/javascript .js
-    AddType application/json .json
+  # Rewrite everything else to index.html for SPA routing
+  RewriteRule ^(.*)$ index.html [QSA,L]
 </IfModule>

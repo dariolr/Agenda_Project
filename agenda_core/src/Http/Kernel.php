@@ -21,6 +21,7 @@ use Agenda\Http\Controllers\StaffAvailabilityExceptionController;
 use Agenda\Http\Controllers\StaffPlanningController;
 use Agenda\Http\Controllers\ResourcesController;
 use Agenda\Http\Controllers\ServicePackagesController;
+use Agenda\Http\Controllers\ServiceVariantResourceController;
 use Agenda\Http\Controllers\TimeBlocksController;
 use Agenda\Http\Controllers\AppointmentsController;
 use Agenda\Http\Controllers\BusinessSyncController;
@@ -47,6 +48,7 @@ use Agenda\Infrastructure\Repositories\StaffScheduleRepository;
 use Agenda\Infrastructure\Repositories\StaffAvailabilityExceptionRepository;
 use Agenda\Infrastructure\Repositories\StaffPlanningRepository;
 use Agenda\Infrastructure\Repositories\ResourceRepository;
+use Agenda\Infrastructure\Repositories\ServiceVariantResourceRepository;
 use Agenda\Infrastructure\Repositories\TimeBlockRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
@@ -187,6 +189,16 @@ final class Kernel
         $this->router->post('/v1/locations/{location_id}/resources', ResourcesController::class, 'store', ['auth']);
         $this->router->put('/v1/resources/{id}', ResourcesController::class, 'update', ['auth']);
         $this->router->delete('/v1/resources/{id}', ResourcesController::class, 'destroy', ['auth']);
+
+        // Service Variant Resources (auth required)
+        $this->router->get('/v1/service-variants/{id}/resources', ServiceVariantResourceController::class, 'index', ['auth']);
+        $this->router->put('/v1/service-variants/{id}/resources', ServiceVariantResourceController::class, 'update', ['auth']);
+        $this->router->post('/v1/service-variants/{id}/resources', ServiceVariantResourceController::class, 'store', ['auth']);
+        $this->router->delete('/v1/service-variants/{id}/resources/{resource_id}', ServiceVariantResourceController::class, 'destroy', ['auth']);
+
+        // Resource Services (auth required) - manage from resource perspective
+        $this->router->get('/v1/resources/{id}/services', ServiceVariantResourceController::class, 'servicesByResource', ['auth']);
+        $this->router->put('/v1/resources/{id}/services', ServiceVariantResourceController::class, 'updateServicesByResource', ['auth']);
 
         // Business Users (operators management)
         $this->router->get('/v1/businesses/{business_id}/users', BusinessUsersController::class, 'index', ['auth']);
@@ -336,6 +348,7 @@ final class Kernel
         $staffExceptionRepo = new StaffAvailabilityExceptionRepository($this->db);
         $staffPlanningRepo = new StaffPlanningRepository($this->db);
         $resourceRepo = new ResourceRepository($this->db);
+        $variantResourceRepo = new ServiceVariantResourceRepository($this->db);
         $timeBlockRepo = new TimeBlockRepository($this->db);
         $bookingRepo = new BookingRepository($this->db);
         $clientRepo = new ClientRepository($this->db);
@@ -373,7 +386,7 @@ final class Kernel
         // Booking Use Cases
         $bookingAuditRepo = new BookingAuditRepository($this->db, $userRepo, $clientRepo);
         $recurrenceRuleRepo = new RecurrenceRuleRepository($this->db);
-        $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo, $timeBlockRepo, $staffExceptionRepo);
+        $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo, $timeBlockRepo, $staffExceptionRepo, $variantResourceRepo, $serviceRepo);
         $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo, $computeAvailability, $bookingAuditRepo);
         $createRecurringBooking = new CreateRecurringBooking($this->db, $bookingRepo, $recurrenceRuleRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $computeAvailability, $notificationRepo, $bookingAuditRepo);
         $previewRecurringBooking = new PreviewRecurringBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo);
@@ -390,7 +403,7 @@ final class Kernel
             CustomerAuthController::class => new CustomerAuthController($loginCustomer, $refreshCustomerToken, $logoutCustomer, $getCustomerMe, $registerCustomer, $requestCustomerPasswordReset, $resetCustomerPassword, $updateCustomerProfile, $changeCustomerPassword, $businessRepo),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo, $businessUserRepo, $userRepo),
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
-            ServicesController::class => new ServicesController($serviceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo),
+            ServicesController::class => new ServicesController($serviceRepo, $variantResourceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo),
             ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo),
             StaffController::class => new StaffController($staffRepo, $staffScheduleRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
@@ -407,7 +420,8 @@ final class Kernel
             BusinessInvitationsController::class => new BusinessInvitationsController($businessRepo, $businessUserRepo, $businessInvitationRepo, $userRepo),
             StaffAvailabilityExceptionController::class => new StaffAvailabilityExceptionController($staffExceptionRepo, $staffRepo, $businessUserRepo, $userRepo),
             StaffPlanningController::class => new StaffPlanningController($staffPlanningRepo, $staffRepo, $businessUserRepo, $userRepo),
-            ResourcesController::class => new ResourcesController($resourceRepo, $locationRepo, $businessUserRepo, $userRepo),
+            ResourcesController::class => new ResourcesController($resourceRepo, $locationRepo, $businessUserRepo, $userRepo, $variantResourceRepo),
+            ServiceVariantResourceController::class => new ServiceVariantResourceController($variantResourceRepo, $businessUserRepo, $userRepo),
             TimeBlocksController::class => new TimeBlocksController($timeBlockRepo, $locationRepo, $businessUserRepo, $userRepo),
             ReportsController::class => new ReportsController($this->db, $businessUserRepo, $userRepo),
         ];

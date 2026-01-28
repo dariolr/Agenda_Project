@@ -7,6 +7,7 @@ namespace Agenda\Http\Controllers;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
+use Agenda\Infrastructure\Repositories\ServiceVariantResourceRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
@@ -17,6 +18,7 @@ final class ServicesController
 {
     public function __construct(
         private readonly ServiceRepository $serviceRepository,
+        private readonly ServiceVariantResourceRepository $variantResourceRepo,
         private readonly LocationRepository $locationRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
@@ -59,11 +61,25 @@ final class ServicesController
         $services = $this->serviceRepository->findByLocationId($locationId, $businessId);
         $categories = $this->serviceRepository->getCategories($businessId);
 
+        // Collect all variant IDs to load resource requirements in batch
+        $variantIds = [];
+        foreach ($services as $service) {
+            if (isset($service['service_variant_id']) && $service['service_variant_id']) {
+                $variantIds[] = (int) $service['service_variant_id'];
+            }
+        }
+
+        // Load all resource requirements in one query
+        $resourceRequirementsByVariant = $this->variantResourceRepo->findByVariantIds($variantIds);
+
         // Group services by category
         $grouped = [];
         $uncategorized = [];
 
         foreach ($services as $service) {
+            $variantId = isset($service['service_variant_id']) ? (int) $service['service_variant_id'] : null;
+            $requirements = $variantId ? ($resourceRequirementsByVariant[$variantId] ?? []) : [];
+
             $formatted = [
                 'id' => (int) $service['id'],
                 'business_id' => (int) $businessId,
@@ -79,8 +95,14 @@ final class ServicesController
                 'is_price_starting_from' => (bool) ($service['is_price_from'] ?? false),
                 'category_id' => $service['category_id'] ? (int) $service['category_id'] : null,
                 'category_name' => $service['category_name'] ?? null,
-                'service_variant_id' => isset($service['service_variant_id']) ? (int) $service['service_variant_id'] : null,
+                'service_variant_id' => $variantId,
                 'sort_order' => (int) ($service['sort_order'] ?? 0),
+                'resource_requirements' => array_map(fn($req) => [
+                    'id' => (int) $req['id'],
+                    'resource_id' => (int) $req['resource_id'],
+                    'resource_name' => $req['resource_name'],
+                    'quantity' => (int) $req['quantity'],
+                ], $requirements),
             ];
 
             if ($service['category_id'] !== null) {
@@ -118,23 +140,34 @@ final class ServicesController
 
         return Response::success([
             'categories' => $categoriesFormatted,
-            'services' => array_map(fn($s) => [
-                'id' => (int) $s['id'],
-                'business_id' => (int) $businessId,
-                'name' => $s['name'],
-                'description' => $s['description'],
-                'duration_minutes' => (int) ($s['duration_minutes'] ?? 0),
-                'processing_time' => (int) ($s['processing_time'] ?? 0),
-                'blocked_time' => (int) ($s['blocked_time'] ?? 0),
-                'price' => (float) ($s['price'] ?? 0),
-                'color' => $s['color'],
-                'is_active' => (bool) ($s['is_active'] ?? true),
-                'is_bookable_online' => (bool) ($s['is_bookable_online'] ?? true),
-                'is_price_starting_from' => (bool) ($s['is_price_from'] ?? false),
-                'category_id' => $s['category_id'] ? (int) $s['category_id'] : null,
-                'service_variant_id' => isset($s['service_variant_id']) ? (int) $s['service_variant_id'] : null,
-                'sort_order' => (int) ($s['sort_order'] ?? 0),
-            ], $services),
+            'services' => array_map(function($s) use ($businessId, $resourceRequirementsByVariant) {
+                $variantId = isset($s['service_variant_id']) ? (int) $s['service_variant_id'] : null;
+                $requirements = $variantId ? ($resourceRequirementsByVariant[$variantId] ?? []) : [];
+                
+                return [
+                    'id' => (int) $s['id'],
+                    'business_id' => (int) $businessId,
+                    'name' => $s['name'],
+                    'description' => $s['description'],
+                    'duration_minutes' => (int) ($s['duration_minutes'] ?? 0),
+                    'processing_time' => (int) ($s['processing_time'] ?? 0),
+                    'blocked_time' => (int) ($s['blocked_time'] ?? 0),
+                    'price' => (float) ($s['price'] ?? 0),
+                    'color' => $s['color'],
+                    'is_active' => (bool) ($s['is_active'] ?? true),
+                    'is_bookable_online' => (bool) ($s['is_bookable_online'] ?? true),
+                    'is_price_starting_from' => (bool) ($s['is_price_from'] ?? false),
+                    'category_id' => $s['category_id'] ? (int) $s['category_id'] : null,
+                    'service_variant_id' => $variantId,
+                    'sort_order' => (int) ($s['sort_order'] ?? 0),
+                    'resource_requirements' => array_map(fn($req) => [
+                        'id' => (int) $req['id'],
+                        'resource_id' => (int) $req['resource_id'],
+                        'resource_name' => $req['resource_name'],
+                        'quantity' => (int) $req['quantity'],
+                    ], $requirements),
+                ];
+            }, $services),
         ], 200);
     }
 

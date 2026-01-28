@@ -369,7 +369,7 @@ class ServiceVariantsNotifier extends AsyncNotifier<List<ServiceVariant>> {
             isBookableOnline: s.isBookableOnline,
             isFree: (s.price ?? 0) == 0,
             isPriceStartingFrom: s.isPriceStartingFrom,
-            resourceRequirements: const [],
+            resourceRequirements: s.resourceRequirements,
             processingTime: s.processingTime ?? 0,
             blockedTime: s.blockedTime ?? 0,
           ),
