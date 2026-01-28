@@ -3997,6 +3997,16 @@ class L10n {
     );
   }
 
+  /// `Non disponibile`
+  String get planningTypeUnavailable {
+    return Intl.message(
+      'Non disponibile',
+      name: 'planningTypeUnavailable',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Data inizio validità`
   String get planningValidFrom {
     return Intl.message(
