@@ -13,6 +13,12 @@ Compatibilità obbligatoria:
 - Il termine **"core"** o **"API"** si riferisce al progetto `agenda_core` (backend PHP)
 - NON usare "frontend" per indicare genericamente interfacce utente
 
+⚠️ **SCHEMA DATABASE - TERMINOLOGIA:**
+- **NON esiste** una tabella `appointments` nel database
+- La tabella principale è `bookings` che contiene le prenotazioni
+- Ogni booking può avere più righe in `booking_items` (i singoli servizi prenotati)
+- Nel codice Flutter, il modello `Appointment` rappresenta un `booking_item` (singolo servizio), NON un booking completo
+
 JSON snake_case.
 I modelli e i campi già usati dai client NON devono essere rinominati.
 

@@ -881,5 +881,32 @@
   "dayThursday": "Giovedì",
   "dayFriday": "Venerdì",
   "daySaturday": "Sabato",
-  "daySunday": "Domenica"
+  "daySunday": "Domenica",
+  "serviceRequiredResourcesLabel": "Risorse richieste",
+  "resourceNoneLabel": "Nessuna risorsa richiesta",
+  "resourceSelectLabel": "Seleziona risorse",
+  "resourcesTitle": "Risorse",
+  "resourcesEmpty": "Nessuna risorsa configurata per questa sede",
+  "resourcesEmptyHint": "Le risorse sono attrezzature o spazi (es. cabine, lettini) che possono essere associati ai servizi",
+  "resourceNew": "Nuova risorsa",
+  "resourceEdit": "Modifica risorsa",
+  "resourceNameLabel": "Nome risorsa",
+  "resourceQuantityLabel": "Quantità disponibile",
+  "resourceTypeLabel": "Tipo (opzionale)",
+  "resourceNoteLabel": "Note (opzionale)",
+  "resourceDeleteConfirm": "Eliminare questa risorsa?",
+  "resourceDeleteWarning": "I servizi che usano questa risorsa non saranno più vincolati alla sua disponibilità",
+  "resourceServicesLabel": "Servizi che usano questa risorsa",
+  "resourceNoServicesSelected": "Nessun servizio associato",
+  "resourceSelectServices": "Seleziona servizi",
+  "resourceServiceCountSingular": "1 servizio",
+  "resourceServiceCountPlural": "{count} servizi",
+  "@resourceServiceCountPlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "resourceQuantityRequired": "Qtà richiesta"
 }

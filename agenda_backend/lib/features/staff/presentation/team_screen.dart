@@ -14,6 +14,7 @@ import '../providers/staff_reorder_provider.dart';
 import '../providers/staff_sorted_providers.dart';
 import 'dialogs/location_dialog.dart';
 import 'dialogs/staff_dialog.dart';
+import 'screens/resources_screen.dart';
 import 'widgets/location_item.dart';
 
 class TeamScreen extends ConsumerStatefulWidget {
@@ -334,6 +335,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
           isWide: isWide,
           onAddStaff: () =>
               showStaffDialog(context, ref, initialLocationId: loc.id),
+          onManageResources: () =>
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
+                  builder: (_) => ResourcesScreen(location: loc),
+                ),
+              ),
           onEditLocation: () => showLocationDialog(context, ref, initial: loc),
           onDeleteLocation: () async {
             if (staff.isNotEmpty) {
