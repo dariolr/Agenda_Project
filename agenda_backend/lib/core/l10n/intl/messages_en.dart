@@ -689,6 +689,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "planningShowExpired": m26,
     "planningType": MessageLookupByLibrary.simpleMessage("Planning type"),
     "planningTypeBiweekly": MessageLookupByLibrary.simpleMessage("Biweekly"),
+    "planningTypeUnavailable": MessageLookupByLibrary.simpleMessage(
+      "Unavailable",
+    ),
     "planningTypeWeekly": MessageLookupByLibrary.simpleMessage("Weekly"),
     "planningValidFrom": MessageLookupByLibrary.simpleMessage(
       "Validity start date",

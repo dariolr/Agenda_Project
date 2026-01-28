@@ -18,12 +18,13 @@ final class RequestCustomerPasswordReset
 
     /**
      * Request a password reset for the given customer email.
+     * Works for both registered clients (with password) and imported clients (without password).
      * Returns true if email was found (for security, always show success message to user).
      */
     public function execute(string $email, int $businessId): bool
     {
-        // Find client by email in business
-        $client = $this->clientAuthRepository->findByEmailForAuth($email, $businessId);
+        // Find client by email in business (even without password - for first activation)
+        $client = $this->clientAuthRepository->findByEmail($email, $businessId);
 
         if ($client === null) {
             // Don't reveal if email exists

@@ -37,9 +37,10 @@ class StaffPlanningValidator {
   /// Valida un planning per creazione.
   ///
   /// [planning] il nuovo planning da validare.
-  /// [existingPlannings] tutti i planning esistenti per lo stesso staff.
+  /// [existingPlannings] non usato - l'API fa auto-split.
   StaffPlanningValidationResult validateForCreate(
     StaffPlanning planning,
+    // ignore: avoid_unused_constructor_parameters
     List<StaffPlanning> existingPlannings,
   ) {
     final errors = <String>[];
@@ -51,8 +52,7 @@ class StaffPlanningValidator {
     // 2. Validazioni template
     _validateTemplates(planning, errors);
 
-    // 3. Validazione non sovrapposizione con planning esistenti
-    _validateNoOverlap(planning, existingPlannings, null, errors);
+    // 3. Non validare overlap lato client: l'API fa auto-split automatico
 
     return errors.isEmpty
         ? StaffPlanningValidationResult.valid(warnings: warnings)
@@ -62,10 +62,11 @@ class StaffPlanningValidator {
   /// Valida un planning per aggiornamento.
   ///
   /// [planning] il planning modificato.
-  /// [existingPlannings] tutti i planning esistenti per lo stesso staff.
+  /// [existingPlannings] non usato - l'API fa auto-split.
   /// [originalPlanning] il planning originale prima delle modifiche.
   StaffPlanningValidationResult validateForUpdate(
     StaffPlanning planning,
+    // ignore: avoid_unused_constructor_parameters
     List<StaffPlanning> existingPlannings,
     StaffPlanning originalPlanning,
   ) {
@@ -78,13 +79,7 @@ class StaffPlanningValidator {
     // 2. Validazioni template
     _validateTemplates(planning, errors);
 
-    // 3. Validazione non sovrapposizione (escludendo sé stesso)
-    _validateNoOverlap(
-      planning,
-      existingPlannings,
-      originalPlanning.id,
-      errors,
-    );
+    // 3. Non validare overlap lato client: l'API fa auto-split automatico
 
     // 4. Warning per cambio type senza adeguare template
     if (originalPlanning.type != planning.type) {
@@ -169,89 +164,4 @@ class StaffPlanningValidator {
       }
     }
   }
-
-  /// Validazione non sovrapposizione intervalli.
-  ///
-  /// [planning] planning da validare.
-  /// [existingPlannings] planning esistenti per lo stesso staff.
-  /// [excludeId] ID da escludere (per update).
-  void _validateNoOverlap(
-    StaffPlanning planning,
-    List<StaffPlanning> existingPlannings,
-    int? excludeId,
-    List<String> errors,
-  ) {
-    for (final existing in existingPlannings) {
-      // Salta sé stesso in caso di update
-      if (excludeId != null && existing.id == excludeId) continue;
-
-      // Salta planning di altri staff
-      if (existing.staffId != planning.staffId) continue;
-
-      if (_intervalsOverlap(planning, existing)) {
-        final existingRange = _formatDateRange(existing);
-        errors.add('Sovrapposizione con planning esistente: $existingRange');
-      }
-    }
-  }
-
-  /// Verifica se due intervalli si sovrappongono.
-  ///
-  /// Usa intervalli chiusi-chiusi: [validFrom, validTo].
-  /// Due planning con valid_to = X e valid_from = X sono sovrapposti.
-  /// Contiguità ammessa solo se new.valid_from = existing.valid_to + 1.
-  bool _intervalsOverlap(StaffPlanning a, StaffPlanning b) {
-    final aFrom = DateUtils.dateOnly(a.validFrom);
-    final aTo = a.validTo != null ? DateUtils.dateOnly(a.validTo!) : null;
-
-    final bFrom = DateUtils.dateOnly(b.validFrom);
-    final bTo = b.validTo != null ? DateUtils.dateOnly(b.validTo!) : null;
-
-    // Caso 1: entrambi hanno valid_to
-    if (aTo != null && bTo != null) {
-      // Non sovrapposti se uno finisce prima che l'altro inizi
-      // MA: dato che sono chiusi-chiusi, aTo deve essere PRIMA di bFrom (non uguale)
-      // Contiguità: aTo + 1 giorno = bFrom → OK, non overlap
-      return !_isBefore(aTo, bFrom) && !_isBefore(bTo, aFrom);
-    }
-
-    // Caso 2: a è open-ended (aTo = null)
-    if (aTo == null && bTo != null) {
-      // a parte da aFrom e va all'infinito
-      // overlap se bTo >= aFrom
-      return !bTo.isBefore(aFrom);
-    }
-
-    // Caso 3: b è open-ended (bTo = null)
-    if (aTo != null && bTo == null) {
-      // b parte da bFrom e va all'infinito
-      // overlap se aTo >= bFrom
-      return !aTo.isBefore(bFrom);
-    }
-
-    // Caso 4: entrambi open-ended → sempre overlap (se stesso staff)
-    return true;
-  }
-
-  /// Verifica se a è strettamente prima di b (non contiguità).
-  ///
-  /// Per intervalli chiusi-chiusi:
-  /// - a finisce il giorno X, b inizia il giorno X → OVERLAP
-  /// - a finisce il giorno X, b inizia il giorno X+1 → NO OVERLAP (contigui)
-  bool _isBefore(DateTime aEnd, DateTime bStart) {
-    // aEnd deve essere almeno 1 giorno prima di bStart per non overlap
-    final nextDay = aEnd.add(const Duration(days: 1));
-    return !nextDay.isAfter(bStart);
-  }
-
-  String _formatDateRange(StaffPlanning planning) {
-    final from = _formatDate(planning.validFrom);
-    final to = planning.validTo != null ? _formatDate(planning.validTo!) : '∞';
-    return '[$from, $to]';
-  }
-
-  String _formatDate(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
 }

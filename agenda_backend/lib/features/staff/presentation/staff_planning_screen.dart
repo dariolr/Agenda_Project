@@ -576,10 +576,24 @@ class _PlanningCard extends StatelessWidget {
       statusColor = theme.colorScheme.onSurfaceVariant;
     }
 
-    // Tipo planning
-    final typeLabel = planning.type == StaffPlanningType.weekly
-        ? l10n.planningTypeWeekly
-        : l10n.planningTypeBiweekly;
+    // Calcola ore settimanali (serve prima per determinare il tipo label)
+    final hoursA = _calculateWeeklyHours(planning.templateA);
+    final hoursB = _calculateWeeklyHours(planning.templateB);
+    final totalHours = hoursA + hoursB;
+
+    // Tipo planning: se 0 ore mostra "Non disponibile"
+    final String typeLabel;
+    final IconData typeIcon;
+    if (totalHours == 0) {
+      typeLabel = l10n.planningTypeUnavailable;
+      typeIcon = Icons.event_busy_outlined;
+    } else if (planning.type == StaffPlanningType.weekly) {
+      typeLabel = l10n.planningTypeWeekly;
+      typeIcon = Icons.view_week_outlined;
+    } else {
+      typeLabel = l10n.planningTypeBiweekly;
+      typeIcon = Icons.date_range_outlined;
+    }
 
     // Periodo validità
     final validFromStr = dateFormat.format(planning.validFrom);
@@ -589,10 +603,6 @@ class _PlanningCard extends StatelessWidget {
             dateFormat.format(planning.validTo!),
           )
         : l10n.planningValidFromOnly(validFromStr);
-
-    // Calcola ore settimanali
-    final hoursA = _calculateWeeklyHours(planning.templateA);
-    final hoursB = _calculateWeeklyHours(planning.templateB);
 
     String hoursText;
     if (planning.type == StaffPlanningType.weekly) {
@@ -624,9 +634,7 @@ class _PlanningCard extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      planning.type == StaffPlanningType.weekly
-                          ? Icons.view_week_outlined
-                          : Icons.date_range_outlined,
+                      typeIcon,
                       size: 20,
                       color: isActive
                           ? theme.colorScheme.primary

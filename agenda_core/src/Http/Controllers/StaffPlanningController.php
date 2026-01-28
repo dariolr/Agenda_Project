@@ -218,26 +218,23 @@ final class StaffPlanningController
             );
         }
 
-        // Verifica sovrapposizione
-        if ($this->planningRepo->hasOverlap(
-            $staffId,
-            $data['valid_from'],
-            $data['valid_to'] ?? null
-        )) {
-            return Response::error(
-                'Sovrapposizione con un planning esistente',
-                'overlap_error',
-                409,
-                $request->traceId
-            );
+        $validFrom = $data['valid_from'];
+        $validTo = $data['valid_to'] ?? null;
+
+        // Trova planning sovrapposti
+        $overlapping = $this->planningRepo->findOverlapping($staffId, $validFrom, $validTo);
+
+        // Se ci sono sovrapposizioni, fai auto-split
+        if (!empty($overlapping)) {
+            $this->autoSplitOverlapping($overlapping, $validFrom, $validTo);
         }
 
         // Crea planning
         $planningId = $this->planningRepo->create([
             'staff_id' => $staffId,
             'type' => $data['type'],
-            'valid_from' => $data['valid_from'],
-            'valid_to' => $data['valid_to'] ?? null,
+            'valid_from' => $validFrom,
+            'valid_to' => $validTo,
         ]);
 
         // Salva templates
@@ -248,6 +245,77 @@ final class StaffPlanningController
         $planning = $this->planningRepo->findById($planningId);
 
         return Response::json(['success' => true, 'data' => $planning], 201, $request->traceId);
+    }
+
+    /**
+     * Gestisce l'auto-split dei planning sovrapposti.
+     * 
+     * Per ogni planning sovrapposto:
+     * - SPLIT: inizia prima di X, finisce dopo Y → tronca a X-1, crea copia da Y+1
+     * - TRIM END: inizia prima di X, finisce durante [X,Y] → tronca valid_to a X-1
+     * - TRIM START: inizia durante [X,Y], finisce dopo Y → sposta valid_from a Y+1
+     * - DELETE: completamente contenuto in [X,Y] → elimina
+     */
+    private function autoSplitOverlapping(array $overlapping, string $newFrom, ?string $newTo): void
+    {
+        $newFromDate = new \DateTime($newFrom);
+        $newToDate = $newTo !== null ? new \DateTime($newTo) : null;
+        $dayBeforeNew = (clone $newFromDate)->modify('-1 day')->format('Y-m-d');
+
+        foreach ($overlapping as $existing) {
+            $existingFromDate = new \DateTime($existing['valid_from']);
+            $existingToDate = $existing['valid_to'] !== null ? new \DateTime($existing['valid_to']) : null;
+            $existingId = (int) $existing['id'];
+
+            $startsBeforeNew = $existingFromDate < $newFromDate;
+            
+            // Determina se finisce dopo il nuovo periodo
+            $endsAfterNew = false;
+            if ($newToDate === null) {
+                // Il nuovo planning non ha fine → nessun esistente "finisce dopo"
+                $endsAfterNew = false;
+            } elseif ($existingToDate === null) {
+                // L'esistente non ha fine → finisce dopo qualsiasi data
+                $endsAfterNew = true;
+            } else {
+                $endsAfterNew = $existingToDate > $newToDate;
+            }
+
+            // Determina se completamente contenuto
+            $isContained = !$startsBeforeNew && !$endsAfterNew;
+            if ($newToDate === null && !$startsBeforeNew) {
+                // Nuovo senza fine e esistente inizia >= newFrom → è contenuto
+                $isContained = true;
+            }
+
+            if ($startsBeforeNew && $endsAfterNew) {
+                // SPLIT: tronca esistente a X-1, crea copia da Y+1
+                $dayAfterNew = (clone $newToDate)->modify('+1 day')->format('Y-m-d');
+                
+                // Crea la copia PRIMA di modificare l'originale
+                $this->planningRepo->duplicate(
+                    $existingId,
+                    $dayAfterNew,
+                    $existing['valid_to']
+                );
+                
+                // Tronca l'originale
+                $this->planningRepo->update($existingId, ['valid_to' => $dayBeforeNew]);
+                
+            } elseif ($startsBeforeNew && !$endsAfterNew) {
+                // TRIM END: tronca valid_to a X-1
+                $this->planningRepo->update($existingId, ['valid_to' => $dayBeforeNew]);
+                
+            } elseif (!$startsBeforeNew && $endsAfterNew) {
+                // TRIM START: sposta valid_from a Y+1
+                $dayAfterNew = (clone $newToDate)->modify('+1 day')->format('Y-m-d');
+                $this->planningRepo->update($existingId, ['valid_from' => $dayAfterNew]);
+                
+            } elseif ($isContained) {
+                // DELETE: completamente contenuto
+                $this->planningRepo->delete($existingId);
+            }
+        }
     }
 
     /**
@@ -282,17 +350,16 @@ final class StaffPlanningController
             );
         }
 
-        // Verifica sovrapposizione (escludendo il planning corrente)
+        // Calcola date effettive per il planning modificato
         $validFrom = $data['valid_from'] ?? $existing['valid_from'];
         $validTo = array_key_exists('valid_to', $data) ? $data['valid_to'] : $existing['valid_to'];
 
-        if ($this->planningRepo->hasOverlap($staffId, $validFrom, $validTo, $planningId)) {
-            return Response::error(
-                'Sovrapposizione con un planning esistente',
-                'overlap_error',
-                409,
-                $request->traceId
-            );
+        // Trova planning sovrapposti (escludendo quello che stiamo modificando)
+        $overlapping = $this->planningRepo->findOverlapping($staffId, $validFrom, $validTo, $planningId);
+        
+        // Se ci sono sovrapposizioni, fai auto-split
+        if (!empty($overlapping)) {
+            $this->autoSplitOverlapping($overlapping, $validFrom, $validTo);
         }
 
         // Aggiorna planning

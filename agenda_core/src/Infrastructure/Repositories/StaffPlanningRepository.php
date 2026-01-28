@@ -336,10 +336,23 @@ final class StaffPlanningRepository
         ?string $validTo,
         ?int $excludePlanningId = null
     ): bool {
-        // Se validTo è null, si sovrappone con qualsiasi planning che inizia >= validFrom
-        // o che ha validTo >= validFrom
-        
-        $sql = 'SELECT COUNT(*) FROM staff_planning WHERE staff_id = ?';
+        $overlapping = $this->findOverlapping($staffId, $validFrom, $validTo, $excludePlanningId);
+        return count($overlapping) > 0;
+    }
+
+    /**
+     * Trova tutti i planning sovrapposti per uno staff in un intervallo.
+     * 
+     * @return array Array di planning sovrapposti con i loro templates.
+     */
+    public function findOverlapping(
+        int $staffId,
+        string $validFrom,
+        ?string $validTo,
+        ?int $excludePlanningId = null
+    ): array {
+        $sql = 'SELECT id, staff_id, type, valid_from, valid_to, created_at, updated_at
+                FROM staff_planning WHERE staff_id = ?';
         $params = [$staffId];
 
         if ($excludePlanningId !== null) {
@@ -350,11 +363,9 @@ final class StaffPlanningRepository
         // Condizione di sovrapposizione per intervalli chiusi-chiusi:
         // [A_from, A_to] e [B_from, B_to] si sovrappongono se:
         // A_from <= B_to AND A_to >= B_from
-        // Con nullable: se A_to è null, A_to >= B_from è sempre vero
         
         if ($validTo === null) {
-            // Nuovo planning senza scadenza: si sovrappone con qualsiasi
-            // planning esistente che non sia terminato prima di validFrom
+            // Nuovo planning senza scadenza
             $sql .= ' AND (valid_to IS NULL OR valid_to >= ?)';
             $params[] = $validFrom;
         } else {
@@ -364,9 +375,52 @@ final class StaffPlanningRepository
             $params[] = $validFrom;
         }
 
+        $sql .= ' ORDER BY valid_from ASC';
+
         $stmt = $this->db->getPdo()->prepare($sql);
         $stmt->execute($params);
+        $plannings = $stmt->fetchAll();
 
-        return (int) $stmt->fetchColumn() > 0;
+        foreach ($plannings as &$planning) {
+            $planning['templates'] = $this->getTemplates((int) $planning['id']);
+        }
+
+        return $plannings;
+    }
+
+    /**
+     * Duplica un planning con nuove date di validità.
+     * Copia tutti i templates.
+     * 
+     * @return int ID del nuovo planning creato.
+     */
+    public function duplicate(int $planningId, string $newValidFrom, ?string $newValidTo): int
+    {
+        $original = $this->findById($planningId);
+        if ($original === null) {
+            throw new \InvalidArgumentException("Planning $planningId not found");
+        }
+
+        // Crea nuovo planning
+        $newId = $this->create([
+            'staff_id' => $original['staff_id'],
+            'type' => $original['type'],
+            'valid_from' => $newValidFrom,
+            'valid_to' => $newValidTo,
+        ]);
+
+        // Copia templates
+        foreach ($original['templates'] as $template) {
+            $weekLabel = $template['week_label'];
+            $daySlots = $template['day_slots'] ?? [];
+            
+            foreach ($daySlots as $dayOfWeek => $slots) {
+                if (!empty($slots)) {
+                    $this->saveTemplate($newId, $weekLabel, (int) $dayOfWeek, $slots);
+                }
+            }
+        }
+
+        return $newId;
     }
 }
