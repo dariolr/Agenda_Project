@@ -744,6 +744,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "planningTypeBiweekly": MessageLookupByLibrary.simpleMessage(
       "Bisettimanale",
     ),
+    "planningTypeUnavailable": MessageLookupByLibrary.simpleMessage(
+      "Non disponibile",
+    ),
     "planningTypeWeekly": MessageLookupByLibrary.simpleMessage("Settimanale"),
     "planningValidFrom": MessageLookupByLibrary.simpleMessage(
       "Data inizio validità",

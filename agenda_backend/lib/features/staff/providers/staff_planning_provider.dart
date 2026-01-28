@@ -170,6 +170,7 @@ class StaffPlanningsNotifier extends Notifier<StaffPlanningsState> {
         validTo: planning.validTo != null
             ? _dateToIso(planning.validTo!)
             : null,
+        setValidToNull: planning.validTo == null,
         templates: planning.templates.map((t) => t.toJson()).toList(),
       );
 

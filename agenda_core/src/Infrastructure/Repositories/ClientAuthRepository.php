@@ -39,6 +39,23 @@ final class ClientAuthRepository
     }
 
     /**
+     * Find client by email (even without password - for password reset/first activation).
+     */
+    public function findByEmail(string $email, int $businessId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, email, password_hash, first_name, last_name, phone, 
+                    email_verified_at, is_archived, created_at 
+             FROM clients 
+             WHERE email = ? AND business_id = ? AND is_archived = 0'
+        );
+        $stmt->execute([$email, $businessId]);
+        $result = $stmt->fetch();
+        
+        return $result ?: null;
+    }
+
+    /**
      * Find client by ID (for JWT validation).
      */
     public function findById(int $id): ?array

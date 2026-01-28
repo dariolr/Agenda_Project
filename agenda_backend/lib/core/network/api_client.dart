@@ -1843,12 +1843,17 @@ class ApiClient {
     String? type,
     String? validFrom,
     String? validTo,
+    bool setValidToNull = false,
     List<Map<String, dynamic>>? templates,
   }) async {
     final data = <String, dynamic>{};
     if (type != null) data['type'] = type;
     if (validFrom != null) data['valid_from'] = validFrom;
-    if (validTo != null) data['valid_to'] = validTo;
+    if (validTo != null) {
+      data['valid_to'] = validTo;
+    } else if (setValidToNull) {
+      data['valid_to'] = null;
+    }
     if (templates != null) data['templates'] = templates;
 
     // _handleResponse già estrae body['data'], quindi response È il planning

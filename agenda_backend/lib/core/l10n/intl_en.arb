@@ -619,6 +619,7 @@
   "planningType": "Planning type",
   "planningTypeWeekly": "Weekly",
   "planningTypeBiweekly": "Biweekly",
+  "planningTypeUnavailable": "Unavailable",
   "planningValidFrom": "Validity start date",
   "planningValidTo": "Validity end date",
   "planningOpenEnded": "No end date",
