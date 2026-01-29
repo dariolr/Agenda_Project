@@ -945,4 +945,145 @@ final class BookingRepository
         $stmt->execute([$clientId, $afterDate]);
         return $stmt->fetchAll();
     }
+
+    /**
+     * Find bookings with advanced filters for the bookings list view.
+     * 
+     * @param int $businessId Business ID
+     * @param array $filters Filters: location_id, staff_id, service_id, client_search, 
+     *                       status, start_date, end_date, include_past, sort_by, sort_order
+     * @param int $limit Max results
+     * @param int $offset Pagination offset
+     * @return array{bookings: array, total: int}
+     */
+    public function findWithFilters(int $businessId, array $filters = [], int $limit = 50, int $offset = 0): array
+    {
+        $now = (new DateTimeImmutable())->format('Y-m-d H:i:s');
+        
+        // Base query - join booking_items to get first appointment time
+        $baseSelect = "
+            SELECT b.id, b.business_id, b.location_id, b.client_id, b.user_id,
+                   b.client_name, b.notes, b.status, b.source,
+                   b.created_at, b.updated_at,
+                   b.recurrence_rule_id, b.recurrence_index,
+                   c.first_name AS client_first_name, c.last_name AS client_last_name,
+                   c.email AS client_email, c.phone AS client_phone,
+                   l.name AS location_name,
+                   MIN(bi.start_time) AS first_start_time,
+                   MAX(bi.end_time) AS last_end_time,
+                   SUM(bi.price) AS total_price,
+                   GROUP_CONCAT(DISTINCT s.name ORDER BY bi.start_time SEPARATOR ', ') AS service_names,
+                   GROUP_CONCAT(DISTINCT CONCAT(st.name, ' ', SUBSTR(st.surname, 1, 1), '.') ORDER BY bi.start_time SEPARATOR ', ') AS staff_names,
+                   creator.first_name AS creator_first_name, creator.last_name AS creator_last_name
+            FROM bookings b
+            LEFT JOIN clients c ON b.client_id = c.id
+            LEFT JOIN locations l ON b.location_id = l.id
+            LEFT JOIN users creator ON b.user_id = creator.id
+            JOIN booking_items bi ON b.id = bi.booking_id
+            JOIN services s ON bi.service_id = s.id
+            JOIN staff st ON bi.staff_id = st.id
+        ";
+        
+        $countSelect = "SELECT COUNT(DISTINCT b.id) FROM bookings b
+            JOIN booking_items bi ON b.id = bi.booking_id";
+        
+        $where = ['b.business_id = ?'];
+        $params = [$businessId];
+        
+        // Location filter
+        if (!empty($filters['location_id'])) {
+            $where[] = 'b.location_id = ?';
+            $params[] = (int) $filters['location_id'];
+        }
+        
+        // Staff filter
+        if (!empty($filters['staff_id'])) {
+            $where[] = 'bi.staff_id = ?';
+            $params[] = (int) $filters['staff_id'];
+        }
+        
+        // Service filter
+        if (!empty($filters['service_id'])) {
+            $where[] = 'bi.service_id = ?';
+            $params[] = (int) $filters['service_id'];
+        }
+        
+        // Client search (name, email, phone)
+        if (!empty($filters['client_search'])) {
+            $search = '%' . $filters['client_search'] . '%';
+            $where[] = '(c.first_name LIKE ? OR c.last_name LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR b.client_name LIKE ?)';
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+        }
+        
+        // Status filter
+        if (!empty($filters['status'])) {
+            if (is_array($filters['status'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['status']), '?'));
+                $where[] = "b.status IN ($placeholders)";
+                $params = array_merge($params, $filters['status']);
+            } else {
+                $where[] = 'b.status = ?';
+                $params[] = $filters['status'];
+            }
+        }
+        
+        // Date range filter
+        if (!empty($filters['start_date'])) {
+            $where[] = 'bi.start_time >= ?';
+            $params[] = $filters['start_date'] . ' 00:00:00';
+        }
+        
+        if (!empty($filters['end_date'])) {
+            $where[] = 'bi.start_time <= ?';
+            $params[] = $filters['end_date'] . ' 23:59:59';
+        }
+        
+        // Include past or only future
+        $includePast = $filters['include_past'] ?? false;
+        if (!$includePast) {
+            $where[] = 'bi.start_time >= ?';
+            $params[] = $now;
+        }
+        
+        $whereClause = ' WHERE ' . implode(' AND ', $where);
+        $groupBy = ' GROUP BY b.id';
+        
+        // Sorting
+        $sortBy = $filters['sort_by'] ?? 'appointment'; // 'appointment' or 'created'
+        $sortOrder = strtoupper($filters['sort_order'] ?? 'DESC');
+        if (!in_array($sortOrder, ['ASC', 'DESC'])) {
+            $sortOrder = 'DESC';
+        }
+        
+        $orderBy = match($sortBy) {
+            'created' => " ORDER BY b.created_at $sortOrder",
+            default => " ORDER BY first_start_time $sortOrder",
+        };
+        
+        // Count total
+        $countParams = $params;
+        $countStmt = $this->db->getPdo()->prepare($countSelect . $whereClause);
+        $countStmt->execute($countParams);
+        $total = (int) $countStmt->fetchColumn();
+        
+        // Get bookings with pagination
+        $sql = $baseSelect . $whereClause . $groupBy . $orderBy . " LIMIT $limit OFFSET $offset";
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
+        $bookings = $stmt->fetchAll();
+        
+        // Enrich each booking with items
+        foreach ($bookings as &$booking) {
+            $booking['items'] = $this->getBookingItems((int) $booking['id']);
+        }
+        
+        return [
+            'bookings' => $bookings,
+            'total' => $total,
+        ];
+    }
 }

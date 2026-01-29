@@ -71,6 +71,8 @@ class UserMenuButton extends ConsumerWidget {
           context.push('/profilo');
         } else if (value == 'report') {
           context.push('/report');
+        } else if (value == 'bookings_list') {
+          context.push('/prenotazioni');
         } else if (value == 'change_password') {
           context.push('/change-password');
         } else if (value == 'switch_business') {
@@ -137,6 +139,17 @@ class UserMenuButton extends ConsumerWidget {
             Icon(Icons.bar_chart, size: 20, color: colorScheme.primary),
             const SizedBox(width: 12),
             Text(context.l10n.reportsTitle),
+          ],
+        ),
+      ),
+      // Elenco Prenotazioni
+      PopupMenuItem<String>(
+        value: 'bookings_list',
+        child: Row(
+          children: [
+            Icon(Icons.list_alt, size: 20, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Text(context.l10n.bookingsListTitle),
           ],
         ),
       ),

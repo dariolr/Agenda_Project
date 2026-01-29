@@ -269,6 +269,9 @@ final class Kernel
         
         // Booking history (audit trail)
         $this->router->get('/v1/bookings/{booking_id}/history', BookingsController::class, 'history', ['auth']);
+        
+        // Bookings list (paginated with filters)
+        $this->router->get('/v1/businesses/{business_id}/bookings/list', BookingsController::class, 'listAll', ['auth']);
 
         // Reports (admin/owner only)
         $this->router->get('/v1/reports/appointments', ReportsController::class, 'appointments', ['auth']);

@@ -189,6 +189,11 @@ class L10n {
     return Intl.message('Chiudi', name: 'actionClose', desc: '', args: []);
   }
 
+  /// `Riprova`
+  String get actionRetry {
+    return Intl.message('Riprova', name: 'actionRetry', desc: '', args: []);
+  }
+
   /// `Confermi l’eliminazione?`
   String get deleteConfirmationTitle {
     return Intl.message(
@@ -5557,6 +5562,506 @@ class L10n {
     return Intl.message(
       'Qtà richiesta',
       name: 'resourceQuantityRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Elenco Prenotazioni`
+  String get bookingsListTitle {
+    return Intl.message(
+      'Elenco Prenotazioni',
+      name: 'bookingsListTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna prenotazione trovata`
+  String get bookingsListEmpty {
+    return Intl.message(
+      'Nessuna prenotazione trovata',
+      name: 'bookingsListEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prova a modificare i filtri di ricerca`
+  String get bookingsListEmptyHint {
+    return Intl.message(
+      'Prova a modificare i filtri di ricerca',
+      name: 'bookingsListEmptyHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Filtri`
+  String get bookingsListFilterTitle {
+    return Intl.message(
+      'Filtri',
+      name: 'bookingsListFilterTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sede`
+  String get bookingsListFilterLocation {
+    return Intl.message(
+      'Sede',
+      name: 'bookingsListFilterLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Operatore`
+  String get bookingsListFilterStaff {
+    return Intl.message(
+      'Operatore',
+      name: 'bookingsListFilterStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizio`
+  String get bookingsListFilterService {
+    return Intl.message(
+      'Servizio',
+      name: 'bookingsListFilterService',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cerca cliente`
+  String get bookingsListFilterClient {
+    return Intl.message(
+      'Cerca cliente',
+      name: 'bookingsListFilterClient',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nome, email o telefono`
+  String get bookingsListFilterClientHint {
+    return Intl.message(
+      'Nome, email o telefono',
+      name: 'bookingsListFilterClientHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Stato`
+  String get bookingsListFilterStatus {
+    return Intl.message(
+      'Stato',
+      name: 'bookingsListFilterStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Periodo`
+  String get bookingsListFilterPeriod {
+    return Intl.message(
+      'Periodo',
+      name: 'bookingsListFilterPeriod',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Includi passati`
+  String get bookingsListFilterIncludePast {
+    return Intl.message(
+      'Includi passati',
+      name: 'bookingsListFilterIncludePast',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Solo futuri`
+  String get bookingsListFilterFutureOnly {
+    return Intl.message(
+      'Solo futuri',
+      name: 'bookingsListFilterFutureOnly',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Data appuntamento`
+  String get bookingsListSortByAppointment {
+    return Intl.message(
+      'Data appuntamento',
+      name: 'bookingsListSortByAppointment',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Data creazione`
+  String get bookingsListSortByCreated {
+    return Intl.message(
+      'Data creazione',
+      name: 'bookingsListSortByCreated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crescente`
+  String get bookingsListSortAsc {
+    return Intl.message(
+      'Crescente',
+      name: 'bookingsListSortAsc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Decrescente`
+  String get bookingsListSortDesc {
+    return Intl.message(
+      'Decrescente',
+      name: 'bookingsListSortDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Data/Ora`
+  String get bookingsListColumnDateTime {
+    return Intl.message(
+      'Data/Ora',
+      name: 'bookingsListColumnDateTime',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Creato il`
+  String get bookingsListColumnCreatedAt {
+    return Intl.message(
+      'Creato il',
+      name: 'bookingsListColumnCreatedAt',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Creato da`
+  String get bookingsListColumnCreatedBy {
+    return Intl.message(
+      'Creato da',
+      name: 'bookingsListColumnCreatedBy',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cliente`
+  String get bookingsListColumnClient {
+    return Intl.message(
+      'Cliente',
+      name: 'bookingsListColumnClient',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizi`
+  String get bookingsListColumnServices {
+    return Intl.message(
+      'Servizi',
+      name: 'bookingsListColumnServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Operatore`
+  String get bookingsListColumnStaff {
+    return Intl.message(
+      'Operatore',
+      name: 'bookingsListColumnStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Stato`
+  String get bookingsListColumnStatus {
+    return Intl.message(
+      'Stato',
+      name: 'bookingsListColumnStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prezzo`
+  String get bookingsListColumnPrice {
+    return Intl.message(
+      'Prezzo',
+      name: 'bookingsListColumnPrice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Azioni`
+  String get bookingsListColumnActions {
+    return Intl.message(
+      'Azioni',
+      name: 'bookingsListColumnActions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modifica`
+  String get bookingsListActionEdit {
+    return Intl.message(
+      'Modifica',
+      name: 'bookingsListActionEdit',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancella`
+  String get bookingsListActionCancel {
+    return Intl.message(
+      'Cancella',
+      name: 'bookingsListActionCancel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Dettagli`
+  String get bookingsListActionView {
+    return Intl.message(
+      'Dettagli',
+      name: 'bookingsListActionView',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confermato`
+  String get bookingsListStatusConfirmed {
+    return Intl.message(
+      'Confermato',
+      name: 'bookingsListStatusConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancellato`
+  String get bookingsListStatusCancelled {
+    return Intl.message(
+      'Cancellato',
+      name: 'bookingsListStatusCancelled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Completato`
+  String get bookingsListStatusCompleted {
+    return Intl.message(
+      'Completato',
+      name: 'bookingsListStatusCompleted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No show`
+  String get bookingsListStatusNoShow {
+    return Intl.message(
+      'No show',
+      name: 'bookingsListStatusNoShow',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `In attesa`
+  String get bookingsListStatusPending {
+    return Intl.message(
+      'In attesa',
+      name: 'bookingsListStatusPending',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Online`
+  String get bookingsListSourceOnline {
+    return Intl.message(
+      'Online',
+      name: 'bookingsListSourceOnline',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Telefono`
+  String get bookingsListSourcePhone {
+    return Intl.message(
+      'Telefono',
+      name: 'bookingsListSourcePhone',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Walk-in`
+  String get bookingsListSourceWalkIn {
+    return Intl.message(
+      'Walk-in',
+      name: 'bookingsListSourceWalkIn',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Gestionale`
+  String get bookingsListSourceInternal {
+    return Intl.message(
+      'Gestionale',
+      name: 'bookingsListSourceInternal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} prenotazioni`
+  String bookingsListTotalCount(int count) {
+    return Intl.message(
+      '$count prenotazioni',
+      name: 'bookingsListTotalCount',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Carica altre`
+  String get bookingsListLoadMore {
+    return Intl.message(
+      'Carica altre',
+      name: 'bookingsListLoadMore',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reset filtri`
+  String get bookingsListResetFilters {
+    return Intl.message(
+      'Reset filtri',
+      name: 'bookingsListResetFilters',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tutte le sedi`
+  String get bookingsListAllLocations {
+    return Intl.message(
+      'Tutte le sedi',
+      name: 'bookingsListAllLocations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tutti gli operatori`
+  String get bookingsListAllStaff {
+    return Intl.message(
+      'Tutti gli operatori',
+      name: 'bookingsListAllStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tutti i servizi`
+  String get bookingsListAllServices {
+    return Intl.message(
+      'Tutti i servizi',
+      name: 'bookingsListAllServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tutti gli stati`
+  String get bookingsListAllStatus {
+    return Intl.message(
+      'Tutti gli stati',
+      name: 'bookingsListAllStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancellare prenotazione?`
+  String get bookingsListCancelConfirmTitle {
+    return Intl.message(
+      'Cancellare prenotazione?',
+      name: 'bookingsListCancelConfirmTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questa azione non può essere annullata.`
+  String get bookingsListCancelConfirmMessage {
+    return Intl.message(
+      'Questa azione non può essere annullata.',
+      name: 'bookingsListCancelConfirmMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione cancellata`
+  String get bookingsListCancelSuccess {
+    return Intl.message(
+      'Prenotazione cancellata',
+      name: 'bookingsListCancelSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Caricamento...`
+  String get bookingsListLoading {
+    return Intl.message(
+      'Caricamento...',
+      name: 'bookingsListLoading',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun cliente`
+  String get bookingsListNoClient {
+    return Intl.message(
+      'Nessun cliente',
+      name: 'bookingsListNoClient',
       desc: '',
       args: [],
     );

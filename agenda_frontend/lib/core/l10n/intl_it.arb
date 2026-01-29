@@ -53,6 +53,7 @@
   "authForgotPassword": "Password dimenticata?",
   "authNoAccount": "Non hai un account?",
   "authHaveAccount": "Hai già un account?",
+  "authRememberMe": "Ricordami",
   "authInvalidEmail": "Email non valida",
   "authInvalidPassword": "La password deve contenere almeno 8 caratteri, una maiuscola, una minuscola e un numero",
   "authPasswordValidationError": "Errore di validazione: {message}",
