@@ -13,7 +13,7 @@ Modificare le costanti in `import_clients.php`:
 ```php
 const BUSINESS_ID = 2;  // ID del business di destinazione
 const CSV_FILE = 'export_customer_list_2026-01-23.csv';
-const SKIP_BLOCKED = false;  // true = salta clienti bloccati, false = importa come archiviati
+const SKIP_BLOCKED = true;  // SEMPRE true - non importare clienti bloccati/non attivi
 ```
 
 ## Mapping CSV → Database
@@ -36,10 +36,16 @@ const SKIP_BLOCKED = false;  // true = salta clienti bloccati, false = importa c
 ## Regole di importazione
 
 1. **Duplicati email**: I clienti con email già presente nel DB vengono saltati
-2. **Clienti bloccati**: Se `SKIP_BLOCKED = true` vengono saltati, altrimenti importati con `is_archived = 1`
+2. **Clienti bloccati/non attivi**: NON importare clienti con stato "Blocked" su Fresha. Questi clienti non devono essere trasferiti nel nuovo sistema (evita record con `is_archived = 1`)
 3. **Righe senza nome**: Saltate automaticamente
 4. **Telefono**: Normalizzato rimuovendo spazi e aggiungendo prefisso `+`
 5. **Password**: Non impostata (`password_hash = NULL`), i clienti dovranno registrarsi
+
+## ⚠️ REGOLA CRITICA (29/01/2026)
+
+**NON importare clienti non attivi** (quelli che su Fresha hanno stato "Blocked").
+
+Motivo: importare clienti archiviati causa problemi quando questi cercano di registrarsi con un'altra email associata al loro nome. Il sistema potrebbe trovare record duplicati e creare confusione.
 
 ## Esecuzione
 
