@@ -559,6 +559,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _buildReportContent(BuildContext context, AppointmentsReport report) {
+    // Determina quali sezioni mostrare in base al periodo selezionato
+    final isSingleDay =
+        _selectedPreset == 'today' ||
+        (_startDate.year == _endDate.year &&
+            _startDate.month == _endDate.month &&
+            _startDate.day == _endDate.day);
+
+    // "Per Giorno della Settimana" non ha senso per un singolo giorno
+    final showDayOfWeek = !isSingleDay;
+
+    // "Per Periodo" non ha senso per un singolo giorno o per "oggi"
+    final showPeriod = !isSingleDay;
+
+    // "Per Operatore" non ha senso se filtrato per un solo staff
+    final showByStaff =
+        _selectedStaffIds.isEmpty || _selectedStaffIds.length > 1;
+
+    // "Per Servizio" non ha senso se filtrato per un solo servizio
+    final showByService =
+        _selectedServiceIds.isEmpty || _selectedServiceIds.length > 1;
+
+    // "Per Fascia Oraria" sempre utile tranne per periodi molto lunghi senza filtri
+    final showByHour = true;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -569,12 +593,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           const SizedBox(height: 24),
 
           // Breakdown sections
-          _buildBreakdownSection(
-            context,
-            title: context.l10n.reportsByStaff,
-            child: _buildStaffTable(context, report.byStaff, report.summary),
-          ),
-          const SizedBox(height: 16),
+          if (showByStaff) ...[
+            _buildBreakdownSection(
+              context,
+              title: context.l10n.reportsByStaff,
+              child: _buildStaffTable(context, report.byStaff, report.summary),
+            ),
+            const SizedBox(height: 16),
+          ],
 
           if (report.byLocation.length > 1) ...[
             _buildBreakdownSection(
@@ -589,40 +615,52 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             const SizedBox(height: 16),
           ],
 
-          _buildBreakdownSection(
-            context,
-            title: context.l10n.reportsByService,
-            child: _buildServiceTable(
+          if (showByService) ...[
+            _buildBreakdownSection(
               context,
-              report.byService,
-              report.summary,
+              title: context.l10n.reportsByService,
+              child: _buildServiceTable(
+                context,
+                report.byService,
+                report.summary,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
 
-          _buildBreakdownSection(
-            context,
-            title: context.l10n.reportsByDayOfWeek,
-            child: _buildDayOfWeekTable(
+          if (showDayOfWeek) ...[
+            _buildBreakdownSection(
               context,
-              report.byDayOfWeek,
-              report.summary,
+              title: context.l10n.reportsByDayOfWeek,
+              child: _buildDayOfWeekTable(
+                context,
+                report.byDayOfWeek,
+                report.summary,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
 
-          _buildBreakdownSection(
-            context,
-            title: context.l10n.reportsByPeriod,
-            child: _buildPeriodTable(context, report.byPeriod, report.summary),
-          ),
-          const SizedBox(height: 16),
+          if (showPeriod) ...[
+            _buildBreakdownSection(
+              context,
+              title: context.l10n.reportsByPeriod,
+              child: _buildPeriodTable(
+                context,
+                report.byPeriod,
+                report.summary,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
-          _buildBreakdownSection(
-            context,
-            title: context.l10n.reportsByHour,
-            child: _buildHourTable(context, report.byHour, report.summary),
-          ),
+          if (showByHour) ...[
+            _buildBreakdownSection(
+              context,
+              title: context.l10n.reportsByHour,
+              child: _buildHourTable(context, report.byHour, report.summary),
+            ),
+          ],
         ],
       ),
     );
