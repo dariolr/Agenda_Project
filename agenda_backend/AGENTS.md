@@ -258,8 +258,12 @@ Future<void> _onSave() async {
 
 ## 🚫 L'agente NON deve
 
+### 🚨 REGOLA CRITICA DEPLOY (29/01/2026)
+**MAI eseguire deploy (build + rsync) di progetti Flutter (agenda_frontend o agenda_backend) senza ESPLICITA richiesta dell'utente.**
+Questa regola si applica SEMPRE, sia per produzione che per staging.
+
 - **Eseguire deploy in PRODUZIONE** (build + rsync verso `gestionale.romeolab.it`) senza richiesta esplicita dell'utente
-- **Eseguire deploy in STAGING** può essere fatto autonomamente per test, ma chiedere conferma se non esplicitamente richiesto
+- **Eseguire deploy in STAGING** (build + rsync verso `gestionale-staging.romeolab.it`) senza richiesta esplicita dell'utente
 - **Avviare l'applicazione** (`flutter run`) senza richiesta esplicita dell'utente
 - **Suggerire "hot reload"** — l'utente sa già quando fare reload, non serve dirgli nulla
 - Aggiungere dipendenze non richieste

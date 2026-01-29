@@ -68,7 +68,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   /// Traduce il codice errore dall'API
-  String _getErrorMessage(String? errorCode, dynamic l10n) {
+  String _getErrorMessage(String? errorCode, String? rawMessage, dynamic l10n) {
     switch (errorCode) {
       case 'email_already_exists':
         return l10n.authErrorEmailAlreadyExists;
@@ -88,6 +88,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         return l10n.authErrorInvalidResetToken;
       case 'reset_token_expired':
         return l10n.authErrorResetTokenExpired;
+      case 'validation_error':
+        // Mostra il messaggio dettagliato dal server
+        if (rawMessage != null && rawMessage.isNotEmpty) {
+          return rawMessage;
+        }
+        return l10n.authRegisterFailed;
     }
     return l10n.authRegisterFailed;
   }
@@ -292,7 +298,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       if (value == null || value.isEmpty) {
                         return l10n.authRequiredField;
                       }
-                      if (value.length < 6) {
+                      // Validazione allineata al backend
+                      if (value.length < 8 ||
+                          !RegExp(r'[A-Z]').hasMatch(value) ||
+                          !RegExp(r'[a-z]').hasMatch(value) ||
+                          !RegExp(r'[0-9]').hasMatch(value)) {
                         return l10n.authInvalidPassword;
                       }
                       return null;
@@ -354,7 +364,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              _getErrorMessage(authState.errorCode, l10n),
+                              _getErrorMessage(
+                                authState.errorCode,
+                                authState.errorMessage,
+                                l10n,
+                              ),
                               style: TextStyle(color: theme.colorScheme.error),
                             ),
                           ),

@@ -429,13 +429,23 @@ class L10n {
     );
   }
 
-  /// `Password troppo corta (min. 6 caratteri)`
+  /// `La password deve contenere almeno 8 caratteri, una maiuscola, una minuscola e un numero`
   String get authInvalidPassword {
     return Intl.message(
-      'Password troppo corta (min. 6 caratteri)',
+      'La password deve contenere almeno 8 caratteri, una maiuscola, una minuscola e un numero',
       name: 'authInvalidPassword',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Errore di validazione: {message}`
+  String authPasswordValidationError(Object message) {
+    return Intl.message(
+      'Errore di validazione: $message',
+      name: 'authPasswordValidationError',
+      desc: '',
+      args: [message],
     );
   }
 
