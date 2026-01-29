@@ -468,9 +468,6 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(16),
-                  ),
                   onTap: () {
                     Navigator.of(ctx).pop();
                     _goBranch(4, ref);
@@ -490,6 +487,40 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                         const SizedBox(width: 16),
                         Text(
                           l10n.reportsTitle,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
+              // Elenco Prenotazioni
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(16),
+                  ),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    context.push('/prenotazioni');
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.list_alt,
+                          color: colorScheme.primary,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 16),
+                        Text(
+                          l10n.bookingsListTitle,
                           style: theme.textTheme.titleMedium,
                         ),
                       ],
@@ -536,6 +567,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         context.push('/profilo');
       } else if (value == 'report') {
         context.push('/report');
+      } else if (value == 'bookings_list') {
+        context.push('/prenotazioni');
       } else if (value == 'change_password') {
         context.push('/change-password');
       } else if (value == 'switch_business') {

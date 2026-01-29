@@ -182,6 +182,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "authRegisterTitle": MessageLookupByLibrary.simpleMessage(
       "Crea un nuovo account",
     ),
+    "authRememberMe": MessageLookupByLibrary.simpleMessage("Ricordami"),
     "authRequiredField": MessageLookupByLibrary.simpleMessage(
       "Campo obbligatorio",
     ),

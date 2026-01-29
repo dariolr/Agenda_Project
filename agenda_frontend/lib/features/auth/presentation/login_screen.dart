@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/credentials_provider.dart';
 import '../../../core/services/pending_booking_storage.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../booking/providers/booking_provider.dart';
@@ -28,14 +29,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _rememberMe = true;
 
   @override
   void initState() {
     super.initState();
+    _loadSavedCredentials();
     // Pulisci eventuali errori residui quando si entra nella pagina
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(authProvider.notifier).clearError();
     });
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final storage = ref.read(credentialsStorageProvider);
+      final credentials = await storage.getSavedCredentials();
+
+      if (credentials.email != null && credentials.password != null) {
+        if (mounted) {
+          setState(() {
+            _emailController.text = credentials.email!;
+            _passwordController.text = credentials.password!;
+            _rememberMe = true;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading saved credentials: $e');
+    }
   }
 
   @override
@@ -85,6 +107,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     debugPrint('LOGIN API returned: success=$success');
 
     if (success && mounted) {
+      // Salva o cancella le credenziali in base alla scelta dell'utente
+      final storage = ref.read(credentialsStorageProvider);
+      if (_rememberMe) {
+        await storage.saveCredentials(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+      } else {
+        await storage.clearCredentials();
+      }
+
       // Segnala al browser che l'autofill è completato con successo
       // Questo triggera la richiesta di salvataggio credenziali
       TextInput.finishAutofillContext();
@@ -298,13 +331,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Password dimenticata
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => _showResetPasswordDialog(context, ref),
-                      child: Text(l10n.authForgotPassword),
-                    ),
+                  // Ricordami e Password dimenticata
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Checkbox Ricordami
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: Checkbox(
+                              value: _rememberMe,
+                              onChanged: (value) {
+                                setState(() => _rememberMe = value ?? true);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => _rememberMe = !_rememberMe);
+                            },
+                            child: Text(
+                              l10n.authRememberMe,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Password dimenticata
+                      TextButton(
+                        onPressed: () => _showResetPasswordDialog(context, ref),
+                        child: Text(l10n.authForgotPassword),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
 

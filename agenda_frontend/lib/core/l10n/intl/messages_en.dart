@@ -180,6 +180,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "authRegisterTitle": MessageLookupByLibrary.simpleMessage(
       "Create a new account",
     ),
+    "authRememberMe": MessageLookupByLibrary.simpleMessage("Remember me"),
     "authRequiredField": MessageLookupByLibrary.simpleMessage("Required field"),
     "authResetPasswordConfirmError": MessageLookupByLibrary.simpleMessage(
       "Invalid or expired token",

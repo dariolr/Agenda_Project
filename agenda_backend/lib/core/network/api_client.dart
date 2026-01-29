@@ -819,6 +819,59 @@ class ApiClient {
     await delete(ApiConfig.booking(locationId, bookingId));
   }
 
+  /// GET /v1/businesses/{business_id}/bookings/list
+  /// Lista prenotazioni con filtri avanzati per il gestionale.
+  Future<Map<String, dynamic>> getBookingsList({
+    required int businessId,
+    int? locationId,
+    int? staffId,
+    int? serviceId,
+    String? clientSearch,
+    List<String>? status,
+    String? startDate,
+    String? endDate,
+    bool includePast = false,
+    String sortBy = 'appointment', // 'appointment' or 'created'
+    String sortOrder = 'desc', // 'asc' or 'desc'
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final queryParameters = <String, dynamic>{
+      'include_past': includePast ? 'true' : 'false',
+      'sort_by': sortBy,
+      'sort_order': sortOrder,
+      'limit': limit.toString(),
+      'offset': offset.toString(),
+    };
+
+    if (locationId != null) {
+      queryParameters['location_id'] = locationId.toString();
+    }
+    if (staffId != null) {
+      queryParameters['staff_id'] = staffId.toString();
+    }
+    if (serviceId != null) {
+      queryParameters['service_id'] = serviceId.toString();
+    }
+    if (clientSearch != null && clientSearch.isNotEmpty) {
+      queryParameters['client_search'] = clientSearch;
+    }
+    if (status != null && status.isNotEmpty) {
+      queryParameters['status'] = status.join(',');
+    }
+    if (startDate != null) {
+      queryParameters['start_date'] = startDate;
+    }
+    if (endDate != null) {
+      queryParameters['end_date'] = endDate;
+    }
+
+    return get(
+      ApiConfig.bookingsList(businessId),
+      queryParameters: queryParameters,
+    );
+  }
+
   /// GET /v1/businesses
   Future<List<Map<String, dynamic>>> getBusinesses() async {
     final response = await get('/v1/businesses');

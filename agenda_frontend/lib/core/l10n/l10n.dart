@@ -419,6 +419,16 @@ class L10n {
     );
   }
 
+  /// `Ricordami`
+  String get authRememberMe {
+    return Intl.message(
+      'Ricordami',
+      name: 'authRememberMe',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Email non valida`
   String get authInvalidEmail {
     return Intl.message(

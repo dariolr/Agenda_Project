@@ -40,6 +40,7 @@
   "actionCancel": "Cancel",
   "actionConfirm": "Confirm",
   "actionClose": "Close",
+  "actionRetry": "Retry",
   "deleteConfirmationTitle": "Confirm deletion?",
   "agendaToday": "Today",
   "agendaPrevDay": "Previous day",
@@ -909,5 +910,63 @@
       }
     }
   },
-  "resourceQuantityRequired": "Qty required"
+  "resourceQuantityRequired": "Qty required",
+
+  "bookingsListTitle": "Bookings List",
+  "bookingsListEmpty": "No bookings found",
+  "bookingsListEmptyHint": "Try adjusting your search filters",
+  "bookingsListFilterTitle": "Filters",
+  "bookingsListFilterLocation": "Location",
+  "bookingsListFilterStaff": "Staff",
+  "bookingsListFilterService": "Service",
+  "bookingsListFilterClient": "Search client",
+  "bookingsListFilterClientHint": "Name, email or phone",
+  "bookingsListFilterStatus": "Status",
+  "bookingsListFilterPeriod": "Period",
+  "bookingsListFilterIncludePast": "Include past",
+  "bookingsListFilterFutureOnly": "Future only",
+  "bookingsListSortByAppointment": "Appointment date",
+  "bookingsListSortByCreated": "Creation date",
+  "bookingsListSortAsc": "Ascending",
+  "bookingsListSortDesc": "Descending",
+  "bookingsListColumnDateTime": "Date/Time",
+  "bookingsListColumnCreatedAt": "Created on",
+  "bookingsListColumnCreatedBy": "Created by",
+  "bookingsListColumnClient": "Client",
+  "bookingsListColumnServices": "Services",
+  "bookingsListColumnStaff": "Staff",
+  "bookingsListColumnStatus": "Status",
+  "bookingsListColumnPrice": "Price",
+  "bookingsListColumnActions": "Actions",
+  "bookingsListActionEdit": "Edit",
+  "bookingsListActionCancel": "Cancel",
+  "bookingsListActionView": "Details",
+  "bookingsListStatusConfirmed": "Confirmed",
+  "bookingsListStatusCancelled": "Cancelled",
+  "bookingsListStatusCompleted": "Completed",
+  "bookingsListStatusNoShow": "No show",
+  "bookingsListStatusPending": "Pending",
+  "bookingsListSourceOnline": "Online",
+  "bookingsListSourcePhone": "Phone",
+  "bookingsListSourceWalkIn": "Walk-in",
+  "bookingsListSourceInternal": "Back office",
+  "bookingsListTotalCount": "{count} bookings",
+  "@bookingsListTotalCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingsListLoadMore": "Load more",
+  "bookingsListResetFilters": "Reset filters",
+  "bookingsListAllLocations": "All locations",
+  "bookingsListAllStaff": "All staff",
+  "bookingsListAllServices": "All services",
+  "bookingsListAllStatus": "All statuses",
+  "bookingsListCancelConfirmTitle": "Cancel booking?",
+  "bookingsListCancelConfirmMessage": "This action cannot be undone.",
+  "bookingsListCancelSuccess": "Booking cancelled",
+  "bookingsListLoading": "Loading...",
+  "bookingsListNoClient": "No client"
 }

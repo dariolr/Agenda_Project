@@ -7,6 +7,7 @@ import '../core/l10n/l10_extension.dart';
 import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
+import '../features/bookings_list/presentation/bookings_list_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
@@ -127,6 +128,14 @@ final GoRouter appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (BuildContext context, GoRouterState state) =>
           const ReportsScreen(),
+    ),
+    // Route per lista prenotazioni
+    GoRoute(
+      path: '/prenotazioni',
+      name: 'prenotazioni',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (BuildContext context, GoRouterState state) =>
+          const BookingsListScreen(),
     ),
   ],
 );

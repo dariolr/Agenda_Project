@@ -73,6 +73,10 @@ class ApiConfig {
   static String bookingHistory(int bookingId) =>
       '/v1/bookings/$bookingId/history';
 
+  /// Lista bookings filtrata per business (gestionale)
+  static String bookingsList(int businessId) =>
+      '/v1/businesses/$businessId/bookings/list';
+
   // ========== SERVICE PACKAGES ENDPOINTS ==========
 
   /// Lista pacchetti servizi per location

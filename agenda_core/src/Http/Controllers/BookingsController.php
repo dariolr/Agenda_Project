@@ -106,6 +106,134 @@ final class BookingsController
     }
 
     /**
+     * GET /v1/businesses/{business_id}/bookings/list
+     * Protected endpoint - gets paginated list of bookings with filters.
+     * 
+     * Query params:
+     * - location_id: filter by location
+     * - staff_id: filter by staff
+     * - service_id: filter by service
+     * - client_search: search in client name/email/phone
+     * - status: filter by status (comma-separated for multiple)
+     * - start_date: filter from date (YYYY-MM-DD)
+     * - end_date: filter to date (YYYY-MM-DD)
+     * - include_past: bool, include past bookings (default: false, only future)
+     * - sort_by: 'appointment' or 'created' (default: appointment)
+     * - sort_order: 'asc' or 'desc' (default: desc)
+     * - limit: max results (default: 50)
+     * - offset: pagination offset (default: 0)
+     */
+    public function listAll(Request $request): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+
+        // Build filters from query params
+        $filters = [];
+        
+        if ($request->queryParam('location_id') !== null) {
+            $filters['location_id'] = (int) $request->queryParam('location_id');
+        }
+        
+        if ($request->queryParam('staff_id') !== null) {
+            $filters['staff_id'] = (int) $request->queryParam('staff_id');
+        }
+        
+        if ($request->queryParam('service_id') !== null) {
+            $filters['service_id'] = (int) $request->queryParam('service_id');
+        }
+        
+        if ($request->queryParam('client_search') !== null) {
+            $filters['client_search'] = trim($request->queryParam('client_search'));
+        }
+        
+        if ($request->queryParam('status') !== null) {
+            $statusParam = $request->queryParam('status');
+            $filters['status'] = strpos($statusParam, ',') !== false 
+                ? explode(',', $statusParam) 
+                : $statusParam;
+        }
+        
+        if ($request->queryParam('start_date') !== null) {
+            $filters['start_date'] = $request->queryParam('start_date');
+        }
+        
+        if ($request->queryParam('end_date') !== null) {
+            $filters['end_date'] = $request->queryParam('end_date');
+        }
+        
+        $filters['include_past'] = $request->queryParam('include_past') === 'true' 
+            || $request->queryParam('include_past') === '1';
+        
+        if ($request->queryParam('sort_by') !== null) {
+            $filters['sort_by'] = $request->queryParam('sort_by');
+        }
+        
+        if ($request->queryParam('sort_order') !== null) {
+            $filters['sort_order'] = $request->queryParam('sort_order');
+        }
+        
+        $limit = min(100, max(1, (int) ($request->queryParam('limit') ?? 50)));
+        $offset = max(0, (int) ($request->queryParam('offset') ?? 0));
+        
+        $result = $this->bookingRepo->findWithFilters($businessId, $filters, $limit, $offset);
+        
+        // Format bookings for response
+        $formatted = array_map(fn($b) => $this->formatBookingForList($b), $result['bookings']);
+        
+        return Response::success([
+            'bookings' => $formatted,
+            'total' => $result['total'],
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+    }
+
+    /**
+     * Format a booking for the list view (includes aggregated fields).
+     */
+    private function formatBookingForList(array $booking): array
+    {
+        $clientName = $booking['client_name'];
+        if (empty($clientName) && (!empty($booking['client_first_name']) || !empty($booking['client_last_name']))) {
+            $clientName = trim(($booking['client_first_name'] ?? '') . ' ' . ($booking['client_last_name'] ?? ''));
+        }
+        
+        $creatorName = null;
+        if (!empty($booking['creator_first_name']) || !empty($booking['creator_last_name'])) {
+            $creatorName = trim(($booking['creator_first_name'] ?? '') . ' ' . ($booking['creator_last_name'] ?? ''));
+        }
+
+        return [
+            'id' => (int) $booking['id'],
+            'business_id' => (int) $booking['business_id'],
+            'location_id' => (int) $booking['location_id'],
+            'location_name' => $booking['location_name'] ?? null,
+            'client_id' => $booking['client_id'] !== null ? (int) $booking['client_id'] : null,
+            'client_name' => $clientName,
+            'client_email' => $booking['client_email'] ?? null,
+            'client_phone' => $booking['client_phone'] ?? null,
+            'notes' => $booking['notes'],
+            'status' => $booking['status'],
+            'source' => $booking['source'] ?? 'online',
+            'first_start_time' => $booking['first_start_time'],
+            'last_end_time' => $booking['last_end_time'],
+            'total_price' => (float) ($booking['total_price'] ?? 0),
+            'service_names' => $booking['service_names'],
+            'staff_names' => $booking['staff_names'],
+            'created_at' => $booking['created_at'],
+            'creator_name' => $creatorName,
+            'recurrence_rule_id' => $booking['recurrence_rule_id'] !== null ? (int) $booking['recurrence_rule_id'] : null,
+            'recurrence_index' => $booking['recurrence_index'] !== null ? (int) $booking['recurrence_index'] : null,
+            'items' => array_map(fn($item) => $this->formatBookingItem($item), $booking['items'] ?? []),
+        ];
+    }
+
+    /**
      * GET /v1/locations/{location_id}/bookings/{booking_id}
      * Protected endpoint - gets a single booking.
      */
