@@ -94,6 +94,30 @@ final GoRouter appRouter = GoRouter(
             ),
           ],
         ),
+
+        // --- Ramo 4: Report ---
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/report',
+              name: 'report',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const ReportsScreen(),
+            ),
+          ],
+        ),
+
+        // --- Ramo 5: Elenco Prenotazioni ---
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/prenotazioni',
+              name: 'prenotazioni',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const BookingsListScreen(),
+            ),
+          ],
+        ),
       ],
     ),
     GoRoute(
@@ -120,22 +144,6 @@ final GoRouter appRouter = GoRouter(
         final token = state.pathParameters['token']!;
         return ResetPasswordScreen(token: token);
       },
-    ),
-    // Route per report
-    GoRoute(
-      path: '/report',
-      name: 'report',
-      parentNavigatorKey: _rootNavigatorKey,
-      builder: (BuildContext context, GoRouterState state) =>
-          const ReportsScreen(),
-    ),
-    // Route per lista prenotazioni
-    GoRoute(
-      path: '/prenotazioni',
-      name: 'prenotazioni',
-      parentNavigatorKey: _rootNavigatorKey,
-      builder: (BuildContext context, GoRouterState state) =>
-          const BookingsListScreen(),
     ),
   ],
 );

@@ -56,6 +56,11 @@ NEW_V="$new_v" perl -0777 -i -pe '
 
 echo "OK: aggiornato $INDEX_FILE -> window.appVersion = \"$new_v\""
 
+# Aggiorna anche app_version.txt (usato dal VersionChecker per auto-aggiornamento)
+VERSION_FILE="$ROOT_DIR/web/app_version.txt"
+echo "$new_v" > "$VERSION_FILE"
+echo "OK: aggiornato $VERSION_FILE -> \"$new_v\""
+
 ###############################################################################
 # 2) Build Flutter Web (zsh) - STAGING API
 ###############################################################################

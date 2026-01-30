@@ -110,9 +110,12 @@ final class BookingsController
      * Protected endpoint - gets paginated list of bookings with filters.
      * 
      * Query params:
-     * - location_id: filter by location
-     * - staff_id: filter by staff
-     * - service_id: filter by service
+     * - location_id: filter by location (single)
+     * - location_ids: filter by locations (comma-separated, for multi-select)
+     * - staff_id: filter by staff (single)
+     * - staff_ids: filter by staff (comma-separated, for multi-select)
+     * - service_id: filter by service (single)
+     * - service_ids: filter by services (comma-separated, for multi-select)
      * - client_search: search in client name/email/phone
      * - status: filter by status (comma-separated for multiple)
      * - start_date: filter from date (YYYY-MM-DD)
@@ -135,15 +138,33 @@ final class BookingsController
         // Build filters from query params
         $filters = [];
         
-        if ($request->queryParam('location_id') !== null) {
+        // Location filter - support both single and multi-select
+        if ($request->queryParam('location_ids') !== null) {
+            $locationIds = array_filter(array_map('intval', explode(',', $request->queryParam('location_ids'))));
+            if (!empty($locationIds)) {
+                $filters['location_ids'] = $locationIds;
+            }
+        } elseif ($request->queryParam('location_id') !== null) {
             $filters['location_id'] = (int) $request->queryParam('location_id');
         }
         
-        if ($request->queryParam('staff_id') !== null) {
+        // Staff filter - support both single and multi-select
+        if ($request->queryParam('staff_ids') !== null) {
+            $staffIds = array_filter(array_map('intval', explode(',', $request->queryParam('staff_ids'))));
+            if (!empty($staffIds)) {
+                $filters['staff_ids'] = $staffIds;
+            }
+        } elseif ($request->queryParam('staff_id') !== null) {
             $filters['staff_id'] = (int) $request->queryParam('staff_id');
         }
         
-        if ($request->queryParam('service_id') !== null) {
+        // Service filter - support both single and multi-select
+        if ($request->queryParam('service_ids') !== null) {
+            $serviceIds = array_filter(array_map('intval', explode(',', $request->queryParam('service_ids'))));
+            if (!empty($serviceIds)) {
+                $filters['service_ids'] = $serviceIds;
+            }
+        } elseif ($request->queryParam('service_id') !== null) {
             $filters['service_id'] = (int) $request->queryParam('service_id');
         }
         
@@ -1457,6 +1478,29 @@ final class BookingsController
                 'service_name' => $item['service_name'] ?? $item['service_name_snapshot'],
                 'staff_display_name' => $item['staff_display_name'],
             ], $booking['items'] ?? []),
+        ];
+    }
+
+    /**
+     * Format a single booking item for the list endpoint.
+     */
+    private function formatBookingItem(array $item): array
+    {
+        return [
+            'id' => (int) $item['id'],
+            'booking_id' => (int) $item['booking_id'],
+            'business_id' => (int) $item['business_id'],
+            'location_id' => (int) $item['location_id'],
+            'service_id' => (int) $item['service_id'],
+            'service_variant_id' => (int) $item['service_variant_id'],
+            'staff_id' => (int) $item['staff_id'],
+            'start_time' => $item['start_time'],
+            'end_time' => $item['end_time'],
+            'price' => (float) ($item['price'] ?? 0),
+            'duration_minutes' => (int) ($item['duration_minutes'] ?? 0),
+            'service_name' => $item['service_name'] ?? $item['service_name_snapshot'] ?? '',
+            'staff_display_name' => $item['staff_display_name'] ?? '',
+            'client_name' => $item['client_name'] ?? '',
         ];
     }
 }

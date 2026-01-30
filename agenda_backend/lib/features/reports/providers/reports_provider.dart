@@ -157,6 +157,14 @@ class ReportsNotifier extends Notifier<ReportsState> {
     }
   }
 
+  /// Refreshes the report using the last params.
+  Future<void> refresh() async {
+    final params = state.params;
+    if (params != null) {
+      await fetchReport(params);
+    }
+  }
+
   /// Clears the report.
   void clear() {
     state = const ReportsState();

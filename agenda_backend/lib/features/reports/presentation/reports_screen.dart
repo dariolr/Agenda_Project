@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/providers/form_factor_provider.dart';
 import '../../../app/widgets/staff_circle_avatar.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/service.dart';
@@ -14,10 +15,14 @@ import '../../services/providers/service_categories_provider.dart';
 import '../../services/providers/services_provider.dart';
 import '../../staff/providers/staff_providers.dart';
 import '../domain/report_models.dart';
+import '../providers/reports_filter_provider.dart';
 import '../providers/reports_provider.dart';
+import '../widgets/reports_header.dart';
 
 /// Screen for viewing appointment reports.
 /// Only accessible to admin/owner users.
+/// Note: This screen is displayed inside ScaffoldWithNavigation,
+/// so it should NOT have its own Scaffold/AppBar.
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -26,10 +31,6 @@ class ReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
-  DateTime _endDate = DateTime.now();
-  String _selectedPreset = 'custom';
-  bool _useFullPeriod = false;
   final Set<int> _selectedLocationIds = {};
   final Set<int> _selectedStaffIds = {};
   final Set<int> _selectedServiceIds = {};
@@ -47,14 +48,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final user = ref.read(authProvider).user;
     if (user == null) return;
 
+    // Get filter state from provider
+    final filterState = ref.read(reportsFilterProvider);
+
     // Get current business ID
     final location = ref.read(currentLocationProvider);
     final businessId = location.businessId;
 
     final params = ReportParams(
       businessId: businessId,
-      startDate: _startDate,
-      endDate: _endDate,
+      startDate: filterState.startDate,
+      endDate: filterState.endDate,
       locationIds: _selectedLocationIds.toList(),
       staffIds: _selectedStaffIds.toList(),
       serviceIds: _selectedServiceIds.toList(),
@@ -64,132 +68,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     ref.read(reportsProvider.notifier).fetchReport(params);
   }
 
-  Future<void> _selectDateRange() async {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final l10n = context.l10n;
-
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
-      saveText: l10n.actionApply,
-      builder: (context, child) {
-        return Theme(
-          data: theme.copyWith(
-            colorScheme: colorScheme.copyWith(
-              onPrimary: colorScheme.onPrimary,
-              onSurface: colorScheme.onSurface,
-            ),
-            datePickerTheme: DatePickerThemeData(
-              rangeSelectionBackgroundColor: colorScheme.primary.withOpacity(
-                0.2,
-              ),
-              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return colorScheme.onPrimary;
-                }
-                if (states.contains(WidgetState.disabled)) {
-                  return colorScheme.onSurface.withOpacity(0.38);
-                }
-                return colorScheme.onSurface;
-              }),
-              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return colorScheme.primary;
-                }
-                return null;
-              }),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        _startDate = picked.start;
-        _endDate = picked.end;
-        _selectedPreset = 'custom';
-      });
-      _fetchReport();
-    }
-  }
-
-  void _applyPreset(String preset) {
-    final now = DateTime.now();
-    final today = DateUtils.dateOnly(now);
-
-    if (preset == 'custom') {
-      _selectDateRange();
-      return;
-    }
-
-    setState(() {
-      _selectedPreset = preset;
-      switch (preset) {
-        case 'today':
-          _startDate = today;
-          _endDate = today;
-          break;
-        case 'month':
-          _startDate = DateTime(now.year, now.month, 1);
-          _endDate = _useFullPeriod
-              ? DateTime(now.year, now.month + 1, 0)
-              : today;
-          break;
-        case 'quarter':
-          final quarterStartMonth = ((now.month - 1) ~/ 3) * 3 + 1;
-          _startDate = DateTime(now.year, quarterStartMonth, 1);
-          _endDate = _useFullPeriod
-              ? DateTime(now.year, quarterStartMonth + 3, 0)
-              : today;
-          break;
-        case 'semester':
-          final semesterStartMonth = now.month <= 6 ? 1 : 7;
-          _startDate = DateTime(now.year, semesterStartMonth, 1);
-          _endDate = _useFullPeriod
-              ? DateTime(now.year, semesterStartMonth + 6, 0)
-              : today;
-          break;
-        case 'year':
-          _startDate = DateTime(now.year, 1, 1);
-          _endDate = _useFullPeriod ? DateTime(now.year, 12, 31) : today;
-          break;
-        case 'last_month':
-          final lastMonth = DateTime(now.year, now.month - 1, 1);
-          _startDate = lastMonth;
-          _endDate = DateTime(now.year, now.month, 0);
-          break;
-        case 'last_3_months':
-          _startDate = DateTime(now.year, now.month - 3, 1);
-          _endDate = DateTime(now.year, now.month, 0);
-          break;
-        case 'last_6_months':
-          _startDate = DateTime(now.year, now.month - 6, 1);
-          _endDate = DateTime(
-            now.year,
-            now.month,
-            0,
-          ); // Fino a fine mese scorso
-          break;
-        case 'last_year':
-          _startDate = DateTime(now.year - 1, 1, 1);
-          _endDate = DateTime(now.year - 1, 12, 31);
-          break;
-      }
-    });
-    _fetchReport();
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final reportState = ref.watch(reportsProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    // Watch filter changes to refetch
+    ref.listen(reportsFilterProvider, (prev, next) {
+      if (prev != null &&
+          (prev.startDate != next.startDate ||
+              prev.endDate != next.endDate ||
+              prev.selectedPreset != next.selectedPreset)) {
+        _fetchReport();
+      }
+    });
 
     // Listen for errors
     ref.listen<ReportsState>(reportsProvider, (prev, next) {
@@ -202,47 +96,40 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       }
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.reportsTitle),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: reportState.isLoading ? null : _fetchReport,
-            tooltip: l10n.actionRefresh,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Filters section
-          _buildFiltersSection(context, colorScheme),
+    // No Scaffold here - shell provides it
+    return Column(
+      children: [
+        // Header with period controls
+        const ReportsHeader(),
 
-          // Content
-          Expanded(
-            child: reportState.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : reportState.report == null
-                ? Center(
-                    child: Text(
-                      l10n.reportsNoData,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+        // Filters section
+        _buildFiltersSection(context, colorScheme),
+
+        // Content
+        Expanded(
+          child: reportState.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : reportState.report == null
+              ? Center(
+                  child: Text(
+                    l10n.reportsNoData,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                  )
-                : _buildReportContent(context, reportState.report!),
-          ),
-        ],
-      ),
+                  ),
+                )
+              : _buildReportContent(context, reportState.report!),
+        ),
+      ],
     );
   }
 
   Widget _buildFiltersSection(BuildContext context, ColorScheme colorScheme) {
     final l10n = context.l10n;
-    final dateFormat = DateFormat('dd/MM/yyyy');
+    final filterState = ref.watch(reportsFilterProvider);
 
     return Container(
+      alignment: Alignment.centerLeft,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
@@ -253,119 +140,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Period preset dropdown and date range
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Preset dropdown
-                Container(
-                  constraints: const BoxConstraints(minHeight: 42),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: colorScheme.outline),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedPreset,
-                      isDense: true,
-                      icon: Icon(
-                        Icons.arrow_drop_down,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      onChanged: (value) {
-                        if (value != null) {
-                          _applyPreset(value);
-                        }
-                      },
-                      items: [
-                        DropdownMenuItem(
-                          value: 'custom',
-                          child: Text(l10n.reportsPresetCustom),
-                        ),
-                        DropdownMenuItem(
-                          value: 'today',
-                          child: Text(l10n.reportsPresetToday),
-                        ),
-                        DropdownMenuItem(
-                          value: 'month',
-                          child: Text(l10n.reportsPresetMonth),
-                        ),
-                        DropdownMenuItem(
-                          value: 'quarter',
-                          child: Text(l10n.reportsPresetQuarter),
-                        ),
-                        DropdownMenuItem(
-                          value: 'semester',
-                          child: Text(l10n.reportsPresetSemester),
-                        ),
-                        DropdownMenuItem(
-                          value: 'year',
-                          child: Text(l10n.reportsPresetYear),
-                        ),
-                        DropdownMenuItem(
-                          value: 'last_month',
-                          child: Text(l10n.reportsPresetLastMonth),
-                        ),
-                        DropdownMenuItem(
-                          value: 'last_3_months',
-                          child: Text(l10n.reportsPresetLast3Months),
-                        ),
-                        DropdownMenuItem(
-                          value: 'last_6_months',
-                          child: Text(l10n.reportsPresetLast6Months),
-                        ),
-                        DropdownMenuItem(
-                          value: 'last_year',
-                          child: Text(l10n.reportsPresetLastYear),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Date range display
-                Expanded(
-                  child: InkWell(
-                    onTap: _selectDateRange,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: colorScheme.outline),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today,
-                            size: 20,
-                            color: colorScheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${dateFormat.format(_startDate)} - ${dateFormat.format(_endDate)}',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ),
-                          Icon(
-                            Icons.edit_calendar,
-                            size: 20,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
           // Filter chips - show only if relevant
           Builder(
             builder: (context) {
@@ -378,6 +152,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               final hasMultipleServices = services.length > 1;
 
               return Wrap(
+                alignment: WrapAlignment.start,
                 spacing: 8,
                 runSpacing: 8,
                 children: [
@@ -419,34 +194,46 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             },
           ),
 
-          // Full period toggle - show only for current period presets
-          if (_selectedPreset != 'custom' &&
-              _selectedPreset != 'today' &&
-              _selectedPreset != 'last_month' &&
-              _selectedPreset != 'last_3_months' &&
-              _selectedPreset != 'last_6_months' &&
-              _selectedPreset != 'last_year')
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Row(
-                children: [
-                  Switch(
-                    value: _useFullPeriod,
-                    onChanged: (value) {
-                      setState(() {
-                        _useFullPeriod = value;
-                      });
-                      _applyPreset(_selectedPreset);
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.reportsFullPeriodToggle,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
+          // Full period toggle - show only on mobile/tablet (on desktop it's in AppBar)
+          Builder(
+            builder: (context) {
+              final formFactor = ref.watch(formFactorProvider);
+              final supportsFullPeriod =
+                  filterState.selectedPreset != 'custom' &&
+                  filterState.selectedPreset != 'today' &&
+                  filterState.selectedPreset != 'last_month' &&
+                  filterState.selectedPreset != 'last_3_months' &&
+                  filterState.selectedPreset != 'last_6_months' &&
+                  filterState.selectedPreset != 'last_year';
+
+              if (!supportsFullPeriod || formFactor == AppFormFactor.desktop) {
+                return const SizedBox.shrink();
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(
+                  children: [
+                    Switch(
+                      value: filterState.useFullPeriod,
+                      onChanged: (value) {
+                        final notifier = ref.read(
+                          reportsFilterProvider.notifier,
+                        );
+                        notifier.setFullPeriod(value);
+                        notifier.applyPreset(filterState.selectedPreset);
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.reportsFullPeriodToggle,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -559,12 +346,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _buildReportContent(BuildContext context, AppointmentsReport report) {
+    final filterState = ref.watch(reportsFilterProvider);
+
     // Determina quali sezioni mostrare in base al periodo selezionato
     final isSingleDay =
-        _selectedPreset == 'today' ||
-        (_startDate.year == _endDate.year &&
-            _startDate.month == _endDate.month &&
-            _startDate.day == _endDate.day);
+        filterState.selectedPreset == 'today' ||
+        (filterState.startDate.year == filterState.endDate.year &&
+            filterState.startDate.month == filterState.endDate.month &&
+            filterState.startDate.day == filterState.endDate.day);
 
     // "Per Giorno della Settimana" non ha senso per un singolo giorno
     final showDayOfWeek = !isSingleDay;

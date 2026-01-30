@@ -10,6 +10,7 @@ import '../features/auth/presentation/change_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
+import '../features/bookings_list/presentation/bookings_list_screen.dart';
 import '../features/business/presentation/business_list_screen.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
 import '../features/clients/presentation/clients_screen.dart';
@@ -199,6 +200,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 name: 'report',
                 builder: (BuildContext context, GoRouterState state) =>
                     const ReportsScreen(),
+              ),
+            ],
+          ),
+
+          // --- Ramo 5: Elenco Prenotazioni ---
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/prenotazioni',
+                name: 'prenotazioni',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const BookingsListScreen(),
               ),
             ],
           ),
