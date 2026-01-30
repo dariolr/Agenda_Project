@@ -824,8 +824,10 @@ class ApiClient {
   Future<Map<String, dynamic>> getBookingsList({
     required int businessId,
     int? locationId,
+    List<int>? locationIds,
     int? staffId,
-    int? serviceId,
+    List<int>? staffIds,
+    List<int>? serviceIds,
     String? clientSearch,
     List<String>? status,
     String? startDate,
@@ -844,14 +846,19 @@ class ApiClient {
       'offset': offset.toString(),
     };
 
-    if (locationId != null) {
+    // Support both single and multi-select
+    if (locationIds != null && locationIds.isNotEmpty) {
+      queryParameters['location_ids'] = locationIds.join(',');
+    } else if (locationId != null) {
       queryParameters['location_id'] = locationId.toString();
     }
-    if (staffId != null) {
+    if (staffIds != null && staffIds.isNotEmpty) {
+      queryParameters['staff_ids'] = staffIds.join(',');
+    } else if (staffId != null) {
       queryParameters['staff_id'] = staffId.toString();
     }
-    if (serviceId != null) {
-      queryParameters['service_id'] = serviceId.toString();
+    if (serviceIds != null && serviceIds.isNotEmpty) {
+      queryParameters['service_ids'] = serviceIds.join(',');
     }
     if (clientSearch != null && clientSearch.isNotEmpty) {
       queryParameters['client_search'] = clientSearch;
