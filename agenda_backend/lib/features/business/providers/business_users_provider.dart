@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/models/business_invitation.dart';
@@ -52,8 +53,10 @@ class BusinessUsersState {
 class BusinessUsersNotifier extends _$BusinessUsersNotifier {
   @override
   BusinessUsersState build(int businessId) {
-    _loadData();
-    return const BusinessUsersState(isLoading: true);
+    final initial = const BusinessUsersState(isLoading: true);
+    // Defer loading to avoid reading state before initialization.
+    Future.microtask(_loadData);
+    return initial;
   }
 
   BusinessUsersRepository get _repository =>
@@ -72,7 +75,30 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         invitations: results[1] as List<BusinessInvitation>,
         isLoading: false,
       );
+      final owner = state.users.firstWhere(
+        (u) => u.role == 'owner',
+        orElse: () => const BusinessUser(
+          id: 0,
+          userId: 0,
+          businessId: 0,
+          role: '',
+          email: '',
+          firstName: '',
+          lastName: '',
+          status: 'active',
+        ),
+      );
+      if (owner.userId != 0) {
+        debugPrint(
+          'BusinessUsersNotifier owner: userId=${owner.userId}, '
+          'email=${owner.email}, '
+          'firstName=${owner.firstName}, '
+          'lastName=${owner.lastName}, '
+          'businessId=$businessId',
+        );
+      }
     } catch (e) {
+      debugPrint('BusinessUsersNotifier._loadData error: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -80,13 +106,20 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
   /// Ricarica i dati.
   Future<void> refresh() => _loadData();
 
-  /// Aggiorna il ruolo di un operatore.
-  Future<bool> updateUserRole(int userId, String newRole) async {
+  /// Aggiorna un operatore (ruolo e/o scope).
+  Future<bool> updateUser({
+    required int userId,
+    required String role,
+    String? scopeType,
+    List<int>? locationIds,
+  }) async {
     try {
-      final updated = await _repository.updateUserRole(
+      final updated = await _repository.updateUser(
         businessId: businessId,
         userId: userId,
-        role: newRole,
+        role: role,
+        scopeType: scopeType,
+        locationIds: locationIds,
       );
       state = state.copyWith(
         users: state.users
@@ -95,6 +128,7 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
       );
       return true;
     } catch (e) {
+      debugPrint('BusinessUsersNotifier.updateUser error: $e');
       state = state.copyWith(error: e.toString());
       return false;
     }
@@ -109,6 +143,7 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
       );
       return true;
     } catch (e) {
+      debugPrint('BusinessUsersNotifier.removeUser error: $e');
       state = state.copyWith(error: e.toString());
       return false;
     }
@@ -118,16 +153,21 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
   Future<BusinessInvitation?> createInvitation({
     required String email,
     required String role,
+    String scopeType = 'business',
+    List<int>? locationIds,
   }) async {
     try {
       final invitation = await _repository.createInvitation(
         businessId: businessId,
         email: email,
         role: role,
+        scopeType: scopeType,
+        locationIds: locationIds,
       );
       state = state.copyWith(invitations: [...state.invitations, invitation]);
       return invitation;
     } catch (e) {
+      debugPrint('BusinessUsersNotifier.createInvitation error: $e');
       state = state.copyWith(error: e.toString());
       return null;
     }
@@ -147,6 +187,7 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
       );
       return true;
     } catch (e) {
+      debugPrint('BusinessUsersNotifier.revokeInvitation error: $e');
       state = state.copyWith(error: e.toString());
       return false;
     }

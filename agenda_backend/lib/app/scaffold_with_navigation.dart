@@ -90,12 +90,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final user = ref.watch(authProvider).user;
     final isSuperadmin = user?.isSuperadmin ?? false;
 
-    final destinations = _ScaffoldWithNavigationHelpers.getDestinations(
-      context,
-      isSuperadmin: isSuperadmin,
-    );
-
-    // Per mobile usiamo destinazioni compatte con "Altro"
+    // Per mobile e desktop usiamo destinazioni compatte con "Altro"
     final mobileDestinations =
         _ScaffoldWithNavigationHelpers.getMobileDestinations(
           context,
@@ -104,17 +99,6 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
     // Quando non siamo su oggi, mostra freccia per tornare a oggi
     // Freccia destra se nel passato (vai avanti), sinistra se nel futuro (torna indietro)
-    final resolvedDestinations = isAgenda && !isToday
-        ? [
-            NavigationDestination(
-              iconData: isPast ? Icons.arrow_forward : Icons.arrow_back,
-              selectedIconData: isPast ? Icons.arrow_forward : Icons.arrow_back,
-              label: context.l10n.agendaToday,
-            ),
-            ...destinations.skip(1),
-          ]
-        : destinations;
-
     // Destinazioni mobile risolte (con freccia per oggi se necessario)
     final resolvedMobileDestinations = isAgenda && !isToday
         ? [
@@ -131,9 +115,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       final layoutConfig = ref.watch(layoutConfigProvider);
       final dividerColor = Theme.of(context).dividerColor;
       const dividerThickness = 1.0;
+      // Desktop usa le stesse destinazioni del mobile (con "Altro")
       final railDestinations =
           _ScaffoldWithNavigationHelpers.toRailDestinations(
-            resolvedDestinations,
+            resolvedMobileDestinations,
           );
 
       final isTablet = formFactor == AppFormFactor.tablet;
@@ -155,6 +140,19 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           actions.add(_BookingsListRefreshAction(ref: ref));
         }
         return actions;
+      }
+
+      // Mappa indice corrente a indice compatto per desktop
+      int desktopCurrentIndex;
+      if (navigationShell.currentIndex <= 1) {
+        // Agenda o Clienti
+        desktopCurrentIndex = navigationShell.currentIndex;
+      } else if (navigationShell.currentIndex <= 5) {
+        // Servizi, Staff, Report o Prenotazioni → evidenzia "Altro"
+        desktopCurrentIndex = 3;
+      } else {
+        // Profile (index 6 → 2 su desktop compatto)
+        desktopCurrentIndex = 2;
       }
 
       return GlobalLoadingOverlay(
@@ -184,9 +182,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                   hoverColor: Colors.transparent,
                 ),
                 child: NavigationRail(
-                  selectedIndex: navigationShell.currentIndex,
+                  selectedIndex: desktopCurrentIndex,
                   onDestinationSelected: (index) =>
-                      _handleNavTap(context, index, ref),
+                      _handleDesktopNavTap(context, index, ref),
                   labelType: NavigationRailLabelType.none,
                   useIndicator: false, // disattiva highlight di sistema su tap
                   // BusinessSelector rimosso - superadmin usa /businesses
@@ -352,12 +350,26 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
   }
 
-  /// Gestisce tap su navigation: se è index 6, mostra menu utente
-  void _handleNavTap(BuildContext context, int index, WidgetRef ref) {
-    if (index == 6) {
-      _showUserMenu(context, ref);
-    } else {
-      _goBranch(index, ref);
+  /// Gestisce tap su navigation desktop (compatta come mobile):
+  /// - Index 0, 1: navigazione normale (Agenda, Clienti)
+  /// - Index 2: menu utente (Profilo)
+  /// - Index 3: mostra popup menu "Altro" (Servizi, Team, Report, Prenotazioni, Operatori)
+  void _handleDesktopNavTap(
+    BuildContext context,
+    int desktopIndex,
+    WidgetRef ref,
+  ) {
+    switch (desktopIndex) {
+      case 0: // Agenda
+      case 1: // Clienti
+        _goBranch(desktopIndex, ref);
+        break;
+      case 2: // Profile → menu utente
+        _showUserMenu(context, ref);
+        break;
+      case 3: // Altro → mostra popup menu
+        _showMorePopupMenu(context, ref);
+        break;
     }
   }
 
@@ -525,9 +537,6 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(16),
-                  ),
                   onTap: () {
                     Navigator.of(ctx).pop();
                     _goBranch(5, ref);
@@ -554,11 +563,110 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                   ),
                 ),
               ),
+              // Operatori (rimosso dal menu "Altro")
             ],
           ),
         ),
       ),
     );
+  }
+
+  /*
+  /// Naviga alla schermata Operatori
+  void _navigateToOperators(BuildContext context, WidgetRef ref) {
+    // Ottieni businessId: prima prova superadmin selected, poi dalla location corrente
+    final superadminBusinessId = ref.read(superadminSelectedBusinessProvider);
+    if (superadminBusinessId != null && superadminBusinessId > 0) {
+      context.push('/operatori/$superadminBusinessId');
+      return;
+    }
+
+    // Per utenti normali, prendi il businessId dalla location corrente
+    try {
+      final location = ref.read(currentLocationProvider);
+      if (location.businessId > 0) {
+        context.push('/operatori/${location.businessId}');
+      }
+    } catch (e) {
+      // Provider non ancora inizializzato, ignora
+      debugPrint('Cannot navigate to operators: $e');
+    }
+  }
+*/
+  /// Mostra popup menu "Altro" per desktop (Servizi, Team, Report, Prenotazioni, Operatori)
+  void _showMorePopupMenu(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final items = <PopupMenuEntry<String>>[
+      PopupMenuItem<String>(
+        value: 'services',
+        child: Row(
+          children: [
+            Icon(Icons.category_outlined, color: colorScheme.primary, size: 22),
+            const SizedBox(width: 12),
+            Text(l10n.navServices),
+          ],
+        ),
+      ),
+      const PopupMenuDivider(),
+      PopupMenuItem<String>(
+        value: 'staff',
+        child: Row(
+          children: [
+            Icon(Icons.badge_outlined, color: colorScheme.primary, size: 22),
+            const SizedBox(width: 12),
+            Text(l10n.navStaff),
+          ],
+        ),
+      ),
+      const PopupMenuDivider(),
+      PopupMenuItem<String>(
+        value: 'report',
+        child: Row(
+          children: [
+            Icon(Icons.bar_chart, color: colorScheme.primary, size: 22),
+            const SizedBox(width: 12),
+            Text(l10n.reportsTitle),
+          ],
+        ),
+      ),
+      const PopupMenuDivider(),
+      PopupMenuItem<String>(
+        value: 'bookings_list',
+        child: Row(
+          children: [
+            Icon(Icons.list_alt, color: colorScheme.primary, size: 22),
+            const SizedBox(width: 12),
+            Text(l10n.bookingsListTitle),
+          ],
+        ),
+      ),
+    ];
+
+    showMenu<String>(
+      context: context,
+      position: const RelativeRect.fromLTRB(0, 200, 0, 0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      items: items,
+    ).then((value) {
+      if (value == null || !context.mounted) return;
+      switch (value) {
+        case 'services':
+          _goBranch(2, ref);
+          break;
+        case 'staff':
+          _goBranch(3, ref);
+          break;
+        case 'report':
+          _goBranch(4, ref);
+          break;
+        case 'bookings_list':
+          _goBranch(5, ref);
+          break;
+      }
+    });
   }
 
   /// Mostra il menu utente (profilo, cambia password, logout)
@@ -1212,52 +1320,7 @@ class _MobileAgendaDateSwitcher extends ConsumerWidget {
 }
 
 class _ScaffoldWithNavigationHelpers {
-  /// Destinazioni per desktop/tablet (tutte le voci visibili)
-  static List<NavigationDestination> getDestinations(
-    BuildContext context, {
-    bool isSuperadmin = false,
-  }) {
-    final l10n = context.l10n;
-    return [
-      NavigationDestination(
-        iconData: Icons.calendar_month_outlined,
-        selectedIconData: Icons.calendar_month,
-        label: l10n.navAgenda,
-      ),
-      NavigationDestination(
-        iconData: Icons.people_outline,
-        selectedIconData: Icons.people,
-        label: l10n.navClients,
-      ),
-      NavigationDestination(
-        iconData: Icons.category_outlined,
-        selectedIconData: Icons.cut,
-        label: l10n.navServices,
-      ),
-      NavigationDestination(
-        iconData: Icons.badge_outlined,
-        selectedIconData: Icons.badge,
-        label: l10n.navStaff,
-      ),
-      NavigationDestination(
-        iconData: Icons.bar_chart_outlined,
-        selectedIconData: Icons.bar_chart,
-        label: l10n.reportsTitle,
-      ),
-      NavigationDestination(
-        iconData: Icons.list_alt_outlined,
-        selectedIconData: Icons.list_alt,
-        label: l10n.bookingsListTitle,
-      ),
-      NavigationDestination(
-        iconData: Icons.account_circle_outlined,
-        selectedIconData: Icons.account_circle,
-        label: l10n.navProfile,
-      ),
-    ];
-  }
-
-  /// Destinazioni per mobile (Servizi e Team raggruppati in "Altro")
+  /// Destinazioni compatte per mobile e desktop (con "Altro")
   static List<NavigationDestination> getMobileDestinations(
     BuildContext context, {
     bool isSuperadmin = false,

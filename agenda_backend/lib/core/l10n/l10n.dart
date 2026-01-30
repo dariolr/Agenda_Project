@@ -3592,6 +3592,76 @@ class L10n {
     );
   }
 
+  /// `Accesso`
+  String get operatorsScopeTitle {
+    return Intl.message(
+      'Accesso',
+      name: 'operatorsScopeTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tutte le sedi`
+  String get operatorsScopeBusiness {
+    return Intl.message(
+      'Tutte le sedi',
+      name: 'operatorsScopeBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accesso completo a tutte le sedi del business`
+  String get operatorsScopeBusinessDesc {
+    return Intl.message(
+      'Accesso completo a tutte le sedi del business',
+      name: 'operatorsScopeBusinessDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sedi specifiche`
+  String get operatorsScopeLocations {
+    return Intl.message(
+      'Sedi specifiche',
+      name: 'operatorsScopeLocations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accesso limitato alle sedi selezionate`
+  String get operatorsScopeLocationsDesc {
+    return Intl.message(
+      'Accesso limitato alle sedi selezionate',
+      name: 'operatorsScopeLocationsDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona sedi`
+  String get operatorsScopeSelectLocations {
+    return Intl.message(
+      'Seleziona sedi',
+      name: 'operatorsScopeSelectLocations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona almeno una sede`
+  String get operatorsScopeLocationsRequired {
+    return Intl.message(
+      'Seleziona almeno una sede',
+      name: 'operatorsScopeLocationsRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Inviti in attesa`
   String get operatorsPendingInvites {
     return Intl.message(

@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 
 /// Repository per gestire operatori e inviti di un business.
 class BusinessUsersRepository {
-  BusinessUsersRepository({required ApiClient apiClient}) : _apiClient = apiClient;
+  BusinessUsersRepository({required ApiClient apiClient})
+    : _apiClient = apiClient;
 
   final ApiClient _apiClient;
 
@@ -16,16 +17,20 @@ class BusinessUsersRepository {
     return data.map((json) => BusinessUser.fromJson(json)).toList();
   }
 
-  /// Aggiorna il ruolo di un operatore.
-  Future<BusinessUser> updateUserRole({
+  /// Aggiorna il ruolo e lo scope di un operatore.
+  Future<BusinessUser> updateUser({
     required int businessId,
     required int userId,
     required String role,
+    String? scopeType,
+    List<int>? locationIds,
   }) async {
     final data = await _apiClient.updateBusinessUser(
       businessId: businessId,
       userId: userId,
       role: role,
+      scopeType: scopeType,
+      locationIds: locationIds,
     );
     return BusinessUser.fromJson(data);
   }
@@ -35,10 +40,7 @@ class BusinessUsersRepository {
     required int businessId,
     required int userId,
   }) async {
-    await _apiClient.removeBusinessUser(
-      businessId: businessId,
-      userId: userId,
-    );
+    await _apiClient.removeBusinessUser(businessId: businessId, userId: userId);
   }
 
   // ========== INVITI ==========
@@ -54,11 +56,15 @@ class BusinessUsersRepository {
     required int businessId,
     required String email,
     required String role,
+    String scopeType = 'business',
+    List<int>? locationIds,
   }) async {
     final data = await _apiClient.createBusinessInvitation(
       businessId: businessId,
       email: email,
       role: role,
+      scopeType: scopeType,
+      locationIds: locationIds,
     );
     return BusinessInvitation.fromJson(data);
   }

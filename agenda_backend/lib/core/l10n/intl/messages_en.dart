@@ -766,6 +766,25 @@ class MessageLookup extends MessageLookupByLibrary {
     "operatorsRoleManager": MessageLookupByLibrary.simpleMessage("Manager"),
     "operatorsRoleOwner": MessageLookupByLibrary.simpleMessage("Owner"),
     "operatorsRoleStaff": MessageLookupByLibrary.simpleMessage("Staff"),
+    "operatorsScopeBusiness": MessageLookupByLibrary.simpleMessage(
+      "All locations",
+    ),
+    "operatorsScopeBusinessDesc": MessageLookupByLibrary.simpleMessage(
+      "Full access to all business locations",
+    ),
+    "operatorsScopeLocations": MessageLookupByLibrary.simpleMessage(
+      "Specific locations",
+    ),
+    "operatorsScopeLocationsDesc": MessageLookupByLibrary.simpleMessage(
+      "Access limited to selected locations",
+    ),
+    "operatorsScopeLocationsRequired": MessageLookupByLibrary.simpleMessage(
+      "Select at least one location",
+    ),
+    "operatorsScopeSelectLocations": MessageLookupByLibrary.simpleMessage(
+      "Select locations",
+    ),
+    "operatorsScopeTitle": MessageLookupByLibrary.simpleMessage("Access"),
     "operatorsSubtitle": MessageLookupByLibrary.simpleMessage(
       "Manage who can access the platform",
     ),

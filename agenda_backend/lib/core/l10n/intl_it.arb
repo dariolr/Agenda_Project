@@ -536,6 +536,13 @@
     }
   },
   "operatorsInviteCopied": "Link di invito copiato",
+  "operatorsScopeTitle": "Accesso",
+  "operatorsScopeBusiness": "Tutte le sedi",
+  "operatorsScopeBusinessDesc": "Accesso completo a tutte le sedi del business",
+  "operatorsScopeLocations": "Sedi specifiche",
+  "operatorsScopeLocationsDesc": "Accesso limitato alle sedi selezionate",
+  "operatorsScopeSelectLocations": "Seleziona sedi",
+  "operatorsScopeLocationsRequired": "Seleziona almeno una sede",
   "operatorsPendingInvites": "Inviti in attesa",
   "operatorsPendingInvitesCount": "{count} inviti in attesa",
   "@operatorsPendingInvitesCount": {
