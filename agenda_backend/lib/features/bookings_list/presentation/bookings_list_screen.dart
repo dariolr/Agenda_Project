@@ -602,10 +602,27 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     return DataRow(
       cells: [
         DataCell(
-          Text(
-            booking.firstStartTime != null
-                ? dateFormat.format(booking.firstStartTime!)
-                : '-',
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (booking.source == 'online' || booking.source == 'onlinestaff')
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Tooltip(
+                    message: booking.sourceLabel(context),
+                    child: Icon(
+                      booking.sourceIcon,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              Text(
+                booking.firstStartTime != null
+                    ? dateFormat.format(booking.firstStartTime!)
+                    : '-',
+              ),
+            ],
           ),
         ),
         DataCell(
@@ -1437,6 +1454,19 @@ class _BookingCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
+                      if (booking.source == 'online' ||
+                          booking.source == 'onlinestaff')
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: Tooltip(
+                            message: booking.sourceLabel(context),
+                            child: Icon(
+                              booking.sourceIcon,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ),
                       Expanded(
                         child: Text(
                           booking.firstStartTime != null
@@ -1470,7 +1500,7 @@ class _BookingCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.cut, size: 16),
+                        const Icon(Icons.category_outlined, size: 16),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(

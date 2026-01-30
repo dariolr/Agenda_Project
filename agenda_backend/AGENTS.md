@@ -189,6 +189,21 @@ Aggiungere chiavi in `lib/core/l10n/intl_it.arb` e `intl_en.arb`.
 - Estetica sobria: **no ripple/splash invasivi**
 - `const` constructor dove possibile
 - Estrarre widget privati da `build()` lunghi
+- **Divider**: usare sempre `PopupMenuDivider()` nei menu popup e `Divider()` per le liste. Non specificare parametri custom se non richiesto esplicitamente.
+
+### Icone Standard (30/01/2026)
+
+**Regole OBBLIGATORIE per icone consistenti:**
+
+| Elemento | Icona CORRETTA | Icona VIETATA |
+|----------|----------------|---------------|
+| **Servizi** | `Icons.category_outlined` | ~~`Icons.cut`~~, ~~`Icons.content_cut`~~ (forbici) |
+| **Prenotazione online** | `Icons.cloud_outlined` | - |
+| **Prenotazione telefono** | `Icons.phone` | - |
+| **Prenotazione walk-in** | `Icons.directions_walk` | - |
+| **Prenotazione interna** | `Icons.person` | - |
+
+**IMPORTANTE:** NON usare MAI l'icona delle forbici (`Icons.cut`, `Icons.content_cut`) per rappresentare servizi. Usare sempre `Icons.category_outlined` o `Icons.category`, coerentemente con la navigation rail principale.
 
 ### Pulsanti Async con Loading State (11/01/2026)
 Per prevenire doppi click durante operazioni asincrone, usare i pulsanti async:
@@ -1178,6 +1193,152 @@ Lo switch NON appare per: `custom`, `today`, `last_month`, `last_3_months`, `las
 - `reportsFullPeriodToggle` — "Includi intero periodo (anche futuro)"
 - `actionApply` — "Applica" (pulsante date picker)
 
+---
+
+## 📋 Lista Prenotazioni - Bookings List (30/01/2026)
+
+### Funzionalità
+Sezione dedicata alla visualizzazione e gestione delle prenotazioni con filtri avanzati, paginazione e ordinamento.
+
+### Accesso
+- Tab "Prenotazioni" nella navigation bar (index 5)
+- Scorciatoia: pulsante refresh nella AppBar per ricaricare
+
+### API Endpoint
+`GET /v1/businesses/{business_id}/bookings/list`
+
+Documentato in dettaglio in `agenda_core/docs/api_contract_v1.md`.
+
+### Filtri Disponibili
+
+| Filtro | Tipo | Descrizione |
+|--------|------|-------------|
+| **Periodo** | Date range | Preset predefiniti o range custom |
+| **Sede** | Multi-select | Una o più sedi |
+| **Operatore** | Multi-select | Uno o più staff |
+| **Servizio** | Multi-select | Uno o più servizi |
+| **Stato** | Multi-select | confirmed, cancelled, completed, no_show, pending |
+| **Ricerca cliente** | Testo | Cerca in nome/email/telefono |
+
+### Preset Periodo
+
+| Preset | Descrizione |
+|--------|-------------|
+| `today` | Oggi |
+| `month` | Mese corrente (intero) |
+| `quarter` | Trimestre corrente |
+| `semester` | Semestre corrente |
+| `year` | Anno corrente |
+| `last_month` | Mese scorso |
+| `last_3_months` | Ultimi 3 mesi |
+| `last_6_months` | Ultimi 6 mesi |
+| `last_year` | Anno precedente |
+| `custom` | Range personalizzato |
+
+**Nota**: A differenza dei Report, i preset "correnti" mostrano sempre l'intero periodo (incluso futuro) per vedere le prenotazioni programmate.
+
+### Ordinamento
+
+| Campo | Descrizione |
+|-------|-------------|
+| `appointment` | Per data appuntamento (default) |
+| `created` | Per data creazione |
+
+Toggle asc/desc disponibile.
+
+### Paginazione
+- Caricamento iniziale: 50 elementi
+- Scroll infinito: carica altri 50 quando vicino al fondo
+- Totale risultati mostrato nell'header
+
+### Colonne Tabella
+
+| Colonna | Campo |
+|---------|-------|
+| Data/ora | `first_start_time` - `last_end_time` |
+| Cliente | `client_name` (+ email/phone in tooltip) |
+| Servizi | `service_names` (aggregati) |
+| Operatore | `staff_names` (aggregati) |
+| Stato | `status` con badge colorato |
+| Prezzo | `total_price` |
+| Azioni | Modifica / Cancella / Dettagli |
+
+### Azioni su Prenotazione
+
+| Azione | Descrizione |
+|--------|-------------|
+| **Dettagli** | Apre dialog con dettaglio completo |
+| **Modifica** | Naviga alla prenotazione nell'agenda |
+| **Cancella** | Cancella con conferma (scope se ricorrente) |
+
+### Provider Flutter
+
+| Provider | Responsabilità |
+|----------|----------------|
+| `bookingsListProvider` | Stato lista + paginazione |
+| `bookingsListFiltersProvider` | Filtri API (location, staff, date, etc.) |
+| `bookingsListFilterProvider` | Stato UI filtro periodo (preset + date range) |
+
+### Modello Dati
+
+`BookingListItem` in `lib/core/models/booking_list_item.dart`:
+- Dati aggregati per evitare join lato client
+- `serviceNames` / `staffNames`: stringhe già formattate
+- `firstStartTime` / `lastEndTime`: orari estremi
+- `isRecurring`: indica se parte di serie ricorrente
+
+`BookingsListState`:
+- `bookings`: lista elementi
+- `total`: totale risultati (per paginazione)
+- `hasMore`: indica se ci sono altre pagine
+- `isLoading` / `isLoadingMore`: stati caricamento
+
+### File Flutter
+
+| File | Responsabilità |
+|------|----------------|
+| `lib/features/bookings_list/presentation/bookings_list_screen.dart` | Schermata principale |
+| `lib/features/bookings_list/providers/bookings_list_provider.dart` | Provider lista + filtri API |
+| `lib/features/bookings_list/providers/bookings_list_filter_provider.dart` | Provider filtro periodo UI |
+| `lib/features/bookings_list/widgets/bookings_list_header.dart` | Header con filtri |
+| `lib/core/models/booking_list_item.dart` | Modello dati |
+| `lib/core/network/api_client.dart` | Metodo `getBookingsList()` |
+
+### Localizzazioni
+
+Chiavi con prefisso `bookingsList*`:
+- `bookingsListTitle` — "Prenotazioni"
+- `bookingsListColumnDate` — "Data"
+- `bookingsListColumnClient` — "Cliente"
+- `bookingsListColumnServices` — "Servizi"
+- `bookingsListColumnStaff` — "Operatore"
+- `bookingsListColumnStatus` — "Stato"
+- `bookingsListColumnPrice` — "Prezzo"
+- `bookingsListColumnActions` — "Azioni"
+- `bookingsListStatusConfirmed` — "Confermato"
+- `bookingsListStatusCancelled` — "Cancellato"
+- `bookingsListStatusCompleted` — "Completato"
+- `bookingsListStatusNoShow` — "No Show"
+- `bookingsListStatusPending` — "In attesa"
+- `bookingsListActionEdit` — "Modifica"
+- `bookingsListActionCancel` — "Cancella"
+- `bookingsListActionView` — "Dettagli"
+- `bookingsListAllLocations` — "Tutte le sedi"
+- `bookingsListAllStaff` — "Tutti gli operatori"
+- `bookingsListAllServices` — "Tutti i servizi"
+- `bookingsListAllStatus` — "Tutti gli stati"
+- `bookingsListResetFilters` — "Reset filtri"
+- `bookingsListCancelConfirmTitle` — "Cancellare prenotazione?"
+- `bookingsListCancelConfirmMessage` — "Questa azione non può essere annullata."
+- `bookingsListCancelSuccess` — "Prenotazione cancellata"
+- `bookingsListLoading` — "Caricamento..."
+- `bookingsListEmpty` — "Nessuna prenotazione trovata"
+- `bookingsListSourceOnline` — "Online"
+- `bookingsListSourcePhone` — "Telefono"
+- `bookingsListSourceWalkIn` — "Walk-in"
+- `bookingsListSourceInternal` — "Interno"
+
+---
 
 SOURCE OF TRUTH: STAFF_PLANNING_MODEL.md
 OBBLIGO: genera anche le migrazioni SQL. Nessuna implementazione è completa senza aggiornamento DB.

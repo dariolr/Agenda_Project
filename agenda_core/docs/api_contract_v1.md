@@ -1655,6 +1655,79 @@ Errors:
 
 ---
 
+## Bookings List (Gestionale)
+
+### GET /v1/businesses/{business_id}/bookings/list
+
+Lista paginata di prenotazioni con filtri avanzati per il gestionale operatori.
+
+**Auth required**: Yes (operatore con accesso al business)
+
+Query params:
+- `location_id`: Filter by location (single, integer)
+- `location_ids`: Filter by locations (comma-separated, for multi-select)
+- `staff_id`: Filter by staff (single, integer)
+- `staff_ids`: Filter by staff (comma-separated, for multi-select)
+- `service_ids`: Filter by services (comma-separated)
+- `client_search`: Search in client name/email/phone (string)
+- `status`: Filter by status (comma-separated: confirmed, cancelled, completed, no_show, pending)
+- `start_date`: Filter from date (YYYY-MM-DD)
+- `end_date`: Filter to date (YYYY-MM-DD)
+- `include_past`: Include past bookings (default: false)
+- `sort_by`: 'appointment' or 'created' (default: appointment)
+- `sort_order`: 'asc' or 'desc' (default: desc)
+- `limit`: Max results (default: 50, max: 100)
+- `offset`: Pagination offset (default: 0)
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "bookings": [
+      {
+        "id": 123,
+        "business_id": 1,
+        "location_id": 1,
+        "location_name": "Sede Centro",
+        "client_id": 45,
+        "client_name": "Mario Rossi",
+        "client_email": "mario@example.com",
+        "client_phone": "+39 333 1234567",
+        "notes": "Note opzionali",
+        "status": "confirmed",
+        "source": "online",
+        "first_start_time": "2026-01-30T10:00:00+01:00",
+        "last_end_time": "2026-01-30T11:30:00+01:00",
+        "total_price": 55.00,
+        "service_names": "Taglio, Piega",
+        "staff_names": "Anna B.",
+        "created_at": "2026-01-25T15:00:00+01:00",
+        "creator_name": "Admin",
+        "recurrence_rule_id": null,
+        "recurrence_index": null
+      }
+    ],
+    "total": 150,
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+Note:
+- `service_names` e `staff_names`: stringhe aggregate (separati da virgola)
+- `first_start_time` / `last_end_time`: orari estremi aggregati dai booking_items
+- `source`: "online", "manual", "import", "onlinestaff"
+- `recurrence_rule_id`: valorizzato se prenotazione ricorrente
+- Supporta sia filtri singoli (`location_id`) che multi-select (`location_ids`)
+- Per multi-select, i valori vanno separati da virgola (es: `location_ids=1,2,3`)
+
+Errors:
+- `forbidden` (403): Non hai accesso a questo business
+
+---
+
 ## Business Context Derivation
 
 | Endpoint Type | location_id Source | business_id |
