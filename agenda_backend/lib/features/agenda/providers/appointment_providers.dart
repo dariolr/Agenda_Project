@@ -285,7 +285,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
       final bookingResponse = await repository.createBooking(
         locationId: location.id,
         idempotencyKey: const Uuid().v4(),
-        serviceIds: [serviceId], // Assuming single service for now
+        serviceIds: [serviceId],
         startTime: roundedStart.toIso8601String(),
         staffId: staffId,
         clientId: clientId,

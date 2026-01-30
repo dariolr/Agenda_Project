@@ -1,0 +1,288 @@
+import 'package:agenda_backend/app/providers/form_factor_provider.dart';
+import 'package:agenda_backend/core/l10n/l10_extension.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import '../providers/reports_filter_provider.dart';
+
+/// Top controls for Reports screen, using shared provider state.
+class ReportsTopControls extends ConsumerWidget {
+  const ReportsTopControls({super.key, this.onDateRangeSelected});
+
+  /// Optional callback when user wants to select custom date range.
+  /// If null, uses a simple date range picker.
+  final VoidCallback? onDateRangeSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final formFactor = ref.watch(formFactorProvider);
+    final isCompact = formFactor != AppFormFactor.desktop;
+    final filterState = ref.watch(reportsFilterProvider);
+    final filterNotifier = ref.read(reportsFilterProvider.notifier);
+
+    return _ReportsTopControlsContent(
+      selectedPreset: filterState.selectedPreset,
+      startDate: filterState.startDate,
+      endDate: filterState.endDate,
+      useFullPeriod: filterState.useFullPeriod,
+      isCompact: isCompact,
+      onPresetChanged: (preset) {
+        if (preset == 'custom') {
+          if (onDateRangeSelected != null) {
+            onDateRangeSelected!();
+          } else {
+            _showDateRangePicker(context, ref);
+          }
+        } else {
+          filterNotifier.applyPreset(preset);
+        }
+      },
+      onDateRangeSelected:
+          onDateRangeSelected ?? () => _showDateRangePicker(context, ref),
+      onFullPeriodChanged: (value) {
+        filterNotifier.setFullPeriod(value);
+        filterNotifier.applyPreset(filterState.selectedPreset);
+      },
+    );
+  }
+
+  Future<void> _showDateRangePicker(BuildContext context, WidgetRef ref) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
+    final filterState = ref.read(reportsFilterProvider);
+
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: DateTimeRange(
+        start: filterState.startDate,
+        end: filterState.endDate,
+      ),
+      saveText: l10n.actionApply,
+      builder: (context, child) {
+        return Theme(
+          data: theme.copyWith(
+            colorScheme: colorScheme.copyWith(
+              onPrimary: colorScheme.onPrimary,
+              onSurface: colorScheme.onSurface,
+            ),
+            datePickerTheme: DatePickerThemeData(
+              rangeSelectionBackgroundColor: colorScheme.primary.withOpacity(
+                0.2,
+              ),
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colorScheme.onPrimary;
+                }
+                if (states.contains(WidgetState.disabled)) {
+                  return colorScheme.onSurface.withOpacity(0.38);
+                }
+                return colorScheme.onSurface;
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colorScheme.primary;
+                }
+                return null;
+              }),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      ref
+          .read(reportsFilterProvider.notifier)
+          .setDateRange(picked.start, picked.end);
+    }
+  }
+}
+
+class _ReportsTopControlsContent extends StatelessWidget {
+  const _ReportsTopControlsContent({
+    required this.selectedPreset,
+    required this.startDate,
+    required this.endDate,
+    required this.useFullPeriod,
+    required this.isCompact,
+    required this.onPresetChanged,
+    required this.onDateRangeSelected,
+    required this.onFullPeriodChanged,
+  });
+
+  final String selectedPreset;
+  final DateTime startDate;
+  final DateTime endDate;
+  final bool useFullPeriod;
+  final bool isCompact;
+  final ValueChanged<String> onPresetChanged;
+  final VoidCallback onDateRangeSelected;
+  final ValueChanged<bool> onFullPeriodChanged;
+
+  bool get _supportsFullPeriod =>
+      selectedPreset != 'custom' &&
+      selectedPreset != 'today' &&
+      selectedPreset != 'last_month' &&
+      selectedPreset != 'last_3_months' &&
+      selectedPreset != 'last_6_months' &&
+      selectedPreset != 'last_year';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
+    final dateFormat = DateFormat('dd/MM/yy');
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Preset dropdown
+        _PresetDropdown(value: selectedPreset, onChanged: onPresetChanged),
+
+        // Date range display - only for custom preset
+        if (selectedPreset == 'custom') ...[
+          const SizedBox(width: 8),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onDateRangeSelected,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: colorScheme.outline),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+
+        // Full period toggle - inline on desktop
+        if (_supportsFullPeriod && !isCompact) ...[
+          const SizedBox(width: 16),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 24,
+                child: Switch(
+                  value: useFullPeriod,
+                  onChanged: onFullPeriodChanged,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                l10n.reportsFullPeriodToggle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PresetDropdown extends StatelessWidget {
+  const _PresetDropdown({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
+
+    return Container(
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outline),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isDense: true,
+          icon: Icon(
+            Icons.arrow_drop_down,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          style: theme.textTheme.bodyMedium,
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+          items: [
+            DropdownMenuItem(
+              value: 'custom',
+              child: Text(l10n.reportsPresetCustom),
+            ),
+            DropdownMenuItem(
+              value: 'today',
+              child: Text(l10n.reportsPresetToday),
+            ),
+            DropdownMenuItem(
+              value: 'month',
+              child: Text(l10n.reportsPresetMonth),
+            ),
+            DropdownMenuItem(
+              value: 'quarter',
+              child: Text(l10n.reportsPresetQuarter),
+            ),
+            DropdownMenuItem(
+              value: 'semester',
+              child: Text(l10n.reportsPresetSemester),
+            ),
+            DropdownMenuItem(
+              value: 'year',
+              child: Text(l10n.reportsPresetYear),
+            ),
+            DropdownMenuItem(
+              value: 'last_month',
+              child: Text(l10n.reportsPresetLastMonth),
+            ),
+            DropdownMenuItem(
+              value: 'last_3_months',
+              child: Text(l10n.reportsPresetLast3Months),
+            ),
+            DropdownMenuItem(
+              value: 'last_6_months',
+              child: Text(l10n.reportsPresetLast6Months),
+            ),
+            DropdownMenuItem(
+              value: 'last_year',
+              child: Text(l10n.reportsPresetLastYear),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

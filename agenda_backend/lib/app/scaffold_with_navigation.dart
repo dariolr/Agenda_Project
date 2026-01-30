@@ -5,6 +5,8 @@ import 'package:agenda_backend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_backend/app/widgets/top_controls.dart';
 import 'package:agenda_backend/app/widgets/user_menu_button.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
+import 'package:agenda_backend/features/bookings_list/providers/bookings_list_provider.dart';
+import 'package:agenda_backend/features/reports/providers/reports_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -79,6 +81,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isClients = navigationShell.currentIndex == 1;
     final isServices = navigationShell.currentIndex == 2;
     final isStaff = navigationShell.currentIndex == 3;
+    final isReport = navigationShell.currentIndex == 4;
+    final isBookingsList = navigationShell.currentIndex == 5;
     final agendaDate = ref.watch(agendaDateProvider);
     final today = DateUtils.dateOnly(DateTime.now());
     final isToday = DateUtils.isSameDay(agendaDate, today);
@@ -145,6 +149,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           actions.add(const _ClientsAddAction());
         } else if (isStaff) {
           actions.add(const _TeamAddAction());
+        } else if (isReport) {
+          actions.add(_ReportRefreshAction(ref: ref));
+        } else if (isBookingsList) {
+          actions.add(_BookingsListRefreshAction(ref: ref));
         }
         return actions;
       }
@@ -157,6 +165,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 : NavigationToolbar.kMiddleSpacing,
             title: isAgenda
                 ? const AgendaTopControls()
+                : isReport
+                ? Text(context.l10n.reportsTitle)
+                : isBookingsList
+                ? Text(context.l10n.bookingsListTitle)
                 : const SizedBox.shrink(),
             centerTitle: false,
             toolbarHeight: 76,
@@ -217,22 +229,26 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         actions.add(const _ClientsAddAction(compact: true));
       } else if (isStaff) {
         actions.add(const _TeamAddAction(compact: true));
+      } else if (isReport) {
+        actions.add(_ReportRefreshAction(ref: ref));
+      } else if (isBookingsList) {
+        actions.add(_BookingsListRefreshAction(ref: ref));
       }
       return actions;
     }
 
     // Su mobile, mappa l'indice corrente a quello compatto
-    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Profile
+    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Prenotazioni
     // Mobile:  0=Agenda, 1=Clienti, 2=Profile, 3=Altro
     int mobileCurrentIndex;
     if (navigationShell.currentIndex <= 1) {
       // Agenda o Clienti
       mobileCurrentIndex = navigationShell.currentIndex;
-    } else if (navigationShell.currentIndex <= 4) {
-      // Servizi, Staff o Report → evidenzia "Altro"
+    } else if (navigationShell.currentIndex <= 5) {
+      // Servizi, Staff, Report o Prenotazioni → evidenzia "Altro"
       mobileCurrentIndex = 3;
     } else {
-      // Profile (index 5 → 2 su mobile)
+      // Profile (index 6 → 2 su mobile)
       mobileCurrentIndex = 2;
     }
 
@@ -243,6 +259,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           titleSpacing: isAgenda ? 4 : NavigationToolbar.kMiddleSpacing,
           title: isAgenda
               ? const AgendaTopControls(compact: true)
+              : isReport
+              ? Text(context.l10n.reportsTitle)
+              : isBookingsList
+              ? Text(context.l10n.bookingsListTitle)
               : const SizedBox.shrink(),
           centerTitle: false,
           actionsPadding: const EdgeInsets.only(right: 6),
@@ -289,6 +309,12 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   }
 
   void _goBranch(int index, WidgetRef ref) {
+    // Protezione: i branch validi sono 0-5
+    if (index < 0 || index > 5) {
+      debugPrint('_goBranch: invalid index $index, ignoring');
+      return;
+    }
+
     if (index == 0 && navigationShell.currentIndex == 0) {
       final selectedDate = ref.read(agendaDateProvider);
       final today = DateUtils.dateOnly(DateTime.now());
@@ -326,9 +352,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
   }
 
-  /// Gestisce tap su navigation: se è index 5, mostra menu utente
+  /// Gestisce tap su navigation: se è index 6, mostra menu utente
   void _handleNavTap(BuildContext context, int index, WidgetRef ref) {
-    if (index == 5) {
+    if (index == 6) {
       _showUserMenu(context, ref);
     } else {
       _goBranch(index, ref);
@@ -504,7 +530,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                   ),
                   onTap: () {
                     Navigator.of(ctx).pop();
-                    context.push('/prenotazioni');
+                    _goBranch(5, ref);
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -566,9 +592,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       } else if (value == 'profile') {
         context.push('/profilo');
       } else if (value == 'report') {
-        context.push('/report');
+        _goBranch(4, ref);
       } else if (value == 'bookings_list') {
-        context.push('/prenotazioni');
+        _goBranch(5, ref);
       } else if (value == 'change_password') {
         context.push('/change-password');
       } else if (value == 'switch_business') {
@@ -1219,6 +1245,11 @@ class _ScaffoldWithNavigationHelpers {
         label: l10n.reportsTitle,
       ),
       NavigationDestination(
+        iconData: Icons.list_alt_outlined,
+        selectedIconData: Icons.list_alt,
+        label: l10n.bookingsListTitle,
+      ),
+      NavigationDestination(
         iconData: Icons.account_circle_outlined,
         selectedIconData: Icons.account_circle,
         label: l10n.navProfile,
@@ -1410,4 +1441,38 @@ class NavigationDestination {
   final IconData iconData;
   final IconData selectedIconData;
   final String label;
+}
+
+/// Refresh button for Report screen
+class _ReportRefreshAction extends StatelessWidget {
+  const _ReportRefreshAction({required this.ref});
+
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: () => ref.read(reportsProvider.notifier).refresh(),
+      icon: const Icon(Icons.refresh),
+      tooltip: context.l10n.actionRefresh,
+    );
+  }
+}
+
+/// Refresh button for BookingsList screen
+class _BookingsListRefreshAction extends StatelessWidget {
+  const _BookingsListRefreshAction({required this.ref});
+
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    final businessId = ref.read(currentLocationProvider).businessId;
+    return IconButton(
+      onPressed: () =>
+          ref.read(bookingsListProvider.notifier).loadBookings(businessId),
+      icon: const Icon(Icons.refresh),
+      tooltip: context.l10n.actionRefresh,
+    );
+  }
 }

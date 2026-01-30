@@ -94,10 +94,12 @@ final class BookingRepository
                     bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.service_name_snapshot, bi.client_name_snapshot,
                     s.name AS service_name,
-                    st.name AS staff_name, st.surname AS staff_surname
+                    st.name AS staff_name, st.surname AS staff_surname,
+                    b.business_id, b.client_name AS booking_client_name
              FROM booking_items bi
              JOIN services s ON bi.service_id = s.id
              JOIN staff st ON bi.staff_id = st.id
+             JOIN bookings b ON bi.booking_id = b.id
              WHERE bi.booking_id = ?
              ORDER BY bi.start_time ASC'
         );
@@ -107,6 +109,8 @@ final class BookingRepository
         foreach ($items as &$item) {
             $item['staff_display_name'] = trim($item['staff_name'] . ' ' . substr($item['staff_surname'] ?? '', 0, 1) . '.');
             $item['duration_minutes'] = $this->calculateItemDuration($item);
+            // Alias for client_name (uses snapshot or booking's client_name)
+            $item['client_name'] = $item['client_name_snapshot'] ?? $item['booking_client_name'] ?? '';
         }
 
         return $items;
@@ -985,25 +989,38 @@ final class BookingRepository
         ";
         
         $countSelect = "SELECT COUNT(DISTINCT b.id) FROM bookings b
+            LEFT JOIN clients c ON b.client_id = c.id
             JOIN booking_items bi ON b.id = bi.booking_id";
         
         $where = ['b.business_id = ?'];
         $params = [$businessId];
         
-        // Location filter
-        if (!empty($filters['location_id'])) {
+        // Location filter - support both single and multi-select
+        if (!empty($filters['location_ids']) && is_array($filters['location_ids'])) {
+            $placeholders = implode(',', array_fill(0, count($filters['location_ids']), '?'));
+            $where[] = "b.location_id IN ($placeholders)";
+            $params = array_merge($params, $filters['location_ids']);
+        } elseif (!empty($filters['location_id'])) {
             $where[] = 'b.location_id = ?';
             $params[] = (int) $filters['location_id'];
         }
         
-        // Staff filter
-        if (!empty($filters['staff_id'])) {
+        // Staff filter - support both single and multi-select
+        if (!empty($filters['staff_ids']) && is_array($filters['staff_ids'])) {
+            $placeholders = implode(',', array_fill(0, count($filters['staff_ids']), '?'));
+            $where[] = "bi.staff_id IN ($placeholders)";
+            $params = array_merge($params, $filters['staff_ids']);
+        } elseif (!empty($filters['staff_id'])) {
             $where[] = 'bi.staff_id = ?';
             $params[] = (int) $filters['staff_id'];
         }
         
-        // Service filter
-        if (!empty($filters['service_id'])) {
+        // Service filter - support both single and multi-select
+        if (!empty($filters['service_ids']) && is_array($filters['service_ids'])) {
+            $placeholders = implode(',', array_fill(0, count($filters['service_ids']), '?'));
+            $where[] = "bi.service_id IN ($placeholders)";
+            $params = array_merge($params, $filters['service_ids']);
+        } elseif (!empty($filters['service_id'])) {
             $where[] = 'bi.service_id = ?';
             $params[] = (int) $filters['service_id'];
         }

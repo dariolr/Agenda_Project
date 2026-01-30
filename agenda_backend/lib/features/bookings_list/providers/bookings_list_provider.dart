@@ -6,8 +6,10 @@ import '/core/network/network_providers.dart';
 /// Stato per i filtri della lista prenotazioni
 class BookingsListFilters {
   final int? locationId;
+  final List<int>? locationIds;
   final int? staffId;
-  final int? serviceId;
+  final List<int>? staffIds;
+  final List<int>? serviceIds;
   final String? clientSearch;
   final List<String>? status;
   final String? startDate;
@@ -18,8 +20,10 @@ class BookingsListFilters {
 
   const BookingsListFilters({
     this.locationId,
+    this.locationIds,
     this.staffId,
-    this.serviceId,
+    this.staffIds,
+    this.serviceIds,
     this.clientSearch,
     this.status,
     this.startDate,
@@ -32,10 +36,14 @@ class BookingsListFilters {
   BookingsListFilters copyWith({
     int? locationId,
     bool clearLocationId = false,
+    List<int>? locationIds,
+    bool clearLocationIds = false,
     int? staffId,
     bool clearStaffId = false,
-    int? serviceId,
-    bool clearServiceId = false,
+    List<int>? staffIds,
+    bool clearStaffIds = false,
+    List<int>? serviceIds,
+    bool clearServiceIds = false,
     String? clientSearch,
     bool clearClientSearch = false,
     List<String>? status,
@@ -50,8 +58,10 @@ class BookingsListFilters {
   }) {
     return BookingsListFilters(
       locationId: clearLocationId ? null : (locationId ?? this.locationId),
+      locationIds: clearLocationIds ? null : (locationIds ?? this.locationIds),
       staffId: clearStaffId ? null : (staffId ?? this.staffId),
-      serviceId: clearServiceId ? null : (serviceId ?? this.serviceId),
+      staffIds: clearStaffIds ? null : (staffIds ?? this.staffIds),
+      serviceIds: clearServiceIds ? null : (serviceIds ?? this.serviceIds),
       clientSearch: clearClientSearch
           ? null
           : (clientSearch ?? this.clientSearch),
@@ -85,15 +95,17 @@ class BookingsListFilters {
   /// Indica se ci sono filtri attivi (oltre ai default)
   bool get hasActiveFilters {
     return locationId != null ||
+        (locationIds != null && locationIds!.isNotEmpty) ||
         staffId != null ||
-        serviceId != null ||
+        (staffIds != null && staffIds!.isNotEmpty) ||
+        (serviceIds != null && serviceIds!.isNotEmpty) ||
         (clientSearch != null && clientSearch!.isNotEmpty) ||
         (status != null && status!.isNotEmpty);
   }
 
   @override
   String toString() {
-    return 'BookingsListFilters(locationId: $locationId, staffId: $staffId, serviceId: $serviceId, clientSearch: $clientSearch, status: $status, startDate: $startDate, endDate: $endDate, includePast: $includePast, sortBy: $sortBy, sortOrder: $sortOrder)';
+    return 'BookingsListFilters(locationId: $locationId, locationIds: $locationIds, staffId: $staffId, staffIds: $staffIds, serviceIds: $serviceIds, clientSearch: $clientSearch, status: $status, startDate: $startDate, endDate: $endDate, includePast: $includePast, sortBy: $sortBy, sortOrder: $sortOrder)';
   }
 }
 
@@ -115,17 +127,38 @@ class BookingsListFiltersNotifier extends Notifier<BookingsListFilters> {
     state = state.copyWith(
       locationId: locationId,
       clearLocationId: locationId == null,
+      clearLocationIds: true,
+    );
+  }
+
+  void setLocationIds(List<int>? locationIds) {
+    state = state.copyWith(
+      locationIds: locationIds,
+      clearLocationIds: locationIds == null || locationIds.isEmpty,
+      clearLocationId: true,
     );
   }
 
   void setStaffId(int? staffId) {
-    state = state.copyWith(staffId: staffId, clearStaffId: staffId == null);
+    state = state.copyWith(
+      staffId: staffId,
+      clearStaffId: staffId == null,
+      clearStaffIds: true,
+    );
   }
 
-  void setServiceId(int? serviceId) {
+  void setStaffIds(List<int>? staffIds) {
     state = state.copyWith(
-      serviceId: serviceId,
-      clearServiceId: serviceId == null,
+      staffIds: staffIds,
+      clearStaffIds: staffIds == null || staffIds.isEmpty,
+      clearStaffId: true,
+    );
+  }
+
+  void setServiceIds(List<int>? serviceIds) {
+    state = state.copyWith(
+      serviceIds: serviceIds,
+      clearServiceIds: serviceIds == null || serviceIds.isEmpty,
     );
   }
 
@@ -237,8 +270,10 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
       final response = await apiClient.getBookingsList(
         businessId: businessId,
         locationId: filters.locationId,
+        locationIds: filters.locationIds,
         staffId: filters.staffId,
-        serviceId: filters.serviceId,
+        staffIds: filters.staffIds,
+        serviceIds: filters.serviceIds,
         clientSearch: filters.clientSearch,
         status: filters.status,
         startDate: filters.startDate,
@@ -276,8 +311,10 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
       final response = await apiClient.getBookingsList(
         businessId: businessId,
         locationId: filters.locationId,
+        locationIds: filters.locationIds,
         staffId: filters.staffId,
-        serviceId: filters.serviceId,
+        staffIds: filters.staffIds,
+        serviceIds: filters.serviceIds,
         clientSearch: filters.clientSearch,
         status: filters.status,
         startDate: filters.startDate,
