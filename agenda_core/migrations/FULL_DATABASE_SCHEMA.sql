@@ -538,6 +538,8 @@ CREATE TABLE IF NOT EXISTS business_users (
     business_id INT UNSIGNED NOT NULL,
     user_id INT UNSIGNED NOT NULL,
     role ENUM('owner', 'admin', 'manager', 'staff') NOT NULL DEFAULT 'staff',
+    scope_type ENUM('business','locations') NOT NULL DEFAULT 'business'
+        COMMENT 'business = all locations, locations = only mapped locations',
     staff_id INT UNSIGNED NULL,
     can_manage_bookings TINYINT(1) NOT NULL DEFAULT 1,
     can_manage_clients TINYINT(1) NOT NULL DEFAULT 1,
@@ -572,6 +574,8 @@ CREATE TABLE IF NOT EXISTS business_invitations (
     business_id INT UNSIGNED NOT NULL,
     email VARCHAR(255) NOT NULL,
     role ENUM('admin', 'manager', 'staff') NOT NULL DEFAULT 'staff',
+    scope_type ENUM('business','locations') NOT NULL DEFAULT 'business'
+        COMMENT 'business = all locations, locations = only mapped locations',
     token VARCHAR(64) NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     status ENUM('pending', 'accepted', 'expired', 'revoked') NOT NULL DEFAULT 'pending',
@@ -592,6 +596,42 @@ CREATE TABLE IF NOT EXISTS business_invitations (
     KEY idx_invitations_business_status (business_id, status),
     KEY idx_invitations_email_status (email, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- business_user_locations: Location assegnate a utenti con scope_type=locations
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS business_user_locations (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    business_user_id INT UNSIGNED NOT NULL,
+    location_id INT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_business_user_location (business_user_id, location_id),
+    KEY idx_bul_location (location_id),
+    CONSTRAINT fk_bul_business_user FOREIGN KEY (business_user_id)
+        REFERENCES business_users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_bul_location FOREIGN KEY (location_id)
+        REFERENCES locations(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Location assegnate a utenti con scope_type=locations';
+
+-- ----------------------------------------------------------------------------
+-- business_invitation_locations: Location assegnate a inviti con scope_type=locations
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS business_invitation_locations (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    invitation_id INT UNSIGNED NOT NULL,
+    location_id INT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_invitation_location (invitation_id, location_id),
+    KEY idx_bil_location (location_id),
+    CONSTRAINT fk_bil_invitation FOREIGN KEY (invitation_id)
+        REFERENCES business_invitations(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_bil_location FOREIGN KEY (location_id)
+        REFERENCES locations(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Location assegnate a inviti con scope_type=locations';
 
 -- ============================================================================
 -- SECTION 4: BOOKING TABLES (from 0003_booking.sql)

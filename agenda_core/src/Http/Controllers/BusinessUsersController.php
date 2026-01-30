@@ -236,6 +236,35 @@ final class BusinessUsersController
             $updateData['staff_id'] = $body['staff_id'];
         }
 
+        // Update scope_type and location_ids
+        if (isset($body['scope_type'])) {
+            $scopeType = $body['scope_type'];
+            if (!in_array($scopeType, ['business', 'locations'], true)) {
+                return Response::validationError(
+                    ['scope_type must be business or locations'],
+                    $request->traceId
+                );
+            }
+            $updateData['scope_type'] = $scopeType;
+            
+            // Handle location_ids
+            if ($scopeType === 'locations') {
+                if (!isset($body['location_ids']) || empty($body['location_ids'])) {
+                    return Response::validationError(
+                        ['location_ids required when scope_type is locations'],
+                        $request->traceId
+                    );
+                }
+                $updateData['location_ids'] = $body['location_ids'];
+            } else {
+                // Clear locations if changing to business scope
+                $updateData['location_ids'] = [];
+            }
+        } elseif (isset($body['location_ids'])) {
+            // Allow updating only location_ids if scope_type is already 'locations'
+            $updateData['location_ids'] = $body['location_ids'];
+        }
+
         if (empty($updateData)) {
             return Response::validationError(['No fields to update'], $request->traceId);
         }
@@ -347,6 +376,8 @@ final class BusinessUsersController
             'id' => (int) $row['id'],
             'user_id' => (int) $row['user_id'],
             'role' => $row['role'],
+            'scope_type' => $row['scope_type'] ?? 'business',
+            'location_ids' => array_map('intval', $row['location_ids'] ?? []),
             'staff_id' => $row['staff_id'] ? (int) $row['staff_id'] : null,
             'permissions' => [
                 'can_manage_bookings' => (bool) $row['can_manage_bookings'],

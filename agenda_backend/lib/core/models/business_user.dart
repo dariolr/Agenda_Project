@@ -4,6 +4,9 @@ class BusinessUser {
   final int userId;
   final int businessId;
   final String role;
+  final String scopeType; // 'business' o 'locations'
+  final List<int>
+  locationIds; // IDs delle location accessibili (se scopeType='locations')
   final String email;
   final String firstName;
   final String lastName;
@@ -17,6 +20,8 @@ class BusinessUser {
     required this.userId,
     required this.businessId,
     required this.role,
+    this.scopeType = 'business',
+    this.locationIds = const [],
     required this.email,
     required this.firstName,
     required this.lastName,
@@ -35,6 +40,12 @@ class BusinessUser {
   /// Indica se l'utente può gestire altri utenti (owner o admin).
   bool get canManageUsers => role == 'owner' || role == 'admin';
 
+  /// Indica se l'utente ha accesso a tutte le location.
+  bool get hasBusinessScope => scopeType == 'business';
+
+  /// Indica se l'utente ha accesso limitato a location specifiche.
+  bool get hasLocationScope => scopeType == 'locations';
+
   /// Etichetta tradotta per il ruolo.
   String get roleLabel => switch (role) {
     'owner' => 'Proprietario',
@@ -49,6 +60,8 @@ class BusinessUser {
     int? userId,
     int? businessId,
     String? role,
+    String? scopeType,
+    List<int>? locationIds,
     String? email,
     String? firstName,
     String? lastName,
@@ -61,6 +74,8 @@ class BusinessUser {
     userId: userId ?? this.userId,
     businessId: businessId ?? this.businessId,
     role: role ?? this.role,
+    scopeType: scopeType ?? this.scopeType,
+    locationIds: locationIds ?? this.locationIds,
     email: email ?? this.email,
     firstName: firstName ?? this.firstName,
     lastName: lastName ?? this.lastName,
@@ -71,20 +86,35 @@ class BusinessUser {
   );
 
   factory BusinessUser.fromJson(Map<String, dynamic> json) => BusinessUser(
-    id: json['id'] as int,
-    userId: json['user_id'] as int,
-    businessId: json['business_id'] as int,
+    id: _asInt(json['id']),
+    userId: _asInt(json['user_id']),
+    businessId: _asInt(json['business_id']),
     role: json['role'] as String,
-    email: json['email'] as String,
-    firstName: json['first_name'] as String? ?? '',
-    lastName: json['last_name'] as String? ?? '',
+    scopeType: json['scope_type'] as String? ?? 'business',
+    locationIds:
+        (json['location_ids'] as List<dynamic>?)
+            ?.map(_asInt)
+            .where((e) => e > 0)
+            .toList() ??
+        [],
+    email: json['email'] as String? ?? json['user']?['email'] as String? ?? '',
+    firstName:
+        json['first_name'] as String? ??
+        json['user']?['first_name'] as String? ??
+        '',
+    lastName:
+        json['last_name'] as String? ??
+        json['user']?['last_name'] as String? ??
+        '',
     status: json['status'] as String? ?? 'active',
     invitedAt: json['invited_at'] != null
         ? DateTime.parse(json['invited_at'] as String)
         : null,
     joinedAt: json['joined_at'] != null
         ? DateTime.parse(json['joined_at'] as String)
-        : null,
+        : (json['accepted_at'] != null
+              ? DateTime.parse(json['accepted_at'] as String)
+              : null),
     isCurrentUser: json['is_current_user'] as bool? ?? false,
   );
 
@@ -93,6 +123,8 @@ class BusinessUser {
     'user_id': userId,
     'business_id': businessId,
     'role': role,
+    'scope_type': scopeType,
+    'location_ids': locationIds,
     'email': email,
     'first_name': firstName,
     'last_name': lastName,
@@ -113,5 +145,13 @@ class BusinessUser {
   int get hashCode => id.hashCode;
 
   @override
-  String toString() => 'BusinessUser(id: $id, email: $email, role: $role)';
+  String toString() =>
+      'BusinessUser(id: $id, email: $email, role: $role, scopeType: $scopeType)';
+}
+
+int _asInt(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
 }

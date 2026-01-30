@@ -27,24 +27,34 @@ final class BusinessInvitationRepository
     {
         $token = $this->generateToken();
         $expiresAt = date('Y-m-d H:i:s', strtotime('+' . self::DEFAULT_EXPIRY_DAYS . ' days'));
+        $scopeType = $data['scope_type'] ?? 'business';
+        $locationIds = $data['location_ids'] ?? [];
 
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO business_invitations 
-                (business_id, email, role, token, expires_at, invited_by)
-             VALUES (?, ?, ?, ?, ?, ?)'
+                (business_id, email, role, scope_type, token, expires_at, invited_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
 
         $stmt->execute([
             $data['business_id'],
             strtolower(trim($data['email'])),
             $data['role'] ?? 'staff',
+            $scopeType,
             $token,
             $data['expires_at'] ?? $expiresAt,
             $data['invited_by'],
         ]);
 
+        $invitationId = (int) $this->db->getPdo()->lastInsertId();
+        
+        // Set locations if scope_type=locations
+        if ($scopeType === 'locations' && !empty($locationIds)) {
+            $this->setLocationIds($invitationId, $locationIds);
+        }
+
         return [
-            'id' => (int) $this->db->getPdo()->lastInsertId(),
+            'id' => $invitationId,
             'token' => $token,
             'expires_at' => $data['expires_at'] ?? $expiresAt,
         ];
@@ -57,7 +67,7 @@ final class BusinessInvitationRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT 
-                i.id, i.business_id, i.email, i.role, i.token, 
+                i.id, i.business_id, i.email, i.role, i.scope_type, i.token, 
                 i.expires_at, i.status, i.accepted_by, i.accepted_at,
                 i.invited_by, i.created_at,
                 b.name as business_name, b.slug as business_slug
@@ -68,7 +78,18 @@ final class BusinessInvitationRepository
         $stmt->execute([$token]);
         $result = $stmt->fetch();
 
-        return $result ?: null;
+        if (!$result) {
+            return null;
+        }
+        
+        // Fetch location_ids if scope_type=locations
+        if ($result['scope_type'] === 'locations') {
+            $result['location_ids'] = $this->getLocationIds((int)$result['id']);
+        } else {
+            $result['location_ids'] = [];
+        }
+
+        return $result;
     }
 
     /**
@@ -94,7 +115,7 @@ final class BusinessInvitationRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT 
-                i.id, i.email, i.role, i.token, i.expires_at, 
+                i.id, i.email, i.role, i.scope_type, i.token, i.expires_at, 
                 i.status, i.invited_by, i.created_at,
                 u.first_name as inviter_first_name, u.last_name as inviter_last_name
              FROM business_invitations i
@@ -105,7 +126,18 @@ final class BusinessInvitationRepository
         );
         $stmt->execute([$businessId]);
 
-        return $stmt->fetchAll();
+        $invitations = $stmt->fetchAll();
+        
+        // Fetch location_ids for invitations with scope_type=locations
+        foreach ($invitations as &$inv) {
+            if ($inv['scope_type'] === 'locations') {
+                $inv['location_ids'] = $this->getLocationIds((int)$inv['id']);
+            } else {
+                $inv['location_ids'] = [];
+            }
+        }
+
+        return $invitations;
     }
 
     /**
@@ -175,6 +207,9 @@ final class BusinessInvitationRepository
      */
     public function delete(int $invitationId): bool
     {
+        // Delete locations first (FK cascade should handle but explicit for safety)
+        $this->setLocationIds($invitationId, []);
+        
         $stmt = $this->db->getPdo()->prepare(
             'DELETE FROM business_invitations WHERE id = ?'
         );
@@ -188,5 +223,42 @@ final class BusinessInvitationRepository
     private function generateToken(): string
     {
         return bin2hex(random_bytes(self::TOKEN_LENGTH));
+    }
+
+    // ========== LOCATION MANAGEMENT ==========
+
+    /**
+     * Get location IDs for an invitation.
+     */
+    public function getLocationIds(int $invitationId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT location_id FROM business_invitation_locations WHERE invitation_id = ?'
+        );
+        $stmt->execute([$invitationId]);
+        
+        return array_column($stmt->fetchAll(), 'location_id');
+    }
+
+    /**
+     * Set location IDs for an invitation.
+     */
+    public function setLocationIds(int $invitationId, array $locationIds): void
+    {
+        $pdo = $this->db->getPdo();
+        
+        // Delete existing
+        $stmt = $pdo->prepare('DELETE FROM business_invitation_locations WHERE invitation_id = ?');
+        $stmt->execute([$invitationId]);
+        
+        // Insert new
+        if (!empty($locationIds)) {
+            $stmt = $pdo->prepare(
+                'INSERT INTO business_invitation_locations (invitation_id, location_id) VALUES (?, ?)'
+            );
+            foreach ($locationIds as $locationId) {
+                $stmt->execute([$invitationId, (int)$locationId]);
+            }
+        }
     }
 }

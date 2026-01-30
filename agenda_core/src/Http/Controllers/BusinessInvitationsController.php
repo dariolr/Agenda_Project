@@ -56,6 +56,8 @@ final class BusinessInvitationsController
                 'id' => (int) $i['id'],
                 'email' => $i['email'],
                 'role' => $i['role'],
+                'scope_type' => $i['scope_type'],
+                'location_ids' => array_map('intval', $i['location_ids'] ?? []),
                 'expires_at' => $i['expires_at'],
                 'created_at' => $i['created_at'],
                 'invited_by' => [
@@ -133,11 +135,27 @@ final class BusinessInvitationsController
             );
         }
 
+        // Validate scope_type and location_ids
+        $scopeType = $body['scope_type'] ?? 'business';
+        $locationIds = $body['location_ids'] ?? [];
+        
+        if (!in_array($scopeType, ['business', 'locations'], true)) {
+            return Response::validationError('scope_type must be business or locations', $request->traceId);
+        }
+        
+        if ($scopeType === 'locations' && empty($locationIds)) {
+            return Response::validationError('location_ids required when scope_type is locations', $request->traceId);
+        }
+        
+        // TODO: Validate location_ids belong to the business
+
         // Create invitation
         $result = $this->invitationRepo->create([
             'business_id' => $businessId,
             'email' => $email,
             'role' => $role,
+            'scope_type' => $scopeType,
+            'location_ids' => $locationIds,
             'invited_by' => $userId,
         ]);
 
@@ -147,6 +165,8 @@ final class BusinessInvitationsController
             'id' => $result['id'],
             'email' => $email,
             'role' => $role,
+            'scope_type' => $scopeType,
+            'location_ids' => array_map('intval', $locationIds),
             'token' => $result['token'],
             'expires_at' => $result['expires_at'],
             'invite_url' => $this->buildInviteUrl($result['token']),
@@ -280,6 +300,8 @@ final class BusinessInvitationsController
             'business_id' => (int) $invitation['business_id'],
             'user_id' => $userId,
             'role' => $invitation['role'],
+            'scope_type' => $invitation['scope_type'],
+            'location_ids' => $invitation['location_ids'] ?? [],
             'invited_by' => (int) $invitation['invited_by'],
             'invited_at' => $invitation['created_at'],
             'accepted_at' => date('Y-m-d H:i:s'),
@@ -292,6 +314,8 @@ final class BusinessInvitationsController
                 'name' => $invitation['business_name'],
             ],
             'role' => $invitation['role'],
+            'scope_type' => $invitation['scope_type'],
+            'location_ids' => array_map('intval', $invitation['location_ids'] ?? []),
         ]);
     }
 

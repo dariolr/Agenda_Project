@@ -819,6 +819,25 @@ class MessageLookup extends MessageLookupByLibrary {
     "operatorsRoleManager": MessageLookupByLibrary.simpleMessage("Manager"),
     "operatorsRoleOwner": MessageLookupByLibrary.simpleMessage("Proprietario"),
     "operatorsRoleStaff": MessageLookupByLibrary.simpleMessage("Staff"),
+    "operatorsScopeBusiness": MessageLookupByLibrary.simpleMessage(
+      "Tutte le sedi",
+    ),
+    "operatorsScopeBusinessDesc": MessageLookupByLibrary.simpleMessage(
+      "Accesso completo a tutte le sedi del business",
+    ),
+    "operatorsScopeLocations": MessageLookupByLibrary.simpleMessage(
+      "Sedi specifiche",
+    ),
+    "operatorsScopeLocationsDesc": MessageLookupByLibrary.simpleMessage(
+      "Accesso limitato alle sedi selezionate",
+    ),
+    "operatorsScopeLocationsRequired": MessageLookupByLibrary.simpleMessage(
+      "Seleziona almeno una sede",
+    ),
+    "operatorsScopeSelectLocations": MessageLookupByLibrary.simpleMessage(
+      "Seleziona sedi",
+    ),
+    "operatorsScopeTitle": MessageLookupByLibrary.simpleMessage("Accesso"),
     "operatorsSubtitle": MessageLookupByLibrary.simpleMessage(
       "Gestisci chi può accedere al gestionale",
     ),
