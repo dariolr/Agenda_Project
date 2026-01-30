@@ -538,6 +538,13 @@
     }
   },
   "operatorsInviteCopied": "Invite link copied",
+  "operatorsScopeTitle": "Access",
+  "operatorsScopeBusiness": "All locations",
+  "operatorsScopeBusinessDesc": "Full access to all business locations",
+  "operatorsScopeLocations": "Specific locations",
+  "operatorsScopeLocationsDesc": "Access limited to selected locations",
+  "operatorsScopeSelectLocations": "Select locations",
+  "operatorsScopeLocationsRequired": "Select at least one location",
   "operatorsPendingInvites": "Pending invites",
   "operatorsPendingInvitesCount": "{count} pending invites",
   "@operatorsPendingInvitesCount": {

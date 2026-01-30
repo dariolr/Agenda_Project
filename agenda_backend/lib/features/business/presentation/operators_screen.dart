@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +9,11 @@ import '../../../app/providers/form_factor_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business_invitation.dart';
 import '../../../core/models/business_user.dart';
+import '../../../core/models/location.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/feedback_dialog.dart';
+import '../../agenda/providers/location_providers.dart';
 import '../providers/business_users_provider.dart';
 import 'dialogs/invite_operator_dialog.dart';
 import 'dialogs/role_selection_dialog.dart';
@@ -294,6 +297,7 @@ class _UserTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
+    final locations = ref.watch(locationsProvider);
 
     return ListTile(
       leading: CircleAvatar(
@@ -336,7 +340,7 @@ class _UserTile extends ConsumerWidget {
           : PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'edit') {
-                  _showEditRoleDialog(context, ref);
+                  _showEditRoleDialog(context, ref, locations);
                 } else if (value == 'remove') {
                   _confirmRemove(context, ref);
                 }
@@ -393,8 +397,13 @@ class _UserTile extends ConsumerWidget {
     };
   }
 
-  void _showEditRoleDialog(BuildContext context, WidgetRef ref) {
+  void _showEditRoleDialog(
+    BuildContext context,
+    WidgetRef ref,
+    List<Location> locations,
+  ) {
     final formFactor = ref.read(formFactorProvider);
+    final currentLocationIds = user.locationIds.toSet();
 
     if (formFactor == AppFormFactor.mobile ||
         formFactor == AppFormFactor.tablet) {
@@ -403,13 +412,35 @@ class _UserTile extends ConsumerWidget {
         heightFactor: null,
         builder: (ctx) => RoleSelectionSheet(
           currentRole: user.role,
+          currentScopeType: user.scopeType,
+          currentLocationIds: user.locationIds,
+          locations: locations,
           userName: user.fullName,
-          onRoleSelected: (newRole) async {
+          onSave: ({
+            required String role,
+            required String scopeType,
+            required List<int> locationIds,
+          }) async {
             Navigator.of(ctx).pop();
-            if (newRole != user.role) {
+            final selectedLocationIds = scopeType == 'locations'
+                ? locationIds.toSet()
+                : <int>{};
+            final hasChanges =
+                role != user.role ||
+                scopeType != user.scopeType ||
+                !setEquals(selectedLocationIds, currentLocationIds);
+            if (hasChanges) {
               await ref
                   .read(businessUsersProvider(businessId).notifier)
-                  .updateUserRole(user.userId, newRole);
+                  .updateUser(
+                    userId: user.userId,
+                    role: role,
+                    scopeType: scopeType,
+                    locationIds:
+                        scopeType == 'locations'
+                            ? selectedLocationIds.toList()
+                            : <int>[],
+                  );
             }
           },
         ),
@@ -419,13 +450,35 @@ class _UserTile extends ConsumerWidget {
         context: context,
         builder: (ctx) => RoleSelectionDialog(
           currentRole: user.role,
+          currentScopeType: user.scopeType,
+          currentLocationIds: user.locationIds,
+          locations: locations,
           userName: user.fullName,
-          onRoleSelected: (newRole) async {
+          onSave: ({
+            required String role,
+            required String scopeType,
+            required List<int> locationIds,
+          }) async {
             Navigator.of(ctx).pop();
-            if (newRole != user.role) {
+            final selectedLocationIds = scopeType == 'locations'
+                ? locationIds.toSet()
+                : <int>{};
+            final hasChanges =
+                role != user.role ||
+                scopeType != user.scopeType ||
+                !setEquals(selectedLocationIds, currentLocationIds);
+            if (hasChanges) {
               await ref
                   .read(businessUsersProvider(businessId).notifier)
-                  .updateUserRole(user.userId, newRole);
+                  .updateUser(
+                    userId: user.userId,
+                    role: role,
+                    scopeType: scopeType,
+                    locationIds:
+                        scopeType == 'locations'
+                            ? selectedLocationIds.toList()
+                            : <int>[],
+                  );
             }
           },
         ),

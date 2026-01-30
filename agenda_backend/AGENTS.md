@@ -142,9 +142,41 @@ lib/
 | 0 | `/agenda` | AgendaScreen |
 | 1 | `/clienti` | ClientsScreen |
 | 2 | `/servizi` | ServicesScreen |
-| 3 | `/staff` | StaffWeekOverviewScreen |
+| 3 | `/staff` | TeamScreen |
+| 4 | `/report` | ReportsScreen |
+| 5 | `/prenotazioni` | BookingsListScreen |
+
+**Route non-shell:**
+- `/operatori/:businessId` → OperatorsScreen (accesso da menu "Altro")
+- `/profilo` → ProfileScreen
+- `/change-password` → ChangePasswordScreen
+- `/reset-password/:token` → ResetPasswordScreen
 
 ⚠️ NON modificare gli indici delle branch.
+
+---
+
+## 🧭 Navigazione Compatta (31/01/2026)
+
+**Desktop e Mobile** usano la stessa struttura a 4 voci:
+
+| Voce | Indice | Azione |
+|------|--------|--------|
+| Agenda | 0 | Naviga a branch 0 |
+| Clienti | 1 | Naviga a branch 1 |
+| Profilo | 2 | Mostra menu utente |
+| Altro | 3 | Mostra sottomenu |
+
+**Sottomenu "Altro" contiene:**
+- Servizi → branch 2
+- Team → branch 3
+- Report → branch 4
+- Prenotazioni → branch 5
+- **Operatori** → `/operatori/:businessId` (nuova voce)
+
+**Implementazione:**
+- Mobile: `_showMoreBottomSheet()` mostra BottomSheet
+- Desktop: `_showMorePopupMenu()` mostra PopupMenu
 
 ---
 
@@ -980,6 +1012,7 @@ I permessi sono gestiti dalla tabella `business_users`:
 - `is_owner = 1` → Owner del business
 - `can_manage_users = 1` → Può gestire staff
 - `is_superadmin = 1` (su users) → Accesso a tutti i business
+- `scope_type = 'business' | 'locations'` → Scope accesso per location
 
 ### File di Riferimento
 | Concetto | File |
@@ -988,6 +1021,114 @@ I permessi sono gestiti dalla tabella `business_users`:
 | Login screen | `lib/features/auth/presentation/login_screen.dart` |
 | API client | `lib/core/network/api_client.dart` |
 | Session listener | `lib/app/session_expired_listener.dart` |
+
+---
+
+## 🏢 Role Scope per Location (31/01/2026)
+
+### Funzionalità
+Gli operatori possono avere accesso a **tutte le sedi** o solo a **sedi specifiche**.
+
+### Campi Database
+
+**Tabella `business_users`:**
+- `scope_type ENUM('business','locations')` — DEFAULT 'business'
+
+**Tabella pivot `business_user_locations`:**
+- `business_user_id` (FK → business_users.id)
+- `location_id` (FK → locations.id)
+
+**Tabella pivot `business_invitation_locations`:**
+- `invitation_id` (FK → business_invitations.id)
+- `location_id` (FK → locations.id)
+
+### Modelli Flutter
+
+**BusinessUser:**
+```dart
+final String scopeType;     // 'business' o 'locations'
+final List<int> locationIds; // IDs location accessibili
+
+bool get hasBusinessScope => scopeType == 'business';
+bool get hasLocationScope => scopeType == 'locations';
+```
+
+**BusinessInvitation:**
+- Stessi campi di BusinessUser
+
+### API Client
+
+```dart
+// Invito operatore con scope
+createBusinessInvitation(
+  businessId: 1,
+  email: 'user@example.com',
+  role: 'staff',
+  scopeType: 'locations',      // 'business' o 'locations'
+  locationIds: [1, 2, 3],      // solo se scopeType='locations'
+)
+
+// Aggiornamento operatore con scope
+updateBusinessUser(
+  businessId: 1,
+  userId: 42,
+  role: 'staff',
+  scopeType: 'locations',
+  locationIds: [1, 2],
+)
+```
+
+### Provider
+
+```dart
+// Invito con scope
+await ref.read(businessUsersProvider(businessId).notifier).createInvitation(
+  email: email,
+  role: role,
+  scopeType: 'locations',
+  locationIds: [1, 2, 3],
+);
+
+// Aggiornamento con scope
+await ref.read(businessUsersProvider(businessId).notifier).updateUser(
+  userId: userId,
+  role: role,
+  scopeType: 'locations',
+  locationIds: [1, 2],
+);
+```
+
+### UI Dialog Invito
+
+La sezione "Accesso" appare solo se il business ha più di una location:
+1. **Toggle scope**: "Tutte le sedi" / "Sedi specifiche"
+2. **Multi-select location**: visibile solo se scopeType='locations'
+3. **Validazione**: almeno una location richiesta se scopeType='locations'
+
+### Localizzazioni
+
+| Chiave | IT | EN |
+|--------|----|----|
+| `operatorsScopeTitle` | Accesso | Access |
+| `operatorsScopeBusiness` | Tutte le sedi | All locations |
+| `operatorsScopeBusinessDesc` | Accesso completo a tutte le sedi | Full access to all locations |
+| `operatorsScopeLocations` | Sedi specifiche | Specific locations |
+| `operatorsScopeLocationsDesc` | Accesso limitato alle sedi selezionate | Access limited to selected locations |
+| `operatorsScopeSelectLocations` | Seleziona sedi | Select locations |
+| `operatorsScopeLocationsRequired` | Seleziona almeno una sede | Select at least one location |
+
+### File Coinvolti
+
+| File | Responsabilità |
+|------|----------------|
+| `lib/core/models/business_user.dart` | Model con scopeType e locationIds |
+| `lib/core/models/business_invitation.dart` | Model con scopeType e locationIds |
+| `lib/core/network/api_client.dart` | Metodi API con parametri scope |
+| `lib/features/business/data/business_users_repository.dart` | Repository CRUD |
+| `lib/features/business/providers/business_users_provider.dart` | Notifier state |
+| `lib/features/business/presentation/dialogs/invite_operator_dialog.dart` | Dialog invito con scope UI |
+| `lib/core/l10n/intl_it.arb` | Localizzazioni IT |
+| `lib/core/l10n/intl_en.arb` | Localizzazioni EN |
 
 ---
 

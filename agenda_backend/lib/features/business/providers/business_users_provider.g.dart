@@ -115,7 +115,7 @@ final class BusinessUsersNotifierProvider
 }
 
 String _$businessUsersNotifierHash() =>
-    r'38239228d01aa3d90273d07122559b5b6ecab0be';
+    r'ad5c91c0763998e097c8aedb9e969dfa063a0858';
 
 /// Notifier per gestire gli operatori di un business.
 

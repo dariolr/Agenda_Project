@@ -1382,7 +1382,16 @@ class ApiClient {
   /// Lista operatori di un business.
   Future<List<Map<String, dynamic>>> getBusinessUsers(int businessId) async {
     final response = await get(ApiConfig.businessUsers(businessId));
-    return (response['data']['users'] as List).cast<Map<String, dynamic>>();
+    final users =
+        response['users'] ??
+        (response['data'] is Map<String, dynamic>
+            ? (response['data'] as Map<String, dynamic>)['users']
+            : null) ??
+        response['_list'];
+    if (users is List) {
+      return users.cast<Map<String, dynamic>>();
+    }
+    return const <Map<String, dynamic>>[];
   }
 
   /// POST /v1/businesses/{business_id}/users
@@ -1400,15 +1409,21 @@ class ApiClient {
   }
 
   /// PATCH /v1/businesses/{business_id}/users/{user_id}
-  /// Aggiorna il ruolo di un operatore.
+  /// Aggiorna il ruolo e lo scope di un operatore.
   Future<Map<String, dynamic>> updateBusinessUser({
     required int businessId,
     required int userId,
     required String role,
+    String? scopeType,
+    List<int>? locationIds,
   }) async {
+    final data = <String, dynamic>{'role': role};
+    if (scopeType != null) data['scope_type'] = scopeType;
+    if (locationIds != null) data['location_ids'] = locationIds;
+
     final response = await patch(
       ApiConfig.businessUser(businessId, userId),
-      data: {'role': role},
+      data: data,
     );
     return response['data'] as Map<String, dynamic>;
   }
@@ -1430,8 +1445,16 @@ class ApiClient {
     int businessId,
   ) async {
     final response = await get(ApiConfig.businessInvitations(businessId));
-    return (response['data']['invitations'] as List)
-        .cast<Map<String, dynamic>>();
+    final invitations =
+        response['invitations'] ??
+        (response['data'] is Map<String, dynamic>
+            ? (response['data'] as Map<String, dynamic>)['invitations']
+            : null) ??
+        response['_list'];
+    if (invitations is List) {
+      return invitations.cast<Map<String, dynamic>>();
+    }
+    return const <Map<String, dynamic>>[];
   }
 
   /// POST /v1/businesses/{business_id}/invitations
@@ -1440,10 +1463,21 @@ class ApiClient {
     required int businessId,
     required String email,
     required String role,
+    String scopeType = 'business',
+    List<int>? locationIds,
   }) async {
+    final data = <String, dynamic>{
+      'email': email,
+      'role': role,
+      'scope_type': scopeType,
+    };
+    if (locationIds != null && locationIds.isNotEmpty) {
+      data['location_ids'] = locationIds;
+    }
+
     final response = await post(
       ApiConfig.businessInvitations(businessId),
-      data: {'email': email, 'role': role},
+      data: data,
     );
     return response['data'] as Map<String, dynamic>;
   }

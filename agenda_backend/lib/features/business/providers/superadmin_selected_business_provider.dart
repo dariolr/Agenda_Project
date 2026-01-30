@@ -4,7 +4,6 @@ import '../../../core/services/preferences_service.dart';
 import '../../agenda/providers/agenda_scroll_provider.dart';
 import '../../agenda/providers/appointment_providers.dart';
 import '../../agenda/providers/bookings_provider.dart';
-import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/date_range_provider.dart';
 import '../../agenda/providers/drag_session_provider.dart';
 import '../../agenda/providers/dragged_appointment_provider.dart';
@@ -105,8 +104,9 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
     ref.invalidate(resizingProvider);
     ref.invalidate(pendingDropProvider);
 
-    // Business ID corrente (currentBusinessProvider è derivato, si aggiorna da solo)
-    ref.invalidate(currentBusinessIdProvider);
+    // NOTE: currentBusinessIdProvider NON va invalidato qui perché usa ref.listen
+    // su superadminSelectedBusinessProvider, quindi si aggiorna automaticamente.
+    // Invalidarlo qui creerebbe una dipendenza circolare.
 
     // Layout e UI state (per sicurezza, anche se sembrano UI-only)
     ref.invalidate(layoutConfigProvider);

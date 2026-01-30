@@ -127,11 +127,11 @@ Se `scope_type=locations`, l’utente può accedere solo alle `location_id` pres
 ---
 
 ## ✅ Checklist finale
-- [ ] Migrazioni SQL create + FULL_DATABASE_SCHEMA aggiornato
-- [ ] API ritorna scope/location
-- [ ] Inviti gestiscono scope/location
-- [ ] Middleware blocca location non autorizzate
-- [ ] UI permette selezione scope/location
-- [ ] App filtra location e azioni
-- [ ] Report filtrati per location
+- [x] Migrazioni SQL create + FULL_DATABASE_SCHEMA aggiornato
+- [x] API ritorna scope/location
+- [x] Inviti gestiscono scope/location
+- [ ] Middleware blocca location non autorizzate (TODO: enforcement lato API)
+- [x] UI permette selezione scope/location
+- [ ] App filtra location e azioni (TODO: filtro location_providers)
+- [ ] Report filtrati per location (TODO: ReportsController)
 

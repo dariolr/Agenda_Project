@@ -8,6 +8,7 @@ import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/bookings_list/presentation/bookings_list_screen.dart';
+import '../features/business/presentation/operators_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
@@ -134,6 +135,16 @@ final GoRouter appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (BuildContext context, GoRouterState state) =>
           const ProfileScreen(),
+    ),
+    // Route per operatori business
+    GoRoute(
+      path: '/operatori/:businessId',
+      name: 'operatori',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (BuildContext context, GoRouterState state) {
+        final businessId = int.parse(state.pathParameters['businessId']!);
+        return OperatorsScreen(businessId: businessId);
+      },
     ),
     // Route per reset password (da email invito)
     GoRoute(
