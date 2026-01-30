@@ -114,6 +114,12 @@ php -S localhost:8080 -t public
 | PUT | `/v1/locations/{location_id}/bookings/{id}` | Aggiorna prenotazione |
 | DELETE | `/v1/locations/{location_id}/bookings/{id}` | Cancella prenotazione |
 
+### Gestionale - Lista Prenotazioni (protetti)
+
+| Metodo | Path | Descrizione |
+|--------|------|-------------|
+| GET | `/v1/businesses/{business_id}/bookings/list` | Lista paginata con filtri avanzati |
+
 ## Autenticazione
 
 - **Access Token**: JWT, 15 minuti TTL, in header `Authorization: Bearer <token>`
