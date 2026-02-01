@@ -400,8 +400,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final services = ref.watch(servicesProvider).value ?? [];
     final serviceCategories = ref.watch(serviceCategoriesProvider);
     final variants = ref.watch(serviceVariantsProvider).value ?? [];
-    final asyncClients = ref.watch(clientsProvider);
-    final clients = asyncClients.value ?? [];
+    final clients = ref.watch(clientsListProvider);
     final staff = ref.watch(staffForCurrentLocationProvider);
     final hasPackages =
         (ref.watch(servicePackagesProvider).value ?? []).isNotEmpty;
@@ -2166,8 +2165,7 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
 
   List<Client> get _filteredClients {
     // Use live clients from provider to get updates after creation
-    final asyncClients = ref.watch(clientsProvider);
-    final clients = asyncClients.value ?? [];
+    final clients = ref.watch(clientsListProvider);
     if (_searchQuery.isEmpty) return clients;
     final q = _searchQuery.toLowerCase();
     return clients.where((c) => c.name.toLowerCase().contains(q)).toList();

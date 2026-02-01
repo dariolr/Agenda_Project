@@ -242,8 +242,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final services = ref.watch(servicesProvider).value ?? [];
     final serviceCategories = ref.watch(serviceCategoriesProvider);
     final variants = ref.watch(serviceVariantsProvider).value ?? [];
-    final asyncClients = ref.watch(clientsProvider);
-    final clients = asyncClients.value ?? [];
+    final clients = ref.watch(clientsListProvider);
     final clientsById = ref.watch(clientsByIdProvider);
     final allStaff = ref.watch(staffForCurrentLocationProvider);
     final hasPackages =
@@ -1150,8 +1149,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
     while (mounted) {
       if (!mounted) return;
-      final asyncClients = ref.read(clientsProvider);
-      final clients = asyncClients.value ?? [];
+      final clients = ref.read(clientsListProvider);
       _ClientItem? result;
       if (isDesktop) {
         result = await showDialog<_ClientItem?>(
@@ -2124,8 +2122,8 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
   }
 
   List<Client> get _filteredClients {
-    final asyncClients = ref.watch(clientsProvider);
-    final clients = (asyncClients.value ?? [])
+    final clients = ref
+        .watch(clientsListProvider)
         .where((c) => !c.isArchived)
         .toList();
     if (_searchQuery.isEmpty) return clients;

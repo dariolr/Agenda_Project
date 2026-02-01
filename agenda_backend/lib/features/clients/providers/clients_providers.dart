@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/appointment.dart';
@@ -21,44 +23,231 @@ final clientsApiProvider = Provider<ClientsApi>((ref) {
   return ClientsApi(apiClient: apiClient);
 });
 
-/// AsyncNotifier per caricare i clienti dall'API
-class ClientsNotifier extends AsyncNotifier<List<Client>> {
+/// Stato per la lista clienti con paginazione
+class ClientsState {
+  final List<Client> clients;
+  final int total;
+  final bool hasMore;
+  final bool isLoadingMore;
+  final String searchQuery;
+  final ClientSortOption sortOption;
+
+  const ClientsState({
+    this.clients = const [],
+    this.total = 0,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+    this.searchQuery = '',
+    this.sortOption = ClientSortOption.nameAsc,
+  });
+
+  ClientsState copyWith({
+    List<Client>? clients,
+    int? total,
+    bool? hasMore,
+    bool? isLoadingMore,
+    String? searchQuery,
+    ClientSortOption? sortOption,
+  }) {
+    return ClientsState(
+      clients: clients ?? this.clients,
+      total: total ?? this.total,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      searchQuery: searchQuery ?? this.searchQuery,
+      sortOption: sortOption ?? this.sortOption,
+    );
+  }
+}
+
+/// Limite di clienti per pagina
+const int _kClientsPageSize = 100;
+
+/// Converte ClientSortOption in stringa per API
+String _sortOptionToApiString(ClientSortOption option) {
+  return switch (option) {
+    ClientSortOption.nameAsc => 'name_asc',
+    ClientSortOption.nameDesc => 'name_desc',
+    ClientSortOption.lastNameAsc => 'last_name_asc',
+    ClientSortOption.lastNameDesc => 'last_name_desc',
+    ClientSortOption.createdAtAsc => 'created_asc',
+    ClientSortOption.createdAtDesc => 'created_desc',
+  };
+}
+
+/// AsyncNotifier per caricare i clienti dall'API con paginazione, ricerca e ordinamento lato server
+class ClientsNotifier extends AsyncNotifier<ClientsState> {
+  Timer? _searchDebounce;
+
   @override
-  Future<List<Client>> build() async {
+  Future<ClientsState> build() async {
     // Verifica autenticazione
     final authState = ref.watch(authProvider);
     if (!authState.isAuthenticated) {
-      return [];
+      return const ClientsState();
     }
 
     final business = ref.watch(currentBusinessProvider);
     if (business.id <= 0) {
-      return [];
+      return const ClientsState();
     }
 
     final repository = ref.watch(clientsRepositoryProvider);
-    final clients = await repository.getAll(business.id);
-    return clients;
+    final response = await repository.getPage(
+      business.id,
+      limit: _kClientsPageSize,
+      offset: 0,
+      sort: _sortOptionToApiString(ClientSortOption.nameAsc),
+    );
+    return ClientsState(
+      clients: response.clients,
+      total: response.total,
+      hasMore: response.hasMore,
+    );
   }
 
-  /// Ricarica i clienti dall'API
-  Future<void> refresh() async {
-    // Verifica autenticazione prima di chiamare API
+  /// Cambia l'ordinamento e ricarica i dati dal server
+  Future<void> setSortOption(ClientSortOption option) async {
+    final current = state.value;
+    if (current == null) return;
+    if (current.sortOption == option) return;
+
     final authState = ref.read(authProvider);
-    if (!authState.isAuthenticated) {
-      return;
-    }
+    if (!authState.isAuthenticated) return;
 
     final business = ref.read(currentBusinessProvider);
-    if (business.id <= 0) {
-      return;
-    }
+    if (business.id <= 0) return;
 
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repository = ref.read(clientsRepositoryProvider);
-      final clients = await repository.getAll(business.id);
-      return clients;
+      final response = await repository.getPage(
+        business.id,
+        limit: _kClientsPageSize,
+        offset: 0,
+        search: current.searchQuery.isNotEmpty ? current.searchQuery : null,
+        sort: _sortOptionToApiString(option),
+      );
+      return ClientsState(
+        clients: response.clients,
+        total: response.total,
+        hasMore: response.hasMore,
+        searchQuery: current.searchQuery,
+        sortOption: option,
+      );
+    });
+  }
+
+  /// Imposta la query di ricerca e ricarica i dati dal server (con debounce)
+  void setSearchQuery(String query) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _executeSearch(query);
+    });
+  }
+
+  /// Esegue la ricerca immediatamente
+  Future<void> _executeSearch(String query) async {
+    final current = state.value;
+    if (current == null) return;
+
+    final trimmedQuery = query.trim();
+    if (current.searchQuery == trimmedQuery) return;
+
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) return;
+
+    final business = ref.read(currentBusinessProvider);
+    if (business.id <= 0) return;
+
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(clientsRepositoryProvider);
+      final response = await repository.getPage(
+        business.id,
+        limit: _kClientsPageSize,
+        offset: 0,
+        search: trimmedQuery.isNotEmpty ? trimmedQuery : null,
+        sort: _sortOptionToApiString(current.sortOption),
+      );
+      return ClientsState(
+        clients: response.clients,
+        total: response.total,
+        hasMore: response.hasMore,
+        searchQuery: trimmedQuery,
+        sortOption: current.sortOption,
+      );
+    });
+  }
+
+  /// Carica la prossima pagina di clienti
+  Future<void> loadMore() async {
+    final current = state.value;
+    if (current == null || !current.hasMore || current.isLoadingMore) return;
+
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) return;
+
+    final business = ref.read(currentBusinessProvider);
+    if (business.id <= 0) return;
+
+    // Imposta loading state
+    state = AsyncValue.data(current.copyWith(isLoadingMore: true));
+
+    try {
+      final repository = ref.read(clientsRepositoryProvider);
+      final response = await repository.getPage(
+        business.id,
+        limit: _kClientsPageSize,
+        offset: current.clients.length,
+        search: current.searchQuery.isNotEmpty ? current.searchQuery : null,
+        sort: _sortOptionToApiString(current.sortOption),
+      );
+
+      state = AsyncValue.data(
+        current.copyWith(
+          clients: [...current.clients, ...response.clients],
+          total: response.total,
+          hasMore: response.hasMore,
+          isLoadingMore: false,
+        ),
+      );
+    } catch (e) {
+      state = AsyncValue.data(current.copyWith(isLoadingMore: false));
+      // ignore: avoid_print
+      print('Error loading more clients: $e');
+    }
+  }
+
+  /// Ricarica i clienti dall'API (mantiene filtri attuali)
+  Future<void> refresh() async {
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) return;
+
+    final business = ref.read(currentBusinessProvider);
+    if (business.id <= 0) return;
+
+    final current = state.value;
+    final searchQuery = current?.searchQuery ?? '';
+    final sortOption = current?.sortOption ?? ClientSortOption.nameAsc;
+
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(clientsRepositoryProvider);
+      final response = await repository.getPage(
+        business.id,
+        limit: _kClientsPageSize,
+        offset: 0,
+        search: searchQuery.isNotEmpty ? searchQuery : null,
+        sort: _sortOptionToApiString(sortOption),
+      );
+      return ClientsState(
+        clients: response.clients,
+        total: response.total,
+        hasMore: response.hasMore,
+        searchQuery: searchQuery,
+        sortOption: sortOption,
+      );
     });
   }
 
@@ -66,7 +255,14 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
   Future<Client> addClient(Client client) async {
     final repository = ref.read(clientsRepositoryProvider);
     final newClient = await repository.add(client);
-    state = AsyncValue.data([...state.value ?? [], newClient]);
+    final current = state.value ?? const ClientsState();
+    // Inserisci all'inizio della lista (sarà riordinato al prossimo refresh)
+    state = AsyncValue.data(
+      current.copyWith(
+        clients: [newClient, ...current.clients],
+        total: current.total + 1,
+      ),
+    );
     return newClient;
   }
 
@@ -74,147 +270,68 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
   Future<void> updateClient(Client client) async {
     final repository = ref.read(clientsRepositoryProvider);
     final updated = await repository.save(client);
-    state = AsyncValue.data([
-      for (final c in state.value ?? [])
-        if (c.id == updated.id) updated else c,
-    ]);
+    final current = state.value ?? const ClientsState();
+    state = AsyncValue.data(
+      current.copyWith(
+        clients: [
+          for (final c in current.clients)
+            if (c.id == updated.id) updated else c,
+        ],
+      ),
+    );
   }
 
   /// Soft delete - imposta isArchived = true
   Future<void> deleteClient(int id) async {
-    final current = state.value?.firstWhere((c) => c.id == id);
+    final current = state.value?.clients.firstWhere(
+      (c) => c.id == id,
+      orElse: () => throw Exception('Client not found'),
+    );
     if (current == null) return;
     final archived = current.copyWith(isArchived: true);
     await updateClient(archived);
   }
 }
 
-final clientsProvider = AsyncNotifierProvider<ClientsNotifier, List<Client>>(
+final clientsProvider = AsyncNotifierProvider<ClientsNotifier, ClientsState>(
   ClientsNotifier.new,
 );
 
+/// Provider di convenienza che restituisce solo la lista clienti (per retrocompatibilità)
+final clientsListProvider = Provider<List<Client>>((ref) {
+  final asyncState = ref.watch(clientsProvider);
+  return asyncState.value?.clients ?? [];
+});
+
+/// Provider che restituisce la lista clienti filtrata (già filtrata dal server)
+/// I clienti archiviati sono già esclusi dal backend
+final filteredClientsProvider = Provider<List<Client>>((ref) {
+  return ref.watch(clientsListProvider).where((c) => !c.isArchived).toList();
+});
+
 // Indicizzazione rapida per id (restituisce mappa vuota se ancora in caricamento)
 final clientsByIdProvider = Provider<Map<int, Client>>((ref) {
-  final asyncClients = ref.watch(clientsProvider);
-  final list = asyncClients.value ?? [];
-  return {for (final c in list) c.id: c};
+  final clients = ref.watch(clientsListProvider);
+  return {for (final c in clients) c.id: c};
 });
 
-/// Notifier per il criterio di ordinamento corrente
-class ClientSortOptionNotifier extends Notifier<ClientSortOption> {
-  @override
-  ClientSortOption build() => ClientSortOption.nameAsc;
-
-  void set(ClientSortOption option) => state = option;
-}
-
-final clientSortOptionProvider =
-    NotifierProvider<ClientSortOptionNotifier, ClientSortOption>(
-      ClientSortOptionNotifier.new,
-    );
-
-/// Provider per la query di ricerca clienti (persistente tra cambi tab)
-class ClientSearchQueryNotifier extends Notifier<String> {
-  @override
-  String build() => '';
-
-  void set(String query) => state = query;
-
-  void clear() => state = '';
-}
-
-final clientSearchQueryProvider =
-    NotifierProvider<ClientSearchQueryNotifier, String>(
-      ClientSearchQueryNotifier.new,
-    );
-
-/// Ordina una lista di clienti secondo il criterio specificato
-List<Client> _sortClients(List<Client> clients, ClientSortOption sort) {
-  final sorted = List<Client>.from(clients);
-
-  switch (sort) {
-    case ClientSortOption.nameAsc:
-      sorted.sort(
-        (a, b) => (a.firstName ?? '').toLowerCase().compareTo(
-          (b.firstName ?? '').toLowerCase(),
-        ),
-      );
-    case ClientSortOption.nameDesc:
-      sorted.sort(
-        (a, b) => (b.firstName ?? '').toLowerCase().compareTo(
-          (a.firstName ?? '').toLowerCase(),
-        ),
-      );
-    case ClientSortOption.lastNameAsc:
-      sorted.sort(
-        (a, b) => (a.lastName ?? '').toLowerCase().compareTo(
-          (b.lastName ?? '').toLowerCase(),
-        ),
-      );
-    case ClientSortOption.lastNameDesc:
-      sorted.sort(
-        (a, b) => (b.lastName ?? '').toLowerCase().compareTo(
-          (a.lastName ?? '').toLowerCase(),
-        ),
-      );
-    case ClientSortOption.createdAtDesc:
-      sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    case ClientSortOption.createdAtAsc:
-      sorted.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-  }
-
-  return sorted;
-}
-
-/// Provider che restituisce la lista clienti ordinata secondo il criterio corrente
-/// Esclude i clienti archiviati (isArchived = true)
-final sortedClientsProvider = Provider<List<Client>>((ref) {
-  final asyncClients = ref.watch(clientsProvider);
-  final clients = (asyncClients.value ?? [])
-      .where((c) => !c.isArchived)
-      .toList();
-  final sortOption = ref.watch(clientSortOptionProvider);
-  return _sortClients(clients, sortOption);
+/// Provider per l'ordinamento corrente (legge dallo stato)
+final clientSortOptionProvider = Provider<ClientSortOption>((ref) {
+  final asyncState = ref.watch(clientsProvider);
+  return asyncState.value?.sortOption ?? ClientSortOption.nameAsc;
 });
 
-// Ricerca base (case-insensitive su name + email + phone) con ordinamento
-// Esclude i clienti archiviati (isArchived = true)
-final clientsSearchProvider = Provider.family<List<Client>, String>((ref, q) {
-  final sortOption = ref.watch(clientSortOptionProvider);
-  final query = q.trim().toLowerCase();
-  final asyncClients = ref.watch(clientsProvider);
-  final allClients = asyncClients.value ?? [];
-
-  List<Client> result;
-  if (query.isEmpty) {
-    result = allClients.where((c) => !c.isArchived).toList();
-  } else {
-    result = allClients
-        .where(
-          (c) =>
-              !c.isArchived &&
-              (c.name.toLowerCase().contains(query) ||
-                  (c.email?.toLowerCase().contains(query) ?? false) ||
-                  (c.phone?.toLowerCase().contains(query) ?? false)),
-        )
-        .toList();
-  }
-
-  return _sortClients(result, sortOption);
-});
-
-/// Provider che restituisce i clienti filtrati usando clientSearchQueryProvider
-/// Questo è il provider principale da usare nella UI
-final filteredClientsProvider = Provider<List<Client>>((ref) {
-  final query = ref.watch(clientSearchQueryProvider);
-  return ref.watch(clientsSearchProvider(query));
+/// Provider per la query di ricerca corrente (legge dallo stato)
+final clientSearchQueryProvider = Provider<String>((ref) {
+  final asyncState = ref.watch(clientsProvider);
+  return asyncState.value?.searchQuery ?? '';
 });
 
 /// Provider che restituisce il conteggio totale dei clienti (non archiviati)
+/// Usa il totale dal server, non la lista locale
 final totalClientsCountProvider = Provider<int>((ref) {
-  final asyncClients = ref.watch(clientsProvider);
-  final allClients = asyncClients.value ?? [];
-  return allClients.where((c) => !c.isArchived).length;
+  final asyncState = ref.watch(clientsProvider);
+  return asyncState.value?.total ?? 0;
 });
 
 // Segmenti
@@ -226,8 +343,8 @@ DateTime _now() => DateTime.now();
 
 final inactiveClientsProvider = Provider<List<Client>>((ref) {
   final limit = _now().subtract(const Duration(days: _kInactiveDays));
-  final asyncClients = ref.watch(clientsProvider);
-  return (asyncClients.value ?? [])
+  final allClients = ref.watch(clientsListProvider);
+  return allClients
       .where(
         (c) =>
             !c.isArchived &&
@@ -238,23 +355,23 @@ final inactiveClientsProvider = Provider<List<Client>>((ref) {
 
 final newClientsProvider = Provider<List<Client>>((ref) {
   final limit = _now().subtract(const Duration(days: _kNewDays));
-  final asyncClients = ref.watch(clientsProvider);
-  return (asyncClients.value ?? [])
+  final allClients = ref.watch(clientsListProvider);
+  return allClients
       .where((c) => !c.isArchived && c.createdAt.isAfter(limit))
       .toList();
 });
 
 final vipClientsProvider = Provider<List<Client>>((ref) {
-  final asyncClients = ref.watch(clientsProvider);
-  return (asyncClients.value ?? [])
+  final allClients = ref.watch(clientsListProvider);
+  return allClients
       .where((c) => !c.isArchived && (c.tags?.contains('VIP') ?? false))
       .toList();
 });
 
 final frequentClientsProvider = Provider<List<Client>>((ref) {
-  final asyncClients = ref.watch(clientsProvider);
+  final allClients = ref.watch(clientsListProvider);
   // Placeholder: usa loyaltyPoints come proxy delle visite
-  return (asyncClients.value ?? [])
+  return allClients
       .where(
         (c) => !c.isArchived && (c.loyaltyPoints ?? 0) >= _kFrequentThreshold,
       )

@@ -13,8 +13,8 @@ $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
 $dotenv->load();
 
 // Configurazione
-const BUSINESS_ID = 3;
-const LOCATION_ID = 3;
+const BUSINESS_ID = 5;
+const LOCATION_ID = 5;
 // CSV nella stessa directory dello script sul server
 const CSV_FILE = 'employees_export.csv';
 
@@ -80,13 +80,22 @@ try {
     
     echo "Headers CSV: " . implode(', ', $headers) . "\n\n";
     
-    // Trova indici colonne
-    $colFirstName = array_search('First Name', $headers);
-    $colLastName = array_search('Last Name', $headers);
-    $colEmail = array_search('Email', $headers);
-    $colStatus = array_search('Status', $headers);
-    $colAppointments = array_search('Appointments', $headers);
-    $colJobTitle = array_search('Job Title', $headers);
+    // Funzione helper per cercare colonne con nomi alternativi (IT/EN)
+    function findColumn(array $headers, array $names): int|false {
+        foreach ($names as $name) {
+            $idx = array_search($name, $headers);
+            if ($idx !== false) return $idx;
+        }
+        return false;
+    }
+    
+    // Trova indici colonne (supporta IT e EN)
+    $colFirstName = findColumn($headers, ['First Name', 'Nome']);
+    $colLastName = findColumn($headers, ['Last Name', 'Cognome']);
+    $colEmail = findColumn($headers, ['Email']);
+    $colStatus = findColumn($headers, ['Status', 'Stato']);
+    $colAppointments = findColumn($headers, ['Appointments', 'Appuntamenti']);
+    $colJobTitle = findColumn($headers, ['Job Title', 'Posizione lavorativa']);
     
     if ($colFirstName === false || $colStatus === false || $colAppointments === false) {
         throw new Exception("Colonne obbligatorie non trovate nel CSV");
@@ -98,8 +107,10 @@ try {
         $status = trim($row[$colStatus] ?? '');
         $appointments = trim($row[$colAppointments] ?? '');
         
-        // Filtra: solo Active + Enabled
-        if ($status !== 'Active' || $appointments !== 'Enabled') {
+        // Filtra: solo Active/Attivo + Enabled/Abilitati
+        $isActive = in_array($status, ['Active', 'Attivo']);
+        $isEnabled = in_array($appointments, ['Enabled', 'Abilitati']);
+        if (!$isActive || !$isEnabled) {
             continue;
         }
         

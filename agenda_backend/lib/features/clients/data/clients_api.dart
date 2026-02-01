@@ -11,17 +11,53 @@ class ClientAppointmentsData {
   ClientAppointmentsData({required this.upcoming, required this.past});
 }
 
+/// Risposta paginata per la lista clienti
+class ClientsPageResponse {
+  final List<Client> clients;
+  final int total;
+  final int limit;
+  final int offset;
+  final bool hasMore;
+
+  ClientsPageResponse({
+    required this.clients,
+    required this.total,
+    required this.limit,
+    required this.offset,
+    required this.hasMore,
+  });
+}
+
 /// API layer per Clients - chiamate reali a agenda_core
 class ClientsApi {
   final ApiClient _apiClient;
 
   ClientsApi({required ApiClient apiClient}) : _apiClient = apiClient;
 
-  /// GET /v1/clients?business_id=X
-  Future<List<Client>> fetchClients(int businessId) async {
-    final data = await _apiClient.getClients(businessId);
+  /// GET /v1/clients?business_id=X[&limit=N][&offset=N][&search=term][&sort=name_asc]
+  /// Supporta paginazione, ricerca e ordinamento lato server
+  Future<ClientsPageResponse> fetchClients(
+    int businessId, {
+    int? limit,
+    int? offset,
+    String? search,
+    String? sort,
+  }) async {
+    final data = await _apiClient.getClients(
+      businessId,
+      limit: limit,
+      offset: offset,
+      search: search,
+      sort: sort,
+    );
     final List<dynamic> items = data['clients'] ?? [];
-    return items.map((json) => _clientFromJson(json)).toList();
+    return ClientsPageResponse(
+      clients: items.map((json) => _clientFromJson(json)).toList(),
+      total: data['total'] as int? ?? items.length,
+      limit: data['limit'] as int? ?? items.length,
+      offset: data['offset'] as int? ?? 0,
+      hasMore: data['has_more'] as bool? ?? false,
+    );
   }
 
   /// GET /v1/clients/{id}/appointments
