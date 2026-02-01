@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/utils/timezone_helper.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/location_providers.dart';
 
-/// 🔹 Linea rossa che indica l'orario corrente.
-/// - visibile solo sulla data odierna
+/// 🔹 Linea rossa che indica l'orario corrente nel timezone della location.
+/// - visibile solo sulla data odierna (nel timezone della location)
 /// - sincronizzata minuto per minuto
 /// - la posizione verticale effettiva viene corretta con [verticalOffset]
 ///   passato da AgendaScreen (offset di scroll della giornata).
@@ -57,7 +59,8 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   }
 
   void _scheduleMinuteSync() {
-    final now = DateTime.now();
+    final timezone = ref.read(currentLocationProvider).timezone;
+    final now = TimezoneHelper.nowInTimezone(timezone);
     final msToNextMinute = 60000 - (now.second * 1000 + now.millisecond);
     _minuteTimer = Timer(Duration(milliseconds: msToNextMinute), () {
       _updateLine();
@@ -69,7 +72,8 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   }
 
   void _updateLine({LayoutConfig? configOverride}) {
-    final now = DateTime.now();
+    final timezone = ref.read(currentLocationProvider).timezone;
+    final now = TimezoneHelper.nowInTimezone(timezone);
     final minutesSinceMidnight = now.hour * 60 + now.minute;
     final LayoutConfig config =
         configOverride ?? ref.read(layoutConfigProvider);
@@ -95,9 +99,10 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
 
   @override
   Widget build(BuildContext context) {
-    // Mostra la linea solo se la data visualizzata è oggi
+    // 🔹 Usa il timezone della location corrente per determinare "oggi"
+    final timezone = ref.watch(currentLocationProvider).timezone;
     final selectedDate = ref.watch(agendaDateProvider);
-    final today = DateUtils.dateOnly(DateTime.now());
+    final today = DateUtils.dateOnly(TimezoneHelper.todayInTimezone(timezone));
     final isToday = DateUtils.isSameDay(selectedDate, today);
     if (!isToday) {
       return const SizedBox.shrink();

@@ -11,6 +11,7 @@ class Location {
   final double? latitude;
   final double? longitude;
   final String? currency;
+  final String timezone;
   final int minBookingNoticeHours;
   final int maxBookingAdvanceDays;
   final bool allowCustomerChooseStaff;
@@ -34,6 +35,7 @@ class Location {
     this.latitude,
     this.longitude,
     this.currency,
+    this.timezone = 'Europe/Rome',
     this.minBookingNoticeHours = 1,
     this.maxBookingAdvanceDays = 90,
     this.allowCustomerChooseStaff = false,
@@ -58,6 +60,7 @@ class Location {
     double? latitude,
     double? longitude,
     String? currency,
+    String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     bool? allowCustomerChooseStaff,
@@ -81,6 +84,7 @@ class Location {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       currency: currency ?? this.currency,
+      timezone: timezone ?? this.timezone,
       minBookingNoticeHours:
           minBookingNoticeHours ?? this.minBookingNoticeHours,
       maxBookingAdvanceDays:
@@ -110,6 +114,7 @@ class Location {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       currency: json['currency'] as String?,
+      timezone: json['timezone'] as String? ?? 'Europe/Rome',
       minBookingNoticeHours: json['min_booking_notice_hours'] as int? ?? 1,
       maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
       allowCustomerChooseStaff:
@@ -137,6 +142,7 @@ class Location {
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (currency != null) 'currency': currency,
+      'timezone': timezone,
       'min_booking_notice_hours': minBookingNoticeHours,
       'max_booking_advance_days': maxBookingAdvanceDays,
       'allow_customer_choose_staff': allowCustomerChooseStaff,

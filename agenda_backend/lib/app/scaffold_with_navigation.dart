@@ -236,18 +236,22 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
 
     // Su mobile, mappa l'indice corrente a quello compatto
-    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Prenotazioni
+    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Prenotazioni, 6=Altro
     // Mobile:  0=Agenda, 1=Clienti, 2=Profile, 3=Altro
     int mobileCurrentIndex;
     if (navigationShell.currentIndex <= 1) {
       // Agenda o Clienti
       mobileCurrentIndex = navigationShell.currentIndex;
-    } else if (navigationShell.currentIndex <= 5) {
+    } else if (navigationShell.currentIndex == 6) {
+      // Schermata "Altro" → evidenzia "Altro" (index 3)
+      mobileCurrentIndex = 3;
+    } else if (navigationShell.currentIndex >= 2 &&
+        navigationShell.currentIndex <= 5) {
       // Servizi, Staff, Report o Prenotazioni → evidenzia "Altro"
       mobileCurrentIndex = 3;
     } else {
-      // Profile (index 6 → 2 su mobile)
-      mobileCurrentIndex = 2;
+      // Fallback
+      mobileCurrentIndex = 0;
     }
 
     return GlobalLoadingOverlay(
@@ -307,8 +311,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   }
 
   void _goBranch(int index, WidgetRef ref) {
-    // Protezione: i branch validi sono 0-5
-    if (index < 0 || index > 5) {
+    // Protezione: i branch validi sono 0-6
+    if (index < 0 || index > 6) {
       debugPrint('_goBranch: invalid index $index, ignoring');
       return;
     }
@@ -336,7 +340,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   void _refreshProvidersForTab(int index, WidgetRef ref) {
     switch (index) {
       case 1: // Clienti
-        ref.read(clientSearchQueryProvider.notifier).clear();
+        ref.read(clientsProvider.notifier).setSearchQuery('');
         ref.read(clientsProvider.notifier).refresh();
         ref.read(clientAppointmentsRefreshProvider.notifier).bump();
         break;
@@ -353,7 +357,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   /// Gestisce tap su navigation desktop (compatta come mobile):
   /// - Index 0, 1: navigazione normale (Agenda, Clienti)
   /// - Index 2: menu utente (Profilo)
-  /// - Index 3: mostra popup menu "Altro" (Servizi, Team, Report, Prenotazioni, Operatori)
+  /// - Index 3: naviga a "Altro" (schermata con cards)
   void _handleDesktopNavTap(
     BuildContext context,
     int desktopIndex,
@@ -367,8 +371,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       case 2: // Profile → menu utente
         _showUserMenu(context, ref);
         break;
-      case 3: // Altro → mostra popup menu
-        _showMorePopupMenu(context, ref);
+      case 3: // Altro → naviga alla schermata Altro
+        _goBranch(6, ref);
         break;
     }
   }
@@ -376,7 +380,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   /// Gestisce tap su navigation mobile:
   /// - Index 0, 1: navigazione normale (Agenda, Clienti)
   /// - Index 2: menu utente (Profilo)
-  /// - Index 3: mostra BottomSheet "Altro" (Servizi, Team, Report)
+  /// - Index 3: naviga a "Altro" (schermata con cards)
   void _handleMobileNavTap(
     BuildContext context,
     int mobileIndex,
@@ -390,283 +394,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       case 2: // Profile → menu utente
         _showUserMenu(context, ref);
         break;
-      case 3: // Altro → mostra BottomSheet
-        _showMoreBottomSheet(context, ref);
+      case 3: // Altro → naviga alla schermata Altro
+        _goBranch(6, ref);
         break;
     }
-  }
-
-  /// Mostra BottomSheet con le voci Servizi, Team e Report
-  void _showMoreBottomSheet(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    // Calcola l'altezza della bottom nav per posizionare il bottomsheet sopra
-    final bottomNavHeight =
-        kBottomNavigationBarHeight +
-        MediaQuery.of(context).padding.bottom +
-        15; // 15 = minimum SafeArea
-
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black26,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: bottomNavHeight),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 12,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  width: 32,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colorScheme.outline.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              // Servizi
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.of(ctx).pop();
-                    _goBranch(2, ref);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.category_outlined,
-                          color: colorScheme.primary,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          l10n.navServices,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
-              // Team
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.of(ctx).pop();
-                    _goBranch(3, ref);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.badge_outlined,
-                          color: colorScheme.primary,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 16),
-                        Text(l10n.navStaff, style: theme.textTheme.titleMedium),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
-              // Report
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.of(ctx).pop();
-                    _goBranch(4, ref);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.bar_chart,
-                          color: colorScheme.primary,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          l10n.reportsTitle,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
-              // Elenco Prenotazioni
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.of(ctx).pop();
-                    _goBranch(5, ref);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.list_alt,
-                          color: colorScheme.primary,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          l10n.bookingsListTitle,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              // Operatori (rimosso dal menu "Altro")
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /*
-  /// Naviga alla schermata Operatori
-  void _navigateToOperators(BuildContext context, WidgetRef ref) {
-    // Ottieni businessId: prima prova superadmin selected, poi dalla location corrente
-    final superadminBusinessId = ref.read(superadminSelectedBusinessProvider);
-    if (superadminBusinessId != null && superadminBusinessId > 0) {
-      context.push('/operatori/$superadminBusinessId');
-      return;
-    }
-
-    // Per utenti normali, prendi il businessId dalla location corrente
-    try {
-      final location = ref.read(currentLocationProvider);
-      if (location.businessId > 0) {
-        context.push('/operatori/${location.businessId}');
-      }
-    } catch (e) {
-      // Provider non ancora inizializzato, ignora
-      debugPrint('Cannot navigate to operators: $e');
-    }
-  }
-*/
-  /// Mostra popup menu "Altro" per desktop (Servizi, Team, Report, Prenotazioni, Operatori)
-  void _showMorePopupMenu(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    final items = <PopupMenuEntry<String>>[
-      PopupMenuItem<String>(
-        value: 'services',
-        child: Row(
-          children: [
-            Icon(Icons.category_outlined, color: colorScheme.primary, size: 22),
-            const SizedBox(width: 12),
-            Text(l10n.navServices),
-          ],
-        ),
-      ),
-      const PopupMenuDivider(),
-      PopupMenuItem<String>(
-        value: 'staff',
-        child: Row(
-          children: [
-            Icon(Icons.badge_outlined, color: colorScheme.primary, size: 22),
-            const SizedBox(width: 12),
-            Text(l10n.navStaff),
-          ],
-        ),
-      ),
-      const PopupMenuDivider(),
-      PopupMenuItem<String>(
-        value: 'report',
-        child: Row(
-          children: [
-            Icon(Icons.bar_chart, color: colorScheme.primary, size: 22),
-            const SizedBox(width: 12),
-            Text(l10n.reportsTitle),
-          ],
-        ),
-      ),
-      const PopupMenuDivider(),
-      PopupMenuItem<String>(
-        value: 'bookings_list',
-        child: Row(
-          children: [
-            Icon(Icons.list_alt, color: colorScheme.primary, size: 22),
-            const SizedBox(width: 12),
-            Text(l10n.bookingsListTitle),
-          ],
-        ),
-      ),
-    ];
-
-    showMenu<String>(
-      context: context,
-      position: const RelativeRect.fromLTRB(0, 200, 0, 0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      items: items,
-    ).then((value) {
-      if (value == null || !context.mounted) return;
-      switch (value) {
-        case 'services':
-          _goBranch(2, ref);
-          break;
-        case 'staff':
-          _goBranch(3, ref);
-          break;
-        case 'report':
-          _goBranch(4, ref);
-          break;
-        case 'bookings_list':
-          _goBranch(5, ref);
-          break;
-      }
-    });
   }
 
   /// Mostra il menu utente (profilo, cambia password, logout)

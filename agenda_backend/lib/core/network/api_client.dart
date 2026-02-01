@@ -564,9 +564,20 @@ class ApiClient {
 
   // ========== GESTIONALE ENDPOINTS ==========
 
-  /// GET /v1/clients?business_id=X
-  Future<Map<String, dynamic>> getClients(int businessId) async {
-    return get(ApiConfig.clients, queryParameters: {'business_id': businessId});
+  /// GET /v1/clients?business_id=X[&limit=N][&offset=N][&search=term][&sort=name_asc]
+  Future<Map<String, dynamic>> getClients(
+    int businessId, {
+    int? limit,
+    int? offset,
+    String? search,
+    String? sort,
+  }) async {
+    final params = <String, dynamic>{'business_id': businessId};
+    if (limit != null) params['limit'] = limit;
+    if (offset != null) params['offset'] = offset;
+    if (search != null && search.isNotEmpty) params['search'] = search;
+    if (sort != null && sort.isNotEmpty) params['sort'] = sort;
+    return get(ApiConfig.clients, queryParameters: params);
   }
 
   /// GET /v1/locations/{location_id}/appointments?date=YYYY-MM-DD

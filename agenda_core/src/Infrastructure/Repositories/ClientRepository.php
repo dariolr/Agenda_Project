@@ -188,13 +188,30 @@ final class ClientRepository
         return $stmt->execute([$userId, $clientId]);
     }
 
-    public function findByBusinessId(int $businessId, ?int $limit = null, int $offset = 0): array
+    /**
+     * Get ORDER BY clause from sort parameter.
+     */
+    private function getOrderByClause(string $sort): string
     {
-        $sql = 'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
+        return match ($sort) {
+            'name_desc' => 'ORDER BY first_name DESC, last_name DESC',
+            'last_name_asc' => 'ORDER BY last_name ASC, first_name ASC',
+            'last_name_desc' => 'ORDER BY last_name DESC, first_name DESC',
+            'created_asc' => 'ORDER BY created_at ASC',
+            'created_desc' => 'ORDER BY created_at DESC',
+            default => 'ORDER BY first_name ASC, last_name ASC', // name_asc
+        };
+    }
+
+    public function findByBusinessId(int $businessId, ?int $limit = null, int $offset = 0, string $sort = 'name_asc'): array
+    {
+        $orderBy = $this->getOrderByClause($sort);
+        
+        $sql = "SELECT id, business_id, user_id, first_name, last_name, email, phone, 
                     notes, is_archived, created_at, updated_at
              FROM clients
              WHERE business_id = ? AND is_archived = 0
-             ORDER BY first_name ASC, last_name ASC';
+             $orderBy";
         
         $params = [$businessId];
         
@@ -210,22 +227,24 @@ final class ClientRepository
         return $stmt->fetchAll();
     }
 
-    public function searchByName(int $businessId, string $query, ?int $limit = null): array
+    public function searchByName(int $businessId, string $query, ?int $limit = null, int $offset = 0, string $sort = 'name_asc'): array
     {
         $searchTerm = '%' . $query . '%';
+        $orderBy = $this->getOrderByClause($sort);
         
-        $sql = 'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
+        $sql = "SELECT id, business_id, user_id, first_name, last_name, email, phone, 
                     notes, is_archived, created_at, updated_at
              FROM clients
              WHERE business_id = ? AND is_archived = 0
                AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ?)
-             ORDER BY first_name ASC, last_name ASC';
+             $orderBy";
         
         $params = [$businessId, $searchTerm, $searchTerm, $searchTerm, $searchTerm];
         
         if ($limit !== null) {
-            $sql .= ' LIMIT ?';
+            $sql .= ' LIMIT ? OFFSET ?';
             $params[] = $limit;
+            $params[] = $offset;
         }
         
         $stmt = $this->db->getPdo()->prepare($sql);
@@ -267,6 +286,36 @@ final class ClientRepository
         $stmt->execute([$clientId, $businessId]);
 
         return $stmt->fetchColumn() !== false;
+    }
+
+    /**
+     * Count total clients for a business.
+     */
+    public function countByBusinessId(int $businessId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) FROM clients WHERE business_id = ? AND is_archived = 0'
+        );
+        $stmt->execute([$businessId]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Count clients matching search query.
+     */
+    public function countBySearch(int $businessId, string $query): int
+    {
+        $searchTerm = '%' . $query . '%';
+        
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) FROM clients
+             WHERE business_id = ? AND is_archived = 0
+               AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ?)'
+        );
+        $stmt->execute([$businessId, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+
+        return (int) $stmt->fetchColumn();
     }
 
     /**

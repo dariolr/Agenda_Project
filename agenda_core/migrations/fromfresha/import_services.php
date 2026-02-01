@@ -14,8 +14,8 @@ $pdo = new PDO(
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
 );
 
-$BUSINESS_ID = 3;
-$LOCATION_ID = 3;
+$BUSINESS_ID = 5;
+$LOCATION_ID = 5;
 
 // Colori per categoria (palette ufficiale)
 $CATEGORY_COLORS = [
@@ -45,13 +45,20 @@ $services = array_filter($csv, function($row) {
 });
 
 // Estrai categorie uniche in ordine di apparizione
-$categories = [];
+// Mappa: nome originale CSV -> nome formattato MAIUSCOLO
+$categories = [];        // nomi formattati (MAIUSCOLO)
+$categoryOriginal = [];  // mappa originale -> formattato
 $categoryOrder = [];
 foreach ($services as $row) {
-    $cat = trim($row[6]);
-    if (!empty($cat) && !in_array($cat, $categories)) {
-        $categories[] = $cat;
-        $categoryOrder[$cat] = count($categories) - 1;
+    $catOriginal = trim($row[6]);
+    $catFormatted = formatCategoryName($catOriginal);
+    if (!empty($catOriginal) && !in_array($catFormatted, $categories)) {
+        $categories[] = $catFormatted;
+        $categoryOrder[$catFormatted] = count($categories) - 1;
+    }
+    // Mappa sempre l'originale al formattato per lookup successivo
+    if (!empty($catOriginal)) {
+        $categoryOriginal[$catOriginal] = $catFormatted;
     }
 }
 
@@ -116,6 +123,23 @@ function parseProcessingTime($str) {
     return $minutes;
 }
 
+// Funzione per formattare categoria (MAIUSCOLO)
+function formatCategoryName($name) {
+    return mb_strtoupper(trim($name), 'UTF-8');
+}
+
+// Funzione per formattare nome servizio (Capitalizzato)
+// Prima aggiunge spazi intorno al + se mancanti, poi capitalizza ogni parola
+function formatServiceName($name) {
+    $name = trim($name);
+    // Aggiungi spazio prima del + se manca (ma non se già presente)
+    $name = preg_replace('/(?<!\s)\+/', ' +', $name);
+    // Aggiungi spazio dopo il + se manca (ma non se già presente)
+    $name = preg_replace('/\+(?!\s)/', '+ ', $name);
+    // Capitalizza ogni parola
+    return mb_convert_case($name, MB_CASE_TITLE, 'UTF-8');
+}
+
 // Inserisci servizi
 echo "\nInserimento servizi...\n";
 $stmtService = $pdo->prepare("INSERT INTO services (business_id, category_id, name, description, sort_order, is_active) VALUES (?, ?, ?, ?, ?, 1)");
@@ -125,24 +149,29 @@ $serviceCount = 0;
 $variantCount = 0;
 
 foreach ($services as $idx => $row) {
-    $name = trim($row[0]);
+    $nameRaw = trim($row[0]);
     $price = floatval(str_replace(',', '.', $row[1]));
     $duration = parseDuration($row[2]);
     $processingTime = parseProcessingTime($row[3]);
     $description = trim($row[5]) ?: null;
-    $category = trim($row[6]);
+    $categoryOriginalName = trim($row[6]);
     $isBookableOnline = (trim($row[9]) === 'Abilitati') ? 1 : 0;
     
-    // Check "- From" per prezzo a partire da
+    // Check "- From" per prezzo a partire da (prima della formattazione)
     $isPriceFrom = 0;
-    if (preg_match('/\s*-\s*From$/i', $name)) {
+    if (preg_match('/\s*-\s*From$/i', $nameRaw)) {
         $isPriceFrom = 1;
-        $name = preg_replace('/\s*-\s*From$/i', '', $name);
+        $nameRaw = preg_replace('/\s*-\s*From$/i', '', $nameRaw);
     }
     
+    // Formatta nome servizio (spazi intorno a + e capitalizzazione)
+    $name = formatServiceName($nameRaw);
+    
     $isFree = ($price == 0) ? 1 : 0;
-    $categoryId = $categoryIds[$category] ?? null;
-    $colorHex = $categoryColorMap[$category] ?? '#BFD9FF';
+    // Usa la mappa originale -> formattato per trovare la categoria
+    $categoryFormatted = $categoryOriginal[$categoryOriginalName] ?? null;
+    $categoryId = $categoryFormatted ? ($categoryIds[$categoryFormatted] ?? null) : null;
+    $colorHex = $categoryFormatted ? ($categoryColorMap[$categoryFormatted] ?? '#BFD9FF') : '#BFD9FF';
     
     // Inserisci servizio
     $stmtService->execute([$BUSINESS_ID, $categoryId, $name, $description, $idx]);
