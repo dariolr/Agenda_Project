@@ -1275,49 +1275,108 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final locale = Localizations.localeOf(context).toString();
     final numberFormat = NumberFormat.decimalPattern(locale);
 
-    // Helper to format hours
-    String formatHours(double hours) {
-      final h = hours.floor();
-      final m = ((hours - h) * 60).round();
-      if (m == 0) return '${h}h';
-      return '${h}h ${m}m';
+    // Helper to format hours with optional days + total in hours
+    // Returns (primaryFormat, totalHoursFormat) - totalHoursFormat is null if < 24h
+    (String, String?) formatHoursWithTotal(double hours) {
+      final totalMinutes = (hours * 60).round();
+      final totalH = totalMinutes ~/ 60;
+      final totalM = totalMinutes % 60;
+      final totalHoursStr = totalM == 0
+          ? '${totalH}h'
+          : '${totalH}h ${totalM}m';
+
+      if (hours >= 24) {
+        final days = totalMinutes ~/ (24 * 60);
+        final remainingMinutes = totalMinutes % (24 * 60);
+        final h = remainingMinutes ~/ 60;
+        final m = remainingMinutes % 60;
+        String primary;
+        if (m == 0 && h == 0) {
+          primary = '${days}g';
+        } else if (m == 0) {
+          primary = '${days}g ${h}h';
+        } else if (h == 0) {
+          primary = '${days}g ${m}m';
+        } else {
+          primary = '${days}g ${h}h ${m}m';
+        }
+        return (primary, totalHoursStr);
+      }
+      return (totalHoursStr, null);
+    }
+
+    Widget buildHoursValue(double hours, {Color? textColor}) {
+      final (primary, totalHours) = formatHoursWithTotal(hours);
+      if (totalHours == null) {
+        return Text(
+          primary,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        );
+      }
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            primary,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          Text(
+            '= $totalHours',
+            style: TextStyle(
+              fontSize: 11,
+              color: (textColor ?? Theme.of(context).colorScheme.onSurface)
+                  .withValues(alpha: 0.6),
+            ),
+          ),
+        ],
+      );
     }
 
     final cards = [
-      _SummaryCardData(
+      _WorkHoursCardData(
         icon: Icons.schedule,
         label: l10n.reportsWorkHoursScheduled,
-        value: formatHours(summary.totalScheduledHours),
+        hoursWidget: buildHoursValue(summary.totalScheduledHours),
         color: colorScheme.primary,
       ),
-      _SummaryCardData(
+      _WorkHoursCardData(
         icon: Icons.work,
         label: l10n.reportsWorkHoursWorked,
-        value: formatHours(summary.totalWorkedHours),
+        hoursWidget: buildHoursValue(summary.totalWorkedHours),
         color: Colors.green,
       ),
-      _SummaryCardData(
+      _WorkHoursCardData(
         icon: Icons.block,
         label: l10n.reportsWorkHoursBlocked,
-        value: formatHours(summary.totalBlockedHours),
+        hoursWidget: buildHoursValue(summary.totalBlockedHours),
         color: Colors.orange,
       ),
-      _SummaryCardData(
+      _WorkHoursCardData(
         icon: Icons.beach_access,
         label: l10n.reportsWorkHoursOff,
-        value: formatHours(summary.totalExceptionOffHours),
+        hoursWidget: buildHoursValue(summary.totalExceptionOffHours),
         color: Colors.red,
       ),
-      _SummaryCardData(
+      _WorkHoursCardData(
         icon: Icons.event_available,
         label: l10n.reportsWorkHoursAvailable,
-        value: formatHours(summary.totalAvailableHours),
+        hoursWidget: buildHoursValue(summary.totalAvailableHours),
         color: Colors.blue,
       ),
-      _SummaryCardData(
+      _WorkHoursCardData(
         icon: Icons.pie_chart,
         label: l10n.reportsWorkHoursUtilization,
-        value: '${numberFormat.format(summary.overallUtilizationPercentage)}%',
+        percentageValue:
+            '${numberFormat.format(summary.overallUtilizationPercentage)}%',
         color: Colors.purple,
       ),
     ];
@@ -1335,17 +1394,77 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            childAspectRatio: 2.2,
+            childAspectRatio: 1.8,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),
           itemCount: cards.length,
           itemBuilder: (context, index) {
             final card = cards[index];
-            return _buildSummaryCard(context, card);
+            return _buildWorkHoursSummaryCard(context, card);
           },
         );
       },
+    );
+  }
+
+  Widget _buildWorkHoursSummaryCard(
+    BuildContext context,
+    _WorkHoursCardData card,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: card.color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(card.icon, color: card.color, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    card.label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  if (card.percentageValue != null)
+                    Text(
+                      card.percentageValue!,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    )
+                  else if (card.hoursWidget != null)
+                    card.hoursWidget!,
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1355,13 +1474,55 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   ) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
-    // Helper to format hours
-    String formatHours(double hours) {
-      final h = hours.floor();
-      final m = ((hours - h) * 60).round();
-      if (m == 0) return '${h}h';
-      return '${h}h ${m}m';
+    // Helper to format hours with optional days + total in hours
+    String formatHoursPrimary(double hours) {
+      final totalMinutes = (hours * 60).round();
+      final totalH = totalMinutes ~/ 60;
+      final totalM = totalMinutes % 60;
+
+      if (hours >= 24) {
+        final days = totalMinutes ~/ (24 * 60);
+        final remainingMinutes = totalMinutes % (24 * 60);
+        final h = remainingMinutes ~/ 60;
+        final m = remainingMinutes % 60;
+        if (m == 0 && h == 0) return '${days}g';
+        if (m == 0) return '${days}g ${h}h';
+        if (h == 0) return '${days}g ${m}m';
+        return '${days}g ${h}h ${m}m';
+      }
+      return totalM == 0 ? '${totalH}h' : '${totalH}h ${totalM}m';
+    }
+
+    String? formatHoursTotal(double hours) {
+      if (hours < 24) return null;
+      final totalMinutes = (hours * 60).round();
+      final totalH = totalMinutes ~/ 60;
+      final totalM = totalMinutes % 60;
+      return totalM == 0 ? '${totalH}h' : '${totalH}h ${totalM}m';
+    }
+
+    Widget buildHoursCell(double hours, {TextStyle? style}) {
+      final primary = formatHoursPrimary(hours);
+      final totalHours = formatHoursTotal(hours);
+      if (totalHours == null) {
+        return Text(primary, style: style);
+      }
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(primary, style: style),
+          Text(
+            '= $totalHours',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              fontSize: 11,
+            ),
+          ),
+        ],
+      );
     }
 
     return SingleChildScrollView(
@@ -1403,10 +1564,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                   ],
                 ),
               ),
-              DataCell(Text(formatHours(row.scheduledHours))),
+              DataCell(buildHoursCell(row.scheduledHours)),
               DataCell(
-                Text(
-                  formatHours(row.workedHours),
+                buildHoursCell(
+                  row.workedHours,
                   style: TextStyle(
                     color: Colors.green.shade700,
                     fontWeight: FontWeight.w500,
@@ -1414,18 +1575,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                 ),
               ),
               DataCell(
-                Text(
-                  formatHours(row.blockedHours),
+                buildHoursCell(
+                  row.blockedHours,
                   style: TextStyle(color: Colors.orange.shade700),
                 ),
               ),
               DataCell(
-                Text(
-                  formatHours(row.exceptionOffHours),
+                buildHoursCell(
+                  row.exceptionOffHours,
                   style: TextStyle(color: Colors.red.shade700),
                 ),
               ),
-              DataCell(Text(formatHours(row.availableHours))),
+              DataCell(buildHoursCell(row.availableHours)),
               DataCell(_buildPercentageBar(context, row.utilizationPercentage)),
             ],
           );
@@ -1447,6 +1608,22 @@ class _SummaryCardData {
   final String label;
   final String value;
   final Color color;
+}
+
+class _WorkHoursCardData {
+  const _WorkHoursCardData({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.hoursWidget,
+    this.percentageValue,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Widget? hoursWidget;
+  final String? percentageValue;
 }
 
 // ============================================================================
