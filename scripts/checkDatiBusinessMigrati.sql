@@ -1,0 +1,1 @@
+SELECT a.name FROM `businesses` a WHERE a.id not in(select b.business_id from staff b where b.business_id = a.id) or a.id not in(select b.business_id from services b where b.business_id = a.id) or a.id not in(select b.business_id from clients b where b.business_id = a.id);
