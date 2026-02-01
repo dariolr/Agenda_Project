@@ -12,14 +12,22 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
 $dotenv->load();
 
-// Configurazione
-const BUSINESS_ID = 5;
-const LOCATION_ID = 5;
-// CSV nella stessa directory dello script sul server
-const CSV_FILE = 'employees_export.csv';
+// Carica configurazione centralizzata
+$config = require __DIR__ . '/config.php';
+$BUSINESS_ID = $config['business_id'];
+$LOCATION_ID = $config['location_id'];
+$CSV_FILE = $config['csv_staff'];
+$DRY_RUN = $config['dry_run'];
+
+echo "=== IMPORTAZIONE STAFF FRESHA ===\n";
+echo "Business ID: {$BUSINESS_ID}\n";
+echo "Location ID: {$LOCATION_ID}\n";
+echo "File CSV: {$CSV_FILE}\n";
+echo "Dry run: " . ($DRY_RUN ? 'Sì' : 'No') . "\n";
+echo "=================================\n\n";
 
 // Palette colori staff (36 colori, ordine dalla UI Flutter)
-const STAFF_COLORS = [
+$STAFF_COLORS = [
     '#FFC400', // 0 - Giallo
     '#FFA000', // 1 - Amber
     '#FF6D00', // 2 - Arancione
@@ -60,8 +68,10 @@ const STAFF_COLORS = [
 
 try {
     // Connessione DB
+    $port = $_ENV['DB_PORT'] ?? 3306;
+    $host = $_ENV['DB_HOST'] === 'localhost' ? '127.0.0.1' : $_ENV['DB_HOST'];
     $pdo = new PDO(
-        "mysql:host={$_ENV['DB_HOST']};dbname={$_ENV['DB_DATABASE']};charset=utf8mb4",
+        "mysql:host={$host};port={$port};dbname={$_ENV['DB_DATABASE']};charset=utf8mb4",
         $_ENV['DB_USERNAME'],
         $_ENV['DB_PASSWORD'],
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
@@ -70,9 +80,9 @@ try {
     echo "Connessione DB OK\n\n";
     
     // Leggi CSV
-    $csvPath = __DIR__ . '/' . CSV_FILE;
+    $csvPath = __DIR__ . '/' . $CSV_FILE;
     if (!file_exists($csvPath)) {
-        throw new Exception("File CSV non trovato: " . CSV_FILE);
+        throw new Exception("File CSV non trovato: " . $CSV_FILE);
     }
     
     $handle = fopen($csvPath, 'r');
@@ -125,7 +135,7 @@ try {
     
     echo "Staff da importare: " . count($staffToImport) . "\n";
     foreach ($staffToImport as $i => $s) {
-        $color = STAFF_COLORS[$i % count(STAFF_COLORS)];
+        $color = $STAFF_COLORS[$i % count($STAFF_COLORS)];
         echo "  $i. {$s['first_name']} {$s['last_name']} → $color\n";
     }
     echo "\n";
@@ -141,7 +151,7 @@ try {
     // GESTISCE staff esistenti per il business
     // Staff con booking esistenti: soft delete (is_active=0, is_bookable_online=0)
     // Staff senza booking: elimina fisicamente
-    $stmt = $pdo->query("SELECT id FROM staff WHERE business_id = " . BUSINESS_ID);
+    $stmt = $pdo->query("SELECT id FROM staff WHERE business_id = " . $BUSINESS_ID);
     $existingStaffIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
     if (!empty($existingStaffIds)) {
@@ -194,10 +204,10 @@ try {
     foreach ($staffToImport as $index => $staff) {
         $sortOrder = $index;  // Parte da 0 (DB vuoto dopo eliminazione)
         $isDefault = ($index === 0) ? 1 : 0;  // Primo staff è default
-        $colorHex = STAFF_COLORS[$index % count(STAFF_COLORS)];
+        $colorHex = $STAFF_COLORS[$index % count($STAFF_COLORS)];
         
         $insertStaff->execute([
-            'business_id' => BUSINESS_ID,
+            'business_id' => $BUSINESS_ID,
             'name' => $staff['first_name'],
             'surname' => $staff['last_name'],
             'color_hex' => $colorHex,
@@ -211,7 +221,7 @@ try {
         // Associa a location
         $insertStaffLocation->execute([
             'staff_id' => $staffId,
-            'location_id' => LOCATION_ID,
+            'location_id' => $LOCATION_ID,
         ]);
         
         $staffInserted++;
@@ -222,7 +232,7 @@ try {
     
     echo "\n=== REPORT FINALE ===\n";
     echo "Staff inseriti: $staffInserted\n";
-    echo "Location associata: " . LOCATION_ID . "\n";
+    echo "Location associata: " . $LOCATION_ID . "\n";
     
 } catch (Exception $e) {
     if (isset($pdo) && $pdo->inTransaction()) {
