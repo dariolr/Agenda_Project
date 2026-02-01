@@ -12,7 +12,7 @@ $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
 $dotenv->load();
 
 // Configurazione
-const BUSINESS_ID = 3;
+const BUSINESS_ID = 5;
 const CSV_FILE = 'export_customer_list.csv';
 const SKIP_BLOCKED = false; // Se true, salta i clienti bloccati. Se false, li importa come is_archived=1
 
@@ -46,22 +46,31 @@ try {
     
     echo "Headers CSV: " . implode(', ', $headers) . "\n\n";
     
-    // Trova indici colonne
-    $colClientId = array_search('Client ID', $headers);
-    $colFirstName = array_search('First Name', $headers);
-    $colLastName = array_search('Last Name', $headers);
-    $colEmail = array_search('Email', $headers);
-    $colMobile = array_search('Mobile Number', $headers);
-    $colTelephone = array_search('Telephone', $headers);
-    $colGender = array_search('Gender', $headers);
-    $colBirthDate = array_search('Date of Birth', $headers);
-    $colCity = array_search('City', $headers);
-    $colNote = array_search('Note', $headers);
-    $colBlocked = array_search('Blocked', $headers);
-    $colAdded = array_search('Added', $headers);
+    // Funzione helper per cercare colonne con nomi alternativi (IT/EN)
+    function findColumn(array $headers, array $names): int|false {
+        foreach ($names as $name) {
+            $idx = array_search($name, $headers);
+            if ($idx !== false) return $idx;
+        }
+        return false;
+    }
+    
+    // Trova indici colonne (supporta IT e EN)
+    $colClientId = findColumn($headers, ['Client ID', 'ID cliente']);
+    $colFirstName = findColumn($headers, ['First Name', 'Nome']);
+    $colLastName = findColumn($headers, ['Last Name', 'Cognome']);
+    $colEmail = findColumn($headers, ['Email']);
+    $colMobile = findColumn($headers, ['Mobile Number', 'Numero di cellulare']);
+    $colTelephone = findColumn($headers, ['Telephone', 'Telefono']);
+    $colGender = findColumn($headers, ['Gender', 'Sesso']);
+    $colBirthDate = findColumn($headers, ['Date of Birth', 'Data di nascita']);
+    $colCity = findColumn($headers, ['City', 'Città']);
+    $colNote = findColumn($headers, ['Note', 'Notes']);
+    $colBlocked = findColumn($headers, ['Blocked', 'Bloccato']);
+    $colAdded = findColumn($headers, ['Added', 'Aggiunto']);
     
     if ($colFirstName === false || $colLastName === false) {
-        throw new Exception("Colonne obbligatorie (First Name, Last Name) non trovate nel CSV");
+        throw new Exception("Colonne obbligatorie (First Name/Nome, Last Name/Cognome) non trovate nel CSV");
     }
     
     // Raccogli clienti da importare
@@ -72,7 +81,8 @@ try {
     while (($row = fgetcsv($handle)) !== false) {
         $firstName = trim($row[$colFirstName] ?? '');
         $lastName = trim($row[$colLastName] ?? '');
-        $blocked = strtolower(trim($row[$colBlocked] ?? '')) === 'yes';
+        $blockedValue = strtolower(trim($row[$colBlocked] ?? ''));
+        $blocked = in_array($blockedValue, ['yes', 'sì', 'si']);
         
         // Salta righe senza nome
         if (empty($firstName) && empty($lastName)) {

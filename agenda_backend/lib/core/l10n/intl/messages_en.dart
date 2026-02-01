@@ -694,6 +694,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "labelStaff": MessageLookupByLibrary.simpleMessage("Team:"),
     "lastVisitLabel": m17,
     "minutesLabel": MessageLookupByLibrary.simpleMessage("min"),
+    "moreBookingsDescription": MessageLookupByLibrary.simpleMessage(
+      "Browse booking history",
+    ),
+    "moreReportsDescription": MessageLookupByLibrary.simpleMessage(
+      "View statistics and business performance",
+    ),
+    "moreServicesDescription": MessageLookupByLibrary.simpleMessage(
+      "Manage services, categories and pricing",
+    ),
+    "moreSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Access other application features",
+    ),
+    "moreTeamDescription": MessageLookupByLibrary.simpleMessage(
+      "Manage operators, locations and working hours",
+    ),
     "moveAppointmentConfirmMessage": m18,
     "moveAppointmentConfirmTitle": MessageLookupByLibrary.simpleMessage(
       "Confirm move?",

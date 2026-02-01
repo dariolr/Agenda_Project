@@ -41,7 +41,7 @@ final class ClientsController
     }
 
     /**
-     * GET /v1/clients?business_id=X[&search=term]
+     * GET /v1/clients?business_id=X[&search=term][&limit=N][&offset=N]
      */
     public function index(Request $request): Response
     {
@@ -56,14 +56,17 @@ final class ClientsController
         }
 
         $search = $request->queryParam('search');
-        $limit = (int) $request->queryParam('limit', '0'); // 0 = no limit
+        $limit = (int) $request->queryParam('limit', '100'); // Default 100 per page
         $offset = (int) $request->queryParam('offset', '0');
+        $sort = $request->queryParam('sort', 'name_asc'); // name_asc, name_desc, last_name_asc, last_name_desc, created_asc, created_desc
         $masked = $request->queryParam('masked', 'false') === 'true';
 
         if ($search !== null && $search !== '') {
-            $clients = $this->clientRepo->searchByName($businessId, $search, $limit > 0 ? $limit : null);
+            $clients = $this->clientRepo->searchByName($businessId, $search, $limit > 0 ? $limit : null, $offset, $sort);
+            $total = $this->clientRepo->countBySearch($businessId, $search);
         } else {
-            $clients = $this->clientRepo->findByBusinessId($businessId, $limit > 0 ? $limit : null, $offset);
+            $clients = $this->clientRepo->findByBusinessId($businessId, $limit > 0 ? $limit : null, $offset, $sort);
+            $total = $this->clientRepo->countByBusinessId($businessId);
         }
 
         // Format response (masked for list view, full for detail)
@@ -74,6 +77,10 @@ final class ClientsController
 
         return Response::success([
             'clients' => $formatted,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset,
+            'has_more' => ($offset + count($clients)) < $total,
         ]);
     }
 

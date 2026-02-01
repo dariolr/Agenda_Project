@@ -35,9 +35,9 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
       body: clientsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Errore: $e')),
-        data: (_) {
+        data: (clientsState) {
           final filteredClients = ref.watch(filteredClientsProvider);
-          final totalClients = ref.watch(totalClientsCountProvider);
+          final totalClients = clientsState.total;
           final hasSearch = searchQuery.trim().isNotEmpty;
 
           return Padding(
@@ -49,7 +49,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                   hintText: context.l10n.clientsTitle,
                   initialValue: searchQuery,
                   onChanged: (v) =>
-                      ref.read(clientSearchQueryProvider.notifier).set(v),
+                      ref.read(clientsProvider.notifier).setSearchQuery(v),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -57,7 +57,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                     ClientsSortDropdown(
                       value: sortOption,
                       onChanged: (v) =>
-                          ref.read(clientSortOptionProvider.notifier).set(v),
+                          ref.read(clientsProvider.notifier).setSortOption(v),
                     ),
                     const Spacer(),
                     Padding(

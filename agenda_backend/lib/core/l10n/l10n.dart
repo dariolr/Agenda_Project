@@ -6136,6 +6136,56 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Gestisci i servizi offerti, categorie e listini`
+  String get moreServicesDescription {
+    return Intl.message(
+      'Gestisci i servizi offerti, categorie e listini',
+      name: 'moreServicesDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Gestisci operatori, sedi e orari di lavoro`
+  String get moreTeamDescription {
+    return Intl.message(
+      'Gestisci operatori, sedi e orari di lavoro',
+      name: 'moreTeamDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Visualizza statistiche e andamento attività`
+  String get moreReportsDescription {
+    return Intl.message(
+      'Visualizza statistiche e andamento attività',
+      name: 'moreReportsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Consulta lo storico delle prenotazioni`
+  String get moreBookingsDescription {
+    return Intl.message(
+      'Consulta lo storico delle prenotazioni',
+      name: 'moreBookingsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accedi alle altre funzionalità dell'applicazione`
+  String get moreSubtitle {
+    return Intl.message(
+      'Accedi alle altre funzionalità dell\'applicazione',
+      name: 'moreSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

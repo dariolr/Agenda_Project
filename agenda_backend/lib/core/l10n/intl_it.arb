@@ -973,5 +973,11 @@
   "bookingsListCancelConfirmMessage": "Questa azione non può essere annullata.",
   "bookingsListCancelSuccess": "Prenotazione cancellata",
   "bookingsListLoading": "Caricamento...",
-  "bookingsListNoClient": "Nessun cliente"
+  "bookingsListNoClient": "Nessun cliente",
+
+  "moreServicesDescription": "Gestisci i servizi offerti, categorie e listini",
+  "moreTeamDescription": "Gestisci operatori, sedi e orari di lavoro",
+  "moreReportsDescription": "Visualizza statistiche e andamento attività",
+  "moreBookingsDescription": "Consulta lo storico delle prenotazioni",
+  "moreSubtitle": "Accedi alle altre funzionalità dell'applicazione"
 }

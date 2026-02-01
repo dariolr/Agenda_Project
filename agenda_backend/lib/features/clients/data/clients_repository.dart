@@ -8,7 +8,27 @@ class ClientsRepository {
 
   final ClientsApi _api;
 
-  Future<List<Client>> getAll(int businessId) => _api.fetchClients(businessId);
+  /// Carica clienti con paginazione, ricerca e ordinamento
+  Future<ClientsPageResponse> getPage(
+    int businessId, {
+    int? limit,
+    int? offset,
+    String? search,
+    String? sort,
+  }) => _api.fetchClients(
+    businessId,
+    limit: limit,
+    offset: offset,
+    search: search,
+    sort: sort,
+  );
+
+  /// Carica tutti i clienti (senza limite)
+  Future<List<Client>> getAll(int businessId) async {
+    final response = await _api.fetchClients(businessId, limit: 10000);
+    return response.clients;
+  }
+
   Future<Client> add(Client client) => _api.createClient(client);
   Future<Client> save(Client client) => _api.updateClient(client);
   Future<void> delete(int clientId) => _api.deleteClient(clientId);

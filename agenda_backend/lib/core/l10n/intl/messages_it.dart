@@ -743,6 +743,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "labelStaff": MessageLookupByLibrary.simpleMessage("Team:"),
     "lastVisitLabel": m17,
     "minutesLabel": MessageLookupByLibrary.simpleMessage("min"),
+    "moreBookingsDescription": MessageLookupByLibrary.simpleMessage(
+      "Consulta lo storico delle prenotazioni",
+    ),
+    "moreReportsDescription": MessageLookupByLibrary.simpleMessage(
+      "Visualizza statistiche e andamento attività",
+    ),
+    "moreServicesDescription": MessageLookupByLibrary.simpleMessage(
+      "Gestisci i servizi offerti, categorie e listini",
+    ),
+    "moreSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Accedi alle altre funzionalità dell\'applicazione",
+    ),
+    "moreTeamDescription": MessageLookupByLibrary.simpleMessage(
+      "Gestisci operatori, sedi e orari di lavoro",
+    ),
     "moveAppointmentConfirmMessage": m18,
     "moveAppointmentConfirmTitle": MessageLookupByLibrary.simpleMessage(
       "Confermi lo spostamento?",

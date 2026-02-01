@@ -975,5 +975,11 @@
   "bookingsListCancelConfirmMessage": "This action cannot be undone.",
   "bookingsListCancelSuccess": "Booking cancelled",
   "bookingsListLoading": "Loading...",
-  "bookingsListNoClient": "No client"
+  "bookingsListNoClient": "No client",
+
+  "moreServicesDescription": "Manage services, categories and pricing",
+  "moreTeamDescription": "Manage operators, locations and working hours",
+  "moreReportsDescription": "View statistics and business performance",
+  "moreBookingsDescription": "Browse booking history",
+  "moreSubtitle": "Access other application features"
 }
