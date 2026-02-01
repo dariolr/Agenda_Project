@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '/core/models/business_closure.dart';
 import 'api_config.dart';
 import 'token_storage.dart';
 
@@ -2167,6 +2168,109 @@ class ApiClient {
         return Map<String, dynamic>.from(response.data);
       }
       return {'success': true};
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // ==========================================================================
+  // BUSINESS CLOSURES (Chiusure attività)
+  // ==========================================================================
+
+  /// Recupera tutte le chiusure per un business
+  Future<List<BusinessClosure>> getBusinessClosures(int businessId) async {
+    try {
+      final response = await _dio.get('/v1/businesses/$businessId/closures');
+      final body = response.data as Map<String, dynamic>;
+      final data = body['data'] as Map<String, dynamic>? ?? body;
+      final List<dynamic> closures = data['closures'] ?? [];
+      return closures
+          .map((json) => BusinessClosure.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Recupera le chiusure in un range di date specifico
+  Future<List<BusinessClosure>> getBusinessClosuresInRange({
+    required int businessId,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/v1/businesses/$businessId/closures/in-range',
+        queryParameters: {
+          'start_date': startDate.toIso8601String().split('T').first,
+          'end_date': endDate.toIso8601String().split('T').first,
+        },
+      );
+      final body = response.data as Map<String, dynamic>;
+      final data = body['data'] as Map<String, dynamic>? ?? body;
+      final List<dynamic> closures = data['closures'] ?? [];
+      return closures
+          .map((json) => BusinessClosure.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Crea una nuova chiusura
+  Future<BusinessClosure> createBusinessClosure({
+    required int businessId,
+    required DateTime startDate,
+    required DateTime endDate,
+    String? reason,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/v1/businesses/$businessId/closures',
+        data: {
+          'start_date': startDate.toIso8601String().split('T').first,
+          'end_date': endDate.toIso8601String().split('T').first,
+          if (reason != null && reason.isNotEmpty) 'reason': reason,
+        },
+      );
+      final body = response.data as Map<String, dynamic>;
+      final data = body['data'] as Map<String, dynamic>? ?? body;
+      final closureJson = data['closure'] as Map<String, dynamic>;
+      return BusinessClosure.fromJson(closureJson);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Aggiorna una chiusura esistente
+  Future<BusinessClosure> updateBusinessClosure({
+    required int closureId,
+    required DateTime startDate,
+    required DateTime endDate,
+    String? reason,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/v1/closures/$closureId',
+        data: {
+          'start_date': startDate.toIso8601String().split('T').first,
+          'end_date': endDate.toIso8601String().split('T').first,
+          if (reason != null) 'reason': reason,
+        },
+      );
+      final body = response.data as Map<String, dynamic>;
+      final data = body['data'] as Map<String, dynamic>? ?? body;
+      final closureJson = data['closure'] as Map<String, dynamic>;
+      return BusinessClosure.fromJson(closureJson);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Elimina una chiusura
+  Future<void> deleteBusinessClosure(int closureId) async {
+    try {
+      await _dio.delete('/v1/closures/$closureId');
     } on DioException catch (e) {
       throw _handleError(e);
     }

@@ -995,5 +995,34 @@
   "moreTeamDescription": "Gestisci operatori, sedi e orari di lavoro",
   "moreReportsDescription": "Visualizza statistiche e andamento attività",
   "moreBookingsDescription": "Consulta lo storico delle prenotazioni",
-  "moreSubtitle": "Accedi alle altre funzionalità dell'applicazione"
+  "moreSubtitle": "Accedi alle altre funzionalità dell'applicazione",
+
+  "closuresTitle": "Date di chiusura",
+  "closuresEmpty": "Nessuna chiusura programmata",
+  "closuresEmptyHint": "Aggiungi i periodi di chiusura dell'attività (es. festività, ferie)",
+  "closuresUpcoming": "Prossime chiusure",
+  "closuresPast": "Chiusure passate",
+  "closuresNewTitle": "Nuova chiusura",
+  "closuresEditTitle": "Modifica chiusura",
+  "closuresStartDate": "Data inizio",
+  "closuresEndDate": "Data fine",
+  "closuresReason": "Motivo (opzionale)",
+  "closuresReasonHint": "es. Festività, Ferie estive, Manutenzione...",
+  "closuresDeleteConfirm": "Eliminare questa chiusura?",
+  "closuresDeleteConfirmMessage": "Gli slot di prenotazione in questo periodo torneranno disponibili.",
+  "closuresOverlapError": "Le date si sovrappongono con un'altra chiusura esistente",
+  "closuresInvalidDateRange": "La data di fine deve essere uguale o successiva alla data di inizio",
+  "closuresDays": "{count, plural, =1{1 giorno} other{{count} giorni}}",
+  "@closuresDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "closuresSingleDay": "Giorno singolo",
+  "closuresDateRange": "Periodo",
+  "closuresAddSuccess": "Chiusura aggiunta",
+  "closuresUpdateSuccess": "Chiusura aggiornata",
+  "closuresDeleteSuccess": "Chiusura eliminata"
 }

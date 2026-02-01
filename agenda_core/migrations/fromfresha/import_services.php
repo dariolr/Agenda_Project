@@ -1,9 +1,29 @@
 <?php
+/**
+ * Script di importazione servizi da CSV Fresha
+ * 
+ * Usage: php import_services.php
+ */
+
 $rootDir = __DIR__ . '/../../';
 require_once $rootDir . 'vendor/autoload.php';
 
 $dotenv = Dotenv\Dotenv::createImmutable($rootDir);
 $dotenv->load();
+
+// Carica configurazione centralizzata
+$config = require __DIR__ . '/config.php';
+$BUSINESS_ID = $config['business_id'];
+$LOCATION_ID = $config['location_id'];
+$CSV_FILE = $config['csv_services'];
+$DRY_RUN = $config['dry_run'];
+
+echo "=== IMPORTAZIONE SERVIZI FRESHA ===\n";
+echo "Business ID: {$BUSINESS_ID}\n";
+echo "Location ID: {$LOCATION_ID}\n";
+echo "File CSV: {$CSV_FILE}\n";
+echo "Dry run: " . ($DRY_RUN ? 'Sì' : 'No') . "\n";
+echo "===================================\n\n";
 
 $port = $_ENV['DB_PORT'] ?? 3306;
 $host = $_ENV['DB_HOST'] === 'localhost' ? '127.0.0.1' : $_ENV['DB_HOST'];
@@ -13,9 +33,6 @@ $pdo = new PDO(
     $_ENV['DB_PASSWORD'],
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
 );
-
-$BUSINESS_ID = 5;
-$LOCATION_ID = 5;
 
 // Colori per categoria (palette ufficiale)
 $CATEGORY_COLORS = [
@@ -35,13 +52,13 @@ $CATEGORY_COLORS = [
 // Leggi CSV
 $csv = array_map(function($line) {
     return str_getcsv($line);
-}, file(__DIR__ . '/export_service_list.csv'));
+}, file(__DIR__ . '/' . $CSV_FILE));
 
 $header = array_shift($csv); // rimuovi header
 
 // Filtra righe vuote e servizi senza Risorsa (colonna 8)
 $services = array_filter($csv, function($row) {
-    return !empty($row[0]) && !empty(trim($row[8]));
+    return !empty($row[0]) && isset($row[8]) && !empty(trim($row[8] ?? ''));
 });
 
 // Estrai categorie uniche in ordine di apparizione

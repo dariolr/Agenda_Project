@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:agenda_backend/app/providers/global_loading_provider.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
@@ -12,7 +13,6 @@ import 'package:agenda_backend/features/agenda/providers/is_resizing_provider.da
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
-import 'package:agenda_backend/app/providers/global_loading_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -299,8 +299,8 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
                 child: isLoading
                     // Mostra loading indicator durante il caricamento
                     ? isGlobalLoading
-                        ? const SizedBox.shrink()
-                        : const Center(child: CircularProgressIndicator())
+                          ? const SizedBox.shrink()
+                          : const Center(child: CircularProgressIndicator())
                     : !hasLocations
                     ? Center(
                         child: Text(

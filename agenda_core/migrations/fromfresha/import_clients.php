@@ -11,10 +11,19 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
 $dotenv->load();
 
-// Configurazione
-const BUSINESS_ID = 5;
-const CSV_FILE = 'export_customer_list.csv';
-const SKIP_BLOCKED = false; // Se true, salta i clienti bloccati. Se false, li importa come is_archived=1
+// Carica configurazione centralizzata
+$config = require __DIR__ . '/config.php';
+$BUSINESS_ID = $config['business_id'];
+$CSV_FILE = $config['csv_clients'];
+$SKIP_BLOCKED = $config['skip_blocked_clients'];
+$DRY_RUN = $config['dry_run'];
+
+echo "=== IMPORTAZIONE CLIENTI FRESHA ===\n";
+echo "Business ID: {$BUSINESS_ID}\n";
+echo "File CSV: {$CSV_FILE}\n";
+echo "Skip bloccati: " . ($SKIP_BLOCKED ? 'Sì' : 'No') . "\n";
+echo "Dry run: " . ($DRY_RUN ? 'Sì' : 'No') . "\n";
+echo "===================================\n\n";
 
 try {
     // Connessione DB
@@ -31,9 +40,9 @@ try {
     echo "Connessione DB OK\n\n";
     
     // Leggi CSV
-    $csvPath = __DIR__ . '/' . CSV_FILE;
+    $csvPath = __DIR__ . '/' . $CSV_FILE;
     if (!file_exists($csvPath)) {
-        throw new Exception("File CSV non trovato: " . CSV_FILE);
+        throw new Exception("File CSV non trovato: " . $CSV_FILE);
     }
     
     $handle = fopen($csvPath, 'r');
@@ -91,7 +100,7 @@ try {
         }
         
         // Gestione clienti bloccati
-        if ($blocked && SKIP_BLOCKED) {
+        if ($blocked && $SKIP_BLOCKED) {
             $skippedBlocked++;
             continue;
         }
@@ -156,7 +165,7 @@ try {
     // Verifica duplicati email nel DB esistente
     $existingEmails = [];
     $stmt = $pdo->prepare("SELECT email FROM clients WHERE business_id = ? AND email IS NOT NULL");
-    $stmt->execute([BUSINESS_ID]);
+    $stmt->execute([$BUSINESS_ID]);
     while ($row = $stmt->fetch()) {
         $existingEmails[strtolower($row['email'])] = true;
     }
@@ -179,7 +188,7 @@ try {
         }
         
         $insertStmt->execute([
-            BUSINESS_ID,
+            $BUSINESS_ID,
             $client['first_name'],
             $client['last_name'],
             $client['email'],
@@ -203,7 +212,7 @@ try {
     echo "\n=== REPORT FINALE ===\n";
     echo "Clienti inseriti: $inserted\n";
     echo "Duplicati email saltati: $skippedDuplicate\n";
-    echo "Business ID: " . BUSINESS_ID . "\n";
+    echo "Business ID: " . $BUSINESS_ID . "\n";
     echo "=====================\n";
     
 } catch (Exception $e) {

@@ -11,6 +11,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/bookings_list/presentation/bookings_list_screen.dart';
+import '../features/business/presentation/business_closures_screen.dart';
 import '../features/business/presentation/business_list_screen.dart';
 import '../features/business/presentation/operators_screen.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
@@ -259,6 +260,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           final businessId = int.parse(state.pathParameters['businessId']!);
           return OperatorsScreen(businessId: businessId);
         },
+      ),
+
+      // Route chiusure business
+      GoRoute(
+        path: '/chiusure',
+        name: 'chiusure',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) =>
+            const BusinessClosuresScreen(),
       ),
     ],
   );

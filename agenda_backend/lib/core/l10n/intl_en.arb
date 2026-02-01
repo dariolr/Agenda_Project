@@ -997,5 +997,34 @@
   "moreTeamDescription": "Manage operators, locations and working hours",
   "moreReportsDescription": "View statistics and business performance",
   "moreBookingsDescription": "Browse booking history",
-  "moreSubtitle": "Access other application features"
+  "moreSubtitle": "Access other application features",
+
+  "closuresTitle": "Closure dates",
+  "closuresEmpty": "No closures scheduled",
+  "closuresEmptyHint": "Add business closure periods (e.g. holidays, vacations)",
+  "closuresUpcoming": "Upcoming closures",
+  "closuresPast": "Past closures",
+  "closuresNewTitle": "New closure",
+  "closuresEditTitle": "Edit closure",
+  "closuresStartDate": "Start date",
+  "closuresEndDate": "End date",
+  "closuresReason": "Reason (optional)",
+  "closuresReasonHint": "e.g. Holiday, Summer vacation, Maintenance...",
+  "closuresDeleteConfirm": "Delete this closure?",
+  "closuresDeleteConfirmMessage": "Booking slots during this period will become available again.",
+  "closuresOverlapError": "Dates overlap with an existing closure",
+  "closuresInvalidDateRange": "End date must be equal to or after start date",
+  "closuresDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@closuresDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "closuresSingleDay": "Single day",
+  "closuresDateRange": "Date range",
+  "closuresAddSuccess": "Closure added",
+  "closuresUpdateSuccess": "Closure updated",
+  "closuresDeleteSuccess": "Closure deleted"
 }
