@@ -8,16 +8,22 @@ use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Repositories\BusinessClosureRepository;
 use Agenda\Infrastructure\Database\Connection;
 use PDO;
 
 final class ReportsController
 {
+    private ?BusinessClosureRepository $closureRepo;
+    
     public function __construct(
         private Connection $db,
         private BusinessUserRepository $businessUserRepo,
-        private UserRepository $userRepo
-    ) {}
+        private UserRepository $userRepo,
+        ?BusinessClosureRepository $closureRepo = null
+    ) {
+        $this->closureRepo = $closureRepo;
+    }
 
     public function appointments(Request $request): Response
     {
@@ -452,6 +458,12 @@ final class ReportsController
     private function buildWorkHoursReport(int $businessId, string $startDate, string $endDate, array $locationIds, array $staffIds): array
     {
         $pdo = $this->db->getPdo();
+        
+        // Get business closed dates in period
+        $closedDates = [];
+        if ($this->closureRepo !== null) {
+            $closedDates = $this->closureRepo->getClosedDatesInRange($businessId, $startDate, $endDate);
+        }
 
         // Get all staff for this business
         $staffQuery = "SELECT s.id, CONCAT(s.name, ' ', s.surname) as full_name, s.color_hex 
@@ -589,6 +601,11 @@ final class ReportsController
             foreach ($period as $date) {
                 $dateStr = $date->format('Y-m-d');
                 $dayOfWeek = (int) $date->format('N'); // 1=Monday, 7=Sunday
+
+                // Skip business closed dates
+                if (in_array($dateStr, $closedDates, true)) {
+                    continue;
+                }
 
                 // Check if there's an unavailable exception for this date (day off)
                 if (isset($exceptions[$dateStr])) {

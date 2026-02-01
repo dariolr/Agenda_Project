@@ -22,6 +22,7 @@ final class BookingException extends Exception
     public const SERVER_ERROR = 'internal_error';
     public const ALREADY_REPLACED = 'already_replaced';
     public const NOT_MODIFIABLE = 'not_modifiable';
+    public const BUSINESS_CLOSED = 'business_closed';
 
     private string $errorCode;
     private array $details;
@@ -149,6 +150,20 @@ final class BookingException extends Exception
             self::NOT_MODIFIABLE,
             400,
             ['booking_id' => $bookingId, 'reason' => $reason]
+        );
+    }
+
+    public static function businessClosed(string $date, ?string $reason = null): self
+    {
+        $message = 'The business is closed on ' . $date;
+        if ($reason !== null && $reason !== '') {
+            $message .= ' (' . $reason . ')';
+        }
+        return new self(
+            $message,
+            self::BUSINESS_CLOSED,
+            400,
+            ['date' => $date, 'reason' => $reason]
         );
     }
 

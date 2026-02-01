@@ -11,6 +11,7 @@ use Agenda\Infrastructure\Repositories\TimeBlockRepository;
 use Agenda\Infrastructure\Repositories\StaffAvailabilityExceptionRepository;
 use Agenda\Infrastructure\Repositories\ServiceVariantResourceRepository;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
+use Agenda\Infrastructure\Repositories\BusinessClosureRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use DateInterval;
@@ -36,6 +37,7 @@ final class ComputeAvailability
         private readonly StaffAvailabilityExceptionRepository $staffExceptionRepository,
         private readonly ?ServiceVariantResourceRepository $resourceRequirementRepository = null,
         private readonly ?ServiceRepository $serviceRepository = null,
+        private readonly ?BusinessClosureRepository $businessClosureRepository = null,
     ) {}
 
     /**
@@ -115,6 +117,13 @@ final class ComputeAvailability
         $today = new DateTimeImmutable('today', $timezone);
         if ($targetDate < $today) {
             return ['slots' => []];
+        }
+
+        // Check if business is closed on this date
+        if ($this->businessClosureRepository !== null) {
+            if ($this->businessClosureRepository->isDateClosed($businessId, $date)) {
+                return ['slots' => []];
+            }
         }
 
         // Calculate minimum booking time (now + min_booking_notice_hours)

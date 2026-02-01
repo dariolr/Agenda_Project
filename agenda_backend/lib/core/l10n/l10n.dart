@@ -6341,6 +6341,218 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Date di chiusura`
+  String get closuresTitle {
+    return Intl.message(
+      'Date di chiusura',
+      name: 'closuresTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna chiusura programmata`
+  String get closuresEmpty {
+    return Intl.message(
+      'Nessuna chiusura programmata',
+      name: 'closuresEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Aggiungi i periodi di chiusura dell'attività (es. festività, ferie)`
+  String get closuresEmptyHint {
+    return Intl.message(
+      'Aggiungi i periodi di chiusura dell\'attività (es. festività, ferie)',
+      name: 'closuresEmptyHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prossime chiusure`
+  String get closuresUpcoming {
+    return Intl.message(
+      'Prossime chiusure',
+      name: 'closuresUpcoming',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Chiusure passate`
+  String get closuresPast {
+    return Intl.message(
+      'Chiusure passate',
+      name: 'closuresPast',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nuova chiusura`
+  String get closuresNewTitle {
+    return Intl.message(
+      'Nuova chiusura',
+      name: 'closuresNewTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modifica chiusura`
+  String get closuresEditTitle {
+    return Intl.message(
+      'Modifica chiusura',
+      name: 'closuresEditTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Data inizio`
+  String get closuresStartDate {
+    return Intl.message(
+      'Data inizio',
+      name: 'closuresStartDate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Data fine`
+  String get closuresEndDate {
+    return Intl.message(
+      'Data fine',
+      name: 'closuresEndDate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Motivo (opzionale)`
+  String get closuresReason {
+    return Intl.message(
+      'Motivo (opzionale)',
+      name: 'closuresReason',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `es. Festività, Ferie estive, Manutenzione...`
+  String get closuresReasonHint {
+    return Intl.message(
+      'es. Festività, Ferie estive, Manutenzione...',
+      name: 'closuresReasonHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Eliminare questa chiusura?`
+  String get closuresDeleteConfirm {
+    return Intl.message(
+      'Eliminare questa chiusura?',
+      name: 'closuresDeleteConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Gli slot di prenotazione in questo periodo torneranno disponibili.`
+  String get closuresDeleteConfirmMessage {
+    return Intl.message(
+      'Gli slot di prenotazione in questo periodo torneranno disponibili.',
+      name: 'closuresDeleteConfirmMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Le date si sovrappongono con un'altra chiusura esistente`
+  String get closuresOverlapError {
+    return Intl.message(
+      'Le date si sovrappongono con un\'altra chiusura esistente',
+      name: 'closuresOverlapError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La data di fine deve essere uguale o successiva alla data di inizio`
+  String get closuresInvalidDateRange {
+    return Intl.message(
+      'La data di fine deve essere uguale o successiva alla data di inizio',
+      name: 'closuresInvalidDateRange',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count, plural, =1{1 giorno} other{{count} giorni}}`
+  String closuresDays(int count) {
+    return Intl.plural(
+      count,
+      one: '1 giorno',
+      other: '$count giorni',
+      name: 'closuresDays',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Giorno singolo`
+  String get closuresSingleDay {
+    return Intl.message(
+      'Giorno singolo',
+      name: 'closuresSingleDay',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Periodo`
+  String get closuresDateRange {
+    return Intl.message(
+      'Periodo',
+      name: 'closuresDateRange',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Chiusura aggiunta`
+  String get closuresAddSuccess {
+    return Intl.message(
+      'Chiusura aggiunta',
+      name: 'closuresAddSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Chiusura aggiornata`
+  String get closuresUpdateSuccess {
+    return Intl.message(
+      'Chiusura aggiornata',
+      name: 'closuresUpdateSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Chiusura eliminata`
+  String get closuresDeleteSuccess {
+    return Intl.message(
+      'Chiusura eliminata',
+      name: 'closuresDeleteSuccess',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

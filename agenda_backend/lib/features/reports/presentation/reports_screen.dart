@@ -1383,26 +1383,38 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 1000
-            ? 6
-            : constraints.maxWidth > 700
+        final isDesktop = constraints.maxWidth > 900;
+        final crossAxisCount = isDesktop
             ? 3
+            : constraints.maxWidth > 500
+            ? 2
             : 2;
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: 1.8,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+        // Aspect ratio più alto su desktop (card più basse)
+        final aspectRatio = isDesktop ? 2.8 : 2.5;
+
+        // Su desktop limita la larghezza e centra
+        final maxGridWidth = isDesktop ? 900.0 : constraints.maxWidth;
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxGridWidth),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: aspectRatio,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: cards.length,
+              itemBuilder: (context, index) {
+                final card = cards[index];
+                return _buildWorkHoursSummaryCard(context, card);
+              },
+            ),
           ),
-          itemCount: cards.length,
-          itemBuilder: (context, index) {
-            final card = cards[index];
-            return _buildWorkHoursSummaryCard(context, card);
-          },
         );
       },
     );
@@ -1525,73 +1537,111 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        headingRowColor: WidgetStateProperty.all(
-          colorScheme.surfaceContainerLow,
-        ),
-        columns: [
-          DataColumn(label: Text(l10n.reportsColStaff)),
-          DataColumn(label: Text(l10n.reportsColScheduledHours), numeric: true),
-          DataColumn(label: Text(l10n.reportsColWorkedHours), numeric: true),
-          DataColumn(label: Text(l10n.reportsColBlockedHours), numeric: true),
-          DataColumn(label: Text(l10n.reportsColOffHours), numeric: true),
-          DataColumn(label: Text(l10n.reportsColAvailableHours), numeric: true),
-          DataColumn(label: Text(l10n.reportsColUtilization), numeric: true),
-        ],
-        rows: byStaff.map((row) {
-          final staffColor = row.staffColor != null
-              ? _parseColor(row.staffColor!)
-              : colorScheme.primary;
+    if (byStaff.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(l10n.reportsNoData),
+      );
+    }
 
-          return DataRow(
-            cells: [
-              DataCell(
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: staffColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(row.staffName),
-                  ],
-                ),
-              ),
-              DataCell(buildHoursCell(row.scheduledHours)),
-              DataCell(
-                buildHoursCell(
-                  row.workedHours,
-                  style: TextStyle(
-                    color: Colors.green.shade700,
-                    fontWeight: FontWeight.w500,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+            child: Theme(
+              data: Theme.of(
+                context,
+              ).copyWith(dividerColor: colorScheme.outline.withOpacity(0.2)),
+              child: DataTable(
+                dividerThickness: 0.2,
+                horizontalMargin: 16,
+                columns: [
+                  DataColumn(label: Text(l10n.reportsColStaff)),
+                  DataColumn(
+                    label: Text(l10n.reportsColScheduledHours),
+                    numeric: true,
                   ),
-                ),
+                  DataColumn(
+                    label: Text(l10n.reportsColWorkedHours),
+                    numeric: true,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.reportsColBlockedHours),
+                    numeric: true,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.reportsColOffHours),
+                    numeric: true,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.reportsColAvailableHours),
+                    numeric: true,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.reportsColUtilization),
+                    numeric: true,
+                  ),
+                ],
+                rows: byStaff.map((row) {
+                  final staffColor = row.staffColor != null
+                      ? _parseColor(row.staffColor!)
+                      : colorScheme.primary;
+
+                  return DataRow(
+                    cells: [
+                      DataCell(
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              margin: const EdgeInsets.only(right: 8),
+                              decoration: BoxDecoration(
+                                color: staffColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            Text(row.staffName),
+                          ],
+                        ),
+                      ),
+                      DataCell(buildHoursCell(row.scheduledHours)),
+                      DataCell(
+                        buildHoursCell(
+                          row.workedHours,
+                          style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        buildHoursCell(
+                          row.blockedHours,
+                          style: TextStyle(color: Colors.orange.shade700),
+                        ),
+                      ),
+                      DataCell(
+                        buildHoursCell(
+                          row.exceptionOffHours,
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                      ),
+                      DataCell(buildHoursCell(row.availableHours)),
+                      DataCell(
+                        _buildPercentageBar(context, row.utilizationPercentage),
+                      ),
+                    ],
+                  );
+                }).toList(),
               ),
-              DataCell(
-                buildHoursCell(
-                  row.blockedHours,
-                  style: TextStyle(color: Colors.orange.shade700),
-                ),
-              ),
-              DataCell(
-                buildHoursCell(
-                  row.exceptionOffHours,
-                  style: TextStyle(color: Colors.red.shade700),
-                ),
-              ),
-              DataCell(buildHoursCell(row.availableHours)),
-              DataCell(_buildPercentageBar(context, row.utilizationPercentage)),
-            ],
-          );
-        }).toList(),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
