@@ -337,27 +337,26 @@ rsync -avz --delete src/ siteground:www/api.romeolab.it/src/
 rsync -avz --delete vendor/ siteground:www/api.romeolab.it/vendor/
 ```
 
-⚠️ VERSIONE CACHE BUSTING (25/01/2026):
+⚠️ VERSIONE CACHE BUSTING (01/02/2026):
 
 **Formato versione Flutter:** `YYYYMMDD-N.P`
 ```
 YYYYMMDD-N.P
 │        │ │
-│        │ └── P = Numero progressivo deploy PRODUZIONE (incrementa SOLO per deploy prod)
-│        └──── N = Contatore giornaliero modifiche
+│        │ └── P = Numero progressivo deploy PRODUZIONE (incrementa AUTOMATICAMENTE con deploy.sh)
+│        └──── N = Contatore giornaliero modifiche (incrementa automaticamente)
 └───────────── Data (anno, mese, giorno)
 ```
 
-**Esempio:** `20260125-1.3` = prima modifica del 25/01/2026, terzo deploy in produzione
+**Esempio:** `20260201-1.10` = prima modifica del 01/02/2026, decimo deploy in produzione
 
-**Prima di ogni deploy Flutter PRODUZIONE**, incrementare **P** in `web/index.html`:
-```html
-<script>
-  window.appVersion = "20260125-1.3";  // Incrementare P per ogni deploy PROD
-</script>
-```
+**Gli script `deploy.sh` incrementano P automaticamente:**
+- `deploy.sh` → incrementa P (+1 ad ogni deploy produzione)
+- `deploy-staging.sh` → NON incrementa P (mantiene valore esistente)
 
-**Valore corrente P:** `3` (al 25/01/2026)
+**File coinvolti:**
+- `web/index.html` → definizione `window.appVersion`
+- `web/app_version.txt` → versione plain text per VersionChecker
 
 ⚠️ **REGOLA:** Il numero **P** incrementa SOLO per deploy PRODUZIONE, NON per staging/test/locale.
 
@@ -1523,6 +1522,73 @@ Quando `slot_display_mode = 'min_gap'`:
 - `teamLocationSlotDisplayModeMinGap` - "Riduci spazi vuoti"
 - `teamLocationMinGapLabel` - "Gap minimo accettabile"
 - `teamLocationMinutes` - "{count} minuti"
+
+---
+
+## 📊 Work Hours Report API (02/02/2026)
+
+### Endpoint
+`GET /v1/reports/work-hours`
+
+### Autenticazione
+Richiede `auth` middleware. Accessibile a admin/owner del business.
+
+### Parametri Query
+| Parametro | Tipo | Required | Descrizione |
+|-----------|------|----------|-------------|
+| `business_id` | int | ✅ | ID del business |
+| `start_date` | string | ✅ | Data inizio (Y-m-d) |
+| `end_date` | string | ✅ | Data fine (Y-m-d) |
+| `location_ids[]` | int[] | ❌ | Filtra per sedi |
+| `staff_ids[]` | int[] | ❌ | Filtra per staff |
+
+### Response
+```json
+{
+  "summary": {
+    "total_scheduled_minutes": 2400,
+    "total_worked_minutes": 1800,
+    "total_blocked_minutes": 120,
+    "total_exception_off_minutes": 480,
+    "total_available_minutes": 2280,
+    "overall_utilization_percentage": 78.9
+  },
+  "by_staff": [
+    {
+      "staff_id": 1,
+      "staff_name": "Mario Rossi",
+      "staff_color": "#4CAF50",
+      "scheduled_minutes": 800,
+      "worked_minutes": 600,
+      "blocked_minutes": 60,
+      "exception_off_minutes": 0,
+      "available_minutes": 740,
+      "utilization_percentage": 81.1
+    }
+  ],
+  "filters": {
+    "start_date": "2026-02-01",
+    "end_date": "2026-02-28",
+    "location_ids": [],
+    "staff_ids": []
+  }
+}
+```
+
+### Calcolo Metriche
+
+| Metrica | Fonte | Descrizione | Label UI |
+|---------|-------|-------------|----------|
+| `scheduled_minutes` | `staff_planning_week_template` | Minuti pianificati da planning settimanale | Pianificate |
+| `worked_minutes` | `booking_items` | Minuti da prenotazioni confirmed/completed | Prenotate |
+| `blocked_minutes` | `time_blocks` | Minuti bloccati (riunioni, pause) | Blocchi |
+| `exception_off_minutes` | `staff_availability_exceptions` | Minuti assenza (ferie, malattia) con type='unavailable' | Assenze |
+| `available_minutes` | calculated | `scheduled_minutes - blocked_minutes` | Effettive |
+| `utilization_percentage` | calculated | `worked_minutes / available_minutes × 100` | Occupazione |
+
+### File PHP
+- `src/Http/Controllers/ReportsController.php` → metodo `workHours()`
+- `src/Http/Controllers/ReportsController.php` → metodo privato `buildWorkHoursReport()`
 
 ---
 

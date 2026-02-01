@@ -346,3 +346,128 @@ class AppointmentsReport {
     );
   }
 }
+
+// ============================================================================
+// WORK HOURS REPORT MODELS
+// ============================================================================
+
+/// Summary for work hours report.
+@immutable
+class WorkHoursSummary {
+  const WorkHoursSummary({
+    required this.totalScheduledMinutes,
+    required this.totalWorkedMinutes,
+    required this.totalBlockedMinutes,
+    required this.totalExceptionOffMinutes,
+    required this.totalAvailableMinutes,
+    required this.overallUtilizationPercentage,
+  });
+
+  final int totalScheduledMinutes;
+  final int totalWorkedMinutes;
+  final int totalBlockedMinutes;
+  final int totalExceptionOffMinutes;
+  final int totalAvailableMinutes;
+  final double overallUtilizationPercentage;
+
+  factory WorkHoursSummary.fromJson(Map<String, dynamic> json) {
+    return WorkHoursSummary(
+      totalScheduledMinutes: json['total_scheduled_minutes'] as int? ?? 0,
+      totalWorkedMinutes: json['total_worked_minutes'] as int? ?? 0,
+      totalBlockedMinutes: json['total_blocked_minutes'] as int? ?? 0,
+      totalExceptionOffMinutes:
+          json['total_exception_off_minutes'] as int? ?? 0,
+      totalAvailableMinutes: json['total_available_minutes'] as int? ?? 0,
+      overallUtilizationPercentage:
+          (json['overall_utilization_percentage'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  /// Returns total scheduled hours.
+  double get totalScheduledHours => totalScheduledMinutes / 60.0;
+
+  /// Returns total worked hours.
+  double get totalWorkedHours => totalWorkedMinutes / 60.0;
+
+  /// Returns total blocked hours.
+  double get totalBlockedHours => totalBlockedMinutes / 60.0;
+
+  /// Returns total exception off hours (ferie, malattia, ecc.).
+  double get totalExceptionOffHours => totalExceptionOffMinutes / 60.0;
+
+  /// Returns total available hours (scheduled - blocked).
+  double get totalAvailableHours => totalAvailableMinutes / 60.0;
+}
+
+/// Staff row for work hours report.
+@immutable
+class StaffWorkHoursRow {
+  const StaffWorkHoursRow({
+    required this.staffId,
+    required this.staffName,
+    this.staffColor,
+    required this.scheduledMinutes,
+    required this.workedMinutes,
+    required this.blockedMinutes,
+    required this.exceptionOffMinutes,
+    required this.availableMinutes,
+    required this.utilizationPercentage,
+  });
+
+  final int staffId;
+  final String staffName;
+  final String? staffColor;
+  final int scheduledMinutes;
+  final int workedMinutes;
+  final int blockedMinutes;
+  final int exceptionOffMinutes;
+  final int availableMinutes;
+  final double utilizationPercentage;
+
+  factory StaffWorkHoursRow.fromJson(Map<String, dynamic> json) {
+    return StaffWorkHoursRow(
+      staffId: json['staff_id'] as int,
+      staffName: json['staff_name'] as String? ?? 'Unknown',
+      staffColor: json['staff_color'] as String?,
+      scheduledMinutes: json['scheduled_minutes'] as int? ?? 0,
+      workedMinutes: json['worked_minutes'] as int? ?? 0,
+      blockedMinutes: json['blocked_minutes'] as int? ?? 0,
+      exceptionOffMinutes: json['exception_off_minutes'] as int? ?? 0,
+      availableMinutes: json['available_minutes'] as int? ?? 0,
+      utilizationPercentage:
+          (json['utilization_percentage'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  double get scheduledHours => scheduledMinutes / 60.0;
+  double get workedHours => workedMinutes / 60.0;
+  double get blockedHours => blockedMinutes / 60.0;
+  double get exceptionOffHours => exceptionOffMinutes / 60.0;
+  double get availableHours => availableMinutes / 60.0;
+}
+
+/// Complete work hours report response.
+@immutable
+class WorkHoursReport {
+  const WorkHoursReport({
+    required this.summary,
+    required this.byStaff,
+    required this.filters,
+  });
+
+  final WorkHoursSummary summary;
+  final List<StaffWorkHoursRow> byStaff;
+  final ReportFilters filters;
+
+  factory WorkHoursReport.fromJson(Map<String, dynamic> json) {
+    return WorkHoursReport(
+      summary: WorkHoursSummary.fromJson(
+        json['summary'] as Map<String, dynamic>,
+      ),
+      byStaff: (json['by_staff'] as List<dynamic>)
+          .map((e) => StaffWorkHoursRow.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      filters: ReportFilters.fromJson(json['filters'] as Map<String, dynamic>),
+    );
+  }
+}

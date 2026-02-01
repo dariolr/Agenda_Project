@@ -30,18 +30,46 @@ class ReportsScreen extends ConsumerStatefulWidget {
   ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
 }
 
-class _ReportsScreenState extends ConsumerState<ReportsScreen> {
+class _ReportsScreenState extends ConsumerState<ReportsScreen>
+    with SingleTickerProviderStateMixin {
   final Set<int> _selectedLocationIds = {};
   final Set<int> _selectedStaffIds = {};
   final Set<int> _selectedServiceIds = {};
   Set<String> _selectedStatuses = {'confirmed'};
 
+  late final TabController _tabController;
+
+  /// 0 = Appointments report, 1 = Work Hours report
+  int _currentTab = 0;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchReport();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging) return;
+    setState(() {
+      _currentTab = _tabController.index;
+    });
+    // Fetch appropriate report for the new tab
+    if (_currentTab == 0) {
+      _fetchReport();
+    } else {
+      _fetchWorkHoursReport();
+    }
   }
 
   void _fetchReport() {
@@ -68,6 +96,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     ref.read(reportsProvider.notifier).fetchReport(params);
   }
 
+  void _fetchWorkHoursReport() {
+    final user = ref.read(authProvider).user;
+    if (user == null) return;
+
+    // Get filter state from provider
+    final filterState = ref.read(reportsFilterProvider);
+
+    // Get current business ID
+    final location = ref.read(currentLocationProvider);
+    final businessId = location.businessId;
+
+    final params = ReportParams(
+      businessId: businessId,
+      startDate: filterState.startDate,
+      endDate: filterState.endDate,
+      locationIds: _selectedLocationIds.toList(),
+      staffIds: _selectedStaffIds.toList(),
+      serviceIds: [],
+      statuses: [],
+    );
+
+    ref.read(workHoursReportProvider.notifier).fetchReport(params);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -81,12 +133,28 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           (prev.startDate != next.startDate ||
               prev.endDate != next.endDate ||
               prev.selectedPreset != next.selectedPreset)) {
-        _fetchReport();
+        // Fetch the appropriate report based on current tab
+        if (_currentTab == 0) {
+          _fetchReport();
+        } else {
+          _fetchWorkHoursReport();
+        }
       }
     });
 
     // Listen for errors
     ref.listen<ReportsState>(reportsProvider, (prev, next) {
+      if (next.error != null && prev?.error != next.error) {
+        FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: next.error!,
+        );
+      }
+    });
+
+    // Listen for work hours report errors
+    ref.listen<WorkHoursReportState>(workHoursReportProvider, (prev, next) {
       if (next.error != null && prev?.error != next.error) {
         FeedbackDialog.showError(
           context,
@@ -102,31 +170,114 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         // Header with period controls
         const ReportsHeader(),
 
+        // TabBar
+        _buildTabBar(context, colorScheme),
+
         // Filters section
         _buildFiltersSection(context, colorScheme),
 
         // Content
         Expanded(
-          child: reportState.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : reportState.report == null
-              ? Center(
-                  child: Text(
-                    l10n.reportsNoData,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                )
-              : _buildReportContent(context, reportState.report!),
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              // Tab 0: Appointments report
+              _buildAppointmentsReportTab(
+                context,
+                reportState,
+                theme,
+                colorScheme,
+              ),
+              // Tab 1: Work Hours report
+              _buildWorkHoursReportTab(context, theme, colorScheme),
+            ],
+          ),
         ),
       ],
     );
   }
 
+  Widget _buildTabBar(BuildContext context, ColorScheme colorScheme) {
+    final l10n = context.l10n;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
+        ),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        labelColor: colorScheme.primary,
+        unselectedLabelColor: colorScheme.onSurfaceVariant,
+        indicatorColor: colorScheme.primary,
+        tabs: [
+          Tab(text: l10n.reportsTabAppointments),
+          Tab(text: l10n.reportsTabStaff),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppointmentsReportTab(
+    BuildContext context,
+    ReportsState reportState,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    final l10n = context.l10n;
+
+    if (reportState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (reportState.report == null) {
+      return Center(
+        child: Text(
+          l10n.reportsNoData,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    return _buildReportContent(context, reportState.report!);
+  }
+
+  Widget _buildWorkHoursReportTab(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    final l10n = context.l10n;
+    final workHoursState = ref.watch(workHoursReportProvider);
+
+    if (workHoursState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (workHoursState.report == null) {
+      return Center(
+        child: Text(
+          l10n.reportsNoData,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    return _buildWorkHoursContent(context, workHoursState.report!);
+  }
+
   Widget _buildFiltersSection(BuildContext context, ColorScheme colorScheme) {
     final l10n = context.l10n;
     final filterState = ref.watch(reportsFilterProvider);
+
+    // Determine which filters to show based on current tab
+    final isWorkHoursTab = _currentTab == 1;
 
     return Container(
       alignment: Alignment.centerLeft,
@@ -174,7 +325,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       selected: _selectedStaffIds.isNotEmpty,
                       onTap: () => _showStaffFilter(context),
                     ),
-                  if (hasMultipleServices)
+                  // Service and status filters are only relevant for appointments report
+                  if (!isWorkHoursTab && hasMultipleServices)
                     _buildFilterChip(
                       context,
                       label: _selectedServiceIds.isEmpty
@@ -183,12 +335,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       selected: _selectedServiceIds.isNotEmpty,
                       onTap: () => _showServiceFilter(context),
                     ),
-                  _buildFilterChip(
-                    context,
-                    label: l10n.reportsFilterStatus,
-                    selected: _selectedStatuses.length < 3,
-                    onTap: () => _showStatusFilter(context),
-                  ),
+                  if (!isWorkHoursTab)
+                    _buildFilterChip(
+                      context,
+                      label: l10n.reportsFilterStatus,
+                      selected: _selectedStatuses.length < 3,
+                      onTap: () => _showStatusFilter(context),
+                    ),
                 ],
               );
             },
@@ -1085,6 +1238,200 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     } catch (_) {
       return Colors.grey;
     }
+  }
+
+  // ===========================================================================
+  // WORK HOURS REPORT CONTENT
+  // ===========================================================================
+
+  Widget _buildWorkHoursContent(BuildContext context, WorkHoursReport report) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Summary cards
+          _buildWorkHoursSummaryCards(context, report.summary),
+          const SizedBox(height: 24),
+
+          // Staff breakdown
+          _buildBreakdownSection(
+            context,
+            title: context.l10n.reportsByStaff,
+            child: _buildWorkHoursStaffTable(context, report.byStaff),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkHoursSummaryCards(
+    BuildContext context,
+    WorkHoursSummary summary,
+  ) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final locale = Localizations.localeOf(context).toString();
+    final numberFormat = NumberFormat.decimalPattern(locale);
+
+    // Helper to format hours
+    String formatHours(double hours) {
+      final h = hours.floor();
+      final m = ((hours - h) * 60).round();
+      if (m == 0) return '${h}h';
+      return '${h}h ${m}m';
+    }
+
+    final cards = [
+      _SummaryCardData(
+        icon: Icons.schedule,
+        label: l10n.reportsWorkHoursScheduled,
+        value: formatHours(summary.totalScheduledHours),
+        color: colorScheme.primary,
+      ),
+      _SummaryCardData(
+        icon: Icons.work,
+        label: l10n.reportsWorkHoursWorked,
+        value: formatHours(summary.totalWorkedHours),
+        color: Colors.green,
+      ),
+      _SummaryCardData(
+        icon: Icons.block,
+        label: l10n.reportsWorkHoursBlocked,
+        value: formatHours(summary.totalBlockedHours),
+        color: Colors.orange,
+      ),
+      _SummaryCardData(
+        icon: Icons.beach_access,
+        label: l10n.reportsWorkHoursOff,
+        value: formatHours(summary.totalExceptionOffHours),
+        color: Colors.red,
+      ),
+      _SummaryCardData(
+        icon: Icons.event_available,
+        label: l10n.reportsWorkHoursAvailable,
+        value: formatHours(summary.totalAvailableHours),
+        color: Colors.blue,
+      ),
+      _SummaryCardData(
+        icon: Icons.pie_chart,
+        label: l10n.reportsWorkHoursUtilization,
+        value: '${numberFormat.format(summary.overallUtilizationPercentage)}%',
+        color: Colors.purple,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth > 1000
+            ? 6
+            : constraints.maxWidth > 700
+            ? 3
+            : 2;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: 2.2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: cards.length,
+          itemBuilder: (context, index) {
+            final card = cards[index];
+            return _buildSummaryCard(context, card);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildWorkHoursStaffTable(
+    BuildContext context,
+    List<StaffWorkHoursRow> byStaff,
+  ) {
+    final l10n = context.l10n;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Helper to format hours
+    String formatHours(double hours) {
+      final h = hours.floor();
+      final m = ((hours - h) * 60).round();
+      if (m == 0) return '${h}h';
+      return '${h}h ${m}m';
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        headingRowColor: WidgetStateProperty.all(
+          colorScheme.surfaceContainerLow,
+        ),
+        columns: [
+          DataColumn(label: Text(l10n.reportsColStaff)),
+          DataColumn(label: Text(l10n.reportsColScheduledHours), numeric: true),
+          DataColumn(label: Text(l10n.reportsColWorkedHours), numeric: true),
+          DataColumn(label: Text(l10n.reportsColBlockedHours), numeric: true),
+          DataColumn(label: Text(l10n.reportsColOffHours), numeric: true),
+          DataColumn(label: Text(l10n.reportsColAvailableHours), numeric: true),
+          DataColumn(label: Text(l10n.reportsColUtilization), numeric: true),
+        ],
+        rows: byStaff.map((row) {
+          final staffColor = row.staffColor != null
+              ? _parseColor(row.staffColor!)
+              : colorScheme.primary;
+
+          return DataRow(
+            cells: [
+              DataCell(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: staffColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(row.staffName),
+                  ],
+                ),
+              ),
+              DataCell(Text(formatHours(row.scheduledHours))),
+              DataCell(
+                Text(
+                  formatHours(row.workedHours),
+                  style: TextStyle(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              DataCell(
+                Text(
+                  formatHours(row.blockedHours),
+                  style: TextStyle(color: Colors.orange.shade700),
+                ),
+              ),
+              DataCell(
+                Text(
+                  formatHours(row.exceptionOffHours),
+                  style: TextStyle(color: Colors.red.shade700),
+                ),
+              ),
+              DataCell(Text(formatHours(row.availableHours))),
+              DataCell(_buildPercentageBar(context, row.utilizationPercentage)),
+            ],
+          );
+        }).toList(),
+      ),
+    );
   }
 }
 

@@ -406,4 +406,355 @@ final class ReportsController
             return 0;
         }
     }
+
+    /**
+     * GET /v1/reports/work-hours
+     * Report on worked hours vs scheduled hours (including time blocks/absences)
+     */
+    public function workHours(Request $request): Response
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null) {
+            return Response::unauthorized('Unauthorized');
+        }
+
+        $businessId = (int) ($request->query['business_id'] ?? 0);
+        if ($businessId === 0) {
+            return Response::badRequest(['error' => 'business_id is required']);
+        }
+
+        if (!$this->hasReportAccess($userId, $businessId)) {
+            return Response::forbidden('Access denied. Admin or owner role required.');
+        }
+
+        $startDate = $request->query['start_date'] ?? null;
+        $endDate = $request->query['end_date'] ?? null;
+
+        if (!$startDate || !$endDate) {
+            return Response::badRequest(['error' => 'start_date and end_date are required']);
+        }
+
+        if (!$this->isValidDate($startDate) || !$this->isValidDate($endDate)) {
+            return Response::badRequest(['error' => 'Invalid date format. Use Y-m-d']);
+        }
+
+        $locationIds = $request->query['location_ids'] ?? [];
+        $staffIds = $request->query['staff_ids'] ?? [];
+
+        $report = $this->buildWorkHoursReport($businessId, $startDate, $endDate, $locationIds, $staffIds);
+
+        return Response::ok($report);
+    }
+
+    /**
+     * Build the work hours report for each staff member.
+     */
+    private function buildWorkHoursReport(int $businessId, string $startDate, string $endDate, array $locationIds, array $staffIds): array
+    {
+        $pdo = $this->db->getPdo();
+
+        // Get all staff for this business
+        $staffQuery = "SELECT s.id, CONCAT(s.name, ' ', s.surname) as full_name, s.color_hex 
+            FROM staff s WHERE s.business_id = ? AND s.is_active = 1";
+        $staffParams = [$businessId];
+
+        if (!empty($staffIds)) {
+            $staffIds = array_map('intval', $staffIds);
+            $placeholders = implode(',', array_fill(0, count($staffIds), '?'));
+            $staffQuery .= " AND s.id IN ($placeholders)";
+            $staffParams = array_merge($staffParams, $staffIds);
+        }
+
+        $staffQuery .= " ORDER BY s.sort_order, s.name";
+        $stmt = $pdo->prepare($staffQuery);
+        $stmt->execute($staffParams);
+        $staffList = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        if (empty($staffList)) {
+            return [
+                'summary' => [
+                    'total_scheduled_minutes' => 0,
+                    'total_worked_minutes' => 0,
+                    'total_blocked_minutes' => 0,
+                    'total_exception_off_minutes' => 0,
+                ],
+                'by_staff' => [],
+                'filters' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'location_ids' => array_map('intval', $locationIds),
+                    'staff_ids' => array_map('intval', $staffIds),
+                ],
+            ];
+        }
+
+        $start = new \DateTime($startDate);
+        $end = new \DateTime($endDate);
+        $end->modify('+1 day'); // Include end date
+        $interval = new \DateInterval('P1D');
+        $period = new \DatePeriod($start, $interval, $end);
+
+        $byStaff = [];
+        $totalScheduled = 0;
+        $totalWorked = 0;
+        $totalBlocked = 0;
+        $totalExceptionOff = 0;
+
+        foreach ($staffList as $staff) {
+            $staffId = (int) $staff['id'];
+            $staffName = $staff['full_name'];
+            $staffColor = $staff['color_hex'];
+
+            // Get all plannings for this staff
+            $planningQuery = "SELECT sp.id, sp.type, sp.valid_from, sp.valid_to 
+                FROM staff_planning sp WHERE sp.staff_id = ? ORDER BY sp.valid_from DESC";
+            $stmt = $pdo->prepare($planningQuery);
+            $stmt->execute([$staffId]);
+            $plannings = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            // Get all exceptions for this staff in the period
+            $exceptionQuery = "SELECT exception_date, start_time, end_time, exception_type, reason 
+                FROM staff_availability_exceptions 
+                WHERE staff_id = ? AND exception_date BETWEEN ? AND ?";
+            $stmt = $pdo->prepare($exceptionQuery);
+            $stmt->execute([$staffId, $startDate, $endDate]);
+            $exceptions = [];
+            foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $exc) {
+                $exceptions[$exc['exception_date']][] = $exc;
+            }
+
+            // Get time blocks for this staff in the period
+            $blockQuery = "SELECT tb.start_time, tb.end_time, tb.reason, tb.is_all_day
+                FROM time_blocks tb
+                JOIN time_block_staff tbs ON tb.id = tbs.time_block_id
+                JOIN locations l ON tb.location_id = l.id
+                WHERE tbs.staff_id = ? 
+                AND l.business_id = ?
+                AND DATE(tb.start_time) >= ? AND DATE(tb.end_time) <= ?";
+            $blockParams = [$staffId, $businessId, $startDate, $endDate];
+
+            if (!empty($locationIds)) {
+                $locationIds = array_map('intval', $locationIds);
+                $placeholders = implode(',', array_fill(0, count($locationIds), '?'));
+                $blockQuery .= " AND tb.location_id IN ($placeholders)";
+                $blockParams = array_merge($blockParams, $locationIds);
+            }
+
+            $stmt = $pdo->prepare($blockQuery);
+            $stmt->execute($blockParams);
+            $blocks = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            // Index blocks by date
+            $blocksByDate = [];
+            foreach ($blocks as $block) {
+                $blockStart = new \DateTime($block['start_time']);
+                $blockEnd = new \DateTime($block['end_time']);
+                $blockDate = $blockStart->format('Y-m-d');
+                
+                if (!isset($blocksByDate[$blockDate])) {
+                    $blocksByDate[$blockDate] = [];
+                }
+                $blocksByDate[$blockDate][] = [
+                    'start' => $blockStart,
+                    'end' => $blockEnd,
+                    'reason' => $block['reason'],
+                    'is_all_day' => (bool) $block['is_all_day'],
+                ];
+            }
+
+            // Get worked minutes from booking_items
+            $workedQuery = "SELECT COALESCE(SUM(TIMESTAMPDIFF(MINUTE, bi.start_time, bi.end_time)), 0) as worked_minutes
+                FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.id
+                WHERE bi.staff_id = ? 
+                AND b.business_id = ?
+                AND DATE(bi.start_time) >= ? AND DATE(bi.start_time) <= ?
+                AND b.status IN ('confirmed', 'completed')";
+            $workedParams = [$staffId, $businessId, $startDate, $endDate];
+
+            if (!empty($locationIds)) {
+                $placeholders = implode(',', array_fill(0, count($locationIds), '?'));
+                $workedQuery .= " AND bi.location_id IN ($placeholders)";
+                $workedParams = array_merge($workedParams, $locationIds);
+            }
+
+            $stmt = $pdo->prepare($workedQuery);
+            $stmt->execute($workedParams);
+            $workedMinutes = (int) $stmt->fetchColumn();
+
+            $scheduledMinutes = 0;
+            $blockedMinutes = 0;
+            $exceptionOffMinutes = 0;
+
+            foreach ($period as $date) {
+                $dateStr = $date->format('Y-m-d');
+                $dayOfWeek = (int) $date->format('N'); // 1=Monday, 7=Sunday
+
+                // Check if there's an unavailable exception for this date (day off)
+                if (isset($exceptions[$dateStr])) {
+                    $hasUnavailableException = false;
+                    $exceptionMinutesToday = 0;
+                    
+                    foreach ($exceptions[$dateStr] as $exc) {
+                        if ($exc['exception_type'] === 'unavailable') {
+                            $hasUnavailableException = true;
+                            // This is a day off - calculate how many minutes they would have worked
+                            $plannedMinutes = $this->getPlannedMinutesForDay($pdo, $plannings, $date, $dayOfWeek);
+                            $exceptionMinutesToday += $plannedMinutes;
+                        } elseif ($exc['exception_type'] === 'available' && $exc['start_time'] && $exc['end_time']) {
+                            // Working exception - add these hours to scheduled
+                            $excStart = new \DateTime($exc['start_time']);
+                            $excEnd = new \DateTime($exc['end_time']);
+                            $scheduledMinutes += (int) (($excEnd->getTimestamp() - $excStart->getTimestamp()) / 60);
+                        }
+                    }
+                    
+                    if ($hasUnavailableException) {
+                        $exceptionOffMinutes += $exceptionMinutesToday;
+                        continue; // Skip normal planning for this day
+                    }
+                }
+
+                // Find valid planning for this date
+                $validPlanning = null;
+                foreach ($plannings as $planning) {
+                    $validFrom = $planning['valid_from'];
+                    $validTo = $planning['valid_to'];
+
+                    if ($dateStr >= $validFrom && ($validTo === null || $dateStr <= $validTo)) {
+                        $validPlanning = $planning;
+                        break;
+                    }
+                }
+
+                if (!$validPlanning) {
+                    continue; // No valid planning for this date
+                }
+
+                // Determine week label (A or B for biweekly)
+                $weekLabel = 'A';
+                if ($validPlanning['type'] === 'biweekly') {
+                    $validFromDate = new \DateTime($validPlanning['valid_from']);
+                    $weeksDiff = (int) floor($validFromDate->diff($date)->days / 7);
+                    $weekLabel = ($weeksDiff % 2 === 0) ? 'A' : 'B';
+                }
+
+                // Get template for this day
+                $templateQuery = "SELECT slots FROM staff_planning_week_template 
+                    WHERE staff_planning_id = ? AND week_label = ? AND day_of_week = ?";
+                $stmt = $pdo->prepare($templateQuery);
+                $stmt->execute([$validPlanning['id'], $weekLabel, $dayOfWeek]);
+                $template = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+                if ($template && $template['slots']) {
+                    $slots = json_decode($template['slots'], true);
+                    if (is_array($slots)) {
+                        $plannedMinutesToday = count($slots) * 15;
+                        $scheduledMinutes += $plannedMinutesToday;
+                    }
+                }
+
+                // Calculate blocked minutes for this day from time_blocks
+                if (isset($blocksByDate[$dateStr])) {
+                    foreach ($blocksByDate[$dateStr] as $block) {
+                        if ($block['is_all_day']) {
+                            // All day block - count all planned hours as blocked
+                            $plannedMinutes = $this->getPlannedMinutesForDay($pdo, $plannings, $date, $dayOfWeek);
+                            $blockedMinutes += $plannedMinutes;
+                        } else {
+                            $blockDuration = (int) (($block['end']->getTimestamp() - $block['start']->getTimestamp()) / 60);
+                            $blockedMinutes += $blockDuration;
+                        }
+                    }
+                }
+            }
+
+            $byStaff[] = [
+                'staff_id' => $staffId,
+                'staff_name' => $staffName,
+                'staff_color' => $staffColor,
+                'scheduled_minutes' => $scheduledMinutes,
+                'worked_minutes' => $workedMinutes,
+                'blocked_minutes' => $blockedMinutes,
+                'exception_off_minutes' => $exceptionOffMinutes,
+                'available_minutes' => max(0, $scheduledMinutes - $blockedMinutes),
+                'utilization_percentage' => $scheduledMinutes > 0 
+                    ? round(($workedMinutes / ($scheduledMinutes - $blockedMinutes)) * 100, 1) 
+                    : 0,
+            ];
+
+            $totalScheduled += $scheduledMinutes;
+            $totalWorked += $workedMinutes;
+            $totalBlocked += $blockedMinutes;
+            $totalExceptionOff += $exceptionOffMinutes;
+        }
+
+        return [
+            'summary' => [
+                'total_scheduled_minutes' => $totalScheduled,
+                'total_worked_minutes' => $totalWorked,
+                'total_blocked_minutes' => $totalBlocked,
+                'total_exception_off_minutes' => $totalExceptionOff,
+                'total_available_minutes' => max(0, $totalScheduled - $totalBlocked),
+                'overall_utilization_percentage' => ($totalScheduled - $totalBlocked) > 0
+                    ? round(($totalWorked / ($totalScheduled - $totalBlocked)) * 100, 1)
+                    : 0,
+            ],
+            'by_staff' => $byStaff,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'location_ids' => array_map('intval', $locationIds),
+                'staff_ids' => array_map('intval', $staffIds),
+            ],
+        ];
+    }
+
+    /**
+     * Get planned minutes for a specific day from planning templates.
+     */
+    private function getPlannedMinutesForDay(\PDO $pdo, array $plannings, \DateTime $date, int $dayOfWeek): int
+    {
+        $dateStr = $date->format('Y-m-d');
+        
+        // Find valid planning for this date
+        $validPlanning = null;
+        foreach ($plannings as $planning) {
+            $validFrom = $planning['valid_from'];
+            $validTo = $planning['valid_to'];
+
+            if ($dateStr >= $validFrom && ($validTo === null || $dateStr <= $validTo)) {
+                $validPlanning = $planning;
+                break;
+            }
+        }
+
+        if (!$validPlanning) {
+            return 0;
+        }
+
+        // Determine week label
+        $weekLabel = 'A';
+        if ($validPlanning['type'] === 'biweekly') {
+            $validFromDate = new \DateTime($validPlanning['valid_from']);
+            $weeksDiff = (int) floor($validFromDate->diff($date)->days / 7);
+            $weekLabel = ($weeksDiff % 2 === 0) ? 'A' : 'B';
+        }
+
+        // Get template
+        $templateQuery = "SELECT slots FROM staff_planning_week_template 
+            WHERE staff_planning_id = ? AND week_label = ? AND day_of_week = ?";
+        $stmt = $pdo->prepare($templateQuery);
+        $stmt->execute([$validPlanning['id'], $weekLabel, $dayOfWeek]);
+        $template = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if ($template && $template['slots']) {
+            $slots = json_decode($template['slots'], true);
+            if (is_array($slots)) {
+                return count($slots) * 15;
+            }
+        }
+
+        return 0;
+    }
 }
