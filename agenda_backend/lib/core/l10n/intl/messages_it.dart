@@ -1034,20 +1034,32 @@ class MessageLookup extends MessageLookupByLibrary {
     "reportsColAppointments": MessageLookupByLibrary.simpleMessage(
       "Appuntamenti",
     ),
+    "reportsColAvailableHours": MessageLookupByLibrary.simpleMessage(
+      "Effettive",
+    ),
     "reportsColAvgDuration": MessageLookupByLibrary.simpleMessage(
       "Durata media",
     ),
     "reportsColAvgRevenue": MessageLookupByLibrary.simpleMessage("Media"),
+    "reportsColBlockedHours": MessageLookupByLibrary.simpleMessage("Blocchi"),
     "reportsColCategory": MessageLookupByLibrary.simpleMessage("Categoria"),
     "reportsColDay": MessageLookupByLibrary.simpleMessage("Giorno"),
     "reportsColHour": MessageLookupByLibrary.simpleMessage("Ora"),
     "reportsColHours": MessageLookupByLibrary.simpleMessage("Ore"),
     "reportsColLocation": MessageLookupByLibrary.simpleMessage("Sede"),
+    "reportsColOffHours": MessageLookupByLibrary.simpleMessage("Ferie/Assenze"),
     "reportsColPercentage": MessageLookupByLibrary.simpleMessage("%"),
     "reportsColPeriod": MessageLookupByLibrary.simpleMessage("Periodo"),
     "reportsColRevenue": MessageLookupByLibrary.simpleMessage("Incasso"),
+    "reportsColScheduledHours": MessageLookupByLibrary.simpleMessage(
+      "Programmate",
+    ),
     "reportsColService": MessageLookupByLibrary.simpleMessage("Servizio"),
     "reportsColStaff": MessageLookupByLibrary.simpleMessage("Operatore"),
+    "reportsColUtilization": MessageLookupByLibrary.simpleMessage(
+      "Occupazione",
+    ),
+    "reportsColWorkedHours": MessageLookupByLibrary.simpleMessage("Prenotate"),
     "reportsFilterLocations": MessageLookupByLibrary.simpleMessage("Sedi"),
     "reportsFilterServices": MessageLookupByLibrary.simpleMessage("Servizi"),
     "reportsFilterStaff": MessageLookupByLibrary.simpleMessage("Staff"),
@@ -1089,6 +1101,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "reportsPresetYear": MessageLookupByLibrary.simpleMessage("Anno corrente"),
     "reportsPresets": MessageLookupByLibrary.simpleMessage("Preset periodo"),
+    "reportsTabAppointments": MessageLookupByLibrary.simpleMessage(
+      "Appuntamenti",
+    ),
+    "reportsTabStaff": MessageLookupByLibrary.simpleMessage("Team"),
     "reportsTitle": MessageLookupByLibrary.simpleMessage("Report"),
     "reportsTotalAppointments": MessageLookupByLibrary.simpleMessage(
       "Appuntamenti",
@@ -1098,6 +1114,24 @@ class MessageLookup extends MessageLookupByLibrary {
     "reportsUniqueClients": MessageLookupByLibrary.simpleMessage(
       "Clienti unici",
     ),
+    "reportsWorkHoursAvailable": MessageLookupByLibrary.simpleMessage(
+      "Effettive",
+    ),
+    "reportsWorkHoursBlocked": MessageLookupByLibrary.simpleMessage("Blocchi"),
+    "reportsWorkHoursOff": MessageLookupByLibrary.simpleMessage(
+      "Ferie/Assenze",
+    ),
+    "reportsWorkHoursScheduled": MessageLookupByLibrary.simpleMessage(
+      "Programmate",
+    ),
+    "reportsWorkHoursSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Riepilogo ore programmate, lavorate e assenze",
+    ),
+    "reportsWorkHoursTitle": MessageLookupByLibrary.simpleMessage("Staff"),
+    "reportsWorkHoursUtilization": MessageLookupByLibrary.simpleMessage(
+      "Occupazione",
+    ),
+    "reportsWorkHoursWorked": MessageLookupByLibrary.simpleMessage("Prenotate"),
     "resourceDeleteConfirm": MessageLookupByLibrary.simpleMessage(
       "Eliminare questa risorsa?",
     ),

@@ -275,6 +275,7 @@ final class Kernel
 
         // Reports (admin/owner only)
         $this->router->get('/v1/reports/appointments', ReportsController::class, 'appointments', ['auth']);
+        $this->router->get('/v1/reports/work-hours', ReportsController::class, 'workHours', ['auth']);
 
         // Time blocks (auth required)
         $this->router->get('/v1/locations/{location_id}/time-blocks', TimeBlocksController::class, 'index', ['auth']);

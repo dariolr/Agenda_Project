@@ -27,7 +27,7 @@ current_v="$(
 )"
 
 next_n=1
-prod_suffix=""
+current_p="0"
 if [[ -n "${current_v:-}" ]]; then
   # Estrae la data (primi 8 caratteri)
   current_date="${current_v:0:8}"
@@ -37,10 +37,10 @@ if [[ -n "${current_v:-}" ]]; then
   # Controlla se c'è un suffisso .P (numero deploy produzione)
   if [[ "$rest" == *"."* ]]; then
     current_n="${rest%%.*}"
-    prod_suffix=".${rest#*.}"
+    current_p="${rest#*.}"
   else
     current_n="$rest"
-    prod_suffix=""
+    current_p="0"
   fi
 
   if [[ "$current_date" == "$today" ]]; then
@@ -54,8 +54,14 @@ if [[ -n "${current_v:-}" ]]; then
   fi
 fi
 
-# Mantiene il suffisso .P se presente
-new_v="${today}-${next_n}${prod_suffix}"
+# Incrementa P (numero progressivo deploy PRODUZIONE)
+if [[ "$current_p" =~ ^[0-9]+$ ]]; then
+  next_p=$(( current_p + 1 ))
+else
+  next_p=1
+fi
+
+new_v="${today}-${next_n}.${next_p}"
 
 # Aggiorna window.appVersion (supporta sia formato YYYYMMDD-N che YYYYMMDD-N.P)
 NEW_V="$new_v" perl -0777 -i -pe '

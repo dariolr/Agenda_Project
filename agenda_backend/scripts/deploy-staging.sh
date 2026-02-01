@@ -23,20 +23,32 @@ fi
 
 today="$(date +%Y%m%d)"
 
-# Estrae l'attuale valore di window.appVersion (se esiste)
+# Estrae l'attuale valore di window.appVersion (supporta sia YYYYMMDD-N che YYYYMMDD-N.P)
 current_v="$(
   perl -0777 -ne '
-    if (m/window\.appVersion\s*=\s*"([0-9]{8}-[0-9]+)"/) { print $1; }
+    if (m/window\.appVersion\s*=\s*"([0-9]{8}-[0-9]+(?:\.[0-9]+)?)"/) { print $1; }
   ' "$INDEX_FILE" || true
 )"
 
 next_n=1
+prod_suffix=""
 if [[ -n "${current_v:-}" ]]; then
-  current_date="${current_v%%-*}"
-  current_n="${current_v##*-}"
+  # Estrae la data (primi 8 caratteri)
+  current_date="${current_v:0:8}"
+  # Estrae il resto dopo il trattino (es: "1" o "1.9")
+  rest="${current_v#*-}"
+  
+  # Controlla se c'è un suffisso .P (numero deploy produzione) - MANTIENI per staging
+  if [[ "$rest" == *"."* ]]; then
+    current_n="${rest%%.*}"
+    prod_suffix=".${rest#*.}"
+  else
+    current_n="$rest"
+    prod_suffix=""
+  fi
 
   if [[ "$current_date" == "$today" ]]; then
-    if [[ "$current_n" == <-> ]]; then
+    if [[ "$current_n" =~ ^[0-9]+$ ]]; then
       next_n=$(( current_n + 1 ))
     else
       next_n=1
@@ -46,12 +58,13 @@ if [[ -n "${current_v:-}" ]]; then
   fi
 fi
 
-new_v="${today}-${next_n}"
+# STAGING: NON incrementa P, lo mantiene solo se già presente
+new_v="${today}-${next_n}${prod_suffix}"
 
-# Aggiorna window.appVersion
+# Aggiorna window.appVersion (supporta sia formato YYYYMMDD-N che YYYYMMDD-N.P)
 NEW_V="$new_v" perl -0777 -i -pe '
   my $newv = $ENV{NEW_V};
-  s{(window\.appVersion\s*=\s*")[0-9]{8}-[0-9]+(")}{\1$newv\2}g;
+  s{(window\.appVersion\s*=\s*")[0-9]{8}-[0-9]+(?:\.[0-9]+)?(")}{\1$newv\2}g;
 ' "$INDEX_FILE"
 
 echo "OK: aggiornato $INDEX_FILE -> window.appVersion = \"$new_v\""

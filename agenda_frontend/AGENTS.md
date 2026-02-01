@@ -429,6 +429,69 @@ Gli utenti autenticati possono modificare il proprio profilo dalla voce "Profilo
 
 ---
 
+## 🏷️ Versione App e Cache Busting (01/02/2026)
+
+### Singolo punto di configurazione
+La versione è definita **una sola volta** in `web/index.html`:
+
+```html
+<script>
+  window.appVersion = "YYYYMMDD-N.P";
+</script>
+```
+
+Questa variabile viene usata per:
+1. **Cache busting** — Il tag `flutter_bootstrap.js` viene generato dinamicamente con `?v=` dalla stessa variabile
+2. **Auto-aggiornamento** — Il file `web/app_version.txt` viene usato dal `VersionChecker` per rilevare nuove versioni
+
+### Formato versione
+
+```
+YYYYMMDD-N.P
+│        │ │
+│        │ └── P = Numero progressivo deploy PRODUZIONE (incrementa AUTOMATICAMENTE con deploy.sh)
+│        └──── N = Contatore giornaliero modifiche (incrementa automaticamente)
+└───────────── Data (anno, mese, giorno)
+```
+
+**Esempio:** `20260201-1.10` = prima modifica del 01/02/2026, decimo deploy in produzione
+
+### Script di Deploy (aggiornamento automatico)
+
+| Script | Comportamento P |
+|--------|-----------------|
+| `deploy.sh` | Incrementa P automaticamente (+1 ad ogni deploy) |
+| `deploy-staging.sh` | NON incrementa P (mantiene valore esistente) |
+
+**Entrambi gli script:**
+- Incrementano N se stesso giorno, resettano a 1 se giorno diverso
+- Aggiornano `web/index.html` (window.appVersion)
+- Aggiornano `web/app_version.txt` (per VersionChecker)
+
+### File app_version.txt
+
+Il file `web/app_version.txt` contiene solo la stringa versione (es. `20260201-1.10`).
+
+**Scopo:** Permette al `VersionChecker` di rilevare nuove versioni deployate senza dover parsare index.html.
+
+**Flow auto-aggiornamento:**
+1. `VersionChecker` legge `/app_version.txt?_={timestamp}` periodicamente
+2. Confronta con versione corrente da `window.appVersion`
+3. Se diversa → mostra dialog "Nuova versione disponibile"
+4. Utente clicca "Aggiorna" → `window.location.reload(true)`
+
+### File di riferimento
+| File | Scopo |
+|------|-------|
+| `web/index.html` | Definizione `window.appVersion` |
+| `web/app_version.txt` | Versione plain text per VersionChecker |
+| `lib/core/utils/app_version.dart` | Utility `getAppVersion()` per leggere da JS |
+| `lib/core/services/version_checker.dart` | Controllo periodico nuove versioni |
+| `scripts/deploy.sh` | Deploy PROD (incrementa P) |
+| `scripts/deploy-staging.sh` | Deploy STAGING (mantiene P) |
+
+---
+
 ## 📚 File di riferimento generali
 
 | Concetto | File chiave |

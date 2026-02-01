@@ -1132,7 +1132,7 @@ La sezione "Accesso" appare solo se il business ha più di una location:
 
 ---
 
-## 🏷️ Versione App e Cache Busting (16/01/2026)
+## 🏷️ Versione App e Cache Busting (01/02/2026)
 
 ### Singolo punto di configurazione
 La versione è definita **una sola volta** in `web/index.html`:
@@ -1146,39 +1146,54 @@ La versione è definita **una sola volta** in `web/index.html`:
 Questa variabile viene usata per:
 1. **Cache busting** — Il tag `flutter_bootstrap.js` viene generato dinamicamente con `?v=` dalla stessa variabile
 2. **Footer login** — Mostrato nella schermata di login come `vYYYYMMDD-N.P`
+3. **Auto-aggiornamento** — Il file `web/app_version.txt` viene usato dal `VersionChecker` per rilevare nuove versioni
 
 ### Formato versione
 
 ```
 YYYYMMDD-N.P
 │        │ │
-│        │ └── P = Numero progressivo deploy PRODUZIONE (incrementa solo per deploy prod)
-│        └──── N = Contatore giornaliero modifiche
+│        │ └── P = Numero progressivo deploy PRODUZIONE (incrementa AUTOMATICAMENTE con deploy.sh)
+│        └──── N = Contatore giornaliero modifiche (incrementa automaticamente)
 └───────────── Data (anno, mese, giorno)
 ```
 
-**Esempio:** `20260125-1.3` = prima modifica del 25/01/2026, terzo deploy in produzione
+**Esempio:** `20260201-1.10` = prima modifica del 01/02/2026, decimo deploy in produzione
 
-### ⚠️ Regola CRITICA per deploy PRODUZIONE
+### Script di Deploy (aggiornamento automatico)
 
-Il numero progressivo **P** deve essere incrementato **SOLO** per deploy in produzione:
-- **Deploy PRODUZIONE**: incrementare P (es. da `.3` a `.4`)
-- **Deploy staging/test/locale**: NON incrementare P, aggiornare solo YYYYMMDD-N se necessario
+| Script | Comportamento P |
+|--------|-----------------|
+| `deploy.sh` | Incrementa P automaticamente (+1 ad ogni deploy) |
+| `deploy-staging.sh` | NON incrementa P (mantiene valore esistente) |
 
-**Valore corrente P:** `4` (al 26/01/2026)
+**Entrambi gli script:**
+- Incrementano N se stesso giorno, resettano a 1 se giorno diverso
+- Aggiornano `web/index.html` (window.appVersion)
+- Aggiornano `web/app_version.txt` (per VersionChecker)
 
-### Come aggiornare la versione
-Modificare **solo** la riga:
-```javascript
-window.appVersion = "20260126-1.4";  // Formato: YYYYMMDD-N.P
-```
+### File app_version.txt
+
+Il file `web/app_version.txt` contiene solo la stringa versione (es. `20260201-1.10`).
+
+**Scopo:** Permette al `VersionChecker` di rilevare nuove versioni deployate senza dover parsare index.html.
+
+**Flow auto-aggiornamento:**
+1. `VersionChecker` legge `/app_version.txt?_={timestamp}` periodicamente
+2. Confronta con versione corrente da `window.appVersion`
+3. Se diversa → mostra dialog "Nuova versione disponibile"
+4. Utente clicca "Aggiorna" → `window.location.reload(true)`
 
 ### File di riferimento
 | File | Scopo |
 |------|-------|
 | `web/index.html` | Definizione `window.appVersion` |
+| `web/app_version.txt` | Versione plain text per VersionChecker |
 | `lib/core/utils/app_version.dart` | Utility `getAppVersion()` per leggere da JS |
+| `lib/core/services/version_checker.dart` | Controllo periodico nuove versioni |
 | `lib/features/auth/presentation/login_screen.dart` | Mostra versione nel footer |
+| `scripts/deploy.sh` | Deploy PROD (incrementa P) |
+| `scripts/deploy-staging.sh` | Deploy STAGING (mantiene P) |
 
 ---
 
@@ -1283,6 +1298,11 @@ La sezione "Fasce orarie intelligenti" appare nel dialog di modifica sede con:
 ### Funzionalità
 Sezione dedicata alle statistiche con filtri avanzati per periodo, sede, staff, servizi e stato appuntamenti.
 
+### Struttura a Tab (02/02/2026)
+La sezione Reports è organizzata in due tab:
+1. **Appuntamenti** — Statistiche appuntamenti (fatturato, occupazione, breakdown per staff/sede/servizio/orario)
+2. **Team** — Riepilogo ore pianificate, prenotate, blocchi e assenze per staff
+
 ### Filtri Periodo Predefiniti
 
 | Preset | Descrizione |
@@ -1306,7 +1326,7 @@ Per i preset "correnti" (mese, trimestre, semestre, anno) è disponibile uno swi
 
 Lo switch NON appare per: `custom`, `today`, `last_month`, `last_3_months`, `last_6_months`, `last_year`.
 
-### Sezioni Report
+### Sezioni Report Appuntamenti
 
 | Sezione | Colonne |
 |---------|----------|
@@ -1317,13 +1337,43 @@ Lo switch NON appare per: `custom`, `today`, `last_month`, `last_3_months`, `las
 | **Per fascia oraria** | Ora, Appuntamenti, Fatturato, % |
 | **Per periodo** | Periodo, Appuntamenti, Fatturato |
 
+### Sezioni Report Team (02/02/2026)
+
+| Sezione | Descrizione |
+|---------|-------------|
+| **Riepilogo** | 6 card: Pianificate, Prenotate, Blocchi, Assenze, Effettive, Occupazione % |
+| **Per operatore** | Tabella con breakdown per staff |
+
+**Colonne tabella staff:**
+| Colonna | Descrizione |
+|---------|-------------|
+| Operatore | Nome staff con colore |
+| Pianificate | Ore da planning settimanale |
+| Prenotate | Ore da booking_items |
+| Blocchi | Ore da time_blocks |
+| Assenze | Ore da staff_availability_exceptions (unavailable) |
+| Effettive | Pianificate - Blocchi |
+| Occupazione | Prenotate / Effettive × 100 |
+
+**API Endpoint:** `GET /v1/reports/work-hours`
+
+**Parametri query:**
+- `business_id` (required)
+- `start_date`, `end_date` (required, formato Y-m-d)
+- `location_ids[]` (optional)
+- `staff_ids[]` (optional)
+
+**Filtri tab Team:**
+- Sede e Staff → mostrati se multipli
+- Servizi e Stato → **NON mostrati** (non pertinenti)
+
 ### File Flutter
 
 | File | Responsabilità |
 |------|----------------|
-| `lib/features/reports/presentation/reports_screen.dart` | Schermata principale con filtri e tabelle |
-| `lib/features/reports/providers/reports_provider.dart` | Provider per fetch dati da API |
-| `lib/features/reports/domain/report_models.dart` | Modelli dati report |
+| `lib/features/reports/presentation/reports_screen.dart` | Schermata principale con TabBar e contenuti |
+| `lib/features/reports/providers/reports_provider.dart` | Provider per fetch dati da API (reportsProvider + workHoursReportProvider) |
+| `lib/features/reports/domain/report_models.dart` | Modelli dati report (AppointmentsReport + WorkHoursReport) |
 
 ### Localizzazioni Principali
 - `reportsPresetCustom` — "Scegli periodo"
@@ -1332,6 +1382,14 @@ Lo switch NON appare per: `custom`, `today`, `last_month`, `last_3_months`, `las
 - `reportsPresetSemester` — "Semestre corrente"
 - `reportsPresetYear` — "Anno corrente"
 - `reportsFullPeriodToggle` — "Includi intero periodo (anche futuro)"
+- `reportsTabAppointments` — "Appuntamenti"
+- `reportsTabStaff` — "Team"
+- `reportsWorkHoursScheduled` — "Pianificate"
+- `reportsWorkHoursWorked` — "Prenotate"
+- `reportsWorkHoursBlocked` — "Blocchi"
+- `reportsWorkHoursOff` — "Assenze"
+- `reportsWorkHoursAvailable` — "Effettive"
+- `reportsWorkHoursUtilization` — "Occupazione"
 - `actionApply` — "Applica" (pulsante date picker)
 
 ---

@@ -5302,6 +5302,161 @@ class L10n {
     );
   }
 
+  /// `Staff`
+  String get reportsWorkHoursTitle {
+    return Intl.message(
+      'Staff',
+      name: 'reportsWorkHoursTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appuntamenti`
+  String get reportsTabAppointments {
+    return Intl.message(
+      'Appuntamenti',
+      name: 'reportsTabAppointments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Team`
+  String get reportsTabStaff {
+    return Intl.message('Team', name: 'reportsTabStaff', desc: '', args: []);
+  }
+
+  /// `Riepilogo ore programmate, lavorate e assenze`
+  String get reportsWorkHoursSubtitle {
+    return Intl.message(
+      'Riepilogo ore programmate, lavorate e assenze',
+      name: 'reportsWorkHoursSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Programmate`
+  String get reportsWorkHoursScheduled {
+    return Intl.message(
+      'Programmate',
+      name: 'reportsWorkHoursScheduled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotate`
+  String get reportsWorkHoursWorked {
+    return Intl.message(
+      'Prenotate',
+      name: 'reportsWorkHoursWorked',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Blocchi`
+  String get reportsWorkHoursBlocked {
+    return Intl.message(
+      'Blocchi',
+      name: 'reportsWorkHoursBlocked',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ferie/Assenze`
+  String get reportsWorkHoursOff {
+    return Intl.message(
+      'Ferie/Assenze',
+      name: 'reportsWorkHoursOff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Effettive`
+  String get reportsWorkHoursAvailable {
+    return Intl.message(
+      'Effettive',
+      name: 'reportsWorkHoursAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Occupazione`
+  String get reportsWorkHoursUtilization {
+    return Intl.message(
+      'Occupazione',
+      name: 'reportsWorkHoursUtilization',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Programmate`
+  String get reportsColScheduledHours {
+    return Intl.message(
+      'Programmate',
+      name: 'reportsColScheduledHours',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotate`
+  String get reportsColWorkedHours {
+    return Intl.message(
+      'Prenotate',
+      name: 'reportsColWorkedHours',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Blocchi`
+  String get reportsColBlockedHours {
+    return Intl.message(
+      'Blocchi',
+      name: 'reportsColBlockedHours',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ferie/Assenze`
+  String get reportsColOffHours {
+    return Intl.message(
+      'Ferie/Assenze',
+      name: 'reportsColOffHours',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Effettive`
+  String get reportsColAvailableHours {
+    return Intl.message(
+      'Effettive',
+      name: 'reportsColAvailableHours',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Occupazione`
+  String get reportsColUtilization {
+    return Intl.message(
+      'Occupazione',
+      name: 'reportsColUtilization',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Operatore`
   String get reportsColStaff {
     return Intl.message(

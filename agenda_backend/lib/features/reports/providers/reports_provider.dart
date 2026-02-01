@@ -175,3 +175,102 @@ class ReportsNotifier extends Notifier<ReportsState> {
 final reportsProvider = NotifierProvider<ReportsNotifier, ReportsState>(
   ReportsNotifier.new,
 );
+
+// ============================================================================
+// WORK HOURS REPORT
+// ============================================================================
+
+/// State for the work hours report.
+class WorkHoursReportState {
+  const WorkHoursReportState({
+    this.params,
+    this.report,
+    this.isLoading = false,
+    this.error,
+  });
+
+  final ReportParams? params;
+  final WorkHoursReport? report;
+  final bool isLoading;
+  final String? error;
+
+  WorkHoursReportState copyWith({
+    ReportParams? params,
+    WorkHoursReport? report,
+    bool? isLoading,
+    String? error,
+    bool clearError = false,
+    bool clearReport = false,
+  }) {
+    return WorkHoursReportState(
+      params: params ?? this.params,
+      report: clearReport ? null : (report ?? this.report),
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+    );
+  }
+}
+
+/// Notifier for work hours report state.
+class WorkHoursReportNotifier extends Notifier<WorkHoursReportState> {
+  @override
+  WorkHoursReportState build() {
+    return const WorkHoursReportState();
+  }
+
+  /// Fetches the work hours report.
+  Future<void> fetchReport(ReportParams params) async {
+    state = state.copyWith(params: params, isLoading: true, clearError: true);
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final dateFormat = DateFormat('yyyy-MM-dd');
+
+      final queryParams = <String, dynamic>{
+        'business_id': params.businessId.toString(),
+        'start_date': dateFormat.format(params.startDate),
+        'end_date': dateFormat.format(params.endDate),
+      };
+
+      if (params.locationIds.isNotEmpty) {
+        queryParams['location_ids[]'] = params.locationIds
+            .map((e) => e.toString())
+            .toList();
+      }
+      if (params.staffIds.isNotEmpty) {
+        queryParams['staff_ids[]'] = params.staffIds
+            .map((e) => e.toString())
+            .toList();
+      }
+
+      final response = await apiClient.get(
+        '/v1/reports/work-hours',
+        queryParameters: queryParams,
+      );
+
+      final report = WorkHoursReport.fromJson(response);
+      state = state.copyWith(report: report, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  /// Refreshes the report using the last params.
+  Future<void> refresh() async {
+    final params = state.params;
+    if (params != null) {
+      await fetchReport(params);
+    }
+  }
+
+  /// Clears the report.
+  void clear() {
+    state = const WorkHoursReportState();
+  }
+}
+
+/// Provider for work hours report state.
+final workHoursReportProvider =
+    NotifierProvider<WorkHoursReportNotifier, WorkHoursReportState>(
+      WorkHoursReportNotifier.new,
+    );
