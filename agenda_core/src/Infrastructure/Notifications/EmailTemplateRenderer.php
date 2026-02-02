@@ -1303,4 +1303,172 @@ TEXT,
 
         return $templates[$locale];
     }
+
+    /**
+     * Get operator password reset template.
+     * Sent when an operator requests a password reset from the gestionale.
+     */
+    public static function operatorPasswordReset(string $locale = 'it'): array
+    {
+        $locale = self::normalizeLocale($locale);
+
+        $templates = [
+            'it' => [
+                'subject' => 'Reimposta la tua password - Gestionale Agenda',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reimposta Password</title>
+</head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+        <tr>
+            <td style="padding:40px 30px;text-align:center;background-color:#2196F3;">
+                <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">Reimposta Password</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:30px;">
+                <p style="margin:0 0 20px;font-size:16px;color:#333;">
+                    Ciao <strong>{{user_name}}</strong>,
+                </p>
+                <p style="margin:0 0 25px;font-size:16px;color:#333;">
+                    Abbiamo ricevuto una richiesta di reimpostazione password per il tuo account sul <strong>Gestionale Agenda</strong>.
+                </p>
+                
+                <p style="margin:0 0 25px;font-size:16px;color:#333;">
+                    Clicca sul pulsante qui sotto per reimpostare la tua password:
+                </p>
+                
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="text-align:center;">
+                            <a href="{{reset_url}}" style="display:inline-block;padding:14px 30px;background-color:#2196F3;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">
+                                Reimposta Password
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p style="margin:25px 0 0;font-size:14px;color:#666;">
+                    Questo link scade tra <strong>1 ora</strong>.
+                </p>
+                <p style="margin:10px 0 0;font-size:14px;color:#666;">
+                    Se non hai richiesto la reimpostazione della password, puoi ignorare questa email. La tua password rimarrà invariata.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+                <p style="margin:0;font-size:12px;color:#999;">
+                    Gestionale Agenda - RomeoLab
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+HTML,
+                'text' => <<<TEXT
+REIMPOSTA PASSWORD
+
+Ciao {{user_name}},
+
+Abbiamo ricevuto una richiesta di reimpostazione password per il tuo account sul Gestionale Agenda.
+
+Per reimpostare la tua password, visita il seguente link:
+{{reset_url}}
+
+Questo link scade tra 1 ora.
+
+Se non hai richiesto la reimpostazione della password, puoi ignorare questa email.
+
+---
+Gestionale Agenda - RomeoLab
+TEXT,
+            ],
+            'en' => [
+                'subject' => 'Reset your password - Agenda Management',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password</title>
+</head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+        <tr>
+            <td style="padding:40px 30px;text-align:center;background-color:#2196F3;">
+                <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">Reset Password</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:30px;">
+                <p style="margin:0 0 20px;font-size:16px;color:#333;">
+                    Hi <strong>{{user_name}}</strong>,
+                </p>
+                <p style="margin:0 0 25px;font-size:16px;color:#333;">
+                    We received a password reset request for your account on <strong>Agenda Management</strong>.
+                </p>
+                
+                <p style="margin:0 0 25px;font-size:16px;color:#333;">
+                    Click the button below to reset your password:
+                </p>
+                
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="text-align:center;">
+                            <a href="{{reset_url}}" style="display:inline-block;padding:14px 30px;background-color:#2196F3;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">
+                                Reset Password
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p style="margin:25px 0 0;font-size:14px;color:#666;">
+                    This link expires in <strong>1 hour</strong>.
+                </p>
+                <p style="margin:10px 0 0;font-size:14px;color:#666;">
+                    If you did not request a password reset, you can ignore this email. Your password will remain unchanged.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+                <p style="margin:0;font-size:12px;color:#999;">
+                    Agenda Management - RomeoLab
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+HTML,
+                'text' => <<<TEXT
+RESET PASSWORD
+
+Hi {{user_name}},
+
+We received a password reset request for your account on Agenda Management.
+
+To reset your password, visit the following link:
+{{reset_url}}
+
+This link expires in 1 hour.
+
+If you did not request a password reset, you can ignore this email.
+
+---
+Agenda Management - RomeoLab
+TEXT,
+            ],
+        ];
+
+        return $templates[$locale];
+    }
 }

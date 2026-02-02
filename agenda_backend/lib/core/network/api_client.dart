@@ -103,8 +103,13 @@ class ApiClient {
             }
           }
           // Gestione 401 generico (token invalid, unauthorized)
+          // MA NON per errori di login (invalid_credentials) o registrazione
           else if (error.response?.statusCode == 401) {
-            _triggerSessionExpired();
+            final errorCode = error.response?.data?['error']?['code'];
+            // Non triggerare session expired per errori di credenziali
+            if (errorCode != 'invalid_credentials') {
+              _triggerSessionExpired();
+            }
           }
           handler.next(error);
         },
