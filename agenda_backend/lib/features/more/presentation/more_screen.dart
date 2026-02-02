@@ -46,13 +46,14 @@ class MoreScreen extends ConsumerWidget {
         color: const Color(0xFF9C27B0), // Purple
         onTap: () => context.go('/prenotazioni'),
       ),
-      _MoreItem(
-        icon: Icons.event_busy,
-        title: l10n.closuresTitle,
-        description: l10n.closuresEmptyHint,
-        color: const Color(0xFFE91E63), // Pink
-        onTap: () => context.go('/chiusure'),
-      ),
+      // Riabilitare quando la funzionalità sarà completa
+      // _MoreItem(
+      //   icon: Icons.event_busy,
+      //   title: l10n.closuresTitle,
+      //   description: l10n.closuresEmptyHint,
+      //   color: const Color(0xFFE91E63), // Pink
+      //   onTap: () => context.go('/chiusure'),
+      // ),
     ];
 
     return Scaffold(
