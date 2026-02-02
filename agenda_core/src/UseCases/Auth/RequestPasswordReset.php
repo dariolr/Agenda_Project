@@ -6,6 +6,8 @@ namespace Agenda\UseCases\Auth;
 
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Notifications\EmailService;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use DateTimeImmutable;
 
 final class RequestPasswordReset
@@ -48,10 +50,50 @@ final class RequestPasswordReset
             $expiresAt,
         ]);
 
-        // In production: send email with token
-        // For now, log the token for testing
-        error_log("Password reset token for {$email}: {$token}");
+        // Send email with reset link
+        $this->sendPasswordResetEmail(
+            email: $email,
+            userName: trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Operatore',
+            resetToken: $token
+        );
 
         return true;
+    }
+
+    private function sendPasswordResetEmail(
+        string $email,
+        string $userName,
+        string $resetToken
+    ): void {
+        try {
+            $locale = $_ENV['DEFAULT_LOCALE'] ?? 'it';
+            $template = EmailTemplateRenderer::operatorPasswordReset($locale);
+            
+            // Reset URL va al GESTIONALE (usa BACKEND_URL dalla config)
+            $gestionaleUrl = $_ENV['BACKEND_URL'] ?? 'https://gestionale.romeolab.it';
+            $resetUrl = $gestionaleUrl . '/reset-password/' . $resetToken;
+
+            $variables = [
+                'user_name' => $userName,
+                'reset_url' => $resetUrl,
+            ];
+
+            $subject = EmailTemplateRenderer::render($template['subject'], $variables);
+            $htmlBody = EmailTemplateRenderer::render($template['html'], $variables);
+
+            error_log("[RequestPasswordReset] Sending email to {$email}");
+
+            $emailService = EmailService::create();
+            $result = $emailService->send($email, $subject, $htmlBody);
+
+            if ($result) {
+                error_log("[RequestPasswordReset] Email sent successfully to {$email}");
+            } else {
+                error_log("[RequestPasswordReset] Email FAILED for {$email}");
+            }
+        } catch (\Throwable $e) {
+            // Log but don't fail - token is already created
+            error_log("[RequestPasswordReset] Exception: " . $e->getMessage());
+        }
     }
 }
