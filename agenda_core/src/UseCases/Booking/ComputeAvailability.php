@@ -11,7 +11,7 @@ use Agenda\Infrastructure\Repositories\TimeBlockRepository;
 use Agenda\Infrastructure\Repositories\StaffAvailabilityExceptionRepository;
 use Agenda\Infrastructure\Repositories\ServiceVariantResourceRepository;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
-use Agenda\Infrastructure\Repositories\BusinessClosureRepository;
+use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use DateInterval;
@@ -37,7 +37,7 @@ final class ComputeAvailability
         private readonly StaffAvailabilityExceptionRepository $staffExceptionRepository,
         private readonly ?ServiceVariantResourceRepository $resourceRequirementRepository = null,
         private readonly ?ServiceRepository $serviceRepository = null,
-        private readonly ?BusinessClosureRepository $businessClosureRepository = null,
+        private readonly ?LocationClosureRepository $locationClosureRepository = null,
     ) {}
 
     /**
@@ -119,9 +119,9 @@ final class ComputeAvailability
             return ['slots' => []];
         }
 
-        // Check if business is closed on this date
-        if ($this->businessClosureRepository !== null) {
-            if ($this->businessClosureRepository->isDateClosed($businessId, $date)) {
+        // Check if location is closed on this date
+        if ($this->locationClosureRepository !== null) {
+            if ($this->locationClosureRepository->isDateClosed($locationId, $date)) {
                 return ['slots' => []];
             }
         }

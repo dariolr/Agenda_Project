@@ -1000,10 +1000,21 @@
   "moreSubtitle": "Access other application features",
 
   "closuresTitle": "Closure dates",
+  "closuresFilterFromToday": "From today",
+  "closuresFilterAll": "All",
   "closuresEmpty": "No closures scheduled",
+  "closuresEmptyForPeriod": "No closures scheduled for the selected period",
   "closuresEmptyHint": "Add business closure periods (e.g. holidays, vacations)",
   "closuresUpcoming": "Upcoming closures",
-  "closuresPast": "Past closures",
+  "closuresPast": "Previous closures",
+  "closuresTotalDays": "for a total of {count, plural, =1{1 day} other{{count} days}}",
+  "@closuresTotalDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "closuresNewTitle": "New closure",
   "closuresEditTitle": "Edit closure",
   "closuresStartDate": "Start date",
@@ -1026,5 +1037,12 @@
   "closuresDateRange": "Date range",
   "closuresAddSuccess": "Closure added",
   "closuresUpdateSuccess": "Closure updated",
-  "closuresDeleteSuccess": "Closure deleted"
+  "closuresDeleteSuccess": "Closure deleted",
+  "closuresLocations": "Affected locations",
+  "closuresSelectAll": "Select all",
+  "closuresDeselectAll": "Deselect all",
+  "closuresSelectAtLeastOneLocation": "Select at least one location",
+  "closuresNoLocations": "No locations configured",
+  "closuresAllLocations": "All locations",
+  "closuresAddButton": "Add closure"
 }

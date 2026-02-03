@@ -23,6 +23,7 @@ import '../../services/providers/service_categories_provider.dart';
 import '../../services/providers/services_provider.dart';
 import '../../staff/providers/availability_exceptions_provider.dart';
 import '../../staff/providers/staff_providers.dart';
+import 'location_closures_provider.dart';
 
 /// Notifier per tracciare se il superadmin ha selezionato un business.
 /// Quando è null, mostra la lista business.
@@ -92,6 +93,9 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
 
     // Availability Exceptions
     ref.invalidate(availabilityExceptionsProvider);
+
+    // Location Closures
+    ref.invalidate(locationClosuresProvider);
 
     // UI State legato al business (contiene ID di entità business-specific)
     ref.invalidate(selectedStaffIdsProvider);

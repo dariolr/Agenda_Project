@@ -25,6 +25,8 @@ import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/agenda/providers/location_providers.dart';
 import '../features/auth/providers/auth_provider.dart';
+import '../features/business/presentation/dialogs/location_closure_dialog.dart';
+import '../features/business/providers/location_closures_provider.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/clients/providers/clients_providers.dart';
@@ -83,6 +85,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isStaff = navigationShell.currentIndex == 3;
     final isReport = navigationShell.currentIndex == 4;
     final isBookingsList = navigationShell.currentIndex == 5;
+    final isClosures = navigationShell.currentIndex == 7;
     final agendaDate = ref.watch(agendaDateProvider);
     final today = DateUtils.dateOnly(DateTime.now());
     final isToday = DateUtils.isSameDay(agendaDate, today);
@@ -138,6 +141,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           actions.add(_ReportRefreshAction(ref: ref));
         } else if (isBookingsList) {
           actions.add(_BookingsListRefreshAction(ref: ref));
+        } else if (isClosures) {
+          actions.add(const _ClosuresAddAction());
         }
         return actions;
       }
@@ -147,8 +152,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       if (navigationShell.currentIndex <= 1) {
         // Agenda o Clienti
         desktopCurrentIndex = navigationShell.currentIndex;
-      } else if (navigationShell.currentIndex <= 5) {
-        // Servizi, Staff, Report o Prenotazioni → evidenzia "Altro"
+      } else if (navigationShell.currentIndex <= 5 ||
+          navigationShell.currentIndex == 7) {
+        // Servizi, Staff, Report, Prenotazioni o Chiusure → evidenzia "Altro"
         desktopCurrentIndex = 3;
       } else {
         // Profile (index 6 → 2 su desktop compatto)
@@ -167,6 +173,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 ? Text(context.l10n.reportsTitle)
                 : isBookingsList
                 ? Text(context.l10n.bookingsListTitle)
+                : isClosures
+                ? Text(context.l10n.closuresTitle)
                 : const SizedBox.shrink(),
             centerTitle: false,
             toolbarHeight: 76,
@@ -231,12 +239,14 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         actions.add(_ReportRefreshAction(ref: ref));
       } else if (isBookingsList) {
         actions.add(_BookingsListRefreshAction(ref: ref));
+      } else if (isClosures) {
+        actions.add(const _ClosuresAddAction(compact: true));
       }
       return actions;
     }
 
     // Su mobile, mappa l'indice corrente a quello compatto
-    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Prenotazioni, 6=Altro
+    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Prenotazioni, 6=Altro, 7=Chiusure
     // Mobile:  0=Agenda, 1=Clienti, 2=Profile, 3=Altro
     int mobileCurrentIndex;
     if (navigationShell.currentIndex <= 1) {
@@ -245,9 +255,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     } else if (navigationShell.currentIndex == 6) {
       // Schermata "Altro" → evidenzia "Altro" (index 3)
       mobileCurrentIndex = 3;
-    } else if (navigationShell.currentIndex >= 2 &&
-        navigationShell.currentIndex <= 5) {
-      // Servizi, Staff, Report o Prenotazioni → evidenzia "Altro"
+    } else if ((navigationShell.currentIndex >= 2 &&
+            navigationShell.currentIndex <= 5) ||
+        navigationShell.currentIndex == 7) {
+      // Servizi, Staff, Report, Prenotazioni o Chiusure → evidenzia "Altro"
       mobileCurrentIndex = 3;
     } else {
       // Fallback
@@ -265,6 +276,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               ? Text(context.l10n.reportsTitle)
               : isBookingsList
               ? Text(context.l10n.bookingsListTitle)
+              : isClosures
+              ? Text(context.l10n.closuresTitle)
               : const SizedBox.shrink(),
           centerTitle: false,
           actionsPadding: const EdgeInsets.only(right: 6),
@@ -339,6 +352,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   /// Ricarica i provider relativi alla tab selezionata
   void _refreshProvidersForTab(int index, WidgetRef ref) {
     switch (index) {
+      case 0: // Agenda
+        ref.read(locationClosuresProvider.notifier).refresh();
+        break;
       case 1: // Clienti
         ref.read(clientsProvider.notifier).setSearchQuery('');
         ref.read(clientsProvider.notifier).refresh();
@@ -1267,6 +1283,60 @@ class _BookingsListRefreshAction extends StatelessWidget {
           ref.read(bookingsListProvider.notifier).loadBookings(businessId),
       icon: const Icon(Icons.refresh),
       tooltip: context.l10n.actionRefresh,
+    );
+  }
+}
+
+/// Add button for Closures screen
+class _ClosuresAddAction extends ConsumerWidget {
+  const _ClosuresAddAction({this.compact = false});
+  final bool compact;
+  static const double _actionButtonHeight = 40;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: GestureDetector(
+        onTap: () => LocationClosureDialog.show(context),
+        child: Builder(
+          builder: (buttonContext) {
+            final scheme = Theme.of(buttonContext).colorScheme;
+            final onContainer = scheme.onSecondaryContainer;
+            return Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: Padding(
+                  padding: compact
+                      ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                      : const EdgeInsets.fromLTRB(12, 8, 28, 8),
+                  child: _buildAddButtonContent(
+                    showLabelEffective: showLabelEffective,
+                    compact: compact,
+                    label: l10n.agendaAdd,
+                    onContainer: onContainer,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

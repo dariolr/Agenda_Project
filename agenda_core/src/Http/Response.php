@@ -69,6 +69,11 @@ final class Response
         return self::error($message, 'not_found', 404);
     }
 
+    public static function noContent(?string $traceId = null): self
+    {
+        return new self(204, ['success' => true], $traceId);
+    }
+
     public static function conflict(string $code, string $message, ?string $traceId = null): self
     {
         return self::error($message, $code, 409);

@@ -12,7 +12,7 @@ use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
-use Agenda\Infrastructure\Repositories\BusinessClosureRepository;
+use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\UseCases\Notifications\QueueBookingConfirmation;
 use Agenda\UseCases\Notifications\QueueBookingReminder;
@@ -40,7 +40,7 @@ final class CreateBooking
         private readonly ?NotificationRepository $notificationRepo = null,
         private readonly ?ComputeAvailability $computeAvailability = null,
         private readonly ?BookingAuditRepository $auditRepository = null,
-        private readonly ?BusinessClosureRepository $businessClosureRepository = null,
+        private readonly ?LocationClosureRepository $locationClosureRepository = null,
     ) {}
 
     /**
@@ -117,10 +117,10 @@ final class CreateBooking
             throw BookingException::invalidLocation($locationId);
         }
 
-        // Check if business is closed on this date
-        if ($this->businessClosureRepository !== null) {
+        // Check if location is closed on this date
+        if ($this->locationClosureRepository !== null) {
             $dateStr = $startTime->format('Y-m-d');
-            $closure = $this->businessClosureRepository->findClosureForDate($businessId, $dateStr);
+            $closure = $this->locationClosureRepository->findClosureForDate($locationId, $dateStr);
             if ($closure !== null) {
                 throw BookingException::businessClosed($dateStr, $closure['reason'] ?? null);
             }
@@ -382,14 +382,14 @@ final class CreateBooking
         // Collect all service IDs for validation
         $serviceIds = array_map(fn($item) => (int) $item['service_id'], $items);
 
-        // Check if business is closed on booking date(s)
-        if ($this->businessClosureRepository !== null && !empty($items)) {
+        // Check if location is closed on booking date(s)
+        if ($this->locationClosureRepository !== null && !empty($items)) {
             // Check first item's start_time date
             $firstItemTime = $items[0]['start_time'] ?? null;
             if ($firstItemTime !== null) {
                 try {
                     $firstDate = (new DateTimeImmutable($firstItemTime))->format('Y-m-d');
-                    $closure = $this->businessClosureRepository->findClosureForDate($businessId, $firstDate);
+                    $closure = $this->locationClosureRepository->findClosureForDate($locationId, $firstDate);
                     if ($closure !== null) {
                         throw BookingException::businessClosed($firstDate, $closure['reason'] ?? null);
                     }
@@ -662,10 +662,10 @@ final class CreateBooking
             throw BookingException::invalidTime('Invalid ISO8601 format');
         }
 
-        // Check if business is closed on this date
-        if ($this->businessClosureRepository !== null) {
+        // Check if location is closed on this date
+        if ($this->locationClosureRepository !== null) {
             $dateStr = $startTimeLocal->format('Y-m-d');
-            $closure = $this->businessClosureRepository->findClosureForDate($businessId, $dateStr);
+            $closure = $this->locationClosureRepository->findClosureForDate($locationId, $dateStr);
             if ($closure !== null) {
                 throw BookingException::businessClosed($dateStr, $closure['reason'] ?? null);
             }
@@ -881,13 +881,13 @@ final class CreateBooking
             throw BookingException::invalidLocation($locationId);
         }
 
-        // Check if business is closed on booking date(s)
-        if ($this->businessClosureRepository !== null && !empty($items)) {
+        // Check if location is closed on booking date(s)
+        if ($this->locationClosureRepository !== null && !empty($items)) {
             $firstItemTime = $items[0]['start_time'] ?? null;
             if ($firstItemTime !== null) {
                 try {
                     $firstDate = (new DateTimeImmutable($firstItemTime))->format('Y-m-d');
-                    $closure = $this->businessClosureRepository->findClosureForDate($businessId, $firstDate);
+                    $closure = $this->locationClosureRepository->findClosureForDate($locationId, $firstDate);
                     if ($closure !== null) {
                         throw BookingException::businessClosed($firstDate, $closure['reason'] ?? null);
                     }

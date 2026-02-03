@@ -3,32 +3,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '/core/l10n/l10_extension.dart';
-import '/core/models/business_closure.dart';
+import '/core/models/location_closure.dart';
 import '/core/widgets/feedback_dialog.dart';
-import '/features/business/providers/business_closures_provider.dart';
-import 'dialogs/business_closure_dialog.dart';
+import '/features/agenda/providers/location_providers.dart';
+import '/features/business/providers/closures_filter_provider.dart';
+import '/features/business/providers/location_closures_provider.dart';
+import '/features/business/widgets/closures_header.dart';
+import 'dialogs/location_closure_dialog.dart' show LocationClosureDialog;
 
-/// Schermata per gestire le chiusure dell'attività
-class BusinessClosuresScreen extends ConsumerStatefulWidget {
-  const BusinessClosuresScreen({super.key});
+/// Schermata per gestire le chiusure della sede.
+class LocationClosuresScreen extends ConsumerStatefulWidget {
+  const LocationClosuresScreen({super.key});
 
   @override
-  ConsumerState<BusinessClosuresScreen> createState() =>
-      _BusinessClosuresScreenState();
+  ConsumerState<LocationClosuresScreen> createState() =>
+      _LocationClosuresScreenState();
 }
 
-class _BusinessClosuresScreenState
-    extends ConsumerState<BusinessClosuresScreen> {
+class _LocationClosuresScreenState
+    extends ConsumerState<LocationClosuresScreen> {
   @override
   void initState() {
     super.initState();
     // Refresh al caricamento
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.invalidate(businessClosuresProvider);
+      ref.invalidate(locationClosuresProvider);
     });
   }
 
-  Future<void> _deleteClosure(BusinessClosure closure) async {
+  Future<void> _deleteClosure(LocationClosure closure) async {
     final l10n = context.l10n;
 
     final confirmed = await showDialog<bool>(
@@ -55,7 +58,7 @@ class _BusinessClosuresScreenState
     if (confirmed == true && mounted) {
       try {
         await ref
-            .read(businessClosuresProvider.notifier)
+            .read(locationClosuresProvider.notifier)
             .deleteClosure(closure.id);
         if (mounted) {
           FeedbackDialog.showSuccess(
@@ -80,58 +83,58 @@ class _BusinessClosuresScreenState
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final closuresAsync = ref.watch(businessClosuresProvider);
+    final colorScheme = theme.colorScheme;
+    final closuresAsync = ref.watch(locationClosuresProvider);
+    final filterState = ref.watch(closuresFilterProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.closuresTitle),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(businessClosuresProvider),
-            tooltip: l10n.actionRefresh,
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => BusinessClosureDialog.show(context),
-        icon: const Icon(Icons.add),
-        label: Text(l10n.closuresNewTitle),
-      ),
-      body: closuresAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: theme.colorScheme.error,
+    return Column(
+      children: [
+        // Header with period controls (closures-specific)
+        const ClosuresHeader(),
+
+        // Content
+        Expanded(
+          child: closuresAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: colorScheme.error),
+                  const SizedBox(height: 16),
+                  Text(error.toString()),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => ref.invalidate(locationClosuresProvider),
+                    child: Text(l10n.actionRetry),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Text(error.toString()),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => ref.invalidate(businessClosuresProvider),
-                child: Text(l10n.actionRetry),
-              ),
-            ],
+            ),
+            data: (closures) {
+              // Filtra per range di date
+              final filteredClosures = closures.where((c) {
+                // Una chiusura è nel range se si sovrappone con il periodo filtro
+                return !c.endDate.isBefore(filterState.startDate) &&
+                    !c.startDate.isAfter(filterState.endDate);
+              }).toList();
+
+              if (filteredClosures.isEmpty) {
+                return _buildEmptyState(context);
+              }
+              return _buildClosuresList(context, filteredClosures);
+            },
           ),
         ),
-        data: (closures) {
-          if (closures.isEmpty) {
-            return _buildEmptyState(context);
-          }
-          return _buildClosuresList(context, closures);
-        },
-      ),
+      ],
     );
   }
 
   Widget _buildEmptyState(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final filterState = ref.watch(closuresFilterProvider);
+    final isAllSelected = filterState.selectedPreset == 'all';
 
     return Center(
       child: Padding(
@@ -142,7 +145,7 @@ class _BusinessClosuresScreenState
             Icon(Icons.event_busy, size: 80, color: theme.colorScheme.outline),
             const SizedBox(height: 24),
             Text(
-              l10n.closuresEmpty,
+              isAllSelected ? l10n.closuresEmpty : l10n.closuresEmptyForPeriod,
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -156,12 +159,6 @@ class _BusinessClosuresScreenState
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: () => BusinessClosureDialog.show(context),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.closuresNewTitle),
-            ),
           ],
         ),
       ),
@@ -170,7 +167,7 @@ class _BusinessClosuresScreenState
 
   Widget _buildClosuresList(
     BuildContext context,
-    List<BusinessClosure> closures,
+    List<LocationClosure> closures,
   ) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
@@ -192,7 +189,10 @@ class _BusinessClosuresScreenState
         if (futureClosures.isNotEmpty) ...[
           _SectionHeader(
             title: l10n.closuresUpcoming,
-            count: futureClosures.length,
+            totalDays: futureClosures.fold<int>(
+              0,
+              (sum, c) => sum + c.durationDays,
+            ),
             icon: Icons.event,
             color: theme.colorScheme.primary,
           ),
@@ -201,18 +201,21 @@ class _BusinessClosuresScreenState
             (c) => _ClosureCard(
               closure: c,
               isActive: c.containsDate(todayOnly),
-              onEdit: () => BusinessClosureDialog.show(context, closure: c),
+              onEdit: () => LocationClosureDialog.show(context, closure: c),
               onDelete: () => _deleteClosure(c),
             ),
           ),
         ],
 
-        // Chiusure passate
+        // Chiusure precedenti
         if (pastClosures.isNotEmpty) ...[
           if (futureClosures.isNotEmpty) const SizedBox(height: 24),
           _SectionHeader(
             title: l10n.closuresPast,
-            count: pastClosures.length,
+            totalDays: pastClosures.fold<int>(
+              0,
+              (sum, c) => sum + c.durationDays,
+            ),
             icon: Icons.history,
             color: theme.colorScheme.outline,
           ),
@@ -221,7 +224,7 @@ class _BusinessClosuresScreenState
             (c) => _ClosureCard(
               closure: c,
               isPast: true,
-              onEdit: () => BusinessClosureDialog.show(context, closure: c),
+              onEdit: () => LocationClosureDialog.show(context, closure: c),
               onDelete: () => _deleteClosure(c),
             ),
           ),
@@ -236,13 +239,13 @@ class _BusinessClosuresScreenState
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  final int count;
+  final int totalDays;
   final IconData icon;
   final Color color;
 
   const _SectionHeader({
     required this.title,
-    required this.count,
+    required this.totalDays,
     required this.icon,
     required this.color,
   });
@@ -250,6 +253,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -265,18 +269,10 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              count.toString(),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
+          Text(
+            l10n.closuresTotalDays(totalDays),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
             ),
           ),
         ],
@@ -285,8 +281,8 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _ClosureCard extends StatelessWidget {
-  final BusinessClosure closure;
+class _ClosureCard extends ConsumerWidget {
+  final LocationClosure closure;
   final bool isPast;
   final bool isActive;
   final VoidCallback onEdit;
@@ -301,22 +297,41 @@ class _ClosureCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).languageCode;
     final dateFormat = DateFormat.yMMMd(locale);
+
+    // Get locations to display their names
+    final locations = ref.watch(locationsProvider);
 
     final isSingleDay =
         closure.startDate.year == closure.endDate.year &&
         closure.startDate.month == closure.endDate.month &&
         closure.startDate.day == closure.endDate.day;
 
-    final cardColor = isActive
-        ? theme.colorScheme.errorContainer.withOpacity(0.5)
-        : isPast
+    final cardColor = isPast
         ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
         : null;
+
+    // Build location names string
+    String locationNames = '';
+    if (locations.isNotEmpty) {
+      final names = closure.locationIds
+          .map(
+            (id) => locations
+                .firstWhere((l) => l.id == id, orElse: () => locations.first)
+                .name,
+          )
+          .where((name) => name.isNotEmpty)
+          .toList();
+      if (names.length == locations.length && locations.length > 1) {
+        locationNames = l10n.closuresAllLocations;
+      } else {
+        locationNames = names.join(', ');
+      }
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -393,25 +408,6 @@ class _ClosureCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // Active badge
-                        if (isActive)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.error,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'CHIUSO',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onError,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
                       ],
                     ),
 
@@ -454,6 +450,32 @@ class _ClosureCard extends StatelessWidget {
                         ],
                       ],
                     ),
+
+                    // Location names
+                    if (locationNames.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: theme.colorScheme.outline,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              locationNames,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
