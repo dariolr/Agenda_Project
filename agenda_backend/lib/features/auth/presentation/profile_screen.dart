@@ -373,43 +373,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
-/// Header del profilo con pulsante modifica
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.isEditing, required this.onEdit});
-
-  final bool isEditing;
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Spacer(),
-          if (!isEditing)
-            TextButton.icon(
-              onPressed: onEdit,
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              label: Text(context.l10n.actionEdit),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Tile per le azioni del profilo
 class _ActionTile extends StatelessWidget {
   const _ActionTile({
