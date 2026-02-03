@@ -8,6 +8,7 @@ import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/auth/domain/auth_state.dart';
 import '../features/auth/presentation/change_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/bookings_list/presentation/bookings_list_screen.dart';
@@ -239,6 +240,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 name: 'chiusure',
                 builder: (BuildContext context, GoRouterState state) =>
                     const LocationClosuresScreen(),
+              ),
+            ],
+          ),
+
+          // --- Ramo 8: Profilo ---
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profilo',
+                name: 'profilo',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const ProfileScreen(),
               ),
             ],
           ),

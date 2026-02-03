@@ -53,6 +53,13 @@ class MoreScreen extends ConsumerWidget {
         color: const Color(0xFFE91E63), // Pink
         onTap: () => context.go('/chiusure'),
       ),
+      _MoreItem(
+        icon: Icons.account_circle_outlined,
+        title: l10n.profileTitle,
+        description: l10n.moreProfileDescription,
+        color: const Color(0xFF607D8B), // Blue Grey
+        onTap: () => context.go('/profilo'),
+      ),
     ];
 
     return Scaffold(

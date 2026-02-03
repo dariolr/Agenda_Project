@@ -620,6 +620,10 @@
   "authPhone": "Phone",
   "switchBusiness": "Switch",
   "profileTitle": "Profile",
+  "profileUpdateSuccess": "Profile updated successfully",
+  "profileEmailChangeWarning": "Warning: changing email will update your login credentials",
+  "profileChangePassword": "Change password",
+  "profileSwitchBusiness": "Switch business",
   "planningCreateTitle": "New planning",
   "planningEditTitle": "Edit planning",
   "planningDeleteTitle": "Delete planning",
@@ -997,6 +1001,7 @@
   "moreTeamDescription": "Manage operators, locations and working hours",
   "moreReportsDescription": "View statistics and business performance",
   "moreBookingsDescription": "Browse booking history",
+  "moreProfileDescription": "Manage your personal data and credentials",
   "moreSubtitle": "Access other application features",
 
   "closuresTitle": "Closure dates",

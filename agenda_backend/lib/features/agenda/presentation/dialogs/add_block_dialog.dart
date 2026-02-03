@@ -449,7 +449,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
                     ),
                   ),
                   if (!isKeyboardOpen) ...[
-                    const AppBottomSheetDivider(),
+                    const AppDivider(),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
                       child: Align(

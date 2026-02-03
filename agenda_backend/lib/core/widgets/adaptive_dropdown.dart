@@ -1,12 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/desktop_popup_container.dart';
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_dividers.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A dropdown item with a value and display widget.
 class AdaptiveDropdownItem<T> {
@@ -258,7 +258,7 @@ class _MobileSheetContent<T> extends StatelessWidget {
               ),
             ),
           ),
-          const AppBottomSheetDivider(),
+          const AppDivider(),
         ],
         ...items.map((item) {
           final isSelected = item.value == selectedValue;
@@ -338,7 +338,7 @@ class _DesktopDropdownContent<T> extends StatelessWidget {
               ),
             ),
           ),
-          const AppBottomSheetDivider(),
+          const AppDivider(),
         ],
         Flexible(
           child: SingleChildScrollView(

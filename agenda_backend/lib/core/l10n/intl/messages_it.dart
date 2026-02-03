@@ -828,6 +828,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "moreBookingsDescription": MessageLookupByLibrary.simpleMessage(
       "Consulta lo storico delle prenotazioni",
     ),
+    "moreProfileDescription": MessageLookupByLibrary.simpleMessage(
+      "Gestisci i tuoi dati personali e le credenziali",
+    ),
     "moreReportsDescription": MessageLookupByLibrary.simpleMessage(
       "Visualizza statistiche e andamento attività",
     ),
@@ -1006,7 +1009,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "priceStartingFromSwitch": MessageLookupByLibrary.simpleMessage(
       "Prezzo \"a partire da\"",
     ),
+    "profileChangePassword": MessageLookupByLibrary.simpleMessage(
+      "Cambia password",
+    ),
+    "profileEmailChangeWarning": MessageLookupByLibrary.simpleMessage(
+      "Attenzione: cambiando email dovrai usarla per il login",
+    ),
+    "profileSwitchBusiness": MessageLookupByLibrary.simpleMessage(
+      "Cambia business",
+    ),
     "profileTitle": MessageLookupByLibrary.simpleMessage("Profilo"),
+    "profileUpdateSuccess": MessageLookupByLibrary.simpleMessage(
+      "Profilo aggiornato con successo",
+    ),
     "recurrenceAfter": MessageLookupByLibrary.simpleMessage("Dopo"),
     "recurrenceClientRequired": MessageLookupByLibrary.simpleMessage(
       "È necessario selezionare un cliente per gli appuntamenti ricorrenti",

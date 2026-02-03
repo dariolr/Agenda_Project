@@ -12,8 +12,8 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
-import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../agenda/providers/location_providers.dart';
 import '../../../services/presentation/widgets/service_eligibility_selector.dart';
 import '../../../services/providers/service_categories_provider.dart';
@@ -580,7 +580,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                     ),
                   ),
                   if (!isKeyboardOpen) ...[
-                    const AppBottomSheetDivider(),
+                    const AppDivider(),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Align(
@@ -705,7 +705,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    const AppBottomSheetDivider(),
+                    const AppDivider(),
                     Expanded(
                       child: SingleChildScrollView(
                         child: Padding(
@@ -721,7 +721,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         ),
                       ),
                     ),
-                    const AppBottomSheetDivider(),
+                    const AppDivider(),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       child: Align(
@@ -761,7 +761,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
-                  const AppBottomSheetDivider(),
+                  const AppDivider(),
                   Expanded(
                     child: SingleChildScrollView(
                       child: Padding(
@@ -777,7 +777,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                       ),
                     ),
                   ),
-                  const AppBottomSheetDivider(),
+                  const AppDivider(),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                     child: Align(
@@ -841,7 +841,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                 setStateLocal(() {});
               },
             ),
-            const AppBottomSheetDivider(),
+            const AppDivider(),
           ],
           for (final loc in locations)
             _SelectableRow(
@@ -897,7 +897,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    const AppBottomSheetDivider(),
+                    const AppDivider(),
                     Expanded(
                       child: SingleChildScrollView(
                         child: Padding(
@@ -907,7 +907,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                       ),
                     ),
                     if (kAllowStaffMultiLocationSelection) ...[
-                      const AppBottomSheetDivider(),
+                      const AppDivider(),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                         child: Align(
@@ -950,7 +950,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
-                  const AppBottomSheetDivider(),
+                  const AppDivider(),
                   Expanded(
                     child: SingleChildScrollView(
                       child: Padding(
@@ -960,7 +960,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                     ),
                   ),
                   if (kAllowStaffMultiLocationSelection) ...[
-                    const AppBottomSheetDivider(),
+                    const AppDivider(),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       child: Align(

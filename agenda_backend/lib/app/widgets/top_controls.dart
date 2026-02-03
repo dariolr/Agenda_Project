@@ -420,7 +420,7 @@ class LocationSheetContent extends StatelessWidget {
               ),
             ),
           ),
-          const AppBottomSheetDivider(),
+          const AppDivider(),
           Expanded(
             child: ListView.builder(
               itemCount: itemCount,

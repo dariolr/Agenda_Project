@@ -145,10 +145,12 @@ lib/
 | 3 | `/staff` | TeamScreen |
 | 4 | `/report` | ReportsScreen |
 | 5 | `/prenotazioni` | BookingsListScreen |
+| 6 | `/altro` | MoreScreen |
+| 7 | `/chiusure` | LocationClosuresScreen |
+| 8 | `/profilo` | ProfileScreen |
 
 **Route non-shell:**
 - `/operatori/:businessId` → OperatorsScreen (accesso da menu "Altro")
-- `/profilo` → ProfileScreen
 - `/change-password` → ChangePasswordScreen
 - `/reset-password/:token` → ResetPasswordScreen
 
@@ -156,27 +158,65 @@ lib/
 
 ---
 
-## 🧭 Navigazione Compatta (31/01/2026)
+## 🧭 Navigazione Compatta (03/02/2026)
 
-**Desktop e Mobile** usano la stessa struttura a 4 voci:
+**Desktop e Mobile** usano la stessa struttura a 3 voci:
 
 | Voce | Indice | Azione |
 |------|--------|--------|
 | Agenda | 0 | Naviga a branch 0 |
 | Clienti | 1 | Naviga a branch 1 |
-| Profilo | 2 | Mostra menu utente |
-| Altro | 3 | Mostra sottomenu |
+| Altro | 2 | Mostra sottomenu |
 
 **Sottomenu "Altro" contiene:**
 - Servizi → branch 2
 - Team → branch 3
 - Report → branch 4
 - Prenotazioni → branch 5
-- **Operatori** → `/operatori/:businessId` (nuova voce)
+- **Chiusure** → branch 7
+- **Operatori** → `/operatori/:businessId`
+- **Profilo** → branch 8
 
 **Implementazione:**
 - Mobile: `_showMoreBottomSheet()` mostra BottomSheet
 - Desktop: `_showMorePopupMenu()` mostra PopupMenu
+
+### ⚠️ Aggiungere nuove interfacce in "Altro"
+
+Quando si aggiunge una nuova sezione accessibile da "Altro", seguire **obbligatoriamente** questo pattern:
+
+1. **Router** (`router_provider.dart`):
+   - Aggiungere un nuovo `StatefulShellBranch` con indice incrementale
+   - Definire path e name della route
+
+2. **MoreScreen** (`more_screen.dart`):
+   - Aggiungere un `_MoreItem` nella lista con:
+     - `icon`: icona outlined
+     - `title`: chiave localizzazione titolo
+     - `description`: chiave localizzazione descrizione
+     - `color`: colore Material distintivo
+     - `onTap`: `context.go('/path')`
+
+3. **Localizzazioni** (`intl_it.arb`, `intl_en.arb`):
+   - Aggiungere chiavi per titolo e descrizione
+
+4. **Scaffold** (`scaffold_with_navigation.dart`):
+   - Verificare che la mappatura indici includa il nuovo branch nel gruppo "Altro"
+
+5. **AGENTS.md**:
+   - Aggiornare tabella "Route fisse" con nuovo indice
+   - Aggiornare lista "Sottomenu Altro"
+
+**Esempio `_MoreItem`:**
+```dart
+_MoreItem(
+  icon: Icons.new_feature_outlined,
+  title: l10n.newFeatureTitle,
+  description: l10n.newFeatureDescription,
+  color: const Color(0xFF9C27B0),
+  onTap: () => context.go('/new-feature'),
+),
+```
 
 ---
 
@@ -631,6 +671,7 @@ void main() async {
 | Time Blocks | `features/agenda/providers/time_blocks_provider.dart` |
 | Resources | `features/agenda/providers/resource_providers.dart` |
 | Availability Exceptions | `features/staff/providers/availability_exceptions_provider.dart` |
+| Location Closures | `features/business/providers/location_closures_provider.dart` |
 | API Client | `core/network/api_client.dart` |
 
 ---
@@ -810,6 +851,39 @@ Periodi di non disponibilità per uno o più staff.
 - `lib/features/agenda/providers/time_blocks_provider.dart`
 - `lib/features/agenda/presentation/dialogs/add_block_dialog.dart`
 - `lib/core/network/api_client.dart` → metodi `getTimeBlocks`, `createTimeBlock`, `updateTimeBlock`, `deleteTimeBlock`
+
+### Location Closures (Chiusure Sedi) (03/02/2026)
+Periodi di chiusura per una o più sedi (festività, ferie, manutenzione).
+
+**Relazione N:M:** Una chiusura può applicarsi a più location, e una location può avere più chiusure.
+
+**Provider:** `locationClosuresProvider` (AsyncNotifier)
+- Carica chiusure da API per business corrente
+- Metodi: `addClosure()`, `updateClosure()`, `deleteClosure()`
+
+**Provider derivati:**
+- `isDateClosedProvider(DateTime)` - verifica se una data è chiusa per la location corrente
+
+**Modello:** `LocationClosure`
+- `id`, `businessId`, `startDate`, `endDate`, `reason`
+- `locationIds` (List<int>) - sedi interessate dalla chiusura
+- `durationDays` - getter per calcolare durata
+- `containsDate(DateTime)` - verifica se una data ricade nel periodo
+
+**File Flutter:**
+- `lib/core/models/location_closure.dart` - modello dati
+- `lib/features/business/providers/location_closures_provider.dart` - provider + isDateClosedProvider
+- `lib/features/business/providers/closures_filter_provider.dart` - filtri periodo UI
+- `lib/features/business/presentation/location_closures_screen.dart` - schermata principale
+- `lib/features/business/presentation/dialogs/location_closure_dialog.dart` - dialog crea/modifica
+- `lib/features/business/widgets/closures_header.dart` - header con filtri periodo e location
+- `lib/core/network/api_client.dart` → metodi `getLocationClosures`, `createLocationClosure`, `updateLocationClosure`, `deleteLocationClosure`
+
+**Integrazione disponibilità:**
+- `staffSlotAvailabilityProvider` verifica chiusure prima di calcolare disponibilità
+- Se la data è chiusa per la location corrente, ritorna tutti gli slot come non disponibili
+
+**Localizzazioni:** Chiavi con prefisso `closures*`
 
 ### Mock Rimossi (01/01/2026)
 I seguenti mock sono stati rimossi perché non più utilizzati:

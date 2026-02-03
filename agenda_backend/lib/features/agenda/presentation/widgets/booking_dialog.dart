@@ -519,7 +519,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
               l10n.bookingUnavailableTimeWarningAppointment,
             ),
             if (!isKeyboardOpen) ...[
-              const AppBottomSheetDivider(),
+              const AppDivider(),
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   horizontalPadding,
@@ -2176,7 +2176,7 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                 ],
               ),
             ),
-            const AppBottomSheetDivider(),
+            const AppDivider(),
             // Quick actions
             ListTile(
               leading: StaffCircleAvatar(
@@ -2212,7 +2212,7 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                 Navigator.of(context).pop(const _ClientItem(-1, ''));
               },
             ),
-            const AppBottomSheetDivider(),
+            const AppDivider(),
             // Client list
             Flexible(
               child: _filteredClients.isEmpty

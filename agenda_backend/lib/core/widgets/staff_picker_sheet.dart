@@ -1,10 +1,10 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
+import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff.dart';
-import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter/material.dart';
-import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Mostra un picker per la selezione dello staff.
@@ -37,7 +37,7 @@ Future<int?> showStaffPickerSheet({
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
-              const AppBottomSheetDivider(),
+              const AppDivider(),
               StaffPickerContent(
                 staff: staff,
                 selectedId: selectedId,

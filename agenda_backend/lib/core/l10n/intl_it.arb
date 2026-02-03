@@ -618,6 +618,10 @@
   "authPhone": "Telefono",
   "switchBusiness": "Cambia",
   "profileTitle": "Profilo",
+  "profileUpdateSuccess": "Profilo aggiornato con successo",
+  "profileEmailChangeWarning": "Attenzione: cambiando email dovrai usarla per il login",
+  "profileChangePassword": "Cambia password",
+  "profileSwitchBusiness": "Cambia business",
   "planningCreateTitle": "Nuovo planning",
   "planningEditTitle": "Modifica planning",
   "planningDeleteTitle": "Elimina planning",
@@ -995,6 +999,7 @@
   "moreTeamDescription": "Gestisci operatori, sedi e orari di lavoro",
   "moreReportsDescription": "Visualizza statistiche e andamento attività",
   "moreBookingsDescription": "Consulta lo storico delle prenotazioni",
+  "moreProfileDescription": "Gestisci i tuoi dati personali e le credenziali",
   "moreSubtitle": "Accedi alle altre funzionalità dell'applicazione",
 
   "closuresTitle": "Date di chiusura",
