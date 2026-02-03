@@ -998,10 +998,21 @@
   "moreSubtitle": "Accedi alle altre funzionalità dell'applicazione",
 
   "closuresTitle": "Date di chiusura",
+  "closuresFilterFromToday": "A partire da oggi",
+  "closuresFilterAll": "Tutti",
   "closuresEmpty": "Nessuna chiusura programmata",
+  "closuresEmptyForPeriod": "Nessuna chiusura programmata per il periodo selezionato",
   "closuresEmptyHint": "Aggiungi i periodi di chiusura dell'attività (es. festività, ferie)",
   "closuresUpcoming": "Prossime chiusure",
-  "closuresPast": "Chiusure passate",
+  "closuresPast": "Chiusure precedenti",
+  "closuresTotalDays": "per un totale di {count, plural, =1{1 giorno} other{{count} giorni}}",
+  "@closuresTotalDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "closuresNewTitle": "Nuova chiusura",
   "closuresEditTitle": "Modifica chiusura",
   "closuresStartDate": "Data inizio",
@@ -1024,5 +1035,12 @@
   "closuresDateRange": "Periodo",
   "closuresAddSuccess": "Chiusura aggiunta",
   "closuresUpdateSuccess": "Chiusura aggiornata",
-  "closuresDeleteSuccess": "Chiusura eliminata"
+  "closuresDeleteSuccess": "Chiusura eliminata",
+  "closuresLocations": "Sedi interessate",
+  "closuresSelectAll": "Seleziona tutte",
+  "closuresDeselectAll": "Deseleziona tutte",
+  "closuresSelectAtLeastOneLocation": "Seleziona almeno una sede",
+  "closuresNoLocations": "Nessuna sede configurata",
+  "closuresAllLocations": "Tutte le sedi",
+  "closuresAddButton": "Aggiungi chiusura"
 }

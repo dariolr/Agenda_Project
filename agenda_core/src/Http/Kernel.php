@@ -25,7 +25,7 @@ use Agenda\Http\Controllers\ServiceVariantResourceController;
 use Agenda\Http\Controllers\TimeBlocksController;
 use Agenda\Http\Controllers\AppointmentsController;
 use Agenda\Http\Controllers\BusinessSyncController;
-use Agenda\Http\Controllers\BusinessClosuresController;
+use Agenda\Http\Controllers\LocationClosuresController;
 use Agenda\Http\Controllers\ReportsController;
 use Agenda\Http\Middleware\AuthMiddleware;
 use Agenda\Http\Middleware\BusinessAccessMiddleware;
@@ -54,7 +54,7 @@ use Agenda\Infrastructure\Repositories\TimeBlockRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Repositories\PopularServiceRepository;
-use Agenda\Infrastructure\Repositories\BusinessClosureRepository;
+use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
 use Agenda\UseCases\Auth\GetMe;
@@ -279,13 +279,13 @@ final class Kernel
         $this->router->get('/v1/reports/appointments', ReportsController::class, 'appointments', ['auth']);
         $this->router->get('/v1/reports/work-hours', ReportsController::class, 'workHours', ['auth']);
 
-        // Business Closures (holidays, vacation periods)
-        $this->router->get('/v1/businesses/{business_id}/closures', BusinessClosuresController::class, 'index', ['auth']);
-        $this->router->get('/v1/businesses/{business_id}/closures/in-range', BusinessClosuresController::class, 'inRange', ['auth']);
-        $this->router->post('/v1/businesses/{business_id}/closures', BusinessClosuresController::class, 'store', ['auth']);
-        $this->router->get('/v1/closures/{id}', BusinessClosuresController::class, 'show', ['auth']);
-        $this->router->put('/v1/closures/{id}', BusinessClosuresController::class, 'update', ['auth']);
-        $this->router->delete('/v1/closures/{id}', BusinessClosuresController::class, 'destroy', ['auth']);
+        // Closures (holidays, vacation periods - per business, can apply to multiple locations)
+        $this->router->get('/v1/businesses/{business_id}/closures', LocationClosuresController::class, 'index', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/closures/in-range', LocationClosuresController::class, 'inRange', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/closures', LocationClosuresController::class, 'store', ['auth']);
+        $this->router->get('/v1/closures/{id}', LocationClosuresController::class, 'show', ['auth']);
+        $this->router->put('/v1/closures/{id}', LocationClosuresController::class, 'update', ['auth']);
+        $this->router->delete('/v1/closures/{id}', LocationClosuresController::class, 'destroy', ['auth']);
 
         // Time blocks (auth required)
         $this->router->get('/v1/locations/{location_id}/time-blocks', TimeBlocksController::class, 'index', ['auth']);
@@ -369,7 +369,7 @@ final class Kernel
         $clientAuthRepo = new ClientAuthRepository($this->db);
         $notificationRepo = new NotificationRepository($this->db);
         $popularServiceRepo = new PopularServiceRepository($this->db);
-        $businessClosureRepo = new BusinessClosureRepository($this->db);
+        $locationClosureRepo = new LocationClosureRepository($this->db);
 
         // Services
         $jwtService = new JwtService();
@@ -401,8 +401,8 @@ final class Kernel
         // Booking Use Cases
         $bookingAuditRepo = new BookingAuditRepository($this->db, $userRepo, $clientRepo);
         $recurrenceRuleRepo = new RecurrenceRuleRepository($this->db);
-        $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo, $timeBlockRepo, $staffExceptionRepo, $variantResourceRepo, $serviceRepo, $businessClosureRepo);
-        $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo, $computeAvailability, $bookingAuditRepo, $businessClosureRepo);
+        $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo, $timeBlockRepo, $staffExceptionRepo, $variantResourceRepo, $serviceRepo, $locationClosureRepo);
+        $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo, $computeAvailability, $bookingAuditRepo, $locationClosureRepo);
         $createRecurringBooking = new CreateRecurringBooking($this->db, $bookingRepo, $recurrenceRuleRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $computeAvailability, $notificationRepo, $bookingAuditRepo);
         $previewRecurringBooking = new PreviewRecurringBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo);
         $modifyRecurringSeries = new ModifyRecurringSeries($this->db, $bookingRepo, $recurrenceRuleRepo, $staffRepo, $bookingAuditRepo);
@@ -438,8 +438,8 @@ final class Kernel
             ResourcesController::class => new ResourcesController($resourceRepo, $locationRepo, $businessUserRepo, $userRepo, $variantResourceRepo),
             ServiceVariantResourceController::class => new ServiceVariantResourceController($variantResourceRepo, $businessUserRepo, $userRepo),
             TimeBlocksController::class => new TimeBlocksController($timeBlockRepo, $locationRepo, $businessUserRepo, $userRepo),
-            ReportsController::class => new ReportsController($this->db, $businessUserRepo, $userRepo, $businessClosureRepo),
-            BusinessClosuresController::class => new BusinessClosuresController($businessClosureRepo, $businessUserRepo, $userRepo),
+            ReportsController::class => new ReportsController($this->db, $businessUserRepo, $userRepo, $locationClosureRepo),
+            LocationClosuresController::class => new LocationClosuresController($locationClosureRepo, $locationRepo, $businessUserRepo, $userRepo),
         ];
     }
 

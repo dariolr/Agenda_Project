@@ -8,21 +8,21 @@ use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
-use Agenda\Infrastructure\Repositories\BusinessClosureRepository;
+use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use Agenda\Infrastructure\Database\Connection;
 use PDO;
 
 final class ReportsController
 {
-    private ?BusinessClosureRepository $closureRepo;
+    private ?LocationClosureRepository $locationClosureRepo;
     
     public function __construct(
         private Connection $db,
         private BusinessUserRepository $businessUserRepo,
         private UserRepository $userRepo,
-        ?BusinessClosureRepository $closureRepo = null
+        ?LocationClosureRepository $locationClosureRepo = null
     ) {
-        $this->closureRepo = $closureRepo;
+        $this->locationClosureRepo = $locationClosureRepo;
     }
 
     public function appointments(Request $request): Response
@@ -459,10 +459,21 @@ final class ReportsController
     {
         $pdo = $this->db->getPdo();
         
-        // Get business closed dates in period
-        $closedDates = [];
-        if ($this->closureRepo !== null) {
-            $closedDates = $this->closureRepo->getClosedDatesInRange($businessId, $startDate, $endDate);
+        // Get all business locations or filtered locations
+        $targetLocationIds = [];
+        if (!empty($locationIds)) {
+            $targetLocationIds = array_map('intval', $locationIds);
+        } else {
+            // Get all business locations
+            $locStmt = $pdo->prepare('SELECT id FROM locations WHERE business_id = ? AND is_active = 1');
+            $locStmt->execute([$businessId]);
+            $targetLocationIds = array_column($locStmt->fetchAll(PDO::FETCH_ASSOC), 'id');
+        }
+        
+        // Get location closed dates in period (map: locationId => [date => reason])
+        $closedDatesByLocation = [];
+        if ($this->locationClosureRepo !== null && !empty($targetLocationIds)) {
+            $closedDatesByLocation = $this->locationClosureRepo->getClosedDatesForLocationsInRange($targetLocationIds, $startDate, $endDate);
         }
 
         // Get all staff for this business
@@ -516,6 +527,16 @@ final class ReportsController
             $staffId = (int) $staff['id'];
             $staffName = $staff['full_name'];
             $staffColor = $staff['color_hex'];
+
+            // Get staff locations (for closure checking)
+            $staffLocStmt = $pdo->prepare('SELECT location_id FROM staff_locations WHERE staff_id = ?');
+            $staffLocStmt->execute([$staffId]);
+            $staffLocationIds = array_column($staffLocStmt->fetchAll(PDO::FETCH_ASSOC), 'location_id');
+            
+            // If filtering by locations, intersect with staff locations
+            if (!empty($locationIds)) {
+                $staffLocationIds = array_intersect($staffLocationIds, array_map('intval', $locationIds));
+            }
 
             // Get all plannings for this staff
             $planningQuery = "SELECT sp.id, sp.type, sp.valid_from, sp.valid_to 
@@ -602,9 +623,19 @@ final class ReportsController
                 $dateStr = $date->format('Y-m-d');
                 $dayOfWeek = (int) $date->format('N'); // 1=Monday, 7=Sunday
 
-                // Skip business closed dates
-                if (in_array($dateStr, $closedDates, true)) {
-                    continue;
+                // Skip if ALL staff locations are closed on this date
+                // (staff is only unavailable if all their locations are closed)
+                if (!empty($staffLocationIds) && !empty($closedDatesByLocation)) {
+                    $allLocationsClosed = true;
+                    foreach ($staffLocationIds as $locId) {
+                        if (!isset($closedDatesByLocation[$locId][$dateStr])) {
+                            $allLocationsClosed = false;
+                            break;
+                        }
+                    }
+                    if ($allLocationsClosed) {
+                        continue;
+                    }
                 }
 
                 // Check if there's an unavailable exception for this date (day off)

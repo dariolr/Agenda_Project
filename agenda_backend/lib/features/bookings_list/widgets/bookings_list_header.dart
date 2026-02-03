@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '/app/providers/form_factor_provider.dart';
+import '/app/widgets/agenda_control_components.dart';
 import '/core/l10n/l10_extension.dart';
 import '../providers/bookings_list_filter_provider.dart';
 
@@ -137,13 +138,15 @@ class _BookingsListControls extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: onDateRangeSelected,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: kAgendaPillRadius,
             child: Container(
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              height: kAgendaControlHeight,
+              padding: const EdgeInsets.symmetric(
+                horizontal: kAgendaControlHorizontalPadding,
+              ),
               decoration: BoxDecoration(
-                border: Border.all(color: colorScheme.outline),
-                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.withOpacity(0.35)),
+                borderRadius: kAgendaPillRadius,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -177,24 +180,22 @@ class _PresetDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
 
     return Container(
-      height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      height: kAgendaControlHeight,
+      padding: const EdgeInsets.symmetric(
+        horizontal: kAgendaControlHorizontalPadding,
+      ),
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outline),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.withOpacity(0.35)),
+        borderRadius: kAgendaPillRadius,
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isDense: true,
-          icon: Icon(
-            Icons.arrow_drop_down,
-            color: colorScheme.onSurfaceVariant,
-          ),
+          icon: const Icon(Icons.arrow_drop_down),
           style: theme.textTheme.bodyMedium,
           onChanged: (v) {
             if (v != null) onChanged(v);
