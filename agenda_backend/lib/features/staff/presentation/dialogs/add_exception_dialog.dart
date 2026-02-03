@@ -4,6 +4,7 @@ import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/labeled_form_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/availability_exception.dart';
@@ -14,7 +15,6 @@ import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../agenda/providers/layout_config_provider.dart';
 import '../../presentation/staff_availability_screen.dart';
 import '../../providers/availability_exceptions_provider.dart';
-import 'package:intl/intl.dart';
 
 /// Mostra il dialog per creare o modificare un'eccezione alla disponibilità.
 Future<void> showAddExceptionDialog(
@@ -516,8 +516,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       top: false,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isKeyboardOpen =
-              MediaQuery.of(context).viewInsets.bottom > 0;
+          final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
           return LocalLoadingOverlay(
             isLoading: _isSaving,
             child: SizedBox(
@@ -547,7 +546,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
                     ),
                   ),
                   if (!isKeyboardOpen) ...[
-                    const AppBottomSheetDivider(),
+                    const AppDivider(),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
                       child: Align(
@@ -689,8 +688,9 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       return null;
     }
 
-    final availabilityByStaff =
-        ref.read(staffAvailabilityByStaffProvider).value;
+    final availabilityByStaff = ref
+        .read(staffAvailabilityByStaffProvider)
+        .value;
     if (availabilityByStaff == null) {
       if (widget.initial != null || _periodMode == _PeriodMode.single) {
         return <DateTime>[_date];
@@ -705,9 +705,11 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
         endDate = _startDate.add(Duration(days: _durationDays - 1));
       }
       final dates = <DateTime>[];
-      for (var d = startDate;
-          !d.isAfter(endDate);
-          d = d.add(const Duration(days: 1))) {
+      for (
+        var d = startDate;
+        !d.isAfter(endDate);
+        d = d.add(const Duration(days: 1))
+      ) {
         dates.add(d);
       }
       return dates;
@@ -765,9 +767,11 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
     final validDates = <DateTime>[];
     final skippedReasons = <DateTime, String>{};
     String? firstError;
-    for (var d = startDate;
-        !d.isAfter(endDate);
-        d = d.add(const Duration(days: 1))) {
+    for (
+      var d = startDate;
+      !d.isAfter(endDate);
+      d = d.add(const Duration(days: 1))
+    ) {
       final error = validateDate(d);
       if (error == null) {
         validDates.add(d);
@@ -836,9 +840,11 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
           var totalDays = 0;
           final skippedDates = <DateTime>[];
           final skippedDetails = <String>[];
-          for (var d = startDate;
-              !d.isAfter(endDate);
-              d = d.add(const Duration(days: 1))) {
+          for (
+            var d = startDate;
+            !d.isAfter(endDate);
+            d = d.add(const Duration(days: 1))
+          ) {
             totalDays++;
           }
           for (final d in validDates) {
@@ -852,12 +858,12 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
             );
           }
           if (validDates.length < totalDays) {
-            for (var d = startDate;
-                !d.isAfter(endDate);
-                d = d.add(const Duration(days: 1))) {
-              final isValid = validDates.any(
-                (v) => DateUtils.isSameDay(v, d),
-              );
+            for (
+              var d = startDate;
+              !d.isAfter(endDate);
+              d = d.add(const Duration(days: 1))
+            ) {
+              final isValid = validDates.any((v) => DateUtils.isSameDay(v, d));
               if (!isValid) {
                 skippedDates.add(d);
               }
@@ -867,8 +873,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
             final locale = Localizations.localeOf(context).toLanguageTag();
             final formatter = DateFormat('d MMM', locale);
             for (final d in skippedDates) {
-              final reason =
-                  _lastSkippedReasons[DateUtils.dateOnly(d)] ?? '';
+              final reason = _lastSkippedReasons[DateUtils.dateOnly(d)] ?? '';
               final dateLabel = formatter.format(d);
               if (reason.isEmpty) {
                 skippedDetails.add(dateLabel);
@@ -893,7 +898,8 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
                         child: ListView.separated(
                           shrinkWrap: true,
                           itemCount: skippedDetails.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 6),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 6),
                           itemBuilder: (context, index) => Text(
                             '• ${skippedDetails[index]}',
                             style: Theme.of(context).textTheme.bodySmall,
@@ -1094,7 +1100,7 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
             ],
           ),
         ),
-        const AppBottomSheetDivider(),
+        const AppDivider(),
         Expanded(
           child: GridView.builder(
             controller: _scrollController,
@@ -1113,7 +1119,8 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
                 return const SizedBox.shrink();
               }
               final isSelected =
-                  time.hour == _selected.hour && time.minute == _selected.minute;
+                  time.hour == _selected.hour &&
+                  time.minute == _selected.minute;
               final label = time.hour == 24
                   ? '24:00'
                   : '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';

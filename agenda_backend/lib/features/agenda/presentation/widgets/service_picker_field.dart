@@ -521,7 +521,7 @@ class _ServicePickerContentState extends State<_ServicePickerContent> {
           ),
         ],
         const SizedBox(height: 8),
-        const AppBottomSheetDivider(),
+        const AppDivider(),
         // Service and packages list
         Expanded(
           child: filteredServices.isEmpty && filteredPackages.isEmpty

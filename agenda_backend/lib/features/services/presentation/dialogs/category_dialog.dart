@@ -10,8 +10,8 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
-import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
+import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../utils/service_validators.dart';
 
@@ -236,7 +236,7 @@ Future<void> showCategoryDialog(
                       ),
                     ),
                     if (!isKeyboardOpen) ...[
-                      const AppBottomSheetDivider(),
+                      const AppDivider(),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                         child: Align(

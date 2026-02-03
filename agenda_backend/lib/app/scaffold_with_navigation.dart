@@ -3,7 +3,6 @@ import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_backend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_backend/app/widgets/top_controls.dart';
-import 'package:agenda_backend/app/widgets/user_menu_button.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_backend/features/bookings_list/providers/bookings_list_provider.dart';
 import 'package:agenda_backend/features/reports/providers/reports_provider.dart';
@@ -27,7 +26,6 @@ import '../features/agenda/providers/location_providers.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/business/presentation/dialogs/location_closure_dialog.dart';
 import '../features/business/providers/location_closures_provider.dart';
-import '../features/business/providers/superadmin_selected_business_provider.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/clients/providers/clients_providers.dart';
 import '../features/services/presentation/dialogs/category_dialog.dart';
@@ -147,17 +145,13 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         return actions;
       }
 
-      // Mappa indice corrente a indice compatto per desktop
+      // Mappa indice corrente a indice compatto per desktop (3 voci: Agenda, Clienti, Altro)
       int desktopCurrentIndex;
       if (navigationShell.currentIndex <= 1) {
         // Agenda o Clienti
         desktopCurrentIndex = navigationShell.currentIndex;
-      } else if (navigationShell.currentIndex <= 5 ||
-          navigationShell.currentIndex == 7) {
-        // Servizi, Staff, Report, Prenotazioni o Chiusure → evidenzia "Altro"
-        desktopCurrentIndex = 3;
       } else {
-        // Profile (index 6 → 2 su desktop compatto)
+        // Tutto il resto (Servizi, Staff, Report, Prenotazioni, Altro, Chiusure, Profilo) → evidenzia "Altro"
         desktopCurrentIndex = 2;
       }
 
@@ -246,23 +240,15 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
 
     // Su mobile, mappa l'indice corrente a quello compatto
-    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Prenotazioni, 6=Altro, 7=Chiusure
-    // Mobile:  0=Agenda, 1=Clienti, 2=Profile, 3=Altro
+    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Prenotazioni, 6=Altro, 7=Chiusure, 8=Profilo
+    // Mobile:  0=Agenda, 1=Clienti, 2=Altro
     int mobileCurrentIndex;
     if (navigationShell.currentIndex <= 1) {
       // Agenda o Clienti
       mobileCurrentIndex = navigationShell.currentIndex;
-    } else if (navigationShell.currentIndex == 6) {
-      // Schermata "Altro" → evidenzia "Altro" (index 3)
-      mobileCurrentIndex = 3;
-    } else if ((navigationShell.currentIndex >= 2 &&
-            navigationShell.currentIndex <= 5) ||
-        navigationShell.currentIndex == 7) {
-      // Servizi, Staff, Report, Prenotazioni o Chiusure → evidenzia "Altro"
-      mobileCurrentIndex = 3;
     } else {
-      // Fallback
-      mobileCurrentIndex = 0;
+      // Tutto il resto (Servizi, Staff, Report, Prenotazioni, Altro, Chiusure, Profilo) → evidenzia "Altro"
+      mobileCurrentIndex = 2;
     }
 
     return GlobalLoadingOverlay(
@@ -372,8 +358,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
   /// Gestisce tap su navigation desktop (compatta come mobile):
   /// - Index 0, 1: navigazione normale (Agenda, Clienti)
-  /// - Index 2: menu utente (Profilo)
-  /// - Index 3: naviga a "Altro" (schermata con cards)
+  /// - Index 2: naviga a "Altro" (schermata con cards)
   void _handleDesktopNavTap(
     BuildContext context,
     int desktopIndex,
@@ -384,10 +369,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       case 1: // Clienti
         _goBranch(desktopIndex, ref);
         break;
-      case 2: // Profile → menu utente
-        _showUserMenu(context, ref);
-        break;
-      case 3: // Altro → naviga alla schermata Altro
+      case 2: // Altro → naviga alla schermata Altro
         _goBranch(6, ref);
         break;
     }
@@ -395,8 +377,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
   /// Gestisce tap su navigation mobile:
   /// - Index 0, 1: navigazione normale (Agenda, Clienti)
-  /// - Index 2: menu utente (Profilo)
-  /// - Index 3: naviga a "Altro" (schermata con cards)
+  /// - Index 2: naviga a "Altro" (schermata con cards)
   void _handleMobileNavTap(
     BuildContext context,
     int mobileIndex,
@@ -407,56 +388,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       case 1: // Clienti
         _goBranch(mobileIndex, ref);
         break;
-      case 2: // Profile → menu utente
-        _showUserMenu(context, ref);
-        break;
-      case 3: // Altro → naviga alla schermata Altro
+      case 2: // Altro → naviga alla schermata Altro
         _goBranch(6, ref);
         break;
     }
-  }
-
-  /// Mostra il menu utente (profilo, cambia password, logout)
-  void _showUserMenu(BuildContext context, WidgetRef ref) {
-    final user = ref.read(authProvider).user;
-    if (user == null) return;
-
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final menuItems = UserMenuButton.buildMenuItems(
-      context,
-      theme,
-      colorScheme,
-      user,
-    );
-
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        MediaQuery.of(context).size.width - 200,
-        MediaQuery.of(context).size.height - 250,
-        16,
-        16,
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      items: menuItems,
-    ).then((value) {
-      if (value == null || !context.mounted) return;
-      if (value == 'logout') {
-        UserMenuButton.handleLogout(context, ref);
-      } else if (value == 'profile') {
-        context.push('/profilo');
-      } else if (value == 'report') {
-        _goBranch(4, ref);
-      } else if (value == 'bookings_list') {
-        _goBranch(5, ref);
-      } else if (value == 'change_password') {
-        context.push('/change-password');
-      } else if (value == 'switch_business') {
-        ref.read(superadminSelectedBusinessProvider.notifier).clear();
-        context.go('/businesses');
-      }
-    });
   }
 }
 
@@ -1083,11 +1018,6 @@ class _ScaffoldWithNavigationHelpers {
         iconData: Icons.people_outline,
         selectedIconData: Icons.people,
         label: l10n.navClients,
-      ),
-      NavigationDestination(
-        iconData: Icons.account_circle_outlined,
-        selectedIconData: Icons.account_circle,
-        label: l10n.navProfile,
       ),
       NavigationDestination(
         iconData: Icons.more_horiz_outlined,

@@ -115,7 +115,9 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
                       SizedBox(
                         width: AppButtonStyles.dialogButtonWidth,
                         child: AppOutlinedActionButton(
-                          onPressed: _isSaving ? null : () => _onCancel(context),
+                          onPressed: _isSaving
+                              ? null
+                              : () => _onCancel(context),
                           padding: AppButtonStyles.dialogButtonPadding,
                           child: Text(l10n.actionCancel),
                         ),
@@ -315,7 +317,7 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
                     ),
                   ),
                   if (!isKeyboardOpen) ...[
-                    const AppBottomSheetDivider(),
+                    const AppDivider(),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Align(

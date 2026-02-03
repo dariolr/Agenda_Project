@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 /// Divider standard per bottom sheet (stile coerente con creazione appuntamento).
-class AppBottomSheetDivider extends StatelessWidget {
-  const AppBottomSheetDivider({super.key});
+class AppDivider extends StatelessWidget {
+  const AppDivider({super.key});
 
   @override
   Widget build(BuildContext context) {

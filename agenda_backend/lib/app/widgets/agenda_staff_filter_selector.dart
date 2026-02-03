@@ -231,7 +231,7 @@ class _StaffFilterPopupContent extends ConsumerWidget {
               ),
             ),
           ),
-          const AppBottomSheetDivider(),
+          const AppDivider(),
 
           // Opzione: Tutto il team
           _DesktopFilterOptionTile(
@@ -258,7 +258,7 @@ class _StaffFilterPopupContent extends ConsumerWidget {
           ),
 
           // Divider
-          const AppBottomSheetDivider(),
+          const AppDivider(),
 
           // Header staff
           Padding(
@@ -486,7 +486,7 @@ class _StaffFilterSheet extends ConsumerWidget {
                 ),
               ),
             ),
-            const AppBottomSheetDivider(),
+            const AppDivider(),
 
             // Opzione: Tutto il team
             _MobileFilterOptionTile(
@@ -513,7 +513,7 @@ class _StaffFilterSheet extends ConsumerWidget {
             ),
 
             // Divider
-            const AppBottomSheetDivider(),
+            const AppDivider(),
 
             // Header staff
             Padding(

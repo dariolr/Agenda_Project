@@ -431,7 +431,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                     ),
                   ),
                   if (!isKeyboardOpen) ...[
-                    const AppBottomSheetDivider(),
+                    const AppDivider(),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Align(
