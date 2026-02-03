@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
-import '/core/models/business_closure.dart';
+import '/core/models/location_closure.dart';
 import 'api_config.dart';
 import 'token_storage.dart';
 
@@ -2179,29 +2179,30 @@ class ApiClient {
   }
 
   // ==========================================================================
-  // BUSINESS CLOSURES (Chiusure attività)
+  // CLOSURES (Chiusure multi-location)
   // ==========================================================================
 
   /// Recupera tutte le chiusure per un business
-  Future<List<BusinessClosure>> getBusinessClosures(int businessId) async {
+  Future<List<LocationClosure>> getClosures(int businessId) async {
     try {
       final response = await _dio.get('/v1/businesses/$businessId/closures');
       final body = response.data as Map<String, dynamic>;
       final data = body['data'] as Map<String, dynamic>? ?? body;
       final List<dynamic> closures = data['closures'] ?? [];
       return closures
-          .map((json) => BusinessClosure.fromJson(json as Map<String, dynamic>))
+          .map((json) => LocationClosure.fromJson(json as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Recupera le chiusure in un range di date specifico
-  Future<List<BusinessClosure>> getBusinessClosuresInRange({
+  /// Recupera le chiusure di un business in un range di date specifico
+  Future<List<LocationClosure>> getClosuresInRange({
     required int businessId,
     required DateTime startDate,
     required DateTime endDate,
+    int? locationId,
   }) async {
     try {
       final response = await _dio.get(
@@ -2209,22 +2210,24 @@ class ApiClient {
         queryParameters: {
           'start_date': startDate.toIso8601String().split('T').first,
           'end_date': endDate.toIso8601String().split('T').first,
+          if (locationId != null) 'location_id': locationId,
         },
       );
       final body = response.data as Map<String, dynamic>;
       final data = body['data'] as Map<String, dynamic>? ?? body;
       final List<dynamic> closures = data['closures'] ?? [];
       return closures
-          .map((json) => BusinessClosure.fromJson(json as Map<String, dynamic>))
+          .map((json) => LocationClosure.fromJson(json as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Crea una nuova chiusura
-  Future<BusinessClosure> createBusinessClosure({
+  /// Crea una nuova chiusura (applicabile a più location)
+  Future<LocationClosure> createClosure({
     required int businessId,
+    required List<int> locationIds,
     required DateTime startDate,
     required DateTime endDate,
     String? reason,
@@ -2233,23 +2236,24 @@ class ApiClient {
       final response = await _dio.post(
         '/v1/businesses/$businessId/closures',
         data: {
+          'location_ids': locationIds,
           'start_date': startDate.toIso8601String().split('T').first,
           'end_date': endDate.toIso8601String().split('T').first,
           if (reason != null && reason.isNotEmpty) 'reason': reason,
         },
       );
       final body = response.data as Map<String, dynamic>;
-      final data = body['data'] as Map<String, dynamic>? ?? body;
-      final closureJson = data['closure'] as Map<String, dynamic>;
-      return BusinessClosure.fromJson(closureJson);
+      final data = body['data'] as Map<String, dynamic>;
+      return LocationClosure.fromJson(data);
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
   /// Aggiorna una chiusura esistente
-  Future<BusinessClosure> updateBusinessClosure({
+  Future<LocationClosure> updateClosure({
     required int closureId,
+    required List<int> locationIds,
     required DateTime startDate,
     required DateTime endDate,
     String? reason,
@@ -2258,22 +2262,22 @@ class ApiClient {
       final response = await _dio.put(
         '/v1/closures/$closureId',
         data: {
+          'location_ids': locationIds,
           'start_date': startDate.toIso8601String().split('T').first,
           'end_date': endDate.toIso8601String().split('T').first,
           if (reason != null) 'reason': reason,
         },
       );
       final body = response.data as Map<String, dynamic>;
-      final data = body['data'] as Map<String, dynamic>? ?? body;
-      final closureJson = data['closure'] as Map<String, dynamic>;
-      return BusinessClosure.fromJson(closureJson);
+      final data = body['data'] as Map<String, dynamic>;
+      return LocationClosure.fromJson(data);
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
   /// Elimina una chiusura
-  Future<void> deleteBusinessClosure(int closureId) async {
+  Future<void> deleteClosure(int closureId) async {
     try {
       await _dio.delete('/v1/closures/$closureId');
     } on DioException catch (e) {

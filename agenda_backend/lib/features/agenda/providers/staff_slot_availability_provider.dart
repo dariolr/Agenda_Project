@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/availability_exception.dart';
+import '../../business/providers/location_closures_provider.dart';
 import '../../staff/providers/availability_exceptions_provider.dart';
 import '../../staff/providers/staff_planning_provider.dart';
 import 'date_range_provider.dart';
@@ -10,12 +11,13 @@ import 'layout_config_provider.dart';
 /// in base alla data corrente dell'agenda.
 ///
 /// La disponibilità finale è calcolata come:
+/// 0. CHECK: Se la data è in un periodo di chiusura, ritorna Set vuoto
 /// 1. Base: planning da API (template settimanale con supporto biweekly A/B)
 /// 2. + Eccezioni "available": aggiungono slot disponibili
 /// 3. - Eccezioni "unavailable": rimuovono slot disponibili
 ///
 /// Ritorna un `Set<int>` contenente gli indici degli slot DISPONIBILI.
-/// - Set vuoto = nessuna disponibilità (staff non lavora quel giorno)
+/// - Set vuoto = nessuna disponibilità (staff non lavora quel giorno o sede chiusa)
 /// - Se non ci sono dati configurati, lo staff è considerato NON disponibile (comportamento restrittivo)
 final staffSlotAvailabilityProvider = Provider.family<Set<int>, int>((
   ref,
@@ -23,6 +25,15 @@ final staffSlotAvailabilityProvider = Provider.family<Set<int>, int>((
 ) {
   final agendaDate = ref.watch(agendaDateProvider);
   final layoutConfig = ref.watch(layoutConfigProvider);
+
+  // ═══════════════════════════════════════════════════════════════
+  // 0️⃣ CHECK: Verifica se la data è in un periodo di chiusura
+  // ═══════════════════════════════════════════════════════════════
+  final isClosed = ref.watch(isDateClosedProvider(agendaDate));
+  if (isClosed) {
+    // Sede chiusa: tutti gli slot non disponibili
+    return const {};
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // 1️⃣ BASE: Planning da API (supporta weekly/biweekly, validità temporale)

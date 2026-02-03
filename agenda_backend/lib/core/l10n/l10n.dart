@@ -6352,11 +6352,36 @@ class L10n {
     );
   }
 
+  /// `A partire da oggi`
+  String get closuresFilterFromToday {
+    return Intl.message(
+      'A partire da oggi',
+      name: 'closuresFilterFromToday',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tutti`
+  String get closuresFilterAll {
+    return Intl.message('Tutti', name: 'closuresFilterAll', desc: '', args: []);
+  }
+
   /// `Nessuna chiusura programmata`
   String get closuresEmpty {
     return Intl.message(
       'Nessuna chiusura programmata',
       name: 'closuresEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna chiusura programmata per il periodo selezionato`
+  String get closuresEmptyForPeriod {
+    return Intl.message(
+      'Nessuna chiusura programmata per il periodo selezionato',
+      name: 'closuresEmptyForPeriod',
       desc: '',
       args: [],
     );
@@ -6382,13 +6407,23 @@ class L10n {
     );
   }
 
-  /// `Chiusure passate`
+  /// `Chiusure precedenti`
   String get closuresPast {
     return Intl.message(
-      'Chiusure passate',
+      'Chiusure precedenti',
       name: 'closuresPast',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `per un totale di {count, plural, =1{1 giorno} other{{count} giorni}}`
+  String closuresTotalDays(int count) {
+    return Intl.message(
+      'per un totale di ${Intl.plural(count, one: '1 giorno', other: '$count giorni')}',
+      name: 'closuresTotalDays',
+      desc: '',
+      args: [count],
     );
   }
 
@@ -6549,6 +6584,76 @@ class L10n {
     return Intl.message(
       'Chiusura eliminata',
       name: 'closuresDeleteSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sedi interessate`
+  String get closuresLocations {
+    return Intl.message(
+      'Sedi interessate',
+      name: 'closuresLocations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona tutte`
+  String get closuresSelectAll {
+    return Intl.message(
+      'Seleziona tutte',
+      name: 'closuresSelectAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Deseleziona tutte`
+  String get closuresDeselectAll {
+    return Intl.message(
+      'Deseleziona tutte',
+      name: 'closuresDeselectAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona almeno una sede`
+  String get closuresSelectAtLeastOneLocation {
+    return Intl.message(
+      'Seleziona almeno una sede',
+      name: 'closuresSelectAtLeastOneLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna sede configurata`
+  String get closuresNoLocations {
+    return Intl.message(
+      'Nessuna sede configurata',
+      name: 'closuresNoLocations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tutte le sedi`
+  String get closuresAllLocations {
+    return Intl.message(
+      'Tutte le sedi',
+      name: 'closuresAllLocations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Aggiungi chiusura`
+  String get closuresAddButton {
+    return Intl.message(
+      'Aggiungi chiusura',
+      name: 'closuresAddButton',
       desc: '',
       args: [],
     );
