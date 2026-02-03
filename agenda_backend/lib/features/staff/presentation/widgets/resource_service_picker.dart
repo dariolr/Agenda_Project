@@ -331,7 +331,7 @@ class _ResourceServicePickerContentState
             ),
           ),
         const SizedBox(height: 8),
-        const AppBottomSheetDivider(),
+        const AppDivider(),
         // Lista servizi
         Expanded(
           child: filteredServices.isEmpty
@@ -375,7 +375,7 @@ class _ResourceServicePickerContentState
                   ],
                 ),
         ),
-        const AppBottomSheetDivider(),
+        const AppDivider(),
         // Footer con pulsanti conferma/annulla
         Padding(
           padding: const EdgeInsets.all(16),

@@ -4002,6 +4002,46 @@ class L10n {
     return Intl.message('Profilo', name: 'profileTitle', desc: '', args: []);
   }
 
+  /// `Profilo aggiornato con successo`
+  String get profileUpdateSuccess {
+    return Intl.message(
+      'Profilo aggiornato con successo',
+      name: 'profileUpdateSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Attenzione: cambiando email dovrai usarla per il login`
+  String get profileEmailChangeWarning {
+    return Intl.message(
+      'Attenzione: cambiando email dovrai usarla per il login',
+      name: 'profileEmailChangeWarning',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cambia password`
+  String get profileChangePassword {
+    return Intl.message(
+      'Cambia password',
+      name: 'profileChangePassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cambia business`
+  String get profileSwitchBusiness {
+    return Intl.message(
+      'Cambia business',
+      name: 'profileSwitchBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Nuovo planning`
   String get planningCreateTitle {
     return Intl.message(
@@ -6327,6 +6367,16 @@ class L10n {
     return Intl.message(
       'Consulta lo storico delle prenotazioni',
       name: 'moreBookingsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Gestisci i tuoi dati personali e le credenziali`
+  String get moreProfileDescription {
+    return Intl.message(
+      'Gestisci i tuoi dati personali e le credenziali',
+      name: 'moreProfileDescription',
       desc: '',
       args: [],
     );

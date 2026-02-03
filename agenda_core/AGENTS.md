@@ -551,6 +551,37 @@ Periodi di non disponibilità per uno o più staff (riunioni, pause, ferie).
 - `src/Infrastructure/Repositories/TimeBlockRepository.php`
 - `src/Http/Controllers/TimeBlocksController.php`
 
+### Location Closures (Chiusure Sedi) (03/02/2026)
+Periodi di chiusura per una o più sedi (festività, ferie, manutenzione).
+
+**Relazione N:M:** Una chiusura può applicarsi a più location tramite tabella pivot.
+
+**Endpoint:**
+- `GET /v1/businesses/{business_id}/closures` - lista chiusure per business
+- `POST /v1/businesses/{business_id}/closures` - crea chiusura
+- `PUT /v1/closures/{id}` - modifica chiusura
+- `DELETE /v1/closures/{id}` - elimina chiusura
+
+**Tabelle:**
+- `closures` - id, business_id, start_date, end_date, reason, created_at, updated_at
+- `closure_locations` - closure_id, location_id (tabella pivot N:M)
+
+**File PHP:**
+- `src/Infrastructure/Repositories/LocationClosureRepository.php`
+- `src/Http/Controllers/LocationClosuresController.php`
+
+**Metodi Repository:**
+- `findByBusinessId(int $businessId)` - tutte le chiusure del business
+- `findByLocationId(int $locationId)` - chiusure per una location specifica
+- `isDateClosed(int $locationId, string $date)` - verifica se una data è chiusa
+- `create(array $data)` - crea chiusura con locationIds
+- `update(int $id, array $data)` - aggiorna chiusura e locationIds
+- `delete(int $id)` - elimina chiusura (cascade su pivot)
+
+**Integrazione ComputeAvailability:**
+- `ComputeAvailability::execute()` verifica chiusure all'inizio (linee 116-120)
+- Se `isDateClosed()` ritorna true, restituisce array vuoto (nessuno slot disponibile)
+
 ---
 
 ## 🔄 Refresh e Polling Dati (01/01/2026)
