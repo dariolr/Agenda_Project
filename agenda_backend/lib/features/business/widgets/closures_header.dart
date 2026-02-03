@@ -157,37 +157,12 @@ class _ClosuresControls extends StatelessWidget {
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        // Location: selector if multiple, label if single
+        // Location selector only if multiple locations
         if (showLocationSelector)
           AgendaLocationSelector(
             locations: locations,
             current: currentLocation,
             onSelected: onLocationSelected,
-          )
-        else
-          // Single location - just show the name as label
-          Container(
-            height: kAgendaControlHeight,
-            padding: const EdgeInsets.symmetric(
-              horizontal: kAgendaControlHorizontalPadding,
-            ),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.withOpacity(0.35)),
-              borderRadius: kAgendaPillRadius,
-            ),
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.place_outlined,
-                  size: 16,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(currentLocation.name, style: theme.textTheme.bodyMedium),
-              ],
-            ),
           ),
         // Preset dropdown
         _PresetDropdown(value: selectedPreset, onChanged: onPresetChanged),
