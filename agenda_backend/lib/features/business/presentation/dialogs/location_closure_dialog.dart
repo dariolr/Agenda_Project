@@ -52,6 +52,7 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
 
     // Initialize selected locations from existing closure or empty
     _selectedLocationIds = widget.closure?.locationIds.toSet() ?? {};
+    // Auto-select single location will be done in build() after we have the locations list
   }
 
   @override
@@ -179,13 +180,6 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
 
       if (mounted) {
         Navigator.of(context).pop(true);
-        FeedbackDialog.showSuccess(
-          context,
-          title: isEditing
-              ? context.l10n.closuresUpdateSuccess
-              : context.l10n.closuresAddSuccess,
-          message: '',
-        );
       }
     } catch (e) {
       if (mounted) {
@@ -216,11 +210,23 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
       Localizations.localeOf(context).languageCode,
     );
     final locations = ref.watch(locationsProvider);
+    final hasMultipleLocations = locations.length > 1;
+
+    // Auto-select single location for new closures
+    if (!isEditing && locations.length == 1 && _selectedLocationIds.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _selectedLocationIds.isEmpty) {
+          setState(() {
+            _selectedLocationIds.add(locations.first.id);
+          });
+        }
+      });
+    }
 
     final durationDays = _endDate.difference(_startDate).inDays + 1;
 
-    // Build location selection widget
-    Widget locationSelectionWidget;
+    // Build location selection widget (only if multiple locations)
+    Widget? locationSelectionWidget;
     if (locations.isEmpty) {
       locationSelectionWidget = Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -231,7 +237,7 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
           ),
         ),
       );
-    } else {
+    } else if (hasMultipleLocations) {
       final allLocationIds = locations.map((l) => l.id).toList();
       final allSelected = _selectedLocationIds.length == locations.length;
 
@@ -382,10 +388,11 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
 
                 const SizedBox(height: 24),
 
-                // Location selection
-                locationSelectionWidget,
-
-                const SizedBox(height: 24),
+                // Location selection (only if multiple locations)
+                if (locationSelectionWidget != null) ...[
+                  locationSelectionWidget,
+                  const SizedBox(height: 24),
+                ],
 
                 // Reason field
                 TextFormField(

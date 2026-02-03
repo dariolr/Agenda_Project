@@ -60,13 +60,6 @@ class _LocationClosuresScreenState
         await ref
             .read(locationClosuresProvider.notifier)
             .deleteClosure(closure.id);
-        if (mounted) {
-          FeedbackDialog.showSuccess(
-            context,
-            title: l10n.closuresDeleteSuccess,
-            message: '',
-          );
-        }
       } catch (e) {
         if (mounted) {
           FeedbackDialog.showError(
