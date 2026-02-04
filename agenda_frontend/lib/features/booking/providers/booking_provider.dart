@@ -180,10 +180,53 @@ final bookingFlowProvider =
     );
 
 class BookingFlowNotifier extends Notifier<BookingFlowState> {
+  bool? _initialHasMultipleLocations;
+  bool _didAutoSelectService = false;
+
   @override
   BookingFlowState build() {
     // Determina lo step iniziale in base al numero di locations
-    final hasMultipleLocations = ref.watch(hasMultipleLocationsProvider);
+    // Usa ref.read per non ricostruire quando cambia
+    final hasMultipleLocations = ref.read(hasMultipleLocationsProvider);
+
+    // Memorizza il valore iniziale (quando i dati sono disponibili)
+    // per evitare reset quando il provider viene rivalutato
+    _initialHasMultipleLocations ??= hasMultipleLocations;
+
+    // Ascolta cambiamenti di hasMultipleLocations solo per aggiornare lo step iniziale
+    // se siamo ancora allo step iniziale e non abbiamo ancora dati
+    ref.listen<bool>(hasMultipleLocationsProvider, (previous, next) {
+      // Se è la prima volta che riceviamo true (locations caricate)
+      // e siamo ancora allo step services (default loading), vai a location
+      if (previous == false &&
+          next == true &&
+          state.currentStep == BookingStep.services &&
+          state.request.services.isEmpty) {
+        state = state.copyWith(currentStep: BookingStep.location);
+      }
+    });
+
+    // Auto-seleziona servizio se c'è un solo servizio prenotabile
+    ref.listen<AsyncValue<ServicesData>>(servicesDataProvider, (
+      previous,
+      next,
+    ) {
+      if (_didAutoSelectService) return;
+      next.whenData((data) {
+        final bookableServices = data.bookableServices;
+        if (bookableServices.length == 1 && state.request.services.isEmpty) {
+          _didAutoSelectService = true;
+          final service = bookableServices.first;
+          state = state.copyWith(
+            request: state.request.copyWith(
+              services: [service],
+              selectedServiceIds: {service.id},
+            ),
+          );
+        }
+      });
+    });
+
     final initialStep = hasMultipleLocations
         ? BookingStep.location
         : BookingStep.services;

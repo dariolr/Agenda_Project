@@ -604,4 +604,90 @@ final class ServiceRepository
         );
         $stmt->execute([$sortOrder, $categoryId]);
     }
+
+    /**
+     * Get all location IDs where this service has an active variant.
+     */
+    public function getServiceLocationIds(int $serviceId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT location_id FROM service_variants 
+             WHERE service_id = ? AND is_active = 1'
+        );
+        $stmt->execute([$serviceId]);
+        return array_column($stmt->fetchAll(), 'location_id');
+    }
+
+    /**
+     * Update service locations by adding/removing variants.
+     * Reactivates existing inactive variants if the location is re-added.
+     */
+    public function updateServiceLocations(int $serviceId, array $locationIds): void
+    {
+        $pdo = $this->db->getPdo();
+        
+        // Get current active location IDs
+        $currentLocationIds = $this->getServiceLocationIds($serviceId);
+        
+        // Determine which to add and which to remove
+        $toAdd = array_diff($locationIds, $currentLocationIds);
+        $toRemove = array_diff($currentLocationIds, $locationIds);
+        
+        // Get an existing variant to copy defaults from
+        $stmt = $pdo->prepare(
+            'SELECT duration_minutes, price, color_hex, is_bookable_online, 
+                    is_price_starting_from, processing_time, blocked_time
+             FROM service_variants WHERE service_id = ? LIMIT 1'
+        );
+        $stmt->execute([$serviceId]);
+        $templateVariant = $stmt->fetch();
+        
+        // Soft-delete removed locations
+        if (!empty($toRemove)) {
+            $placeholders = implode(',', array_fill(0, count($toRemove), '?'));
+            $stmt = $pdo->prepare(
+                "UPDATE service_variants SET is_active = 0, updated_at = NOW() 
+                 WHERE service_id = ? AND location_id IN ($placeholders)"
+            );
+            $stmt->execute(array_merge([$serviceId], $toRemove));
+        }
+        
+        // Add new locations (or reactivate if exists but inactive)
+        foreach ($toAdd as $locationId) {
+            // Check if inactive variant exists
+            $stmt = $pdo->prepare(
+                'SELECT id FROM service_variants 
+                 WHERE service_id = ? AND location_id = ? AND is_active = 0'
+            );
+            $stmt->execute([$serviceId, $locationId]);
+            $existingInactive = $stmt->fetch();
+            
+            if ($existingInactive) {
+                // Reactivate existing variant
+                $stmt = $pdo->prepare(
+                    'UPDATE service_variants SET is_active = 1, updated_at = NOW() WHERE id = ?'
+                );
+                $stmt->execute([$existingInactive['id']]);
+            } else {
+                // Create new variant with defaults from template
+                $stmt = $pdo->prepare(
+                    'INSERT INTO service_variants 
+                     (service_id, location_id, duration_minutes, price, color_hex, 
+                      is_bookable_online, is_price_starting_from, processing_time, blocked_time, is_active)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
+                );
+                $stmt->execute([
+                    $serviceId,
+                    $locationId,
+                    $templateVariant['duration_minutes'] ?? 30,
+                    $templateVariant['price'] ?? 0,
+                    $templateVariant['color_hex'] ?? null,
+                    $templateVariant['is_bookable_online'] ?? 1,
+                    $templateVariant['is_price_starting_from'] ?? 0,
+                    $templateVariant['processing_time'] ?? null,
+                    $templateVariant['blocked_time'] ?? null,
+                ]);
+            }
+        }
+    }
 }

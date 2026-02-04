@@ -107,4 +107,4 @@ else
   echo "WARN: .htaccess non trovato in web/, SPA routing potrebbe non funzionare"
 fi
 
-rsync -avz --delete "$ROOT_DIR/build/web/" siteground:www/prenota.romeolab.it/public_html/
+rsync -avz --delete "$ROOT_DIR/build/web/" romeolab:www/prenota.romeolab.it/public_html/

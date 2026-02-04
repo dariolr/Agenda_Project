@@ -2,6 +2,7 @@
 class Service {
   final int id;
   final int businessId;
+  final int? locationId;
   final int categoryId;
   final String name;
   final String? description;
@@ -18,6 +19,7 @@ class Service {
   const Service({
     required this.id,
     required this.businessId,
+    this.locationId,
     required this.categoryId,
     required this.name,
     this.description,
@@ -39,6 +41,7 @@ class Service {
   Service copyWith({
     int? id,
     int? businessId,
+    int? locationId,
     int? categoryId,
     String? name,
     String? description,
@@ -54,6 +57,7 @@ class Service {
   }) => Service(
     id: id ?? this.id,
     businessId: businessId ?? this.businessId,
+    locationId: locationId ?? this.locationId,
     categoryId: categoryId ?? this.categoryId,
     name: name ?? this.name,
     description: description ?? this.description,
@@ -72,6 +76,7 @@ class Service {
     id: json['id'] as int,
     // API può usare business_id o derivarlo dalla location
     businessId: json['business_id'] as int? ?? 0,
+    locationId: json['location_id'] as int?,
     // category_id può essere null per servizi non categorizzati
     categoryId: json['category_id'] as int? ?? 0,
     name: json['name'] as String,
@@ -112,6 +117,7 @@ class Service {
   Map<String, dynamic> toJson() => {
     'id': id,
     'business_id': businessId,
+    if (locationId != null) 'location_id': locationId,
     'category_id': categoryId,
     'name': name,
     if (description != null) 'description': description,

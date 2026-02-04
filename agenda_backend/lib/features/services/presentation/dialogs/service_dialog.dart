@@ -37,6 +37,11 @@ bool _mapEquals<K, V>(Map<K, V> a, Map<K, V> b) {
   return true;
 }
 
+bool _setEquals<T>(Set<T> a, Set<T> b) {
+  if (a.length != b.length) return false;
+  return a.containsAll(b) && b.containsAll(a);
+}
+
 enum _AdditionalTimeSelection { none, processing, blocked }
 
 const List<Color> _serviceColorPalette = [
@@ -412,6 +417,16 @@ Future<void> showServiceDialog(
   Set<int> selectedStaffIds = {...originalStaffIds};
   bool isSelectingStaff = false;
 
+  // Location selection
+  final allLocations = ref.read(locationsProvider);
+  final hasMultipleLocations = allLocations.length > 1;
+  // In creazione: seleziona location corrente di default
+  // In modifica: carica le location dal server
+  Set<int> selectedLocationIds = {locationId};
+  Set<int> originalLocationIds = {locationId}; // Per confrontare le modifiche
+  bool isSelectingLocations = false;
+  bool isLoadingLocations = isEditing; // Se editing, mostra loading iniziale
+
   // Risorse richieste (Map: resourceId -> quantity)
   final locationResources = ref.read(locationResourcesProvider(locationId));
   final existingResourceRequirements =
@@ -537,21 +552,40 @@ Future<void> showServiceDialog(
       Service? savedService;
 
       if (!isEditing) {
-        // Create new service via API
-        savedService = await notifier.createServiceApi(
-          name: normalizedName,
-          categoryId: selectedCategory!,
-          description: descController.text.trim().isEmpty
-              ? null
-              : descController.text.trim(),
-          durationMinutes: selectedDuration!,
-          price: finalPrice ?? 0,
-          colorHex: ColorUtils.toHex(selectedColor),
-          isBookableOnline: isBookableOnline,
-          isPriceStartingFrom: finalIsPriceStartingFrom,
-          processingTime: processingToSave > 0 ? processingToSave : null,
-          blockedTime: blockedToSave > 0 ? blockedToSave : null,
-        );
+        // Create new service via API - use multi-location if multiple selected
+        if (selectedLocationIds.length > 1) {
+          savedService = await notifier.createServiceMultiLocationApi(
+            locationIds: selectedLocationIds.toList(),
+            name: normalizedName,
+            categoryId: selectedCategory!,
+            description: descController.text.trim().isEmpty
+                ? null
+                : descController.text.trim(),
+            durationMinutes: selectedDuration!,
+            price: finalPrice ?? 0,
+            colorHex: ColorUtils.toHex(selectedColor),
+            isBookableOnline: isBookableOnline,
+            isPriceStartingFrom: finalIsPriceStartingFrom,
+            processingTime: processingToSave > 0 ? processingToSave : null,
+            blockedTime: blockedToSave > 0 ? blockedToSave : null,
+          );
+        } else {
+          // Single location - use standard API
+          savedService = await notifier.createServiceApi(
+            name: normalizedName,
+            categoryId: selectedCategory!,
+            description: descController.text.trim().isEmpty
+                ? null
+                : descController.text.trim(),
+            durationMinutes: selectedDuration!,
+            price: finalPrice ?? 0,
+            colorHex: ColorUtils.toHex(selectedColor),
+            isBookableOnline: isBookableOnline,
+            isPriceStartingFrom: finalIsPriceStartingFrom,
+            processingTime: processingToSave > 0 ? processingToSave : null,
+            blockedTime: blockedToSave > 0 ? blockedToSave : null,
+          );
+        }
       } else {
         // Update existing service via API
         savedService = await notifier.updateServiceApi(
@@ -647,6 +681,20 @@ Future<void> showServiceDialog(
           serviceVariantId: variantId,
           resources: resourcesList,
         );
+      }
+
+      // Aggiorna le sedi associate al servizio (solo se modificate)
+      if (isEditing && hasMultipleLocations) {
+        final locationsChanged = !_setEquals(
+          selectedLocationIds,
+          originalLocationIds,
+        );
+        if (locationsChanged) {
+          await notifier.updateServiceLocationsApi(
+            serviceId: savedService.id,
+            locationIds: selectedLocationIds.toList(),
+          );
+        }
       }
 
       if (context.mounted) {
@@ -822,6 +870,167 @@ Future<void> showServiceDialog(
       setState(() {
         selectedStaffIds = {...current};
         isSelectingStaff = false;
+      });
+    }
+
+    Future<void> openLocationSelector() async {
+      if (isSelectingLocations) return;
+      setState(() => isSelectingLocations = true);
+      final l10n = context.l10n;
+      final formFactor = ref.read(formFactorProvider);
+      Set<int> current = {...selectedLocationIds};
+
+      Widget buildLocationRows(void Function(VoidCallback) setStateLocal) {
+        final allIds = [for (final loc in allLocations) loc.id];
+        final allSelected = allIds.isNotEmpty && allIds.every(current.contains);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SelectableRow(
+              label: l10n.teamSelectAllServices, // "Seleziona tutti"
+              selected: allSelected,
+              onTap: () {
+                if (allSelected) {
+                  // Deseleziona tutti tranne la location corrente
+                  current.clear();
+                  current.add(locationId);
+                } else {
+                  current
+                    ..clear()
+                    ..addAll(allIds);
+                }
+                setStateLocal(() {});
+              },
+            ),
+            const Divider(height: 1),
+            for (final loc in allLocations)
+              _SelectableRow(
+                label: loc.name,
+                selected: current.contains(loc.id),
+                onTap: () {
+                  if (current.contains(loc.id)) {
+                    // Non permettere di deselezionare tutte le location
+                    if (current.length > 1) {
+                      current.remove(loc.id);
+                    }
+                  } else {
+                    current.add(loc.id);
+                  }
+                  setStateLocal(() {});
+                },
+              ),
+          ],
+        );
+      }
+
+      Future<void> openLocDialog(BuildContext ctx) async {
+        await showDialog<void>(
+          context: ctx,
+          builder: (dialogCtx) => StatefulBuilder(
+            builder: (context, setStateLocal) {
+              return Dialog(
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 520,
+                    maxWidth: 680,
+                    maxHeight: 520,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                        child: Text(
+                          l10n.serviceLocationsLabel,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: buildLocationRows(setStateLocal),
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: AppFilledButton(
+                            onPressed: () => Navigator.of(dialogCtx).pop(),
+                            padding: AppButtonStyles.dialogButtonPadding,
+                            child: Text(l10n.actionConfirm),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      }
+
+      Future<void> openLocSheet(BuildContext ctx) async {
+        await AppBottomSheet.show<void>(
+          context: ctx,
+          heightFactor: AppBottomSheet.defaultHeightFactor,
+          padding: EdgeInsets.zero,
+          builder: (sheetCtx) => StatefulBuilder(
+            builder: (context, setStateLocal) {
+              return SafeArea(
+                top: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Text(
+                        l10n.serviceLocationsLabel,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: buildLocationRows(setStateLocal),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: AppFilledButton(
+                          onPressed: () => Navigator.of(sheetCtx).pop(),
+                          padding: AppButtonStyles.dialogButtonPadding,
+                          child: Text(l10n.actionConfirm),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      }
+
+      if (formFactor == AppFormFactor.desktop) {
+        await openLocDialog(context);
+      } else {
+        await openLocSheet(context);
+      }
+
+      setState(() {
+        selectedLocationIds = {...current};
+        isSelectingLocations = false;
       });
     }
 
@@ -1044,6 +1253,53 @@ Future<void> showServiceDialog(
           ),
         ),
         const SizedBox(height: AppSpacing.formRowSpacing),
+        if (hasMultipleLocations) ...[
+          AppOutlinedActionButton(
+            onPressed: isLoadingLocations ? null : openLocationSelector,
+            expand: true,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(context.l10n.serviceLocationsLabel),
+                  ),
+                ),
+                if (isLoadingLocations)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      context.l10n.serviceLocationsCount(
+                        selectedLocationIds.length,
+                        allLocations.length,
+                      ),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
+        ],
         AppOutlinedActionButton(
           onPressed: openStaffSelector,
           expand: true,
@@ -1399,6 +1655,29 @@ Future<void> showServiceDialog(
         });
         didAutoScroll = true;
       }
+
+      // Load service locations on first build (for editing)
+      if (isEditing && isLoadingLocations) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          try {
+            final notifier = ref.read(servicesProvider.notifier);
+            final loadedIds = await notifier.getServiceLocationsApi(service.id);
+            setState(() {
+              selectedLocationIds = loadedIds.toSet();
+              originalLocationIds = loadedIds.toSet();
+              isLoadingLocations = false;
+            });
+          } catch (e) {
+            // Fallback to current location on error
+            setState(() {
+              selectedLocationIds = {locationId};
+              originalLocationIds = {locationId};
+              isLoadingLocations = false;
+            });
+          }
+        });
+      }
+
       final body = buildBody(context, setState);
 
       final cancelButton = SizedBox(

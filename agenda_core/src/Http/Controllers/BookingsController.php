@@ -20,6 +20,7 @@ use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
+use Agenda\Infrastructure\Notifications\NotificationRepository;
 
 final class BookingsController
 {
@@ -39,6 +40,7 @@ final class BookingsController
         private readonly ?PreviewRecurringBooking $previewRecurringBooking = null,
         private readonly ?RecurrenceRuleRepository $recurrenceRuleRepo = null,
         private readonly ?ModifyRecurringSeries $modifyRecurringSeries = null,
+        private readonly ?NotificationRepository $notificationRepo = null,
     ) {}
 
     /**
@@ -1346,8 +1348,16 @@ final class BookingsController
 
         if ($scope === 'all') {
             $cancelledCount = $this->bookingRepo->cancelAllRecurrences($ruleId);
+            // Delete pending reminders for all bookings in the series
+            if ($this->notificationRepo !== null) {
+                $this->notificationRepo->deletePendingRemindersForRecurringSeries($ruleId);
+            }
         } elseif ($scope === 'future') {
             $cancelledCount = $this->bookingRepo->cancelFutureRecurrences($ruleId, $fromIndex);
+            // Delete pending reminders for future bookings in the series
+            if ($this->notificationRepo !== null) {
+                $this->notificationRepo->deletePendingRemindersForFutureRecurrences($ruleId, $fromIndex);
+            }
         } else {
             return Response::error('Invalid scope. Must be "all" or "future"', 'validation_error', 400);
         }

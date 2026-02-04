@@ -7,7 +7,7 @@
 
 set -e
 
-SSH_ALIAS="siteground"
+SSH_ALIAS="romeolab"
 REMOTE_BASE="www/api.romeolab.it"
 
 echo "🧹 Pulizia server agenda_core"

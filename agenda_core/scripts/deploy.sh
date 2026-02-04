@@ -17,7 +17,7 @@
 set -e
 
 # === CONFIGURAZIONE ===
-SSH_ALIAS="siteground"
+SSH_ALIAS="romeolab"
 REMOTE_BASE="www/api.romeolab.it"
 
 # Path locale

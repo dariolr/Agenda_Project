@@ -109,6 +109,6 @@ fi
 # 4) Deploy su STAGING
 ###############################################################################
 
-rsync -avz --delete "$ROOT_DIR/build/web/" siteground:www/prenota-staging.romeolab.it/public_html/
+rsync -avz --delete "$ROOT_DIR/build/web/" romeolab:www/prenota-staging.romeolab.it/public_html/
 
 echo "✅ Deploy STAGING completato: https://prenota-staging.romeolab.it"

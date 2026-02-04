@@ -1115,6 +1115,42 @@ class ApiClient {
 
   // ========== SERVICES CRUD ==========
 
+  /// POST /v1/businesses/{business_id}/services
+  /// Creates a service with variants for multiple locations
+  Future<Map<String, dynamic>> createServiceMultiLocation({
+    required int businessId,
+    required List<int> locationIds,
+    required String name,
+    int? categoryId,
+    String? description,
+    int durationMinutes = 30,
+    double price = 0,
+    String? colorHex,
+    bool isBookableOnline = true,
+    bool isPriceStartingFrom = false,
+    int? processingTime,
+    int? blockedTime,
+  }) async {
+    final response = await post(
+      '/v1/businesses/$businessId/services',
+      data: {
+        'name': name,
+        'location_ids': locationIds,
+        if (categoryId != null) 'category_id': categoryId,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+        'duration_minutes': durationMinutes,
+        'price': price,
+        if (colorHex != null && colorHex.isNotEmpty) 'color': colorHex,
+        'is_bookable_online': isBookableOnline,
+        'is_price_starting_from': isPriceStartingFrom,
+        if (processingTime != null) 'processing_time': processingTime,
+        if (blockedTime != null) 'blocked_time': blockedTime,
+      },
+    );
+    return response;
+  }
+
   /// POST /v1/locations/{location_id}/services
   Future<Map<String, dynamic>> createService({
     required int locationId,
@@ -1192,6 +1228,28 @@ class ApiClient {
   /// DELETE /v1/services/{id}
   Future<void> deleteService(int serviceId) async {
     await delete('/v1/services/$serviceId');
+  }
+
+  /// GET /v1/services/{id}/locations
+  /// Returns the list of location IDs where this service has an active variant.
+  Future<List<int>> getServiceLocations(int serviceId) async {
+    final response = await get('/v1/services/$serviceId/locations');
+    final locationIds = response['location_ids'] as List<dynamic>? ?? [];
+    return locationIds.map((e) => e as int).toList();
+  }
+
+  /// PUT /v1/services/{id}/locations
+  /// Updates the locations associated with a service.
+  Future<List<int>> updateServiceLocations({
+    required int serviceId,
+    required List<int> locationIds,
+  }) async {
+    final response = await put(
+      '/v1/services/$serviceId/locations',
+      data: {'location_ids': locationIds},
+    );
+    final updatedIds = response['location_ids'] as List<dynamic>? ?? [];
+    return updatedIds.map((e) => e as int).toList();
   }
 
   // ========== SERVICE CATEGORIES CRUD ==========
