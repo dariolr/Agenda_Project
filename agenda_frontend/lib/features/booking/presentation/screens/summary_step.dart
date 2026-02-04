@@ -8,6 +8,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../widgets/wrong_business_auth_banner.dart';
 
 class SummaryStep extends ConsumerStatefulWidget {
   const SummaryStep({super.key});
@@ -64,6 +65,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Banner se autenticato per business diverso
+                const WrongBusinessAuthBanner(),
+
                 // Data e ora
                 if (request.selectedSlot != null)
                   _SummarySection(

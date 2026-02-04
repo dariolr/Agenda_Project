@@ -2091,6 +2091,7 @@ class _SelectedClientTile extends StatelessWidget {
 class _ClientPickerSheet extends ConsumerStatefulWidget {
   const _ClientPickerSheet({required this.clients, this.selectedClientId});
 
+  /// Initial clients list (not used anymore, kept for API compatibility)
   final List<Client> clients;
   final int? selectedClientId;
 
@@ -2101,7 +2102,6 @@ class _ClientPickerSheet extends ConsumerStatefulWidget {
 class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
-  String _searchQuery = '';
 
   @override
   void initState() {
@@ -2121,20 +2121,15 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
     super.dispose();
   }
 
-  List<Client> get _filteredClients {
-    final clients = ref
-        .watch(clientsListProvider)
-        .where((c) => !c.isArchived)
-        .toList();
-    if (_searchQuery.isEmpty) return clients;
-    final q = _searchQuery.toLowerCase();
-    return clients.where((c) => c.name.toLowerCase().contains(q)).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+
+    // Watch the search state from provider
+    final searchState = ref.watch(clientPickerSearchProvider);
+    final clients = searchState.clients;
+    final isLoading = searchState.isLoading;
 
     final maxHeight = MediaQuery.of(context).size.height * 0.8;
     return SafeArea(
@@ -2162,6 +2157,18 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                     decoration: InputDecoration(
                       hintText: l10n.searchClientPlaceholder,
                       prefixIcon: const Icon(Icons.search, size: 20),
+                      suffixIcon: isLoading
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : null,
                       border: const OutlineInputBorder(),
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
@@ -2170,7 +2177,9 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                       ),
                     ),
                     onChanged: (value) {
-                      setState(() => _searchQuery = value.trim());
+                      ref
+                          .read(clientPickerSearchProvider.notifier)
+                          .setSearchQuery(value);
                     },
                   ),
                 ],
@@ -2192,7 +2201,9 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
               ),
               title: Text(l10n.createNewClient),
               onTap: () {
-                Navigator.of(context).pop(_ClientItem(-2, _searchQuery));
+                Navigator.of(
+                  context,
+                ).pop(_ClientItem(-2, _searchController.text.trim()));
               },
             ),
             ListTile(
@@ -2215,7 +2226,9 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
             const AppDivider(),
             // Client list
             Flexible(
-              child: _filteredClients.isEmpty
+              child: isLoading && clients.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : clients.isEmpty
                   ? Center(
                       child: Text(
                         l10n.clientsEmpty,
@@ -2226,9 +2239,9 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.only(bottom: 8),
-                      itemCount: _filteredClients.length,
+                      itemCount: clients.length,
                       itemBuilder: (context, index) {
-                        final client = _filteredClients[index];
+                        final client = clients[index];
                         final isSelected = client.id == widget.selectedClientId;
                         return ListTile(
                           leading: StaffCircleAvatar(
@@ -2263,6 +2276,10 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                                     ref,
                                     client: client,
                                   );
+                                  // Refresh search results after edit
+                                  ref
+                                      .read(clientPickerSearchProvider.notifier)
+                                      .refresh();
                                 },
                                 tooltip: l10n.clientsEdit,
                               ),

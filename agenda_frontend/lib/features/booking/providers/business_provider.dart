@@ -112,3 +112,42 @@ String? businessSlug(Ref ref) {
 bool isBusinessSubdomain(Ref ref) {
   return ref.watch(businessSlugProvider) != null;
 }
+
+/// Provider che verifica se l'utente è autenticato per un business DIVERSO
+/// da quello corrente (basato su URL slug).
+///
+/// Restituisce:
+/// - `null` se l'utente non è autenticato o dati non ancora caricati
+/// - `true` se l'utente è autenticato per un business DIVERSO
+/// - `false` se l'utente è autenticato per lo STESSO business o non autenticato
+///
+/// Utile per mostrare un avviso quando l'utente naviga su un business
+/// diverso da quello per cui si è autenticato.
+@riverpod
+class IsAuthenticatedForDifferentBusiness
+    extends _$IsAuthenticatedForDifferentBusiness {
+  @override
+  Future<bool> build() async {
+    final currentBusinessAsync = ref.watch(currentBusinessProvider);
+    final authenticatedBusinessIdAsync = ref.watch(
+      authenticatedBusinessIdProvider,
+    );
+
+    // Attendo i valori
+    final currentBusiness = currentBusinessAsync.value;
+    final authenticatedBusinessId = authenticatedBusinessIdAsync.value;
+
+    // Se l'utente non è autenticato, non c'è mismatch
+    if (authenticatedBusinessId == null) {
+      return false;
+    }
+
+    // Se il business corrente non è caricato, non possiamo verificare
+    if (currentBusiness == null) {
+      return false;
+    }
+
+    // Verifica se il business corrente è DIVERSO da quello autenticato
+    return currentBusiness.id != authenticatedBusinessId;
+  }
+}

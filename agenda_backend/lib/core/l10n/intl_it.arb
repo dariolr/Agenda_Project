@@ -1059,5 +1059,37 @@
   "closuresSelectAtLeastOneLocation": "Seleziona almeno una sede",
   "closuresNoLocations": "Nessuna sede configurata",
   "closuresAllLocations": "Tutte le sedi",
-  "closuresAddButton": "Aggiungi chiusura"
+  "closuresAddButton": "Aggiungi chiusura",
+  "closuresImportHolidays": "Importa festività",
+  "closuresImportHolidaysTitle": "Importa festività nazionali",
+  "closuresImportHolidaysYear": "Anno:",
+  "closuresImportHolidaysLocations": "Applica alle sedi:",
+  "closuresImportHolidaysList": "Seleziona le festività da importare:",
+  "closuresImportHolidaysAction": "Importa {count, plural, =1{1 festività} other{{count} festività}}",
+  "@closuresImportHolidaysAction": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "closuresImportHolidaysSuccess": "{count, plural, =1{1 festività importata} other{{count} festività importate}}",
+  "@closuresImportHolidaysSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "closuresImportHolidaysAlreadyAdded": "{count, plural, =1{1 festività già presente} other{{count} festività già presenti}} (contrassegnate con ✓)",
+  "@closuresImportHolidaysAlreadyAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "closuresImportHolidaysUnsupportedCountry": "Le festività automatiche non sono disponibili per il paese configurato nella sede.",
+  "actionSelectAll": "Seleziona tutti",
+  "actionDeselectAll": "Deseleziona tutti"
 }

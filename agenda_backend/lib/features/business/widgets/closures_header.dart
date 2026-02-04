@@ -5,7 +5,11 @@ import 'package:intl/intl.dart';
 import '/app/widgets/agenda_control_components.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/location.dart';
+import '/core/models/location_closure.dart';
+import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/location_providers.dart';
+import '/features/business/domain/public_holidays.dart';
+import '/features/business/presentation/dialogs/import_holidays_dialog.dart';
 import '../providers/closures_filter_provider.dart';
 import '../providers/location_closures_provider.dart';
 
@@ -17,6 +21,7 @@ class ClosuresHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
     final filterState = ref.watch(closuresFilterProvider);
     final filterNotifier = ref.read(closuresFilterProvider.notifier);
 
@@ -24,6 +29,10 @@ class ClosuresHeader extends ConsumerWidget {
     final locations = ref.watch(locationsProvider);
     final currentLocation = ref.watch(currentLocationProvider);
     final showLocationSelector = locations.length > 1;
+
+    // Check if holidays import is available for this country
+    final country = currentLocation.country;
+    final holidaysAvailable = PublicHolidaysFactory.isSupported(country);
 
     return Container(
       alignment: Alignment.centerLeft,
@@ -34,29 +43,97 @@ class ClosuresHeader extends ConsumerWidget {
           bottom: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
         ),
       ),
-      child: _ClosuresControls(
-        selectedPreset: filterState.selectedPreset,
-        startDate: filterState.startDate,
-        endDate: filterState.endDate,
-        onPresetChanged: (preset) {
-          if (preset == 'custom') {
-            _showDateRangePicker(context, ref);
-          } else {
-            filterNotifier.applyPreset(preset);
-          }
-        },
-        onDateRangeSelected: () => _showDateRangePicker(context, ref),
-        // Location selector props
-        showLocationSelector: showLocationSelector,
-        locations: locations,
-        currentLocation: currentLocation,
-        onLocationSelected: (id) {
-          ref.read(currentLocationIdProvider.notifier).set(id);
-          // Refresh closures after location change
-          ref.invalidate(locationClosuresProvider);
-        },
+      child: Row(
+        children: [
+          Expanded(
+            child: _ClosuresControls(
+              selectedPreset: filterState.selectedPreset,
+              startDate: filterState.startDate,
+              endDate: filterState.endDate,
+              onPresetChanged: (preset) {
+                if (preset == 'custom') {
+                  _showDateRangePicker(context, ref);
+                } else {
+                  filterNotifier.applyPreset(preset);
+                }
+              },
+              onDateRangeSelected: () => _showDateRangePicker(context, ref),
+              // Location selector props
+              showLocationSelector: showLocationSelector,
+              locations: locations,
+              currentLocation: currentLocation,
+              onLocationSelected: (id) {
+                ref.read(currentLocationIdProvider.notifier).set(id);
+                // Refresh closures after location change
+                ref.invalidate(locationClosuresProvider);
+              },
+            ),
+          ),
+          // Import holidays button
+          if (holidaysAvailable)
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _showImportHolidaysDialog(context, ref),
+                borderRadius: kAgendaPillRadius,
+                child: Container(
+                  height: kAgendaControlHeight,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: kAgendaControlHorizontalPadding,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.withOpacity(0.35)),
+                    borderRadius: kAgendaPillRadius,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.flag_outlined,
+                        size: 16,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.closuresImportHolidays,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
+  }
+
+  Future<void> _showImportHolidaysDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final l10n = context.l10n;
+    final locations = ref.read(locationsProvider);
+    final closuresAsync = ref.read(locationClosuresProvider);
+
+    final existingClosures = closuresAsync.maybeWhen(
+      data: (closures) => closures,
+      orElse: () => <LocationClosure>[],
+    );
+
+    final count = await ImportHolidaysDialog.show(
+      context,
+      locations: locations,
+      existingClosures: existingClosures,
+    );
+
+    if (count != null && count > 0 && context.mounted) {
+      await FeedbackDialog.showSuccess(
+        context,
+        title: l10n.closuresImportHolidaysSuccess(count),
+        message: '',
+      );
+    }
   }
 
   Future<void> _showDateRangePicker(BuildContext context, WidgetRef ref) async {

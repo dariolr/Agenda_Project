@@ -60,6 +60,9 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m17(total) => "Totale: ${total}";
 
+  static String m18(businessName) =>
+      "Per prenotare su ${businessName}, devi accedere con un account registrato qui.";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "actionBack": MessageLookupByLibrary.simpleMessage("Indietro"),
@@ -565,6 +568,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "weekdayThu": MessageLookupByLibrary.simpleMessage("Gio"),
     "weekdayTue": MessageLookupByLibrary.simpleMessage("Mar"),
     "weekdayWed": MessageLookupByLibrary.simpleMessage("Mer"),
+    "wrongBusinessAuthAction": MessageLookupByLibrary.simpleMessage(
+      "Esci e accedi qui",
+    ),
+    "wrongBusinessAuthMessage": m18,
+    "wrongBusinessAuthTitle": MessageLookupByLibrary.simpleMessage(
+      "Account associato ad un\'altra attività",
+    ),
     "yes": MessageLookupByLibrary.simpleMessage("Sì"),
   };
 }

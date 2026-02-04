@@ -2127,6 +2127,36 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Account associato ad un'altra attività`
+  String get wrongBusinessAuthTitle {
+    return Intl.message(
+      'Account associato ad un\'altra attività',
+      name: 'wrongBusinessAuthTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per prenotare su {businessName}, devi accedere con un account registrato qui.`
+  String wrongBusinessAuthMessage(String businessName) {
+    return Intl.message(
+      'Per prenotare su $businessName, devi accedere con un account registrato qui.',
+      name: 'wrongBusinessAuthMessage',
+      desc: '',
+      args: [businessName],
+    );
+  }
+
+  /// `Esci e accedi qui`
+  String get wrongBusinessAuthAction {
+    return Intl.message(
+      'Esci e accedi qui',
+      name: 'wrongBusinessAuthAction',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

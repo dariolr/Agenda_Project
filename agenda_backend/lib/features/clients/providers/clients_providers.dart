@@ -29,6 +29,7 @@ class ClientsState {
   final int total;
   final bool hasMore;
   final bool isLoadingMore;
+  final bool isSearching;
   final String searchQuery;
   final ClientSortOption sortOption;
 
@@ -37,6 +38,7 @@ class ClientsState {
     this.total = 0,
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.isSearching = false,
     this.searchQuery = '',
     this.sortOption = ClientSortOption.nameAsc,
   });
@@ -46,6 +48,7 @@ class ClientsState {
     int? total,
     bool? hasMore,
     bool? isLoadingMore,
+    bool? isSearching,
     String? searchQuery,
     ClientSortOption? sortOption,
   }) {
@@ -54,6 +57,7 @@ class ClientsState {
       total: total ?? this.total,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      isSearching: isSearching ?? this.isSearching,
       searchQuery: searchQuery ?? this.searchQuery,
       sortOption: sortOption ?? this.sortOption,
     );
@@ -160,8 +164,10 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
     final business = ref.read(currentBusinessProvider);
     if (business.id <= 0) return;
 
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    // Mantieni i dati visibili, mostra solo indicatore di ricerca
+    state = AsyncValue.data(current.copyWith(isSearching: true));
+
+    try {
       final repository = ref.read(clientsRepositoryProvider);
       final response = await repository.getPage(
         business.id,
@@ -170,14 +176,22 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
         search: trimmedQuery.isNotEmpty ? trimmedQuery : null,
         sort: _sortOptionToApiString(current.sortOption),
       );
-      return ClientsState(
-        clients: response.clients,
-        total: response.total,
-        hasMore: response.hasMore,
-        searchQuery: trimmedQuery,
-        sortOption: current.sortOption,
+      state = AsyncValue.data(
+        ClientsState(
+          clients: response.clients,
+          total: response.total,
+          hasMore: response.hasMore,
+          searchQuery: trimmedQuery,
+          sortOption: current.sortOption,
+          isSearching: false,
+        ),
       );
-    });
+    } catch (e) {
+      // In caso di errore, mantieni i dati precedenti e mostra errore
+      state = AsyncValue.data(current.copyWith(isSearching: false));
+      // ignore: avoid_print
+      print('Error searching clients: $e');
+    }
   }
 
   /// Carica la prossima pagina di clienti
@@ -419,3 +433,158 @@ final bookingIdsByClientProvider = Provider.family<Set<int>, int>((
   final appointments = ref.watch(clientWithAppointmentsProvider(clientId));
   return appointments.map((a) => a.bookingId).toSet();
 });
+
+// ---------------------------------------------------------------------------
+// CLIENT PICKER SEARCH PROVIDER
+// Provider dedicato per la ricerca clienti nel picker di appuntamenti/prenotazioni.
+// Esegue la ricerca lato server per gestire correttamente grandi volumi di clienti.
+// ---------------------------------------------------------------------------
+
+/// Limite di clienti per la ricerca nel picker
+const int _kPickerSearchLimit = 50;
+
+/// Stato della ricerca clienti nel picker
+class ClientPickerSearchState {
+  final List<Client> clients;
+  final bool isLoading;
+  final String searchQuery;
+  final String? error;
+
+  const ClientPickerSearchState({
+    this.clients = const [],
+    this.isLoading = false,
+    this.searchQuery = '',
+    this.error,
+  });
+
+  ClientPickerSearchState copyWith({
+    List<Client>? clients,
+    bool? isLoading,
+    String? searchQuery,
+    String? error,
+  }) {
+    return ClientPickerSearchState(
+      clients: clients ?? this.clients,
+      isLoading: isLoading ?? this.isLoading,
+      searchQuery: searchQuery ?? this.searchQuery,
+      error: error,
+    );
+  }
+}
+
+/// Notifier per la ricerca clienti nel picker con debounce
+/// Usa autoDispose per resettarsi quando il picker viene chiuso
+class ClientPickerSearchNotifier extends Notifier<ClientPickerSearchState> {
+  Timer? _searchDebounce;
+
+  @override
+  ClientPickerSearchState build() {
+    ref.onDispose(() {
+      _searchDebounce?.cancel();
+    });
+    // Carica i primi clienti all'apertura (senza filtro)
+    _loadInitialClients();
+    return const ClientPickerSearchState(isLoading: true);
+  }
+
+  /// Carica i primi clienti senza filtro all'apertura del picker
+  Future<void> _loadInitialClients() async {
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) {
+      state = const ClientPickerSearchState();
+      return;
+    }
+
+    final business = ref.read(currentBusinessProvider);
+    if (business.id <= 0) {
+      state = const ClientPickerSearchState();
+      return;
+    }
+
+    try {
+      final repository = ref.read(clientsRepositoryProvider);
+      final response = await repository.getPage(
+        business.id,
+        limit: _kPickerSearchLimit,
+        offset: 0,
+        sort: 'name_asc',
+      );
+      state = ClientPickerSearchState(
+        clients: response.clients.where((c) => !c.isArchived).toList(),
+        isLoading: false,
+      );
+    } catch (e) {
+      state = ClientPickerSearchState(isLoading: false, error: e.toString());
+    }
+  }
+
+  /// Imposta la query di ricerca con debounce
+  void setSearchQuery(String query) {
+    final trimmed = query.trim();
+
+    // Aggiorna subito lo stato visuale della query
+    state = state.copyWith(searchQuery: trimmed);
+
+    // Cancella il debounce precedente
+    _searchDebounce?.cancel();
+
+    // Se query vuota, ricarica i clienti iniziali
+    if (trimmed.isEmpty) {
+      state = state.copyWith(isLoading: true);
+      _loadInitialClients();
+      return;
+    }
+
+    // Debounce per evitare troppe chiamate durante la digitazione
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _executeSearch(trimmed);
+    });
+  }
+
+  /// Esegue la ricerca lato server
+  Future<void> _executeSearch(String query) async {
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) return;
+
+    final business = ref.read(currentBusinessProvider);
+    if (business.id <= 0) return;
+
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final repository = ref.read(clientsRepositoryProvider);
+      final response = await repository.getPage(
+        business.id,
+        limit: _kPickerSearchLimit,
+        offset: 0,
+        search: query,
+        sort: 'name_asc',
+      );
+      state = ClientPickerSearchState(
+        clients: response.clients.where((c) => !c.isArchived).toList(),
+        isLoading: false,
+        searchQuery: query,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  /// Forza un refresh della ricerca corrente
+  Future<void> refresh() async {
+    final query = state.searchQuery;
+    if (query.isEmpty) {
+      state = state.copyWith(isLoading: true);
+      await _loadInitialClients();
+    } else {
+      await _executeSearch(query);
+    }
+  }
+}
+
+/// Provider per la ricerca clienti nel picker (autoDispose si resetta alla chiusura)
+final clientPickerSearchProvider =
+    NotifierProvider.autoDispose<
+      ClientPickerSearchNotifier,
+      ClientPickerSearchState
+    >(ClientPickerSearchNotifier.new);
