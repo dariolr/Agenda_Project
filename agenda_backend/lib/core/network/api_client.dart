@@ -1512,6 +1512,13 @@ class ApiClient {
     await delete(ApiConfig.businessUser(businessId, userId));
   }
 
+  /// GET /v1/me/business/{business_id}
+  /// Ottiene il contesto dell'utente corrente per un business (scope_type, location_ids).
+  Future<Map<String, dynamic>> getMyBusinessContext(int businessId) async {
+    final response = await get('/v1/me/business/$businessId');
+    return response['data'] as Map<String, dynamic>;
+  }
+
   // ========== BUSINESS INVITATIONS ==========
 
   /// GET /v1/businesses/{business_id}/invitations

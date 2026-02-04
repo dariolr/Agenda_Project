@@ -18,6 +18,7 @@ import '../../agenda/providers/selected_appointment_provider.dart';
 import '../../agenda/providers/staff_filter_providers.dart';
 import '../../agenda/providers/temp_drag_time_provider.dart';
 import '../../agenda/providers/time_blocks_provider.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../../clients/providers/clients_providers.dart';
 import '../../services/providers/service_categories_provider.dart';
 import '../../services/providers/services_provider.dart';
@@ -118,6 +119,9 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
     ref.invalidate(agendaScrollProvider);
     ref.invalidate(initialScrollDoneProvider);
     ref.invalidate(agendaVerticalOffsetProvider);
+
+    // Business User Context (permessi location)
+    ref.invalidate(currentBusinessUserContextProvider);
   }
 }
 

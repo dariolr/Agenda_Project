@@ -6728,6 +6728,98 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Importa festività`
+  String get closuresImportHolidays {
+    return Intl.message(
+      'Importa festività',
+      name: 'closuresImportHolidays',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Importa festività nazionali`
+  String get closuresImportHolidaysTitle {
+    return Intl.message(
+      'Importa festività nazionali',
+      name: 'closuresImportHolidaysTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Anno:`
+  String get closuresImportHolidaysYear {
+    return Intl.message(
+      'Anno:',
+      name: 'closuresImportHolidaysYear',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Applica alle sedi:`
+  String get closuresImportHolidaysLocations {
+    return Intl.message(
+      'Applica alle sedi:',
+      name: 'closuresImportHolidaysLocations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona le festività da importare:`
+  String get closuresImportHolidaysList {
+    return Intl.message(
+      'Seleziona le festività da importare:',
+      name: 'closuresImportHolidaysList',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Importa {count, plural, =1{1 festività} other{{count} festività}}`
+  String closuresImportHolidaysAction(int count) {
+    return Intl.message(
+      'Importa ${Intl.plural(count, one: '1 festività', other: '$count festività')}',
+      name: 'closuresImportHolidaysAction',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `{count, plural, =1{1 festività importata} other{{count} festività importate}}`
+  String closuresImportHolidaysSuccess(int count) {
+    return Intl.plural(
+      count,
+      one: '1 festività importata',
+      other: '$count festività importate',
+      name: 'closuresImportHolidaysSuccess',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `{count, plural, =1{1 festività già presente} other{{count} festività già presenti}} (contrassegnate con ✓)`
+  String closuresImportHolidaysAlreadyAdded(int count) {
+    return Intl.message(
+      '${Intl.plural(count, one: '1 festività già presente', other: '$count festività già presenti')} (contrassegnate con ✓)',
+      name: 'closuresImportHolidaysAlreadyAdded',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Le festività automatiche non sono disponibili per il paese configurato nella sede.`
+  String get closuresImportHolidaysUnsupportedCountry {
+    return Intl.message(
+      'Le festività automatiche non sono disponibili per il paese configurato nella sede.',
+      name: 'closuresImportHolidaysUnsupportedCountry',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

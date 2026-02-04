@@ -289,3 +289,95 @@ final class IsBusinessSubdomainProvider
 
 String _$isBusinessSubdomainHash() =>
     r'7af66aeaae959e3aa4b1de252d5328627d90c0a1';
+
+/// Provider che verifica se l'utente è autenticato per un business DIVERSO
+/// da quello corrente (basato su URL slug).
+///
+/// Restituisce:
+/// - `null` se l'utente non è autenticato o dati non ancora caricati
+/// - `true` se l'utente è autenticato per un business DIVERSO
+/// - `false` se l'utente è autenticato per lo STESSO business o non autenticato
+///
+/// Utile per mostrare un avviso quando l'utente naviga su un business
+/// diverso da quello per cui si è autenticato.
+
+@ProviderFor(IsAuthenticatedForDifferentBusiness)
+const isAuthenticatedForDifferentBusinessProvider =
+    IsAuthenticatedForDifferentBusinessProvider._();
+
+/// Provider che verifica se l'utente è autenticato per un business DIVERSO
+/// da quello corrente (basato su URL slug).
+///
+/// Restituisce:
+/// - `null` se l'utente non è autenticato o dati non ancora caricati
+/// - `true` se l'utente è autenticato per un business DIVERSO
+/// - `false` se l'utente è autenticato per lo STESSO business o non autenticato
+///
+/// Utile per mostrare un avviso quando l'utente naviga su un business
+/// diverso da quello per cui si è autenticato.
+final class IsAuthenticatedForDifferentBusinessProvider
+    extends $AsyncNotifierProvider<IsAuthenticatedForDifferentBusiness, bool> {
+  /// Provider che verifica se l'utente è autenticato per un business DIVERSO
+  /// da quello corrente (basato su URL slug).
+  ///
+  /// Restituisce:
+  /// - `null` se l'utente non è autenticato o dati non ancora caricati
+  /// - `true` se l'utente è autenticato per un business DIVERSO
+  /// - `false` se l'utente è autenticato per lo STESSO business o non autenticato
+  ///
+  /// Utile per mostrare un avviso quando l'utente naviga su un business
+  /// diverso da quello per cui si è autenticato.
+  const IsAuthenticatedForDifferentBusinessProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'isAuthenticatedForDifferentBusinessProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() =>
+      _$isAuthenticatedForDifferentBusinessHash();
+
+  @$internal
+  @override
+  IsAuthenticatedForDifferentBusiness create() =>
+      IsAuthenticatedForDifferentBusiness();
+}
+
+String _$isAuthenticatedForDifferentBusinessHash() =>
+    r'f5d1cb4db2d0827c8cb31f2a8bb0be419d3b11ee';
+
+/// Provider che verifica se l'utente è autenticato per un business DIVERSO
+/// da quello corrente (basato su URL slug).
+///
+/// Restituisce:
+/// - `null` se l'utente non è autenticato o dati non ancora caricati
+/// - `true` se l'utente è autenticato per un business DIVERSO
+/// - `false` se l'utente è autenticato per lo STESSO business o non autenticato
+///
+/// Utile per mostrare un avviso quando l'utente naviga su un business
+/// diverso da quello per cui si è autenticato.
+
+abstract class _$IsAuthenticatedForDifferentBusiness
+    extends $AsyncNotifier<bool> {
+  FutureOr<bool> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<AsyncValue<bool>, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<bool>, bool>,
+              AsyncValue<bool>,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}

@@ -1061,5 +1061,37 @@
   "closuresSelectAtLeastOneLocation": "Select at least one location",
   "closuresNoLocations": "No locations configured",
   "closuresAllLocations": "All locations",
-  "closuresAddButton": "Add closure"
+  "closuresAddButton": "Add closure",
+  "closuresImportHolidays": "Import holidays",
+  "closuresImportHolidaysTitle": "Import national holidays",
+  "closuresImportHolidaysYear": "Year:",
+  "closuresImportHolidaysLocations": "Apply to locations:",
+  "closuresImportHolidaysList": "Select holidays to import:",
+  "closuresImportHolidaysAction": "Import {count, plural, =1{1 holiday} other{{count} holidays}}",
+  "@closuresImportHolidaysAction": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "closuresImportHolidaysSuccess": "{count, plural, =1{1 holiday imported} other{{count} holidays imported}}",
+  "@closuresImportHolidaysSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "closuresImportHolidaysAlreadyAdded": "{count, plural, =1{1 holiday already added} other{{count} holidays already added}} (marked with ✓)",
+  "@closuresImportHolidaysAlreadyAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "closuresImportHolidaysUnsupportedCountry": "Automatic holidays are not available for the country configured in the location.",
+  "actionSelectAll": "Select all",
+  "actionDeselectAll": "Deselect all"
 }
