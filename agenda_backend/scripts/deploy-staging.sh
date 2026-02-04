@@ -109,6 +109,6 @@ fi
 # 4) Deploy su STAGING
 ###############################################################################
 
-rsync -avz --delete "$ROOT_DIR/build/web/" siteground:www/gestionale-staging.romeolab.it/public_html/
+rsync -avz --delete "$ROOT_DIR/build/web/" romeolab:www/gestionale-staging.romeolab.it/public_html/
 
 echo "✅ Deploy STAGING completato: https://gestionale-staging.romeolab.it"

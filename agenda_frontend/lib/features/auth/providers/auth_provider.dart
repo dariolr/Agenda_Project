@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/network/network_providers.dart';
-import '../../../core/network/token_storage.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_state.dart';
 
@@ -30,21 +29,28 @@ class AuthNotifier extends Notifier<AuthState> {
 
   /// Tenta di ripristinare la sessione da refresh token
   Future<void> _tryRestoreSession() async {
+    debugPrint('AUTH: _tryRestoreSession started');
     state = AuthState.loading();
     try {
       // Recupera il businessId salvato
-      final tokenStorage = createTokenStorage();
+      final tokenStorage = ref.read(tokenStorageProvider);
       final savedBusinessId = await tokenStorage.getBusinessId();
+      debugPrint('AUTH: savedBusinessId=$savedBusinessId');
 
       final user = await _repository.tryRestoreSession(
         businessId: savedBusinessId,
       );
+      debugPrint('AUTH: tryRestoreSession result: user=${user?.email}');
       if (user != null) {
         state = AuthState.authenticated(user);
+        debugPrint('AUTH: state set to authenticated');
       } else {
         state = AuthState.unauthenticated();
+        debugPrint('AUTH: state set to unauthenticated (no user)');
       }
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('AUTH: tryRestoreSession error: $e');
+      debugPrint('AUTH: stack trace: $st');
       state = AuthState.unauthenticated();
     }
   }

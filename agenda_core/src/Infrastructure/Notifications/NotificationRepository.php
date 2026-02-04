@@ -163,4 +163,68 @@ final class NotificationRepository
         
         return $stmt->rowCount();
     }
+
+    /**
+     * Delete pending reminders for a specific booking.
+     * Called when a booking is cancelled to avoid sending reminders for deleted bookings.
+     * 
+     * @param int $bookingId The booking ID
+     * @return int Number of deleted notifications
+     */
+    public function deletePendingReminders(int $bookingId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'DELETE FROM notification_queue 
+             WHERE booking_id = :booking_id
+               AND channel = "booking_reminder"
+               AND status = "pending"'
+        );
+        $stmt->execute(['booking_id' => $bookingId]);
+        
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Delete pending reminders for all bookings in a recurring series.
+     * Called when a recurring series is cancelled.
+     * 
+     * @param int $recurrenceRuleId The recurrence rule ID
+     * @return int Number of deleted notifications
+     */
+    public function deletePendingRemindersForRecurringSeries(int $recurrenceRuleId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'DELETE nq FROM notification_queue nq
+             INNER JOIN bookings b ON nq.booking_id = b.id
+             WHERE b.recurrence_rule_id = :rule_id
+               AND nq.channel = "booking_reminder"
+               AND nq.status = "pending"'
+        );
+        $stmt->execute(['rule_id' => $recurrenceRuleId]);
+        
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Delete pending reminders for future bookings in a recurring series.
+     * Called when future recurring bookings are cancelled.
+     * 
+     * @param int $recurrenceRuleId The recurrence rule ID
+     * @param int $fromIndex The recurrence index to start from
+     * @return int Number of deleted notifications
+     */
+    public function deletePendingRemindersForFutureRecurrences(int $recurrenceRuleId, int $fromIndex): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'DELETE nq FROM notification_queue nq
+             INNER JOIN bookings b ON nq.booking_id = b.id
+             WHERE b.recurrence_rule_id = :rule_id
+               AND b.recurrence_index >= :from_index
+               AND nq.channel = "booking_reminder"
+               AND nq.status = "pending"'
+        );
+        $stmt->execute(['rule_id' => $recurrenceRuleId, 'from_index' => $fromIndex]);
+        
+        return $stmt->rowCount();
+    }
 }

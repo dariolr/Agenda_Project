@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +17,6 @@ import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../agenda/providers/location_providers.dart';
 import '../../../services/presentation/widgets/service_eligibility_selector.dart';
-import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../providers/staff_providers.dart';
 
@@ -80,6 +80,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
   bool _isSelectingLocations = false;
   bool _isBookableOnline = true;
   bool _didAutoScrollColor = false;
+  bool _didFilterServiceIds = false;
 
   static const List<Color> _palette = [
     // Gialli / Amber (alto contrasto)
@@ -192,7 +193,32 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final formFactor = ref.read(formFactorProvider);
     final isSingleColumn = formFactor != AppFormFactor.desktop;
     final locations = ref.watch(locationsProvider);
-    final totalServicesCount = (ref.watch(servicesProvider).value ?? []).length;
+    // Carica servizi solo per le location selezionate
+    final locationIdsKey = locationIdsToKey(_selectedLocationIds);
+    final servicesForLocationsAsync = ref.watch(
+      servicesForLocationsProvider(locationIdsKey),
+    );
+    final servicesData = servicesForLocationsAsync.value;
+    final totalServicesCount = servicesData?.services.length ?? 0;
+
+    // Filtra i serviceIds selezionati per includere solo quelli disponibili
+    // nelle location dello staff (una sola volta al primo caricamento)
+    if (!_didFilterServiceIds && servicesData != null) {
+      final validServiceIds = servicesData.services.map((s) => s.id).toSet();
+      final invalidIds = _selectedServiceIds
+          .where((id) => !validServiceIds.contains(id))
+          .toList();
+      if (invalidIds.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _selectedServiceIds.removeAll(invalidIds);
+            });
+          }
+        });
+      }
+      _didFilterServiceIds = true;
+    }
     final totalLocationsCount = locations.length;
     final selectedLocationName =
         !kAllowStaffMultiLocationSelection && _selectedLocationIds.isNotEmpty
@@ -673,8 +699,14 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     if (_isSelectingServices) return;
     setState(() => _isSelectingServices = true);
     final l10n = context.l10n;
-    final services = ref.read(servicesProvider).value ?? [];
-    final categories = ref.read(serviceCategoriesProvider);
+    // Carica servizi solo per le location selezionate
+    final servicesResult = await ref.read(
+      servicesForLocationsProvider(
+        locationIdsToKey(_selectedLocationIds),
+      ).future,
+    );
+    final services = servicesResult.services;
+    final categories = servicesResult.categories;
     final formFactor = ref.read(formFactorProvider);
     Set<int> current = {..._selectedServiceIds};
 
@@ -798,11 +830,15 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       );
     }
 
+    if (!mounted) return;
+
     if (formFactor == AppFormFactor.desktop) {
       await openDialog(context);
     } else {
       await openSheet(context);
     }
+
+    if (!mounted) return;
 
     setState(() {
       _selectedServiceIds
@@ -986,6 +1022,21 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       await openDialog(context);
     } else {
       await openSheet(context);
+    }
+
+    // Aggiorna le location selezionate
+    final newLocationIds = current.toSet();
+
+    // Se le location sono cambiate, rimuovi i servizi che non appartengono più
+    if (!setEquals(_selectedLocationIds, newLocationIds)) {
+      // Carica i servizi per le nuove location
+      final servicesResult = await ref.read(
+        servicesForLocationsProvider(locationIdsToKey(newLocationIds)).future,
+      );
+      final validServiceIds = servicesResult.services.map((s) => s.id).toSet();
+
+      // Rimuovi i servizi che non sono più validi
+      _selectedServiceIds.removeWhere((id) => !validServiceIds.contains(id));
     }
 
     setState(() {

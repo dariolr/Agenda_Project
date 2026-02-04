@@ -1805,6 +1805,26 @@ class L10n {
     );
   }
 
+  /// `Sedi disponibili`
+  String get serviceLocationsLabel {
+    return Intl.message(
+      'Sedi disponibili',
+      name: 'serviceLocationsLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} di {total} sedi`
+  String serviceLocationsCount(int count, int total) {
+    return Intl.message(
+      '$count di $total sedi',
+      name: 'serviceLocationsCount',
+      desc: '',
+      args: [count, total],
+    );
+  }
+
   /// `Riordina sedi e membri del team trascinandoli. Seleziona se ordinare sedi o team. L’ordine sarà lo stesso anche nella sezione agenda.`
   String get teamReorderHelpDescription {
     return Intl.message(

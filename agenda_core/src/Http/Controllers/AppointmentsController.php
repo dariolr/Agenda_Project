@@ -6,14 +6,17 @@ namespace Agenda\Http\Controllers;
 
 use Agenda\Http\Request;
 use Agenda\Http\Response;
+use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\UseCases\Booking\CreateBooking;
 use Agenda\UseCases\Booking\UpdateBooking;
 use Agenda\UseCases\Booking\DeleteBooking;
+use Agenda\UseCases\Notifications\QueueBookingReminder;
 
 final class AppointmentsController
 {
@@ -26,6 +29,8 @@ final class AppointmentsController
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
         private readonly ?BookingAuditRepository $auditRepo = null,
+        private readonly ?NotificationRepository $notificationRepo = null,
+        private readonly ?Connection $db = null,
     ) {}
 
     /**
@@ -208,6 +213,13 @@ final class AppointmentsController
                 $userId,
                 $actuallyChangedFields
             );
+            
+            // Refresh reminder if time or service fields changed
+            $reminderRelevantFields = ['start_time', 'end_time', 'service_id', 'service_variant_id'];
+            $shouldRefreshReminder = !empty(array_intersect(array_keys($actuallyChangedFields), $reminderRelevantFields));
+            if ($shouldRefreshReminder) {
+                $this->refreshBookingReminder($bookingId);
+            }
         }
 
         return Response::success($this->formatAppointment($updated));
@@ -278,6 +290,9 @@ final class AppointmentsController
         
         // Create audit event for booking_item_added
         $this->createBookingItemAddedEvent($bookingId, $newItemId, $itemData, $userId);
+        
+        // Refresh reminder with new item included
+        $this->refreshBookingReminder($bookingId);
 
         return Response::success($this->formatAppointment($newAppointment));
     }
@@ -324,6 +339,11 @@ final class AppointmentsController
         $this->bookingRepo->updateBooking($bookingId, [
             'status' => 'cancelled',
         ]);
+        
+        // Delete pending reminders for this booking
+        if ($this->notificationRepo !== null) {
+            $this->notificationRepo->deletePendingReminders($bookingId);
+        }
         
         // Create audit event for booking_cancelled
         $this->createBookingCancelledEvent($bookingId, $beforeState, $userId);
@@ -398,6 +418,13 @@ final class AppointmentsController
             $this->bookingRepo->updateStatus($bookingId, 'cancelled');
             // Also record booking_cancelled event when all items removed
             $this->createBookingCancelledEvent($bookingId, ['reason' => 'all_items_deleted'], $userId);
+            // Delete pending reminders for this booking
+            if ($this->notificationRepo !== null) {
+                $this->notificationRepo->deletePendingReminders($bookingId);
+            }
+        } else {
+            // Refresh reminder with remaining items
+            $this->refreshBookingReminder($bookingId);
         }
 
         return Response::success([
@@ -645,6 +672,25 @@ final class AppointmentsController
             );
         } catch (\Throwable $e) {
             file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createBookingCancelledEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+
+    /**
+     * Refresh the booking reminder after items have been modified.
+     * Deletes existing pending reminder and queues a new one with updated data.
+     */
+    private function refreshBookingReminder(int $bookingId): void
+    {
+        if ($this->notificationRepo === null || $this->db === null) {
+            return;
+        }
+
+        try {
+            $reminderUseCase = new QueueBookingReminder($this->db, $this->notificationRepo);
+            $reminderUseCase->refreshReminder($bookingId);
+        } catch (\Throwable $e) {
+            // Log error but don't fail the main operation
+            error_log("Failed to refresh booking reminder for booking {$bookingId}: " . $e->getMessage());
         }
     }
 }

@@ -75,6 +75,14 @@ flutter build web --release --no-tree-shake-icons
 flutter test
 ```
 
+### ⚠️ REGOLA WARNING (03/02/2026)
+
+**Tutti i warning devono essere risolti** prima di considerare completata una modifica.
+
+- Eseguire `flutter analyze` dopo ogni modifica
+- Risolvere **tutti** i warning (info, warning, error)
+- **Unica eccezione**: warning di tipo `TODO` possono rimanere
+
 ---
 
 ## 📁 Architettura del progetto

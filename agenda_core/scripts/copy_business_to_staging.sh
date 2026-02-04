@@ -14,7 +14,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configurazione
-SSH_HOST="siteground"
+SSH_HOST="romeolab"
 DB_USER="ugucggguv4ij7"
 DB_PASS='I0lqrdlr@##'
 PROD_DB="db5hleekkbuuhm"

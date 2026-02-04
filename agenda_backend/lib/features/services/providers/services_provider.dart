@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/service.dart';
+import '../../../core/models/service_category.dart';
 import '../../../core/models/service_staff_eligibility.dart';
 import '../../../core/models/service_variant.dart';
 import '../../agenda/providers/business_providers.dart';
@@ -12,6 +13,86 @@ import 'service_categories_provider.dart';
 import 'services_repository_provider.dart';
 
 // Le categorie sono ora gestite in providers/service_categories_provider.dart
+
+///
+/// SERVICES PER LOCATION IDS (per staff dialog)
+///
+/// Carica servizi da multiple location. Usato nel dialog staff per mostrare
+/// solo i servizi delle location assegnate allo staff.
+///
+class ServicesForLocationsResult {
+  final List<Service> services;
+  final List<ServiceCategory> categories;
+
+  const ServicesForLocationsResult({
+    required this.services,
+    required this.categories,
+  });
+}
+
+/// Provider che carica servizi per una lista di location.
+/// La chiave è una stringa con gli ID separati da virgola (es. "2,7").
+/// Usare `locationIdsToKey` per convertire un `Set<int>` in chiave.
+String locationIdsToKey(Set<int> locationIds) {
+  final sorted = locationIds.toList()..sort();
+  return sorted.join(',');
+}
+
+Set<int> keyToLocationIds(String key) {
+  if (key.isEmpty) return {};
+  return key.split(',').map(int.parse).toSet();
+}
+
+/// Trigger per forzare il refresh di servicesForLocationsProvider
+/// Incrementato quando i servizi vengono creati/modificati/eliminati
+class ServicesForLocationsRefreshNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void trigger() => state++;
+}
+
+final servicesForLocationsRefreshProvider =
+    NotifierProvider<ServicesForLocationsRefreshNotifier, int>(
+      ServicesForLocationsRefreshNotifier.new,
+    );
+
+final servicesForLocationsProvider =
+    FutureProvider.family<ServicesForLocationsResult, String>((
+      ref,
+      locationIdsKey,
+    ) async {
+      // Watch del refresh trigger per invalidare la cache
+      ref.watch(servicesForLocationsRefreshProvider);
+      final locationIds = keyToLocationIds(locationIdsKey);
+
+      if (locationIds.isEmpty) {
+        return const ServicesForLocationsResult(services: [], categories: []);
+      }
+
+      final repository = ref.watch(servicesRepositoryProvider);
+      final allServices = <Service>[];
+      final categoryMap = <int, ServiceCategory>{};
+
+      // Carica servizi da tutte le location
+      for (final locationId in locationIds) {
+        final result = await repository.getServicesWithCategories(
+          locationId: locationId,
+        );
+        allServices.addAll(result.services);
+        for (final cat in result.categories) {
+          categoryMap[cat.id] = cat;
+        }
+      }
+
+      // Ordina per nome
+      allServices.sort((a, b) => a.name.compareTo(b.name));
+
+      return ServicesForLocationsResult(
+        services: allServices,
+        categories: categoryMap.values.toList(),
+      );
+    });
 
 ///
 /// SERVICES NOTIFIER (CRUD via API)
@@ -91,7 +172,60 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
 
   // ===== API METHODS =====
 
-  /// Creates a new service via API and updates local state
+  /// Creates a new service with variants for multiple locations via API
+  Future<Service?> createServiceMultiLocationApi({
+    required List<int> locationIds,
+    required String name,
+    int? categoryId,
+    String? description,
+    int durationMinutes = 30,
+    double price = 0,
+    String? colorHex,
+    bool isBookableOnline = true,
+    bool isPriceStartingFrom = false,
+    int? processingTime,
+    int? blockedTime,
+  }) async {
+    final repository = ref.read(servicesRepositoryProvider);
+    final businessId = ref.read(currentBusinessIdProvider);
+
+    if (businessId <= 0 || locationIds.isEmpty) return null;
+
+    try {
+      final newService = await repository.createServiceMultiLocation(
+        businessId: businessId,
+        locationIds: locationIds,
+        name: name,
+        categoryId: categoryId,
+        description: description,
+        durationMinutes: durationMinutes,
+        price: price,
+        colorHex: colorHex,
+        isBookableOnline: isBookableOnline,
+        isPriceStartingFrom: isPriceStartingFrom,
+        processingTime: processingTime,
+        blockedTime: blockedTime,
+      );
+
+      // Add to local state only if current location is in the list
+      final currentLocation = ref.read(currentLocationProvider);
+      if (locationIds.contains(currentLocation.id)) {
+        final current = state.value ?? [];
+        state = AsyncData([...current, newService]);
+
+        ref
+            .read(serviceCategoriesProvider.notifier)
+            .bumpEmptyCategoriesToEnd(servicesOverride: state.value);
+      }
+
+      return newService;
+    } catch (e) {
+      // Keep old state on error
+      return null;
+    }
+  }
+
+  /// Creates a new service via API and updates local state (legacy, single location)
   Future<Service?> createServiceApi({
     required String name,
     int? categoryId,
@@ -127,6 +261,10 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
       // Add to local state
       final current = state.value ?? [];
       state = AsyncData([...current, newService]);
+
+      // Trigger refresh of servicesForLocationsProvider
+      // so staff dialog will see the new service
+      ref.read(servicesForLocationsRefreshProvider.notifier).trigger();
 
       ref
           .read(serviceCategoriesProvider.notifier)
@@ -185,6 +323,9 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
           if (s.id == updatedService.id) updatedService else s,
       ]);
 
+      // Trigger refresh of servicesForLocationsProvider
+      ref.read(servicesForLocationsRefreshProvider.notifier).trigger();
+
       ref
           .read(serviceCategoriesProvider.notifier)
           .bumpEmptyCategoriesToEnd(servicesOverride: state.value);
@@ -209,10 +350,37 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
 
       ref.read(serviceVariantsProvider.notifier).removeByServiceId(serviceId);
 
+      // Trigger refresh of servicesForLocationsProvider
+      ref.read(servicesForLocationsRefreshProvider.notifier).trigger();
+
       ref
           .read(serviceCategoriesProvider.notifier)
           .bumpEmptyCategoriesToEnd(servicesOverride: newList);
 
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Gets the location IDs where a service has active variants
+  Future<List<int>> getServiceLocationsApi(int serviceId) async {
+    final repository = ref.read(servicesRepositoryProvider);
+    return repository.getServiceLocations(serviceId);
+  }
+
+  /// Updates the locations associated with a service
+  /// Returns true on success, false on failure
+  Future<bool> updateServiceLocationsApi({
+    required int serviceId,
+    required List<int> locationIds,
+  }) async {
+    final repository = ref.read(servicesRepositoryProvider);
+    try {
+      await repository.updateServiceLocations(
+        serviceId: serviceId,
+        locationIds: locationIds,
+      );
       return true;
     } catch (e) {
       return false;

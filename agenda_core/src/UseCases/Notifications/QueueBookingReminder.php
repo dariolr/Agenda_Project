@@ -31,6 +31,37 @@ final class QueueBookingReminder
             return 0;
         }
 
+        return $this->queueReminderInternal($booking, $hoursBeforeDefault);
+    }
+
+    /**
+     * Refresh reminder for a booking after items have been modified.
+     * Deletes existing pending reminder and queues a new one with updated data.
+     * 
+     * @param int $bookingId The booking ID
+     * @return int Number of reminders queued (0 or 1)
+     */
+    public function refreshReminder(int $bookingId): int
+    {
+        // Delete existing pending reminder
+        $this->notificationRepo->deletePendingReminders($bookingId);
+        
+        // Fetch fresh booking data
+        $booking = $this->fetchBookingData($bookingId);
+        if ($booking === null) {
+            return 0;
+        }
+        
+        // Queue new reminder with updated data
+        return $this->queueReminderInternal($booking);
+    }
+
+    /**
+     * Internal method to queue a reminder without checking if already sent.
+     */
+    private function queueReminderInternal(array $booking, int $hoursBeforeDefault = 24): int
+    {
+
         // Get settings
         $settings = $this->notificationRepo->getSettings((int) $booking['business_id']);
         if ($settings && !$settings['email_reminder_enabled']) {
@@ -270,5 +301,63 @@ final class QueueBookingReminder
         return EmailTemplateRenderer::normalizeLocale(
             $booking['locale'] ?? $booking['business_locale'] ?? null
         );
+    }
+
+    /**
+     * Fetch booking data for reminder refresh.
+     * Returns null if booking not found or cancelled.
+     */
+    private function fetchBookingData(int $bookingId): ?array
+    {
+        $frontendUrl = getenv('FRONTEND_URL') ?: 'https://prenota.romeolab.it';
+        
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT 
+                b.id as booking_id,
+                b.user_id,
+                b.client_id,
+                b.client_name,
+                b.status,
+                l.business_id,
+                l.timezone as location_timezone,
+                bus.name as business_name,
+                bus.email as business_email,
+                bus.slug as business_slug,
+                l.name as location_name,
+                l.address as location_address,
+                l.phone as location_phone,
+                l.email as location_email,
+                c.email as client_email,
+                c.first_name as client_first_name,
+                MIN(bi.start_time) as start_time,
+                GROUP_CONCAT(DISTINCT s.name SEPARATOR ", ") as services
+             FROM bookings b
+             JOIN locations l ON b.location_id = l.id
+             JOIN businesses bus ON l.business_id = bus.id
+             LEFT JOIN clients c ON b.client_id = c.id
+             LEFT JOIN booking_items bi ON b.id = bi.booking_id
+             LEFT JOIN service_variants sv ON bi.service_variant_id = sv.id
+             LEFT JOIN services s ON sv.service_id = s.id
+             WHERE b.id = :booking_id
+               AND b.status IN ("pending", "confirmed")
+             GROUP BY b.id'
+        );
+        $stmt->execute(['booking_id' => $bookingId]);
+        $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+        
+        if (!$booking) {
+            return null;
+        }
+        
+        // Set client_name from client_first_name if available
+        if (!empty($booking['client_first_name'])) {
+            $booking['client_name'] = $booking['client_first_name'];
+        }
+        
+        // Build manage_url from business slug
+        $slug = $booking['business_slug'] ?? '';
+        $booking['manage_url'] = $frontendUrl . '/' . $slug . '/my-bookings';
+        
+        return $booking;
     }
 }

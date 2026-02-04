@@ -148,13 +148,27 @@ class ApiClient {
   /// Tenta di ripristinare sessione da refresh token (customer)
   /// Richiede businessId per chiamare l'endpoint corretto
   Future<Map<String, dynamic>?> tryRestoreSession({int? businessId}) async {
+    debugPrint('API: tryRestoreSession start, businessId=$businessId');
     final refreshToken = await _tokenStorage.getRefreshToken();
+    debugPrint(
+      'API: refreshToken from storage: ${refreshToken != null ? "present (${refreshToken.length} chars)" : "null"}',
+    );
     // Usa il businessId passato o quello salvato
     final effectiveBusinessId = businessId ?? _currentBusinessId;
-    if (effectiveBusinessId == null) return null;
-    if (refreshToken == null && !kIsWeb) return null;
+    debugPrint('API: effectiveBusinessId=$effectiveBusinessId');
+    if (effectiveBusinessId == null) {
+      debugPrint('API: no businessId, returning null');
+      return null;
+    }
+    if (refreshToken == null && !kIsWeb) {
+      debugPrint('API: no refreshToken and not web, returning null');
+      return null;
+    }
 
     try {
+      debugPrint(
+        'API: calling refresh endpoint: ${ApiConfig.customerRefresh(effectiveBusinessId)}',
+      );
       final response = await _dio.post(
         ApiConfig.customerRefresh(effectiveBusinessId),
         data: refreshToken != null
@@ -162,6 +176,7 @@ class ApiClient {
             : <String, dynamic>{},
       );
 
+      debugPrint('API: refresh response: ${response.data}');
       if (response.data['success'] == true) {
         final data = response.data['data'];
         _accessToken = data['access_token'];
@@ -169,12 +184,18 @@ class ApiClient {
         final nextRefreshToken = data['refresh_token'];
         if (nextRefreshToken is String && nextRefreshToken.isNotEmpty) {
           await _tokenStorage.saveRefreshToken(nextRefreshToken);
+          debugPrint('API: saved new refresh token');
         }
 
         // Fetch customer profile
+        debugPrint('API: fetching customer profile');
         return await getCustomerMe();
+      } else {
+        debugPrint('API: refresh response success=false');
       }
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('API: refresh error: $e');
+      debugPrint('API: stack: $st');
       await _tokenStorage.clearRefreshToken();
     }
     return null;
@@ -284,11 +305,17 @@ class ApiClient {
     required String email,
     required String password,
   }) async {
+    debugPrint('=== customerLogin ===');
+    debugPrint('baseUrl: ${_dio.options.baseUrl}');
+    debugPrint('endpoint: ${ApiConfig.customerLogin(businessId)}');
+    debugPrint('businessId: $businessId, email: $email');
+
     final data = await post(
       ApiConfig.customerLogin(businessId),
       data: {'email': email, 'password': password},
     );
 
+    debugPrint('customerLogin SUCCESS: ${data.keys}');
     _accessToken = data['access_token'];
     _currentBusinessId = businessId;
     final refreshToken = data['refresh_token'];

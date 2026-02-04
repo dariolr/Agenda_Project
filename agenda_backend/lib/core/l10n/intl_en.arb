@@ -269,6 +269,18 @@
     }
   },
   "serviceEligibleStaffNone": "No eligible team members",
+  "serviceLocationsLabel": "Available locations",
+  "serviceLocationsCount": "{count} of {total} locations",
+  "@serviceLocationsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "teamReorderHelpDescription": "Reorder locations and team members by dragging them. Select whether to sort locations or team. The order will also apply in the agenda section.",
   "createCategoryButtonLabel": "New category",
   "servicesNewServiceMenu": "New service",

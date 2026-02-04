@@ -107,6 +107,6 @@ else
   echo "WARN: .htaccess non trovato in web/, SPA routing potrebbe non funzionare"
 fi
 
-rsync -avz --delete "$ROOT_DIR/build/web/" siteground:www/gestionale.romeolab.it/public_html/
+rsync -avz --delete "$ROOT_DIR/build/web/" romeolab:www/gestionale.romeolab.it/public_html/
 
 # Use the VSCode task named dart-analyze instead of running dart analyze directly.

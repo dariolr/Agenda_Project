@@ -79,26 +79,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/$slug/booking$query';
       }
 
-      // Auth redirect logic per route con slug (solo se auth è ready)
-      if (slug != null && authReady) {
+      // Auth redirect logic per route con slug
+      if (slug != null) {
         final subPath = pathSegments.length > 1 ? pathSegments[1] : '';
 
         // Route protette che richiedono autenticazione
-        const protectedRoutes = {
-          'booking',
-          'my-bookings',
-          'profile',
-          'change-password',
-        };
+        // NOTA: 'booking' NON è protetta - i clienti devono poter prenotare senza login
+        const protectedRoutes = {'my-bookings', 'profile', 'change-password'};
 
         // Se non autenticato e cerca di accedere a route protetta, redirect a login
-        // Passa ?from per mostrare messaggio contestuale nella pagina login
-        if (!isAuthenticated && protectedRoutes.contains(subPath)) {
+        // Ma solo se auth è ready! Altrimenti aspettiamo che il session restore completi
+        if (authReady &&
+            !isAuthenticated &&
+            protectedRoutes.contains(subPath)) {
           return '/$slug/login?from=$subPath';
         }
 
         // Se autenticato e cerca di accedere a login/register, redirect a booking
-        if (isAuthenticated && (subPath == 'login' || subPath == 'register')) {
+        // Solo se auth è ready per evitare loop
+        if (authReady &&
+            isAuthenticated &&
+            (subPath == 'login' || subPath == 'register')) {
           return '/$slug/booking';
         }
       }

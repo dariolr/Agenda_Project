@@ -3,6 +3,8 @@ import 'service_variant_resource_requirement.dart';
 class Service {
   final int id;
   final int businessId;
+  final int?
+  locationId; // Location a cui appartiene il servizio (da service_variants)
   final int categoryId;
   final String name;
   final String? description;
@@ -21,6 +23,7 @@ class Service {
   const Service({
     required this.id,
     required this.businessId,
+    this.locationId,
     required this.categoryId,
     required this.name,
     this.description,
@@ -39,6 +42,7 @@ class Service {
   Service copyWith({
     int? id,
     int? businessId,
+    int? locationId,
     int? categoryId,
     String? name,
     String? description,
@@ -55,6 +59,7 @@ class Service {
   }) => Service(
     id: id ?? this.id,
     businessId: businessId ?? this.businessId,
+    locationId: locationId ?? this.locationId,
     categoryId: categoryId ?? this.categoryId,
     name: name ?? this.name,
     description: description ?? this.description,
@@ -84,6 +89,7 @@ class Service {
     return Service(
       id: json['id'] as int,
       businessId: json['business_id'] as int? ?? 1,
+      locationId: json['location_id'] as int?,
       categoryId: json['category_id'] as int? ?? 0,
       name: json['name'] as String,
       description: json['description'] as String?,
@@ -103,6 +109,7 @@ class Service {
   Map<String, dynamic> toJson() => {
     'id': id,
     'business_id': businessId,
+    if (locationId != null) 'location_id': locationId,
     'category_id': categoryId,
     'name': name,
     if (description != null) 'description': description,

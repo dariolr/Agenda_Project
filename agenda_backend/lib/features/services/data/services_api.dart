@@ -58,8 +58,41 @@ class ServicesApi {
 
   // ===== Services CRUD =====
 
+  /// POST /v1/businesses/{business_id}/services
+  /// Creates a new service with variants for multiple locations
+  Future<Service> createServiceMultiLocation({
+    required int businessId,
+    required List<int> locationIds,
+    required String name,
+    int? categoryId,
+    String? description,
+    int durationMinutes = 30,
+    double price = 0,
+    String? colorHex,
+    bool isBookableOnline = true,
+    bool isPriceStartingFrom = false,
+    int? processingTime,
+    int? blockedTime,
+  }) async {
+    final data = await _apiClient.createServiceMultiLocation(
+      businessId: businessId,
+      locationIds: locationIds,
+      name: name,
+      categoryId: categoryId,
+      description: description,
+      durationMinutes: durationMinutes,
+      price: price,
+      colorHex: colorHex,
+      isBookableOnline: isBookableOnline,
+      isPriceStartingFrom: isPriceStartingFrom,
+      processingTime: processingTime,
+      blockedTime: blockedTime,
+    );
+    return Service.fromJson(data['service'] as Map<String, dynamic>);
+  }
+
   /// POST /v1/locations/{location_id}/services
-  /// Creates a new service
+  /// Creates a new service (legacy, single location)
   Future<Service> createService({
     required int locationId,
     required String name,
@@ -130,6 +163,24 @@ class ServicesApi {
   /// Soft deletes a service
   Future<void> deleteService(int serviceId) async {
     await _apiClient.deleteService(serviceId);
+  }
+
+  /// GET /v1/services/{id}/locations
+  /// Gets the location IDs where this service has an active variant
+  Future<List<int>> getServiceLocations(int serviceId) async {
+    return _apiClient.getServiceLocations(serviceId);
+  }
+
+  /// PUT /v1/services/{id}/locations
+  /// Updates the locations associated with a service
+  Future<List<int>> updateServiceLocations({
+    required int serviceId,
+    required List<int> locationIds,
+  }) async {
+    return _apiClient.updateServiceLocations(
+      serviceId: serviceId,
+      locationIds: locationIds,
+    );
   }
 
   // ===== Categories CRUD =====
