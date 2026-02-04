@@ -616,4 +616,84 @@ final class ServicesController
             'sort_order' => (int) ($service['sort_order'] ?? 0),
         ];
     }
+
+    /**
+     * GET /v1/services/{id}/locations
+     * Get location IDs where a service has active variants.
+     * Auth required.
+     */
+    public function getLocations(Request $request): Response
+    {
+        $serviceId = (int) $request->getRouteParam('id');
+
+        // Get service to verify ownership
+        $existingService = $this->serviceRepository->findServiceById($serviceId);
+        if (!$existingService) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
+
+        $businessId = (int) $existingService['business_id'];
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
+
+        $locationIds = $this->serviceRepository->getServiceLocationIds($serviceId);
+
+        return Response::success(['location_ids' => array_map('intval', $locationIds)]);
+    }
+
+    /**
+     * PUT /v1/services/{id}/locations
+     * Update which locations a service is available in.
+     * Auth required.
+     * 
+     * Payload:
+     * {
+     *   "location_ids": [1, 2, 3]
+     * }
+     */
+    public function updateLocations(Request $request): Response
+    {
+        $serviceId = (int) $request->getRouteParam('id');
+
+        // Get service to verify ownership
+        $existingService = $this->serviceRepository->findServiceById($serviceId);
+        if (!$existingService) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
+
+        $businessId = (int) $existingService['business_id'];
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
+
+        $body = $request->getBody();
+        $locationIds = $body['location_ids'] ?? [];
+
+        if (!is_array($locationIds) || empty($locationIds)) {
+            return Response::error('location_ids array is required and cannot be empty', 'validation_error', 400);
+        }
+
+        $locationIds = array_map('intval', $locationIds);
+
+        // Verify all locations belong to this business
+        foreach ($locationIds as $locId) {
+            $location = $this->locationRepo->findById($locId);
+            if (!$location || (int) $location['business_id'] !== $businessId) {
+                return Response::error("Invalid location_id: {$locId}", 'validation_error', 400);
+            }
+        }
+
+        $this->serviceRepository->updateServiceLocations($serviceId, $locationIds);
+
+        return Response::success([
+            'message' => 'Service locations updated successfully',
+            'location_ids' => $locationIds,
+        ]);
+    }
 }
+

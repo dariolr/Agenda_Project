@@ -226,6 +226,8 @@ final class Kernel
         $this->router->put('/v1/services/{id}', ServicesController::class, 'update', ['auth']);
         $this->router->delete('/v1/services/{id}', ServicesController::class, 'destroy', ['auth']);
         $this->router->post('/v1/services/reorder', ServicesController::class, 'reorderServices', ['auth']);
+        $this->router->get('/v1/services/{id}/locations', ServicesController::class, 'getLocations', ['auth']);
+        $this->router->put('/v1/services/{id}/locations', ServicesController::class, 'updateLocations', ['auth']);
 
         // Service Packages (public)
         $this->router->get('/v1/locations/{location_id}/service-packages', ServicePackagesController::class, 'index', ['location_path']);
@@ -422,9 +424,9 @@ final class Kernel
             ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo),
             StaffController::class => new StaffController($staffRepo, $staffScheduleRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
-            BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries),
+            BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo),
             ClientsController::class => new ClientsController($clientRepo, $businessUserRepo, $userRepo, $bookingRepo),
-            AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $bookingAuditRepo),
+            AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $bookingAuditRepo, $notificationRepo, $this->db),
             AdminBusinessesController::class => new AdminBusinessesController($this->db, $businessRepo, $businessUserRepo, $userRepo),
             BusinessSyncController::class => new BusinessSyncController(
                 new ExportBusiness($this->db),

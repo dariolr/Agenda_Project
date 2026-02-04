@@ -73,6 +73,11 @@ final class DeleteBooking
         // Cattura stato booking per audit prima della cancellazione
         $bookingStateForAudit = $this->captureBookingStateForAudit($bookingId);
         
+        // Elimina eventuali promemoria pendenti prima di cancellare il booking
+        if ($this->notificationRepo !== null) {
+            $this->notificationRepo->deletePendingReminders($bookingId);
+        }
+        
         // Cancella il booking (e i suoi items tramite il repository)
         $deleted = $this->bookingRepo->deleteBooking($bookingId);
 

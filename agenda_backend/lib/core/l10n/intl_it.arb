@@ -267,6 +267,18 @@
     }
   },
   "serviceEligibleStaffNone": "Nessun membro abilitato",
+  "serviceLocationsLabel": "Sedi disponibili",
+  "serviceLocationsCount": "{count} di {total} sedi",
+  "@serviceLocationsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "teamReorderHelpDescription": "Riordina sedi e membri del team trascinandoli. Seleziona se ordinare sedi o team. L’ordine sarà lo stesso anche nella sezione agenda.",
   "createCategoryButtonLabel": "Nuova categoria",
   "servicesNewServiceMenu": "Nuovo servizio",
