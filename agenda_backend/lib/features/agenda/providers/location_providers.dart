@@ -5,6 +5,7 @@ import '../../../core/models/location.dart';
 import '../../../core/network/network_providers.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../../business/providers/locations_providers.dart';
 import '../../business/providers/superadmin_selected_business_provider.dart';
 
@@ -35,6 +36,7 @@ final businessIdForLocationsProvider = Provider<int?>((ref) {
 
 ///
 /// 🔹 ELENCO LOCATIONS (da API) - FutureProvider per caricamento asincrono
+/// Filtra in base ai permessi dell'utente (scopeType: business o locations)
 ///
 final locationsAsyncProvider = FutureProvider<List<Location>>((ref) async {
   final businessId = ref.watch(businessIdForLocationsProvider);
@@ -45,9 +47,19 @@ final locationsAsyncProvider = FutureProvider<List<Location>>((ref) async {
   }
 
   final repository = ref.watch(locationsRepositoryProvider);
-  final locations = await repository.getByBusinessId(businessId);
+  final allLocations = await repository.getByBusinessId(businessId);
+
   // Filtra solo le location attive
-  return locations.where((l) => l.isActive).toList();
+  var locations = allLocations.where((l) => l.isActive).toList();
+
+  // Filtra in base ai permessi utente (scopeType)
+  final allowedIds = ref.watch(allowedLocationIdsProvider);
+  if (allowedIds != null) {
+    // L'utente ha accesso limitato a specifiche location
+    locations = locations.where((l) => allowedIds.contains(l.id)).toList();
+  }
+
+  return locations;
 });
 
 ///

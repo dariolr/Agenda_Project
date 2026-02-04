@@ -59,10 +59,10 @@ final class ResendAdminInvite
         $adminEmail = $owner['email'];
         $adminUserId = (int) $owner['user_id'];
 
-        // Generate new reset token (24h)
+        // Generate new reset token (30 days)
         $resetToken = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $resetToken);
-        $expiresAt = (new DateTimeImmutable('+24 hours'))->format('Y-m-d H:i:s');
+        $expiresAt = (new DateTimeImmutable('+30 days'))->format('Y-m-d H:i:s');
 
         // Delete existing tokens and create new one
         $stmt = $this->db->getPdo()->prepare(

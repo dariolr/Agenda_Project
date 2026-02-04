@@ -42,11 +42,6 @@ final class ClientsController
 
     /**
      * GET /v1/clients?business_id=X[&search=term][&limit=N][&offset=N]
-     * 
-     * TODO: Ripristinare paginazione quando il frontend Flutter implementerà
-     * la ricerca clienti via API nel dialog appuntamenti/prenotazioni.
-     * Attualmente restituisce TUTTI i clienti ignorando limit/offset per
-     * permettere il filtro locale nel picker clienti. (03/02/2026)
      */
     public function index(Request $request): Response
     {
@@ -61,11 +56,8 @@ final class ClientsController
         }
 
         $search = $request->queryParam('search');
-        // TODO: Ripristinare questi parametri quando il frontend supporterà la ricerca via API
-        // $limit = (int) $request->queryParam('limit', '100');
-        // $offset = (int) $request->queryParam('offset', '0');
-        $limit = 10000; // Restituisce tutti i clienti per ora
-        $offset = 0;
+        $limit = (int) $request->queryParam('limit', '100');
+        $offset = (int) $request->queryParam('offset', '0');
         $sort = $request->queryParam('sort', 'name_asc'); // name_asc, name_desc, last_name_asc, last_name_desc, created_asc, created_desc
         $masked = $request->queryParam('masked', 'false') === 'true';
 

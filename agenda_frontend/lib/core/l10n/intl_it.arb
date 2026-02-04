@@ -334,5 +334,14 @@
   "cancelledBadge": "ELIMINATA",
 
   "businessNotFound": "Attività non trovata",
-  "businessNotFoundHint": "Verifica l'indirizzo o contatta direttamente l'attività."
+  "businessNotFoundHint": "Verifica l'indirizzo o contatta direttamente l'attività.",
+
+  "wrongBusinessAuthTitle": "Account associato ad un'altra attività",
+  "wrongBusinessAuthMessage": "Per prenotare su {businessName}, devi accedere con un account registrato qui.",
+  "@wrongBusinessAuthMessage": {
+    "placeholders": {
+      "businessName": { "type": "String" }
+    }
+  },
+  "wrongBusinessAuthAction": "Esci e accedi qui"
 }

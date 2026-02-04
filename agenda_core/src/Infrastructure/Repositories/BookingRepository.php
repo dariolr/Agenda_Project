@@ -29,9 +29,15 @@ final class BookingRepository
                     b.idempotency_key, b.created_at, b.updated_at,
                     b.recurrence_rule_id, b.recurrence_index, 
                     b.is_recurrence_parent, b.has_conflict,
-                    c.first_name AS client_first_name, c.last_name AS client_last_name
+                    c.first_name AS client_first_name, c.last_name AS client_last_name,
+                    bus.name AS business_name,
+                    l.name AS location_name,
+                    l.address AS location_address,
+                    l.city AS location_city
              FROM bookings b
              LEFT JOIN clients c ON b.client_id = c.id
+             LEFT JOIN businesses bus ON b.business_id = bus.id
+             LEFT JOIN locations l ON b.location_id = l.id
              WHERE b.id = ?'
         );
         $stmt->execute([$bookingId]);

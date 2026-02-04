@@ -58,9 +58,88 @@ final class ReportsController
         $statusFilter = $request->query['status'] ?? 'confirmed,completed';
         $statuses = array_filter(explode(',', $statusFilter));
 
+        // Enforce location restrictions based on user's scope
+        $locationIds = $this->enforceLocationScope($userId, $businessId, $locationIds);
+        if ($locationIds === false) {
+            // User has locations scope but none of their locations were in the filter
+            return Response::ok([
+                'summary' => [
+                    'total_appointments' => 0,
+                    'total_bookings' => 0,
+                    'total_revenue' => 0,
+                    'total_duration_minutes' => 0,
+                    'unique_clients' => 0,
+                    'cancelled_count' => 0,
+                    'online_count' => 0,
+                    'manual_count' => 0,
+                ],
+                'by_staff' => [],
+                'by_location' => [],
+                'by_service' => [],
+                'by_day_of_week' => [],
+                'by_period' => [],
+                'filters' => [
+                    'business_id' => $businessId,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'location_ids' => [],
+                ],
+            ]);
+        }
+
         $report = $this->buildReport($businessId, $startDate, $endDate, $locationIds, $staffIds, $serviceIds, $statuses);
 
         return Response::ok($report);
+    }
+
+    /**
+     * Enforce location scope restrictions.
+     * 
+     * @param int $userId
+     * @param int $businessId
+     * @param array $requestedLocationIds Location IDs from request
+     * @return array|false Filtered location IDs, or false if no valid locations
+     */
+    private function enforceLocationScope(int $userId, int $businessId, array $requestedLocationIds): array|false
+    {
+        // Superadmin has full access
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return $requestedLocationIds;
+        }
+
+        // Get user's business context
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness($userId, $businessId);
+        if ($businessUser === null) {
+            return false;
+        }
+
+        // If user has business scope, no filtering needed
+        if (($businessUser['scope_type'] ?? 'business') === 'business') {
+            return $requestedLocationIds;
+        }
+
+        // User has locations scope - enforce restrictions
+        $allowedLocations = $businessUser['location_ids'] ?? [];
+        if (empty($allowedLocations)) {
+            return false;
+        }
+
+        if (empty($requestedLocationIds)) {
+            // No filter specified - return only allowed locations
+            return $allowedLocations;
+        }
+
+        // Intersect requested with allowed
+        $filteredLocations = array_intersect(
+            array_map('intval', $requestedLocationIds),
+            array_map('intval', $allowedLocations)
+        );
+
+        if (empty($filteredLocations)) {
+            return false;
+        }
+
+        return array_values($filteredLocations);
     }
 
     private function hasReportAccess(int $userId, int $businessId): bool
@@ -446,6 +525,29 @@ final class ReportsController
 
         $locationIds = $request->query['location_ids'] ?? [];
         $staffIds = $request->query['staff_ids'] ?? [];
+
+        // Enforce location restrictions based on user's scope
+        $locationIds = $this->enforceLocationScope($userId, $businessId, $locationIds);
+        if ($locationIds === false) {
+            // User has locations scope but none of their locations were in the filter
+            return Response::ok([
+                'summary' => [
+                    'total_scheduled_minutes' => 0,
+                    'total_worked_minutes' => 0,
+                    'total_blocked_minutes' => 0,
+                    'total_exception_off_minutes' => 0,
+                    'total_available_minutes' => 0,
+                    'overall_utilization_percentage' => 0,
+                ],
+                'by_staff' => [],
+                'filters' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'location_ids' => [],
+                    'staff_ids' => [],
+                ],
+            ]);
+        }
 
         $report = $this->buildWorkHoursReport($businessId, $startDate, $endDate, $locationIds, $staffIds);
 

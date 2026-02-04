@@ -33,11 +33,8 @@ class ResponsiveLayout {
     // 📐 Calcolo larghezza colonne staff
     // ──────────────────────────────────────────────
     final dynamicMaxVisible = formFactor == AppFormFactor.mobile
-        ? 2
-        : config.computeMaxVisibleStaff(
-            screenWidth,
-            formFactor: formFactor,
-          );
+        ? 3 // Permette fino a 3 colonne su mobile
+        : config.computeMaxVisibleStaff(screenWidth, formFactor: formFactor);
     final visibleStaff = staffCount.clamp(1, dynamicMaxVisible);
 
     final columnWidth = config.computeAdaptiveColumnWidth(

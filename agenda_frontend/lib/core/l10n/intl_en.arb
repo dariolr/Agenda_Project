@@ -334,5 +334,14 @@
   "cancelledBadge": "CANCELLED",
 
   "businessNotFound": "Business not found",
-  "businessNotFoundHint": "Please check the URL or contact the business directly."
+  "businessNotFoundHint": "Please check the URL or contact the business directly.",
+
+  "wrongBusinessAuthTitle": "Account linked to another business",
+  "wrongBusinessAuthMessage": "To book at {businessName}, you need to log in with an account registered here.",
+  "@wrongBusinessAuthMessage": {
+    "placeholders": {
+      "businessName": { "type": "String" }
+    }
+  },
+  "wrongBusinessAuthAction": "Log out and sign in here"
 }

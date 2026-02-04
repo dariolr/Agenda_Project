@@ -161,12 +161,12 @@ final class UpdateBusiness
                 $this->businessUserRepo->createOwner($businessId, $newAdminUserId);
             }
 
-            // Generate password reset token for new user
+            // Generate password reset token for new user (30 days validity)
             $resetToken = null;
             if ($isNewUser) {
                 $resetToken = bin2hex(random_bytes(32));
                 $tokenHash = hash('sha256', $resetToken);
-                $expiresAt = (new DateTimeImmutable('+24 hours'))->format('Y-m-d H:i:s');
+                $expiresAt = (new DateTimeImmutable('+30 days'))->format('Y-m-d H:i:s');
 
                 $stmt = $this->db->getPdo()->prepare(
                     'DELETE FROM password_reset_token_users WHERE user_id = ?'

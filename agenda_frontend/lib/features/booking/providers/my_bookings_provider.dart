@@ -5,7 +5,6 @@ import '/core/models/location.dart';
 import '/core/models/service_package.dart';
 import '/core/network/api_client.dart';
 import '/core/network/network_providers.dart';
-import '/features/booking/providers/business_provider.dart';
 import '/features/booking/providers/locations_provider.dart';
 
 part 'my_bookings_provider.g.dart';
@@ -54,7 +53,6 @@ class MyBookings extends _$MyBookings {
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.getCustomerBookings();
 
-      final businessName = ref.read(currentBusinessProvider).value?.name ?? '';
       final locationsAsync = ref.read(locationsProvider);
       final locationNames = <int, String>{};
       final locations = locationsAsync.value ?? const <Location>[];
@@ -74,7 +72,6 @@ class MyBookings extends _$MyBookings {
           .map(
             (json) => _fromCustomerBooking(
               json as Map<String, dynamic>,
-              businessName: businessName,
               locationNames: locationNames,
               packagesByLocation: packagesByLocation,
             ),
@@ -85,7 +82,6 @@ class MyBookings extends _$MyBookings {
           .map(
             (json) => _fromCustomerBooking(
               json as Map<String, dynamic>,
-              businessName: businessName,
               locationNames: locationNames,
               packagesByLocation: packagesByLocation,
             ),
@@ -120,7 +116,6 @@ class MyBookings extends _$MyBookings {
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.getCustomerBookings();
 
-      final businessName = ref.read(currentBusinessProvider).value?.name ?? '';
       final locationsAsync = ref.read(locationsProvider);
       final locationNames = <int, String>{};
       final locations = locationsAsync.value ?? const <Location>[];
@@ -140,7 +135,6 @@ class MyBookings extends _$MyBookings {
           .map(
             (json) => _fromCustomerBooking(
               json as Map<String, dynamic>,
-              businessName: businessName,
               locationNames: locationNames,
               packagesByLocation: packagesByLocation,
             ),
@@ -151,7 +145,6 @@ class MyBookings extends _$MyBookings {
           .map(
             (json) => _fromCustomerBooking(
               json as Map<String, dynamic>,
-              businessName: businessName,
               locationNames: locationNames,
               packagesByLocation: packagesByLocation,
             ),
@@ -179,7 +172,6 @@ class MyBookings extends _$MyBookings {
         notes: notes,
       );
 
-      final businessName = ref.read(currentBusinessProvider).value?.name ?? '';
       final locationsAsync = ref.read(locationsProvider);
       final locationNames = <int, String>{};
       final locations = locationsAsync.value ?? const <Location>[];
@@ -192,7 +184,6 @@ class MyBookings extends _$MyBookings {
       ]);
       final updatedBooking = _fromCustomerBooking(
         updated,
-        businessName: businessName,
         locationNames: locationNames,
         packagesByLocation: packagesByLocation,
       );
@@ -249,7 +240,6 @@ class MyBookings extends _$MyBookings {
       final bookingData =
           response['booking'] as Map<String, dynamic>? ?? response;
 
-      final businessName = ref.read(currentBusinessProvider).value?.name ?? '';
       final locationsAsync = ref.read(locationsProvider);
       final locationNames = <int, String>{};
       final locations = locationsAsync.value ?? const <Location>[];
@@ -262,7 +252,6 @@ class MyBookings extends _$MyBookings {
       ]);
       final newBooking = _fromCustomerBooking(
         bookingData,
-        businessName: businessName,
         locationNames: locationNames,
         packagesByLocation: packagesByLocation,
       );
@@ -297,7 +286,6 @@ class MyBookings extends _$MyBookings {
 
 BookingItem _fromCustomerBooking(
   Map<String, dynamic> json, {
-  required String businessName,
   required Map<int, String> locationNames,
   required Map<int, List<ServicePackage>> packagesByLocation,
 }) {
@@ -308,8 +296,15 @@ BookingItem _fromCustomerBooking(
 
   final locationId =
       json['location_id'] as int? ?? firstItem['location_id'] as int? ?? 0;
+  // FIX BUG CRITICO: usa location_name dalla response API invece che dal provider
+  // Il provider locationNames puo essere vuoto o riferirsi al business corrente dell'URL
   final locationName =
-      locationNames[locationId] ?? (json['location_name'] as String? ?? '');
+      json['location_name'] as String? ?? locationNames[locationId] ?? '';
+
+  // FIX BUG CRITICO: usa business_name dalla response API invece che dal provider URL
+  // Questo evita di mostrare il nome del business sbagliato quando l'utente
+  // naviga su un business diverso da quello delle sue prenotazioni
+  final businessName = json['business_name'] as String? ?? '';
 
   final startTimeValue = firstItem['start_time'] ?? json['start_time'];
   final endTimeValue =

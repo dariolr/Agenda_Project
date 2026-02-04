@@ -29,7 +29,7 @@ NC='\033[0m' # No Color
 
 # Configurazione percorsi
 LOCAL_DIR="$(cd "$(dirname "$0")" && pwd)"
-REMOTE_HOST="siteground"
+REMOTE_HOST="romeolab"
 REMOTE_BASE="www/api.romeolab.it"
 REMOTE_MIGRATIONS_DIR="${REMOTE_BASE}/migrations/fromfresha"
 

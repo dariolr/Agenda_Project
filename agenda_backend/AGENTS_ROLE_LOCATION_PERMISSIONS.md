@@ -130,8 +130,10 @@ Se `scope_type=locations`, l’utente può accedere solo alle `location_id` pres
 - [x] Migrazioni SQL create + FULL_DATABASE_SCHEMA aggiornato
 - [x] API ritorna scope/location
 - [x] Inviti gestiscono scope/location
-- [ ] Middleware blocca location non autorizzate (TODO: enforcement lato API)
+- [x] Middleware blocca location non autorizzate (LocationAccessMiddleware.php)
 - [x] UI permette selezione scope/location
-- [ ] App filtra location e azioni (TODO: filtro location_providers)
-- [ ] Report filtrati per location (TODO: ReportsController)
+- [x] App filtra location e azioni (locationsAsyncProvider + allowedLocationIdsProvider)
+- [x] Report filtrati per location (ReportsController::enforceLocationScope)
+- [x] Endpoint /v1/me/business/{business_id} per context utente
+- [x] currentBusinessUserContextProvider per caching lato Flutter
 

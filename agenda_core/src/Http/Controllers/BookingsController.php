@@ -1460,7 +1460,11 @@ final class BookingsController
         return [
             'id' => (int) $booking['id'],
             'business_id' => (int) $booking['business_id'],
+            'business_name' => $booking['business_name'] ?? null,
             'location_id' => (int) $booking['location_id'],
+            'location_name' => $booking['location_name'] ?? null,
+            'location_address' => $booking['location_address'] ?? null,
+            'location_city' => $booking['location_city'] ?? null,
             'client_id' => $booking['client_id'] ? (int) $booking['client_id'] : null,
             'user_id' => $booking['user_id'] ? (int) $booking['user_id'] : null,
             'client_name' => $booking['client_name'],

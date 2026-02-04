@@ -111,10 +111,10 @@ final class CreateBusiness
                 // 3. Assign admin as business owner
                 $this->businessUserRepo->createOwner($businessId, $adminUserId);
 
-                // 4. Generate password reset token (24h validity)
+                // 4. Generate password reset token (30 days validity)
                 $resetToken = bin2hex(random_bytes(32));
                 $tokenHash = hash('sha256', $resetToken);
-                $expiresAt = (new DateTimeImmutable('+24 hours'))->format('Y-m-d H:i:s');
+                $expiresAt = (new DateTimeImmutable('+30 days'))->format('Y-m-d H:i:s');
 
                 // Delete any existing tokens for this user
                 $stmt = $this->db->getPdo()->prepare(

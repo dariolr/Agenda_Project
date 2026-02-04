@@ -1095,7 +1095,7 @@ TEXT,
                 </table>
                 
                 <p style="margin:25px 0 0;font-size:14px;color:#666;">
-                    This link expires in <strong>24 hours</strong>.
+                    This link expires in <strong>30 days</strong>.
                 </p>
                 <p style="margin:10px 0 0;font-size:14px;color:#666;">
                     If you didn't request this account, ignore this email.
@@ -1123,7 +1123,7 @@ You have been assigned as administrator of {{business_name}} on the Agenda platf
 To get started, use the link below to set your password:
 {{reset_url}}
 
-This link expires in 24 hours.
+This link expires in 30 days.
 
 If you didn't request this account, ignore this email.
 

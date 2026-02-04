@@ -51,7 +51,7 @@ final class BusinessUsersController
         $users = $this->businessUserRepo->findUsersByBusinessId($businessId);
 
         return Response::success([
-            'users' => array_map(fn($u) => $this->formatBusinessUser($u), $users),
+            'users' => array_map(fn($u) => $this->formatBusinessUser($u, $userId), $users),
         ]);
     }
 
@@ -329,6 +329,57 @@ final class BusinessUsersController
     }
 
     /**
+     * GET /v1/me/business/{business_id}
+     * Get the current user's context for a specific business.
+     * Returns scope_type and location_ids for permission filtering.
+     */
+    public function meContext(Request $request): Response
+    {
+        $userId = $request->userId();
+        if ($userId === null) {
+            return Response::unauthorized('Authentication required', $request->traceId);
+        }
+
+        $businessId = (int) $request->getAttribute('business_id');
+
+        // Check if superadmin
+        $isSuperadmin = $this->userRepo->isSuperadmin($userId);
+        if ($isSuperadmin) {
+            // Superadmin has full access to all locations
+            return Response::success([
+                'user_id' => $userId,
+                'business_id' => $businessId,
+                'role' => 'superadmin',
+                'scope_type' => 'business',
+                'location_ids' => [],
+                'is_superadmin' => true,
+            ]);
+        }
+
+        // Get business_user record
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness($userId, $businessId);
+        if ($businessUser === null) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+
+        return Response::success([
+            'user_id' => $userId,
+            'business_id' => $businessId,
+            'role' => $businessUser['role'],
+            'scope_type' => $businessUser['scope_type'] ?? 'business',
+            'location_ids' => array_map('intval', $businessUser['location_ids'] ?? []),
+            'is_superadmin' => false,
+            'permissions' => [
+                'can_manage_bookings' => (bool) $businessUser['can_manage_bookings'],
+                'can_manage_clients' => (bool) $businessUser['can_manage_clients'],
+                'can_manage_services' => (bool) $businessUser['can_manage_services'],
+                'can_manage_staff' => (bool) $businessUser['can_manage_staff'],
+                'can_view_reports' => (bool) $businessUser['can_view_reports'],
+            ],
+        ]);
+    }
+
+    /**
      * Check if user can manage business users.
      * Returns null if allowed, Response if denied.
      */
@@ -370,11 +421,12 @@ final class BusinessUsersController
         return $this->businessUserRepo->getRole($userId, $businessId) ?? 'staff';
     }
 
-    private function formatBusinessUser(array $row): array
+    private function formatBusinessUser(array $row, ?int $currentUserId = null): array
     {
+        $userId = (int) $row['user_id'];
         return [
             'id' => (int) $row['id'],
-            'user_id' => (int) $row['user_id'],
+            'user_id' => $userId,
             'role' => $row['role'],
             'scope_type' => $row['scope_type'] ?? 'business',
             'location_ids' => array_map('intval', $row['location_ids'] ?? []),
@@ -387,6 +439,7 @@ final class BusinessUsersController
                 'can_view_reports' => (bool) $row['can_view_reports'],
             ],
             'is_active' => (bool) $row['is_active'],
+            'is_current_user' => $currentUserId !== null && $userId === $currentUserId,
             'invited_by' => $row['invited_by'] ? (int) $row['invited_by'] : null,
             'invited_at' => $row['invited_at'],
             'accepted_at' => $row['accepted_at'],

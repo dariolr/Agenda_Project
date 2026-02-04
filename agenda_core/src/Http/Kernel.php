@@ -31,6 +31,7 @@ use Agenda\Http\Middleware\AuthMiddleware;
 use Agenda\Http\Middleware\BusinessAccessMiddleware;
 use Agenda\Http\Middleware\CustomerAuthMiddleware;
 use Agenda\Http\Middleware\IdempotencyMiddleware;
+use Agenda\Http\Middleware\LocationAccessMiddleware;
 use Agenda\Http\Middleware\LocationContextMiddleware;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Logger\Logger;
@@ -187,8 +188,8 @@ final class Kernel
 
         // Resources (auth required)
         $this->router->get('/v1/businesses/{business_id}/resources', ResourcesController::class, 'indexByBusiness', ['auth']);
-        $this->router->get('/v1/locations/{location_id}/resources', ResourcesController::class, 'indexByLocation', ['auth']);
-        $this->router->post('/v1/locations/{location_id}/resources', ResourcesController::class, 'store', ['auth']);
+        $this->router->get('/v1/locations/{location_id}/resources', ResourcesController::class, 'indexByLocation', ['auth', 'location_path', 'location_access']);
+        $this->router->post('/v1/locations/{location_id}/resources', ResourcesController::class, 'store', ['auth', 'location_path', 'location_access']);
         $this->router->put('/v1/resources/{id}', ResourcesController::class, 'update', ['auth']);
         $this->router->delete('/v1/resources/{id}', ResourcesController::class, 'destroy', ['auth']);
 
@@ -208,6 +209,9 @@ final class Kernel
         $this->router->patch('/v1/businesses/{business_id}/users/{target_user_id}', BusinessUsersController::class, 'update', ['auth']);
         $this->router->delete('/v1/businesses/{business_id}/users/{target_user_id}', BusinessUsersController::class, 'destroy', ['auth']);
 
+        // Current user's business context (for permissions)
+        $this->router->get('/v1/me/business/{business_id}', BusinessUsersController::class, 'meContext', ['auth']);
+
         // Business Invitations
         $this->router->get('/v1/businesses/{business_id}/invitations', BusinessInvitationsController::class, 'index', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/invitations', BusinessInvitationsController::class, 'store', ['auth']);
@@ -222,7 +226,7 @@ final class Kernel
         $this->router->get('/v1/availability', AvailabilityController::class, 'index', ['location_query']);
 
         // Services CRUD (auth required)
-        $this->router->post('/v1/locations/{location_id}/services', ServicesController::class, 'store', ['auth', 'location_path']);
+        $this->router->post('/v1/locations/{location_id}/services', ServicesController::class, 'store', ['auth', 'location_path', 'location_access']);
         $this->router->put('/v1/services/{id}', ServicesController::class, 'update', ['auth']);
         $this->router->delete('/v1/services/{id}', ServicesController::class, 'destroy', ['auth']);
         $this->router->post('/v1/services/reorder', ServicesController::class, 'reorderServices', ['auth']);
@@ -234,9 +238,9 @@ final class Kernel
         $this->router->get('/v1/locations/{location_id}/service-packages/{id}/expand', ServicePackagesController::class, 'expand', ['location_path']);
 
         // Service Packages CRUD (auth required)
-        $this->router->post('/v1/locations/{location_id}/service-packages', ServicePackagesController::class, 'store', ['auth', 'location_path']);
-        $this->router->put('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'update', ['auth', 'location_path']);
-        $this->router->delete('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'destroy', ['auth', 'location_path']);
+        $this->router->post('/v1/locations/{location_id}/service-packages', ServicePackagesController::class, 'store', ['auth', 'location_path', 'location_access']);
+        $this->router->put('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'update', ['auth', 'location_path', 'location_access']);
+        $this->router->delete('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'destroy', ['auth', 'location_path', 'location_access']);
         $this->router->post('/v1/service-packages/reorder', ServicePackagesController::class, 'reorder', ['auth']);
 
         // Service Categories CRUD (auth required)
@@ -255,18 +259,18 @@ final class Kernel
         $this->router->delete('/v1/clients/{id}', ClientsController::class, 'destroy', ['auth']);
 
         // Bookings (protected, business-scoped via path)
-        $this->router->get('/v1/locations/{location_id}/bookings', BookingsController::class, 'index', ['auth', 'location_path']);
-        $this->router->get('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'show', ['auth', 'location_path']);
-        $this->router->post('/v1/locations/{location_id}/bookings', BookingsController::class, 'store', ['auth', 'location_path', 'idempotency']);
-        $this->router->put('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'update', ['auth', 'location_path']);
-        $this->router->delete('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'destroy', ['auth', 'location_path']);
+        $this->router->get('/v1/locations/{location_id}/bookings', BookingsController::class, 'index', ['auth', 'location_path', 'location_access']);
+        $this->router->get('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'show', ['auth', 'location_path', 'location_access']);
+        $this->router->post('/v1/locations/{location_id}/bookings', BookingsController::class, 'store', ['auth', 'location_path', 'location_access', 'idempotency']);
+        $this->router->put('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'update', ['auth', 'location_path', 'location_access']);
+        $this->router->delete('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'destroy', ['auth', 'location_path', 'location_access']);
         
         // Booking replace (atomic replace pattern)
         $this->router->post('/v1/bookings/{booking_id}/replace', BookingsController::class, 'replace', ['auth']);
         
         // Recurring bookings (gestionale only)
-        $this->router->post('/v1/locations/{location_id}/bookings/recurring/preview', BookingsController::class, 'previewRecurring', ['auth', 'location_path']);
-        $this->router->post('/v1/locations/{location_id}/bookings/recurring', BookingsController::class, 'storeRecurring', ['auth', 'location_path']);
+        $this->router->post('/v1/locations/{location_id}/bookings/recurring/preview', BookingsController::class, 'previewRecurring', ['auth', 'location_path', 'location_access']);
+        $this->router->post('/v1/locations/{location_id}/bookings/recurring', BookingsController::class, 'storeRecurring', ['auth', 'location_path', 'location_access']);
         $this->router->get('/v1/bookings/recurring/{recurrence_rule_id}', BookingsController::class, 'showRecurringSeries', ['auth']);
         $this->router->patch('/v1/bookings/recurring/{recurrence_rule_id}', BookingsController::class, 'patchRecurringSeries', ['auth']);
         $this->router->delete('/v1/bookings/recurring/{recurrence_rule_id}', BookingsController::class, 'cancelRecurringSeries', ['auth']);
@@ -290,16 +294,16 @@ final class Kernel
         $this->router->delete('/v1/closures/{id}', LocationClosuresController::class, 'destroy', ['auth']);
 
         // Time blocks (auth required)
-        $this->router->get('/v1/locations/{location_id}/time-blocks', TimeBlocksController::class, 'index', ['auth']);
-        $this->router->post('/v1/locations/{location_id}/time-blocks', TimeBlocksController::class, 'store', ['auth']);
+        $this->router->get('/v1/locations/{location_id}/time-blocks', TimeBlocksController::class, 'index', ['auth', 'location_path', 'location_access']);
+        $this->router->post('/v1/locations/{location_id}/time-blocks', TimeBlocksController::class, 'store', ['auth', 'location_path', 'location_access']);
         $this->router->put('/v1/time-blocks/{id}', TimeBlocksController::class, 'update', ['auth']);
         $this->router->delete('/v1/time-blocks/{id}', TimeBlocksController::class, 'destroy', ['auth']);
 
         // Appointments (protected, business-scoped via path)
-        $this->router->get('/v1/locations/{location_id}/appointments', AppointmentsController::class, 'index', ['auth', 'location_path']);
-        $this->router->get('/v1/locations/{location_id}/appointments/{id}', AppointmentsController::class, 'show', ['auth', 'location_path']);
-        $this->router->patch('/v1/locations/{location_id}/appointments/{id}', AppointmentsController::class, 'update', ['auth', 'location_path']);
-        $this->router->post('/v1/locations/{location_id}/appointments/{id}/cancel', AppointmentsController::class, 'cancel', ['auth', 'location_path']);
+        $this->router->get('/v1/locations/{location_id}/appointments', AppointmentsController::class, 'index', ['auth', 'location_path', 'location_access']);
+        $this->router->get('/v1/locations/{location_id}/appointments/{id}', AppointmentsController::class, 'show', ['auth', 'location_path', 'location_access']);
+        $this->router->patch('/v1/locations/{location_id}/appointments/{id}', AppointmentsController::class, 'update', ['auth', 'location_path', 'location_access']);
+        $this->router->post('/v1/locations/{location_id}/appointments/{id}/cancel', AppointmentsController::class, 'cancel', ['auth', 'location_path', 'location_access']);
         $this->router->post('/v1/bookings/{booking_id}/items', AppointmentsController::class, 'store', ['auth']);
         $this->router->delete('/v1/bookings/{booking_id}/items/{item_id}', AppointmentsController::class, 'destroyItem', ['auth']);
 
@@ -342,6 +346,7 @@ final class Kernel
             'customer_auth' => new CustomerAuthMiddleware($jwtService),
             'location_path' => new LocationContextMiddleware($locationRepo, 'path'),
             'location_query' => new LocationContextMiddleware($locationRepo, 'query'),
+            'location_access' => new LocationAccessMiddleware($businessUserRepo, $userRepo),
             'idempotency' => new IdempotencyMiddleware(),
             'business_access' => new BusinessAccessMiddleware($businessUserRepo, $userRepo, 'attribute'),
             'business_access_route' => new BusinessAccessMiddleware($businessUserRepo, $userRepo, 'route'),
