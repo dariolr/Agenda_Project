@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/auth/providers/auth_provider.dart';
 import '../../app/router_provider.dart';
+import '../../features/auth/providers/auth_provider.dart';
 import '../network/network_providers.dart';
-import 'app_dialogs.dart';
 
 /// Widget che ascolta il provider sessionExpiredProvider e
 /// esegue logout automatico quando la sessione scade.
@@ -28,21 +27,9 @@ class SessionExpiredListener extends ConsumerWidget {
     // Esegui logout silenzioso (senza chiamata API, sessione già scaduta)
     ref.read(authProvider.notifier).logout(silent: true);
 
-    // Mostra dialog informativo
+    // Redirect diretto al login senza dialog
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final navigatorKey = ref.read(rootNavigatorKeyProvider);
-      final dialogContext = navigatorKey.currentContext;
-      if (dialogContext == null) return;
-      showAppInfoDialog(
-        dialogContext,
-        title: const Text('Sessione scaduta'),
-        content: const Text(
-          'La tua sessione è scaduta. Effettua nuovamente il login per continuare.',
-        ),
-        closeLabel: 'OK',
-      ).then((_) {
-        ref.read(routerProvider).go('/login');
-      });
+      ref.read(routerProvider).go('/login');
     });
   }
 }

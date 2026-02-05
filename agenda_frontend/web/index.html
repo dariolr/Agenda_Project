@@ -36,12 +36,88 @@
   
   <!-- Versione app esposta a Flutter -->
   <script>
-    window.appVersion = "20260204-2.9";
+    window.appVersion = "20260205-1.10";
+    
+    // Localizzazioni per loading screen
+    window.loadingTexts = {
+      'it': 'Caricamento...',
+      'en': 'Loading...'
+    };
+    
+    // Rileva lingua browser (default: italiano)
+    function getLoadingText() {
+      var lang = (navigator.language || navigator.userLanguage || 'it').substring(0, 2).toLowerCase();
+      return window.loadingTexts[lang] || window.loadingTexts['it'];
+    }
   </script>
+
+  <style>
+    /* Loading screen mentre Flutter si carica */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease-out;
+    }
+    .loading-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e0e0e0;
+      border-top-color: #2196F3;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    .loading-text {
+      margin-top: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 16px;
+      color: #666;
+      letter-spacing: 0.5px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
+  <!-- Loading screen -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-spinner"></div>
+    <div id="loading-text" class="loading-text"></div>
+  </div>
+
+  <script>
+    // Imposta testo loading in base alla lingua del browser
+    document.getElementById('loading-text').textContent = getLoadingText();
+  </script>
+
   <script>
     document.write('<script src="flutter_bootstrap.js?v=' + window.appVersion + '" async><\/script>');
+  </script>
+
+  <script>
+    // Rimuovi loading screen quando Flutter è pronto
+    window.addEventListener('flutter-first-frame', function() {
+      var loader = document.getElementById('loading-screen');
+      if (loader) {
+        loader.classList.add('fade-out');
+        setTimeout(function() {
+          loader.remove();
+        }, 300);
+      }
+    });
   </script>
 </body>
 </html>

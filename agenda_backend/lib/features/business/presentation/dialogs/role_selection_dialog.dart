@@ -71,29 +71,32 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
             selectedRole: _selectedRole,
             onChanged: (role) => setState(() => _selectedRole = role),
           ),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 16),
-          _ScopeTypeSelector(
-            selectedScopeType: _selectedScopeType,
-            onChanged: (scope) => setState(() {
-              _selectedScopeType = scope;
-              if (scope == 'business') {
-                _selectedLocationIds.clear();
-              }
-            }),
-          ),
-          if (_selectedScopeType == 'locations') ...[
+          // Sezione scope solo se più di una location
+          if (widget.locations.length > 1) ...[
+            const SizedBox(height: 24),
+            const Divider(),
             const SizedBox(height: 16),
-            _LocationsMultiSelect(
-              locations: widget.locations,
-              selectedIds: _selectedLocationIds,
-              onChanged: (ids) => setState(() {
-                _selectedLocationIds
-                  ..clear()
-                  ..addAll(ids);
+            _ScopeTypeSelector(
+              selectedScopeType: _selectedScopeType,
+              onChanged: (scope) => setState(() {
+                _selectedScopeType = scope;
+                if (scope == 'business') {
+                  _selectedLocationIds.clear();
+                }
               }),
             ),
+            if (_selectedScopeType == 'locations') ...[
+              const SizedBox(height: 16),
+              _LocationsMultiSelect(
+                locations: widget.locations,
+                selectedIds: _selectedLocationIds,
+                onChanged: (ids) => setState(() {
+                  _selectedLocationIds
+                    ..clear()
+                    ..addAll(ids);
+                }),
+              ),
+            ],
           ],
         ],
       ),
@@ -191,29 +194,32 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
           selectedRole: _selectedRole,
           onChanged: (role) => setState(() => _selectedRole = role),
         ),
-        const SizedBox(height: 24),
-        const Divider(),
-        const SizedBox(height: 16),
-        _ScopeTypeSelector(
-          selectedScopeType: _selectedScopeType,
-          onChanged: (scope) => setState(() {
-            _selectedScopeType = scope;
-            if (scope == 'business') {
-              _selectedLocationIds.clear();
-            }
-          }),
-        ),
-        if (_selectedScopeType == 'locations') ...[
+        // Sezione scope solo se più di una location
+        if (widget.locations.length > 1) ...[
+          const SizedBox(height: 24),
+          const Divider(),
           const SizedBox(height: 16),
-          _LocationsMultiSelect(
-            locations: widget.locations,
-            selectedIds: _selectedLocationIds,
-            onChanged: (ids) => setState(() {
-              _selectedLocationIds
-                ..clear()
-                ..addAll(ids);
+          _ScopeTypeSelector(
+            selectedScopeType: _selectedScopeType,
+            onChanged: (scope) => setState(() {
+              _selectedScopeType = scope;
+              if (scope == 'business') {
+                _selectedLocationIds.clear();
+              }
             }),
           ),
+          if (_selectedScopeType == 'locations') ...[
+            const SizedBox(height: 16),
+            _LocationsMultiSelect(
+              locations: widget.locations,
+              selectedIds: _selectedLocationIds,
+              onChanged: (ids) => setState(() {
+                _selectedLocationIds
+                  ..clear()
+                  ..addAll(ids);
+              }),
+            ),
+          ],
         ],
 
         // Actions
@@ -273,7 +279,7 @@ class _RoleRadioList extends StatelessWidget {
           groupValue: selectedRole,
           onChanged: onChanged,
           title: l10n.operatorsRoleAdmin,
-          subtitle: 'Accesso completo, può gestire operatori',
+          subtitle: l10n.operatorsRoleAdminDesc,
           icon: Icons.admin_panel_settings,
         ),
         _RoleRadioTile(
@@ -281,7 +287,7 @@ class _RoleRadioList extends StatelessWidget {
           groupValue: selectedRole,
           onChanged: onChanged,
           title: l10n.operatorsRoleManager,
-          subtitle: 'Gestisce agenda e clienti',
+          subtitle: l10n.operatorsRoleManagerDesc,
           icon: Icons.manage_accounts,
         ),
         _RoleRadioTile(
@@ -289,7 +295,7 @@ class _RoleRadioList extends StatelessWidget {
           groupValue: selectedRole,
           onChanged: onChanged,
           title: l10n.operatorsRoleStaff,
-          subtitle: 'Visualizza e gestisce solo i propri appuntamenti',
+          subtitle: l10n.operatorsRoleStaffDesc,
           icon: Icons.person,
         ),
       ],

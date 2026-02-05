@@ -156,9 +156,9 @@ lib/
 | 6 | `/altro` | MoreScreen |
 | 7 | `/chiusure` | LocationClosuresScreen |
 | 8 | `/profilo` | ProfileScreen |
+| 9 | `/permessi` | OperatorsScreen |
 
 **Route non-shell:**
-- `/operatori/:businessId` → OperatorsScreen (accesso da menu "Altro")
 - `/change-password` → ChangePasswordScreen
 - `/reset-password/:token` → ResetPasswordScreen
 
@@ -179,11 +179,11 @@ lib/
 **Sottomenu "Altro" contiene:**
 - Servizi → branch 2
 - Team → branch 3
+- **Permessi** → branch 9
 - Report → branch 4
 - Prenotazioni → branch 5
-- **Chiusure** → branch 7
-- **Operatori** → `/operatori/:businessId`
-- **Profilo** → branch 8
+- Chiusure → branch 7
+- Profilo → branch 8
 
 **Implementazione:**
 - Mobile: `_showMoreBottomSheet()` mostra BottomSheet
@@ -193,25 +193,62 @@ lib/
 
 Quando si aggiunge una nuova sezione accessibile da "Altro", seguire **obbligatoriamente** questo pattern:
 
+#### 🚨 REGOLE CRITICHE
+
+1. **DEVE essere una StatefulShellBranch** — MAI usare route push (`parentNavigatorKey: _rootNavigatorKey`)
+2. **La navigation bar DEVE rimanere visibile** — l'utente deve poter navigare liberamente
+3. **NO AppBar con back button** — usa `automaticallyImplyLeading: false` o nessun `leading`
+4. **Stessa struttura delle altre schermate** — Scaffold senza AppBar.leading custom
+
+#### Pattern obbligatorio
+
 1. **Router** (`router_provider.dart`):
    - Aggiungere un nuovo `StatefulShellBranch` con indice incrementale
-   - Definire path e name della route
+   - **MAI** usare `parentNavigatorKey: _rootNavigatorKey`
+   - Usare `context.go('/path')` nel menu, **MAI** `context.push()`
 
-2. **MoreScreen** (`more_screen.dart`):
+2. **Screen**:
+   - **NO** `AppBar.leading: IconButton(icon: Icons.arrow_back, ...)`
+   - **NO** `context.pop()` per tornare indietro
+   - Usare `Scaffold` con `AppBar` semplice (solo titolo)
+   
+   ```dart
+   // ✅ CORRETTO
+   Scaffold(
+     appBar: AppBar(
+       title: Text(l10n.screenTitle),
+     ),
+     body: ...
+   )
+   
+   // ❌ VIETATO
+   Scaffold(
+     appBar: AppBar(
+       leading: IconButton(
+         icon: const Icon(Icons.arrow_back),
+         onPressed: () => context.pop(),
+       ),
+       title: Text(l10n.screenTitle),
+     ),
+     body: ...
+   )
+   ```
+
+3. **MoreScreen** (`more_screen.dart`):
    - Aggiungere un `_MoreItem` nella lista con:
      - `icon`: icona outlined
      - `title`: chiave localizzazione titolo
      - `description`: chiave localizzazione descrizione
      - `color`: colore Material distintivo
-     - `onTap`: `context.go('/path')`
+     - `onTap`: `context.go('/path')` — **MAI** `context.push()`
 
-3. **Localizzazioni** (`intl_it.arb`, `intl_en.arb`):
+4. **Localizzazioni** (`intl_it.arb`, `intl_en.arb`):
    - Aggiungere chiavi per titolo e descrizione
 
-4. **Scaffold** (`scaffold_with_navigation.dart`):
+5. **Scaffold** (`scaffold_with_navigation.dart`):
    - Verificare che la mappatura indici includa il nuovo branch nel gruppo "Altro"
 
-5. **AGENTS.md**:
+6. **AGENTS.md**:
    - Aggiornare tabella "Route fisse" con nuovo indice
    - Aggiornare lista "Sottomenu Altro"
 
@@ -1211,6 +1248,79 @@ La sezione "Accesso" appare solo se il business ha più di una location:
 | `lib/features/business/presentation/dialogs/invite_operator_dialog.dart` | Dialog invito con scope UI |
 | `lib/core/l10n/intl_it.arb` | Localizzazioni IT |
 | `lib/core/l10n/intl_en.arb` | Localizzazioni EN |
+
+---
+
+## 🔐 Sistema Permessi UI (03/02/2026)
+
+### Funzionalità
+Il gestionale applica controlli di visibilità in base al ruolo dell'utente loggato.
+
+### Gerarchia Ruoli
+
+| Ruolo | Permessi |
+|-------|----------|
+| **Owner** | Accesso completo, può gestire operatori e business |
+| **Admin** | Come owner ma non può cedere ownership |
+| **Manager** | Vede tutti gli appuntamenti, non gestisce operatori/impostazioni |
+| **Staff** | Vede solo propri appuntamenti, nessuna gestione |
+
+### API Endpoint
+`GET /v1/me/business/{business_id}` — Ritorna contesto utente nel business:
+
+```json
+{
+  "user_id": 6,
+  "business_id": 1,
+  "role": "staff",
+  "scope_type": "business",
+  "location_ids": [],
+  "staff_id": 3,
+  "is_superadmin": false
+}
+```
+
+### Provider Flutter
+
+| Provider | Tipo | Descrizione |
+|----------|------|-------------|
+| `currentBusinessUserContextProvider` | AsyncNotifier | Carica contesto da API |
+| `canManageOperatorsProvider` | bool | True se owner/admin |
+| `canViewAllAppointmentsProvider` | bool | True se owner/admin/manager |
+| `canManageBusinessSettingsProvider` | bool | True se owner/admin |
+| `currentUserStaffIdProvider` | int? | ID staff se l'utente ha ruolo staff |
+
+### Effetti UI per Ruolo Staff
+
+1. **Menu "Altro"**: Non vede Servizi, Staff, Chiusure, Permessi
+2. **Agenda**: Vede solo propri appuntamenti
+3. **Selettore staff**: Nascosto (vede solo se stesso)
+4. **Colonne agenda**: Solo la propria
+
+### File Coinvolti
+
+| File | Responsabilità |
+|------|----------------|
+| `lib/features/auth/providers/current_business_user_provider.dart` | Provider contesto + permessi |
+| `lib/features/business/presentation/more_screen.dart` | Visibilità menu condizionale |
+| `lib/features/agenda/providers/appointment_providers.dart` | Filtro appuntamenti per staff |
+| `lib/features/agenda/providers/staff_filter_providers.dart` | Filtro staff visibili per ruolo |
+| `lib/app/widgets/top_controls.dart` | Nasconde selettore staff per role=staff |
+| `lib/app/scaffold_with_navigation.dart` | Nasconde selettore staff compatto |
+| `src/Http/Controllers/AuthController.php` | Endpoint myBusinessContext |
+
+### Uso nei Widget
+
+```dart
+// Verificare permesso prima di mostrare elemento
+final canManage = ref.watch(canManageOperatorsProvider);
+if (canManage) {
+  // Mostra voce menu "Permessi"
+}
+
+// Ottenere staff_id dell'utente corrente (null se non è staff)
+final staffId = ref.watch(currentUserStaffIdProvider);
+```
 
 ---
 

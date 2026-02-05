@@ -1,4 +1,5 @@
 import 'package:agenda_backend/core/services/preferences_service.dart';
+import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -131,9 +132,20 @@ final onDutyStaffIdsProvider = Provider<Set<int>>((ref) {
 });
 
 /// Provider che restituisce lo staff filtrato in base alla modalità selezionata.
+/// Se l'utente è ruolo staff, vede solo se stesso.
 final filteredStaffProvider = Provider<List<Staff>>((ref) {
-  final mode = ref.watch(staffFilterModeProvider);
   final allStaff = ref.watch(staffForCurrentLocationProvider);
+
+  // Se l'utente è ruolo staff, mostra solo se stesso
+  final canViewAll = ref.watch(canViewAllAppointmentsProvider);
+  final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
+
+  if (!canViewAll && currentUserStaffId != null) {
+    return allStaff.where((s) => s.id == currentUserStaffId).toList();
+  }
+
+  // Altrimenti applica i filtri normali
+  final mode = ref.watch(staffFilterModeProvider);
   final selectedIds = ref.watch(selectedStaffIdsProvider);
   final onDutyIds = ref.watch(onDutyStaffIdsProvider);
 

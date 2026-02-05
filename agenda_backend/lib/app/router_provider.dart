@@ -255,6 +255,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+
+          // --- Ramo 9: Permessi ---
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/permessi',
+                name: 'permessi',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const OperatorsScreen(),
+              ),
+            ],
+          ),
         ],
       ),
 

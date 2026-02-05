@@ -4,6 +4,7 @@ import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_backend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_backend/app/widgets/top_controls.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
+import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/bookings_list/providers/bookings_list_provider.dart';
 import 'package:agenda_backend/features/reports/providers/reports_provider.dart';
 import 'package:flutter/material.dart';
@@ -20,10 +21,12 @@ import '../core/widgets/global_loading_overlay.dart';
 import '../features/agenda/presentation/dialogs/add_block_dialog.dart';
 import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
 import '../features/agenda/presentation/widgets/booking_dialog.dart';
+import '../features/agenda/providers/business_providers.dart';
 import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/agenda/providers/location_providers.dart';
 import '../features/auth/providers/auth_provider.dart';
+import '../features/business/presentation/dialogs/invite_operator_dialog.dart';
 import '../features/business/presentation/dialogs/location_closure_dialog.dart';
 import '../features/business/providers/location_closures_provider.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
@@ -84,6 +87,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isReport = navigationShell.currentIndex == 4;
     final isBookingsList = navigationShell.currentIndex == 5;
     final isClosures = navigationShell.currentIndex == 7;
+    final isPermessi = navigationShell.currentIndex == 9;
     final agendaDate = ref.watch(agendaDateProvider);
     final today = DateUtils.dateOnly(DateTime.now());
     final isToday = DateUtils.isSameDay(agendaDate, today);
@@ -141,6 +145,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           actions.add(_BookingsListRefreshAction(ref: ref));
         } else if (isClosures) {
           actions.add(const _ClosuresAddAction());
+        } else if (isPermessi) {
+          actions.add(const _PermessiAddAction());
         }
         return actions;
       }
@@ -169,6 +175,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 ? Text(context.l10n.bookingsListTitle)
                 : isClosures
                 ? Text(context.l10n.closuresTitle)
+                : isPermessi
+                ? Text(context.l10n.permissionsTitle)
                 : const SizedBox.shrink(),
             centerTitle: false,
             toolbarHeight: 76,
@@ -235,6 +243,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         actions.add(_BookingsListRefreshAction(ref: ref));
       } else if (isClosures) {
         actions.add(const _ClosuresAddAction(compact: true));
+      } else if (isPermessi) {
+        actions.add(const _PermessiAddAction(compact: true));
       }
       return actions;
     }
@@ -264,6 +274,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               ? Text(context.l10n.bookingsListTitle)
               : isClosures
               ? Text(context.l10n.closuresTitle)
+              : isPermessi
+              ? Text(context.l10n.permissionsTitle)
               : const SizedBox.shrink(),
           centerTitle: false,
           actionsPadding: const EdgeInsets.only(right: 6),
@@ -495,7 +507,9 @@ class _AgendaFilterActions extends ConsumerWidget {
     final staffCount = ref.watch(staffForCurrentLocationProvider).length;
     final locations = ref.watch(locationsProvider);
     final currentLocationId = ref.watch(currentLocationIdProvider);
-    final showStaffSelector = staffCount > 1;
+    // Mostra selettore staff solo se può vedere tutti gli appuntamenti
+    final canViewAll = ref.watch(canViewAllAppointmentsProvider);
+    final showStaffSelector = canViewAll && staffCount > 1;
     final showLocationSelector = locations.length > 1;
 
     if (!showStaffSelector && !showLocationSelector) {
@@ -1237,6 +1251,64 @@ class _ClosuresAddAction extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: GestureDetector(
         onTap: () => LocationClosureDialog.show(context),
+        child: Builder(
+          builder: (buttonContext) {
+            final scheme = Theme.of(buttonContext).colorScheme;
+            final onContainer = scheme.onSecondaryContainer;
+            return Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: Padding(
+                  padding: compact
+                      ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                      : const EdgeInsets.fromLTRB(12, 8, 28, 8),
+                  child: _buildAddButtonContent(
+                    showLabelEffective: showLabelEffective,
+                    compact: compact,
+                    label: l10n.agendaAdd,
+                    onContainer: onContainer,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Add button for Permessi screen
+class _PermessiAddAction extends ConsumerWidget {
+  const _PermessiAddAction({this.compact = false});
+  final bool compact;
+  static const double _actionButtonHeight = 40;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
+    final businessId = ref.watch(currentBusinessIdProvider);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: GestureDetector(
+        onTap: () => showDialog(
+          context: context,
+          builder: (ctx) => InviteOperatorDialog(businessId: businessId),
+        ),
         child: Builder(
           builder: (buttonContext) {
             final scheme = Theme.of(buttonContext).colorScheme;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/network/network_providers.dart';
+import '../../../core/services/credentials_provider.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_state.dart';
 
@@ -28,13 +29,17 @@ class AuthNotifier extends Notifier<AuthState> {
   AuthRepository get _repository => ref.read(authRepositoryProvider);
 
   /// Tenta di ripristinare la sessione da refresh token
+  /// Se fallisce, prova con le credenziali salvate ("Ricordami")
   Future<void> _tryRestoreSession() async {
     debugPrint('AUTH: _tryRestoreSession started');
     state = AuthState.loading();
+
+    int? savedBusinessId;
+
     try {
       // Recupera il businessId salvato
       final tokenStorage = ref.read(tokenStorageProvider);
-      final savedBusinessId = await tokenStorage.getBusinessId();
+      savedBusinessId = await tokenStorage.getBusinessId();
       debugPrint('AUTH: savedBusinessId=$savedBusinessId');
 
       final user = await _repository.tryRestoreSession(
@@ -44,15 +49,64 @@ class AuthNotifier extends Notifier<AuthState> {
       if (user != null) {
         state = AuthState.authenticated(user);
         debugPrint('AUTH: state set to authenticated');
-      } else {
-        state = AuthState.unauthenticated();
-        debugPrint('AUTH: state set to unauthenticated (no user)');
+        return;
       }
+
+      // Refresh token non valido, prova con credenziali salvate
+      debugPrint('AUTH: no session, trying saved credentials');
     } catch (e, st) {
       debugPrint('AUTH: tryRestoreSession error: $e');
       debugPrint('AUTH: stack trace: $st');
+    }
+
+    // Prova auto-login con credenziali salvate (anche in caso di errore sopra)
+    try {
+      await _tryAutoLoginWithSavedCredentials(savedBusinessId);
+    } catch (e) {
+      debugPrint(
+        'AUTH: _tryAutoLoginWithSavedCredentials unexpected error: $e',
+      );
+      // Assicurati che lo stato sia sempre settato
       state = AuthState.unauthenticated();
     }
+  }
+
+  /// Tenta auto-login con credenziali salvate da "Ricordami"
+  Future<void> _tryAutoLoginWithSavedCredentials(int? businessId) async {
+    try {
+      final credentialsStorage = ref.read(credentialsStorageProvider);
+      final credentials = await credentialsStorage.getSavedCredentials();
+
+      if (credentials.email != null &&
+          credentials.password != null &&
+          businessId != null) {
+        debugPrint(
+          'AUTH: auto-login with saved credentials for ${credentials.email}',
+        );
+
+        final user = await _repository.login(
+          businessId: businessId,
+          email: credentials.email!,
+          password: credentials.password!,
+        );
+
+        state = AuthState.authenticated(user);
+        debugPrint('AUTH: auto-login successful');
+        return;
+      }
+    } catch (e) {
+      debugPrint('AUTH: auto-login with saved credentials failed: $e');
+      // Credenziali non più valide (es. password cambiata) - puliscile
+      try {
+        final credentialsStorage = ref.read(credentialsStorageProvider);
+        await credentialsStorage.clearCredentials();
+        debugPrint('AUTH: cleared invalid saved credentials');
+      } catch (_) {}
+    }
+
+    // Nessuna credenziale salvata o login fallito
+    state = AuthState.unauthenticated();
+    debugPrint('AUTH: state set to unauthenticated');
   }
 
   /// Login con email e password

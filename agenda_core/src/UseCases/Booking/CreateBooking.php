@@ -242,6 +242,11 @@ final class CreateBooking
             throw BookingException::invalidStaff($staffId);
         }
 
+        // Validate staff can perform ALL requested services
+        if (!$this->staffRepository->canPerformServices($staffId, $serviceIds, $locationId, $businessId)) {
+            throw BookingException::invalidStaff($staffId);
+        }
+
         // Determine client for this booking
         $clientId = null;
         $clientName = null;
@@ -460,6 +465,11 @@ final class CreateBooking
 
                 // Validate staff belongs to location
                 if (!$this->staffRepository->belongsToLocation($staffId, $locationId)) {
+                    throw BookingException::invalidStaff($staffId);
+                }
+
+                // Validate staff can perform this service
+                if (!$this->staffRepository->canPerformServices($staffId, [$serviceId], $locationId, $businessId)) {
                     throw BookingException::invalidStaff($staffId);
                 }
 
@@ -772,6 +782,11 @@ final class CreateBooking
             throw BookingException::invalidStaff($staffId);
         }
 
+        // Validate staff can perform ALL requested services
+        if (!$this->staffRepository->canPerformServices($staffId, $serviceIds, $locationId, $businessId)) {
+            throw BookingException::invalidStaff($staffId);
+        }
+
         // Start transaction for conflict detection
         $this->db->beginTransaction();
 
@@ -947,6 +962,11 @@ final class CreateBooking
 
                 // Validate staff belongs to location
                 if (!$this->staffRepository->belongsToLocation($staffId, $locationId)) {
+                    throw BookingException::invalidStaff($staffId);
+                }
+
+                // Validate staff can perform this service
+                if (!$this->staffRepository->canPerformServices($staffId, [$serviceId], $locationId, $businessId)) {
                     throw BookingException::invalidStaff($staffId);
                 }
 

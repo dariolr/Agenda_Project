@@ -3532,6 +3532,26 @@ class L10n {
     );
   }
 
+  /// `Permessi`
+  String get permissionsTitle {
+    return Intl.message(
+      'Permessi',
+      name: 'permissionsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Gestisci accessi e ruoli degli operatori`
+  String get permissionsDescription {
+    return Intl.message(
+      'Gestisci accessi e ruoli degli operatori',
+      name: 'permissionsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Nessun operatore configurato`
   String get operatorsEmpty {
     return Intl.message(
@@ -3599,6 +3619,26 @@ class L10n {
       name: 'operatorsInviteSuccess',
       desc: '',
       args: [email],
+    );
+  }
+
+  /// `Esiste già un invito in attesa per questa email. Puoi reinviarlo dalla lista degli inviti pendenti.`
+  String get operatorsInviteAlreadyPending {
+    return Intl.message(
+      'Esiste già un invito in attesa per questa email. Puoi reinviarlo dalla lista degli inviti pendenti.',
+      name: 'operatorsInviteAlreadyPending',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile inviare l'invito`
+  String get operatorsInviteError {
+    return Intl.message(
+      'Impossibile inviare l\'invito',
+      name: 'operatorsInviteError',
+      desc: '',
+      args: [],
     );
   }
 
@@ -3782,6 +3822,16 @@ class L10n {
     );
   }
 
+  /// `Accesso completo a tutte le funzionalità. Può gestire altri operatori e modificare impostazioni del business.`
+  String get operatorsRoleAdminDesc {
+    return Intl.message(
+      'Accesso completo a tutte le funzionalità. Può gestire altri operatori e modificare impostazioni del business.',
+      name: 'operatorsRoleAdminDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Manager`
   String get operatorsRoleManager {
     return Intl.message(
@@ -3792,11 +3842,31 @@ class L10n {
     );
   }
 
+  /// `Gestisce agenda e clienti. Vede e gestisce tutti gli appuntamenti, ma non può gestire operatori né impostazioni.`
+  String get operatorsRoleManagerDesc {
+    return Intl.message(
+      'Gestisce agenda e clienti. Vede e gestisce tutti gli appuntamenti, ma non può gestire operatori né impostazioni.',
+      name: 'operatorsRoleManagerDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Staff`
   String get operatorsRoleStaff {
     return Intl.message(
       'Staff',
       name: 'operatorsRoleStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Vede e gestisce solo i propri appuntamenti. Può creare prenotazioni assegnate a sé stesso.`
+  String get operatorsRoleStaffDesc {
+    return Intl.message(
+      'Vede e gestisce solo i propri appuntamenti. Può creare prenotazioni assegnate a sé stesso.',
+      name: 'operatorsRoleStaffDesc',
       desc: '',
       args: [],
     );

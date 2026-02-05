@@ -535,6 +535,8 @@
 
   "operatorsTitle": "Operators",
   "operatorsSubtitle": "Manage who can access the platform",
+  "permissionsTitle": "Permissions",
+  "permissionsDescription": "Manage operator access and roles",
   "operatorsEmpty": "No operators configured",
   "operatorsInviteTitle": "Invite operator",
   "operatorsInviteSubtitle": "Send an invite via email",
@@ -549,6 +551,8 @@
       }
     }
   },
+  "operatorsInviteAlreadyPending": "An invite is already pending for this email. You can resend it from the pending invites list.",
+  "operatorsInviteError": "Unable to send invite",
   "operatorsInviteCopied": "Invite link copied",
   "operatorsScopeTitle": "Access",
   "operatorsScopeBusiness": "All locations",
@@ -588,8 +592,11 @@
   "operatorsRemoveSuccess": "Operator removed",
   "operatorsRoleOwner": "Owner",
   "operatorsRoleAdmin": "Administrator",
+  "operatorsRoleAdminDesc": "Full access to all features. Can manage other operators and modify business settings.",
   "operatorsRoleManager": "Manager",
+  "operatorsRoleManagerDesc": "Manages agenda and clients. Can view and manage all appointments, but cannot manage operators or settings.",
   "operatorsRoleStaff": "Staff",
+  "operatorsRoleStaffDesc": "Views and manages only own appointments. Can create bookings assigned to themselves.",
   "operatorsRoleDescription": "Select access level",
   "operatorsYou": "You",
   "operatorsInvitedBy": "Invited by {name}",

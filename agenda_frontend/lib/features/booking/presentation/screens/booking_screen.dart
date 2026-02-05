@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/widgets/app_loading_screen.dart';
 import '../../../../core/widgets/booking_app_bar.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/business_provider.dart';
@@ -24,12 +25,10 @@ class BookingScreen extends ConsumerWidget {
     final config = ref.watch(bookingConfigProvider);
     final l10n = context.l10n;
 
-    // Se il business è in caricamento, mostra loading
+    // Se il business è in caricamento, mostra loading identico a index.html
+    // per transizione seamless
     if (businessAsync.isLoading) {
-      return const Scaffold(
-        appBar: BookingAppBar(showUserMenu: false),
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const AppLoadingScreen();
     }
 
     // Se c'è un errore nel caricamento del business

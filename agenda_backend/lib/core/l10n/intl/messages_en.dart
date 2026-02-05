@@ -851,10 +851,16 @@ class MessageLookup extends MessageLookupByLibrary {
       "No operators configured",
     ),
     "operatorsExpires": m24,
+    "operatorsInviteAlreadyPending": MessageLookupByLibrary.simpleMessage(
+      "An invite is already pending for this email. You can resend it from the pending invites list.",
+    ),
     "operatorsInviteCopied": MessageLookupByLibrary.simpleMessage(
       "Invite link copied",
     ),
     "operatorsInviteEmail": MessageLookupByLibrary.simpleMessage("Email"),
+    "operatorsInviteError": MessageLookupByLibrary.simpleMessage(
+      "Unable to send invite",
+    ),
     "operatorsInviteRole": MessageLookupByLibrary.simpleMessage("Role"),
     "operatorsInviteSend": MessageLookupByLibrary.simpleMessage("Send invite"),
     "operatorsInviteSubtitle": MessageLookupByLibrary.simpleMessage(
@@ -879,12 +885,21 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsRevokeInviteConfirm": m29,
     "operatorsRoleAdmin": MessageLookupByLibrary.simpleMessage("Administrator"),
+    "operatorsRoleAdminDesc": MessageLookupByLibrary.simpleMessage(
+      "Full access to all features. Can manage other operators and modify business settings.",
+    ),
     "operatorsRoleDescription": MessageLookupByLibrary.simpleMessage(
       "Select access level",
     ),
     "operatorsRoleManager": MessageLookupByLibrary.simpleMessage("Manager"),
+    "operatorsRoleManagerDesc": MessageLookupByLibrary.simpleMessage(
+      "Manages agenda and clients. Can view and manage all appointments, but cannot manage operators or settings.",
+    ),
     "operatorsRoleOwner": MessageLookupByLibrary.simpleMessage("Owner"),
     "operatorsRoleStaff": MessageLookupByLibrary.simpleMessage("Staff"),
+    "operatorsRoleStaffDesc": MessageLookupByLibrary.simpleMessage(
+      "Views and manages only own appointments. Can create bookings assigned to themselves.",
+    ),
     "operatorsScopeBusiness": MessageLookupByLibrary.simpleMessage(
       "All locations",
     ),
@@ -909,6 +924,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operators"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("You"),
+    "permissionsDescription": MessageLookupByLibrary.simpleMessage(
+      "Manage operator access and roles",
+    ),
+    "permissionsTitle": MessageLookupByLibrary.simpleMessage("Permissions"),
     "planningActive": MessageLookupByLibrary.simpleMessage("Active"),
     "planningBiweeklyHours": m30,
     "planningCreateTitle": MessageLookupByLibrary.simpleMessage("New planning"),

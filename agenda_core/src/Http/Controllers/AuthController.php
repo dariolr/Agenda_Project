@@ -16,6 +16,8 @@ use Agenda\UseCases\Auth\ResetPassword;
 use Agenda\UseCases\Auth\VerifyResetToken;
 use Agenda\UseCases\Auth\ChangePassword;
 use Agenda\UseCases\Auth\UpdateProfile;
+use Agenda\Infrastructure\Repositories\BusinessUserRepository;
+use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Domain\Exceptions\AuthException;
 use Agenda\Domain\Exceptions\ValidationException;
 
@@ -32,6 +34,8 @@ final class AuthController
         private readonly VerifyResetToken $verifyResetToken,
         private readonly ChangePassword $changePassword,
         private readonly UpdateProfile $updateProfile,
+        private readonly BusinessUserRepository $businessUserRepo,
+        private readonly UserRepository $userRepo,
     ) {}
 
     /**
@@ -351,5 +355,55 @@ final class AuthController
         } catch (ValidationException $e) {
             return Response::error($e->getMessage(), 'validation_error', 422, $e->getErrors());
         }
+    }
+
+    /**
+     * GET /v1/me/business/{business_id}
+     * Returns the current user's context (role, scope_type, location_ids) for a specific business.
+     */
+    public function myBusinessContext(Request $request): Response
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null) {
+            return Response::error('Unauthorized', 'unauthorized', 401);
+        }
+
+        $businessId = (int) $request->getRouteParam('business_id');
+        if ($businessId <= 0) {
+            return Response::error('Invalid business ID', 'validation_error', 400);
+        }
+
+        // Check if user is superadmin
+        $user = $this->userRepo->findById((int) $userId);
+        if ($user && ($user['is_superadmin'] ?? false)) {
+            return Response::success([
+                'data' => [
+                    'user_id' => (int) $userId,
+                    'business_id' => $businessId,
+                    'role' => 'superadmin',
+                    'scope_type' => 'business',
+                    'location_ids' => [],
+                    'is_superadmin' => true,
+                ],
+            ], 200);
+        }
+
+        // Get business_user record
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness((int) $userId, $businessId);
+        if ($businessUser === null) {
+            return Response::error('Access denied', 'forbidden', 403);
+        }
+
+        return Response::success([
+            'data' => [
+                'user_id' => (int) $userId,
+                'business_id' => $businessId,
+                'role' => $businessUser['role'],
+                'scope_type' => $businessUser['scope_type'] ?? 'business',
+                'location_ids' => $businessUser['location_ids'] ?? [],
+                'staff_id' => $businessUser['staff_id'] ?? null,
+                'is_superadmin' => false,
+            ],
+        ], 200);
     }
 }

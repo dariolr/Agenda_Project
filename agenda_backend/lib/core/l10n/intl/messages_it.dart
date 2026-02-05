@@ -912,10 +912,16 @@ class MessageLookup extends MessageLookupByLibrary {
       "Nessun operatore configurato",
     ),
     "operatorsExpires": m24,
+    "operatorsInviteAlreadyPending": MessageLookupByLibrary.simpleMessage(
+      "Esiste già un invito in attesa per questa email. Puoi reinviarlo dalla lista degli inviti pendenti.",
+    ),
     "operatorsInviteCopied": MessageLookupByLibrary.simpleMessage(
       "Link di invito copiato",
     ),
     "operatorsInviteEmail": MessageLookupByLibrary.simpleMessage("Email"),
+    "operatorsInviteError": MessageLookupByLibrary.simpleMessage(
+      "Impossibile inviare l\'invito",
+    ),
     "operatorsInviteRole": MessageLookupByLibrary.simpleMessage("Ruolo"),
     "operatorsInviteSend": MessageLookupByLibrary.simpleMessage("Invia invito"),
     "operatorsInviteSubtitle": MessageLookupByLibrary.simpleMessage(
@@ -944,12 +950,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "operatorsRoleAdmin": MessageLookupByLibrary.simpleMessage(
       "Amministratore",
     ),
+    "operatorsRoleAdminDesc": MessageLookupByLibrary.simpleMessage(
+      "Accesso completo a tutte le funzionalità. Può gestire altri operatori e modificare impostazioni del business.",
+    ),
     "operatorsRoleDescription": MessageLookupByLibrary.simpleMessage(
       "Seleziona il livello di accesso",
     ),
     "operatorsRoleManager": MessageLookupByLibrary.simpleMessage("Manager"),
+    "operatorsRoleManagerDesc": MessageLookupByLibrary.simpleMessage(
+      "Gestisce agenda e clienti. Vede e gestisce tutti gli appuntamenti, ma non può gestire operatori né impostazioni.",
+    ),
     "operatorsRoleOwner": MessageLookupByLibrary.simpleMessage("Proprietario"),
     "operatorsRoleStaff": MessageLookupByLibrary.simpleMessage("Staff"),
+    "operatorsRoleStaffDesc": MessageLookupByLibrary.simpleMessage(
+      "Vede e gestisce solo i propri appuntamenti. Può creare prenotazioni assegnate a sé stesso.",
+    ),
     "operatorsScopeBusiness": MessageLookupByLibrary.simpleMessage(
       "Tutte le sedi",
     ),
@@ -974,6 +989,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operatori"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("Tu"),
+    "permissionsDescription": MessageLookupByLibrary.simpleMessage(
+      "Gestisci accessi e ruoli degli operatori",
+    ),
+    "permissionsTitle": MessageLookupByLibrary.simpleMessage("Permessi"),
     "planningActive": MessageLookupByLibrary.simpleMessage("Attivo"),
     "planningBiweeklyHours": m30,
     "planningCreateTitle": MessageLookupByLibrary.simpleMessage(
