@@ -17,6 +17,8 @@ interface EmailProviderInterface
      * @param string $subject Email subject
      * @param string $htmlBody HTML content
      * @param string|null $textBody Plain text fallback (optional)
+     * @param array<int, array{filename: string, content: string, content_type?: string, encoding?: string}>|null $attachments
+     *        Attachments with base64 content and metadata (optional)
      * @param string|null $fromEmail Override sender email (optional)
      * @param string|null $fromName Override sender name (optional)
      * @param string|null $replyTo Reply-to address (optional)
@@ -27,6 +29,7 @@ interface EmailProviderInterface
         string $subject,
         string $htmlBody,
         ?string $textBody = null,
+        ?array $attachments = null,
         ?string $fromEmail = null,
         ?string $fromName = null,
         ?string $replyTo = null,

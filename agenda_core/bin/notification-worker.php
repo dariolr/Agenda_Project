@@ -167,6 +167,7 @@ foreach ($notifications as $notification) {
         $subject = EmailTemplateRenderer::render($templateData['subject'], $variables);
         $htmlBody = EmailTemplateRenderer::render($templateData['html'], $variables);
         $textBody = isset($templateData['text']) ? EmailTemplateRenderer::render($templateData['text'], $variables) : null;
+        $attachments = $payload['attachments'] ?? null;
         
         // Send email
         $success = $emailService->send(
@@ -174,6 +175,7 @@ foreach ($notifications as $notification) {
             subject: $subject,
             htmlBody: $htmlBody,
             textBody: $textBody,
+            attachments: $attachments,
             fromEmail: $fromEmail,  // Dynamic: location > business > .env
             fromName: $fromName,    // Dynamic: location > business > .env
             replyTo: $replyTo       // Reply to location/business email

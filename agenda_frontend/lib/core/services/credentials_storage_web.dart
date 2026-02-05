@@ -58,6 +58,15 @@ class WebCredentialsStorage implements CredentialsStorage {
   }
 
   @override
+  Future<void> clearPassword() async {
+    try {
+      html.window.localStorage.remove(_passwordKey);
+    } catch (e) {
+      debugPrint('CredentialsStorage: Error clearing password: $e');
+    }
+  }
+
+  @override
   Future<bool> hasCredentials() async {
     try {
       return html.window.localStorage[_emailKey] != null &&
