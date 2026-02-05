@@ -29,6 +29,7 @@ import '../features/auth/providers/auth_provider.dart';
 import '../features/business/presentation/dialogs/invite_operator_dialog.dart';
 import '../features/business/presentation/dialogs/location_closure_dialog.dart';
 import '../features/business/providers/location_closures_provider.dart';
+import '../features/business/providers/superadmin_selected_business_provider.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/clients/providers/clients_providers.dart';
 import '../features/services/presentation/dialogs/category_dialog.dart';
@@ -371,6 +372,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   /// Gestisce tap su navigation desktop (compatta come mobile):
   /// - Index 0, 1: navigazione normale (Agenda, Clienti)
   /// - Index 2: naviga a "Altro" (schermata con cards)
+  /// - Index 3: Cambia Business (solo superadmin)
   void _handleDesktopNavTap(
     BuildContext context,
     int desktopIndex,
@@ -384,12 +386,17 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       case 2: // Altro → naviga alla schermata Altro
         _goBranch(6, ref);
         break;
+      case 3: // Cambia Business (superadmin)
+        ref.read(superadminSelectedBusinessProvider.notifier).clear();
+        context.go('/businesses');
+        break;
     }
   }
 
   /// Gestisce tap su navigation mobile:
   /// - Index 0, 1: navigazione normale (Agenda, Clienti)
   /// - Index 2: naviga a "Altro" (schermata con cards)
+  /// - Index 3: Cambia Business (solo superadmin)
   void _handleMobileNavTap(
     BuildContext context,
     int mobileIndex,
@@ -402,6 +409,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         break;
       case 2: // Altro → naviga alla schermata Altro
         _goBranch(6, ref);
+        break;
+      case 3: // Cambia Business (superadmin)
+        ref.read(superadminSelectedBusinessProvider.notifier).clear();
+        context.go('/businesses');
         break;
     }
   }
@@ -1038,6 +1049,13 @@ class _ScaffoldWithNavigationHelpers {
         selectedIconData: Icons.more_horiz,
         label: l10n.navMore,
       ),
+      // Cambia Business - solo per superadmin
+      if (isSuperadmin)
+        NavigationDestination(
+          iconData: Icons.business_outlined,
+          selectedIconData: Icons.business,
+          label: l10n.switchBusiness,
+        ),
     ];
   }
 

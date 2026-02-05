@@ -110,10 +110,31 @@ Notifiche Email (M10):
 **Template Variables (12/01/2026):**
 | Template | Variabili obbligatorie |
 |----------|------------------------|
-| `bookingConfirmed` | client_name, business_name, location_name, location_address, location_city, location_phone, date, time, services, total_price, cancel_deadline, manage_url |
-| `bookingReminder` | client_name, business_name, location_name, location_address, location_phone, date, time, services, manage_url |
+| `bookingConfirmed` | client_name, business_name, location_name, location_address, location_city, location_phone, date, time, services, total_price, cancel_deadline, manage_url, calendar_links_html, calendar_links_text |
+| `bookingReminder` | client_name, business_name, location_name, location_address, location_phone, date, time, services, manage_url, calendar_links_html, calendar_links_text |
 | `bookingCancelled` | client_name, business_name, location_address, location_city, date, time, services, booking_url |
-| `bookingRescheduled` | client_name, business_name, old_date, old_time, date, time, location_name, location_address, services, manage_url |
+| `bookingRescheduled` | client_name, business_name, old_date, old_time, date, time, location_name, location_address, services, manage_url, calendar_links_html, calendar_links_text |
+
+**Calendar Links (05/02/2026):**
+I template `bookingConfirmed`, `bookingReminder` e `bookingRescheduled` includono pulsanti per aggiungere l'evento al calendario.
+
+| Provider | Metodo | Descrizione |
+|----------|--------|-------------|
+| Google Calendar | URL API | Apre form pre-compilato in Google Calendar |
+| Outlook | URL deeplink | Apre form pre-compilato in Outlook.com |
+| iCal/Apple | Data URI ICS | Scarica file .ics compatibile con Apple Calendar |
+| Yahoo | URL API | Apre form pre-compilato in Yahoo Calendar |
+
+**File PHP:**
+- `src/Infrastructure/Notifications/CalendarLinkGenerator.php` - generatore centralizzato
+- Metodi: `generateLinks()`, `generateHtmlBlock()`, `generateTextBlock()`, `generateIcs()`
+
+**Variabili template:**
+- `{{calendar_links_html}}` - blocco HTML con 4 bottoni (Google, Outlook, iCal, Yahoo)
+- `{{calendar_links_text}}` - versione plain text con URL diretti
+
+**Requisiti dati booking:**
+Per generare i link calendario, il booking deve includere `end_time`. Se mancante, i link non vengono generati (graceful degradation).
 
 **Template Email - Stile e Localizzazione (15/01/2026):**
 

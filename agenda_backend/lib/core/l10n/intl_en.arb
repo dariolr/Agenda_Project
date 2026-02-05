@@ -1021,6 +1021,7 @@
   "moreReportsDescription": "View statistics and business performance",
   "moreBookingsDescription": "Browse booking history",
   "moreProfileDescription": "Manage your personal data and credentials",
+  "moreSwitchBusinessDescription": "Switch to another business",
   "moreSubtitle": "Access other application features",
 
   "closuresTitle": "Closure dates",

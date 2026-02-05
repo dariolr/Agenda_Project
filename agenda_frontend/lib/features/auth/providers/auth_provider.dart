@@ -19,6 +19,9 @@ final authProvider = NotifierProvider<AuthNotifier, AuthState>(
 );
 
 class AuthNotifier extends Notifier<AuthState> {
+  /// BusinessId per cui abbiamo già tentato auto-login
+  final Set<int> _attemptedAutoLoginBusinessIds = {};
+
   @override
   AuthState build() {
     // Tenta ripristino sessione all'avvio
@@ -144,6 +147,12 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       await _repository.logout(businessId: businessId);
     } finally {
+      // Cancella solo la password salvata (mantiene l'email per comodità)
+      try {
+        final credentialsStorage = ref.read(credentialsStorageProvider);
+        await credentialsStorage.clearPassword();
+        debugPrint('AUTH: cleared saved password on logout');
+      } catch (_) {}
       state = AuthState.unauthenticated();
     }
   }
@@ -249,4 +258,61 @@ class AuthNotifier extends Notifier<AuthState> {
 
   /// Verifica se è autenticato
   bool get isAuthenticated => state.isAuthenticated;
+
+  /// Tenta auto-login con credenziali salvate per un businessId specifico.
+  /// Da chiamare quando il businessId corrente (dall'URL) è disponibile
+  /// e l'utente risulta non autenticato.
+  /// Ritorna true se l'auto-login è avvenuto con successo.
+  Future<bool> retryAutoLoginIfNeeded(int businessId) async {
+    // Non riprovare se già autenticato
+    if (state.isAuthenticated) {
+      return false;
+    }
+
+    // Non riprovare se siamo in loading
+    if (state.status == AuthStatus.loading ||
+        state.status == AuthStatus.initial) {
+      return false;
+    }
+
+    // Non riprovare se abbiamo già tentato per questo business
+    if (_attemptedAutoLoginBusinessIds.contains(businessId)) {
+      debugPrint(
+        'AUTH: already attempted auto-login for businessId=$businessId',
+      );
+      return false;
+    }
+
+    _attemptedAutoLoginBusinessIds.add(businessId);
+    debugPrint('AUTH: retryAutoLoginIfNeeded for businessId=$businessId');
+
+    try {
+      final credentialsStorage = ref.read(credentialsStorageProvider);
+      final credentials = await credentialsStorage.getSavedCredentials();
+
+      if (credentials.email == null || credentials.password == null) {
+        debugPrint('AUTH: no saved credentials for retry');
+        return false;
+      }
+
+      debugPrint(
+        'AUTH: retrying auto-login with saved credentials for ${credentials.email}',
+      );
+      state = AuthState.loading();
+
+      final user = await _repository.login(
+        businessId: businessId,
+        email: credentials.email!,
+        password: credentials.password!,
+      );
+
+      state = AuthState.authenticated(user);
+      debugPrint('AUTH: retry auto-login successful');
+      return true;
+    } catch (e) {
+      debugPrint('AUTH: retry auto-login failed: $e');
+      state = AuthState.unauthenticated();
+      return false;
+    }
+  }
 }

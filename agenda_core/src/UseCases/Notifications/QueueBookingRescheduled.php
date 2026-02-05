@@ -7,6 +7,7 @@ namespace Agenda\UseCases\Notifications;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
+use Agenda\Infrastructure\Notifications\CalendarLinkGenerator;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -105,6 +106,8 @@ final class QueueBookingRescheduled
             ? sprintf("📍 %s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
             : '';
 
+        $calendar = $this->buildCalendarData($booking, $locale, $locationName, $locationAddress);
+
         $variables = [
             'client_name' => $clientName,
             'business_name' => $booking['business_name'] ?? '',
@@ -136,6 +139,14 @@ final class QueueBookingRescheduled
         
         $template = EmailTemplateRenderer::bookingRescheduled($locale);
         
+        $payload = [
+            'template' => 'booking_rescheduled',
+            'variables' => $variables,
+        ];
+        if (!empty($calendar['attachments'])) {
+            $payload['attachments'] = $calendar['attachments'];
+        }
+
         return $this->notificationRepo->queue([
             'type' => 'email',
             'channel' => 'booking_rescheduled',
@@ -144,10 +155,7 @@ final class QueueBookingRescheduled
             'recipient_email' => $recipientEmail['email'],
             'recipient_name' => $recipientEmail['name'],
             'subject' => EmailTemplateRenderer::render($template['subject'], $variables),
-            'payload' => [
-                'template' => 'booking_rescheduled',
-                'variables' => $variables,
-            ],
+            'payload' => $payload,
             'priority' => 2, // High priority
             'business_id' => $booking['business_id'],
             'booking_id' => $booking['booking_id'],
@@ -194,5 +202,41 @@ final class QueueBookingRescheduled
         return EmailTemplateRenderer::normalizeLocale(
             $booking['locale'] ?? $booking['business_locale'] ?? null
         );
+    }
+
+    /**
+     * Build calendar HTML/text and ICS attachment using NEW time (if available).
+     *
+     * @return array{html: string, text: string, attachments: array<int, array>|null}
+     */
+    private function buildCalendarData(
+        array $booking,
+        string $locale,
+        string $locationName,
+        string $locationAddress
+    ): array {
+        $newEndTime = $booking['new_end_time'] ?? $booking['end_time'] ?? null;
+        if (empty($newEndTime)) {
+            return ['attachments' => null];
+        }
+
+        $eventData = CalendarLinkGenerator::prepareEventFromBooking(
+            [
+                'start_time' => $booking['new_start_time'] ?? $booking['start_time'],
+                'end_time' => $newEndTime,
+                'services' => $booking['services'] ?? '',
+                'location_name' => $locationName,
+                'location_address' => $locationAddress,
+                'location_city' => $booking['location_city'] ?? '',
+                'location_timezone' => $booking['location_timezone'] ?? 'Europe/Rome',
+                'booking_id' => $booking['booking_id'] ?? 0,
+            ],
+            $booking['business_name'] ?? '',
+            $locale
+        );
+        $icsContent = CalendarLinkGenerator::generateIcsContent($eventData);
+        return [
+            'attachments' => [CalendarLinkGenerator::createIcsAttachment($icsContent)],
+        ];
     }
 }

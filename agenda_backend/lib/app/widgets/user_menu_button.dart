@@ -6,7 +6,6 @@ import '../../core/l10n/l10_extension.dart';
 import '../../core/models/user.dart';
 import '../../core/utils/app_version.dart';
 import '../../features/auth/providers/auth_provider.dart';
-import '../../features/business/providers/superadmin_selected_business_provider.dart';
 
 /// Avatar utente riutilizzabile.
 class UserAvatar extends StatelessWidget {
@@ -71,10 +70,6 @@ class UserMenuButton extends ConsumerWidget {
           context.push('/profilo');
         } else if (value == 'change_password') {
           context.push('/change-password');
-        } else if (value == 'switch_business') {
-          // Reset selected business e torna alla lista
-          ref.read(superadminSelectedBusinessProvider.notifier).clear();
-          context.go('/businesses');
         }
       },
     );
@@ -138,18 +133,6 @@ class UserMenuButton extends ConsumerWidget {
           ],
         ),
       ),
-      // Cambia Business per superadmin
-      if (user.isSuperadmin)
-        PopupMenuItem<String>(
-          value: 'switch_business',
-          child: Row(
-            children: [
-              Icon(Icons.business, size: 20, color: colorScheme.primary),
-              const SizedBox(width: 12),
-              Text('Cambia Business'),
-            ],
-          ),
-        ),
       PopupMenuItem<String>(
         value: 'logout',
         child: Row(

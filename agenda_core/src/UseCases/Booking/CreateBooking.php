@@ -1111,6 +1111,7 @@ final class CreateBooking
                 'sender_email' => $senderEmail,
                 'sender_name' => $senderName,
                 'start_time' => $booking['items'][0]['start_time'] ?? $booking['created_at'],
+                'end_time' => $booking['items'][count($booking['items']) - 1]['end_time'] ?? null,
                 'services' => implode(', ', array_column($booking['items'] ?? [], 'service_name')),
                 'total_price' => $booking['total_price'] ?? 0,
                 'cancellation_hours' => $location['cancellation_hours'] ?? 24,

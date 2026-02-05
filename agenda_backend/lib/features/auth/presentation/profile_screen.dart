@@ -7,7 +7,6 @@ import '../../../core/network/api_client.dart';
 import '../../../core/widgets/app_buttons.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../../core/widgets/local_loading_overlay.dart';
-import '../../business/providers/superadmin_selected_business_provider.dart';
 import '../providers/auth_provider.dart';
 
 /// Schermata profilo utente.
@@ -115,11 +114,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (mounted) {
       context.go('/login');
     }
-  }
-
-  void _switchBusiness() {
-    ref.read(superadminSelectedBusinessProvider.notifier).clear();
-    context.go('/businesses');
   }
 
   @override
@@ -341,13 +335,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         title: l10n.profileChangePassword,
                         onTap: () => context.push('/change-password'),
                       ),
-
-                      if (user?.isSuperadmin == true)
-                        _ActionTile(
-                          icon: Icons.swap_horiz,
-                          title: l10n.profileSwitchBusiness,
-                          onTap: _switchBusiness,
-                        ),
 
                       _ActionTile(
                         icon: Icons.logout,

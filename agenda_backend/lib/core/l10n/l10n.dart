@@ -6472,6 +6472,16 @@ class L10n {
     );
   }
 
+  /// `Passa a un altro business`
+  String get moreSwitchBusinessDescription {
+    return Intl.message(
+      'Passa a un altro business',
+      name: 'moreSwitchBusinessDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Accedi alle altre funzionalità dell'applicazione`
   String get moreSubtitle {
     return Intl.message(

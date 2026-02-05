@@ -7,6 +7,7 @@ namespace Agenda\UseCases\Notifications;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
+use Agenda\Infrastructure\Notifications\CalendarLinkGenerator;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -142,6 +143,8 @@ final class QueueBookingReminder
             ? sprintf("📍 %s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
             : '';
 
+        $calendar = $this->buildCalendarData($booking, $locale);
+
         $variables = [
             'client_name' => $clientName,
             'business_name' => $booking['business_name'] ?? '',
@@ -167,6 +170,14 @@ final class QueueBookingReminder
         
         $template = EmailTemplateRenderer::bookingReminder($locale);
         
+        $payload = [
+            'template' => 'booking_reminder',
+            'variables' => $variables,
+        ];
+        if (!empty($calendar['attachments'])) {
+            $payload['attachments'] = $calendar['attachments'];
+        }
+
         return $this->notificationRepo->queue([
             'type' => 'email',
             'channel' => 'booking_reminder',
@@ -175,10 +186,7 @@ final class QueueBookingReminder
             'recipient_email' => $recipientEmail['email'],
             'recipient_name' => $recipientEmail['name'],
             'subject' => EmailTemplateRenderer::render($template['subject'], $variables),
-            'payload' => [
-                'template' => 'booking_reminder',
-                'variables' => $variables,
-            ],
+            'payload' => $payload,
             'priority' => 5, // Normal priority
             'scheduled_at' => $scheduledAt->format('Y-m-d H:i:s'),
             'business_id' => $booking['business_id'],
@@ -213,6 +221,7 @@ final class QueueBookingReminder
                 c.email as client_email,
                 c.first_name as client_first_name,
                 MIN(bi.start_time) as start_time,
+                MAX(bi.end_time) as end_time,
                 GROUP_CONCAT(DISTINCT s.name SEPARATOR ", ") as services
              FROM bookings b
              JOIN locations l ON b.location_id = l.id
@@ -304,6 +313,28 @@ final class QueueBookingReminder
     }
 
     /**
+     * Build calendar HTML/text and ICS attachment (if end_time is available).
+     *
+     * @return array{html: string, text: string, attachments: array<int, array>|null}
+     */
+    private function buildCalendarData(array $booking, string $locale): array
+    {
+        if (empty($booking['end_time'])) {
+            return ['attachments' => null];
+        }
+
+        $eventData = CalendarLinkGenerator::prepareEventFromBooking(
+            $booking,
+            $booking['business_name'] ?? '',
+            $locale
+        );
+        $icsContent = CalendarLinkGenerator::generateIcsContent($eventData);
+        return [
+            'attachments' => [CalendarLinkGenerator::createIcsAttachment($icsContent)],
+        ];
+    }
+
+    /**
      * Fetch booking data for reminder refresh.
      * Returns null if booking not found or cancelled.
      */
@@ -330,6 +361,7 @@ final class QueueBookingReminder
                 c.email as client_email,
                 c.first_name as client_first_name,
                 MIN(bi.start_time) as start_time,
+                MAX(bi.end_time) as end_time,
                 GROUP_CONCAT(DISTINCT s.name SEPARATOR ", ") as services
              FROM bookings b
              JOIN locations l ON b.location_id = l.id

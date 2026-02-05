@@ -177,6 +177,7 @@ final class EmailTemplateRenderer
                         </td>
                     </tr>
                 </table>
+                
             </td>
         </tr>
         <tr>
@@ -283,6 +284,7 @@ TEXT,
                         </td>
                     </tr>
                 </table>
+                
             </td>
         </tr>
         <tr>
@@ -597,6 +599,7 @@ TEXT,
                         </td>
                     </tr>
                 </table>
+                
             </td>
         </tr>
         <tr>
@@ -689,6 +692,7 @@ TEXT,
                         </td>
                     </tr>
                 </table>
+                
             </td>
         </tr>
         <tr>
@@ -795,6 +799,7 @@ TEXT,
                         </td>
                     </tr>
                 </table>
+                
             </td>
         </tr>
         <tr>
@@ -890,6 +895,7 @@ TEXT,
                         </td>
                     </tr>
                 </table>
+                
             </td>
         </tr>
         <tr>

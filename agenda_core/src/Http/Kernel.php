@@ -148,6 +148,8 @@ final class Kernel
         $this->router->get('/v1/businesses/by-slug/{slug}', BusinessController::class, 'showBySlug');
         // Public locations for a business (for booking flow)
         $this->router->get('/v1/businesses/{business_id}/locations/public', LocationsController::class, 'indexPublic');
+        
+        // Calendar ICS download (public, token-protected)
 
         // Businesses and Locations (auth required)
         $this->router->get('/v1/businesses', BusinessController::class, 'index', ['auth']);

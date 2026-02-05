@@ -51,6 +51,15 @@ class SecureCredentialsStorage implements CredentialsStorage {
   }
 
   @override
+  Future<void> clearPassword() async {
+    try {
+      await _storage.delete(key: _passwordKey);
+    } catch (e) {
+      debugPrint('CredentialsStorage: Error clearing password: $e');
+    }
+  }
+
+  @override
   Future<bool> hasCredentials() async {
     try {
       final email = await _storage.read(key: _emailKey);
