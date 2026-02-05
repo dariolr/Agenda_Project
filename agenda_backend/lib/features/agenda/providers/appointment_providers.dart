@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/models/appointment.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../../clients/providers/clients_providers.dart';
 import '../../services/providers/services_provider.dart';
 import 'bookings_provider.dart';
@@ -557,11 +558,19 @@ final appointmentsForCurrentLocationProvider = Provider<List<Appointment>>((
   final appointmentsAsync = ref.watch(appointmentsProvider);
   final appointments = appointmentsAsync.value ?? [];
 
+  // Filtro per ruolo: staff vede solo i propri appuntamenti
+  final canViewAll = ref.watch(canViewAllAppointmentsProvider);
+  final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
+
   return [
     for (final appt in appointments)
       if (appt.locationId == location.id &&
           !appt.endTime.isBefore(dayStart) &&
-          appt.startTime.isBefore(dayEnd))
+          appt.startTime.isBefore(dayEnd) &&
+          // Se può vedere tutto, mostra. Altrimenti solo i propri
+          (canViewAll ||
+              currentUserStaffId == null ||
+              appt.staffId == currentUserStaffId))
         appt,
   ];
 });

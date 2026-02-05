@@ -533,6 +533,8 @@
 
   "operatorsTitle": "Operatori",
   "operatorsSubtitle": "Gestisci chi può accedere al gestionale",
+  "permissionsTitle": "Permessi",
+  "permissionsDescription": "Gestisci accessi e ruoli degli operatori",
   "operatorsEmpty": "Nessun operatore configurato",
   "operatorsInviteTitle": "Invita operatore",
   "operatorsInviteSubtitle": "Invia un invito via email",
@@ -547,6 +549,8 @@
       }
     }
   },
+  "operatorsInviteAlreadyPending": "Esiste già un invito in attesa per questa email. Puoi reinviarlo dalla lista degli inviti pendenti.",
+  "operatorsInviteError": "Impossibile inviare l'invito",
   "operatorsInviteCopied": "Link di invito copiato",
   "operatorsScopeTitle": "Accesso",
   "operatorsScopeBusiness": "Tutte le sedi",
@@ -586,8 +590,11 @@
   "operatorsRemoveSuccess": "Operatore rimosso",
   "operatorsRoleOwner": "Proprietario",
   "operatorsRoleAdmin": "Amministratore",
+  "operatorsRoleAdminDesc": "Accesso completo a tutte le funzionalità. Può gestire altri operatori e modificare impostazioni del business.",
   "operatorsRoleManager": "Manager",
+  "operatorsRoleManagerDesc": "Gestisce agenda e clienti. Vede e gestisce tutti gli appuntamenti, ma non può gestire operatori né impostazioni.",
   "operatorsRoleStaff": "Staff",
+  "operatorsRoleStaffDesc": "Vede e gestisce solo i propri appuntamenti. Può creare prenotazioni assegnate a sé stesso.",
   "operatorsRoleDescription": "Seleziona il livello di accesso",
   "operatorsYou": "Tu",
   "operatorsInvitedBy": "Invitato da {name}",

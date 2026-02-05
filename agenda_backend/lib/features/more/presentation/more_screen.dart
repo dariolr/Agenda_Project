@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/form_factor_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 
 /// Schermata "Altro" con cards per le sezioni secondarie
 class MoreScreen extends ConsumerWidget {
@@ -16,22 +17,37 @@ class MoreScreen extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
     final formFactor = ref.watch(formFactorProvider);
     final isDesktop = formFactor == AppFormFactor.desktop;
+    final canManageOperators = ref.watch(canManageOperatorsProvider);
+    final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
 
     final items = [
-      _MoreItem(
-        icon: Icons.category_outlined,
-        title: l10n.navServices,
-        description: l10n.moreServicesDescription,
-        color: const Color(0xFF4CAF50), // Green
-        onTap: () => context.go('/servizi'),
-      ),
-      _MoreItem(
-        icon: Icons.badge_outlined,
-        title: l10n.navStaff,
-        description: l10n.moreTeamDescription,
-        color: const Color(0xFF2196F3), // Blue
-        onTap: () => context.go('/staff'),
-      ),
+      // Servizi - visibile solo a chi può gestire impostazioni
+      if (canManageSettings)
+        _MoreItem(
+          icon: Icons.category_outlined,
+          title: l10n.navServices,
+          description: l10n.moreServicesDescription,
+          color: const Color(0xFF4CAF50), // Green
+          onTap: () => context.go('/servizi'),
+        ),
+      // Team - visibile solo a chi può gestire impostazioni
+      if (canManageSettings)
+        _MoreItem(
+          icon: Icons.badge_outlined,
+          title: l10n.navStaff,
+          description: l10n.moreTeamDescription,
+          color: const Color(0xFF2196F3), // Blue
+          onTap: () => context.go('/staff'),
+        ),
+      // Permessi - visibile solo a chi può gestire operatori
+      if (canManageOperators)
+        _MoreItem(
+          icon: Icons.admin_panel_settings_outlined,
+          title: l10n.permissionsTitle,
+          description: l10n.permissionsDescription,
+          color: const Color(0xFF00BCD4), // Cyan
+          onTap: () => context.go('/permessi'),
+        ),
       _MoreItem(
         icon: Icons.bar_chart,
         title: l10n.reportsTitle,
@@ -46,13 +62,15 @@ class MoreScreen extends ConsumerWidget {
         color: const Color(0xFF9C27B0), // Purple
         onTap: () => context.go('/prenotazioni'),
       ),
-      _MoreItem(
-        icon: Icons.event_busy,
-        title: l10n.closuresTitle,
-        description: l10n.closuresEmptyHint,
-        color: const Color(0xFFE91E63), // Pink
-        onTap: () => context.go('/chiusure'),
-      ),
+      // Chiusure - visibile solo a chi può gestire impostazioni
+      if (canManageSettings)
+        _MoreItem(
+          icon: Icons.event_busy,
+          title: l10n.closuresTitle,
+          description: l10n.closuresEmptyHint,
+          color: const Color(0xFFE91E63), // Pink
+          onTap: () => context.go('/chiusure'),
+        ),
       _MoreItem(
         icon: Icons.account_circle_outlined,
         title: l10n.profileTitle,

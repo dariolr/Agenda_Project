@@ -168,7 +168,30 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
     if (invitation != null) {
       Navigator.of(context).pop();
       _showSuccessDialog(context, invitation.email, invitation.token);
+    } else {
+      _showInviteError(context, ref);
     }
+  }
+
+  void _showInviteError(BuildContext context, WidgetRef ref) {
+    final state = ref.read(businessUsersProvider(widget.businessId));
+    final errorMsg = state.error ?? '';
+    final l10n = context.l10n;
+
+    String message;
+    if (errorMsg.contains('already pending')) {
+      message = l10n.operatorsInviteAlreadyPending;
+    } else {
+      message = errorMsg.isNotEmpty ? errorMsg : l10n.operatorsInviteError;
+    }
+
+    FeedbackDialog.showError(
+      context,
+      title: l10n.operatorsInviteError,
+      message: message,
+    );
+
+    ref.read(businessUsersProvider(widget.businessId).notifier).clearError();
   }
 
   void _showSuccessDialog(BuildContext context, String email, String? token) {
@@ -366,7 +389,30 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
     if (invitation != null) {
       Navigator.of(context).pop();
       _showSuccessDialog(context, invitation.email, invitation.token);
+    } else {
+      _showInviteError(context, ref);
     }
+  }
+
+  void _showInviteError(BuildContext context, WidgetRef ref) {
+    final state = ref.read(businessUsersProvider(widget.businessId));
+    final errorMsg = state.error ?? '';
+    final l10n = context.l10n;
+
+    String message;
+    if (errorMsg.contains('already pending')) {
+      message = l10n.operatorsInviteAlreadyPending;
+    } else {
+      message = errorMsg.isNotEmpty ? errorMsg : l10n.operatorsInviteError;
+    }
+
+    FeedbackDialog.showError(
+      context,
+      title: l10n.operatorsInviteError,
+      message: message,
+    );
+
+    ref.read(businessUsersProvider(widget.businessId).notifier).clearError();
   }
 
   void _showSuccessDialog(BuildContext context, String email, String? token) {
@@ -402,7 +448,7 @@ class _RoleSelector extends StatelessWidget {
         _RoleOption(
           role: 'admin',
           label: l10n.operatorsRoleAdmin,
-          description: 'Accesso completo, può gestire operatori',
+          description: l10n.operatorsRoleAdminDesc,
           icon: Icons.admin_panel_settings,
           isSelected: selectedRole == 'admin',
           onTap: () => onChanged('admin'),
@@ -411,7 +457,7 @@ class _RoleSelector extends StatelessWidget {
         _RoleOption(
           role: 'manager',
           label: l10n.operatorsRoleManager,
-          description: 'Gestisce agenda e clienti',
+          description: l10n.operatorsRoleManagerDesc,
           icon: Icons.manage_accounts,
           isSelected: selectedRole == 'manager',
           onTap: () => onChanged('manager'),
@@ -420,7 +466,7 @@ class _RoleSelector extends StatelessWidget {
         _RoleOption(
           role: 'staff',
           label: l10n.operatorsRoleStaff,
-          description: 'Visualizza e gestisce solo i propri appuntamenti',
+          description: l10n.operatorsRoleStaffDesc,
           icon: Icons.person,
           isSelected: selectedRole == 'staff',
           onTap: () => onChanged('staff'),

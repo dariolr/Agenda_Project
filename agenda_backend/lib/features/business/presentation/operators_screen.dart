@@ -13,14 +13,44 @@ import '../../../core/models/location.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/feedback_dialog.dart';
+import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../providers/business_users_provider.dart';
-import 'dialogs/invite_operator_dialog.dart';
 import 'dialogs/role_selection_dialog.dart';
 
 /// Schermata per la gestione degli operatori di un business.
 class OperatorsScreen extends ConsumerWidget {
-  const OperatorsScreen({super.key, required this.businessId});
+  const OperatorsScreen({super.key, this.businessId});
+
+  /// Se null, usa currentBusinessIdProvider (navigazione shell, senza Scaffold)
+  final int? businessId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final int effectiveBusinessId =
+        businessId ?? ref.watch(currentBusinessIdProvider);
+
+    // Se businessId è passato esplicitamente → navigazione push, serve Scaffold con back button
+    if (businessId != null) {
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+          ),
+          title: Text(context.l10n.permissionsTitle),
+        ),
+        body: _OperatorsBody(businessId: effectiveBusinessId),
+      );
+    }
+
+    // Navigazione shell → niente Scaffold (la toolbar è gestita da ScaffoldWithNavigation)
+    return _OperatorsBody(businessId: effectiveBusinessId);
+  }
+}
+
+class _OperatorsBody extends ConsumerWidget {
+  const _OperatorsBody({required this.businessId});
 
   final int businessId;
 
@@ -29,16 +59,7 @@ class OperatorsScreen extends ConsumerWidget {
     final state = ref.watch(businessUsersProvider(businessId));
     final l10n = context.l10n;
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(l10n.operatorsTitle),
-      ),
-      body: _buildBody(context, ref, state, l10n),
-    );
+    return _buildBody(context, ref, state, l10n);
   }
 
   Widget _buildBody(
@@ -74,26 +95,15 @@ class OperatorsScreen extends ConsumerWidget {
           ref.read(businessUsersProvider(businessId).notifier).refresh(),
       child: CustomScrollView(
         slivers: [
-          // Header con sottotitolo e pulsante aggiungi
+          // Header con sottotitolo
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.operatorsSubtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  FilledButton.icon(
-                    onPressed: () => _showInviteDialog(context, ref),
-                    icon: const Icon(Icons.person_add, size: 18),
-                    label: Text(l10n.operatorsInviteTitle),
-                  ),
-                ],
+              child: Text(
+                l10n.operatorsSubtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ),
@@ -152,11 +162,17 @@ class OperatorsScreen extends ConsumerWidget {
             )
           else
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) =>
-                    _UserTile(user: state.users[index], businessId: businessId),
-                childCount: state.users.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final user = state.users[index];
+                // Key composita per forzare rebuild quando cambiano i dati
+                return _UserTile(
+                  key: ValueKey(
+                    '${user.userId}_${user.role}_${user.scopeType}_${user.locationIds.join(',')}',
+                  ),
+                  user: user,
+                  businessId: businessId,
+                );
+              }, childCount: state.users.length),
             ),
 
           // Padding finale
@@ -164,23 +180,6 @@ class OperatorsScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  void _showInviteDialog(BuildContext context, WidgetRef ref) {
-    final formFactor = ref.read(formFactorProvider);
-
-    if (formFactor == AppFormFactor.mobile ||
-        formFactor == AppFormFactor.tablet) {
-      AppBottomSheet.show(
-        context: context,
-        builder: (ctx) => InviteOperatorSheet(businessId: businessId),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (ctx) => InviteOperatorDialog(businessId: businessId),
-      );
-    }
   }
 }
 
@@ -288,7 +287,7 @@ class _InvitationTile extends ConsumerWidget {
 
 /// Tile per visualizzare un operatore attivo.
 class _UserTile extends ConsumerWidget {
-  const _UserTile({required this.user, required this.businessId});
+  const _UserTile({super.key, required this.user, required this.businessId});
 
   final BusinessUser user;
   final int businessId;
@@ -416,33 +415,33 @@ class _UserTile extends ConsumerWidget {
           currentLocationIds: user.locationIds,
           locations: locations,
           userName: user.fullName,
-          onSave: ({
-            required String role,
-            required String scopeType,
-            required List<int> locationIds,
-          }) async {
-            Navigator.of(ctx).pop();
-            final selectedLocationIds = scopeType == 'locations'
-                ? locationIds.toSet()
-                : <int>{};
-            final hasChanges =
-                role != user.role ||
-                scopeType != user.scopeType ||
-                !setEquals(selectedLocationIds, currentLocationIds);
-            if (hasChanges) {
-              await ref
-                  .read(businessUsersProvider(businessId).notifier)
-                  .updateUser(
-                    userId: user.userId,
-                    role: role,
-                    scopeType: scopeType,
-                    locationIds:
-                        scopeType == 'locations'
+          onSave:
+              ({
+                required String role,
+                required String scopeType,
+                required List<int> locationIds,
+              }) async {
+                Navigator.of(ctx).pop();
+                final selectedLocationIds = scopeType == 'locations'
+                    ? locationIds.toSet()
+                    : <int>{};
+                final hasChanges =
+                    role != user.role ||
+                    scopeType != user.scopeType ||
+                    !setEquals(selectedLocationIds, currentLocationIds);
+                if (hasChanges) {
+                  await ref
+                      .read(businessUsersProvider(businessId).notifier)
+                      .updateUser(
+                        userId: user.userId,
+                        role: role,
+                        scopeType: scopeType,
+                        locationIds: scopeType == 'locations'
                             ? selectedLocationIds.toList()
                             : <int>[],
-                  );
-            }
-          },
+                      );
+                }
+              },
         ),
       );
     } else {
@@ -454,33 +453,33 @@ class _UserTile extends ConsumerWidget {
           currentLocationIds: user.locationIds,
           locations: locations,
           userName: user.fullName,
-          onSave: ({
-            required String role,
-            required String scopeType,
-            required List<int> locationIds,
-          }) async {
-            Navigator.of(ctx).pop();
-            final selectedLocationIds = scopeType == 'locations'
-                ? locationIds.toSet()
-                : <int>{};
-            final hasChanges =
-                role != user.role ||
-                scopeType != user.scopeType ||
-                !setEquals(selectedLocationIds, currentLocationIds);
-            if (hasChanges) {
-              await ref
-                  .read(businessUsersProvider(businessId).notifier)
-                  .updateUser(
-                    userId: user.userId,
-                    role: role,
-                    scopeType: scopeType,
-                    locationIds:
-                        scopeType == 'locations'
+          onSave:
+              ({
+                required String role,
+                required String scopeType,
+                required List<int> locationIds,
+              }) async {
+                Navigator.of(ctx).pop();
+                final selectedLocationIds = scopeType == 'locations'
+                    ? locationIds.toSet()
+                    : <int>{};
+                final hasChanges =
+                    role != user.role ||
+                    scopeType != user.scopeType ||
+                    !setEquals(selectedLocationIds, currentLocationIds);
+                if (hasChanges) {
+                  await ref
+                      .read(businessUsersProvider(businessId).notifier)
+                      .updateUser(
+                        userId: user.userId,
+                        role: role,
+                        scopeType: scopeType,
+                        locationIds: scopeType == 'locations'
                             ? selectedLocationIds.toList()
                             : <int>[],
-                  );
-            }
-          },
+                      );
+                }
+              },
         ),
       );
     }

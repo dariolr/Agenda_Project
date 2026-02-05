@@ -114,6 +114,16 @@ class L10n {
     return Intl.message('Esci', name: 'actionLogout', desc: '', args: []);
   }
 
+  /// `Caricamento...`
+  String get loadingGeneric {
+    return Intl.message(
+      'Caricamento...',
+      name: 'loadingGeneric',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Sessione scaduta. Effettua nuovamente l'accesso.`
   String get sessionExpired {
     return Intl.message(

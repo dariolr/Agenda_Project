@@ -12,6 +12,7 @@
   "actionRegister": "Register",
   "actionLogout": "Logout",
   
+  "loadingGeneric": "Loading...",
   "sessionExpired": "Session expired. Please log in again.",
   
   "errorTitle": "Error",

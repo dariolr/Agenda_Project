@@ -127,6 +127,7 @@ final class Kernel
         $this->router->get('/v1/me', AuthController::class, 'me', ['auth']);
         $this->router->put('/v1/me', AuthController::class, 'updateMe', ['auth']);
         $this->router->post('/v1/me/change-password', AuthController::class, 'changePassword', ['auth']);
+        $this->router->get('/v1/me/business/{business_id}', AuthController::class, 'myBusinessContext', ['auth']);
         $this->router->get('/v1/me/bookings', BookingsController::class, 'myBookings', ['auth']);
         $this->router->get('/v1/me/businesses', AdminBusinessesController::class, 'myBusinesses', ['auth']);
 
@@ -421,7 +422,7 @@ final class Kernel
         // Controllers
         $this->controllers = [
             HealthController::class => new HealthController(),
-            AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $verifyResetToken, $changePassword, $updateProfile),
+            AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $verifyResetToken, $changePassword, $updateProfile, $businessUserRepo, $userRepo),
             CustomerAuthController::class => new CustomerAuthController($loginCustomer, $refreshCustomerToken, $logoutCustomer, $getCustomerMe, $registerCustomer, $requestCustomerPasswordReset, $resetCustomerPassword, $updateCustomerProfile, $changeCustomerPassword, $businessRepo),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo, $businessUserRepo, $userRepo),
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
