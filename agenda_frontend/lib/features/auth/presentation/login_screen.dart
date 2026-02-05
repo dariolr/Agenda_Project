@@ -30,6 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = true;
+  bool _autoLoginAttempted = false;
 
   @override
   void initState() {
@@ -38,7 +39,96 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // Pulisci eventuali errori residui quando si entra nella pagina
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(authProvider.notifier).clearError();
+      _tryAutoLoginOnReady();
     });
+  }
+
+  /// Tenta auto-login quando businessId e auth state sono pronti
+  Future<void> _tryAutoLoginOnReady() async {
+    // Evita tentativi multipli
+    if (_autoLoginAttempted) {
+      return;
+    }
+    _autoLoginAttempted = true;
+
+    // Verifica che il widget sia ancora montato
+    if (!mounted) {
+      return;
+    }
+
+    final authState = ref.read(authProvider);
+
+    // Se siamo già autenticati, non fare nulla
+    if (authState.isAuthenticated) {
+      return;
+    }
+
+    // Se l'auth sta ancora caricando/inizializzando, aspetta
+    if (authState.status == AuthStatus.initial ||
+        authState.status == AuthStatus.loading) {
+      _autoLoginAttempted = false; // Reset per riprovare dopo
+      return;
+    }
+
+    // Ottieni il businessId dall'URL (sincrono)
+    int? businessId = ref.read(currentBusinessIdProvider);
+
+    // Se non disponibile, prova a leggere dal business async
+    if (businessId == null) {
+      final businessAsync = ref.read(currentBusinessProvider);
+      if (businessAsync.hasValue) {
+        businessId = businessAsync.value?.id;
+      } else if (businessAsync.isLoading) {
+        // Business ancora in caricamento - riproveremo dal listener
+        _autoLoginAttempted = false;
+        return;
+      } else if (businessAsync.hasError) {
+        debugPrint('LOGIN auto-login: business has error, skipping');
+        return;
+      }
+    }
+
+    if (businessId == null || !mounted) {
+      return;
+    }
+
+    // Tenta l'auto-login con le credenziali salvate
+    debugPrint('LOGIN: trying auto-login for businessId=$businessId');
+    final success = await ref
+        .read(authProvider.notifier)
+        .retryAutoLoginIfNeeded(businessId);
+
+    if (success && mounted) {
+      _navigateAfterAutoLogin();
+    }
+  }
+
+  /// Naviga alla destinazione appropriata dopo auto-login
+  void _navigateAfterAutoLogin() async {
+    final slug = ref.read(routeSlugProvider);
+
+    // Verifica se c'è una prenotazione in sospeso
+    if (await PendingBookingStorage.hasPendingBooking()) {
+      final restored = await ref
+          .read(bookingFlowProvider.notifier)
+          .restorePendingBooking();
+      if (restored && mounted) {
+        debugPrint('AUTO-LOGIN: pending booking restored - going to booking');
+        context.go('/$slug/booking');
+        return;
+      }
+    }
+
+    // Se l'utente voleva vedere my-bookings, portalo lì
+    if (widget.redirectFrom == 'my-bookings' && mounted) {
+      context.go('/$slug/my-bookings');
+      return;
+    }
+
+    // Altrimenti vai al booking
+    if (mounted) {
+      context.go('/$slug/booking');
+    }
   }
 
   Future<void> _loadSavedCredentials() async {
@@ -183,6 +273,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    // Ascolta i cambiamenti di stato auth per tentare auto-login
+    // quando passa da loading a unauthenticated
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (previous != null &&
+          (previous.status == AuthStatus.loading ||
+              previous.status == AuthStatus.initial) &&
+          next.status == AuthStatus.unauthenticated) {
+        _tryAutoLoginOnReady();
+      }
+    });
+
+    // Ascolta quando il business finisce di caricarsi per tentare auto-login
+    ref.listen(currentBusinessProvider, (previous, next) {
+      if (previous != null && previous.isLoading && next.hasValue) {
+        _tryAutoLoginOnReady();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(

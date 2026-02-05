@@ -810,6 +810,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "moreSubtitle": MessageLookupByLibrary.simpleMessage(
       "Access other application features",
     ),
+    "moreSwitchBusinessDescription": MessageLookupByLibrary.simpleMessage(
+      "Switch to another business",
+    ),
     "moreTeamDescription": MessageLookupByLibrary.simpleMessage(
       "Manage operators, locations and working hours",
     ),

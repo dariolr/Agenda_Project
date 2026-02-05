@@ -41,6 +41,7 @@ final class BrevoProvider implements EmailProviderInterface
         string $subject,
         string $htmlBody,
         ?string $textBody = null,
+        ?array $attachments = null,
         ?string $fromEmail = null,
         ?string $fromName = null,
         ?string $replyTo = null,
@@ -54,11 +55,11 @@ final class BrevoProvider implements EmailProviderInterface
         $isSmtpKey = str_starts_with($this->apiKey, 'xsmtpsib-');
         
         if (!$isSmtpKey && function_exists('curl_init')) {
-            return $this->sendViaApi($to, $subject, $htmlBody, $textBody, $from, $name, $replyTo);
+            return $this->sendViaApi($to, $subject, $htmlBody, $textBody, $attachments, $from, $name, $replyTo);
         }
 
         // Use SMTP for SMTP keys or when curl is not available
-        return $this->sendViaSmtp($to, $subject, $htmlBody, $textBody, $from, $name, $replyTo);
+        return $this->sendViaSmtp($to, $subject, $htmlBody, $textBody, $attachments, $from, $name, $replyTo);
     }
 
     private function sendViaApi(
@@ -66,6 +67,7 @@ final class BrevoProvider implements EmailProviderInterface
         string $subject,
         string $htmlBody,
         ?string $textBody,
+        ?array $attachments,
         string $from,
         string $name,
         string $replyTo,
@@ -85,6 +87,15 @@ final class BrevoProvider implements EmailProviderInterface
 
         if ($textBody) {
             $data['textContent'] = $textBody;
+        }
+        if (!empty($attachments)) {
+            $data['attachment'] = [];
+            foreach ($attachments as $attachment) {
+                $data['attachment'][] = [
+                    'content' => $attachment['content'] ?? '',
+                    'name' => $attachment['filename'] ?? 'attachment',
+                ];
+            }
         }
 
         $ch = curl_init('https://api.brevo.com/v3/smtp/email');
@@ -123,6 +134,7 @@ final class BrevoProvider implements EmailProviderInterface
         string $subject,
         string $htmlBody,
         ?string $textBody,
+        ?array $attachments,
         string $from,
         string $name,
         string $replyTo,
@@ -138,7 +150,7 @@ final class BrevoProvider implements EmailProviderInterface
             $name,
         );
 
-        return $smtp->send($to, $subject, $htmlBody, $textBody, $from, $name, $replyTo);
+        return $smtp->send($to, $subject, $htmlBody, $textBody, $attachments, $from, $name, $replyTo);
     }
 
     public function sendBatch(array $messages): array
@@ -150,6 +162,7 @@ final class BrevoProvider implements EmailProviderInterface
                 $message['subject'],
                 $message['htmlBody'],
                 $message['textBody'] ?? null,
+                $message['attachments'] ?? null,
             );
             // Rate limiting: Brevo free has 300/day limit
             usleep(100000); // 100ms between emails
