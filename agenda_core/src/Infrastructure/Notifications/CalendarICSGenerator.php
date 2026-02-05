@@ -10,7 +10,7 @@ use DateTimeZone;
 /**
  * Generate ICS content for email notifications.
  */
-final class CalendarLinkGenerator
+final class CalendarICSGenerator
 {
     /**
      * Generate ICS content only (no external links).
@@ -74,19 +74,11 @@ final class CalendarLinkGenerator
             'PRODID:-//RomeoLab Agenda//IT',
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
-        ];
-
-        $vtimezone = self::buildVtimezoneBlock($timezone, $startLocal);
-        if (!empty($vtimezone)) {
-            $ics = array_merge($ics, $vtimezone);
-        }
-
-        $ics = array_merge($ics, [
             'BEGIN:VEVENT',
             'UID:' . $uid,
             'DTSTAMP:' . $now->format('Ymd\THis\Z'),
-            'DTSTART;TZID=' . $timezone . ':' . $startLocal->format('Ymd\THis'),
-            'DTEND;TZID=' . $timezone . ':' . $endLocal->format('Ymd\THis'),
+            'DTSTART:' . $startLocal->format('Ymd\THis'),
+            'DTEND:' . $endLocal->format('Ymd\THis'),
             'SUMMARY:' . $title,
             'DESCRIPTION:' . $description,
             'LOCATION:' . $location,
@@ -94,7 +86,7 @@ final class CalendarLinkGenerator
             'SEQUENCE:0',
             'END:VEVENT',
             'END:VCALENDAR',
-        ]);
+        ];
         
         return implode("\r\n", $ics);
     }
@@ -113,128 +105,6 @@ final class CalendarLinkGenerator
         return $text;
     }
 
-    /**
-     * Build VTIMEZONE block for the given timezone and year.
-     *
-     * @return array<int, string>
-     */
-    private static function buildVtimezoneBlock(string $timezone, DateTimeImmutable $referenceDate): array
-    {
-        if ($timezone === 'UTC') {
-            return [];
-        }
-
-        $tz = new DateTimeZone($timezone);
-        $year = (int) $referenceDate->format('Y');
-        $start = new DateTimeImmutable("{$year}-01-01 00:00:00", $tz);
-        $end = new DateTimeImmutable("{$year}-12-31 23:59:59", $tz);
-        $transitions = $tz->getTransitions($start->getTimestamp(), $end->getTimestamp());
-
-        if (empty($transitions)) {
-            $offset = $tz->getOffset($start);
-            return array_merge(
-                [
-                    'BEGIN:VTIMEZONE',
-                    'TZID:' . $timezone,
-                    'X-LIC-LOCATION:' . $timezone,
-                ],
-                self::buildTimezoneComponent('STANDARD', $start, $offset, $offset, $timezone),
-                ['END:VTIMEZONE']
-            );
-        }
-
-        $lines = [
-            'BEGIN:VTIMEZONE',
-            'TZID:' . $timezone,
-            'X-LIC-LOCATION:' . $timezone,
-        ];
-
-        $prevOffset = null;
-        $components = 0;
-        foreach ($transitions as $t) {
-            if (!isset($t['offset'], $t['ts'])) {
-                continue;
-            }
-            if ($prevOffset === null) {
-                $prevOffset = (int) $t['offset'];
-                continue;
-            }
-
-            $type = !empty($t['isdst']) ? 'DAYLIGHT' : 'STANDARD';
-            $abbr = $t['abbr'] ?? $type;
-            $dtLocal = (new DateTimeImmutable('@' . $t['ts']))->setTimezone($tz);
-
-            $lines = array_merge(
-                $lines,
-                self::buildTimezoneComponent(
-                    $type,
-                    $dtLocal,
-                    $prevOffset,
-                    (int) $t['offset'],
-                    $abbr
-                )
-            );
-            $components++;
-
-            $prevOffset = (int) $t['offset'];
-        }
-
-        if ($components === 0 && $prevOffset !== null) {
-            $lines = array_merge(
-                $lines,
-                self::buildTimezoneComponent(
-                    'STANDARD',
-                    $start,
-                    $prevOffset,
-                    $prevOffset,
-                    $timezone
-                )
-            );
-        }
-
-        $lines[] = 'END:VTIMEZONE';
-
-        return $lines;
-    }
-
-    /**
-     * Build STANDARD/DAYLIGHT component lines from a timezone transition.
-     *
-     * @param string $type 'STANDARD' or 'DAYLIGHT'
-     * @return array<int, string>
-     */
-    private static function buildTimezoneComponent(
-        string $type,
-        DateTimeImmutable $dtLocal,
-        int $offsetFromSeconds,
-        int $offsetToSeconds,
-        string $abbr
-    ): array
-    {
-        $offsetTo = self::formatOffset($offsetToSeconds);
-        $offsetFrom = self::formatOffset($offsetFromSeconds);
-
-        return [
-            "BEGIN:{$type}",
-            'DTSTART:' . $dtLocal->format('Ymd\THis'),
-            'TZOFFSETFROM:' . $offsetFrom,
-            'TZOFFSETTO:' . $offsetTo,
-            'TZNAME:' . $abbr,
-            "END:{$type}",
-        ];
-    }
-
-    /**
-     * Format offset seconds to +HHMM / -HHMM.
-     */
-    private static function formatOffset(int $seconds): string
-    {
-        $sign = $seconds >= 0 ? '+' : '-';
-        $seconds = abs($seconds);
-        $hours = intdiv($seconds, 3600);
-        $minutes = intdiv($seconds % 3600, 60);
-        return sprintf('%s%02d%02d', $sign, $hours, $minutes);
-    }
 
     /**
      * Prepare event data from booking for calendar link generation.

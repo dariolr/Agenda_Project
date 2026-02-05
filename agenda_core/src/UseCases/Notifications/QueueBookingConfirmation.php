@@ -7,7 +7,7 @@ namespace Agenda\UseCases\Notifications;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
-use Agenda\Infrastructure\Notifications\CalendarLinkGenerator;
+use Agenda\Infrastructure\Notifications\CalendarICSGenerator;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -214,14 +214,14 @@ final class QueueBookingConfirmation
             return ['attachments' => null];
         }
 
-        $eventData = CalendarLinkGenerator::prepareEventFromBooking(
+        $eventData = CalendarICSGenerator::prepareEventFromBooking(
             $booking,
             $booking['business_name'] ?? '',
             $locale
         );
-        $icsContent = CalendarLinkGenerator::generateIcsContent($eventData);
+        $icsContent = CalendarICSGenerator::generateIcsContent($eventData);
         return [
-            'attachments' => [CalendarLinkGenerator::createIcsAttachment($icsContent)],
+            'attachments' => [CalendarICSGenerator::createIcsAttachment($icsContent)],
         ];
     }
 }
