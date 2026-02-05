@@ -12,6 +12,7 @@
   "actionRegister": "Registrati",
   "actionLogout": "Esci",
   
+  "loadingGeneric": "Caricamento...",
   "sessionExpired": "Sessione scaduta. Effettua nuovamente l'accesso.",
   
   "errorTitle": "Errore",

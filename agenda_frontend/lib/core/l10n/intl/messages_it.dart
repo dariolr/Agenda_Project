@@ -433,6 +433,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "loadingAvailability": MessageLookupByLibrary.simpleMessage(
       "Caricamento disponibilità...",
     ),
+    "loadingGeneric": MessageLookupByLibrary.simpleMessage("Caricamento..."),
     "locationEmpty": MessageLookupByLibrary.simpleMessage(
       "Nessuna sede disponibile",
     ),

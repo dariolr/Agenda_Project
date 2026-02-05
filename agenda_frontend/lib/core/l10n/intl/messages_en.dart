@@ -419,6 +419,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "loadingAvailability": MessageLookupByLibrary.simpleMessage(
       "Loading availability...",
     ),
+    "loadingGeneric": MessageLookupByLibrary.simpleMessage("Loading..."),
     "locationEmpty": MessageLookupByLibrary.simpleMessage(
       "No location available",
     ),

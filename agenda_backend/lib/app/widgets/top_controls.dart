@@ -7,6 +7,7 @@ import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
+import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -161,7 +162,10 @@ class TopControls extends ConsumerWidget {
         ],
         if (mode == TopControlsMode.agenda)
           SizedBox(width: layoutConfig.hourColumnWidth),
+        // Il selettore staff è mostrato solo se l'utente può vedere tutti gli appuntamenti
+        // e se ci sono più membri staff nella location
         if (mode == TopControlsMode.agenda &&
+            ref.watch(canViewAllAppointmentsProvider) &&
             ref.watch(staffForCurrentLocationProvider).length > 1) ...[
           const Align(
             alignment: AlignmentDirectional.centerStart,
@@ -201,6 +205,7 @@ class TopControls extends ConsumerWidget {
     }
     final showStaffSelector =
         mode == TopControlsMode.agenda &&
+        ref.watch(canViewAllAppointmentsProvider) &&
         ref.watch(staffForCurrentLocationProvider).length > 1;
     final showLocationSelector = data.locations.length > 1;
 
