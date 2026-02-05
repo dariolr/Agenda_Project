@@ -7,7 +7,7 @@ namespace Agenda\UseCases\Notifications;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
-use Agenda\Infrastructure\Notifications\CalendarLinkGenerator;
+use Agenda\Infrastructure\Notifications\CalendarICSGenerator;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -220,7 +220,7 @@ final class QueueBookingRescheduled
             return ['attachments' => null];
         }
 
-        $eventData = CalendarLinkGenerator::prepareEventFromBooking(
+        $eventData = CalendarICSGenerator::prepareEventFromBooking(
             [
                 'start_time' => $booking['new_start_time'] ?? $booking['start_time'],
                 'end_time' => $newEndTime,
@@ -234,9 +234,9 @@ final class QueueBookingRescheduled
             $booking['business_name'] ?? '',
             $locale
         );
-        $icsContent = CalendarLinkGenerator::generateIcsContent($eventData);
+        $icsContent = CalendarICSGenerator::generateIcsContent($eventData);
         return [
-            'attachments' => [CalendarLinkGenerator::createIcsAttachment($icsContent)],
+            'attachments' => [CalendarICSGenerator::createIcsAttachment($icsContent)],
         ];
     }
 }
