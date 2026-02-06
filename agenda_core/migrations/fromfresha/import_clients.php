@@ -17,12 +17,14 @@ $BUSINESS_ID = $config['business_id'];
 $CSV_FILE = $config['csv_clients'];
 $SKIP_BLOCKED = $config['skip_blocked_clients'];
 $DRY_RUN = $config['dry_run'];
+$CLEAR_EXISTING = $config['clear_existing_data'] ?? false;
 
 echo "=== IMPORTAZIONE CLIENTI FRESHA ===\n";
 echo "Business ID: {$BUSINESS_ID}\n";
 echo "File CSV: {$CSV_FILE}\n";
 echo "Skip bloccati: " . ($SKIP_BLOCKED ? 'Sì' : 'No') . "\n";
 echo "Dry run: " . ($DRY_RUN ? 'Sì' : 'No') . "\n";
+echo "Pulisci dati esistenti: " . ($CLEAR_EXISTING ? 'Sì' : 'No') . "\n";
 echo "===================================\n\n";
 
 try {
@@ -38,6 +40,15 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
     echo "Connessione DB OK\n\n";
+    
+    // Pulisci dati esistenti se richiesto
+    if ($CLEAR_EXISTING && !$DRY_RUN) {
+        echo "Pulizia clienti esistenti per business_id = {$BUSINESS_ID}...\n";
+        $stmt = $pdo->prepare("DELETE FROM clients WHERE business_id = ?");
+        $stmt->execute([$BUSINESS_ID]);
+        $deleted = $stmt->rowCount();
+        echo "Eliminati {$deleted} clienti esistenti\n\n";
+    }
     
     // Leggi CSV
     $csvPath = __DIR__ . '/' . $CSV_FILE;
@@ -62,6 +73,20 @@ try {
             if ($idx !== false) return $idx;
         }
         return false;
+    }
+
+    // Normalizza gender (max 20 caratteri nel DB)
+    function normalizeGender(?string $value): ?string {
+        if (empty($value)) return null;
+        $value = trim($value);
+        $lower = strtolower($value);
+        // Valori riconosciuti (IT/EN)
+        if (in_array($lower, ['donna', 'female', 'f'])) return 'Donna';
+        if (in_array($lower, ['uomo', 'male', 'm'])) return 'Uomo';
+        // Valori lunghi o non specificati → NULL
+        if (strlen($value) > 20) return null;
+        if (str_contains($lower, 'non specific')) return null;
+        return $value;
     }
     
     // Trova indici colonne (supporta IT e EN)
@@ -143,7 +168,7 @@ try {
             'last_name' => $lastName,
             'email' => strtolower(trim($row[$colEmail] ?? '')) ?: null,
             'phone' => $phone ?: null,
-            'gender' => trim($row[$colGender] ?? '') ?: null,
+            'gender' => normalizeGender($row[$colGender] ?? null),
             'birth_date' => $birthDate,
             'city' => trim($row[$colCity] ?? '') ?: null,
             'notes' => trim($row[$colNote] ?? '') ?: null,

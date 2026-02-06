@@ -141,24 +141,44 @@ trap restore_config EXIT
 # Cambia directory al progetto root per caricare vendor/autoload.php
 cd "$PROJECT_ROOT"
 
+# Variabili per catturare i report
+REPORT_CLIENTS=""
+REPORT_SERVICES=""
+REPORT_STAFF=""
+
 # 1. Import Clienti
 echo "${GREEN}[1/3] Importazione Clienti...${NC}"
-php "$SCRIPT_DIR/import_clients.php"
+OUTPUT_CLIENTS=$(php "$SCRIPT_DIR/import_clients.php" 2>&1)
+echo "$OUTPUT_CLIENTS" | grep -v "=== REPORT FINALE" | grep -v "^Clienti inseriti:" | grep -v "^Duplicati email saltati:" | grep -v "^Business ID:" | grep -v "^====" || true
+REPORT_CLIENTS=$(echo "$OUTPUT_CLIENTS" | grep -A20 "=== REPORT FINALE ===")
 echo ""
 
 # 2. Import Servizi
 echo "${GREEN}[2/3] Importazione Servizi...${NC}"
-php "$SCRIPT_DIR/import_services.php"
+OUTPUT_SERVICES=$(php "$SCRIPT_DIR/import_services.php" 2>&1)
+echo "$OUTPUT_SERVICES" | grep -v "=== REPORT FINALE" | grep -v "^Categorie inserite:" | grep -v "^Servizi inseriti:" | grep -v "^Variants inseriti:" | grep -v "^====" || true
+REPORT_SERVICES=$(echo "$OUTPUT_SERVICES" | grep -A20 "=== REPORT FINALE ===")
 echo ""
 
 # 3. Import Staff
 echo "${GREEN}[3/3] Importazione Staff...${NC}"
-php "$SCRIPT_DIR/import_staff.php"
+OUTPUT_STAFF=$(php "$SCRIPT_DIR/import_staff.php" 2>&1)
+echo "$OUTPUT_STAFF" | grep -v "=== REPORT FINALE" | grep -v "^Staff inseriti:" | grep -v "^Staff disattivati:" | grep -v "^====" || true
+REPORT_STAFF=$(echo "$OUTPUT_STAFF" | grep -A20 "=== REPORT FINALE ===")
 echo ""
 
 echo "${GREEN}========================================${NC}"
 echo "${GREEN}   Migrazione completata!${NC}"
 echo "${GREEN}========================================${NC}"
+echo ""
+echo "${YELLOW}=== REPORT FINALE CLIENTI ===${NC}"
+echo "$REPORT_CLIENTS" | tail -n +2
+echo ""
+echo "${YELLOW}=== REPORT FINALE SERVIZI ===${NC}"
+echo "$REPORT_SERVICES" | tail -n +2
+echo ""
+echo "${YELLOW}=== REPORT FINALE STAFF ===${NC}"
+echo "$REPORT_STAFF" | tail -n +2
 
 if [[ "$DRY_RUN" == "true" ]]; then
     echo ""

@@ -193,10 +193,17 @@ echo ""
 log_info "=== ESECUZIONE MIGRAZIONE ==="
 echo ""
 
+# Variabili per catturare i report
+REPORT_SERVICES=""
+REPORT_STAFF=""
+REPORT_CLIENTS=""
+
 # 6a. Import Servizi
 log_info "Importazione SERVIZI..."
 if ! $DRY_RUN; then
-    ssh ${REMOTE_HOST} "cd ${REMOTE_BASE} && php migrations/fromfresha/import_services.php"
+    OUTPUT_SERVICES=$(ssh ${REMOTE_HOST} "cd ${REMOTE_BASE} && php migrations/fromfresha/import_services.php" 2>&1)
+    echo "$OUTPUT_SERVICES" | grep -v "=== REPORT FINALE" | grep -v "^Categorie inserite:" | grep -v "^Servizi inseriti:" | grep -v "^Variants inseriti:" | grep -v "^====" || true
+    REPORT_SERVICES=$(echo "$OUTPUT_SERVICES" | grep -A20 "=== REPORT FINALE ===")
 fi
 log_success "Servizi importati"
 echo ""
@@ -204,7 +211,9 @@ echo ""
 # 6b. Import Staff
 log_info "Importazione STAFF..."
 if ! $DRY_RUN; then
-    ssh ${REMOTE_HOST} "cd ${REMOTE_BASE} && php migrations/fromfresha/import_staff.php"
+    OUTPUT_STAFF=$(ssh ${REMOTE_HOST} "cd ${REMOTE_BASE} && php migrations/fromfresha/import_staff.php" 2>&1)
+    echo "$OUTPUT_STAFF" | grep -v "=== REPORT FINALE" | grep -v "^Staff inseriti:" | grep -v "^Staff disattivati:" | grep -v "^====" || true
+    REPORT_STAFF=$(echo "$OUTPUT_STAFF" | grep -A20 "=== REPORT FINALE ===")
 fi
 log_success "Staff importato"
 echo ""
@@ -212,7 +221,9 @@ echo ""
 # 6c. Import Clienti
 log_info "Importazione CLIENTI..."
 if ! $DRY_RUN; then
-    ssh ${REMOTE_HOST} "cd ${REMOTE_BASE} && php migrations/fromfresha/import_clients.php"
+    OUTPUT_CLIENTS=$(ssh ${REMOTE_HOST} "cd ${REMOTE_BASE} && php migrations/fromfresha/import_clients.php" 2>&1)
+    echo "$OUTPUT_CLIENTS" | grep -v "=== REPORT FINALE" | grep -v "^Clienti inseriti:" | grep -v "^Duplicati email saltati:" | grep -v "^Business ID:" | grep -v "^====" || true
+    REPORT_CLIENTS=$(echo "$OUTPUT_CLIENTS" | grep -A20 "=== REPORT FINALE ===")
 fi
 log_success "Clienti importati"
 
@@ -234,5 +245,18 @@ echo "=========================================="
 echo "${GREEN}  MIGRAZIONE STAGING COMPLETATA${NC}"
 echo "=========================================="
 echo ""
+
+if ! $DRY_RUN; then
+    echo "${YELLOW}=== REPORT FINALE SERVIZI ===${NC}"
+    echo "$REPORT_SERVICES" | tail -n +2
+    echo ""
+    echo "${YELLOW}=== REPORT FINALE STAFF ===${NC}"
+    echo "$REPORT_STAFF" | tail -n +2
+    echo ""
+    echo "${YELLOW}=== REPORT FINALE CLIENTI ===${NC}"
+    echo "$REPORT_CLIENTS" | tail -n +2
+    echo ""
+fi
+
 log_info "Verifica i dati su: https://gestionale-staging.romeolab.it"
 echo ""
