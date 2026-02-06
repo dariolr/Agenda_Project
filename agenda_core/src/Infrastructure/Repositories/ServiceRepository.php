@@ -335,6 +335,75 @@ final class ServiceRepository
     }
 
     /**
+     * Create a new service with variants for multiple locations.
+     */
+    public function createMultiLocation(
+        int $businessId,
+        array $locationIds,
+        string $name,
+        ?int $categoryId = null,
+        ?string $description = null,
+        int $durationMinutes = 30,
+        float $price = 0.0,
+        ?string $colorHex = null,
+        bool $isBookableOnline = true,
+        bool $isPriceStartingFrom = false,
+        ?int $processingTime = null,
+        ?int $blockedTime = null
+    ): array {
+        if (empty($locationIds)) {
+            throw new \InvalidArgumentException('At least one location_id is required');
+        }
+
+        $pdo = $this->db->getPdo();
+        
+        $pdo->beginTransaction();
+        try {
+            // Get next sort_order
+            $stmt = $pdo->prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 FROM services WHERE business_id = ?');
+            $stmt->execute([$businessId]);
+            $sortOrder = (int) $stmt->fetchColumn();
+
+            // Insert service
+            $stmt = $pdo->prepare(
+                'INSERT INTO services (business_id, category_id, name, description, sort_order, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, 1, NOW())'
+            );
+            $stmt->execute([$businessId, $categoryId, $name, $description, $sortOrder]);
+            $serviceId = (int) $pdo->lastInsertId();
+
+            // Insert service_variant for each location
+            $stmtVariant = $pdo->prepare(
+                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, is_price_starting_from, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+            );
+
+            $firstLocationId = $locationIds[0];
+            foreach ($locationIds as $locationId) {
+                $stmtVariant->execute([
+                    $serviceId,
+                    $locationId,
+                    $durationMinutes,
+                    $processingTime ?? 0,
+                    $blockedTime ?? 0,
+                    $price,
+                    $colorHex ?? '#CCCCCC',
+                    $isBookableOnline ? 1 : 0,
+                    $isPriceStartingFrom ? 1 : 0,
+                ]);
+            }
+
+            $pdo->commit();
+
+            // Return service with first location's variant
+            return $this->findById($serviceId, $firstLocationId);
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
      * Update a service and its variant.
      */
     public function update(
@@ -352,7 +421,8 @@ final class ServiceRepository
         ?int $processingTime = null,
         ?int $blockedTime = null,
         bool $setProcessingTimeNull = false,
-        bool $setBlockedTimeNull = false
+        bool $setBlockedTimeNull = false,
+        bool $setDescriptionNull = false
     ): ?array {
         $pdo = $this->db->getPdo();
 
@@ -369,9 +439,9 @@ final class ServiceRepository
                 $serviceUpdates[] = 'category_id = ?';
                 $serviceParams[] = $categoryId;
             }
-            if ($description !== null) {
+            if ($description !== null || $setDescriptionNull) {
                 $serviceUpdates[] = 'description = ?';
-                $serviceParams[] = $description;
+                $serviceParams[] = $setDescriptionNull ? null : $description;
             }
             if ($sortOrder !== null) {
                 $serviceUpdates[] = 'sort_order = ?';

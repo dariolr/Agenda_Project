@@ -217,6 +217,56 @@ final class ServicesController
     }
 
     /**
+     * POST /v1/businesses/{business_id}/services
+     * Create a new service with variants for multiple locations. Auth required.
+     */
+    public function storeMultiLocation(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+
+        // Authorization check
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+
+        $body = $request->getBody();
+        $name = trim($body['name'] ?? '');
+        if (empty($name)) {
+            return Response::error('Name is required', 'validation_error', 400);
+        }
+
+        $locationIds = $body['location_ids'] ?? [];
+        if (empty($locationIds) || !is_array($locationIds)) {
+            return Response::error('location_ids is required and must be a non-empty array', 'validation_error', 400);
+        }
+
+        // Verify all locations belong to this business
+        foreach ($locationIds as $locationId) {
+            $location = $this->locationRepo->findById((int) $locationId);
+            if (!$location || (int) $location['business_id'] !== $businessId) {
+                return Response::error("Invalid location_id: $locationId", 'validation_error', 400);
+            }
+        }
+
+        $service = $this->serviceRepository->createMultiLocation(
+            businessId: $businessId,
+            locationIds: array_map('intval', $locationIds),
+            name: $name,
+            categoryId: isset($body['category_id']) ? (int) $body['category_id'] : null,
+            description: $body['description'] ?? null,
+            durationMinutes: (int) ($body['duration_minutes'] ?? 30),
+            price: (float) ($body['price'] ?? 0),
+            colorHex: $body['color'] ?? $body['color_hex'] ?? null,
+            isBookableOnline: (bool) ($body['is_bookable_online'] ?? true),
+            isPriceStartingFrom: (bool) ($body['is_price_starting_from'] ?? false),
+            processingTime: isset($body['processing_time']) ? (int) $body['processing_time'] : null,
+            blockedTime: isset($body['blocked_time']) ? (int) $body['blocked_time'] : null
+        );
+
+        return Response::success(['service' => $this->formatService($service, $businessId)], 201);
+    }
+
+    /**
      * PUT /v1/services/{id}
      * Update a service. Auth required.
      */
@@ -265,6 +315,9 @@ final class ServicesController
             $setBlockedTimeNull = $blockedTime === 0;
         }
 
+        // Handle description null
+        $setDescriptionNull = (bool) ($body['set_description_null'] ?? false);
+
         $service = $this->serviceRepository->update(
             serviceId: $serviceId,
             locationId: $locationId,
@@ -280,7 +333,8 @@ final class ServicesController
             processingTime: $processingTime,
             blockedTime: $blockedTime,
             setProcessingTimeNull: $setProcessingTimeNull,
-            setBlockedTimeNull: $setBlockedTimeNull
+            setBlockedTimeNull: $setBlockedTimeNull,
+            setDescriptionNull: $setDescriptionNull
         );
 
         if (!$service) {
