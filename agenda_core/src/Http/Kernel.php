@@ -229,6 +229,7 @@ final class Kernel
         $this->router->get('/v1/availability', AvailabilityController::class, 'index', ['location_query']);
 
         // Services CRUD (auth required)
+        $this->router->post('/v1/businesses/{business_id}/services', ServicesController::class, 'storeMultiLocation', ['auth', 'business_access_route']);
         $this->router->post('/v1/locations/{location_id}/services', ServicesController::class, 'store', ['auth', 'location_path', 'location_access']);
         $this->router->put('/v1/services/{id}', ServicesController::class, 'update', ['auth']);
         $this->router->delete('/v1/services/{id}', ServicesController::class, 'destroy', ['auth']);
