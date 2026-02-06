@@ -17,12 +17,14 @@ $BUSINESS_ID = $config['business_id'];
 $LOCATION_ID = $config['location_id'];
 $CSV_FILE = $config['csv_services'];
 $DRY_RUN = $config['dry_run'];
+$CLEAR_EXISTING = $config['clear_existing_data'] ?? false;
 
 echo "=== IMPORTAZIONE SERVIZI FRESHA ===\n";
 echo "Business ID: {$BUSINESS_ID}\n";
 echo "Location ID: {$LOCATION_ID}\n";
 echo "File CSV: {$CSV_FILE}\n";
 echo "Dry run: " . ($DRY_RUN ? 'Sì' : 'No') . "\n";
+echo "Pulisci dati esistenti: " . ($CLEAR_EXISTING ? 'Sì' : 'No') . "\n";
 echo "===================================\n\n";
 
 $port = $_ENV['DB_PORT'] ?? 3306;
@@ -91,28 +93,22 @@ foreach ($categories as $idx => $cat) {
 echo "\nMappa colori:\n";
 print_r($categoryColorMap);
 
-// Cleanup
-echo "\nCleanup in corso...\n";
-// Prima elimina booking_items che referenziano service_variants (ignora se tabella non esiste)
-try {
-    $pdo->exec("DELETE bi FROM booking_items bi 
-                JOIN service_variants sv ON bi.service_variant_id = sv.id 
-                WHERE sv.location_id = $LOCATION_ID");
-} catch (PDOException $e) {
-    echo "  (booking_items skipped)\n";
+// Cleanup (solo se richiesto)
+if ($CLEAR_EXISTING && !$DRY_RUN) {
+    echo "\nCleanup in corso...\n";
+    // Prima elimina booking_items che referenziano service_variants (ignora se tabella non esiste)
+    try {
+        $pdo->exec("DELETE bi FROM booking_items bi 
+                    JOIN service_variants sv ON bi.service_variant_id = sv.id 
+                    WHERE sv.location_id = $LOCATION_ID");
+    } catch (PDOException $e) {
+        echo "  (booking_items skipped)\n";
+    }
+    $pdo->exec("DELETE FROM service_variants WHERE location_id = $LOCATION_ID");
+    $pdo->exec("DELETE FROM services WHERE business_id = $BUSINESS_ID");
+    $pdo->exec("DELETE FROM service_categories WHERE business_id = $BUSINESS_ID");
+    echo "Cleanup completato.\n";
 }
-// Poi elimina appointments che usano servizi di questo business (ignora se tabella non esiste)
-try {
-    $pdo->exec("DELETE a FROM appointments a 
-                JOIN services s ON a.service_id = s.id 
-                WHERE s.business_id = $BUSINESS_ID");
-} catch (PDOException $e) {
-    echo "  (appointments skipped)\n";
-}
-$pdo->exec("DELETE FROM service_variants WHERE location_id = $LOCATION_ID");
-$pdo->exec("DELETE FROM services WHERE business_id = $BUSINESS_ID");
-$pdo->exec("DELETE FROM service_categories WHERE business_id = $BUSINESS_ID");
-echo "Cleanup completato.\n";
 
 // Inserisci categorie
 echo "\nInserimento categorie...\n";

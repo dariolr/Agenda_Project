@@ -18,13 +18,6 @@
         "--web-port=8081", 
         "--dart-define=API_BASE_URL=http://localhost:8888"
       ]
-    },
-    {
-      "name": "Open MAMP Build (offline)",
-      "type": "chrome",
-      "request": "launch",
-      "url": "http://localhost:8888/gestionale/",
-      "webRoot": "${workspaceFolder}/build/web"
     }
   ]
 }

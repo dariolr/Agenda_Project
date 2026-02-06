@@ -18,12 +18,14 @@ $BUSINESS_ID = $config['business_id'];
 $LOCATION_ID = $config['location_id'];
 $CSV_FILE = $config['csv_staff'];
 $DRY_RUN = $config['dry_run'];
+$CLEAR_EXISTING = $config['clear_existing_data'] ?? false;
 
 echo "=== IMPORTAZIONE STAFF FRESHA ===\n";
 echo "Business ID: {$BUSINESS_ID}\n";
 echo "Location ID: {$LOCATION_ID}\n";
 echo "File CSV: {$CSV_FILE}\n";
 echo "Dry run: " . ($DRY_RUN ? 'Sì' : 'No') . "\n";
+echo "Pulisci dati esistenti: " . ($CLEAR_EXISTING ? 'Sì' : 'No') . "\n";
 echo "=================================\n\n";
 
 // Palette colori staff (36 colori, ordine dalla UI Flutter)
@@ -148,41 +150,43 @@ try {
     // Inizia transazione
     $pdo->beginTransaction();
     
-    // GESTISCE staff esistenti per il business
-    // Staff con booking esistenti: soft delete (is_active=0, is_bookable_online=0)
-    // Staff senza booking: elimina fisicamente
-    $stmt = $pdo->query("SELECT id FROM staff WHERE business_id = " . $BUSINESS_ID);
-    $existingStaffIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    
-    if (!empty($existingStaffIds)) {
-        $idList = implode(',', $existingStaffIds);
-        echo "Gestione staff esistenti (ID: $idList)...\n";
+    // GESTISCE staff esistenti per il business (solo se richiesto cleanup)
+    if ($CLEAR_EXISTING && !$DRY_RUN) {
+        // Staff con booking esistenti: soft delete (is_active=0, is_bookable_online=0)
+        // Staff senza booking: elimina fisicamente
+        $stmt = $pdo->query("SELECT id FROM staff WHERE business_id = " . $BUSINESS_ID);
+        $existingStaffIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
         
-        // Trova staff con booking (non eliminabili)
-        $stmt = $pdo->query("SELECT DISTINCT staff_id FROM booking_items WHERE staff_id IN ($idList)");
-        $staffWithBookings = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        // Staff eliminabili (senza booking)
-        $staffToDelete = array_diff($existingStaffIds, $staffWithBookings);
-        
-        // Elimina associazioni per TUTTI
-        $pdo->exec("DELETE FROM staff_locations WHERE staff_id IN ($idList)");
-        $pdo->exec("DELETE FROM staff_services WHERE staff_id IN ($idList)");
-        
-        // Soft delete per staff con booking
-        if (!empty($staffWithBookings)) {
-            $softDeleteIds = implode(',', $staffWithBookings);
-            $pdo->exec("UPDATE staff SET is_active = 0, is_bookable_online = 0 WHERE id IN ($softDeleteIds)");
-            echo "  Disattivati (soft delete): " . count($staffWithBookings) . " staff con booking esistenti\n";
+        if (!empty($existingStaffIds)) {
+            $idList = implode(',', $existingStaffIds);
+            echo "Gestione staff esistenti (ID: $idList)...\n";
+            
+            // Trova staff con booking (non eliminabili)
+            $stmt = $pdo->query("SELECT DISTINCT staff_id FROM booking_items WHERE staff_id IN ($idList)");
+            $staffWithBookings = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            // Staff eliminabili (senza booking)
+            $staffToDelete = array_diff($existingStaffIds, $staffWithBookings);
+            
+            // Elimina associazioni per TUTTI
+            $pdo->exec("DELETE FROM staff_locations WHERE staff_id IN ($idList)");
+            $pdo->exec("DELETE FROM staff_services WHERE staff_id IN ($idList)");
+            
+            // Soft delete per staff con booking
+            if (!empty($staffWithBookings)) {
+                $softDeleteIds = implode(',', $staffWithBookings);
+                $pdo->exec("UPDATE staff SET is_active = 0, is_bookable_online = 0 WHERE id IN ($softDeleteIds)");
+                echo "  Disattivati (soft delete): " . count($staffWithBookings) . " staff con booking esistenti\n";
+            }
+            
+            // Hard delete per staff senza booking
+            if (!empty($staffToDelete)) {
+                $deleteIds = implode(',', $staffToDelete);
+                $deleted = $pdo->exec("DELETE FROM staff WHERE id IN ($deleteIds)");
+                echo "  Eliminati fisicamente: $deleted staff senza booking\n";
+            }
+            echo "\n";
         }
-        
-        // Hard delete per staff senza booking
-        if (!empty($staffToDelete)) {
-            $deleteIds = implode(',', $staffToDelete);
-            $deleted = $pdo->exec("DELETE FROM staff WHERE id IN ($deleteIds)");
-            echo "  Eliminati fisicamente: $deleted staff senza booking\n";
-        }
-        echo "\n";
     }
     
     // Prepara statements
