@@ -588,13 +588,17 @@ Future<void> showServiceDialog(
         }
       } else {
         // Update existing service via API
+        final descriptionText = descController.text.trim();
+        final hadDescription =
+            service.description != null && service.description!.isNotEmpty;
+        final hasDescription = descriptionText.isNotEmpty;
+
         savedService = await notifier.updateServiceApi(
           serviceId: service.id,
           name: normalizedName,
           categoryId: selectedCategory!,
-          description: descController.text.trim().isEmpty
-              ? null
-              : descController.text.trim(),
+          description: hasDescription ? descriptionText : null,
+          setDescriptionNull: hadDescription && !hasDescription,
           durationMinutes: selectedDuration!,
           price: finalPrice ?? 0,
           colorHex: ColorUtils.toHex(selectedColor),

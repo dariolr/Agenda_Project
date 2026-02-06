@@ -1192,6 +1192,7 @@ class ApiClient {
     int? categoryId,
     bool setCategoryIdNull = false,
     String? description,
+    bool setDescriptionNull = false,
     int? durationMinutes,
     double? price,
     String? colorHex,
@@ -1210,7 +1211,10 @@ class ApiClient {
           'category_id': null
         else if (categoryId != null)
           'category_id': categoryId,
-        if (description != null) 'description': description,
+        if (setDescriptionNull)
+          'set_description_null': true
+        else if (description != null)
+          'description': description,
         if (durationMinutes != null) 'duration_minutes': durationMinutes,
         if (price != null) 'price': price,
         if (colorHex != null) 'color': colorHex,
