@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accedi al tuo account</title>
+  <style>
+    :root {
+      --surface: #ffffff;
+      --page: #ffffff;
+      --primary: #2196f3;
+      --primary-soft: rgba(33, 150, 243, 0.12);
+      --text: #1f1f1f;
+      --muted: #5f6368;
+      --danger: #d32f2f;
+      --danger-bg: rgba(211, 47, 47, 0.1);
+      --border: #d8dce2;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--page);
+      color: var(--text);
+    }
+
+    .appbar {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+      z-index: 2;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+
+    .container {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .top-space {
+      height: 32px;
+    }
+
+    .lock {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 32px;
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      background: rgba(33, 150, 243, 0.1);
+      border-radius: 50%;
+    }
+
+    .lock svg {
+      width: 34px;
+      height: 34px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .info {
+      display: none;
+      padding: 16px;
+      background: var(--primary-soft);
+      border: 1px solid rgba(33, 150, 243, 0.3);
+      border-radius: 12px;
+      margin-bottom: 24px;
+      color: #1f1f1f;
+      line-height: 1.4;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #4d5258;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      height: 52px;
+      padding: 0 44px 0 12px;
+      font-size: 16px;
+      color: var(--text);
+      background: #fff;
+    }
+
+    .input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.16);
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      width: 36px;
+      height: 36px;
+      border: 0;
+      border-radius: 18px;
+      background: transparent;
+      cursor: pointer;
+      color: #6e747a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toggle-password svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .toggle-password .icon-off {
+      display: none;
+    }
+
+    .toggle-password.is-visible .icon-on {
+      display: none;
+    }
+
+    .toggle-password.is-visible .icon-off {
+      display: block;
+    }
+
+    .actions-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 0 24px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .remember {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .link-btn {
+      border: 0;
+      background: transparent;
+      color: var(--primary);
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .error {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: var(--danger-bg);
+      border-radius: 8px;
+      color: var(--danger);
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .submit {
+      width: 100%;
+      height: 48px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .submit[disabled] {
+      opacity: 0.65;
+      cursor: default;
+    }
+
+    .register-row {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <header class="appbar">
+    <div class="title">Accedi al tuo account</div>
+  </header>
+
+  <main class="container">
+    <div class="top-space"></div>
+    <div class="lock" aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+        <path d="M8 10V8a4 4 0 1 1 8 0v2"></path>
+      </svg>
+    </div>
+    <div id="info-box" class="info"></div>
+
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label class="label" for="email">Email</label>
+        <div class="input-wrap">
+          <input id="email" class="input" name="email" type="email" inputmode="email"
+            autocomplete="username email" autocapitalize="none" required />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="password">Password</label>
+        <div class="input-wrap">
+          <input id="password" class="input" name="password" type="password"
+            autocomplete="current-password" required />
+          <button id="toggle-password" class="toggle-password" type="button" aria-label="Mostra password">
+            <svg class="icon-on" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg class="icon-off" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 3l18 18"></path>
+              <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path>
+              <path d="M9.9 5.1A11.7 11.7 0 0 1 12 5c6.5 0 10 7 10 7a17.3 17.3 0 0 1-4.2 5"></path>
+              <path d="M6.2 6.2A17.8 17.8 0 0 0 2 12s3.5 7 10 7c1.8 0 3.3-.5 4.6-1.2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <label class="remember">
+          <input id="remember-me" type="checkbox" checked />
+          <span>Ricordami</span>
+        </label>
+        <button id="forgot-btn" class="link-btn" type="button">Password dimenticata?</button>
+      </div>
+
+      <div id="error-box" class="error" role="alert" aria-live="polite">
+        <span>⚠</span><span id="error-text"></span>
+      </div>
+
+      <button id="submit-btn" class="submit" type="submit">Accedi</button>
+
+      <div class="register-row">
+        <span>Non hai un account?</span>
+        <button id="register-btn" class="link-btn" type="button">Registrati</button>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    (function () {
+      const form = document.getElementById("login-form");
+      const submitBtn = document.getElementById("submit-btn");
+      const forgotBtn = document.getElementById("forgot-btn");
+      const registerBtn = document.getElementById("register-btn");
+      const togglePasswordBtn = document.getElementById("toggle-password");
+      const infoBox = document.getElementById("info-box");
+      const errorBox = document.getElementById("error-box");
+      const errorText = document.getElementById("error-text");
+      const rememberMe = document.getElementById("remember-me");
+      const emailInput = document.getElementById("email");
+      const passwordInput = document.getElementById("password");
+
+      const params = new URLSearchParams(window.location.search);
+      const slug = (params.get("slug") || "").trim();
+      const from = (params.get("from") || "booking").trim();
+      const routeFrom = new Set(["booking", "my-bookings", "profile", "change-password"]).has(from) ? from : "booking";
+
+      const savedEmailKey = "agenda_frontend_saved_email";
+      const savedPasswordKey = "agenda_frontend_saved_password";
+      const savedBusinessIdKey = "agenda_business_id";
+      const savedRefreshTokenKey = "agenda_refresh_token";
+      let cachedBusinessId = null;
+
+      function showInfo(text) {
+        if (!text) {
+          infoBox.style.display = "none";
+          infoBox.textContent = "";
+          return;
+        }
+        infoBox.style.display = "block";
+        infoBox.textContent = text;
+      }
+
+      function showError(message) {
+        if (!message) {
+          errorBox.style.display = "none";
+          errorText.textContent = "";
+          return;
+        }
+        errorBox.style.display = "flex";
+        errorText.textContent = message;
+      }
+
+      function setLoading(loading) {
+        submitBtn.disabled = loading;
+        submitBtn.textContent = loading ? "Accesso..." : "Accedi";
+      }
+
+      function resolveApiBase() {
+        const host = window.location.hostname;
+        const port = window.location.port;
+        if (host.includes("localhost") || host === "127.0.0.1") {
+          // Debug mapping:
+          // - localhost:8080 => production API
+          // - localhost:8081 => local API
+          if (port === "8080") return "https://api.romeolab.it";
+          return "http://localhost:8888";
+        }
+        if (host.includes("prenota-staging")) return "https://api-staging.romeolab.it";
+        return "https://api.romeolab.it";
+      }
+
+      const apiBase = resolveApiBase();
+
+      function safeDecodeBase64(value) {
+        try {
+          return decodeURIComponent(escape(window.atob(value)));
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function safeEncodeBase64(value) {
+        return window.btoa(unescape(encodeURIComponent(value)));
+      }
+
+      function restoreSavedCredentials() {
+        const encodedEmail = window.localStorage.getItem(savedEmailKey);
+        const encodedPassword = window.localStorage.getItem(savedPasswordKey);
+        if (!encodedEmail || !encodedPassword) return;
+        const decodedEmail = safeDecodeBase64(encodedEmail);
+        const decodedPassword = safeDecodeBase64(encodedPassword);
+        if (decodedEmail) emailInput.value = decodedEmail;
+        if (decodedPassword) passwordInput.value = decodedPassword;
+        rememberMe.checked = true;
+      }
+
+      function persistCredentials(email, password) {
+        if (!rememberMe.checked) {
+          window.localStorage.removeItem(savedEmailKey);
+          window.localStorage.removeItem(savedPasswordKey);
+          return;
+        }
+        window.localStorage.setItem(savedEmailKey, safeEncodeBase64(email));
+        window.localStorage.setItem(savedPasswordKey, safeEncodeBase64(password));
+      }
+
+      function persistSessionContext(businessId) {
+        // Keep the same keys used by Flutter Web token storage.
+        window.localStorage.setItem(savedBusinessIdKey, String(businessId));
+        // Refresh token is now managed via httpOnly cookie on web.
+        // Remove stale client-stored token to avoid wrong refresh fallback.
+        window.localStorage.removeItem(savedRefreshTokenKey);
+      }
+
+      async function getBusinessId() {
+        if (cachedBusinessId !== null) return cachedBusinessId;
+        const url = `${apiBase}/v1/businesses/by-slug/${encodeURIComponent(slug)}`;
+        const response = await fetch(url, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          credentials: "include",
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload || payload.success !== true || typeof payload.data?.id !== "number") {
+          throw new Error("Business non trovato");
+        }
+        cachedBusinessId = payload.data.id;
+        return cachedBusinessId;
+      }
+
+      async function login(businessId, email, password) {
+        const url = `${apiBase}/v1/customer/${businessId}/auth/login`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        });
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload || payload.success !== true) {
+          const code = payload && payload.error && payload.error.code;
+          if (code === "invalid_credentials") throw new Error("Credenziali non valide");
+          throw new Error("Accesso non riuscito. Riprova.");
+        }
+      }
+
+      async function requestPasswordReset() {
+        const enteredEmail = window.prompt("Inserisci la tua email per recuperare la password", emailInput.value.trim());
+        if (!enteredEmail) return;
+        const businessId = await getBusinessId();
+        const response = await fetch(`${apiBase}/v1/customer/${businessId}/auth/forgot-password`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email: enteredEmail.trim() }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload || payload.success !== true) {
+          const code = payload && payload.error && payload.error.code;
+          if (code === "email_not_found") throw new Error("Email non trovata nel sistema. Verifica l'indirizzo o registrati.");
+          throw new Error("Errore durante l'invio. Riprova.");
+        }
+        window.alert("Email inviata! Controlla la tua casella di posta.");
+      }
+
+      togglePasswordBtn.addEventListener("click", function () {
+        const isPassword = passwordInput.type === "password";
+        passwordInput.type = isPassword ? "text" : "password";
+        togglePasswordBtn.classList.toggle("is-visible", isPassword);
+        togglePasswordBtn.setAttribute(
+          "aria-label",
+          isPassword ? "Nascondi password" : "Mostra password"
+        );
+      });
+
+      registerBtn.addEventListener("click", function () {
+        if (!slug) return;
+        const next = new URLSearchParams();
+        const email = emailInput.value.trim();
+        if (email) next.set("email", email);
+        if (routeFrom) next.set("from", routeFrom);
+        const query = next.toString();
+        window.location.assign(`/${encodeURIComponent(slug)}/register${query ? `?${query}` : ""}`);
+      });
+
+      forgotBtn.addEventListener("click", async function () {
+        showError("");
+        try {
+          await requestPasswordReset();
+        } catch (error) {
+          showError(error && error.message ? error.message : "Errore durante l'invio. Riprova.");
+        }
+      });
+
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        showError("");
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!slug) return showError("Link non valido: business mancante.");
+        if (!email || !password) return showError("Campo obbligatorio");
+        if (!email.includes("@")) return showError("Email non valida");
+
+        setLoading(true);
+        try {
+          const businessId = await getBusinessId();
+          await login(businessId, email, password);
+          persistSessionContext(businessId);
+          persistCredentials(email, password);
+          window.location.assign(`/${encodeURIComponent(slug)}/${routeFrom}`);
+        } catch (error) {
+          showError(error && error.message ? error.message : "Accesso non riuscito. Riprova.");
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      if (from === "my-bookings") {
+        showInfo("Per visualizzare i tuoi appuntamenti, accedi con il tuo account o registrati se non ne hai ancora uno.");
+      } else if (from === "booking") {
+        showInfo("Per prenotare un appuntamento, accedi con il tuo account o registrati se non ne hai ancora uno.");
+      }
+
+      restoreSavedCredentials();
+    })();
+  </script>
+</body>
+</html>

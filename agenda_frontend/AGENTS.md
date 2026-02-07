@@ -307,9 +307,18 @@ if (success) {
 
 ### Route protette (richiedono autenticazione)
 Le seguenti route richiedono autenticazione. Se l'utente non è autenticato, viene reindirizzato a `/:slug/login`:
+- `/:slug/booking`
 - `/:slug/my-bookings`
 - `/:slug/profile`
 - `/:slug/change-password`
+
+### Login Web Nativo (07/02/2026)
+- Su web, la route `/:slug/login` reindirizza a `web/login.html` (form HTML nativo).
+- Su non-web rimane la `LoginScreen` Flutter.
+- `login.html` usa:
+  - `GET /v1/businesses/by-slug/{slug}` per ricavare `business_id`
+  - `POST /v1/customer/{business_id}/auth/login` con `credentials: include`
+- Per sicurezza, `login.html` NON supporta `api_base` via query string.
 
 ### Provider chiave
 - `routeSlugProvider` — StateProvider aggiornato dal router con lo slug corrente

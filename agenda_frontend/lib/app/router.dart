@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +10,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
+import '../features/auth/presentation/web_login_redirect_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/booking/presentation/screens/booking_screen.dart';
 import '../features/booking/presentation/screens/my_bookings_screen.dart';
@@ -84,8 +86,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         final subPath = pathSegments.length > 1 ? pathSegments[1] : '';
 
         // Route protette che richiedono autenticazione
-        // NOTA: 'booking' NON è protetta - i clienti devono poter prenotare senza login
-        const protectedRoutes = {'my-bookings', 'profile', 'change-password'};
+        const protectedRoutes = {
+          'booking',
+          'my-bookings',
+          'profile',
+          'change-password',
+        };
 
         // Se non autenticato e cerca di accedere a route protetta, redirect a login
         // Ma solo se auth è ready! Altrimenti aspettiamo che il session restore completi
@@ -146,6 +152,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'business-login',
         builder: (context, state) {
           final from = state.uri.queryParameters['from'];
+          final slug = state.pathParameters['slug'] ?? '';
+          if (kIsWeb) {
+            return WebLoginRedirectScreen(slug: slug, from: from);
+          }
           return LoginScreen(redirectFrom: from);
         },
       ),
