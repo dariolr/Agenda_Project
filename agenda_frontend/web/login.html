@@ -313,6 +313,7 @@
       const savedBusinessIdKey = "agenda_business_id";
       const savedRefreshTokenKey = "agenda_refresh_token";
       let cachedBusinessId = null;
+      let isSubmitting = false;
 
       function showInfo(text) {
         if (!text) {
@@ -335,6 +336,7 @@
       }
 
       function setLoading(loading) {
+        isSubmitting = loading;
         submitBtn.disabled = loading;
         submitBtn.textContent = loading ? "Accesso..." : "Accedi";
       }
@@ -479,25 +481,43 @@
 
       form.addEventListener("submit", async function (event) {
         event.preventDefault();
+        if (isSubmitting) return;
+        setLoading(true);
         showError("");
         const email = emailInput.value.trim();
         const password = passwordInput.value;
 
-        if (!slug) return showError("Link non valido: business mancante.");
-        if (!email || !password) return showError("Campo obbligatorio");
-        if (!email.includes("@")) return showError("Email non valida");
+        if (!slug) {
+          showError("Link non valido: business mancante.");
+          setLoading(false);
+          return;
+        }
+        if (!email || !password) {
+          showError("Campo obbligatorio");
+          setLoading(false);
+          return;
+        }
+        if (!email.includes("@")) {
+          showError("Email non valida");
+          setLoading(false);
+          return;
+        }
 
-        setLoading(true);
+        let loginSucceeded = false;
         try {
           const businessId = await getBusinessId();
           await login(businessId, email, password);
+          loginSucceeded = true;
           persistSessionContext(businessId);
           persistCredentials(email, password);
           window.location.assign(`/${encodeURIComponent(slug)}/${routeFrom}`);
         } catch (error) {
           showError(error && error.message ? error.message : "Accesso non riuscito. Riprova.");
         } finally {
-          setLoading(false);
+          // Keep button disabled while browser navigates to the next page.
+          if (!loginSucceeded) {
+            setLoading(false);
+          }
         }
       });
 
