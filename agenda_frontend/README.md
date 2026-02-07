@@ -41,8 +41,8 @@ L'app supporta più business tramite URL path-based:
 |-----|---------------|
 | `/` | Landing page "Business non specificato" |
 | `/:slug` | Redirect a `/:slug/booking` |
-| `/:slug/booking` | Schermata prenotazione |
-| `/:slug/login` | Login |
+| `/:slug/booking` | Schermata prenotazione (auth required) |
+| `/:slug/login` | Login (su web redirect a `login.html`) |
 | `/:slug/register` | Registrazione |
 | `/:slug/my-bookings` | Le mie prenotazioni |
 | `/reset-password/:token` | Reset password (globale) |
@@ -51,6 +51,20 @@ L'app supporta più business tramite URL path-based:
 - `lib/app/providers/route_slug_provider.dart` — StateProvider aggiornato dal router
 - `lib/app/router.dart` — Estrae slug dal path e aggiorna provider
 - `lib/features/booking/providers/business_provider.dart` — Carica business da API
+
+### Route protette
+- `/:slug/booking`
+- `/:slug/my-bookings`
+- `/:slug/profile`
+- `/:slug/change-password`
+
+Quando non autenticato, il router reindirizza a `/:slug/login?from={route}`.
+
+### Login web nativo (07/02/2026)
+- Su web, `/:slug/login` reindirizza a `web/login.html` (form HTML nativo).
+- Obiettivo: migliore compatibilità autofill/password manager su iOS Safari e webview.
+- `login.html` usa endpoint customer auth e cookie refresh (`credentials: include`).
+- Per sicurezza, `login.html` NON accetta `api_base` da query string: l'API base è derivata dall'host corrente.
 
 ### ⚠️ NON usare SubdomainResolver
 `SubdomainResolver.getBusinessSlug()` legge `Uri.base` (statico). Usare sempre `routeSlugProvider`.

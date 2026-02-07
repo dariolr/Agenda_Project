@@ -299,17 +299,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         elevation: 0,
         scrolledUnderElevation: 0.5,
         centerTitle: true,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            size: 20,
-            color: colorScheme.onSurface,
-          ),
-          onPressed: () {
-            final slug = ref.read(routeSlugProvider);
-            context.go('/$slug/booking');
-          },
-        ),
         title: Text(
           l10n.authLoginTitle,
           style: theme.textTheme.titleLarge?.copyWith(
