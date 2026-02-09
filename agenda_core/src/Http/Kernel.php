@@ -446,7 +446,7 @@ final class Kernel
                 $userRepo
             ),
             BusinessUsersController::class => new BusinessUsersController($businessRepo, $businessUserRepo, $businessInvitationRepo, $sessionRepo, $userRepo),
-            BusinessInvitationsController::class => new BusinessInvitationsController($businessRepo, $businessUserRepo, $businessInvitationRepo, $locationRepo, $userRepo, $registerUser),
+            BusinessInvitationsController::class => new BusinessInvitationsController($businessRepo, $businessUserRepo, $businessInvitationRepo, $locationRepo, $staffRepo, $userRepo, $registerUser),
             StaffAvailabilityExceptionController::class => new StaffAvailabilityExceptionController($staffExceptionRepo, $staffRepo, $businessUserRepo, $userRepo),
             StaffPlanningController::class => new StaffPlanningController($staffPlanningRepo, $staffRepo, $businessUserRepo, $userRepo),
             ResourcesController::class => new ResourcesController($resourceRepo, $locationRepo, $businessUserRepo, $userRepo, $variantResourceRepo),

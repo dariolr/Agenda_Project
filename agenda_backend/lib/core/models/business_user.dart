@@ -4,6 +4,7 @@ class BusinessUser {
   final int userId;
   final int businessId;
   final String role;
+  final int? staffId;
   final String scopeType; // 'business' o 'locations'
   final List<int>
   locationIds; // IDs delle location accessibili (se scopeType='locations')
@@ -20,6 +21,7 @@ class BusinessUser {
     required this.userId,
     required this.businessId,
     required this.role,
+    this.staffId,
     this.scopeType = 'business',
     this.locationIds = const [],
     required this.email,
@@ -61,6 +63,7 @@ class BusinessUser {
     int? userId,
     int? businessId,
     String? role,
+    int? staffId,
     String? scopeType,
     List<int>? locationIds,
     String? email,
@@ -75,6 +78,7 @@ class BusinessUser {
     userId: userId ?? this.userId,
     businessId: businessId ?? this.businessId,
     role: role ?? this.role,
+    staffId: staffId ?? this.staffId,
     scopeType: scopeType ?? this.scopeType,
     locationIds: locationIds ?? this.locationIds,
     email: email ?? this.email,
@@ -91,6 +95,7 @@ class BusinessUser {
     userId: _asInt(json['user_id']),
     businessId: _asInt(json['business_id']),
     role: json['role'] as String,
+    staffId: json['staff_id'] != null ? _asInt(json['staff_id']) : null,
     scopeType: json['scope_type'] as String? ?? 'business',
     locationIds:
         (json['location_ids'] as List<dynamic>?)
@@ -124,6 +129,7 @@ class BusinessUser {
     'user_id': userId,
     'business_id': businessId,
     'role': role,
+    'staff_id': staffId,
     'scope_type': scopeType,
     'location_ids': locationIds,
     'email': email,

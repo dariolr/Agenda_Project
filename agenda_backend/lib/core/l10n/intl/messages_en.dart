@@ -1035,6 +1035,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "operatorsRoleStaffDesc": MessageLookupByLibrary.simpleMessage(
       "Views and manages only own appointments. Can create bookings assigned to themselves.",
     ),
+    "operatorsRoleViewer": MessageLookupByLibrary.simpleMessage("Viewer"),
+    "operatorsRoleViewerDesc": MessageLookupByLibrary.simpleMessage(
+      "Can view appointments, services, staff, and availability. No edits allowed.",
+    ),
     "operatorsScopeBusiness": MessageLookupByLibrary.simpleMessage(
       "All locations",
     ),
