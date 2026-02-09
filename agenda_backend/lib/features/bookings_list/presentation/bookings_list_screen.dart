@@ -38,6 +38,38 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   final Set<int> _selectedServiceIds = {};
   Set<String> _selectedStatuses = {'confirmed'};
 
+  List<Staff> _staffScopedByLocations({
+    required List<Staff> staff,
+    required Set<int> visibleLocationIds,
+    Set<int>? selectedLocationIds,
+  }) {
+    final scopeLocationIds =
+        (selectedLocationIds != null && selectedLocationIds.isNotEmpty)
+        ? selectedLocationIds
+        : visibleLocationIds;
+
+    return staff.where((s) {
+      if (s.locationIds.isEmpty) return true;
+      return s.locationIds.any(scopeLocationIds.contains);
+    }).toList();
+  }
+
+  List<Service> _servicesScopedByLocations({
+    required List<Service> services,
+    required Set<int> visibleLocationIds,
+    Set<int>? selectedLocationIds,
+  }) {
+    final scopeLocationIds =
+        (selectedLocationIds != null && selectedLocationIds.isNotEmpty)
+        ? selectedLocationIds
+        : visibleLocationIds;
+
+    return services.where((s) {
+      if (s.locationId == null) return true;
+      return scopeLocationIds.contains(s.locationId);
+    }).toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -175,11 +207,31 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     );
 
     if (selected != null) {
-      setState(
-        () => _selectedLocationIds
-          ..clear()
-          ..addAll(selected),
+      final visibleLocationIds = locations.map((l) => l.id).toSet();
+      final staff = ref.read(allStaffProvider).value ?? [];
+      final services = ref.read(servicesProvider).value ?? [];
+      final filteredStaff = _staffScopedByLocations(
+        staff: staff,
+        visibleLocationIds: visibleLocationIds,
+        selectedLocationIds: selected,
       );
+      final filteredServices = _servicesScopedByLocations(
+        services: services,
+        visibleLocationIds: visibleLocationIds,
+        selectedLocationIds: selected,
+      );
+      final allowedStaffIds = filteredStaff.map((s) => s.id).toSet();
+      final allowedServiceIds = filteredServices.map((s) => s.id).toSet();
+
+      setState(() {
+        _selectedLocationIds
+          ..clear()
+          ..addAll(selected);
+        _selectedStaffIds.removeWhere((id) => !allowedStaffIds.contains(id));
+        _selectedServiceIds.removeWhere(
+          (id) => !allowedServiceIds.contains(id),
+        );
+      });
       _loadInitialData();
     }
   }
@@ -190,11 +242,11 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         .read(locationsProvider)
         .map((l) => l.id)
         .toSet();
-    final filteredStaff = staff.where((s) {
-      // Staff senza location esplicite è trattato come globale
-      if (s.locationIds.isEmpty) return true;
-      return s.locationIds.any(visibleLocationIds.contains);
-    }).toList();
+    final filteredStaff = _staffScopedByLocations(
+      staff: staff,
+      visibleLocationIds: visibleLocationIds,
+      selectedLocationIds: _selectedLocationIds,
+    );
     if (filteredStaff.isEmpty) return;
 
     final selected = await showDialog<Set<int>>(
@@ -215,13 +267,22 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
 
   void _showServiceFilter(BuildContext context) async {
     final services = ref.read(servicesProvider).value ?? [];
+    final visibleLocationIds = ref
+        .read(locationsProvider)
+        .map((l) => l.id)
+        .toSet();
+    final filteredServices = _servicesScopedByLocations(
+      services: services,
+      visibleLocationIds: visibleLocationIds,
+      selectedLocationIds: _selectedLocationIds,
+    );
     final categories = ref.read(serviceCategoriesProvider);
-    if (services.isEmpty) return;
+    if (filteredServices.isEmpty) return;
 
     final selected = await showDialog<Set<int>>(
       context: context,
       builder: (ctx) => _ServiceFilterDialog(
-        services: services,
+        services: filteredServices,
         categories: categories,
         selected: _selectedServiceIds,
       ),
@@ -351,10 +412,21 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
           final locations = ref.watch(locationsProvider);
           final staff = ref.watch(allStaffProvider).value ?? [];
           final services = ref.watch(servicesProvider).value ?? [];
+          final visibleLocationIds = locations.map((l) => l.id).toSet();
+          final filteredStaff = _staffScopedByLocations(
+            staff: staff,
+            visibleLocationIds: visibleLocationIds,
+            selectedLocationIds: _selectedLocationIds,
+          );
+          final filteredServices = _servicesScopedByLocations(
+            services: services,
+            visibleLocationIds: visibleLocationIds,
+            selectedLocationIds: _selectedLocationIds,
+          );
 
           final hasMultipleLocations = locations.length > 1;
-          final hasMultipleStaff = staff.length > 1;
-          final hasMultipleServices = services.length > 1;
+          final hasMultipleStaff = filteredStaff.length > 1;
+          final hasMultipleServices = filteredServices.length > 1;
 
           return Wrap(
             alignment: WrapAlignment.start,
