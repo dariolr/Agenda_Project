@@ -7,7 +7,7 @@ namespace Agenda\UseCases\Admin;
 use Agenda\Infrastructure\Database\Connection;
 
 /**
- * Esporta tutti i dati di un business per sincronizzazione staging.
+ * Esporta tutti i dati di un business.
  * NON include: sessioni, token, notification_queue
  */
 final class ExportBusiness

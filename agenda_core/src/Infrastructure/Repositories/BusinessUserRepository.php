@@ -109,6 +109,52 @@ final class BusinessUserRepository
     }
 
     /**
+     * Check if user has a specific permission in a business.
+     * Owner is always allowed.
+     */
+    public function hasPermission(
+        int $userId,
+        int $businessId,
+        string $permission,
+        bool $isSuperadmin = false
+    ): bool {
+        if ($isSuperadmin) {
+            return true;
+        }
+
+        $allowedPermissions = [
+            'can_manage_bookings',
+            'can_manage_clients',
+            'can_manage_services',
+            'can_manage_staff',
+            'can_view_reports',
+        ];
+
+        if (!in_array($permission, $allowedPermissions, true)) {
+            return false;
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT role, {$permission} AS permission_value
+             FROM business_users
+             WHERE user_id = ? AND business_id = ? AND is_active = 1
+             LIMIT 1"
+        );
+        $stmt->execute([$userId, $businessId]);
+        $row = $stmt->fetch();
+
+        if (!$row) {
+            return false;
+        }
+
+        if (($row['role'] ?? null) === 'owner') {
+            return true;
+        }
+
+        return (bool) ((int) ($row['permission_value'] ?? 0));
+    }
+
+    /**
      * Get user's role in a business.
      * Returns null if no access.
      */
@@ -166,6 +212,9 @@ final class BusinessUserRepository
      */
     public function create(array $data): int
     {
+        $role = $data['role'] ?? 'staff';
+        $defaultPermissions = $this->defaultPermissionsForRole($role);
+
         // Check if there's an existing (possibly deactivated) record
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, is_active FROM business_users 
@@ -178,6 +227,22 @@ final class BusinessUserRepository
         $locationIds = $data['location_ids'] ?? [];
 
         if ($existing) {
+            $canManageBookings = $this->toDbBoolInt(
+                $data['can_manage_bookings'] ?? $defaultPermissions['can_manage_bookings']
+            );
+            $canManageClients = $this->toDbBoolInt(
+                $data['can_manage_clients'] ?? $defaultPermissions['can_manage_clients']
+            );
+            $canManageServices = $this->toDbBoolInt(
+                $data['can_manage_services'] ?? $defaultPermissions['can_manage_services']
+            );
+            $canManageStaff = $this->toDbBoolInt(
+                $data['can_manage_staff'] ?? $defaultPermissions['can_manage_staff']
+            );
+            $canViewReports = $this->toDbBoolInt(
+                $data['can_view_reports'] ?? $defaultPermissions['can_view_reports']
+            );
+
             // Reactivate and update existing record
             $updateStmt = $this->db->getPdo()->prepare(
                 'UPDATE business_users SET
@@ -189,14 +254,14 @@ final class BusinessUserRepository
                  WHERE id = ?'
             );
             $updateStmt->execute([
-                $data['role'] ?? 'staff',
+                $role,
                 $scopeType,
                 $data['staff_id'] ?? null,
-                $data['can_manage_bookings'] ?? 1,
-                $data['can_manage_clients'] ?? 1,
-                $data['can_manage_services'] ?? 0,
-                $data['can_manage_staff'] ?? 0,
-                $data['can_view_reports'] ?? 0,
+                $canManageBookings,
+                $canManageClients,
+                $canManageServices,
+                $canManageStaff,
+                $canViewReports,
                 $data['invited_by'] ?? null,
                 $data['invited_at'] ?? null,
                 $data['accepted_at'] ?? date('Y-m-d H:i:s'),
@@ -214,6 +279,22 @@ final class BusinessUserRepository
         }
 
         // Insert new record
+        $canManageBookings = $this->toDbBoolInt(
+            $data['can_manage_bookings'] ?? $defaultPermissions['can_manage_bookings']
+        );
+        $canManageClients = $this->toDbBoolInt(
+            $data['can_manage_clients'] ?? $defaultPermissions['can_manage_clients']
+        );
+        $canManageServices = $this->toDbBoolInt(
+            $data['can_manage_services'] ?? $defaultPermissions['can_manage_services']
+        );
+        $canManageStaff = $this->toDbBoolInt(
+            $data['can_manage_staff'] ?? $defaultPermissions['can_manage_staff']
+        );
+        $canViewReports = $this->toDbBoolInt(
+            $data['can_view_reports'] ?? $defaultPermissions['can_view_reports']
+        );
+
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO business_users 
                 (business_id, user_id, role, scope_type, staff_id, 
@@ -225,14 +306,14 @@ final class BusinessUserRepository
         $stmt->execute([
             $data['business_id'],
             $data['user_id'],
-            $data['role'] ?? 'staff',
+            $role,
             $scopeType,
             $data['staff_id'] ?? null,
-            $data['can_manage_bookings'] ?? 1,
-            $data['can_manage_clients'] ?? 1,
-            $data['can_manage_services'] ?? 0,
-            $data['can_manage_staff'] ?? 0,
-            $data['can_view_reports'] ?? 0,
+            $canManageBookings,
+            $canManageClients,
+            $canManageServices,
+            $canManageStaff,
+            $canViewReports,
             $data['invited_by'] ?? null,
             $data['invited_at'] ?? null,
             $data['accepted_at'] ?? date('Y-m-d H:i:s'),
@@ -246,6 +327,84 @@ final class BusinessUserRepository
         }
 
         return $businessUserId;
+    }
+
+    /**
+     * Role-based default permissions for new/reactivated business users.
+     *
+     * owner/admin: full access
+     * manager: agenda + clients
+     * staff: own operational access (bookings only from permission flags perspective)
+     *
+     * @return array{
+     *   can_manage_bookings: bool,
+     *   can_manage_clients: bool,
+     *   can_manage_services: bool,
+     *   can_manage_staff: bool,
+     *   can_view_reports: bool
+     * }
+     */
+    private function defaultPermissionsForRole(string $role): array
+    {
+        return match ($role) {
+            'owner', 'admin' => [
+                'can_manage_bookings' => true,
+                'can_manage_clients' => true,
+                'can_manage_services' => true,
+                'can_manage_staff' => true,
+                'can_view_reports' => true,
+            ],
+            'manager' => [
+                'can_manage_bookings' => true,
+                'can_manage_clients' => true,
+                'can_manage_services' => false,
+                'can_manage_staff' => false,
+                'can_view_reports' => false,
+            ],
+            'staff' => [
+                'can_manage_bookings' => true,
+                'can_manage_clients' => false,
+                'can_manage_services' => false,
+                'can_manage_staff' => false,
+                'can_view_reports' => false,
+            ],
+            'viewer' => [
+                'can_manage_bookings' => false,
+                'can_manage_clients' => false,
+                'can_manage_services' => false,
+                'can_manage_staff' => false,
+                'can_view_reports' => false,
+            ],
+            default => [
+                'can_manage_bookings' => false,
+                'can_manage_clients' => false,
+                'can_manage_services' => false,
+                'can_manage_staff' => false,
+                'can_view_reports' => false,
+            ],
+        };
+    }
+
+    /**
+     * Normalize permission values to DB-safe tinyint (0/1).
+     * Prevents PDO from sending empty string for false in strict SQL mode.
+     */
+    private function toDbBoolInt(mixed $value): int
+    {
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+        if (is_numeric($value)) {
+            return ((int) $value) === 1 ? 1 : 0;
+        }
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+            if ($normalized === '1' || $normalized === 'true' || $normalized === 'yes') {
+                return 1;
+            }
+            return 0;
+        }
+        return 0;
     }
 
     /**
@@ -329,6 +488,9 @@ final class BusinessUserRepository
      */
     public function delete(int $id): bool
     {
+        // Keep pivot table coherent on soft-delete.
+        $this->setLocationIds($id, []);
+
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE business_users SET is_active = 0 WHERE id = ?'
         );
@@ -341,6 +503,16 @@ final class BusinessUserRepository
      */
     public function removeUserFromBusiness(int $userId, int $businessId): bool
     {
+        // Clear assigned locations for every matching association before deactivation.
+        $findStmt = $this->db->getPdo()->prepare(
+            'SELECT id FROM business_users WHERE user_id = ? AND business_id = ?'
+        );
+        $findStmt->execute([$userId, $businessId]);
+        $rows = $findStmt->fetchAll();
+        foreach ($rows as $row) {
+            $this->setLocationIds((int) $row['id'], []);
+        }
+
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE business_users SET is_active = 0 
              WHERE user_id = ? AND business_id = ?'
@@ -355,10 +527,11 @@ final class BusinessUserRepository
     public function canAssignRole(string $assignerRole, string $targetRole): bool
     {
         $hierarchy = [
-            'owner' => ['owner', 'admin', 'manager', 'staff'],
-            'admin' => ['admin', 'manager', 'staff'],
+            'owner' => ['owner', 'admin', 'manager', 'staff', 'viewer'],
+            'admin' => ['admin', 'manager', 'staff', 'viewer'],
             'manager' => [],
             'staff' => [],
+            'viewer' => [],
         ];
 
         return in_array($targetRole, $hierarchy[$assignerRole] ?? [], true);

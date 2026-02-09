@@ -34,9 +34,11 @@ final class AppointmentsController
     ) {}
 
     /**
-     * Check if authenticated user has access to the given business.
+     * Check if authenticated user can access appointments in the given business.
+     * - write operations: requires can_manage_bookings
+     * - read operations: allows role=viewer too
      */
-    private function hasBusinessAccess(Request $request, int $businessId): bool
+    private function hasBusinessAccess(Request $request, int $businessId, bool $allowReadOnly = false): bool
     {
         $userId = $request->getAttribute('user_id');
         if ($userId === null) {
@@ -48,8 +50,15 @@ final class AppointmentsController
             return true;
         }
 
-        // Normal user: check business_users table
-        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+        if ($allowReadOnly) {
+            $role = $this->businessUserRepo->getRole($userId, $businessId);
+            if ($role === 'viewer') {
+                return true;
+            }
+        }
+
+        // Normal user: enforce bookings permission for write access
+        return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_bookings', false);
     }
 
     /**
@@ -67,7 +76,7 @@ final class AppointmentsController
         }
 
         // Authorization check (middleware should set business_id)
-        if ($businessId && !$this->hasBusinessAccess($request, (int) $businessId)) {
+        if ($businessId && !$this->hasBusinessAccess($request, (int) $businessId, true)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
@@ -99,7 +108,7 @@ final class AppointmentsController
         
         if ($location) {
             $businessId = (int) $location['business_id'];
-            if (!$this->hasBusinessAccess($request, $businessId)) {
+            if (!$this->hasBusinessAccess($request, $businessId, true)) {
                 return Response::notFound('Appointment not found');
             }
         }

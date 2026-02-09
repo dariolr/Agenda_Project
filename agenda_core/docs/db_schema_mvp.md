@@ -194,10 +194,10 @@ Inviti via email per nuovi operatori del business.
 | id | INT UNSIGNED PK AUTO_INCREMENT | |
 | business_id | INT UNSIGNED FK NOT NULL | |
 | email | VARCHAR(255) NOT NULL | Email destinatario |
-| role | ENUM('admin','manager','staff') DEFAULT 'staff' | Ruolo assegnato |
+| role | ENUM('admin','manager','staff','viewer') DEFAULT 'staff' | Ruolo assegnato |
 | token | VARCHAR(64) NOT NULL UNIQUE | Token hex 64 caratteri |
 | expires_at | TIMESTAMP NOT NULL | Default: +7 giorni |
-| status | ENUM('pending','accepted','expired','revoked') DEFAULT 'pending' | |
+| status | ENUM('pending','accepted','expired','declined','revoked') DEFAULT 'pending' | |
 | accepted_by | INT UNSIGNED FK NULL | User che ha accettato |
 | accepted_at | TIMESTAMP NULL | |
 | invited_by | INT UNSIGNED FK NOT NULL | User che ha invitato |
@@ -216,6 +216,10 @@ UNIQUE (business_id, email, status) - un solo invito pending per email
 2. Email inviata con link `/invite/{token}`
 3. Destinatario apre link, fa login/register
 4. `POST /v1/invitations/{token}/accept` → crea record `business_users`
+
+**Gestione lifecycle:**
+- Invito pending revocato: eliminazione diretta record.
+- Revoca accesso operatore: eliminazione eventuali inviti accepted collegati.
 
 ### 4. auth_sessions
 Sessioni di autenticazione con refresh token (hash, mai in chiaro).

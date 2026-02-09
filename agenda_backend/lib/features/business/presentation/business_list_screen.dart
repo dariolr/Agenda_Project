@@ -12,7 +12,6 @@ import '../providers/business_providers.dart';
 import '../providers/superadmin_selected_business_provider.dart';
 import 'dialogs/create_business_dialog.dart';
 import 'dialogs/edit_business_dialog.dart';
-import 'dialogs/sync_to_staging_dialog.dart';
 
 /// Schermata lista business per superadmin.
 /// Mostra tutti i business con possibilità di selezionarne uno o crearne uno nuovo.
@@ -44,8 +43,6 @@ class BusinessListScreen extends ConsumerWidget {
               _showResendInviteDialog(context, ref, business),
           onSuspend: (business) => _showSuspendDialog(context, ref, business),
           onDelete: (business) => _showDeleteDialog(context, ref, business),
-          onSyncToStaging: (business) =>
-              _showSyncToStagingDialog(context, ref, business),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -85,7 +82,7 @@ class BusinessListScreen extends ConsumerWidget {
 
   void _selectBusiness(BuildContext context, WidgetRef ref, Business business) {
     // Imposta il business corrente
-    ref.read(currentBusinessIdProvider.notifier).set(business.id);
+    ref.read(currentBusinessIdProvider.notifier).selectByUser(business.id);
     // Segna che il superadmin ha selezionato un business
     ref.read(superadminSelectedBusinessProvider.notifier).select(business.id);
     // Naviga all'agenda
@@ -385,19 +382,6 @@ class BusinessListScreen extends ConsumerWidget {
       }
     }
   }
-
-  /// Mostra dialog per copiare un business su staging
-  Future<void> _showSyncToStagingDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Business business,
-  ) async {
-    final synced = await showSyncToStagingDialog(context, business);
-    if (synced == true && context.mounted) {
-      // Forza il refresh della lista
-      ref.read(businessesRefreshProvider.notifier).refresh();
-    }
-  }
 }
 
 class _BusinessList extends StatelessWidget {
@@ -408,7 +392,6 @@ class _BusinessList extends StatelessWidget {
     required this.onResendInvite,
     required this.onSuspend,
     required this.onDelete,
-    required this.onSyncToStaging,
   });
 
   final List<Business> businesses;
@@ -417,7 +400,6 @@ class _BusinessList extends StatelessWidget {
   final void Function(Business) onResendInvite;
   final void Function(Business) onSuspend;
   final void Function(Business) onDelete;
-  final void Function(Business) onSyncToStaging;
 
   @override
   Widget build(BuildContext context) {
@@ -480,7 +462,6 @@ class _BusinessList extends StatelessWidget {
               onResendInvite: () => onResendInvite(business),
               onSuspend: () => onSuspend(business),
               onDelete: () => onDelete(business),
-              onSyncToStaging: () => onSyncToStaging(business),
             );
           },
         );
@@ -497,7 +478,6 @@ class _BusinessCard extends StatelessWidget {
     required this.onResendInvite,
     required this.onSuspend,
     required this.onDelete,
-    required this.onSyncToStaging,
   });
 
   final Business business;
@@ -506,7 +486,6 @@ class _BusinessCard extends StatelessWidget {
   final VoidCallback onResendInvite;
   final VoidCallback onSuspend;
   final VoidCallback onDelete;
-  final VoidCallback onSyncToStaging;
 
   @override
   Widget build(BuildContext context) {
@@ -649,8 +628,6 @@ class _BusinessCard extends StatelessWidget {
                       onSuspend();
                     case 'delete':
                       onDelete();
-                    case 'sync':
-                      onSyncToStaging();
                   }
                 },
                 itemBuilder: (context) => [
@@ -668,19 +645,6 @@ class _BusinessCard extends StatelessWidget {
                     child: ListTile(
                       leading: Icon(Icons.email_outlined),
                       title: Text('Reinvia invito'),
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                    ),
-                  ),
-                  // Copia su Staging
-                  const PopupMenuItem(
-                    value: 'sync',
-                    child: ListTile(
-                      leading: Icon(
-                        Icons.cloud_upload_outlined,
-                        color: Colors.blue,
-                      ),
-                      title: Text('Copia su Staging'),
                       contentPadding: EdgeInsets.zero,
                       dense: true,
                     ),

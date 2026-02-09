@@ -11,7 +11,7 @@ use Agenda\UseCases\Admin\ImportBusiness;
 use Agenda\Infrastructure\Repositories\UserRepository;
 
 /**
- * Controller per sincronizzazione business tra ambienti (prod → staging)
+ * Controller per sincronizzazione business tra ambienti
  * Accessibile SOLO ai superadmin
  */
 final class BusinessSyncController
@@ -81,7 +81,6 @@ final class BusinessSyncController
      * - notification_queue
      * - auth_sessions
      * - client_sessions
-     * Usato per sync Staging → Produzione
      */
     public function import(Request $request): Response
     {
@@ -128,7 +127,7 @@ final class BusinessSyncController
     
     /**
      * POST /v1/admin/businesses/sync-from-production
-     * Sincronizza un business da produzione (solo per ambiente staging)
+     * Sincronizza un business da produzione
      * 
      * Body: { "business_id": 1 } oppure { "slug": "mio-business" }
      */
@@ -139,10 +138,10 @@ final class BusinessSyncController
             return Response::error('access_denied', 'Accesso riservato ai superadmin', 403);
         }
         
-        // Verifica che siamo in ambiente staging
+        // Verifica ambiente
         $appEnv = $_ENV['APP_ENV'] ?? 'production';
-        if ($appEnv !== 'staging') {
-            return Response::error('invalid_environment', 'Questa funzione è disponibile solo in ambiente staging', 400);
+        if ($appEnv === 'production') {
+            return Response::error('invalid_environment', 'Questa funzione non è disponibile in produzione', 400);
         }
         
         $body = $request->getBody();
@@ -199,7 +198,7 @@ final class BusinessSyncController
             
             $exportData = $exportResponse['data'];
             
-            // 2. Importa i dati in staging
+            // 2. Importa i dati
             $stats = $this->importBusiness->execute($exportData);
             
             return Response::success([

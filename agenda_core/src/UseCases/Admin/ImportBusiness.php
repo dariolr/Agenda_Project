@@ -8,13 +8,11 @@ use Agenda\Infrastructure\Database\Connection;
 
 /**
  * Importa dati di un business da export JSON.
- * Usato per sincronizzare dati da produzione a staging.
  * 
  * ATTENZIONE: Questo UseCase ELIMINA tutti i dati esistenti del business prima di importare!
  * 
  * @param array $exportData Dati esportati da ExportBusiness
  * @param bool $skipSessionsAndNotifications Se true, NON importa notification_queue, auth_sessions, client_sessions
- *                                            Usato per sync Staging → Produzione
  */
 final class ImportBusiness
 {

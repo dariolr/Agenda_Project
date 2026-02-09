@@ -11,6 +11,8 @@ class Business {
   final String? adminEmail; // Email dell'admin proprietario
   final bool isSuspended; // Business sospeso (visibile ma non operativo)
   final String? suspensionMessage; // Messaggio da mostrare quando sospeso
+  final String? userRole; // Ruolo dell'utente corrente nel business
+  final String? userScopeType; // Scope dell'utente corrente nel business
 
   const Business({
     required this.id,
@@ -25,6 +27,8 @@ class Business {
     this.adminEmail,
     this.isSuspended = false,
     this.suspensionMessage,
+    this.userRole,
+    this.userScopeType,
   });
 
   Business copyWith({
@@ -40,6 +44,8 @@ class Business {
     String? adminEmail,
     bool? isSuspended,
     String? suspensionMessage,
+    String? userRole,
+    String? userScopeType,
   }) {
     return Business(
       id: id ?? this.id,
@@ -54,6 +60,8 @@ class Business {
       adminEmail: adminEmail ?? this.adminEmail,
       isSuspended: isSuspended ?? this.isSuspended,
       suspensionMessage: suspensionMessage ?? this.suspensionMessage,
+      userRole: userRole ?? this.userRole,
+      userScopeType: userScopeType ?? this.userScopeType,
     );
   }
 
@@ -73,6 +81,8 @@ class Business {
       adminEmail: json['admin_email'] as String?,
       isSuspended: json['is_suspended'] == true || json['is_suspended'] == 1,
       suspensionMessage: json['suspension_message'] as String?,
+      userRole: json['user_role'] as String?,
+      userScopeType: json['user_scope_type'] as String?,
     );
   }
 
@@ -90,6 +100,8 @@ class Business {
       'admin_email': adminEmail,
       'is_suspended': isSuspended,
       'suspension_message': suspensionMessage,
+      'user_role': userRole,
+      'user_scope_type': userScopeType,
     };
   }
 }

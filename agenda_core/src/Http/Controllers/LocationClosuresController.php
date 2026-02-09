@@ -277,7 +277,7 @@ final class LocationClosuresController
         if ($this->userRepo->isSuperadmin($userId)) {
             return true;
         }
-        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+        return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_staff', false);
     }
 
     private function formatClosure(array $closure): array

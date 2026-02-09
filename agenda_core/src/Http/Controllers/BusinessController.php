@@ -133,7 +133,7 @@ final class BusinessController
 
     private function formatBusiness(array $row): array
     {
-        return [
+        $result = [
             'id' => (int) $row['id'],
             'name' => $row['name'],
             'slug' => $row['slug'],
@@ -145,5 +145,14 @@ final class BusinessController
             'created_at' => $row['created_at'],
             'updated_at' => $row['updated_at'],
         ];
+
+        if (isset($row['user_role']) && is_string($row['user_role'])) {
+            $result['user_role'] = $row['user_role'];
+        }
+        if (isset($row['user_scope_type']) && is_string($row['user_scope_type'])) {
+            $result['user_scope_type'] = $row['user_scope_type'];
+        }
+
+        return $result;
     }
 }

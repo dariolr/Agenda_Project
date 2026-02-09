@@ -116,7 +116,7 @@ Inviti via email per nuovi operatori.
 - role (enum: admin, manager, staff)
 - token (64-char hex, unique)
 - expires_at (default: created_at + 7 days)
-- status (enum: pending, accepted, expired, revoked)
+- status (enum: pending, accepted, expired, declined)
 - accepted_by (user_id, nullable)
 - accepted_at (nullable)
 - invited_by (user_id)
@@ -129,6 +129,10 @@ Inviti via email per nuovi operatori.
 - `token, status` - lookup per accettazione
 - `business_id, status` - lista inviti pendenti
 - `email, status` - ricerca inviti per email
+
+**Note operative:**
+- Gli inviti `pending` revocati vengono eliminati direttamente.
+- Quando un accesso operatore viene rimosso, gli eventuali inviti `accepted` collegati vengono eliminati.
 
 ---
 

@@ -169,7 +169,8 @@ final canViewAllAppointmentsProvider = Provider<bool>((ref) {
       if (data.isSuperadmin) return true;
       return data.role == 'admin' ||
           data.role == 'owner' ||
-          data.role == 'manager';
+          data.role == 'manager' ||
+          data.role == 'viewer';
     },
     loading: () => false,
     error: (_, __) => false,

@@ -1515,9 +1515,12 @@ Endpoints per gestire inviti via email agli operatori.
 
 ### GET /v1/businesses/{business_id}/invitations
 
-List pending invitations for a business.
+List invitations for a business.
 
 **Auth required**: Yes (owner/admin or superadmin)
+
+Query params:
+- `status`: `pending` | `accepted` | `expired` | `declined` | `revoked` | `all` (default `pending`)
 
 Response (200):
 ```json
@@ -1529,6 +1532,8 @@ Response (200):
         "id": 1,
         "email": "nuovo@example.com",
         "role": "staff",
+        "status": "pending",
+        "effective_status": "pending",
         "expires_at": "2026-01-04T14:00:00+01:00",
         "created_at": "2025-12-28T14:00:00+01:00",
         "invited_by": {
@@ -1578,14 +1583,13 @@ Response (201):
 
 Errors:
 - `validation_error` (400): Email già membro del business
-- `validation_error` (400): Invito già pendente per questa email
 - `forbidden` (403): Non puoi invitare con ruolo >= al tuo
 
 ---
 
 ### DELETE /v1/businesses/{business_id}/invitations/{invitation_id}
 
-Revoke a pending invitation.
+Delete invitation.
 
 **Auth required**: Yes (owner/admin or superadmin)
 
@@ -1594,8 +1598,9 @@ Response (200):
 {
   "success": true,
   "data": {
-    "message": "Invitation revoked",
-    "id": 1
+    "message": "Invitation deleted",
+    "id": 1,
+    "action": "deleted"
   }
 }
 ```
@@ -1613,6 +1618,7 @@ Response (200):
   "data": {
     "email": "nuovo@example.com",
     "role": "staff",
+    "user_exists": true,
     "business": {
       "id": 1,
       "name": "Salone Bella Vita",

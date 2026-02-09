@@ -7,9 +7,7 @@
 | **Nome progetto** | agenda_backend |
 | **Scopo** | Gestionale per OPERATORI/STAFF |
 | **URL produzione** | **gestionale**.romeolab.it |
-| **URL staging** | **gestionale-staging**.romeolab.it |
 | **Cartella SiteGround PROD** | `www/gestionale.romeolab.it/public_html/` |
-| **Cartella SiteGround STAGING** | `www/gestionale-staging.romeolab.it/public_html/` |
 | **NON confondere con** | agenda_frontend (prenota.romeolab.it) |
 
 ### ⚠️ DEPLOY PRODUZIONE
@@ -19,15 +17,6 @@
 cd agenda_backend
 flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it
 rsync -avz --delete build/web/ siteground:www/gestionale.romeolab.it/public_html/
-```
-
-### ⚠️ DEPLOY STAGING
-
-```bash
-# STAGING: gestionale-staging.romeolab.it
-cd agenda_backend
-flutter build web --release --dart-define=API_BASE_URL=https://api-staging.romeolab.it
-rsync -avz --delete build/web/ siteground:www/gestionale-staging.romeolab.it/public_html/
 ```
 
 ❌ **MAI** deployare su `prenota.romeolab.it` — quello è per agenda_frontend!
@@ -392,10 +381,8 @@ Future<void> _onSave() async {
 
 ### 🚨 REGOLA CRITICA DEPLOY (29/01/2026)
 **MAI eseguire deploy (build + rsync) di progetti Flutter (agenda_frontend o agenda_backend) senza ESPLICITA richiesta dell'utente.**
-Questa regola si applica SEMPRE, sia per produzione che per staging.
 
 - **Eseguire deploy in PRODUZIONE** (build + rsync verso `gestionale.romeolab.it`) senza richiesta esplicita dell'utente
-- **Eseguire deploy in STAGING** (build + rsync verso `gestionale-staging.romeolab.it`) senza richiesta esplicita dell'utente
 - **Avviare l'applicazione** (`flutter run`) senza richiesta esplicita dell'utente
 - **Suggerire "hot reload"** — l'utente sa già quando fare reload, non serve dirgli nulla
 - Aggiungere dipendenze non richieste
@@ -463,43 +450,7 @@ features/business/
     ├── business_list_screen.dart     # Lista + provider selezione + reinvia invito
     └── dialogs/
         ├── create_business_dialog.dart  # Con campo admin_email
-        ├── edit_business_dialog.dart    # Con campo admin_email
-        └── sync_to_staging_dialog.dart  # Sync bidirezionale Prod ↔ Staging
-```
-
-### 🔄 Sync Business Prod ↔ Staging (15/01/2026)
-
-Il superadmin può sincronizzare un business tra produzione e staging in entrambe le direzioni.
-
-**Accesso:** Menu azioni business → "Copia su Staging"
-
-**Direzioni disponibili:**
-- **Produzione → Staging**: copia TUTTI i dati (incluse sessioni e notifiche)
-- **Staging → Produzione**: copia dati SENZA sessioni auth e notification queue
-
-**Comportamento `skip_sessions_and_notifications`:**
-| Direzione | Flag | Tabelle escluse |
-|-----------|------|-----------------|
-| Prod → Staging | `false` | Nessuna |
-| Staging → Prod | `true` | `notification_queue`, `auth_sessions`, `client_sessions` |
-
-**File Flutter:**
-- `lib/features/business/presentation/dialogs/sync_to_staging_dialog.dart` - UI con selezione direzione
-- `lib/core/network/api_client.dart` - metodi `exportBusinessFromProduction()`, `exportBusinessFromStaging()`, `pushBusinessToProduction()`, `pushBusinessToStaging()`, `importBusiness()`
-- `lib/core/network/api_config.dart` - `productionApiUrl`, `stagingApiUrl`
-
-**Metodi API Client:**
-```dart
-// Export da altro ambiente
-exportBusinessFromProduction(businessId)  // quando siamo su staging
-exportBusinessFromStaging(businessId)      // quando siamo su produzione
-
-// Import su altro ambiente
-pushBusinessToProduction(exportData, {skipSessionsAndNotifications: true})
-pushBusinessToStaging(exportData)
-
-// Import locale
-importBusiness(exportData, {skipSessionsAndNotifications: false})
+        └── edit_business_dialog.dart    # Con campo admin_email
 ```
 
 ### ⚠️ Provider invalidation su cambio business (01/01/2026)
@@ -1357,12 +1308,11 @@ YYYYMMDD-N.P
 | Script | Comportamento P |
 |--------|-----------------|
 | `deploy.sh` | Incrementa P automaticamente (+1 ad ogni deploy) |
-| `deploy-staging.sh` | NON incrementa P (mantiene valore esistente) |
 
-**Entrambi gli script:**
-- Incrementano N se stesso giorno, resettano a 1 se giorno diverso
-- Aggiornano `web/index.html` (window.appVersion)
-- Aggiornano `web/app_version.txt` (per VersionChecker)
+**Lo script:**
+- Incrementa N se stesso giorno, resetta a 1 se giorno diverso
+- Aggiorna `web/index.html` (window.appVersion)
+- Aggiorna `web/app_version.txt` (per VersionChecker)
 
 ### File app_version.txt
 
@@ -1385,7 +1335,6 @@ Il file `web/app_version.txt` contiene solo la stringa versione (es. `20260201-1
 | `lib/core/services/version_checker.dart` | Controllo periodico nuove versioni |
 | `lib/features/auth/presentation/login_screen.dart` | Mostra versione nel footer |
 | `scripts/deploy.sh` | Deploy PROD (incrementa P) |
-| `scripts/deploy-staging.sh` | Deploy STAGING (mantiene P) |
 
 ---
 

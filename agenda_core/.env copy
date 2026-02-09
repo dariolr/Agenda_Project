@@ -25,16 +25,12 @@ APP_TIMEZONE=Europe/Rome
 # EMAIL NOTIFICATIONS
 # ========================================
 
-# Email - Siteground
+# Provider: smtp | brevo | mailgun
 MAIL_PROVIDER=smtp
-MAIL_FROM_ADDRESS=noreply@romeolab.it
-MAIL_FROM_NAME="Gestionale Appuntamenti"
-# SMTP Configuration (SiteGround)
-SMTP_HOST=mail.romeolab.it
-SMTP_PORT=465
-SMTP_USERNAME=noreply@romeolab.it
-SMTP_PASSWORD=I0lqr68Dario
-SMTP_ENCRYPTION=ssl
+
+# Default sender (used by all providers)
+MAIL_FROM_ADDRESS=noreply@example.com
+MAIL_FROM_NAME="Agenda Platform"
 
 # Optional: channel-specific senders (must be verified on provider)
 MAIL_FROM_ADDRESS_BOOKING_CONFIRMED=conferma-appuntamento@romeolab.it
@@ -42,6 +38,14 @@ MAIL_FROM_ADDRESS_BOOKING_REMINDER=promemoria-appuntamento@romeolab.it
 MAIL_FROM_ADDRESS_BOOKING_CANCELLED=appuntamento-cancellato@romeolab.it
 MAIL_FROM_ADDRESS_BOOKING_RESCHEDULED=modifica-appuntamento@romeolab.it
 
+# SMTP Configuration (for MAIL_PROVIDER=smtp)
+# Works with SiteGround, Gmail, or any SMTP server
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=your-smtp-username
+SMTP_PASSWORD=your-smtp-password
+# Encryption: tls | ssl | none
+SMTP_ENCRYPTION=tls
 
 # Brevo Configuration (for MAIL_PROVIDER=brevo)
 # Free tier: 300 emails/day
@@ -68,6 +72,6 @@ FRONTEND_URL=https://prenota.romeolab.it
 BACKEND_URL=https://gestionale.romeolab.it
 
 # Test mode: redirect all notification emails to nome.cognome@romeolab.it
-NOTIFICATION_TEST_MODE=false
+NOTIFICATION_TEST_MODE=true
 NOTIFICATION_TEST_EMAIL=dariolarosa@hotmail.com
 

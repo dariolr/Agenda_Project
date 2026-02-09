@@ -29,7 +29,7 @@ final class ServiceVariantResourceController
     ) {}
 
     /**
-     * Check if authenticated user has access to the business.
+     * Check if authenticated user has services permission in the business.
      */
     private function hasBusinessAccess(Request $request, int $businessId): bool
     {
@@ -42,7 +42,7 @@ final class ServiceVariantResourceController
             return true;
         }
 
-        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+        return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', false);
     }
 
     /**
@@ -242,16 +242,14 @@ final class ServiceVariantResourceController
     {
         $resourceId = (int) $request->getRouteParam('id');
 
-        // Get resource location for authorization
-        $locationId = $this->variantResourceRepo->getLocationIdForResource($resourceId);
-        if (!$locationId) {
+        // Get resource business for authorization
+        $businessId = $this->variantResourceRepo->getBusinessIdForResource($resourceId);
+        if ($businessId === null) {
             return Response::notFound('Resource not found', $request->traceId);
         }
 
-        // Need to get business_id from location - use a simple query
-        $userId = $request->getAttribute('user_id');
-        if ($userId === null) {
-            return Response::error('Unauthorized', 'unauthorized', 401, $request->traceId);
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Resource not found', $request->traceId);
         }
 
         $services = $this->variantResourceRepo->findVariantsByResourceId($resourceId);
@@ -279,15 +277,14 @@ final class ServiceVariantResourceController
     {
         $resourceId = (int) $request->getRouteParam('id');
 
-        // Get resource location for authorization
-        $locationId = $this->variantResourceRepo->getLocationIdForResource($resourceId);
-        if (!$locationId) {
+        // Get resource business for authorization
+        $businessId = $this->variantResourceRepo->getBusinessIdForResource($resourceId);
+        if ($businessId === null) {
             return Response::notFound('Resource not found', $request->traceId);
         }
 
-        $userId = $request->getAttribute('user_id');
-        if ($userId === null) {
-            return Response::error('Unauthorized', 'unauthorized', 401, $request->traceId);
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Resource not found', $request->traceId);
         }
 
         $body = $request->getBody();

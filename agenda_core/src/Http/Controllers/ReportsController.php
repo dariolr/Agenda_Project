@@ -148,16 +148,7 @@ final class ReportsController
             return true;
         }
 
-        $pdo = $this->db->getPdo();
-        $stmt = $pdo->prepare('SELECT is_owner, can_manage_users FROM business_users WHERE user_id = ? AND business_id = ?');
-        $stmt->execute([$userId, $businessId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$row) {
-            return false;
-        }
-
-        return (bool) $row['is_owner'] || (bool) $row['can_manage_users'];
+        return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_view_reports', false);
     }
 
     private function isValidDate(string $date): bool
