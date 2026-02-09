@@ -101,9 +101,28 @@ foreach ($notifications as $notification) {
     $type = $notification['type'];
     $channel = $notification['channel'];  // booking_confirmed, booking_reminder, etc.
     $recipient = $notification['recipient_email'];
+    $bookingId = $notification['booking_id'] ?? null;
     
     if ($verbose) {
         echo "[{$id}] {$channel} -> {$recipient}... ";
+    }
+    
+    // Per i reminder, verifica che il booking sia ancora attivo (non cancellato)
+    if ($channel === 'booking_reminder' && $bookingId !== null) {
+        $stmt = $db->getPdo()->prepare('SELECT status FROM bookings WHERE id = ?');
+        $stmt->execute([$bookingId]);
+        $bookingStatus = $stmt->fetchColumn();
+        
+        if ($bookingStatus === 'cancelled') {
+            if ($verbose) {
+                echo "SKIPPED (booking cancelled) - deleting\n";
+            }
+            // Elimina il reminder (coerente con deletePendingReminders)
+            $deleteStmt = $db->getPdo()->prepare('DELETE FROM notification_queue WHERE id = ?');
+            $deleteStmt->execute([$id]);
+            $failed++;
+            continue;
+        }
     }
     
     // Mark as processing
