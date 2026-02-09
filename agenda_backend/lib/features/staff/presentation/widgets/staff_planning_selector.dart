@@ -15,11 +15,13 @@ class StaffPlanningSelector extends ConsumerWidget {
     required this.selectedPlanningId,
     required this.onPlanningSelected,
     this.onTemplateChanged,
+    this.readOnly = false,
   });
 
   final int staffId;
   final int? selectedPlanningId;
   final ValueChanged<StaffPlanning?> onPlanningSelected;
+  final bool readOnly;
 
   /// Callback quando viene cambiato il template (A/B) per biweekly
   final ValueChanged<WeekLabel>? onTemplateChanged;
@@ -62,7 +64,7 @@ class StaffPlanningSelector extends ConsumerWidget {
         // Dropdown per selezionare planning
         if (plannings.isEmpty)
           OutlinedButton.icon(
-            onPressed: () => _createPlanning(context, ref),
+            onPressed: readOnly ? null : () => _createPlanning(context, ref),
             icon: const Icon(Icons.add, size: 18),
             label: Text(l10n.planningListAdd),
           )
@@ -125,38 +127,41 @@ class StaffPlanningSelector extends ConsumerWidget {
                         ),
                       ),
                       // Edit button
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined, size: 18),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _editPlanning(context, ref, p);
-                        },
-                        tooltip: l10n.actionEdit,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
+                      if (!readOnly)
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _editPlanning(context, ref, p);
+                          },
+                          tooltip: l10n.actionEdit,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
               ),
-              const PopupMenuDivider(),
-              // Aggiungi nuovo
-              PopupMenuItem<int?>(
-                value: -1,
-                child: Row(
-                  children: [
-                    Icon(Icons.add, size: 18, color: theme.colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.planningListAdd,
-                      style: TextStyle(color: theme.colorScheme.primary),
-                    ),
-                  ],
+              if (!readOnly) ...[
+                const PopupMenuDivider(),
+                // Aggiungi nuovo
+                PopupMenuItem<int?>(
+                  value: -1,
+                  child: Row(
+                    children: [
+                      Icon(Icons.add, size: 18, color: theme.colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.planningListAdd,
+                        style: TextStyle(color: theme.colorScheme.primary),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
             child: Chip(
               avatar: Icon(

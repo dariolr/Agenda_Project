@@ -337,6 +337,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
           location: loc,
           staff: staff,
           isWide: isWide,
+          readOnly: !canManageStaff,
           onAddStaff: canManageStaff
               ? () => showStaffDialog(context, ref, initialLocationId: loc.id)
               : () {},
@@ -376,7 +377,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
           },
           onEditStaff: canManageStaff
               ? (staff) => showStaffDialog(context, ref, initial: staff)
-              : (_) {},
+              : (staff) => showStaffDialog(
+                  context,
+                  ref,
+                  initial: staff,
+                  readOnly: true,
+                ),
           onDuplicateStaff: canManageStaff
               ? (staff) => showStaffDialog(
                   context,

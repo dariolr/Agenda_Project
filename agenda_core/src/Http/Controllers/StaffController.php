@@ -120,8 +120,8 @@ final class StaffController
         $userId = $request->getAttribute('user_id');
         $isSuperadmin = $this->userRepo->isSuperadmin($userId);
 
-        // Check user has access to business
-        if (!$this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_staff', $isSuperadmin)) {
+        // Read-only access: any active operator in the business (viewer included).
+        if (!$this->businessUserRepo->hasAccess($userId, $businessId, $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -175,8 +175,8 @@ final class StaffController
             return Response::notFound('Staff member not found', $request->traceId);
         }
 
-        // Check user has access to business
-        if (!$this->businessUserRepo->hasPermission($userId, (int) $staff['business_id'], 'can_manage_staff', $isSuperadmin)) {
+        // Read-only access: any active operator in the business (viewer included).
+        if (!$this->businessUserRepo->hasAccess($userId, (int) $staff['business_id'], $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 

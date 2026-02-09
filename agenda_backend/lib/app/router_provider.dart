@@ -99,8 +99,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           invitationPath == '/invitation' ||
           invitationPath.startsWith('/invitation/');
       final canManageClients = ref.read(currentUserCanManageClientsProvider);
-      final canManageServices = ref.read(currentUserCanManageServicesProvider);
-      final canManageStaff = ref.read(currentUserCanManageStaffProvider);
+      final canViewServices = ref.read(currentUserCanViewServicesProvider);
+      final canViewStaff = ref.read(currentUserCanViewStaffProvider);
       final canManageOperators = ref.read(canManageOperatorsProvider);
       final canManageBusinessSettings = ref.read(
         canManageBusinessSettingsProvider,
@@ -175,8 +175,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isAuthenticated && !isSuperadmin) {
         final path = state.uri.path;
         if (path == '/clienti' && !canManageClients) return '/agenda';
-        if (path == '/servizi' && !canManageServices) return '/agenda';
-        if (path == '/staff' && !canManageStaff) return '/agenda';
+        if (path == '/servizi' && !canViewServices) return '/agenda';
+        if (path == '/staff' && !canViewStaff) return '/agenda';
+        if (path == '/staff-availability' && !canViewStaff) return '/agenda';
         if (path == '/report' && !canViewReports) return '/agenda';
         if (path == '/chiusure' && !canManageBusinessSettings) return '/agenda';
         if (path == '/permessi' && !canManageOperators) return '/agenda';

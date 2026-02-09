@@ -22,6 +22,7 @@ class LocationItem extends StatelessWidget {
     this.headerTrailing,
     this.staffListOverride,
     this.showDefaultActions = true,
+    this.readOnly = false,
   });
 
   final Location location;
@@ -37,6 +38,7 @@ class LocationItem extends StatelessWidget {
   final Widget? headerTrailing;
   final Widget? staffListOverride;
   final bool showDefaultActions;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +135,7 @@ class LocationItem extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (showDefaultActions) ...[
+                    if (showDefaultActions && !readOnly) ...[
                       IconButton(
                         tooltip: context.l10n.teamAddStaff,
                         icon: Icon(
@@ -191,6 +193,7 @@ class LocationItem extends StatelessWidget {
                               isLast: i == staff.length - 1,
                               isEvenRow: i.isEven,
                               isWide: isWide,
+                              readOnly: readOnly,
                               onEdit: () => onEditStaff(staff[i]),
                               onDuplicate: () => onDuplicateStaff(staff[i]),
                               onDelete: () => onDeleteStaff(staff[i]),

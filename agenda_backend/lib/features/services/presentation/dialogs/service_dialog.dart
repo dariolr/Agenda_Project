@@ -331,8 +331,10 @@ Future<void> showServiceDialog(
   Color? preselectedColor,
   bool requireCategorySelection = false,
   bool duplicateFrom = false,
+  bool readOnly = false,
 }) async {
-  if (!ref.read(currentUserCanManageServicesProvider)) return;
+  if (!ref.read(currentUserCanManageServicesProvider) && !readOnly) return;
+  final canEditDialog = !readOnly;
   final notifier = ref.read(servicesProvider.notifier);
   final allServices = ref.read(servicesProvider).value ?? [];
   final categories = ref.read(serviceCategoriesProvider);
@@ -740,7 +742,8 @@ Future<void> showServiceDialog(
             _SelectableRow(
               label: l10n.teamSelectAllServices,
               selected: allSelected,
-              onTap: () {
+              onTap: canEditDialog
+                  ? () {
                 if (allSelected) {
                   current.clear();
                 } else {
@@ -749,21 +752,24 @@ Future<void> showServiceDialog(
                     ..addAll(allIds);
                 }
                 setStateLocal(() {});
-              },
+              }
+                  : () {},
             ),
             const Divider(height: 1),
             for (final member in staffList)
               _SelectableRow(
                 label: member.displayName,
                 selected: current.contains(member.id),
-                onTap: () {
+                onTap: canEditDialog
+                    ? () {
                   if (current.contains(member.id)) {
                     current.remove(member.id);
                   } else {
                     current.add(member.id);
                   }
                   setStateLocal(() {});
-                },
+                }
+                    : () {},
               ),
           ],
         );
@@ -809,7 +815,9 @@ Future<void> showServiceDialog(
                           child: AppFilledButton(
                             onPressed: () => Navigator.of(dialogCtx).pop(),
                             padding: AppButtonStyles.dialogButtonPadding,
-                            child: Text(l10n.actionConfirm),
+                            child: Text(
+                              canEditDialog ? l10n.actionConfirm : l10n.actionClose,
+                            ),
                           ),
                         ),
                       ),
@@ -855,7 +863,9 @@ Future<void> showServiceDialog(
                         child: AppFilledButton(
                           onPressed: () => Navigator.of(sheetCtx).pop(),
                           padding: AppButtonStyles.dialogButtonPadding,
-                          child: Text(l10n.actionConfirm),
+                          child: Text(
+                            canEditDialog ? l10n.actionConfirm : l10n.actionClose,
+                          ),
                         ),
                       ),
                     ),
@@ -875,7 +885,9 @@ Future<void> showServiceDialog(
       }
 
       setState(() {
-        selectedStaffIds = {...current};
+        if (canEditDialog) {
+          selectedStaffIds = {...current};
+        }
         isSelectingStaff = false;
       });
     }
@@ -1229,10 +1241,12 @@ Future<void> showServiceDialog(
               for (final c in categories)
                 DropdownMenuItem(value: c.id, child: Text(c.name)),
             ],
-            onChanged: (v) => setState(() {
-              selectedCategory = v;
-              categoryError = false;
-            }),
+            onChanged: canEditDialog
+                ? (v) => setState(() {
+                    selectedCategory = v;
+                    categoryError = false;
+                  })
+                : null,
           ),
         ),
         const SizedBox(height: AppSpacing.formRowSpacing),
@@ -1240,6 +1254,7 @@ Future<void> showServiceDialog(
           label: context.l10n.fieldNameRequiredLabel,
           child: TextField(
             controller: nameController,
+            enabled: canEditDialog,
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
               isDense: true,
@@ -1253,6 +1268,7 @@ Future<void> showServiceDialog(
           child: TextField(
             controller: descController,
             maxLines: 3,
+            enabled: canEditDialog,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
               isDense: true,
@@ -1262,7 +1278,9 @@ Future<void> showServiceDialog(
         const SizedBox(height: AppSpacing.formRowSpacing),
         if (hasMultipleLocations) ...[
           AppOutlinedActionButton(
-            onPressed: isLoadingLocations ? null : openLocationSelector,
+            onPressed: canEditDialog && !isLoadingLocations
+                ? openLocationSelector
+                : null,
             expand: true,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Row(
@@ -1419,9 +1437,11 @@ Future<void> showServiceDialog(
                         itemBuilder: (context, index) {
                           final color = uniquePalette[index];
                           return GestureDetector(
-                            onTap: () => setState(() {
-                              selectedColor = color;
-                            }),
+                            onTap: canEditDialog
+                                ? () => setState(() {
+                                    selectedColor = color;
+                                  })
+                                : null,
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
                               width: 36,
@@ -1521,14 +1541,16 @@ Future<void> showServiceDialog(
               for (final (minutes, label) in _durationOptions(context))
                 DropdownMenuItem(value: minutes, child: Text(label)),
             ],
-            onChanged: (v) => setState(() {
-              selectedDuration = v;
-              durationError = false;
-              if ((selectedDuration ?? 0) <= 0) {
-                additionalSelection = _AdditionalTimeSelection.none;
-                additionalMinutes = 0;
-              }
-            }),
+            onChanged: canEditDialog
+                ? (v) => setState(() {
+                    selectedDuration = v;
+                    durationError = false;
+                    if ((selectedDuration ?? 0) <= 0) {
+                      additionalSelection = _AdditionalTimeSelection.none;
+                      additionalMinutes = 0;
+                    }
+                  })
+                : null,
           ),
         ),
         if ((selectedDuration ?? 0) > 0) ...[
@@ -1558,12 +1580,15 @@ Future<void> showServiceDialog(
                   child: Text(context.l10n.additionalTimeOptionBlocked),
                 ),
               ],
-              onChanged: (sel) => setState(() {
-                additionalSelection = sel ?? _AdditionalTimeSelection.none;
-                if (additionalSelection == _AdditionalTimeSelection.none) {
-                  additionalMinutes = 0;
-                }
-              }),
+              onChanged: canEditDialog
+                  ? (sel) => setState(() {
+                      additionalSelection =
+                          sel ?? _AdditionalTimeSelection.none;
+                      if (additionalSelection == _AdditionalTimeSelection.none) {
+                        additionalMinutes = 0;
+                      }
+                    })
+                  : null,
             ),
           ),
           if (additionalSelection != _AdditionalTimeSelection.none) ...[
@@ -1586,9 +1611,11 @@ Future<void> showServiceDialog(
                   ))
                     DropdownMenuItem(value: minutes, child: Text(label)),
                 ],
-                onChanged: (v) => setState(() {
-                  additionalMinutes = v ?? 0;
-                }),
+                onChanged: canEditDialog
+                    ? (v) => setState(() {
+                        additionalMinutes = v ?? 0;
+                      })
+                    : null,
               ),
             ),
           ],
@@ -1607,27 +1634,32 @@ Future<void> showServiceDialog(
               isDense: true,
               prefixText: '$currencySymbol ',
             ),
-            enabled: !isFree,
-            onChanged: (_) {
-              if (priceController.text.trim().isEmpty && isPriceStartingFrom) {
-                setState(() => isPriceStartingFrom = false);
-              }
-            },
+            enabled: canEditDialog && !isFree,
+            onChanged: canEditDialog
+                ? (_) {
+                    if (priceController.text.trim().isEmpty &&
+                        isPriceStartingFrom) {
+                      setState(() => isPriceStartingFrom = false);
+                    }
+                  }
+                : null,
           ),
         ),
         const SizedBox(height: AppSpacing.formRowSpacing),
         _SwitchTile(
           title: context.l10n.freeServiceSwitch,
           value: isFree,
-          onChanged: (v) {
-            setState(() {
-              isFree = v;
-              if (isFree) {
-                priceController.clear();
-                isPriceStartingFrom = false;
-              }
-            });
-          },
+          onChanged: canEditDialog
+              ? (v) {
+                  setState(() {
+                    isFree = v;
+                    if (isFree) {
+                      priceController.clear();
+                      isPriceStartingFrom = false;
+                    }
+                  });
+                }
+              : null,
         ),
         _SwitchTile(
           title: context.l10n.priceStartingFromSwitch,
@@ -1635,16 +1667,21 @@ Future<void> showServiceDialog(
               ? context.l10n.setPriceToEnable
               : null,
           value: isPriceStartingFrom,
-          onChanged: (!isFree && priceController.text.trim().isNotEmpty)
+          onChanged: (canEditDialog &&
+                  !isFree &&
+                  priceController.text.trim().isNotEmpty)
               ? (v) => setState(() => isPriceStartingFrom = v)
               : null,
-          enabled: (!isFree && priceController.text.trim().isNotEmpty),
+          enabled:
+              canEditDialog && (!isFree && priceController.text.trim().isNotEmpty),
         ),
         const SizedBox(height: 40),
         _SwitchTile(
           title: context.l10n.bookableOnlineSwitch,
           value: isBookableOnline,
-          onChanged: (v) => setState(() => isBookableOnline = v),
+          onChanged: canEditDialog
+              ? (v) => setState(() => isBookableOnline = v)
+              : null,
         ),
       ],
     );
@@ -1657,6 +1694,7 @@ Future<void> showServiceDialog(
   final builder = StatefulBuilder(
     builder: (context, setState) {
       final canManageServices = ref.watch(currentUserCanManageServicesProvider);
+      final canEdit = canManageServices && !readOnly;
       if (!didAutoScroll) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           scrollToSelected(animate: false);
@@ -1702,7 +1740,7 @@ Future<void> showServiceDialog(
       final saveButton = SizedBox(
         width: AppButtonStyles.dialogButtonWidth,
         child: AppAsyncFilledButton(
-          onPressed: isSaving || !canManageServices
+          onPressed: isSaving || !canEdit
               ? null
               : () async {
                   setState(() => isSaving = true);
@@ -1719,7 +1757,19 @@ Future<void> showServiceDialog(
           child: Text(context.l10n.actionSave),
         ),
       );
-      final bottomActions = [cancelButton, saveButton];
+      final closeButton = SizedBox(
+        width: AppButtonStyles.dialogButtonWidth,
+        child: AppFilledButton(
+          onPressed: isSaving
+              ? null
+              : () => Navigator.of(context, rootNavigator: true).pop(),
+          padding: AppButtonStyles.dialogButtonPadding,
+          child: Text(context.l10n.actionClose),
+        ),
+      );
+      final bottomActions = readOnly
+          ? <Widget>[closeButton]
+          : <Widget>[cancelButton, saveButton];
 
       if (isDesktop) {
         return DismissibleDialog(

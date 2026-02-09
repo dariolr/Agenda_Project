@@ -34,6 +34,7 @@ import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
 import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
 import 'package:agenda_backend/core/widgets/staff_picker_sheet.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
+import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/exception_calendar_view.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/staff_planning_selector.dart';
@@ -437,6 +438,7 @@ class _StaffAvailabilityScreenState
   Widget build(BuildContext context) {
     final layout = ref.watch(layoutConfigProvider);
     final availabilityByStaff = ref.watch(staffAvailabilityByStaffProvider);
+    final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
     // Usa lo staff filtrato per la location selezionata nella sezione staff
     final staffList = ref.watch(staffForStaffSectionProvider);
 
@@ -556,6 +558,7 @@ class _StaffAvailabilityScreenState
                           selectedPlanningId: _selectedPlanning?.id,
                           onPlanningSelected: _onPlanningSelected,
                           onTemplateChanged: _onTemplateChanged,
+                          readOnly: !canManageStaff,
                         );
                       },
                     ),
@@ -570,7 +573,8 @@ class _StaffAvailabilityScreenState
                           onPressed:
                               (_selectedStaffId == null ||
                                   _selectedPlanning == null ||
-                                  isSaving)
+                                  isSaving ||
+                                  !canManageStaff)
                               ? null
                               : () => _savePlanning(ref, layout.minutesPerSlot),
                           child: Text(context.l10n.availabilitySave),
@@ -589,12 +593,13 @@ class _StaffAvailabilityScreenState
                   controller: _tabController,
                   children: [
                     // Tab 1: Editor orario settimanale
-                    _buildWeeklyScheduleTab(layout),
+                    _buildWeeklyScheduleTab(layout, canManageStaff),
                     // Tab 2: Calendario eccezioni
                     if (_selectedStaffId != null)
                       SingleChildScrollView(
                         child: ExceptionCalendarView(
                           staffId: _selectedStaffId!,
+                          readOnly: !canManageStaff,
                         ),
                       )
                     else
@@ -610,7 +615,7 @@ class _StaffAvailabilityScreenState
   }
 
   /// Costruisce il tab dell'editor settimanale.
-  Widget _buildWeeklyScheduleTab(dynamic layout) {
+  Widget _buildWeeklyScheduleTab(dynamic layout, bool canManageStaff) {
     final schedule = WeeklySchedule.fromSlots(
       _weeklySelections,
       minutesPerSlot: layout.minutesPerSlot,
@@ -632,14 +637,15 @@ class _StaffAvailabilityScreenState
                     minutesPerSlot: layout.minutesPerSlot,
                   ),
                   showHeader: false,
-                  onChanged: (newSchedule) {
+                  readOnly: !canManageStaff,
+                  onChanged: canManageStaff ? (newSchedule) {
                     final newSlots = newSchedule.toSlots(
                       minutesPerSlot: layout.minutesPerSlot,
                     );
                     setState(() {
                       _weeklySelections = newSlots;
                     });
-                  },
+                  } : null,
                 ),
               ),
             ),

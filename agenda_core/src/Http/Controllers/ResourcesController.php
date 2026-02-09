@@ -42,7 +42,8 @@ final class ResourcesController
         $userId = $request->getAttribute('user_id');
         $isSuperadmin = $this->userRepo->isSuperadmin($userId);
 
-        if (!$this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', $isSuperadmin)) {
+        // Read access: any active operator in the business (viewer included).
+        if (!$this->businessUserRepo->hasAccess($userId, $businessId, $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -68,7 +69,8 @@ final class ResourcesController
             return Response::notFound('Location not found', $request->traceId);
         }
 
-        if (!$this->businessUserRepo->hasPermission($userId, (int) $location['business_id'], 'can_manage_services', $isSuperadmin)) {
+        // Read access: any active operator in the business (viewer included).
+        if (!$this->businessUserRepo->hasAccess($userId, (int) $location['business_id'], $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 

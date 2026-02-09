@@ -10,9 +10,14 @@ import '../dialogs/add_exception_dialog.dart';
 /// Widget per visualizzare e gestire le eccezioni alla disponibilità
 /// in una vista calendario mensile.
 class ExceptionCalendarView extends ConsumerStatefulWidget {
-  const ExceptionCalendarView({super.key, required this.staffId});
+  const ExceptionCalendarView({
+    super.key,
+    required this.staffId,
+    this.readOnly = false,
+  });
 
   final int staffId;
+  final bool readOnly;
 
   @override
   ConsumerState<ExceptionCalendarView> createState() =>
@@ -112,11 +117,13 @@ class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
                 ),
               ),
               FilledButton.icon(
-                onPressed: () => showAddExceptionDialog(
-                  context,
-                  ref,
-                  staffId: widget.staffId,
-                ),
+                onPressed: widget.readOnly
+                    ? null
+                    : () => showAddExceptionDialog(
+                        context,
+                        ref,
+                        staffId: widget.staffId,
+                      ),
                 icon: const Icon(Icons.add, size: 18),
                 label: Text(l10n.exceptionsAdd),
               ),
@@ -164,6 +171,7 @@ class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
         _ExceptionsList(
           exceptions: _filterExceptionsForMonth(exceptions),
           staffId: widget.staffId,
+          readOnly: widget.readOnly,
         ),
       ],
     );
@@ -184,6 +192,7 @@ class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
   }
 
   void _onDayTap(DateTime date, List<AvailabilityException> exceptions) {
+    if (widget.readOnly) return;
     final dayExceptions = exceptions.where((e) => e.isOnDate(date)).toList();
 
     if (dayExceptions.isEmpty) {
@@ -423,10 +432,15 @@ class _CalendarGrid extends ConsumerWidget {
 
 /// Lista delle eccezioni del mese.
 class _ExceptionsList extends ConsumerWidget {
-  const _ExceptionsList({required this.exceptions, required this.staffId});
+  const _ExceptionsList({
+    required this.exceptions,
+    required this.staffId,
+    required this.readOnly,
+  });
 
   final List<AvailabilityException> exceptions;
   final int staffId;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -453,7 +467,11 @@ class _ExceptionsList extends ConsumerWidget {
       children: [
         const Divider(),
         ...exceptions.map(
-          (e) => _ExceptionTile(exception: e, staffId: staffId),
+          (e) => _ExceptionTile(
+            exception: e,
+            staffId: staffId,
+            readOnly: readOnly,
+          ),
         ),
       ],
     );
@@ -462,10 +480,15 @@ class _ExceptionsList extends ConsumerWidget {
 
 /// Tile per singola eccezione.
 class _ExceptionTile extends ConsumerWidget {
-  const _ExceptionTile({required this.exception, required this.staffId});
+  const _ExceptionTile({
+    required this.exception,
+    required this.staffId,
+    required this.readOnly,
+  });
 
   final AvailabilityException exception;
   final int staffId;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -504,19 +527,23 @@ class _ExceptionTile extends ConsumerWidget {
       ),
       trailing: IconButton(
         icon: const Icon(Icons.edit_outlined),
-        onPressed: () => showAddExceptionDialog(
-          context,
-          ref,
-          staffId: staffId,
-          initial: exception,
-        ),
+        onPressed: readOnly
+            ? null
+            : () => showAddExceptionDialog(
+                context,
+                ref,
+                staffId: staffId,
+                initial: exception,
+              ),
       ),
-      onTap: () => showAddExceptionDialog(
-        context,
-        ref,
-        staffId: staffId,
-        initial: exception,
-      ),
+      onTap: readOnly
+          ? null
+          : () => showAddExceptionDialog(
+              context,
+              ref,
+              staffId: staffId,
+              initial: exception,
+            ),
     );
   }
 

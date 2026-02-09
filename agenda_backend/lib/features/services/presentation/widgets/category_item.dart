@@ -29,6 +29,7 @@ class CategoryItem extends StatelessWidget {
   final ValueChanged<ServicePackage> onPackageEdit;
   final ValueChanged<int> onPackageDelete;
   final bool addTopSpacing;
+  final bool readOnly;
 
   const CategoryItem({
     super.key,
@@ -51,16 +52,14 @@ class CategoryItem extends StatelessWidget {
     required this.onPackageEdit,
     required this.onPackageDelete,
     required this.addTopSpacing,
+    this.readOnly = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final isEmptyCategory = entries.isEmpty;
     return Container(
-      margin: EdgeInsets.only(
-        top: addTopSpacing ? 32 : 0,
-        bottom: 24,
-      ),
+      margin: EdgeInsets.only(top: addTopSpacing ? 32 : 0, bottom: 24),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
@@ -84,10 +83,7 @@ class CategoryItem extends StatelessWidget {
                 top: Radius.circular(16),
               ),
             ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 14,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
               children: [
                 // Titolo + descrizione
@@ -99,7 +95,8 @@ class CategoryItem extends StatelessWidget {
                         category.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: colorScheme.onPrimaryContainer,
                             ),
@@ -111,9 +108,7 @@ class CategoryItem extends StatelessWidget {
                             category.description!,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: colorScheme.onPrimaryContainer
                                       .withOpacity(0.8),
@@ -129,37 +124,39 @@ class CategoryItem extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    IconButton(
-                      tooltip: context.l10n.addServiceTooltip,
-                      icon: Icon(
-                        Icons.add,
-                        color: colorScheme.onPrimaryContainer,
-                      ),
-                      onPressed: onAddService,
-                    ),
-                    IconButton(
-                      tooltip: context.l10n.servicePackageNewMenu,
-                      icon: Icon(
-                        Icons.widgets_outlined,
-                        color: colorScheme.onPrimaryContainer,
-                      ),
-                      onPressed: onAddPackage,
-                    ),
-                    IconButton(
-                      tooltip: context.l10n.actionEdit,
-                      icon: Icon(
-                        Icons.edit_outlined,
-                        color: colorScheme.onPrimaryContainer,
-                      ),
-                      onPressed: onEditCategory,
-                    ),
-                    if (isEmptyCategory)
+                    if (!readOnly) ...[
                       IconButton(
-                        tooltip: context.l10n.actionDelete,
-                        icon: const Icon(Icons.delete_outline),
-                        color: colorScheme.onPrimaryContainer,
-                        onPressed: onDeleteCategory,
+                        tooltip: context.l10n.addServiceTooltip,
+                        icon: Icon(
+                          Icons.add,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                        onPressed: onAddService,
                       ),
+                      IconButton(
+                        tooltip: context.l10n.servicePackageNewMenu,
+                        icon: Icon(
+                          Icons.widgets_outlined,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                        onPressed: onAddPackage,
+                      ),
+                      IconButton(
+                        tooltip: context.l10n.actionEdit,
+                        icon: Icon(
+                          Icons.edit_outlined,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                        onPressed: onEditCategory,
+                      ),
+                      if (isEmptyCategory)
+                        IconButton(
+                          tooltip: context.l10n.actionDelete,
+                          icon: const Icon(Icons.delete_outline),
+                          color: colorScheme.onPrimaryContainer,
+                          onPressed: onDeleteCategory,
+                        ),
+                    ],
                   ],
                 ),
               ],
@@ -186,6 +183,7 @@ class CategoryItem extends StatelessWidget {
                     onPackageOpen: onPackageOpen,
                     onPackageEdit: onPackageEdit,
                     onPackageDelete: onPackageDelete,
+                    readOnly: readOnly,
                   ),
           ),
         ],

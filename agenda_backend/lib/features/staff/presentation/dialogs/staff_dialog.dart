@@ -27,8 +27,9 @@ Future<void> showStaffDialog(
   Staff? initial,
   int? initialLocationId,
   bool duplicateFrom = false,
+  bool readOnly = false,
 }) async {
-  if (!ref.read(currentUserCanManageStaffProvider)) return;
+  if (!readOnly && !ref.read(currentUserCanManageStaffProvider)) return;
   final formFactor = ref.read(formFactorProvider);
   final isDesktop = formFactor == AppFormFactor.desktop;
 
@@ -36,6 +37,7 @@ Future<void> showStaffDialog(
     initial: initial,
     initialLocationId: initialLocationId,
     isDuplicating: duplicateFrom,
+    readOnly: readOnly,
   );
 
   if (isDesktop) {
@@ -56,11 +58,13 @@ class _StaffDialog extends ConsumerStatefulWidget {
     this.initial,
     this.initialLocationId,
     this.isDuplicating = false,
+    this.readOnly = false,
   });
 
   final Staff? initial;
   final int? initialLocationId;
   final bool isDuplicating;
+  final bool readOnly;
 
   bool get isEditing => initial != null && !isDuplicating;
 
@@ -194,6 +198,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         : l10n.teamNewStaffTitle;
     final formFactor = ref.read(formFactorProvider);
     final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
+    final isReadOnly = widget.readOnly || !canManageStaff;
     final isSingleColumn = formFactor != AppFormFactor.desktop;
     final locations = ref.watch(locationsProvider);
     // Carica servizi solo per le location selezionate
@@ -264,18 +269,26 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
           )
         : null;
 
-    final actions = [
-      AppOutlinedActionButton(
-        onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
-        padding: AppButtonStyles.dialogButtonPadding,
-        child: Text(l10n.actionCancel),
-      ),
-      AppFilledButton(
-        onPressed: _isSaving || !canManageStaff ? null : _onSave,
-        padding: AppButtonStyles.dialogButtonPadding,
-        child: Text(l10n.actionSave),
-      ),
-    ];
+    final actions = isReadOnly
+        ? <Widget>[
+            AppOutlinedActionButton(
+              onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+              padding: AppButtonStyles.dialogButtonPadding,
+              child: Text(l10n.actionClose),
+            ),
+          ]
+        : <Widget>[
+            AppOutlinedActionButton(
+              onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+              padding: AppButtonStyles.dialogButtonPadding,
+              child: Text(l10n.actionCancel),
+            ),
+            AppFilledButton(
+              onPressed: _isSaving ? null : _onSave,
+              padding: AppButtonStyles.dialogButtonPadding,
+              child: Text(l10n.actionSave),
+            ),
+          ];
 
     final bottomActions = actions
         .map(
@@ -287,6 +300,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       label: l10n.teamStaffNameLabel,
       child: TextFormField(
         controller: _nameController,
+        enabled: !isReadOnly,
         decoration: const InputDecoration(
           border: OutlineInputBorder(),
           isDense: true,
@@ -302,6 +316,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       label: l10n.teamStaffSurnameLabel,
       child: TextFormField(
         controller: _surnameController,
+        enabled: !isReadOnly,
         decoration: const InputDecoration(
           border: OutlineInputBorder(),
           isDense: true,
@@ -376,7 +391,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                           final color = _palette[index];
                           final initials = _buildInitials();
                           return GestureDetector(
-                            onTap: () => setState(() => _selectedColor = color),
+                            onTap: isReadOnly
+                                ? null
+                                : () => setState(() => _selectedColor = color),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
                               child: StaffCircleAvatar(
@@ -406,7 +423,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
           SizedBox(
             height: 48,
             child: AppOutlinedActionButton(
-              onPressed: _openLocationsSelector,
+              onPressed: isReadOnly ? null : _openLocationsSelector,
               expand: true,
               padding: AppButtonStyles.defaultPadding,
               child: Row(
@@ -465,7 +482,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
           SizedBox(
             height: 48,
             child: AppOutlinedActionButton(
-              onPressed: _openServicesSelector,
+              onPressed: () => _openServicesSelector(readOnly: isReadOnly),
               expand: true,
               padding: AppButtonStyles.defaultPadding,
               child: Align(
@@ -507,7 +524,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
           _SwitchTile(
             title: l10n.teamStaffBookableOnlineLabel,
             value: _isBookableOnline,
-            onChanged: (v) => setState(() => _isBookableOnline = v),
+            onChanged: isReadOnly
+                ? null
+                : (v) => setState(() => _isBookableOnline = v),
           ),
           if (_saveError != null) ...[
             const SizedBox(height: AppSpacing.formRowSpacing),
@@ -699,7 +718,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     }
   }
 
-  Future<void> _openServicesSelector() async {
+  Future<void> _openServicesSelector({bool readOnly = false}) async {
     if (_isSelectingServices) return;
     setState(() => _isSelectingServices = true);
     final l10n = context.l10n;
@@ -750,6 +769,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                             services: services,
                             categories: categories,
                             selectedServiceIds: current,
+                            readOnly: readOnly,
                             onChanged: (value) => setStateLocal(() {
                               current = {...value};
                             }),
@@ -765,7 +785,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         child: AppFilledButton(
                           onPressed: () => Navigator.of(dialogCtx).pop(),
                           padding: AppButtonStyles.dialogButtonPadding,
-                          child: Text(l10n.actionConfirm),
+                          child: Text(
+                            readOnly ? l10n.actionClose : l10n.actionConfirm,
+                          ),
                         ),
                       ),
                     ),
@@ -806,6 +828,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                           services: services,
                           categories: categories,
                           selectedServiceIds: current,
+                          readOnly: readOnly,
                           onChanged: (value) => setStateLocal(() {
                             current = {...value};
                           }),
@@ -821,7 +844,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                       child: AppFilledButton(
                         onPressed: () => Navigator.of(sheetCtx).pop(),
                         padding: AppButtonStyles.dialogButtonPadding,
-                        child: Text(l10n.actionConfirm),
+                        child: Text(
+                          readOnly ? l10n.actionClose : l10n.actionConfirm,
+                        ),
                       ),
                     ),
                   ),
@@ -844,12 +869,17 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
 
     if (!mounted) return;
 
-    setState(() {
-      _selectedServiceIds
-        ..clear()
-        ..addAll(current);
-      _isSelectingServices = false;
-    });
+    if (!readOnly) {
+      setState(() {
+        _selectedServiceIds
+          ..clear()
+          ..addAll(current);
+        _isSelectingServices = false;
+      });
+      return;
+    }
+
+    setState(() => _isSelectingServices = false);
   }
 
   Future<void> _openLocationsSelector() async {

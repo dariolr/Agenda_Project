@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/network_providers.dart';
+import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import 'auth_provider.dart';
 
@@ -121,6 +122,15 @@ class BusinessUserContext {
   }
 }
 
+bool _isContextForCurrentBusiness(
+  BusinessUserContext? context,
+  int currentBusinessId,
+) {
+  if (context == null) return false;
+  if (context.isSuperadmin) return true;
+  return currentBusinessId > 0 && context.businessId == currentBusinessId;
+}
+
 /// Provider asincrono per ottenere il contesto dell'utente corrente nel business.
 /// Carica da API: GET /v1/me/business/{business_id}
 final currentBusinessUserContextProvider = FutureProvider<BusinessUserContext?>(
@@ -166,6 +176,7 @@ final currentBusinessUserContextProvider = FutureProvider<BusinessUserContext?>(
 
 /// Provider per verificare se l'utente corrente ha accesso a una specifica location.
 final hasLocationAccessProvider = Provider.family<bool, int>((ref, locationId) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   final context = contextAsync.when(
     data: (data) => data,
@@ -173,11 +184,12 @@ final hasLocationAccessProvider = Provider.family<bool, int>((ref, locationId) {
     error: (_, __) => null,
   );
 
-  // Se non caricato o errore, nega accesso per sicurezza
-  if (context == null) return false;
+  if (!_isContextForCurrentBusiness(context, currentBusinessId)) {
+    return false;
+  }
 
   // Scope business = accesso a tutte le location
-  if (context.hasBusinessScope) return true;
+  if (context!.hasBusinessScope) return true;
 
   // Scope locations = verifica se locationId è nella lista
   return context.locationIds.contains(locationId);
@@ -186,6 +198,7 @@ final hasLocationAccessProvider = Provider.family<bool, int>((ref, locationId) {
 /// Provider per ottenere la lista di location IDs accessibili all'utente corrente.
 /// Ritorna null se ha accesso a tutte le location (scopeType='business').
 final allowedLocationIdsProvider = Provider<List<int>?>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   final context = contextAsync.when(
     data: (data) => data,
@@ -193,11 +206,12 @@ final allowedLocationIdsProvider = Provider<List<int>?>((ref) {
     error: (_, __) => null,
   );
 
-  // Se non ancora caricato, ritorna null (nessun filtro)
-  if (context == null) return null;
+  if (!_isContextForCurrentBusiness(context, currentBusinessId)) {
+    return null;
+  }
 
   // Scope business = null significa accesso a tutte
-  if (context.hasBusinessScope) return null;
+  if (context!.hasBusinessScope) return null;
 
   // Scope locations = ritorna la lista specifica
   return context.locationIds;
@@ -210,9 +224,13 @@ final allowedLocationIdsProvider = Provider<List<int>?>((ref) {
 /// Ruolo dell'utente corrente nel business.
 /// Ritorna 'staff' come default se non ancora caricato.
 final currentUserRoleProvider = Provider<String>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
-    data: (data) => data?.role ?? 'staff',
+    data: (data) =>
+        _isContextForCurrentBusiness(data, currentBusinessId)
+            ? data!.role
+            : 'staff',
     loading: () => 'staff',
     error: (_, __) => 'staff',
   );
@@ -221,11 +239,12 @@ final currentUserRoleProvider = Provider<String>((ref) {
 /// Verifica se l'utente corrente è admin o owner.
 /// Admin può gestire altri operatori.
 final canManageOperatorsProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
     data: (data) {
-      if (data == null) return false;
-      if (data.isSuperadmin) return true;
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
       return data.role == 'admin' || data.role == 'owner';
     },
     loading: () => false,
@@ -236,11 +255,12 @@ final canManageOperatorsProvider = Provider<bool>((ref) {
 /// Verifica se l'utente corrente può vedere tutti gli appuntamenti.
 /// Admin e Manager vedono tutto, Staff vede solo i propri.
 final canViewAllAppointmentsProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
     data: (data) {
-      if (data == null) return false;
-      if (data.isSuperadmin) return true;
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
       return data.role == 'admin' ||
           data.role == 'owner' ||
           data.role == 'manager' ||
@@ -254,11 +274,12 @@ final canViewAllAppointmentsProvider = Provider<bool>((ref) {
 /// Verifica se l'utente corrente può modificare impostazioni business.
 /// Solo admin e owner.
 final canManageBusinessSettingsProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
     data: (data) {
-      if (data == null) return false;
-      if (data.isSuperadmin) return true;
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
       return data.role == 'admin' || data.role == 'owner';
     },
     loading: () => false,
@@ -268,11 +289,12 @@ final canManageBusinessSettingsProvider = Provider<bool>((ref) {
 
 /// Verifica se l'utente corrente può gestire agenda/prenotazioni.
 final currentUserCanManageBookingsProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
     data: (data) {
-      if (data == null) return false;
-      if (data.isSuperadmin) return true;
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
       return data.canManageBookings;
     },
     loading: () => false,
@@ -282,11 +304,12 @@ final currentUserCanManageBookingsProvider = Provider<bool>((ref) {
 
 /// Verifica se l'utente corrente può gestire clienti.
 final currentUserCanManageClientsProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
     data: (data) {
-      if (data == null) return false;
-      if (data.isSuperadmin) return true;
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
       return data.canManageClients;
     },
     loading: () => false,
@@ -296,12 +319,29 @@ final currentUserCanManageClientsProvider = Provider<bool>((ref) {
 
 /// Verifica se l'utente corrente può gestire servizi.
 final currentUserCanManageServicesProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
     data: (data) {
-      if (data == null) return false;
-      if (data.isSuperadmin) return true;
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
       return data.canManageServices;
+    },
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
+/// Verifica se l'utente corrente può visualizzare servizi.
+/// Include chi può gestire e il ruolo viewer.
+final currentUserCanViewServicesProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.when(
+    data: (data) {
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
+      return data.canManageServices || data.role == 'viewer';
     },
     loading: () => false,
     error: (_, __) => false,
@@ -310,12 +350,29 @@ final currentUserCanManageServicesProvider = Provider<bool>((ref) {
 
 /// Verifica se l'utente corrente può gestire staff.
 final currentUserCanManageStaffProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
     data: (data) {
-      if (data == null) return false;
-      if (data.isSuperadmin) return true;
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
       return data.canManageStaff;
+    },
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
+/// Verifica se l'utente corrente può visualizzare staff.
+/// Include chi può gestire e il ruolo viewer.
+final currentUserCanViewStaffProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.when(
+    data: (data) {
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
+      return data.canManageStaff || data.role == 'viewer';
     },
     loading: () => false,
     error: (_, __) => false,
@@ -325,9 +382,13 @@ final currentUserCanManageStaffProvider = Provider<bool>((ref) {
 /// Provider per ottenere lo staff_id dell'utente corrente (se è uno staff).
 /// Ritorna null se l'utente non è associato a uno staff.
 final currentUserStaffIdProvider = Provider<int?>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
-    data: (data) => data?.staffId,
+    data: (data) =>
+        _isContextForCurrentBusiness(data, currentBusinessId)
+            ? data!.staffId
+            : null,
     loading: () => null,
     error: (_, __) => null,
   );
@@ -335,11 +396,12 @@ final currentUserStaffIdProvider = Provider<int?>((ref) {
 
 /// Verifica se l'utente corrente può visualizzare report in base ai permessi.
 final currentUserCanViewReportsProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
     data: (data) {
-      if (data == null) return false;
-      if (data.isSuperadmin) return true;
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
       return data.canViewReports;
     },
     loading: () => false,

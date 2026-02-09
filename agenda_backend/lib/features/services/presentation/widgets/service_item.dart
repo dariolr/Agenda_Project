@@ -22,6 +22,7 @@ class ServiceItem extends ConsumerWidget {
   final VoidCallback onEdit;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
+  final bool readOnly;
 
   const ServiceItem({
     super.key,
@@ -38,6 +39,7 @@ class ServiceItem extends ConsumerWidget {
     required this.onEdit,
     required this.onDuplicate,
     required this.onDelete,
+    this.readOnly = false,
   });
 
   @override
@@ -194,7 +196,9 @@ class ServiceItem extends ConsumerWidget {
                       ),
                       trailing: UnconstrainedBox(
                         alignment: Alignment.centerRight,
-                        child: isWide
+                        child: readOnly
+                            ? null
+                            : isWide
                             ? _buildActionIcons(context)
                             : _buildPopupMenu(),
                       ),

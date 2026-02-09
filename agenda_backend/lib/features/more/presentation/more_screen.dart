@@ -19,13 +19,13 @@ class MoreScreen extends ConsumerWidget {
     final isDesktop = formFactor == AppFormFactor.desktop;
     final canManageOperators = ref.watch(canManageOperatorsProvider);
     final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
-    final canManageServices = ref.watch(currentUserCanManageServicesProvider);
-    final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
+    final canViewServices = ref.watch(currentUserCanViewServicesProvider);
+    final canViewStaff = ref.watch(currentUserCanViewStaffProvider);
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
 
     final items = [
       // Servizi - visibile solo a chi può gestire impostazioni
-      if (canManageServices)
+      if (canViewServices)
         _MoreItem(
           icon: Icons.category_outlined,
           title: l10n.navServices,
@@ -34,13 +34,21 @@ class MoreScreen extends ConsumerWidget {
           onTap: () => context.go('/servizi'),
         ),
       // Team - visibile solo a chi può gestire impostazioni
-      if (canManageStaff)
+      if (canViewStaff)
         _MoreItem(
           icon: Icons.badge_outlined,
           title: l10n.navStaff,
           description: l10n.moreTeamDescription,
           color: const Color(0xFF2196F3), // Blue
           onTap: () => context.go('/staff'),
+        ),
+      if (canViewStaff)
+        _MoreItem(
+          icon: Icons.schedule_outlined,
+          title: l10n.staffHubAvailabilityTitle,
+          description: l10n.moreTeamDescription,
+          color: const Color(0xFF3F51B5), // Indigo
+          onTap: () => context.pushNamed('staff-availability'),
         ),
       // Permessi - visibile solo a chi può gestire operatori
       if (canManageOperators)

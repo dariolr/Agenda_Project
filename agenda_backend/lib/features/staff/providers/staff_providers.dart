@@ -1,6 +1,7 @@
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/auth/providers/auth_provider.dart';
+import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -283,12 +284,23 @@ final staffSectionLocationIdProvider =
 /// Se locationId è null (tutte le sedi), restituisce tutti gli staff.
 final staffForStaffSectionProvider = Provider<List<Staff>>((ref) {
   final locationId = ref.watch(staffSectionLocationIdProvider);
+  final allowedLocationIds = ref.watch(allowedLocationIdsProvider);
   final staffAsync = ref.watch(allStaffProvider);
-  final staff = staffAsync.value ?? [];
+  final allStaff = staffAsync.value ?? [];
+  final staff = allowedLocationIds == null
+      ? allStaff
+      : allStaff
+            .where((member) => member.locationIds.any(allowedLocationIds.contains))
+            .toList();
 
   if (locationId == null) {
-    // Tutte le sedi: restituisci tutti gli staff
+    // Tutte le sedi consentite
     return _sortStaff(staff);
+  }
+
+  // Se l'utente non ha accesso a questa location, lista vuota.
+  if (allowedLocationIds != null && !allowedLocationIds.contains(locationId)) {
+    return const [];
   }
 
   return _sortStaff([

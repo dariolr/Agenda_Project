@@ -13,6 +13,8 @@ class ServiceEligibilitySelector extends StatelessWidget {
     required this.selectedServiceIds,
     required this.onChanged,
     this.showSelectAll = true,
+    this.readOnly = false,
+    this.onServiceTap,
   });
 
   final List<Service> services;
@@ -20,6 +22,8 @@ class ServiceEligibilitySelector extends StatelessWidget {
   final Set<int> selectedServiceIds;
   final ValueChanged<Set<int>> onChanged;
   final bool showSelectAll;
+  final bool readOnly;
+  final ValueChanged<Service>? onServiceTap;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +66,9 @@ class ServiceEligibilitySelector extends StatelessWidget {
           _SelectableRow(
             label: l10n.teamSelectAllServices,
             selected: isAllSelected,
-            onTap: () {
+            onTap: readOnly
+                ? null
+                : () {
               if (isAllSelected) {
                 onChanged(<int>{});
               } else {
@@ -74,12 +80,13 @@ class ServiceEligibilitySelector extends StatelessWidget {
         for (final category in sortedCategories)
           if ((servicesByCategory[category.id] ?? const <Service>[]).isNotEmpty)
             ...[
-              _CategoryHeader(
-                category: category,
-                selectedIds: selectedServiceIds,
-                services: servicesByCategory[category.id]!,
-                onChanged: onChanged,
-              ),
+                _CategoryHeader(
+                  category: category,
+                  selectedIds: selectedServiceIds,
+                  services: servicesByCategory[category.id]!,
+                  onChanged: onChanged,
+                  readOnly: readOnly,
+                ),
               for (int i = 0; i < servicesByCategory[category.id]!.length; i++)
                 _ServiceRow(
                   service: servicesByCategory[category.id]![i],
@@ -90,6 +97,8 @@ class ServiceEligibilitySelector extends StatelessWidget {
                           .extension<AppInteractionColors>()
                           ?.alternatingRowFill ??
                       theme.colorScheme.onSurface.withOpacity(0.04),
+                  readOnly: readOnly,
+                  onServiceTap: onServiceTap,
                 ),
             ],
       ],
@@ -101,12 +110,12 @@ class _SelectableRow extends StatelessWidget {
   const _SelectableRow({
     required this.label,
     required this.selected,
-    required this.onTap,
+    this.onTap,
   });
 
   final String label;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -139,12 +148,14 @@ class _CategoryHeader extends StatelessWidget {
     required this.services,
     required this.selectedIds,
     required this.onChanged,
+    required this.readOnly,
   });
 
   final ServiceCategory category;
   final List<Service> services;
   final Set<int> selectedIds;
   final ValueChanged<Set<int>> onChanged;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +167,9 @@ class _CategoryHeader extends StatelessWidget {
     return Material(
       color: theme.colorScheme.primary,
       child: InkWell(
-        onTap: () {
+        onTap: readOnly
+            ? null
+            : () {
           if (serviceIds.isEmpty) return;
           final updated = {...selectedIds};
           if (isSelected) {
@@ -201,6 +214,8 @@ class _ServiceRow extends StatelessWidget {
     required this.selectedIds,
     required this.onChanged,
     required this.evenBackgroundColor,
+    required this.readOnly,
+    this.onServiceTap,
   });
 
   final Service service;
@@ -208,6 +223,8 @@ class _ServiceRow extends StatelessWidget {
   final Set<int> selectedIds;
   final ValueChanged<Set<int>> onChanged;
   final Color evenBackgroundColor;
+  final bool readOnly;
+  final ValueChanged<Service>? onServiceTap;
 
   @override
   Widget build(BuildContext context) {
@@ -216,6 +233,10 @@ class _ServiceRow extends StatelessWidget {
       color: isEven ? evenBackgroundColor : Colors.transparent,
       child: InkWell(
         onTap: () {
+          if (readOnly) {
+            onServiceTap?.call(service);
+            return;
+          }
           final updated = {...selectedIds};
           if (isSelected) {
             updated.remove(service.id);

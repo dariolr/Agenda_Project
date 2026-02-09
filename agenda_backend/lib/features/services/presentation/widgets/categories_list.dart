@@ -27,6 +27,7 @@ class CategoriesList extends ConsumerWidget {
   final ValueChanged<ServicePackage> onPackageEdit;
   final ValueChanged<int> onPackageDelete;
   final ScrollController scrollController;
+  final bool readOnly;
 
   const CategoriesList({
     super.key,
@@ -48,6 +49,7 @@ class CategoriesList extends ConsumerWidget {
     required this.onPackageEdit,
     required this.onPackageDelete,
     required this.scrollController,
+    this.readOnly = false,
   });
 
   @override
@@ -58,9 +60,7 @@ class CategoriesList extends ConsumerWidget {
       itemCount: categories.length,
       itemBuilder: (context, index) {
         final category = categories[index];
-        final entries = ref.watch(
-          sortedCategoryEntriesProvider(category.id),
-        );
+        final entries = ref.watch(sortedCategoryEntriesProvider(category.id));
         final hasPrev = index > 0;
         final prevIsNonEmpty = hasPrev
             ? ref
@@ -115,6 +115,7 @@ class CategoriesList extends ConsumerWidget {
               onPackageEdit: onPackageEdit,
               onPackageDelete: onPackageDelete,
               addTopSpacing: isFirstEmptyAfterNonEmpty,
+              readOnly: readOnly,
             ),
           ),
         );
