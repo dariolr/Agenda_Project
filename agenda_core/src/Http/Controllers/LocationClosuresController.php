@@ -34,7 +34,7 @@ final class LocationClosuresController
         $businessId = (int) $request->getRouteParam('business_id');
         $userId = $request->getAttribute('user_id');
 
-        if (!$this->hasBusinessAccess($userId, $businessId)) {
+        if (!$this->hasBusinessReadAccess($userId, $businessId)) {
             return Response::notFound('Business not found', $request->traceId);
         }
 
@@ -54,7 +54,7 @@ final class LocationClosuresController
         $businessId = (int) $request->getRouteParam('business_id');
         $userId = $request->getAttribute('user_id');
 
-        if (!$this->hasBusinessAccess($userId, $businessId)) {
+        if (!$this->hasBusinessReadAccess($userId, $businessId)) {
             return Response::notFound('Business not found', $request->traceId);
         }
 
@@ -92,7 +92,7 @@ final class LocationClosuresController
         $businessId = (int) $request->getRouteParam('business_id');
         $userId = $request->getAttribute('user_id');
 
-        if (!$this->hasBusinessAccess($userId, $businessId)) {
+        if (!$this->hasBusinessWriteAccess($userId, $businessId)) {
             return Response::notFound('Business not found', $request->traceId);
         }
 
@@ -168,7 +168,7 @@ final class LocationClosuresController
             return Response::notFound('Closure not found', $request->traceId);
         }
 
-        if (!$this->hasBusinessAccess($userId, (int)$closure['business_id'])) {
+        if (!$this->hasBusinessReadAccess($userId, (int)$closure['business_id'])) {
             return Response::notFound('Closure not found', $request->traceId);
         }
 
@@ -192,7 +192,7 @@ final class LocationClosuresController
 
         $businessId = (int)$closure['business_id'];
         
-        if (!$this->hasBusinessAccess($userId, $businessId)) {
+        if (!$this->hasBusinessWriteAccess($userId, $businessId)) {
             return Response::notFound('Closure not found', $request->traceId);
         }
 
@@ -263,7 +263,7 @@ final class LocationClosuresController
             return Response::notFound('Closure not found', $request->traceId);
         }
 
-        if (!$this->hasBusinessAccess($userId, (int)$closure['business_id'])) {
+        if (!$this->hasBusinessWriteAccess($userId, (int)$closure['business_id'])) {
             return Response::notFound('Closure not found', $request->traceId);
         }
 
@@ -272,7 +272,15 @@ final class LocationClosuresController
         return Response::noContent($request->traceId);
     }
 
-    private function hasBusinessAccess(int $userId, int $businessId): bool
+    private function hasBusinessReadAccess(int $userId, int $businessId): bool
+    {
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+    }
+
+    private function hasBusinessWriteAccess(int $userId, int $businessId): bool
     {
         if ($this->userRepo->isSuperadmin($userId)) {
             return true;

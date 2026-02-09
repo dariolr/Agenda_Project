@@ -14,6 +14,7 @@ class ServicePackageListItem extends ConsumerWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final bool readOnly;
 
   const ServicePackageListItem({
     super.key,
@@ -25,6 +26,7 @@ class ServicePackageListItem extends ConsumerWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
+    this.readOnly = false,
   });
 
   @override
@@ -68,8 +70,9 @@ class ServicePackageListItem extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: colorScheme.secondary,
                     borderRadius: BorderRadius.only(
-                      bottomLeft:
-                          isLast ? const Radius.circular(16) : Radius.zero,
+                      bottomLeft: isLast
+                          ? const Radius.circular(16)
+                          : Radius.zero,
                     ),
                   ),
                 ),
@@ -119,12 +122,15 @@ class ServicePackageListItem extends ConsumerWidget {
                               children: [
                                 if (!package.isActive)
                                   _StatusChip(
-                                    label: context.l10n.servicePackageInactiveLabel,
+                                    label: context
+                                        .l10n
+                                        .servicePackageInactiveLabel,
                                     color: colorScheme.outline,
                                   ),
                                 if (package.isBroken)
                                   _StatusChip(
-                                    label: context.l10n.servicePackageBrokenLabel,
+                                    label:
+                                        context.l10n.servicePackageBrokenLabel,
                                     color: colorScheme.error,
                                   ),
                               ],
@@ -134,7 +140,9 @@ class ServicePackageListItem extends ConsumerWidget {
                     ),
                     trailing: UnconstrainedBox(
                       alignment: Alignment.centerRight,
-                      child: isWide
+                      child: readOnly
+                          ? null
+                          : isWide
                           ? _buildActionIcons(context)
                           : _buildPopupMenu(context),
                     ),

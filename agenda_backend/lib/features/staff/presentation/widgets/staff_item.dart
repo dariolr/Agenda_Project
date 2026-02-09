@@ -18,6 +18,7 @@ class StaffItem extends ConsumerStatefulWidget {
     required this.onDuplicate,
     required this.onDelete,
     this.trailingOverride,
+    this.readOnly = false,
   });
 
   final Staff staff;
@@ -28,6 +29,7 @@ class StaffItem extends ConsumerStatefulWidget {
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
   final Widget? trailingOverride;
+  final bool readOnly;
 
   @override
   ConsumerState<StaffItem> createState() => _StaffItemState();
@@ -141,7 +143,9 @@ class _StaffItemState extends ConsumerState<StaffItem> {
           mouseCursor: SystemMouseCursors.click,
           trailing:
               widget.trailingOverride ??
-              (widget.isWide
+              (widget.readOnly
+                  ? null
+                  : widget.isWide
                   ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

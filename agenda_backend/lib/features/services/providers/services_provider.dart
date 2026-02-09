@@ -125,12 +125,15 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
       locationId: location.id,
     );
 
-    // Le categorie gestionali sono protette da permesso "manage_services".
+    // Per ruoli read-only (viewer) usiamo le categorie incluse in GET /services.
+    // Per ruoli con manage_services usiamo la fonte gestionale dedicata.
     if (canManageServices) {
       final categories = await repository.getCategories(businessId);
       ref.read(serviceCategoriesProvider.notifier).setCategories(categories);
     } else {
-      ref.read(serviceCategoriesProvider.notifier).setCategories(const []);
+      ref
+          .read(serviceCategoriesProvider.notifier)
+          .setCategories(result.categories);
     }
 
     return result.services;
@@ -163,12 +166,15 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         locationId: location.id,
       );
 
-      // Le categorie gestionali sono protette da permesso "manage_services".
+      // Per ruoli read-only (viewer) usiamo le categorie incluse in GET /services.
+      // Per ruoli con manage_services usiamo la fonte gestionale dedicata.
       if (canManageServices) {
         final categories = await repository.getCategories(businessId);
         ref.read(serviceCategoriesProvider.notifier).setCategories(categories);
       } else {
-        ref.read(serviceCategoriesProvider.notifier).setCategories(const []);
+        ref
+            .read(serviceCategoriesProvider.notifier)
+            .setCategories(result.categories);
       }
 
       state = AsyncData(result.services);

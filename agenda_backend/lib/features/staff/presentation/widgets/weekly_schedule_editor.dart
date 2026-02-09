@@ -258,12 +258,14 @@ class WeeklyScheduleEditor extends StatefulWidget {
   final WeeklySchedule initialSchedule;
   final ValueChanged<WeeklySchedule>? onChanged;
   final bool showHeader;
+  final bool readOnly;
 
   const WeeklyScheduleEditor({
     super.key,
     required this.initialSchedule,
     this.onChanged,
     this.showHeader = true,
+    this.readOnly = false,
   });
 
   @override
@@ -377,10 +379,14 @@ class _WeeklyScheduleEditorState extends State<WeeklyScheduleEditor> {
     final theme = Theme.of(context);
     final dayNames = _getDayNames(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
+    return IgnorePointer(
+      ignoring: widget.readOnly,
+      child: Opacity(
+        opacity: widget.readOnly ? 0.92 : 1,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
         // Header con titolo e ore totali (opzionale)
         if (widget.showHeader)
           Padding(
@@ -427,7 +433,9 @@ class _WeeklyScheduleEditorState extends State<WeeklyScheduleEditor> {
             );
           }),
         ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 }
