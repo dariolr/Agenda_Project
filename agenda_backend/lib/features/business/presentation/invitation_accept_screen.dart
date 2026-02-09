@@ -184,7 +184,7 @@ class _InvitationAcceptScreenState
                               ),
                             if (isAuthenticated) ...[
                               const SizedBox(height: 8),
-                              TextButton(
+                              OutlinedButton.icon(
                                 onPressed: () async {
                                   await ref
                                       .read(authProvider.notifier)
@@ -195,7 +195,8 @@ class _InvitationAcceptScreenState
                                   );
                                   context.go('/login?redirect=$redirect');
                                 },
-                                child: Text(l10n.invitationAcceptSwitchAccount),
+                                icon: const Icon(Icons.switch_account_outlined),
+                                label: Text(l10n.invitationAcceptSwitchAccount),
                               ),
                             ],
                           ],
