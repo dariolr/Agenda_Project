@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/l10n/l10_extension.dart';
 import '../features/agenda/presentation/agenda_screen.dart';
+import '../features/agenda/providers/business_providers.dart';
 import '../features/auth/domain/auth_state.dart';
 import '../features/auth/presentation/change_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
@@ -55,18 +56,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   final isAuthenticated = authInfo.isAuthenticated;
   final isSuperadmin = authInfo.isSuperadmin;
   final isInitialOrLoading = authInfo.isInitialOrLoading;
-  final canManageClients = ref.watch(currentUserCanManageClientsProvider);
-  final canManageServices = ref.watch(currentUserCanManageServicesProvider);
-  final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
-  final canManageOperators = ref.watch(canManageOperatorsProvider);
-  final canManageBusinessSettings = ref.watch(
-    canManageBusinessSettingsProvider,
-  );
-  final canViewReports = ref.watch(currentUserCanViewReportsProvider);
-
-  final superadminSelectedBusiness = ref.watch(
-    superadminSelectedBusinessProvider,
-  );
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -109,6 +98,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isInvitationPage =
           invitationPath == '/invitation' ||
           invitationPath.startsWith('/invitation/');
+      final canManageClients = ref.read(currentUserCanManageClientsProvider);
+      final canManageServices = ref.read(currentUserCanManageServicesProvider);
+      final canManageStaff = ref.read(currentUserCanManageStaffProvider);
+      final canManageOperators = ref.read(canManageOperatorsProvider);
+      final canManageBusinessSettings = ref.read(
+        canManageBusinessSettingsProvider,
+      );
+      final canViewReports = ref.read(currentUserCanViewReportsProvider);
+      final currentBusinessId = ref.read(currentBusinessIdProvider);
+      final superadminSelectedBusiness = ref.read(
+        superadminSelectedBusinessProvider,
+      );
 
       // Durante il caricamento iniziale, non fare redirect
       if (isInitialOrLoading) {
@@ -144,6 +145,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Se superadmin va alla schermata switch user, riporta alla lista admin.
       if (isAuthenticated && isSuperadmin && isOnUserBusinessSwitch) {
         return '/businesses';
+      }
+
+      // Per utenti non superadmin:
+      // - /my-businesses è usata in due casi:
+      //   1) selezione iniziale (business non ancora selezionato)
+      //   2) switch esplicito dal menu (?switch=1)
+      // - se esiste già un business corrente e non è uno switch esplicito,
+      //   evita rimbalzi tornando in agenda.
+      if (isAuthenticated && !isSuperadmin && isOnUserBusinessSwitch) {
+        final isExplicitSwitch = state.uri.queryParameters['switch'] == '1';
+        if (!isExplicitSwitch && currentBusinessId > 0) {
+          return '/agenda';
+        }
       }
 
       // Se superadmin tenta di accedere all'agenda senza aver selezionato un business
