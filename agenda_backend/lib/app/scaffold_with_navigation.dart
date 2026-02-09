@@ -501,7 +501,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       context.go('/businesses');
       return;
     }
-    context.go('/my-businesses');
+    context.go('/my-businesses?switch=1');
   }
 
   void _handleLogout(BuildContext context, WidgetRef ref) {

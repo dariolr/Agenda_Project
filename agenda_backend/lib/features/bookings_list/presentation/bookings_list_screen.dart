@@ -186,12 +186,21 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
 
   void _showStaffFilter(BuildContext context) async {
     final staff = ref.read(allStaffProvider).value ?? [];
-    if (staff.isEmpty) return;
+    final visibleLocationIds = ref
+        .read(locationsProvider)
+        .map((l) => l.id)
+        .toSet();
+    final filteredStaff = staff.where((s) {
+      // Staff senza location esplicite è trattato come globale
+      if (s.locationIds.isEmpty) return true;
+      return s.locationIds.any(visibleLocationIds.contains);
+    }).toList();
+    if (filteredStaff.isEmpty) return;
 
     final selected = await showDialog<Set<int>>(
       context: context,
       builder: (ctx) =>
-          _StaffFilterDialog(staff: staff, selected: _selectedStaffIds),
+          _StaffFilterDialog(staff: filteredStaff, selected: _selectedStaffIds),
     );
 
     if (selected != null) {
