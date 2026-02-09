@@ -3892,16 +3892,6 @@ class L10n {
     );
   }
 
-  /// `Accedi con un altro account`
-  String get invitationAcceptSwitchAccount {
-    return Intl.message(
-      'Accedi con un altro account',
-      name: 'invitationAcceptSwitchAccount',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Invito accettato`
   String get invitationAcceptSuccessTitle {
     return Intl.message(
@@ -3982,10 +3972,10 @@ class L10n {
     );
   }
 
-  /// `Questo invito è associato a un'altra email. Per continuare: 1) clicca "Accedi con un altro account" 2) effettua il login con l'email invitata 3) torna su questo link e accetta l'invito.`
+  /// `Questo invito è associato a un'altra email. Sei stato disconnesso automaticamente: ora accedi con l'email invitata per continuare.`
   String get invitationAcceptErrorEmailMismatch {
     return Intl.message(
-      'Questo invito è associato a un\'altra email. Per continuare: 1) clicca "Accedi con un altro account" 2) effettua il login con l\'email invitata 3) torna su questo link e accetta l\'invito.',
+      'Questo invito è associato a un\'altra email. Sei stato disconnesso automaticamente: ora accedi con l\'email invitata per continuare.',
       name: 'invitationAcceptErrorEmailMismatch',
       desc: '',
       args: [],

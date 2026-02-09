@@ -869,7 +869,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Accetta invito",
     ),
     "invitationAcceptErrorEmailMismatch": MessageLookupByLibrary.simpleMessage(
-      "Questo invito è associato a un\'altra email. Per continuare: 1) clicca \"Accedi con un altro account\" 2) effettua il login con l\'email invitata 3) torna su questo link e accetta l\'invito.",
+      "Questo invito è associato a un\'altra email. Sei stato disconnesso automaticamente: ora accedi con l\'email invitata per continuare.",
     ),
     "invitationAcceptErrorExpired": MessageLookupByLibrary.simpleMessage(
       "Questo invito è scaduto.",
@@ -911,9 +911,6 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "invitationAcceptSuccessTitle": MessageLookupByLibrary.simpleMessage(
       "Invito accettato",
-    ),
-    "invitationAcceptSwitchAccount": MessageLookupByLibrary.simpleMessage(
-      "Accedi con un altro account",
     ),
     "invitationAcceptTitle": MessageLookupByLibrary.simpleMessage(
       "Accetta invito",

@@ -808,7 +808,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Accept invitation",
     ),
     "invitationAcceptErrorEmailMismatch": MessageLookupByLibrary.simpleMessage(
-      "This invitation is linked to a different email. To continue: 1) tap \"Sign in with another account\" 2) sign in with the invited email 3) return to this link and accept the invitation.",
+      "This invitation is linked to a different email. You were signed out automatically: now sign in with the invited email to continue.",
     ),
     "invitationAcceptErrorExpired": MessageLookupByLibrary.simpleMessage(
       "This invitation has expired.",
@@ -850,9 +850,6 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "invitationAcceptSuccessTitle": MessageLookupByLibrary.simpleMessage(
       "Invitation accepted",
-    ),
-    "invitationAcceptSwitchAccount": MessageLookupByLibrary.simpleMessage(
-      "Sign in with another account",
     ),
     "invitationAcceptTitle": MessageLookupByLibrary.simpleMessage(
       "Accept invitation",
