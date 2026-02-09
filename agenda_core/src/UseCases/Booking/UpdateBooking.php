@@ -173,6 +173,11 @@ final class UpdateBooking
             throw BookingException::serverError('Failed to update booking');
         }
 
+        // Se lo status viene cambiato a 'cancelled', elimina i reminder pendenti
+        if (($data['status'] ?? null) === 'cancelled' && $this->notificationRepo !== null) {
+            $this->notificationRepo->deletePendingReminders($bookingId);
+        }
+
         // Cattura stato DOPO l'update per audit
         $afterState = $this->captureBookingState($bookingId);
         
