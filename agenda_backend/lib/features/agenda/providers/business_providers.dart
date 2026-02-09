@@ -129,10 +129,24 @@ final currentBusinessProvider = Provider<Business>((ref) {
   final currentId = ref.watch(currentBusinessIdProvider);
 
   return businessesAsync.when(
-    data: (businesses) => businesses.firstWhere(
-      (b) => b.id == currentId,
-      orElse: () => businesses.first,
-    ),
+    data: (businesses) {
+      if (businesses.isEmpty) {
+        return Business(id: 0, name: 'Loading...', createdAt: DateTime.now());
+      }
+
+      if (currentId <= 0) {
+        return businesses.first;
+      }
+
+      final match = businesses.where((b) => b.id == currentId);
+      if (match.isNotEmpty) {
+        return match.first;
+      }
+
+      // Evita fallback silenzioso al primo business quando l'ID corrente
+      // è stale/non valido: i provider dipendenti attendono un ID valido.
+      return Business(id: 0, name: 'Loading...', createdAt: DateTime.now());
+    },
     loading: () =>
         Business(id: currentId, name: 'Loading...', createdAt: DateTime.now()),
     error: (_, __) =>

@@ -172,7 +172,7 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
     final l10n = context.l10n;
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Header
@@ -187,43 +187,49 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 24),
-
-        // Role options
-        _RoleRadioList(
-          selectedRole: _selectedRole,
-          onChanged: (role) => setState(() => _selectedRole = role),
-        ),
-        // Sezione scope solo se più di una location
-        if (widget.locations.length > 1) ...[
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 16),
-          _ScopeTypeSelector(
-            selectedScopeType: _selectedScopeType,
-            onChanged: (scope) => setState(() {
-              _selectedScopeType = scope;
-              if (scope == 'business') {
-                _selectedLocationIds.clear();
-              }
-            }),
-          ),
-          if (_selectedScopeType == 'locations') ...[
-            const SizedBox(height: 16),
-            _LocationsMultiSelect(
-              locations: widget.locations,
-              selectedIds: _selectedLocationIds,
-              onChanged: (ids) => setState(() {
-                _selectedLocationIds
-                  ..clear()
-                  ..addAll(ids);
-              }),
+        const SizedBox(height: 16),
+        Flexible(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Role options
+                _RoleRadioList(
+                  selectedRole: _selectedRole,
+                  onChanged: (role) => setState(() => _selectedRole = role),
+                ),
+                // Sezione scope solo se più di una location
+                if (widget.locations.length > 1) ...[
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  _ScopeTypeSelector(
+                    selectedScopeType: _selectedScopeType,
+                    onChanged: (scope) => setState(() {
+                      _selectedScopeType = scope;
+                      if (scope == 'business') {
+                        _selectedLocationIds.clear();
+                      }
+                    }),
+                  ),
+                  if (_selectedScopeType == 'locations') ...[
+                    const SizedBox(height: 16),
+                    _LocationsMultiSelect(
+                      locations: widget.locations,
+                      selectedIds: _selectedLocationIds,
+                      onChanged: (ids) => setState(() {
+                        _selectedLocationIds
+                          ..clear()
+                          ..addAll(ids);
+                      }),
+                    ),
+                  ],
+                ],
+              ],
             ),
-          ],
-        ],
-
-        // Actions
-        const SizedBox(height: 24),
+          ),
+        ),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
