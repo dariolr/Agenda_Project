@@ -5,6 +5,7 @@ import '/core/models/appointment.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
 import '../../../../../../core/l10n/l10_extension.dart';
 import '../../../../../../core/widgets/app_dialogs.dart';
+import '../../../../auth/providers/current_business_user_provider.dart';
 import '../../../../clients/providers/clients_providers.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
@@ -80,6 +81,7 @@ class _AppointmentCardInteractiveState
     final selection = ref.watch(selectedAppointmentProvider);
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final formFactor = ref.watch(formFactorProvider);
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
 
     final isSelected = selection.contains(widget.appointment.id);
     final isDragging = draggedId == widget.appointment.id;
@@ -191,7 +193,8 @@ class _AppointmentCardInteractiveState
                 ),
                 feedbackOffset: Offset.zero,
                 dragAnchorStrategy: childDragAnchorStrategy,
-                maxSimultaneousDrags: _blockDragDuringResize ? 0 : 1,
+                maxSimultaneousDrags:
+                    (_blockDragDuringResize || !canManageBookings) ? 0 : 1,
                 childWhenDragging: _buildCard(
                   isGhost: true,
                   showThickBorder: showThickBorder,
@@ -240,7 +243,7 @@ class _AppointmentCardInteractiveState
 
                 child: _buildCard(
                   showThickBorder: showThickBorder,
-                  isResizingDisabled: isDragging,
+                  isResizingDisabled: isDragging || !canManageBookings,
                   isSelected: isSelected,
                 ),
               ),
@@ -283,6 +286,12 @@ class _AppointmentCardInteractiveState
   }
 
   void _handleDragEnd(WidgetRef ref, DraggableDetails details) {
+    final canManageBookings = ref.read(currentUserCanManageBookingsProvider);
+    if (!canManageBookings) {
+      _handleEnd(ref, keepSelection: false);
+      return;
+    }
+
     if (details.wasAccepted) {
       _handleEnd(ref, keepSelection: true);
       return;

@@ -15,6 +15,11 @@ class BusinessUserContext {
   final List<int> locationIds;
   final int? staffId;
   final bool isSuperadmin;
+  final bool canManageBookings;
+  final bool canManageClients;
+  final bool canManageServices;
+  final bool canManageStaff;
+  final bool canViewReports;
 
   const BusinessUserContext({
     required this.userId,
@@ -24,6 +29,11 @@ class BusinessUserContext {
     required this.locationIds,
     required this.staffId,
     required this.isSuperadmin,
+    required this.canManageBookings,
+    required this.canManageClients,
+    required this.canManageServices,
+    required this.canManageStaff,
+    required this.canViewReports,
   });
 
   /// Indica se l'utente ha accesso a tutte le location del business.
@@ -36,10 +46,53 @@ class BusinessUserContext {
   bool get isStaffRole => role == 'staff' && staffId != null;
 
   factory BusinessUserContext.fromJson(Map<String, dynamic> json) {
+    final role = json['role'] as String;
+    final permissions = json['permissions'];
+    final defaultCanManageBookings =
+        role == 'owner' ||
+        role == 'admin' ||
+        role == 'manager' ||
+        role == 'staff';
+    final defaultCanManageClients =
+        role == 'owner' || role == 'admin' || role == 'manager';
+    final defaultCanManageServices = role == 'owner' || role == 'admin';
+    final defaultCanManageStaff = role == 'owner' || role == 'admin';
+    final defaultCanViewReports = role == 'owner' || role == 'admin';
+    final canManageBookings = permissions is Map
+        ? _toBool(
+            permissions['can_manage_bookings'],
+            fallback: defaultCanManageBookings,
+          )
+        : defaultCanManageBookings;
+    final canManageClients = permissions is Map
+        ? _toBool(
+            permissions['can_manage_clients'],
+            fallback: defaultCanManageClients,
+          )
+        : defaultCanManageClients;
+    final canManageServices = permissions is Map
+        ? _toBool(
+            permissions['can_manage_services'],
+            fallback: defaultCanManageServices,
+          )
+        : defaultCanManageServices;
+    final canManageStaff = permissions is Map
+        ? _toBool(
+            permissions['can_manage_staff'],
+            fallback: defaultCanManageStaff,
+          )
+        : defaultCanManageStaff;
+    final canViewReports = permissions is Map
+        ? _toBool(
+            permissions['can_view_reports'],
+            fallback: defaultCanViewReports,
+          )
+        : defaultCanViewReports;
+
     return BusinessUserContext(
       userId: json['user_id'] as int,
       businessId: json['business_id'] as int,
-      role: json['role'] as String,
+      role: role,
       scopeType: json['scope_type'] as String? ?? 'business',
       locationIds:
           (json['location_ids'] as List<dynamic>?)
@@ -48,7 +101,23 @@ class BusinessUserContext {
           [],
       staffId: json['staff_id'] as int?,
       isSuperadmin: json['is_superadmin'] as bool? ?? false,
+      canManageBookings: canManageBookings,
+      canManageClients: canManageClients,
+      canManageServices: canManageServices,
+      canManageStaff: canManageStaff,
+      canViewReports: canViewReports,
     );
+  }
+
+  static bool _toBool(dynamic value, {required bool fallback}) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == '1' || normalized == 'true') return true;
+      if (normalized == '0' || normalized == 'false') return false;
+    }
+    return fallback;
   }
 }
 
@@ -72,6 +141,11 @@ final currentBusinessUserContextProvider = FutureProvider<BusinessUserContext?>(
         locationIds: const [],
         staffId: null,
         isSuperadmin: true,
+        canManageBookings: true,
+        canManageClients: true,
+        canManageServices: true,
+        canManageStaff: true,
+        canViewReports: true,
       );
     }
 
@@ -192,6 +266,62 @@ final canManageBusinessSettingsProvider = Provider<bool>((ref) {
   );
 });
 
+/// Verifica se l'utente corrente può gestire agenda/prenotazioni.
+final currentUserCanManageBookingsProvider = Provider<bool>((ref) {
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.when(
+    data: (data) {
+      if (data == null) return false;
+      if (data.isSuperadmin) return true;
+      return data.canManageBookings;
+    },
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
+/// Verifica se l'utente corrente può gestire clienti.
+final currentUserCanManageClientsProvider = Provider<bool>((ref) {
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.when(
+    data: (data) {
+      if (data == null) return false;
+      if (data.isSuperadmin) return true;
+      return data.canManageClients;
+    },
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
+/// Verifica se l'utente corrente può gestire servizi.
+final currentUserCanManageServicesProvider = Provider<bool>((ref) {
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.when(
+    data: (data) {
+      if (data == null) return false;
+      if (data.isSuperadmin) return true;
+      return data.canManageServices;
+    },
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
+/// Verifica se l'utente corrente può gestire staff.
+final currentUserCanManageStaffProvider = Provider<bool>((ref) {
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.when(
+    data: (data) {
+      if (data == null) return false;
+      if (data.isSuperadmin) return true;
+      return data.canManageStaff;
+    },
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
 /// Provider per ottenere lo staff_id dell'utente corrente (se è uno staff).
 /// Ritorna null se l'utente non è associato a uno staff.
 final currentUserStaffIdProvider = Provider<int?>((ref) {
@@ -200,5 +330,19 @@ final currentUserStaffIdProvider = Provider<int?>((ref) {
     data: (data) => data?.staffId,
     loading: () => null,
     error: (_, __) => null,
+  );
+});
+
+/// Verifica se l'utente corrente può visualizzare report in base ai permessi.
+final currentUserCanViewReportsProvider = Provider<bool>((ref) {
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.when(
+    data: (data) {
+      if (data == null) return false;
+      if (data.isSuperadmin) return true;
+      return data.canViewReports;
+    },
+    loading: () => false,
+    error: (_, __) => false,
   );
 });

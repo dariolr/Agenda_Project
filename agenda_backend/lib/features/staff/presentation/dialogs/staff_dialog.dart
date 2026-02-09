@@ -16,6 +16,7 @@ import '../../../../core/widgets/app_switch.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../agenda/providers/location_providers.dart';
+import '../../../auth/providers/current_business_user_provider.dart';
 import '../../../services/presentation/widgets/service_eligibility_selector.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../providers/staff_providers.dart';
@@ -27,6 +28,7 @@ Future<void> showStaffDialog(
   int? initialLocationId,
   bool duplicateFrom = false,
 }) async {
+  if (!ref.read(currentUserCanManageStaffProvider)) return;
   final formFactor = ref.read(formFactorProvider);
   final isDesktop = formFactor == AppFormFactor.desktop;
 
@@ -191,6 +193,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         ? l10n.teamEditStaffTitle
         : l10n.teamNewStaffTitle;
     final formFactor = ref.read(formFactorProvider);
+    final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
     final isSingleColumn = formFactor != AppFormFactor.desktop;
     final locations = ref.watch(locationsProvider);
     // Carica servizi solo per le location selezionate
@@ -268,7 +271,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         child: Text(l10n.actionCancel),
       ),
       AppFilledButton(
-        onPressed: _isSaving ? null : _onSave,
+        onPressed: _isSaving || !canManageStaff ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
         child: Text(l10n.actionSave),
       ),
@@ -638,6 +641,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
   String? _saveError;
 
   Future<void> _onSave() async {
+    if (!ref.read(currentUserCanManageStaffProvider)) return;
     if (!_formKey.currentState!.validate()) return;
     if (_selectedLocationIds.isEmpty) {
       setState(() => _locationsError = context.l10n.validationRequired);

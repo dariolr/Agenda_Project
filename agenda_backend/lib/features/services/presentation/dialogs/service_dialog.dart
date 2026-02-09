@@ -23,6 +23,7 @@ import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
+import '../../../auth/providers/current_business_user_provider.dart';
 import '../../../staff/providers/staff_providers.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../providers/services_provider.dart';
@@ -331,6 +332,7 @@ Future<void> showServiceDialog(
   bool requireCategorySelection = false,
   bool duplicateFrom = false,
 }) async {
+  if (!ref.read(currentUserCanManageServicesProvider)) return;
   final notifier = ref.read(servicesProvider.notifier);
   final allServices = ref.read(servicesProvider).value ?? [];
   final categories = ref.read(serviceCategoriesProvider);
@@ -512,6 +514,7 @@ Future<void> showServiceDialog(
   }
 
   Future<void> handleSave() async {
+    if (!ref.read(currentUserCanManageServicesProvider)) return;
     final name = nameController.text.trim();
     if (name.isEmpty) {
       nameError = true;
@@ -1653,6 +1656,7 @@ Future<void> showServiceDialog(
 
   final builder = StatefulBuilder(
     builder: (context, setState) {
+      final canManageServices = ref.watch(currentUserCanManageServicesProvider);
       if (!didAutoScroll) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           scrollToSelected(animate: false);
@@ -1698,7 +1702,7 @@ Future<void> showServiceDialog(
       final saveButton = SizedBox(
         width: AppButtonStyles.dialogButtonWidth,
         child: AppAsyncFilledButton(
-          onPressed: isSaving
+          onPressed: isSaving || !canManageServices
               ? null
               : () async {
                   setState(() => isSaving = true);
