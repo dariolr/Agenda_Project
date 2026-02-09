@@ -384,6 +384,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   /// Ricarica i provider relativi alla tab selezionata
   void _refreshProvidersForTab(int index, WidgetRef ref) {
     final canManageSettings = ref.read(canManageBusinessSettingsProvider);
+    final canManageClients = ref.read(currentUserCanManageClientsProvider);
+    final canViewServices = ref.read(currentUserCanViewServicesProvider);
+    final canViewStaff = ref.read(currentUserCanViewStaffProvider);
     switch (index) {
       case 0: // Agenda
         if (canManageSettings) {
@@ -391,16 +394,22 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         }
         break;
       case 1: // Clienti
-        ref.read(clientsProvider.notifier).setSearchQuery('');
-        ref.read(clientsProvider.notifier).refresh();
-        ref.read(clientAppointmentsRefreshProvider.notifier).bump();
+        if (canManageClients) {
+          ref.read(clientsProvider.notifier).setSearchQuery('');
+          ref.read(clientsProvider.notifier).refresh();
+          ref.read(clientAppointmentsRefreshProvider.notifier).bump();
+        }
         break;
       case 2: // Servizi
-        ref.read(servicesProvider.notifier).refresh();
+        if (canViewServices) {
+          ref.read(servicesProvider.notifier).refresh();
+        }
         break;
       case 3: // Staff
-        ref.read(allStaffProvider.notifier).refresh();
-        ref.read(locationsProvider.notifier).refresh();
+        if (canViewStaff) {
+          ref.read(allStaffProvider.notifier).refresh();
+          ref.read(locationsProvider.notifier).refresh();
+        }
         break;
     }
   }

@@ -784,11 +784,12 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                icon: const Icon(Icons.visibility, size: 20),
-                onPressed: () => _viewBookingDetails(booking),
-                tooltip: l10n.bookingsListActionView,
-              ),
+              if (booking.status != 'cancelled')
+                IconButton(
+                  icon: const Icon(Icons.visibility, size: 20),
+                  onPressed: () => _viewBookingDetails(booking),
+                  tooltip: l10n.bookingsListActionView,
+                ),
               if (canManageBookings && booking.status != 'cancelled')
                 IconButton(
                   icon: Icon(
@@ -1541,7 +1542,7 @@ class _BookingCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
-        onTap: onView,
+        onTap: booking.status != 'cancelled' ? onView : null,
         borderRadius: BorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1649,12 +1650,13 @@ class _BookingCard extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.visibility),
-                        onPressed: onView,
-                        tooltip: l10n.bookingsListActionView,
-                        iconSize: 20,
-                      ),
+                      if (booking.status != 'cancelled')
+                        IconButton(
+                          icon: const Icon(Icons.visibility),
+                          onPressed: onView,
+                          tooltip: l10n.bookingsListActionView,
+                          iconSize: 20,
+                        ),
                       if (canManageBookings && booking.status != 'cancelled')
                         IconButton(
                           icon: Icon(

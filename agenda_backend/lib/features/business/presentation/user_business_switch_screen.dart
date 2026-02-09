@@ -5,13 +5,50 @@ import 'package:go_router/go_router.dart';
 import '../../../app/widgets/user_menu_button.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
+import '../../../core/models/location.dart';
 import '../../agenda/providers/business_providers.dart';
+import '../../agenda/providers/location_providers.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../providers/superadmin_selected_business_provider.dart';
 
 /// Schermata selezione business per utenti non superadmin.
 /// Mostra solo la lista dei business accessibili, senza azioni CRUD.
 class UserBusinessSwitchScreen extends ConsumerWidget {
   const UserBusinessSwitchScreen({super.key});
+
+  Future<void> _selectBusinessAndEnter(
+    BuildContext context,
+    WidgetRef ref,
+    int businessId,
+  ) async {
+    // 1) Set business scelto
+    ref.read(currentBusinessIdProvider.notifier).selectByUser(businessId);
+
+    // 2) Invalida stato business-scoped e contesto permessi
+    invalidateBusinessScopedProviders(ref);
+    ref.invalidate(currentBusinessUserContextProvider);
+
+    // 3) Attendi locations filtrate per il nuovo business/scope
+    List<Location> locations = const [];
+    try {
+      locations = await ref.read(locationsAsyncProvider.future);
+    } catch (_) {
+      locations = const [];
+    }
+
+    // 4) Seleziona una location valida per evitare fetch con location stale
+    if (locations.isNotEmpty) {
+      final currentLocationId = ref.read(currentLocationIdProvider);
+      final hasCurrent = locations.any((l) => l.id == currentLocationId);
+      if (!hasCurrent) {
+        ref.read(currentLocationIdProvider.notifier).set(locations.first.id);
+      }
+    }
+
+    if (context.mounted) {
+      context.go('/agenda');
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,32 +76,15 @@ class UserBusinessSwitchScreen extends ConsumerWidget {
           if (businesses.length == 1) {
             final onlyBusiness = businesses.first;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              final currentId = ref.read(currentBusinessIdProvider);
-              if (currentId != onlyBusiness.id) {
-                ref
-                    .read(currentBusinessIdProvider.notifier)
-                    .selectByUser(onlyBusiness.id);
-                invalidateBusinessScopedProviders(ref);
-              }
-              if (context.mounted) {
-                context.go('/agenda');
-              }
+              _selectBusinessAndEnter(context, ref, onlyBusiness.id);
             });
             return const Center(child: CircularProgressIndicator());
           }
 
           return _UserBusinessList(
             businesses: businesses,
-            onSelect: (business) {
-              ref
-                  .read(currentBusinessIdProvider.notifier)
-                  .selectByUser(business.id);
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!context.mounted) return;
-                invalidateBusinessScopedProviders(ref);
-                context.go('/agenda');
-              });
-            },
+            onSelect: (business) =>
+                _selectBusinessAndEnter(context, ref, business.id),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
