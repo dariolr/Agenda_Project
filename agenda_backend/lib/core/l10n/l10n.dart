@@ -3632,6 +3632,36 @@ class L10n {
     );
   }
 
+  /// `Questo utente ha già accesso al business.`
+  String get operatorsInviteAlreadyHasAccess {
+    return Intl.message(
+      'Questo utente ha già accesso al business.',
+      name: 'operatorsInviteAlreadyHasAccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invio email non disponibile in questo ambiente. Contatta il supporto.`
+  String get operatorsInviteEmailUnavailable {
+    return Intl.message(
+      'Invio email non disponibile in questo ambiente. Contatta il supporto.',
+      name: 'operatorsInviteEmailUnavailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile inviare l'email di invito. Riprova più tardi.`
+  String get operatorsInviteEmailFailed {
+    return Intl.message(
+      'Impossibile inviare l\'email di invito. Riprova più tardi.',
+      name: 'operatorsInviteEmailFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Impossibile inviare l'invito`
   String get operatorsInviteError {
     return Intl.message(
@@ -3647,6 +3677,326 @@ class L10n {
     return Intl.message(
       'Link di invito copiato',
       name: 'operatorsInviteCopied',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accetta invito`
+  String get invitationAcceptTitle {
+    return Intl.message(
+      'Accetta invito',
+      name: 'invitationAcceptTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verifica invito in corso...`
+  String get invitationAcceptLoading {
+    return Intl.message(
+      'Verifica invito in corso...',
+      name: 'invitationAcceptLoading',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sei stato invitato a collaborare con {businessName} come {role}.`
+  String invitationAcceptIntro(String businessName, String role) {
+    return Intl.message(
+      'Sei stato invitato a collaborare con $businessName come $role.',
+      name: 'invitationAcceptIntro',
+      desc: '',
+      args: [businessName, role],
+    );
+  }
+
+  /// `Accedi con l'email invitata per continuare.`
+  String get invitationAcceptLoginRequired {
+    return Intl.message(
+      'Accedi con l\'email invitata per continuare.',
+      name: 'invitationAcceptLoginRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accetta per continuare`
+  String get invitationAcceptLoginAction {
+    return Intl.message(
+      'Accetta per continuare',
+      name: 'invitationAcceptLoginAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accetta e accedi`
+  String get invitationAcceptAndLoginAction {
+    return Intl.message(
+      'Accetta e accedi',
+      name: 'invitationAcceptAndLoginAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hai già un account? Accedi per accettare l'invito.`
+  String get invitationAcceptHintExistingAccount {
+    return Intl.message(
+      'Hai già un account? Accedi per accettare l\'invito.',
+      name: 'invitationAcceptHintExistingAccount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Non hai un account? Registrati prima.`
+  String get invitationAcceptHintNoAccount {
+    return Intl.message(
+      'Non hai un account? Registrati prima.',
+      name: 'invitationAcceptHintNoAccount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Registrati per accettare`
+  String get invitationRegisterAction {
+    return Intl.message(
+      'Registrati per accettare',
+      name: 'invitationRegisterAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Registrati per accettare l'invito`
+  String get invitationRegisterTitle {
+    return Intl.message(
+      'Registrati per accettare l\'invito',
+      name: 'invitationRegisterTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Registrazione...`
+  String get invitationRegisterInProgress {
+    return Intl.message(
+      'Registrazione...',
+      name: 'invitationRegisterInProgress',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Conferma password`
+  String get invitationRegisterPasswordConfirm {
+    return Intl.message(
+      'Conferma password',
+      name: 'invitationRegisterPasswordConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La password deve avere almeno 8 caratteri.`
+  String get invitationRegisterPasswordTooShort {
+    return Intl.message(
+      'La password deve avere almeno 8 caratteri.',
+      name: 'invitationRegisterPasswordTooShort',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La password deve contenere almeno una maiuscola, una minuscola e un numero.`
+  String get invitationRegisterPasswordWeak {
+    return Intl.message(
+      'La password deve contenere almeno una maiuscola, una minuscola e un numero.',
+      name: 'invitationRegisterPasswordWeak',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Le password non coincidono.`
+  String get invitationRegisterPasswordMismatch {
+    return Intl.message(
+      'Le password non coincidono.',
+      name: 'invitationRegisterPasswordMismatch',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email già registrata. Accedi per accettare l'invito.`
+  String get invitationRegisterExistingUser {
+    return Intl.message(
+      'Email già registrata. Accedi per accettare l\'invito.',
+      name: 'invitationRegisterExistingUser',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per questa email non esiste ancora un account. Usa Registrati.`
+  String get invitationAcceptRequiresRegistration {
+    return Intl.message(
+      'Per questa email non esiste ancora un account. Usa Registrati.',
+      name: 'invitationAcceptRequiresRegistration',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accetta invito`
+  String get invitationAcceptButton {
+    return Intl.message(
+      'Accetta invito',
+      name: 'invitationAcceptButton',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accettazione in corso...`
+  String get invitationAcceptInProgress {
+    return Intl.message(
+      'Accettazione in corso...',
+      name: 'invitationAcceptInProgress',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rifiuta invito`
+  String get invitationDeclineButton {
+    return Intl.message(
+      'Rifiuta invito',
+      name: 'invitationDeclineButton',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rifiuto in corso...`
+  String get invitationDeclineInProgress {
+    return Intl.message(
+      'Rifiuto in corso...',
+      name: 'invitationDeclineInProgress',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accedi con un altro account`
+  String get invitationAcceptSwitchAccount {
+    return Intl.message(
+      'Accedi con un altro account',
+      name: 'invitationAcceptSwitchAccount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invito accettato`
+  String get invitationAcceptSuccessTitle {
+    return Intl.message(
+      'Invito accettato',
+      name: 'invitationAcceptSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ora puoi usare il gestionale con i permessi assegnati.`
+  String get invitationAcceptSuccessMessage {
+    return Intl.message(
+      'Ora puoi usare il gestionale con i permessi assegnati.',
+      name: 'invitationAcceptSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Vai all'agenda`
+  String get invitationAcceptGoAgenda {
+    return Intl.message(
+      'Vai all\'agenda',
+      name: 'invitationAcceptGoAgenda',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invito rifiutato`
+  String get invitationDeclineSuccessTitle {
+    return Intl.message(
+      'Invito rifiutato',
+      name: 'invitationDeclineSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hai rifiutato l'invito. Non è stata aggiunta nessuna autorizzazione.`
+  String get invitationDeclineSuccessMessage {
+    return Intl.message(
+      'Hai rifiutato l\'invito. Non è stata aggiunta nessuna autorizzazione.',
+      name: 'invitationDeclineSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Vai al login`
+  String get invitationDeclineGoLogin {
+    return Intl.message(
+      'Vai al login',
+      name: 'invitationDeclineGoLogin',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questo invito non è valido.`
+  String get invitationAcceptErrorInvalid {
+    return Intl.message(
+      'Questo invito non è valido.',
+      name: 'invitationAcceptErrorInvalid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questo invito è scaduto.`
+  String get invitationAcceptErrorExpired {
+    return Intl.message(
+      'Questo invito è scaduto.',
+      name: 'invitationAcceptErrorExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questo invito è associato a un'altra email. Per continuare: 1) clicca "Accedi con un altro account" 2) effettua il login con l'email invitata 3) torna su questo link e accetta l'invito.`
+  String get invitationAcceptErrorEmailMismatch {
+    return Intl.message(
+      'Questo invito è associato a un\'altra email. Per continuare: 1) clicca "Accedi con un altro account" 2) effettua il login con l\'email invitata 3) torna su questo link e accetta l\'invito.',
+      name: 'invitationAcceptErrorEmailMismatch',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile completare l'operazione. Riprova.`
+  String get invitationAcceptErrorGeneric {
+    return Intl.message(
+      'Impossibile completare l\'operazione. Riprova.',
+      name: 'invitationAcceptErrorGeneric',
       desc: '',
       args: [],
     );
@@ -3757,6 +4107,26 @@ class L10n {
     return Intl.message(
       'Vuoi revocare l\'invito per $email?',
       name: 'operatorsRevokeInviteConfirm',
+      desc: '',
+      args: [email],
+    );
+  }
+
+  /// `Elimina invito`
+  String get operatorsDeleteInvite {
+    return Intl.message(
+      'Elimina invito',
+      name: 'operatorsDeleteInvite',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Vuoi eliminare definitivamente l'invito per {email}?`
+  String operatorsDeleteInviteConfirm(String email) {
+    return Intl.message(
+      'Vuoi eliminare definitivamente l\'invito per $email?',
+      name: 'operatorsDeleteInviteConfirm',
       desc: '',
       args: [email],
     );
@@ -3904,6 +4274,76 @@ class L10n {
       name: 'operatorsExpires',
       desc: '',
       args: [date],
+    );
+  }
+
+  /// `Accettato il {date}`
+  String operatorsAcceptedOn(String date) {
+    return Intl.message(
+      'Accettato il $date',
+      name: 'operatorsAcceptedOn',
+      desc: '',
+      args: [date],
+    );
+  }
+
+  /// `{count} inviti archiviati`
+  String operatorsInvitesHistoryCount(int count) {
+    return Intl.message(
+      '$count inviti archiviati',
+      name: 'operatorsInvitesHistoryCount',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `In attesa`
+  String get operatorsInviteStatusPending {
+    return Intl.message(
+      'In attesa',
+      name: 'operatorsInviteStatusPending',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accettato`
+  String get operatorsInviteStatusAccepted {
+    return Intl.message(
+      'Accettato',
+      name: 'operatorsInviteStatusAccepted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rifiutato`
+  String get operatorsInviteStatusDeclined {
+    return Intl.message(
+      'Rifiutato',
+      name: 'operatorsInviteStatusDeclined',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Revocato`
+  String get operatorsInviteStatusRevoked {
+    return Intl.message(
+      'Revocato',
+      name: 'operatorsInviteStatusRevoked',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Scaduto`
+  String get operatorsInviteStatusExpired {
+    return Intl.message(
+      'Scaduto',
+      name: 'operatorsInviteStatusExpired',
+      desc: '',
+      args: [],
     );
   }
 

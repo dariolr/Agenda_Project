@@ -6,9 +6,6 @@ class ApiConfig {
     defaultValue: 'https://api.romeolab.it',
   );
 
-  /// Verifica se siamo in ambiente staging
-  static bool get isStaging => baseUrl.contains('api-staging.romeolab.it');
-
   /// Location ID di default (per MVP single-location)
   static const int defaultLocationId = 1;
 
@@ -118,6 +115,18 @@ class ApiConfig {
   static String acceptInvitation(String token) =>
       '/v1/invitations/$token/accept';
 
+  /// Accetta invito senza login (utente già registrato)
+  static String acceptInvitationPublic(String token) =>
+      '/v1/invitations/$token/accept-public';
+
+  /// Rifiuta invito
+  static String declineInvitation(String token) =>
+      '/v1/invitations/$token/decline';
+
+  /// Registrazione account operatore da invito + accettazione
+  static String registerInvitation(String token) =>
+      '/v1/invitations/$token/register';
+
   // ========== STAFF SCHEDULES ENDPOINTS ==========
 
   /// Lista tutti gli schedules degli staff di un business
@@ -143,35 +152,4 @@ class ApiConfig {
   /// Slot disponibili per una data
   static String staffPlanningAvailability(int staffId) =>
       '/v1/staff/$staffId/planning-availability';
-
-  // ========== ADMIN BUSINESS SYNC ENDPOINTS ==========
-
-  /// URL API Staging (per push da produzione)
-  static const String stagingApiUrl = 'https://api-staging.romeolab.it';
-
-  /// URL API Produzione (per push da staging)
-  static const String productionApiUrl = 'https://api.romeolab.it';
-
-  /// Export business data (superadmin only)
-  static String businessExport(int businessId) =>
-      '/v1/admin/businesses/$businessId/export';
-
-  /// Export business data by slug (superadmin only)
-  static String businessExportBySlug(String slug) =>
-      '/v1/admin/businesses/by-slug/$slug/export';
-
-  /// Import business data (superadmin only, staging only)
-  static const String businessImport = '/v1/admin/businesses/import';
-
-  /// Sync from production (superadmin only, staging only)
-  static const String businessSyncFromProduction =
-      '/v1/admin/businesses/sync-from-production';
-
-  /// Push to staging - URL completo perché punta a staging anche da produzione
-  static const String businessPushToStaging =
-      '$stagingApiUrl/v1/admin/businesses/import';
-
-  /// Push to production - URL completo perché punta a prod anche da staging
-  static const String businessPushToProduction =
-      '$productionApiUrl/v1/admin/businesses/import';
 }

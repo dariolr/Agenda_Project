@@ -271,6 +271,11 @@ class _RoleRadioList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final isIt = Localizations.localeOf(context).languageCode == 'it';
+    final viewerLabel = isIt ? 'Visualizzatore' : 'Viewer';
+    final viewerDesc = isIt
+        ? 'Può solo visualizzare appuntamenti e calendario. Nessuna modifica.'
+        : 'Can only view appointments and calendar. No changes allowed.';
 
     return Column(
       children: [
@@ -297,6 +302,14 @@ class _RoleRadioList extends StatelessWidget {
           title: l10n.operatorsRoleStaff,
           subtitle: l10n.operatorsRoleStaffDesc,
           icon: Icons.person,
+        ),
+        _RoleRadioTile(
+          value: 'viewer',
+          groupValue: selectedRole,
+          onChanged: onChanged,
+          title: viewerLabel,
+          subtitle: viewerDesc,
+          icon: Icons.visibility_outlined,
         ),
       ],
     );

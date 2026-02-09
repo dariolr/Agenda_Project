@@ -244,14 +244,6 @@ cp ~/.ssh/siteground_ed25519.pub ~/Library/Mobile\ Documents/com~apple~CloudDocs
 | **agenda_frontend** | Prenotazioni CLIENTI | **prenota**.romeolab.it | `www/prenota.romeolab.it/public_html/` |
 | **agenda_backend** | Gestionale OPERATORI | **gestionale**.romeolab.it | `www/gestionale.romeolab.it/public_html/` |
 
-**STAGING:**
-
-| Progetto | Descrizione | URL Staging | Cartella SiteGround |
-|----------|-------------|-------------|---------------------|
-| **agenda_core** | API PHP Backend | api-staging.romeolab.it | `www/api-staging.romeolab.it/` |
-| **agenda_frontend** | Prenotazioni CLIENTI | **prenota-staging**.romeolab.it | `www/prenota-staging.romeolab.it/public_html/` |
-| **agenda_backend** | Gestionale OPERATORI | **gestionale-staging**.romeolab.it | `www/gestionale-staging.romeolab.it/public_html/` |
-
 ### ⚠️ ERRORI COMUNI DA EVITARE
 
 ❌ **MAI** deployare `agenda_backend` su `prenota.romeolab.it`  
@@ -288,25 +280,6 @@ rsync -avz --delete src/ siteground:www/api.romeolab.it/src/
 rsync -avz --delete vendor/ siteground:www/api.romeolab.it/vendor/
 ```
 
-### Comandi Deploy STAGING
-
-```bash
-# 1️⃣ FRONTEND STAGING (agenda_frontend → prenota-staging.romeolab.it)
-cd /path/to/agenda_frontend
-flutter build web --release --dart-define=API_BASE_URL=https://api-staging.romeolab.it
-rsync -avz --delete build/web/ siteground:www/prenota-staging.romeolab.it/public_html/
-
-# 2️⃣ GESTIONALE STAGING (agenda_backend → gestionale-staging.romeolab.it)  
-cd /path/to/agenda_backend
-flutter build web --release --dart-define=API_BASE_URL=https://api-staging.romeolab.it
-rsync -avz --delete build/web/ siteground:www/gestionale-staging.romeolab.it/public_html/
-
-# 3️⃣ API STAGING (agenda_core → api-staging.romeolab.it)
-rsync -avz public/ siteground:www/api-staging.romeolab.it/public_html/
-rsync -avz --delete src/ siteground:www/api-staging.romeolab.it/src/
-rsync -avz --delete vendor/ siteground:www/api-staging.romeolab.it/vendor/
-```
-
 ### Checklist PRE-DEPLOY
 
 - [ ] Sono nella cartella CORRETTA del progetto?
@@ -322,13 +295,6 @@ Deploy Produzione (28/12/2025):
 - Gestionale: https://gestionale.romeolab.it
 - Hosting: SiteGround condiviso
 - CORS: `CORS_ALLOWED_ORIGINS=https://prenota.romeolab.it,https://gestionale.romeolab.it,http://localhost:8080`
-
-Deploy Staging (17/01/2026):
-- API: https://api-staging.romeolab.it
-- Frontend: https://prenota-staging.romeolab.it
-- Gestionale: https://gestionale-staging.romeolab.it
-- Database: `dbax2noxh5jpyb`
-- CORS: `CORS_ALLOWED_ORIGINS=https://prenota-staging.romeolab.it,https://gestionale-staging.romeolab.it,http://localhost:8080`
 
 **SSH Accesso Configurato (10/01/2026):**
 - Host alias: `siteground`
@@ -368,13 +334,12 @@ YYYYMMDD-N.P
 
 **Gli script `deploy.sh` incrementano P automaticamente:**
 - `deploy.sh` → incrementa P (+1 ad ogni deploy produzione)
-- `deploy-staging.sh` → NON incrementa P (mantiene valore esistente)
 
 **File coinvolti:**
 - `web/index.html` → definizione `window.appVersion`
 - `web/app_version.txt` → versione plain text per VersionChecker
 
-⚠️ **REGOLA:** Il numero **P** incrementa SOLO per deploy PRODUZIONE, NON per staging/test/locale.
+⚠️ **REGOLA:** Il numero **P** incrementa SOLO per deploy PRODUZIONE.
 
 ⚠️ STRUTTURA PROGETTO vs DEPLOY SITEGROUND (31/12/2025):
 
@@ -632,7 +597,6 @@ Questo impatta filtri agenda, sezione team e dialog staff.
 
 ⚠️ REGOLA DEPLOY PRODUZIONE:
 - **MAI** eseguire deploy in PRODUZIONE (`api.romeolab.it`) senza richiesta esplicita dell'utente
-- Il deploy in STAGING (`api-staging.romeolab.it`) può essere fatto autonomamente per test
 - Usare i comandi rsync documentati in DEPLOY.md sezione 12
 
 ⚠️ REGOLA CRITICA DEPLOY:
@@ -1303,102 +1267,6 @@ Tutti gli endpoint che ritornano appointments ora includono:
 - `correlation_id` (UUID) collega eventi correlati (es. replace genera 2 eventi con stesso correlation_id)
 - Gli errori di audit **non bloccano** l'operazione principale (logged e ignorati)
 - Actor types: `customer`, `staff`, `system`
-
----
-
-## 🌐 Ambiente Staging (17/01/2026)
-
-### Scopo
-L'ambiente staging serve per testare nuove funzionalità senza impattare la produzione.
-
-### URL Staging
-
-| Componente | URL |
-|------------|-----|
-| API | https://api-staging.romeolab.it |
-| Frontend Prenotazioni | https://prenota-staging.romeolab.it |
-| Gestionale | https://gestionale-staging.romeolab.it |
-
-### Database Staging
-
-| Campo | Valore |
-|-------|--------|
-| Database | `dbax2noxh5jpyb` |
-| Host | localhost |
-| User | `ugucggguv4ij7` |
-| Password | `I0lqrdlr@##` |
-
-### Variabili .env Specifiche Staging
-
-```bash
-APP_ENV=staging
-
-# IMPORTANTE: Email test mode
-NOTIFICATION_TEST_MODE=true
-NOTIFICATION_TEST_EMAIL=dariolarosa@romeolab.it
-
-# Per funzionalità sync business
-PRODUCTION_API_URL=https://api.romeolab.it
-
-# CORS Staging
-CORS_ALLOWED_ORIGINS=https://prenota-staging.romeolab.it,https://gestionale-staging.romeolab.it,http://localhost:8080
-```
-
-### Business Sync Bidirezionale (15/01/2026)
-
-Sincronizzazione business tra produzione e staging in entrambe le direzioni.
-
-**Endpoint:**
-
-| Metodo | Endpoint | Descrizione |
-|--------|----------|-------------|
-| GET | `/v1/admin/businesses/{id}/export` | Esporta business completo (JSON) |
-| GET | `/v1/admin/businesses/by-slug/{slug}/export` | Esporta business per slug |
-| POST | `/v1/admin/businesses/import` | Importa business da JSON |
-
-**Parametri Import:**
-
-```json
-POST /v1/admin/businesses/import
-{
-  "data": { ...export JSON... },
-  "skip_sessions_and_notifications": false  // Opzionale, default false
-}
-```
-
-**`skip_sessions_and_notifications`:**
-- Se `true`: NON importa `notification_queue`, `auth_sessions`, `client_sessions`
-- Usato per sync **Staging → Produzione** (evita sovrascrivere sessioni/notifiche di produzione)
-- Se `false` (default): importa tutte le tabelle (usato per **Produzione → Staging**)
-
-**File PHP:**
-- `src/UseCases/Admin/ExportBusiness.php`
-- `src/UseCases/Admin/ImportBusiness.php` - parametro `$skipSessionsAndNotifications`
-- `src/Http/Controllers/BusinessSyncController.php`
-
-**Dati esportati:**
-- Business (info base)
-- Locations (tutte)
-- Staff (tutti con availability e planning)
-- Services e Categories
-- Clients
-- Appointments e Bookings
-- Auth sessions e Client sessions (se `skip_sessions_and_notifications=false`)
-- Notification queue (se `skip_sessions_and_notifications=false`)
-
-**Dati MAI esportati:**
-- Password utenti (per sicurezza)
-
-### Script Pulizia Database Staging
-
-File: `scripts/clear_staging_db.sql`
-
-Svuota tutte le tabelle mantenendo solo l'utente superadmin (id=1).
-
-```bash
-# Esecuzione
-ssh siteground "cd www/api-staging.romeolab.it && mysql -u ugucggguv4ij7 -p'I0lqrdlr@##' dbax2noxh5jpyb" < scripts/clear_staging_db.sql
-```
 
 ---
 

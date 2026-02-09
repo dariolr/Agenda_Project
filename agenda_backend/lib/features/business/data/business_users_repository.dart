@@ -45,9 +45,15 @@ class BusinessUsersRepository {
 
   // ========== INVITI ==========
 
-  /// Recupera tutti gli inviti pendenti di un business.
-  Future<List<BusinessInvitation>> getInvitations(int businessId) async {
-    final data = await _apiClient.getBusinessInvitations(businessId);
+  /// Recupera gli inviti di un business.
+  Future<List<BusinessInvitation>> getInvitations(
+    int businessId, {
+    String status = 'pending',
+  }) async {
+    final data = await _apiClient.getBusinessInvitations(
+      businessId,
+      status: status,
+    );
     return data.map((json) => BusinessInvitation.fromJson(json)).toList();
   }
 
@@ -69,8 +75,8 @@ class BusinessUsersRepository {
     return BusinessInvitation.fromJson(data);
   }
 
-  /// Revoca un invito pendente.
-  Future<void> revokeInvitation({
+  /// Elimina un invito.
+  Future<void> deleteInvitation({
     required int businessId,
     required int invitationId,
   }) async {
@@ -88,5 +94,30 @@ class BusinessUsersRepository {
   /// Accetta un invito.
   Future<void> acceptInvitation(String token) async {
     await _apiClient.acceptInvitation(token);
+  }
+
+  /// Accetta invito senza login (utente già registrato).
+  Future<void> acceptInvitationPublic(String token) async {
+    await _apiClient.acceptInvitationPublic(token);
+  }
+
+  /// Rifiuta un invito.
+  Future<void> declineInvitation(String token) async {
+    await _apiClient.declineInvitation(token);
+  }
+
+  /// Registra un nuovo account operatore da invito e accetta l'invito.
+  Future<Map<String, dynamic>> registerInvitation({
+    required String token,
+    required String firstName,
+    required String lastName,
+    required String password,
+  }) async {
+    return _apiClient.registerInvitation(
+      token: token,
+      firstName: firstName,
+      lastName: lastName,
+      password: password,
+    );
   }
 }

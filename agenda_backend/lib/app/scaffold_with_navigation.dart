@@ -95,12 +95,18 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isPast = agendaDate.isBefore(today);
     final user = ref.watch(authProvider).user;
     final isSuperadmin = user?.isSuperadmin ?? false;
+    final businessesAsync = ref.watch(businessesProvider);
+    final hasMultipleBusinesses = businessesAsync.maybeWhen(
+      data: (businesses) => businesses.length > 1,
+      orElse: () => false,
+    );
+    final showSwitchBusiness = isSuperadmin || hasMultipleBusinesses;
 
     // Per mobile e desktop usiamo destinazioni compatte con "Altro"
     final mobileDestinations =
         _ScaffoldWithNavigationHelpers.getMobileDestinations(
           context,
-          isSuperadmin: isSuperadmin,
+          showSwitchBusiness: showSwitchBusiness,
         );
 
     // Quando non siamo su oggi, mostra freccia per tornare a oggi
@@ -372,7 +378,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   /// Gestisce tap su navigation desktop (compatta come mobile):
   /// - Index 0, 1: navigazione normale (Agenda, Clienti)
   /// - Index 2: naviga a "Altro" (schermata con cards)
-  /// - Index 3: Cambia Business (solo superadmin)
+  /// - Index 3: Cambia Business
   void _handleDesktopNavTap(
     BuildContext context,
     int desktopIndex,
@@ -386,9 +392,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       case 2: // Altro → naviga alla schermata Altro
         _goBranch(6, ref);
         break;
-      case 3: // Cambia Business (superadmin)
-        ref.read(superadminSelectedBusinessProvider.notifier).clear();
-        context.go('/businesses');
+      case 3: // Cambia Business
+        _goToBusinessSwitcher(context, ref);
         break;
     }
   }
@@ -396,7 +401,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   /// Gestisce tap su navigation mobile:
   /// - Index 0, 1: navigazione normale (Agenda, Clienti)
   /// - Index 2: naviga a "Altro" (schermata con cards)
-  /// - Index 3: Cambia Business (solo superadmin)
+  /// - Index 3: Cambia Business
   void _handleMobileNavTap(
     BuildContext context,
     int mobileIndex,
@@ -410,11 +415,21 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       case 2: // Altro → naviga alla schermata Altro
         _goBranch(6, ref);
         break;
-      case 3: // Cambia Business (superadmin)
-        ref.read(superadminSelectedBusinessProvider.notifier).clear();
-        context.go('/businesses');
+      case 3: // Cambia Business
+        _goToBusinessSwitcher(context, ref);
         break;
     }
+  }
+
+  void _goToBusinessSwitcher(BuildContext context, WidgetRef ref) {
+    final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
+    invalidateBusinessScopedProviders(ref);
+    if (isSuperadmin) {
+      ref.read(superadminSelectedBusinessProvider.notifier).clear();
+      context.go('/businesses');
+      return;
+    }
+    context.go('/my-businesses');
   }
 }
 
@@ -1030,7 +1045,7 @@ class _ScaffoldWithNavigationHelpers {
   /// Destinazioni compatte per mobile e desktop (con "Altro")
   static List<NavigationDestination> getMobileDestinations(
     BuildContext context, {
-    bool isSuperadmin = false,
+    bool showSwitchBusiness = false,
   }) {
     final l10n = context.l10n;
     return [
@@ -1049,8 +1064,8 @@ class _ScaffoldWithNavigationHelpers {
         selectedIconData: Icons.more_horiz,
         label: l10n.navMore,
       ),
-      // Cambia Business - solo per superadmin
-      if (isSuperadmin)
+      // Cambia Business
+      if (showSwitchBusiness)
         NavigationDestination(
           iconData: Icons.business_outlined,
           selectedIconData: Icons.business,

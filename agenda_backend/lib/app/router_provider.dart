@@ -13,8 +13,10 @@ import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/bookings_list/presentation/bookings_list_screen.dart';
 import '../features/business/presentation/business_list_screen.dart';
+import '../features/business/presentation/invitation_accept_screen.dart';
 import '../features/business/presentation/location_closures_screen.dart';
 import '../features/business/presentation/operators_screen.dart';
+import '../features/business/presentation/user_business_switch_screen.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
 import '../features/clients/presentation/clients_screen.dart';
 import '../features/more/presentation/more_screen.dart';
@@ -66,8 +68,33 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: _AuthNotifier(ref),
 
     redirect: (context, state) {
+      final browserPath = Uri.base.path;
+      final isInvitationBrowserUrl =
+          browserPath == '/invitation' ||
+          browserPath.startsWith('/invitation/');
+      final browserLocation = Uri.base.hasQuery
+          ? '${Uri.base.path}?${Uri.base.query}'
+          : Uri.base.path;
+
+      // Single source of truth for invitation deep-links:
+      // if browser URL is /invitation/{token}, keep router locked there.
+      if (isInvitationBrowserUrl) {
+        final stateLocation = state.uri.hasQuery
+            ? '${state.uri.path}?${state.uri.query}'
+            : state.uri.path;
+        if (stateLocation != browserLocation) {
+          return browserLocation;
+        }
+        return null;
+      }
+
       final isLoggingIn = state.matchedLocation == '/login';
       final isOnBusinessList = state.matchedLocation == '/businesses';
+      final isOnUserBusinessSwitch = state.matchedLocation == '/my-businesses';
+      final invitationPath = state.uri.path;
+      final isInvitationPage =
+          invitationPath == '/invitation' ||
+          invitationPath.startsWith('/invitation/');
 
       // Durante il caricamento iniziale, non fare redirect
       if (isInitialOrLoading) {
@@ -76,7 +103,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Pagine pubbliche che non richiedono autenticazione
       final isPublicPage =
-          isLoggingIn || state.matchedLocation.startsWith('/reset-password');
+          isLoggingIn ||
+          state.matchedLocation.startsWith('/reset-password') ||
+          isInvitationPage;
 
       // Se non loggato e non su pagina pubblica, vai al login
       if (!isAuthenticated && !isPublicPage) {
@@ -85,18 +114,31 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Se loggato e sulla pagina login
       if (isAuthenticated && isLoggingIn) {
-        // Se superadmin senza business selezionato, vai alla lista business
-        if (isSuperadmin && superadminSelectedBusiness == null) {
-          return '/businesses';
+        final redirect = state.uri.queryParameters['redirect'];
+        if (redirect != null && redirect.startsWith('/')) {
+          return redirect;
         }
-        return '/agenda';
+        // Dopo login: superadmin su lista business admin, utenti normali su selettore personale.
+        return isSuperadmin ? '/businesses' : '/my-businesses';
+      }
+
+      // Business list admin solo per superadmin.
+      if (isAuthenticated && !isSuperadmin && isOnBusinessList) {
+        return '/my-businesses';
+      }
+
+      // Se superadmin va alla schermata switch user, riporta alla lista admin.
+      if (isAuthenticated && isSuperadmin && isOnUserBusinessSwitch) {
+        return '/businesses';
       }
 
       // Se superadmin tenta di accedere all'agenda senza aver selezionato un business
       if (isAuthenticated &&
           isSuperadmin &&
           superadminSelectedBusiness == null &&
+          !isInvitationPage &&
           !isOnBusinessList &&
+          !isOnUserBusinessSwitch &&
           !isLoggingIn) {
         return '/businesses';
       }
@@ -119,7 +161,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) =>
+            LoginScreen(redirectTo: state.uri.queryParameters['redirect']),
+      ),
+
+      GoRoute(
+        path: '/invitation/:token',
+        name: 'invitation',
+        builder: (context, state) {
+          final token = state.pathParameters['token']!;
+          return InvitationAcceptScreen(token: token);
+        },
       ),
 
       // Route reset password (fuori dalla shell, pubblica)
@@ -137,6 +189,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/businesses',
         name: 'businesses',
         builder: (context, state) => const BusinessListScreen(),
+      ),
+
+      // Route selezione business per utenti non superadmin
+      GoRoute(
+        path: '/my-businesses',
+        name: 'my-businesses',
+        builder: (context, state) => const UserBusinessSwitchScreen(),
       ),
 
       // Shell con navigazione principale
@@ -309,6 +368,7 @@ class _AuthNotifier extends ChangeNotifier {
       // Se l'utente si disconnette, resetta la selezione business del superadmin
       if (previous?.isAuthenticated == true && !next.isAuthenticated) {
         _ref.read(superadminSelectedBusinessProvider.notifier).clear();
+        invalidateBusinessScopedProviders(_ref);
       }
       notifyListeners();
     });

@@ -8,6 +8,8 @@ class BusinessInvitation {
   final List<int>
   locationIds; // IDs delle location accessibili (se scopeType='locations')
   final String? token;
+  final String status;
+  final DateTime? acceptedAt;
   final DateTime expiresAt;
   final DateTime createdAt;
   final InviterInfo invitedBy;
@@ -20,13 +22,25 @@ class BusinessInvitation {
     this.scopeType = 'business',
     this.locationIds = const [],
     this.token,
+    this.status = 'pending',
+    this.acceptedAt,
     required this.expiresAt,
     required this.createdAt,
     required this.invitedBy,
   });
 
   /// Verifica se l'invito è scaduto.
-  bool get isExpired => DateTime.now().isAfter(expiresAt);
+  bool get isExpired => effectiveStatus == 'expired';
+
+  /// Stato calcolato lato client (supporta pending già scaduti).
+  String get effectiveStatus {
+    if (status == 'pending' && DateTime.now().isAfter(expiresAt)) {
+      return 'expired';
+    }
+    return status;
+  }
+
+  bool get isPending => effectiveStatus == 'pending';
 
   /// Indica se l'invito è per tutte le location.
   bool get hasBusinessScope => scopeType == 'business';
@@ -39,6 +53,7 @@ class BusinessInvitation {
     'admin' => 'Amministratore',
     'manager' => 'Manager',
     'staff' => 'Staff',
+    'viewer' => 'Visualizzatore',
     _ => role,
   };
 
@@ -50,6 +65,8 @@ class BusinessInvitation {
     String? scopeType,
     List<int>? locationIds,
     String? token,
+    String? status,
+    DateTime? acceptedAt,
     DateTime? expiresAt,
     DateTime? createdAt,
     InviterInfo? invitedBy,
@@ -61,6 +78,8 @@ class BusinessInvitation {
     scopeType: scopeType ?? this.scopeType,
     locationIds: locationIds ?? this.locationIds,
     token: token ?? this.token,
+    status: status ?? this.status,
+    acceptedAt: acceptedAt ?? this.acceptedAt,
     expiresAt: expiresAt ?? this.expiresAt,
     createdAt: createdAt ?? this.createdAt,
     invitedBy: invitedBy ?? this.invitedBy,
@@ -68,11 +87,12 @@ class BusinessInvitation {
 
   factory BusinessInvitation.fromJson(Map<String, dynamic> json) {
     final invitedByData = json['invited_by'] as Map<String, dynamic>?;
+    final now = DateTime.now();
     return BusinessInvitation(
       id: _asInt(json['id']),
       businessId: _asInt(json['business_id']),
-      email: json['email'] as String,
-      role: json['role'] as String,
+      email: json['email'] as String? ?? '',
+      role: json['role'] as String? ?? 'staff',
       scopeType: json['scope_type'] as String? ?? 'business',
       locationIds:
           (json['location_ids'] as List<dynamic>?)
@@ -81,8 +101,15 @@ class BusinessInvitation {
               .toList() ??
           [],
       token: json['token'] as String?,
-      expiresAt: DateTime.parse(json['expires_at'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
+      status:
+          json['effective_status'] as String? ??
+          json['status'] as String? ??
+          'pending',
+      acceptedAt: _parseDateTime(json['accepted_at']),
+      expiresAt:
+          _parseDateTime(json['expires_at']) ??
+          now.add(const Duration(days: 7)),
+      createdAt: _parseDateTime(json['created_at']) ?? now,
       invitedBy: invitedByData != null
           ? InviterInfo.fromJson(invitedByData)
           : const InviterInfo(firstName: '', lastName: ''),
@@ -97,6 +124,8 @@ class BusinessInvitation {
     'scope_type': scopeType,
     'location_ids': locationIds,
     if (token != null) 'token': token,
+    'status': status,
+    if (acceptedAt != null) 'accepted_at': acceptedAt!.toIso8601String(),
     'expires_at': expiresAt.toIso8601String(),
     'created_at': createdAt.toIso8601String(),
     'invited_by': invitedBy.toJson(),
@@ -122,6 +151,11 @@ int _asInt(Object? value) {
   if (value is num) return value.toInt();
   if (value is String) return int.tryParse(value) ?? 0;
   return 0;
+}
+
+DateTime? _parseDateTime(Object? value) {
+  if (value is! String || value.isEmpty) return null;
+  return DateTime.tryParse(value);
 }
 
 /// Informazioni sull'utente che ha inviato l'invito.

@@ -50,9 +50,6 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
     state = null;
     // NON rimuoviamo dalle preferenze: l'utente può tornare con "Cambia Business"
     // ma al prossimo login verrà comunque portato all'ultimo business
-
-    // Invalida tutti i provider business-specific per forzare ricaricamento
-    _invalidateBusinessProviders();
   }
 
   /// Pulisce completamente la selezione, anche dalle preferenze.
@@ -60,69 +57,71 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
   void clearCompletely() {
     state = null;
     ref.read(preferencesServiceProvider).clearSuperadminLastBusinessId();
-    _invalidateBusinessProviders();
   }
+}
 
-  /// Invalida tutti i provider che contengono dati specifici del business.
-  void _invalidateBusinessProviders() {
-    // Staff
-    ref.invalidate(allStaffProvider);
+/// Invalida tutti i provider che contengono dati specifici del business.
+/// Da chiamare da UI/router, non dal notifier di selezione business, per evitare
+/// dipendenze circolari durante la fase di invalidazione.
+void invalidateBusinessScopedProviders(Object refObj) {
+  final ref = refObj as dynamic;
+  // Staff
+  ref.invalidate(allStaffProvider);
 
-    // Locations
-    ref.invalidate(locationsProvider);
-    ref.invalidate(currentLocationProvider);
+  // Locations
+  ref.invalidate(locationsProvider);
+  ref.invalidate(currentLocationProvider);
 
-    // Services
-    ref.invalidate(servicesProvider);
-    ref.invalidate(serviceCategoriesProvider);
-    ref.invalidate(serviceStaffEligibilityProvider);
+  // Services
+  ref.invalidate(servicesProvider);
+  ref.invalidate(serviceCategoriesProvider);
+  ref.invalidate(serviceStaffEligibilityProvider);
 
-    // Clients
-    ref.invalidate(clientsProvider);
+  // Clients
+  ref.invalidate(clientsProvider);
 
-    // Appointments
-    ref.invalidate(appointmentsProvider);
+  // Appointments
+  ref.invalidate(appointmentsProvider);
 
-    // Bookings (prenotazioni con note/clientName)
-    ref.invalidate(bookingsProvider);
+  // Bookings (prenotazioni con note/clientName)
+  ref.invalidate(bookingsProvider);
 
-    // Resources
-    ref.invalidate(resourcesProvider);
+  // Resources
+  ref.invalidate(resourcesProvider);
 
-    // Time Blocks
-    ref.invalidate(timeBlocksProvider);
+  // Time Blocks
+  ref.invalidate(timeBlocksProvider);
 
-    // Availability Exceptions
-    ref.invalidate(availabilityExceptionsProvider);
+  // Availability Exceptions
+  ref.invalidate(availabilityExceptionsProvider);
 
-    // Location Closures
-    ref.invalidate(locationClosuresProvider);
+  // Location Closures
+  ref.invalidate(locationClosuresProvider);
 
-    // UI State legato al business (contiene ID di entità business-specific)
-    ref.invalidate(selectedStaffIdsProvider);
-    ref.invalidate(staffFilterModeProvider);
-    ref.invalidate(selectedAppointmentProvider);
-    ref.invalidate(dragSessionProvider);
-    ref.invalidate(draggedAppointmentIdProvider);
-    ref.invalidate(draggedBaseRangeProvider);
-    ref.invalidate(tempDragTimeProvider);
-    ref.invalidate(resizingProvider);
-    ref.invalidate(pendingDropProvider);
+  // UI State legato al business (contiene ID di entità business-specific)
+  ref.invalidate(selectedStaffIdsProvider);
+  ref.invalidate(staffFilterModeProvider);
+  ref.invalidate(selectedAppointmentProvider);
+  ref.invalidate(dragSessionProvider);
+  ref.invalidate(draggedAppointmentIdProvider);
+  ref.invalidate(draggedBaseRangeProvider);
+  ref.invalidate(tempDragTimeProvider);
+  ref.invalidate(resizingProvider);
+  ref.invalidate(pendingDropProvider);
 
-    // NOTE: currentBusinessIdProvider NON va invalidato qui perché usa ref.listen
-    // su superadminSelectedBusinessProvider, quindi si aggiorna automaticamente.
-    // Invalidarlo qui creerebbe una dipendenza circolare.
+  // NOTE: currentBusinessIdProvider NON va invalidato qui perché usa ref.listen
+  // su superadminSelectedBusinessProvider, quindi si aggiorna automaticamente.
+  // Invalidarlo qui creerebbe una dipendenza circolare.
 
-    // Layout e UI state (per sicurezza, anche se sembrano UI-only)
-    ref.invalidate(layoutConfigProvider);
-    ref.invalidate(agendaDateProvider);
-    ref.invalidate(agendaScrollProvider);
-    ref.invalidate(initialScrollDoneProvider);
-    ref.invalidate(agendaVerticalOffsetProvider);
+  // Layout e UI state (per sicurezza, anche se sembrano UI-only)
+  ref.invalidate(layoutConfigProvider);
+  ref.invalidate(agendaDateProvider);
+  ref.invalidate(agendaScrollProvider);
+  ref.invalidate(initialScrollDoneProvider);
+  ref.invalidate(agendaVerticalOffsetProvider);
 
-    // Business User Context (permessi location)
-    ref.invalidate(currentBusinessUserContextProvider);
-  }
+  // Business User Context (permessi location)
+  ref.invalidate(currentBusinessUserContextProvider);
 }
 
 final superadminSelectedBusinessProvider =

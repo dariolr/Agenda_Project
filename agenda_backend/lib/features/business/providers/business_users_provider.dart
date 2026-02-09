@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../app/providers/global_loading_provider.dart';
 import '../../../core/models/business_invitation.dart';
 import '../../../core/models/business_user.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/network/network_providers.dart';
 import '../data/business_users_repository.dart';
 
@@ -62,13 +64,18 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
   BusinessUsersRepository get _repository =>
       ref.read(businessUsersRepositoryProvider);
 
+  String _toUserError(Object e) {
+    if (e is ApiException) return e.message;
+    return e.toString();
+  }
+
   /// Carica operatori e inviti.
   Future<void> _loadData() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final results = await Future.wait([
         _repository.getUsers(businessId),
-        _repository.getInvitations(businessId),
+        _repository.getInvitations(businessId, status: 'all'),
       ]);
       state = state.copyWith(
         users: results[0] as List<BusinessUser>,
@@ -113,6 +120,9 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
     String? scopeType,
     List<int>? locationIds,
   }) async {
+    final globalLoading = ref.read(globalLoadingProvider.notifier);
+    globalLoading.show();
+    state = state.copyWith(isLoading: true, error: null);
     try {
       final updated = await _repository.updateUser(
         businessId: businessId,
@@ -125,27 +135,36 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         users: state.users
             .map((u) => u.userId == userId ? updated : u)
             .toList(),
+        isLoading: false,
       );
       return true;
     } catch (e) {
       debugPrint('BusinessUsersNotifier.updateUser error: $e');
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(isLoading: false, error: _toUserError(e));
       return false;
+    } finally {
+      globalLoading.hide();
     }
   }
 
   /// Rimuove un operatore.
   Future<bool> removeUser(int userId) async {
+    final globalLoading = ref.read(globalLoadingProvider.notifier);
+    globalLoading.show();
+    state = state.copyWith(isLoading: true, error: null);
     try {
       await _repository.removeUser(businessId: businessId, userId: userId);
       state = state.copyWith(
         users: state.users.where((u) => u.userId != userId).toList(),
+        isLoading: false,
       );
       return true;
     } catch (e) {
       debugPrint('BusinessUsersNotifier.removeUser error: $e');
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(isLoading: false, error: _toUserError(e));
       return false;
+    } finally {
+      globalLoading.hide();
     }
   }
 
@@ -156,6 +175,9 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
     String scopeType = 'business',
     List<int>? locationIds,
   }) async {
+    final globalLoading = ref.read(globalLoadingProvider.notifier);
+    globalLoading.show();
+    state = state.copyWith(isLoading: true, error: null);
     try {
       final invitation = await _repository.createInvitation(
         businessId: businessId,
@@ -164,19 +186,47 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         scopeType: scopeType,
         locationIds: locationIds,
       );
-      state = state.copyWith(invitations: [...state.invitations, invitation]);
+      state = state.copyWith(
+        invitations: [...state.invitations, invitation],
+        isLoading: false,
+      );
       return invitation;
     } catch (e) {
       debugPrint('BusinessUsersNotifier.createInvitation error: $e');
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(isLoading: false, error: _toUserError(e));
       return null;
+    } finally {
+      globalLoading.hide();
     }
   }
 
-  /// Revoca un invito.
-  Future<bool> revokeInvitation(int invitationId) async {
+  /// Reinvia un invito pendente creando un nuovo token e una nuova scadenza.
+  Future<bool> resendInvitation(BusinessInvitation invitation) async {
+    state = state.copyWith(isLoading: true, error: null);
     try {
-      await _repository.revokeInvitation(
+      await _repository.createInvitation(
+        businessId: businessId,
+        email: invitation.email,
+        role: invitation.role,
+        scopeType: invitation.scopeType,
+        locationIds: invitation.locationIds,
+      );
+      await _loadData();
+      return true;
+    } catch (e) {
+      debugPrint('BusinessUsersNotifier.resendInvitation error: $e');
+      state = state.copyWith(isLoading: false, error: _toUserError(e));
+      return false;
+    }
+  }
+
+  /// Elimina un invito.
+  Future<bool> deleteInvitation(int invitationId) async {
+    final globalLoading = ref.read(globalLoadingProvider.notifier);
+    globalLoading.show();
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _repository.deleteInvitation(
         businessId: businessId,
         invitationId: invitationId,
       );
@@ -184,12 +234,15 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         invitations: state.invitations
             .where((i) => i.id != invitationId)
             .toList(),
+        isLoading: false,
       );
       return true;
     } catch (e) {
-      debugPrint('BusinessUsersNotifier.revokeInvitation error: $e');
-      state = state.copyWith(error: e.toString());
+      debugPrint('BusinessUsersNotifier.deleteInvitation error: $e');
+      state = state.copyWith(isLoading: false, error: _toUserError(e));
       return false;
+    } finally {
+      globalLoading.hide();
     }
   }
 

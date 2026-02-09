@@ -22,7 +22,7 @@ final class ClientsController
     ) {}
 
     /**
-     * Check if authenticated user has access to the given business.
+     * Check if authenticated user has clients permission in the given business.
      */
     private function hasBusinessAccess(Request $request, int $businessId): bool
     {
@@ -36,8 +36,8 @@ final class ClientsController
             return true;
         }
 
-        // Normal user: check business_users table
-        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+        // Normal user: enforce clients permission
+        return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_clients', false);
     }
 
     /**

@@ -6,7 +6,9 @@ namespace Agenda\Http\Controllers;
 
 use Agenda\Http\Request;
 use Agenda\Http\Response;
+use Agenda\Infrastructure\Repositories\AuthSessionRepository;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
+use Agenda\Infrastructure\Repositories\BusinessInvitationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Domain\Exceptions\AuthException;
@@ -25,6 +27,8 @@ final class BusinessUsersController
     public function __construct(
         private readonly BusinessRepository $businessRepo,
         private readonly BusinessUserRepository $businessUserRepo,
+        private readonly BusinessInvitationRepository $businessInvitationRepo,
+        private readonly AuthSessionRepository $authSessionRepo,
         private readonly UserRepository $userRepo,
     ) {}
 
@@ -62,7 +66,7 @@ final class BusinessUsersController
      * Body:
      * {
      *   "user_id": 123,
-     *   "role": "staff|manager|admin",
+     *   "role": "staff|manager|viewer|admin",
      *   "staff_id": 456  // optional: link to staff record
      * }
      */
@@ -92,9 +96,9 @@ final class BusinessUsersController
         $role = $body['role'] ?? 'staff';
         
         // Validate role
-        if (!in_array($role, ['staff', 'manager', 'admin'], true)) {
+        if (!in_array($role, ['staff', 'manager', 'viewer', 'admin'], true)) {
             return Response::validationError(
-                ['role must be staff, manager, or admin'],
+                ['role must be staff, manager, viewer, or admin'],
                 $request->traceId
             );
         }
@@ -154,7 +158,7 @@ final class BusinessUsersController
      * 
      * Body:
      * {
-     *   "role": "staff|manager|admin",
+     *   "role": "staff|manager|viewer|admin",
      *   "staff_id": 456,  // optional
      *   "can_manage_bookings": true,
      *   "can_manage_clients": true,
@@ -198,9 +202,9 @@ final class BusinessUsersController
         if (isset($body['role'])) {
             $newRole = $body['role'];
             
-            if (!in_array($newRole, ['staff', 'manager', 'admin'], true)) {
+            if (!in_array($newRole, ['staff', 'manager', 'viewer', 'admin'], true)) {
                 return Response::validationError(
-                    ['role must be staff, manager, or admin'],
+                    ['role must be staff, manager, viewer, or admin'],
                     $request->traceId
                 );
             }
@@ -214,6 +218,8 @@ final class BusinessUsersController
             }
 
             $updateData['role'] = $newRole;
+            // Apply role defaults on role change; explicit body permissions below can override.
+            $updateData = array_merge($updateData, $this->defaultPermissionsForRole($newRole));
         }
 
         // Update permissions if provided
@@ -320,6 +326,18 @@ final class BusinessUsersController
         }
 
         $this->businessUserRepo->delete($businessUser['id']);
+        // Force session renewal after permission revocation.
+        // Access token remains valid until TTL, but refresh/login is required afterwards.
+        $this->authSessionRepo->revokeAllForUser($targetUserId);
+
+        // Keep invitation history consistent with access revocation in operators screen.
+        $targetUser = $this->userRepo->findById($targetUserId);
+        if ($targetUser !== null && isset($targetUser['email'])) {
+            $this->businessInvitationRepo->deleteAcceptedByEmailAndBusiness(
+                (string) $targetUser['email'],
+                $businessId
+            );
+        }
 
         return Response::success([
             'message' => 'User removed from business',
@@ -449,5 +467,42 @@ final class BusinessUsersController
                 'last_name' => $row['last_name'] ?? null,
             ],
         ];
+    }
+
+    /**
+     * Role-based default permissions.
+     */
+    private function defaultPermissionsForRole(string $role): array
+    {
+        return match ($role) {
+            'admin' => [
+                'can_manage_bookings' => true,
+                'can_manage_clients' => true,
+                'can_manage_services' => true,
+                'can_manage_staff' => true,
+                'can_view_reports' => true,
+            ],
+            'manager' => [
+                'can_manage_bookings' => true,
+                'can_manage_clients' => true,
+                'can_manage_services' => false,
+                'can_manage_staff' => false,
+                'can_view_reports' => false,
+            ],
+            'viewer' => [
+                'can_manage_bookings' => false,
+                'can_manage_clients' => false,
+                'can_manage_services' => false,
+                'can_manage_staff' => false,
+                'can_view_reports' => false,
+            ],
+            default => [
+                'can_manage_bookings' => false,
+                'can_manage_clients' => false,
+                'can_manage_services' => false,
+                'can_manage_staff' => false,
+                'can_view_reports' => false,
+            ],
+        };
     }
 }

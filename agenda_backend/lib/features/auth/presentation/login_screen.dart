@@ -15,7 +15,9 @@ import '../providers/auth_provider.dart';
 /// Schermata di login per il gestionale.
 /// Richiede autenticazione per accedere al sistema.
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.redirectTo});
+
+  final String? redirectTo;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -30,6 +32,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
   bool _credentialsLoaded = false;
   String? _errorMessage;
+
+  String get _postLoginRoute {
+    final redirect = widget.redirectTo;
+    if (redirect != null && redirect.startsWith('/')) {
+      return redirect;
+    }
+    return '/agenda';
+  }
 
   @override
   void initState() {
@@ -103,7 +113,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // Segnala al browser che l'autofill è completato con successo
         // Questo triggera la richiesta di salvataggio credenziali
         TextInput.finishAutofillContext();
-        context.go('/agenda');
+        context.go(_postLoginRoute);
       } else {
         setState(() {
           _errorMessage = context.l10n.authLoginFailed;
@@ -127,7 +137,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // Osserva solo per redirect se autenticato
     ref.listen(authProvider, (prev, next) {
       if (next.isAuthenticated && mounted) {
-        context.go('/agenda');
+        context.go(_postLoginRoute);
       }
     });
 

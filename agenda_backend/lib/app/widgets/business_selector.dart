@@ -27,7 +27,7 @@ class BusinessSelector extends ConsumerWidget {
         businesses: businesses,
         currentBusinessId: currentBusinessId,
         onChanged: (id) {
-          ref.read(currentBusinessIdProvider.notifier).set(id);
+          ref.read(currentBusinessIdProvider.notifier).selectByUser(id);
           ref.read(superadminSelectedBusinessProvider.notifier).select(id);
         },
       ),

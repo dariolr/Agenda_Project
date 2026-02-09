@@ -27,7 +27,6 @@ class SubdomainResolver {
     'admin',
     'gestionale',
     'app',
-    'staging',
     'dev',
     'test',
     'localhost',

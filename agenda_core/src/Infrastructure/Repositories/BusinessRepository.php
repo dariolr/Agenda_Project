@@ -33,10 +33,11 @@ final class BusinessRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency, 
-                    b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at
+                    b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at,
+                    bu.role AS user_role, bu.scope_type AS user_scope_type
              FROM businesses b
              JOIN business_users bu ON bu.business_id = b.id
-             WHERE bu.user_id = ? AND b.is_active = 1
+             WHERE bu.user_id = ? AND bu.is_active = 1 AND b.is_active = 1
              ORDER BY b.name ASC'
         );
         $stmt->execute([$userId]);

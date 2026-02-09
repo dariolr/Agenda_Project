@@ -552,8 +552,53 @@
     }
   },
   "operatorsInviteAlreadyPending": "An invite is already pending for this email. You can resend it from the pending invites list.",
+  "operatorsInviteAlreadyHasAccess": "This user already has access to the business.",
+  "operatorsInviteEmailUnavailable": "Email sending is unavailable in this environment. Please contact support.",
+  "operatorsInviteEmailFailed": "Unable to send the invitation email. Please try again later.",
   "operatorsInviteError": "Unable to send invite",
   "operatorsInviteCopied": "Invite link copied",
+  "invitationAcceptTitle": "Accept invitation",
+  "invitationAcceptLoading": "Checking invitation...",
+  "invitationAcceptIntro": "You were invited to collaborate with {businessName} as {role}.",
+  "@invitationAcceptIntro": {
+    "placeholders": {
+      "businessName": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "invitationAcceptLoginRequired": "Sign in with the invited email to continue.",
+  "invitationAcceptLoginAction": "Accept to continue",
+  "invitationAcceptAndLoginAction": "Accept and sign in",
+  "invitationAcceptHintExistingAccount": "Already have an account? Sign in to accept the invitation.",
+  "invitationAcceptHintNoAccount": "No account yet? Register first.",
+  "invitationRegisterAction": "Register to accept",
+  "invitationRegisterTitle": "Register to accept invitation",
+  "invitationRegisterInProgress": "Registering...",
+  "invitationRegisterPasswordConfirm": "Confirm password",
+  "invitationRegisterPasswordTooShort": "Password must be at least 8 characters long.",
+  "invitationRegisterPasswordWeak": "Password must include at least one uppercase letter, one lowercase letter, and one number.",
+  "invitationRegisterPasswordMismatch": "Passwords do not match.",
+  "invitationRegisterExistingUser": "Email already registered. Sign in to accept the invitation.",
+  "invitationAcceptRequiresRegistration": "No account exists for this email yet. Use Register.",
+  "invitationAcceptButton": "Accept invitation",
+  "invitationAcceptInProgress": "Accepting invitation...",
+  "invitationDeclineButton": "Decline invitation",
+  "invitationDeclineInProgress": "Declining invitation...",
+  "invitationAcceptSwitchAccount": "Sign in with another account",
+  "invitationAcceptSuccessTitle": "Invitation accepted",
+  "invitationAcceptSuccessMessage": "You can now use the management app with assigned permissions.",
+  "invitationAcceptGoAgenda": "Go to agenda",
+  "invitationDeclineSuccessTitle": "Invitation declined",
+  "invitationDeclineSuccessMessage": "You declined the invitation. No permission has been granted.",
+  "invitationDeclineGoLogin": "Go to login",
+  "invitationAcceptErrorInvalid": "This invitation is not valid.",
+  "invitationAcceptErrorExpired": "This invitation has expired.",
+  "invitationAcceptErrorEmailMismatch": "This invitation is linked to a different email. To continue: 1) tap \"Sign in with another account\" 2) sign in with the invited email 3) return to this link and accept the invitation.",
+  "invitationAcceptErrorGeneric": "Unable to complete the operation. Please try again.",
   "operatorsScopeTitle": "Access",
   "operatorsScopeBusiness": "All locations",
   "operatorsScopeBusinessDesc": "Full access to all business locations",
@@ -573,6 +618,15 @@
   "operatorsRevokeInvite": "Revoke invite",
   "operatorsRevokeInviteConfirm": "Do you want to revoke the invite for {email}?",
   "@operatorsRevokeInviteConfirm": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsDeleteInvite": "Delete invite",
+  "operatorsDeleteInviteConfirm": "Do you want to permanently delete the invite for {email}?",
+  "@operatorsDeleteInviteConfirm": {
     "placeholders": {
       "email": {
         "type": "String"
@@ -615,6 +669,27 @@
       }
     }
   },
+  "operatorsAcceptedOn": "Accepted on {date}",
+  "@operatorsAcceptedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsInvitesHistoryCount": "{count} archived invites",
+  "@operatorsInvitesHistoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "operatorsInviteStatusPending": "Pending",
+  "operatorsInviteStatusAccepted": "Accepted",
+  "operatorsInviteStatusDeclined": "Declined",
+  "operatorsInviteStatusRevoked": "Revoked",
+  "operatorsInviteStatusExpired": "Expired",
   
   "authLoginSubtitle": "Sign in to the management system",
   "authEmail": "Email",

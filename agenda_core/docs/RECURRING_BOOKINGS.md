@@ -10,7 +10,7 @@
 
 **L'implementazione deve essere eseguita SOLO in ambiente locale (MAMP).**
 
-- NON eseguire deploy su staging o produzione fino ad approvazione esplicita
+- NON eseguire deploy su produzione fino ad approvazione esplicita
 - Testare tutte le funzionalità su `http://localhost:8888/api/`
 - Database locale: MySQL su porta 8889 (MAMP)
 - Usare `./scripts/deploy-local.sh` per deploy locale
@@ -395,6 +395,4 @@ DELETE /v1/bookings/recurring/{rule_id}                - Cancella serie (scope=a
 
 ### Fase 6: Test e deploy
 28. [ ] Test end-to-end su ambiente locale
-29. [ ] Deploy staging
-30. [ ] Test su staging
-31. [ ] Deploy produzione
+29. [ ] Deploy produzione

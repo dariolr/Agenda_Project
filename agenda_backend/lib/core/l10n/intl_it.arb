@@ -550,8 +550,53 @@
     }
   },
   "operatorsInviteAlreadyPending": "Esiste già un invito in attesa per questa email. Puoi reinviarlo dalla lista degli inviti pendenti.",
+  "operatorsInviteAlreadyHasAccess": "Questo utente ha già accesso al business.",
+  "operatorsInviteEmailUnavailable": "Invio email non disponibile in questo ambiente. Contatta il supporto.",
+  "operatorsInviteEmailFailed": "Impossibile inviare l'email di invito. Riprova più tardi.",
   "operatorsInviteError": "Impossibile inviare l'invito",
   "operatorsInviteCopied": "Link di invito copiato",
+  "invitationAcceptTitle": "Accetta invito",
+  "invitationAcceptLoading": "Verifica invito in corso...",
+  "invitationAcceptIntro": "Sei stato invitato a collaborare con {businessName} come {role}.",
+  "@invitationAcceptIntro": {
+    "placeholders": {
+      "businessName": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "invitationAcceptLoginRequired": "Accedi con l'email invitata per continuare.",
+  "invitationAcceptLoginAction": "Accetta per continuare",
+  "invitationAcceptAndLoginAction": "Accetta e accedi",
+  "invitationAcceptHintExistingAccount": "Hai già un account? Accedi per accettare l'invito.",
+  "invitationAcceptHintNoAccount": "Non hai un account? Registrati prima.",
+  "invitationRegisterAction": "Registrati per accettare",
+  "invitationRegisterTitle": "Registrati per accettare l'invito",
+  "invitationRegisterInProgress": "Registrazione...",
+  "invitationRegisterPasswordConfirm": "Conferma password",
+  "invitationRegisterPasswordTooShort": "La password deve avere almeno 8 caratteri.",
+  "invitationRegisterPasswordWeak": "La password deve contenere almeno una maiuscola, una minuscola e un numero.",
+  "invitationRegisterPasswordMismatch": "Le password non coincidono.",
+  "invitationRegisterExistingUser": "Email già registrata. Accedi per accettare l'invito.",
+  "invitationAcceptRequiresRegistration": "Per questa email non esiste ancora un account. Usa Registrati.",
+  "invitationAcceptButton": "Accetta invito",
+  "invitationAcceptInProgress": "Accettazione in corso...",
+  "invitationDeclineButton": "Rifiuta invito",
+  "invitationDeclineInProgress": "Rifiuto in corso...",
+  "invitationAcceptSwitchAccount": "Accedi con un altro account",
+  "invitationAcceptSuccessTitle": "Invito accettato",
+  "invitationAcceptSuccessMessage": "Ora puoi usare il gestionale con i permessi assegnati.",
+  "invitationAcceptGoAgenda": "Vai all'agenda",
+  "invitationDeclineSuccessTitle": "Invito rifiutato",
+  "invitationDeclineSuccessMessage": "Hai rifiutato l'invito. Non è stata aggiunta nessuna autorizzazione.",
+  "invitationDeclineGoLogin": "Vai al login",
+  "invitationAcceptErrorInvalid": "Questo invito non è valido.",
+  "invitationAcceptErrorExpired": "Questo invito è scaduto.",
+  "invitationAcceptErrorEmailMismatch": "Questo invito è associato a un'altra email. Per continuare: 1) clicca \"Accedi con un altro account\" 2) effettua il login con l'email invitata 3) torna su questo link e accetta l'invito.",
+  "invitationAcceptErrorGeneric": "Impossibile completare l'operazione. Riprova.",
   "operatorsScopeTitle": "Accesso",
   "operatorsScopeBusiness": "Tutte le sedi",
   "operatorsScopeBusinessDesc": "Accesso completo a tutte le sedi del business",
@@ -571,6 +616,15 @@
   "operatorsRevokeInvite": "Revoca invito",
   "operatorsRevokeInviteConfirm": "Vuoi revocare l'invito per {email}?",
   "@operatorsRevokeInviteConfirm": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsDeleteInvite": "Elimina invito",
+  "operatorsDeleteInviteConfirm": "Vuoi eliminare definitivamente l'invito per {email}?",
+  "@operatorsDeleteInviteConfirm": {
     "placeholders": {
       "email": {
         "type": "String"
@@ -613,6 +667,27 @@
       }
     }
   },
+  "operatorsAcceptedOn": "Accettato il {date}",
+  "@operatorsAcceptedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "operatorsInvitesHistoryCount": "{count} inviti archiviati",
+  "@operatorsInvitesHistoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "operatorsInviteStatusPending": "In attesa",
+  "operatorsInviteStatusAccepted": "Accettato",
+  "operatorsInviteStatusDeclined": "Rifiutato",
+  "operatorsInviteStatusRevoked": "Revocato",
+  "operatorsInviteStatusExpired": "Scaduto",
   
   "authLoginSubtitle": "Accedi al gestionale",
   "authEmail": "Email",

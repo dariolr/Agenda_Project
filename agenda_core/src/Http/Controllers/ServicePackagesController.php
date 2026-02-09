@@ -19,7 +19,7 @@ final class ServicePackagesController
     ) {}
 
     /**
-     * Check if authenticated user has access to the given business.
+     * Check if authenticated user has services permission in the given business.
      */
     private function hasBusinessAccess(Request $request, int $businessId): bool
     {
@@ -32,7 +32,7 @@ final class ServicePackagesController
             return true;
         }
 
-        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+        return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', false);
     }
 
     /**
