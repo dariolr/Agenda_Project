@@ -18,6 +18,7 @@ import 'package:agenda_backend/features/staff/providers/availability_exceptions_
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:agenda_backend/features/staff/widgets/staff_top_controls.dart';
+import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -578,6 +579,7 @@ class _StaffWeekOverviewScreenState
   Widget build(BuildContext context) {
     // Data sources
     final selectedDate = ref.watch(agendaDateProvider);
+    final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
     // Current location could influence future filtering (kept for clarity)
     // final location = ref.watch(currentLocationProvider); // not used yet
     final staffList = ref.watch(staffForStaffSectionProvider);
@@ -723,6 +725,7 @@ class _StaffWeekOverviewScreenState
       final minutes = _totalMinutesForStaff(availability[staffId] ?? const {});
       final isMobile = formFactor == AppFormFactor.mobile;
       void openStaffAvailability() {
+        if (!canManageStaff) return;
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => StaffPlanningScreen(initialStaffId: staffId),
@@ -772,7 +775,7 @@ class _StaffWeekOverviewScreenState
       if (isMobile) {
         // Mobile: avatar, nome e totale ore raggruppati al centro
         return GestureDetector(
-          onTap: openStaffAvailability,
+          onTap: canManageStaff ? openStaffAvailability : null,
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -785,28 +788,29 @@ class _StaffWeekOverviewScreenState
                       isHighlighted: false,
                       initials: staff.initials,
                     ),
-                    Positioned(
-                      right: -4,
-                      bottom: -4,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.edit_outlined,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.primary,
+                    if (canManageStaff)
+                      Positioned(
+                        right: -4,
+                        bottom: -4,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -836,7 +840,7 @@ class _StaffWeekOverviewScreenState
 
       // Desktop/Tablet: layout orizzontale
       return GestureDetector(
-        onTap: openStaffAvailability,
+        onTap: canManageStaff ? openStaffAvailability : null,
         child: Row(
           children: [
             StaffCircleAvatar(
@@ -876,13 +880,14 @@ class _StaffWeekOverviewScreenState
                 ],
               ),
             ),
-            IconButton(
-              tooltip: context.l10n.staffEditHours,
-              iconSize: 20,
-              padding: const EdgeInsets.all(4),
-              onPressed: openStaffAvailability,
-              icon: const Icon(Icons.edit_outlined),
-            ),
+            if (canManageStaff)
+              IconButton(
+                tooltip: context.l10n.staffEditHours,
+                iconSize: 20,
+                padding: const EdgeInsets.all(4),
+                onPressed: openStaffAvailability,
+                icon: const Icon(Icons.edit_outlined),
+              ),
           ],
         ),
       );
@@ -959,6 +964,7 @@ class _StaffWeekOverviewScreenState
 
     // Helper: mostra menu per eccezione "tutto il giorno"
     void showAllDayExceptionMenu(int staffId, int weekday, DateTime date) {
+      if (!canManageStaff) return;
       final l10n = context.l10n;
       final isMobile = formFactor == AppFormFactor.mobile;
       final locale = Intl.getCurrentLocale();
@@ -1133,6 +1139,7 @@ class _StaffWeekOverviewScreenState
       DateTime date, {
       bool isException = false,
     }) {
+      if (!canManageStaff) return;
       final l10n = context.l10n;
       final isMobile = formFactor == AppFormFactor.mobile;
       final locale = Intl.getCurrentLocale();
@@ -1603,10 +1610,12 @@ class _StaffWeekOverviewScreenState
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(6),
-            onTap: () {
+            onTap: canManageStaff
+                ? () {
               // Mostra menu per eccezione "tutto il giorno"
               showAllDayExceptionMenu(staffId, weekday, date);
-            },
+            }
+                : null,
             child: CustomPaint(
               painter: hasAllDayAvailable
                   ? null
@@ -1660,7 +1669,8 @@ class _StaffWeekOverviewScreenState
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(6),
-            onTap: () {
+            onTap: canManageStaff
+                ? () {
               if (range.hourRange != null) {
                 final isAllDayRange =
                     range.hourRange!.startHour == 0 &&
@@ -1716,7 +1726,8 @@ class _StaffWeekOverviewScreenState
                   isException: range.isException,
                 );
               }
-            },
+            }
+                : null,
             child: CustomPaint(
               painter: isUnavailableException
                   ? _DashedRoundedRectPainter(color: borderColor, radius: 6)

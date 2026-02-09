@@ -100,7 +100,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       currentUserCanManageBookingsProvider,
     );
     final canManageServices = ref.watch(currentUserCanManageServicesProvider);
-    final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
+    final canViewStaff = ref.watch(currentUserCanViewStaffProvider);
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
     final canManageOperators = ref.watch(canManageOperatorsProvider);
     final canManageClosures = ref.watch(canManageBusinessSettingsProvider);
@@ -156,7 +156,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           actions.add(const _ServicesAddAction());
         } else if (isClients && showClientsNav) {
           actions.add(const _ClientsAddAction());
-        } else if (isStaff && canManageStaff) {
+        } else if (isStaff && canViewStaff) {
           actions.add(const _TeamAddAction());
         } else if (isReport && canViewReports) {
           actions.add(_ReportRefreshAction(ref: ref));
@@ -262,7 +262,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         actions.add(const _ServicesAddAction(compact: true));
       } else if (isClients && showClientsNav) {
         actions.add(const _ClientsAddAction(compact: true));
-      } else if (isStaff && canManageStaff) {
+      } else if (isStaff && canViewStaff) {
         actions.add(const _TeamAddAction(compact: true));
       } else if (isReport && canViewReports) {
         actions.add(_ReportRefreshAction(ref: ref));
@@ -892,6 +892,7 @@ class _TeamAddAction extends ConsumerWidget {
     final staffCount = staffAsync.value?.length ?? 0;
     final locations = ref.watch(locationsProvider);
     final locationCount = locations.length;
+    final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
 
     Widget buildActionLabel(IconData icon, String label) {
       return showLabelEffective
@@ -936,8 +937,8 @@ class _TeamAddAction extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
           ],
-          // Pulsante Modifica ordinamento: visibile solo se almeno 2 staff o 2 locations
-          if (staffCount >= 2 || locationCount >= 2) ...[
+          // Pulsante Modifica ordinamento: solo per ruoli con permesso di modifica
+          if (canManageStaff && (staffCount >= 2 || locationCount >= 2)) ...[
             Tooltip(
               message: l10n.reorderTitle,
               child: SizedBox(
@@ -960,55 +961,56 @@ class _TeamAddAction extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
           ],
-          AdaptiveDropdown<String>(
-            modalTitle: l10n.agendaAdd,
-            alignment: AdaptiveDropdownAlignment.right,
-            verticalPosition: AdaptiveDropdownVerticalPosition.above,
-            forcePopup: true,
-            hideTriggerWhenOpen: true,
-            popupWidth: 220,
-            items: [
-              AdaptiveDropdownItem(
-                value: 'location',
-                child: Text(l10n.teamNewLocationTitle),
-              ),
-              AdaptiveDropdownItem(
-                value: 'staff',
-                child: Text(l10n.teamNewStaffTitle),
-              ),
-            ],
-            onSelected: (value) {
-              if (value == 'location') {
-                showLocationDialog(context, ref);
-              } else if (value == 'staff') {
-                showStaffDialog(context, ref);
-              }
-            },
-            child: Material(
-              elevation: 0,
-              color: scheme.secondaryContainer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: SizedBox(
-                height: _actionButtonHeight,
-                width: isIconOnly ? iconOnlyWidth : null,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  child: _buildAddButtonContent(
-                    showLabelEffective: showLabelEffective,
-                    compact: compact,
-                    label: l10n.agendaAdd,
-                    onContainer: onContainer,
+          if (canManageStaff)
+            AdaptiveDropdown<String>(
+              modalTitle: l10n.agendaAdd,
+              alignment: AdaptiveDropdownAlignment.right,
+              verticalPosition: AdaptiveDropdownVerticalPosition.above,
+              forcePopup: true,
+              hideTriggerWhenOpen: true,
+              popupWidth: 220,
+              items: [
+                AdaptiveDropdownItem(
+                  value: 'location',
+                  child: Text(l10n.teamNewLocationTitle),
+                ),
+                AdaptiveDropdownItem(
+                  value: 'staff',
+                  child: Text(l10n.teamNewStaffTitle),
+                ),
+              ],
+              onSelected: (value) {
+                if (value == 'location') {
+                  showLocationDialog(context, ref);
+                } else if (value == 'staff') {
+                  showStaffDialog(context, ref);
+                }
+              },
+              child: Material(
+                elevation: 0,
+                color: scheme.secondaryContainer,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: SizedBox(
+                  height: _actionButtonHeight,
+                  width: isIconOnly ? iconOnlyWidth : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: _buildAddButtonContent(
+                      showLabelEffective: showLabelEffective,
+                      compact: compact,
+                      label: l10n.agendaAdd,
+                      onContainer: onContainer,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

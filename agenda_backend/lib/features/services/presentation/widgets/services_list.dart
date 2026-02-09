@@ -20,6 +20,7 @@ class ServicesList extends ConsumerWidget {
   final void Function(ServicePackage) onPackageOpen;
   final void Function(ServicePackage) onPackageEdit;
   final void Function(int id) onPackageDelete;
+  final bool readOnly;
 
   const ServicesList({
     super.key,
@@ -35,6 +36,7 @@ class ServicesList extends ConsumerWidget {
     required this.onPackageOpen,
     required this.onPackageEdit,
     required this.onPackageDelete,
+    this.readOnly = false,
   });
 
   @override
@@ -67,6 +69,7 @@ class ServicesList extends ConsumerWidget {
                       onEdit: () => onEdit(entries[i].service!),
                       onDuplicate: () => onDuplicate(entries[i].service!),
                       onDelete: () => onDelete(entries[i].service!.id),
+                      readOnly: readOnly,
                     )
                   else
                     ServicePackageListItem(
@@ -75,9 +78,12 @@ class ServicesList extends ConsumerWidget {
                       isEvenRow: i.isEven,
                       isWide: isWide,
                       colorScheme: colorScheme,
-                      onTap: () => onPackageOpen(entries[i].package!),
+                      onTap: () {
+                        onPackageOpen(entries[i].package!);
+                      },
                       onEdit: () => onPackageEdit(entries[i].package!),
                       onDelete: () => onPackageDelete(entries[i].package!.id),
+                      readOnly: readOnly,
                     ),
                 if (entries.isNotEmpty)
                   Divider(

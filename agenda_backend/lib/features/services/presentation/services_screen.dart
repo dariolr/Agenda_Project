@@ -10,11 +10,13 @@ import '../../../core/models/service_category.dart';
 import '../../../core/models/service_package.dart';
 import '../../../core/models/service_variant.dart';
 import '../../../core/utils/color_utils.dart';
+import '../../../core/utils/price_utils.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../../core/widgets/reorder_toggle_button.dart';
 import '../../../core/widgets/reorder_toggle_panel.dart';
 import '../../auth/providers/current_business_user_provider.dart';
+import '../../agenda/providers/location_providers.dart';
 import '../../agenda/providers/resource_providers.dart';
 import '../providers/service_categories_provider.dart';
 import '../providers/service_packages_provider.dart';
@@ -112,11 +114,14 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canManageServices = ref.watch(currentUserCanManageServicesProvider);
     final servicesAsync = ref.watch(servicesProvider);
     final allCategories = ref.watch(sortedCategoriesProvider);
     ref.watch(servicePackagesProvider);
-    // Pre-carica le risorse per averle disponibili nel service dialog
-    ref.watch(resourcesProvider);
+    // Pre-carica le risorse solo per ruoli che possono modificare servizi.
+    if (canManageServices) {
+      ref.watch(resourcesProvider);
+    }
 
     // Mostriamo sempre tutte le categorie; i provider di sort sposteranno le vuote in coda.
     final categories = allCategories;
@@ -170,9 +175,26 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     if (servicesAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+    if (servicesAsync.hasError) {
+      return Center(
+        child: Text(
+          context.l10n.errorTitle,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
 
     if (categories.isEmpty) {
-      return const SizedBox.shrink();
+      return Center(
+        child: Text(
+          context.l10n.noServicesFound,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
     }
 
     return GestureDetector(
@@ -633,6 +655,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     bool isWide,
     ColorScheme colorScheme,
   ) {
+    final canManageServices = ref.watch(currentUserCanManageServicesProvider);
     final servicesNotifier = ref.read(servicesProvider.notifier);
     Color? mostUsedColorForCategory(ServiceCategory category) {
       final services = (ref.read(servicesProvider).value ?? [])
@@ -705,6 +728,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       onPackageEdit: (package) =>
           _openPackageDialog(context, ref, package: package),
       onPackageDelete: (id) => _confirmDeletePackage(context, ref, id),
+      readOnly: !canManageServices,
     );
   }
 
@@ -748,7 +772,15 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     bool duplicateFrom = false,
   }) {
     final canManageServices = ref.read(currentUserCanManageServicesProvider);
-    if (!canManageServices) return Future.value();
+    if (!canManageServices) {
+      if (service == null) return Future.value();
+      return showServiceDialog(
+        context,
+        ref,
+        service: service,
+        readOnly: true,
+      ).then((_) => _selectedService.value = null);
+    }
 
     return showServiceDialog(
       context,
@@ -767,7 +799,12 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     int? preselectedCategoryId,
   }) {
     final canManageServices = ref.read(currentUserCanManageServicesProvider);
-    if (!canManageServices) return Future.value();
+    if (!canManageServices) {
+      if (package != null) {
+        _openPackageDetailsDialog(context, ref, package);
+      }
+      return Future.value();
+    }
 
     final services = ref.read(servicesProvider).value ?? [];
     final categories = ref.read(serviceCategoriesProvider);
@@ -834,6 +871,37 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       cancelLabel: context.l10n.actionCancel,
       danger: true,
       onConfirm: onConfirm,
+    );
+  }
+
+  Future<void> _openPackageDetailsDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ServicePackage package,
+  ) async {
+    final isIt = Localizations.localeOf(context).languageCode == 'it';
+    final durationLabelText = isIt ? 'Durata' : 'Duration';
+    final priceLabelText = isIt ? 'Prezzo' : 'Price';
+    final currencyCode = ref.read(effectiveCurrencyProvider);
+    await showAppInfoDialog(
+      context,
+      title: Text(package.name),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$durationLabelText: ${context.localizedDurationLabel(package.effectiveDurationMinutes)}'),
+          const SizedBox(height: 6),
+          Text(
+            '$priceLabelText: ${PriceFormatter.format(context: context, amount: package.effectivePrice, currencyCode: currencyCode)}',
+          ),
+          if ((package.description ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(package.description!.trim()),
+          ],
+        ],
+      ),
+      closeLabel: context.l10n.actionClose,
     );
   }
 }

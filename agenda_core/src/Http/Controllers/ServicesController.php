@@ -29,7 +29,26 @@ final class ServicesController
     ) {}
 
     /**
-     * Check if authenticated user has services permission in the given business.
+     * Check if authenticated user can read business data in the given business.
+     */
+    private function hasBusinessReadAccess(Request $request, int $businessId): bool
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null) {
+            return false;
+        }
+
+        // Superadmin has access to all businesses
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+
+        // Normal user: any active business operator can read.
+        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+    }
+
+    /**
+     * Check if authenticated user has services manage permission in the given business.
      */
     private function hasBusinessAccess(Request $request, int $businessId): bool
     {
@@ -38,7 +57,6 @@ final class ServicesController
             return false;
         }
 
-        // Superadmin has access to all businesses
         if ($this->userRepo->isSuperadmin($userId)) {
             return true;
         }
@@ -190,7 +208,7 @@ final class ServicesController
         $businessId = (int) $location['business_id'];
 
         // Authorization check
-        if (!$this->hasBusinessAccess($request, $businessId)) {
+        if (!$this->hasBusinessReadAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
@@ -613,7 +631,7 @@ final class ServicesController
         $businessId = (int) $staff['business_id'];
 
         // Authorization check
-        if (!$this->hasBusinessAccess($request, $businessId)) {
+        if (!$this->hasBusinessReadAccess($request, $businessId)) {
             return Response::notFound('Staff not found', $request->traceId);
         }
 
@@ -698,7 +716,7 @@ final class ServicesController
         $businessId = (int) $existingService['business_id'];
 
         // Authorization check
-        if (!$this->hasBusinessAccess($request, $businessId)) {
+        if (!$this->hasBusinessReadAccess($request, $businessId)) {
             return Response::notFound('Service not found', $request->traceId);
         }
 
