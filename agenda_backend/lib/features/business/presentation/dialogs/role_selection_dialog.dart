@@ -48,6 +48,18 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
         ? widget.currentScopeType
         : 'business';
     _selectedLocationIds = widget.currentLocationIds.toSet();
+    _enforceSingleLocationForStaff();
+  }
+
+  void _enforceSingleLocationForStaff() {
+    if (_selectedRole == 'staff' &&
+        _selectedScopeType == 'locations' &&
+        _selectedLocationIds.length > 1) {
+      final keep = _selectedLocationIds.last;
+      _selectedLocationIds
+        ..clear()
+        ..add(keep);
+    }
   }
 
   @override
@@ -69,7 +81,10 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
           const SizedBox(height: 24),
           _RoleRadioList(
             selectedRole: _selectedRole,
-            onChanged: (role) => setState(() => _selectedRole = role),
+            onChanged: (role) => setState(() {
+              _selectedRole = role;
+              _enforceSingleLocationForStaff();
+            }),
           ),
           // Sezione scope solo se più di una location
           if (widget.locations.length > 1) ...[
@@ -83,6 +98,7 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
                 if (scope == 'business') {
                   _selectedLocationIds.clear();
                 }
+                _enforceSingleLocationForStaff();
               }),
             ),
             if (_selectedScopeType == 'locations') ...[
@@ -91,9 +107,14 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
                 locations: widget.locations,
                 selectedIds: _selectedLocationIds,
                 onChanged: (ids) => setState(() {
-                  _selectedLocationIds
-                    ..clear()
-                    ..addAll(ids);
+                  _selectedLocationIds.clear();
+                  if (_selectedRole == 'staff') {
+                    if (ids.isNotEmpty) {
+                      _selectedLocationIds.add(ids.last);
+                    }
+                  } else {
+                    _selectedLocationIds.addAll(ids);
+                  }
                 }),
               ),
             ],
@@ -113,6 +134,20 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
                 context,
                 title: l10n.errorTitle,
                 message: l10n.operatorsScopeLocationsRequired,
+              );
+              return;
+            }
+            if (_selectedRole == 'staff' &&
+                _selectedScopeType == 'locations' &&
+                _selectedLocationIds.length > 1) {
+              final isIt =
+                  Localizations.localeOf(context).languageCode == 'it';
+              FeedbackDialog.showError(
+                context,
+                title: l10n.errorTitle,
+                message: isIt
+                    ? 'Per il ruolo Staff puoi selezionare una sola sede.'
+                    : 'For Staff role you can select only one location.',
               );
               return;
             }
@@ -165,104 +200,131 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
         ? widget.currentScopeType
         : 'business';
     _selectedLocationIds = widget.currentLocationIds.toSet();
+    _enforceSingleLocationForStaff();
+  }
+
+  void _enforceSingleLocationForStaff() {
+    if (_selectedRole == 'staff' &&
+        _selectedScopeType == 'locations' &&
+        _selectedLocationIds.length > 1) {
+      final keep = _selectedLocationIds.last;
+      _selectedLocationIds
+        ..clear()
+        ..add(keep);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Column(
-      mainAxisSize: MainAxisSize.max,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Header
-        Text(
-          l10n.operatorsEditRole,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Modifica il ruolo di ${widget.userName}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Text(
+            l10n.operatorsEditRole,
+            style: Theme.of(context).textTheme.titleLarge,
           ),
-        ),
-        const SizedBox(height: 16),
-        Flexible(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Role options
-                _RoleRadioList(
-                  selectedRole: _selectedRole,
-                  onChanged: (role) => setState(() => _selectedRole = role),
-                ),
-                // Sezione scope solo se più di una location
-                if (widget.locations.length > 1) ...[
-                  const SizedBox(height: 24),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  _ScopeTypeSelector(
-                    selectedScopeType: _selectedScopeType,
-                    onChanged: (scope) => setState(() {
-                      _selectedScopeType = scope;
-                      if (scope == 'business') {
-                        _selectedLocationIds.clear();
-                      }
-                    }),
-                  ),
-                  if (_selectedScopeType == 'locations') ...[
-                    const SizedBox(height: 16),
-                    _LocationsMultiSelect(
-                      locations: widget.locations,
-                      selectedIds: _selectedLocationIds,
-                      onChanged: (ids) => setState(() {
-                        _selectedLocationIds
-                          ..clear()
-                          ..addAll(ids);
-                      }),
-                    ),
-                  ],
-                ],
-              ],
+          const SizedBox(height: 4),
+          Text(
+            'Modifica il ruolo di ${widget.userName}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(l10n.actionCancel),
-              ),
+          const SizedBox(height: 16),
+          _RoleRadioList(
+            selectedRole: _selectedRole,
+            onChanged: (role) => setState(() {
+              _selectedRole = role;
+              _enforceSingleLocationForStaff();
+            }),
+          ),
+          // Sezione scope solo se più di una location
+          if (widget.locations.length > 1) ...[
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            _ScopeTypeSelector(
+              selectedScopeType: _selectedScopeType,
+              onChanged: (scope) => setState(() {
+                _selectedScopeType = scope;
+                if (scope == 'business') {
+                  _selectedLocationIds.clear();
+                }
+                _enforceSingleLocationForStaff();
+              }),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: FilledButton(
-                onPressed: () {
-                  if (_selectedScopeType == 'locations' &&
-                      _selectedLocationIds.isEmpty) {
-                    FeedbackDialog.showError(
-                      context,
-                      title: l10n.errorTitle,
-                      message: l10n.operatorsScopeLocationsRequired,
-                    );
-                    return;
+            if (_selectedScopeType == 'locations') ...[
+              const SizedBox(height: 16),
+              _LocationsMultiSelect(
+                locations: widget.locations,
+                selectedIds: _selectedLocationIds,
+                onChanged: (ids) => setState(() {
+                  _selectedLocationIds.clear();
+                  if (_selectedRole == 'staff') {
+                    if (ids.isNotEmpty) {
+                      _selectedLocationIds.add(ids.last);
+                    }
+                  } else {
+                    _selectedLocationIds.addAll(ids);
                   }
-                  widget.onSave(
-                    role: _selectedRole,
-                    scopeType: _selectedScopeType,
-                    locationIds: _selectedLocationIds.toList(),
-                  );
-                },
-                child: Text(l10n.actionSave),
+                }),
               ),
-            ),
+            ],
           ],
-        ),
-      ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.actionCancel),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    if (_selectedScopeType == 'locations' &&
+                        _selectedLocationIds.isEmpty) {
+                      FeedbackDialog.showError(
+                        context,
+                        title: l10n.errorTitle,
+                        message: l10n.operatorsScopeLocationsRequired,
+                      );
+                      return;
+                    }
+                    if (_selectedRole == 'staff' &&
+                        _selectedScopeType == 'locations' &&
+                        _selectedLocationIds.length > 1) {
+                      final isIt =
+                          Localizations.localeOf(context).languageCode == 'it';
+                      FeedbackDialog.showError(
+                        context,
+                        title: l10n.errorTitle,
+                        message: isIt
+                            ? 'Per il ruolo Staff puoi selezionare una sola sede.'
+                            : 'For Staff role you can select only one location.',
+                      );
+                      return;
+                    }
+                    widget.onSave(
+                      role: _selectedRole,
+                      scopeType: _selectedScopeType,
+                      locationIds: _selectedLocationIds.toList(),
+                    );
+                  },
+                  child: Text(l10n.actionSave),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -277,11 +339,6 @@ class _RoleRadioList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final isIt = Localizations.localeOf(context).languageCode == 'it';
-    final viewerLabel = isIt ? 'Visualizzatore' : 'Viewer';
-    final viewerDesc = isIt
-        ? 'Può solo visualizzare appuntamenti e calendario. Nessuna modifica.'
-        : 'Can only view appointments and calendar. No changes allowed.';
 
     return Column(
       children: [
@@ -313,8 +370,8 @@ class _RoleRadioList extends StatelessWidget {
           value: 'viewer',
           groupValue: selectedRole,
           onChanged: onChanged,
-          title: viewerLabel,
-          subtitle: viewerDesc,
+          title: l10n.operatorsRoleViewer,
+          subtitle: l10n.operatorsRoleViewerDesc,
           icon: Icons.visibility_outlined,
         ),
       ],

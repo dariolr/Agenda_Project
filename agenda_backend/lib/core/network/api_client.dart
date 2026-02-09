@@ -1543,10 +1543,17 @@ class ApiClient {
     required String role,
     String? scopeType,
     List<int>? locationIds,
+    int? staffId,
   }) async {
     final data = <String, dynamic>{'role': role};
     if (scopeType != null) data['scope_type'] = scopeType;
     if (locationIds != null) data['location_ids'] = locationIds;
+    if (staffId != null) {
+      data['staff_id'] = staffId;
+    } else if (role != 'staff') {
+      // Clear staff link when moving away from staff role.
+      data['staff_id'] = null;
+    }
 
     final response = await patch(
       ApiConfig.businessUser(businessId, userId),
@@ -1598,6 +1605,7 @@ class ApiClient {
     required String role,
     String scopeType = 'business',
     List<int>? locationIds,
+    int? staffId,
   }) async {
     final data = <String, dynamic>{
       'email': email,
@@ -1606,6 +1614,9 @@ class ApiClient {
     };
     if (locationIds != null && locationIds.isNotEmpty) {
       data['location_ids'] = locationIds;
+    }
+    if (staffId != null) {
+      data['staff_id'] = staffId;
     }
 
     final response = await post(

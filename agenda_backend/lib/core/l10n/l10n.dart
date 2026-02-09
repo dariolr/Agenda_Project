@@ -4232,6 +4232,26 @@ class L10n {
     );
   }
 
+  /// `Visualizzatore`
+  String get operatorsRoleViewer {
+    return Intl.message(
+      'Visualizzatore',
+      name: 'operatorsRoleViewer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Può consultare appuntamenti, servizi, staff e disponibilità. Nessuna modifica consentita.`
+  String get operatorsRoleViewerDesc {
+    return Intl.message(
+      'Può consultare appuntamenti, servizi, staff e disponibilità. Nessuna modifica consentita.',
+      name: 'operatorsRoleViewerDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Seleziona il livello di accesso`
   String get operatorsRoleDescription {
     return Intl.message(

@@ -650,6 +650,8 @@
   "operatorsRoleManagerDesc": "Manages agenda and clients. Can view and manage all appointments, but cannot manage operators or settings.",
   "operatorsRoleStaff": "Staff",
   "operatorsRoleStaffDesc": "Views and manages only own appointments. Can create bookings assigned to themselves.",
+  "operatorsRoleViewer": "Viewer",
+  "operatorsRoleViewerDesc": "Can view appointments, services, staff, and availability. No edits allowed.",
   "operatorsRoleDescription": "Select access level",
   "operatorsYou": "You",
   "operatorsInvitedBy": "Invited by {name}",
