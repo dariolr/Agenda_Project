@@ -79,6 +79,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Single source of truth for invitation deep-links:
       // if browser URL is /invitation/{token}, keep router locked there.
       if (isInvitationBrowserUrl) {
+        final allowLeaveInvitation =
+            state.uri.queryParameters['leave_invitation'] == '1';
+        if (allowLeaveInvitation) {
+          return null;
+        }
         final stateLocation = state.uri.hasQuery
             ? '${state.uri.path}?${state.uri.query}'
             : state.uri.path;

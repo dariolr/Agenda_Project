@@ -588,13 +588,13 @@
   "invitationDeclineInProgress": "Rifiuto in corso...",
   "invitationAcceptSuccessTitle": "Invito accettato",
   "invitationAcceptSuccessMessage": "Ora puoi usare il gestionale con i permessi assegnati.",
-  "invitationAcceptGoAgenda": "Vai all'agenda",
   "invitationDeclineSuccessTitle": "Invito rifiutato",
   "invitationDeclineSuccessMessage": "Hai rifiutato l'invito. Non è stata aggiunta nessuna autorizzazione.",
   "invitationDeclineGoLogin": "Vai al login",
   "invitationAcceptErrorInvalid": "Questo invito non è valido.",
   "invitationAcceptErrorExpired": "Questo invito è scaduto.",
-  "invitationAcceptErrorEmailMismatch": "Questo invito è associato a un'altra email. Sei stato disconnesso automaticamente: ora accedi con l'email invitata per continuare.",
+  "invitationAcceptErrorEmailMismatch": "Questo invito è associato a un'altra email. Esegui il logout dall'account corrente, poi riapri questo link e accedi con l'email invitata.",
+  "invitationGoToApplication": "Vai all'applicazione",
   "invitationAcceptErrorGeneric": "Impossibile completare l'operazione. Riprova.",
   "operatorsScopeTitle": "Accesso",
   "operatorsScopeBusiness": "Tutte le sedi",
@@ -1171,7 +1171,5 @@
       }
     }
   },
-  "closuresImportHolidaysUnsupportedCountry": "Le festività automatiche non sono disponibili per il paese configurato nella sede.",
-  "actionSelectAll": "Seleziona tutti",
-  "actionDeselectAll": "Deseleziona tutti"
+  "closuresImportHolidaysUnsupportedCountry": "Le festività automatiche non sono disponibili per il paese configurato nella sede."
 }

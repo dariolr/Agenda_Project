@@ -22,6 +22,7 @@ class InvitationAcceptScreen extends ConsumerStatefulWidget {
 
 class _InvitationAcceptScreenState
     extends ConsumerState<InvitationAcceptScreen> {
+  ProviderSubscription? _authSub;
   bool _isLoading = true;
   bool _isAccepting = false;
   bool _isDeclining = false;
@@ -36,13 +37,24 @@ class _InvitationAcceptScreenState
   @override
   void initState() {
     super.initState();
+    _authSub = ref.listenManual(authProvider, (previous, next) {
+      _syncEmailMismatchMessage();
+    });
     Future.microtask(_loadInvitation);
+  }
+
+  @override
+  void dispose() {
+    _authSub?.close();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final isAuthenticated = ref.watch(authProvider).isAuthenticated;
+    final authState = ref.watch(authProvider);
+    final isAuthenticated = authState.isAuthenticated;
+    final isEmailMismatch = _isEmailMismatch(authState);
     final business = _invitation?['business'];
     final businessName = business is Map<String, dynamic>
         ? (business['name'] as String?)
@@ -78,6 +90,8 @@ class _InvitationAcceptScreenState
                       ? _buildLoading(context)
                       : _isInvalidInvitation
                       ? _buildInvalid(context)
+                      : isEmailMismatch
+                      ? _buildMismatchOnly(context)
                       : (_accepted || _declined)
                       ? _buildSuccess(context)
                       : Column(
@@ -238,10 +252,8 @@ class _InvitationAcceptScreenState
                 _accepted = true;
               });
               if (!context.mounted) return;
-              final redirect = Uri.encodeComponent(
-                '/invitation/${widget.token}',
-              );
-              context.go('/login?redirect=$redirect');
+              final redirect = Uri.encodeComponent('/agenda');
+              context.go('/login?leave_invitation=1&redirect=$redirect');
             },
       child: Text(
         _isAccepting
@@ -424,8 +436,8 @@ class _InvitationAcceptScreenState
         Text(l10n.invitationAcceptSuccessMessage),
         const SizedBox(height: 16),
         FilledButton(
-          onPressed: () => context.go('/agenda'),
-          child: Text(l10n.invitationAcceptGoAgenda),
+          onPressed: _goToApplication,
+          child: Text(l10n.invitationGoToApplication),
         ),
       ],
     );
@@ -447,6 +459,7 @@ class _InvitationAcceptScreenState
         _invitation = data;
         _isLoading = false;
       });
+      _syncEmailMismatchMessage();
     } on ApiException catch (e) {
       if (!mounted) return;
       final isInvalid = _isInvalidInvitationError(e);
@@ -466,30 +479,51 @@ class _InvitationAcceptScreenState
     }
   }
 
-  Future<void> _acceptInvitation() async {
-    if (_isAccepting || _accepted) return;
-    if (!ref.read(authProvider).isAuthenticated) {
-      setState(() {
-        _errorMessage = context.l10n.invitationAcceptLoginRequired;
-      });
+  void _syncEmailMismatchMessage() {
+    if (!mounted || _invitation == null) {
+      return;
+    }
+
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) {
+      if (_errorMessage == context.l10n.invitationAcceptErrorEmailMismatch) {
+        setState(() {
+          _errorMessage = null;
+        });
+      }
       return;
     }
 
     final invitedEmail =
         (_invitation?['email'] as String?)?.trim().toLowerCase() ?? '';
-    final authState = ref.read(authProvider);
     final currentUser = authState.user;
     final loggedEmail = currentUser is User
         ? currentUser.email.trim().toLowerCase()
         : '';
 
-    if (invitedEmail.isNotEmpty &&
-        loggedEmail.isNotEmpty &&
-        loggedEmail != invitedEmail) {
-      await ref.read(authProvider.notifier).logout(silent: true);
-      if (!mounted) return;
+    if (invitedEmail.isEmpty ||
+        loggedEmail.isEmpty ||
+        loggedEmail == invitedEmail) {
+      if (_errorMessage == context.l10n.invitationAcceptErrorEmailMismatch) {
+        setState(() {
+          _errorMessage = null;
+        });
+      }
+      return;
+    }
+
+    if (_errorMessage != context.l10n.invitationAcceptErrorEmailMismatch) {
       setState(() {
         _errorMessage = context.l10n.invitationAcceptErrorEmailMismatch;
+      });
+    }
+  }
+
+  Future<void> _acceptInvitation() async {
+    if (_isAccepting || _accepted) return;
+    if (!ref.read(authProvider).isAuthenticated) {
+      setState(() {
+        _errorMessage = context.l10n.invitationAcceptLoginRequired;
       });
       return;
     }
@@ -871,6 +905,45 @@ class _InvitationAcceptScreenState
         ),
       ],
     );
+  }
+
+  Widget _buildMismatchOnly(BuildContext context) {
+    return Column(
+      key: const ValueKey('invitation-email-mismatch'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ErrorBanner(message: context.l10n.invitationAcceptErrorEmailMismatch),
+        const SizedBox(height: 12),
+        FilledButton(
+          onPressed: _goToApplication,
+          child: Text(context.l10n.invitationGoToApplication, textAlign: TextAlign.center),
+        ),
+      ],
+    );
+  }
+
+  void _goToApplication() {
+    final isAuthenticated = ref.read(authProvider).isAuthenticated;
+    if (isAuthenticated) {
+      context.go('/agenda?leave_invitation=1');
+      return;
+    }
+    final redirect = Uri.encodeComponent('/agenda');
+    context.go('/login?leave_invitation=1&redirect=$redirect');
+  }
+
+  bool _isEmailMismatch(authState) {
+    if (_invitation == null || !authState.isAuthenticated) return false;
+    final invitedEmail =
+        (_invitation?['email'] as String?)?.trim().toLowerCase() ?? '';
+    final currentUser = authState.user;
+    final loggedEmail = currentUser is User
+        ? currentUser.email.trim().toLowerCase()
+        : '';
+    return invitedEmail.isNotEmpty &&
+        loggedEmail.isNotEmpty &&
+        invitedEmail != loggedEmail;
   }
 }
 
