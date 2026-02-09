@@ -245,7 +245,7 @@ final class ServicesController
         $businessId = (int) $request->getRouteParam('business_id');
 
         // Authorization check
-        if (!$this->hasBusinessAccess($request, $businessId)) {
+        if (!$this->hasBusinessReadAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
@@ -402,7 +402,7 @@ final class ServicesController
         $businessId = (int) $request->getRouteParam('business_id');
 
         // Authorization check (middleware should handle this, but double-check)
-        if (!$this->hasBusinessAccess($request, $businessId)) {
+        if (!$this->hasBusinessReadAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 

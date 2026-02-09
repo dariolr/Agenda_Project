@@ -135,13 +135,6 @@ final onDutyStaffIdsProvider = Provider<Set<int>>((ref) {
 /// Se l'utente è ruolo staff, vede solo se stesso.
 final filteredStaffProvider = Provider<List<Staff>>((ref) {
   final allStaff = ref.watch(staffForCurrentLocationProvider);
-  final currentRole = ref.watch(currentUserRoleProvider);
-
-  // Viewer: sempre tutta la squadra della sede corrente.
-  // Evita schermata agenda vuota quando sono presenti filtri salvati custom/on-duty.
-  if (currentRole == 'viewer') {
-    return allStaff;
-  }
 
   // Se l'utente è ruolo staff, mostra solo se stesso
   final canViewAll = ref.watch(canViewAllAppointmentsProvider);
