@@ -24,6 +24,7 @@ class BusinessUsersRepository {
     required String role,
     String? scopeType,
     List<int>? locationIds,
+    int? staffId,
   }) async {
     final data = await _apiClient.updateBusinessUser(
       businessId: businessId,
@@ -31,6 +32,7 @@ class BusinessUsersRepository {
       role: role,
       scopeType: scopeType,
       locationIds: locationIds,
+      staffId: staffId,
     );
     return BusinessUser.fromJson(data);
   }
@@ -64,6 +66,7 @@ class BusinessUsersRepository {
     required String role,
     String scopeType = 'business',
     List<int>? locationIds,
+    int? staffId,
   }) async {
     final data = await _apiClient.createBusinessInvitation(
       businessId: businessId,
@@ -71,6 +74,7 @@ class BusinessUsersRepository {
       role: role,
       scopeType: scopeType,
       locationIds: locationIds,
+      staffId: staffId,
     );
     return BusinessInvitation.fromJson(data);
   }

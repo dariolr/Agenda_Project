@@ -183,6 +183,7 @@ CREATE TABLE `business_invitations` (
   `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `role` enum('admin','manager','staff','viewer') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'staff',
   `scope_type` enum('business','locations') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'business',
+  `staff_id` int UNSIGNED DEFAULT NULL,
   `token` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `expires_at` timestamp NOT NULL,
   `status` enum('pending','accepted','expired','declined','revoked') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
@@ -895,6 +896,7 @@ ALTER TABLE `business_invitations`
   ADD UNIQUE KEY `uk_pending_invitation` (`business_id`,`email`,`status`),
   ADD KEY `fk_invitations_invited_by` (`invited_by`),
   ADD KEY `fk_invitations_accepted_by` (`accepted_by`),
+  ADD KEY `idx_invitations_staff` (`staff_id`),
   ADD KEY `idx_invitations_token` (`token`,`status`),
   ADD KEY `idx_invitations_business_status` (`business_id`,`status`),
   ADD KEY `idx_invitations_email_status` (`email`,`status`);
@@ -1474,7 +1476,8 @@ ALTER TABLE `booking_replacements`
 ALTER TABLE `business_invitations`
   ADD CONSTRAINT `fk_invitations_accepted_by` FOREIGN KEY (`accepted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_invitations_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_invitations_invited_by` FOREIGN KEY (`invited_by`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_invitations_invited_by` FOREIGN KEY (`invited_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_invitations_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL;
 
 --
 -- Limiti per la tabella `business_invitation_locations`

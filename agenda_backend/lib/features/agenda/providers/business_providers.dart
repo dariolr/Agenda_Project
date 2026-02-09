@@ -45,12 +45,6 @@ final businessesProvider = FutureProvider<List<Business>>((ref) async {
 /// 🔹 BUSINESS CORRENTE (ID)
 ///
 class CurrentBusinessId extends Notifier<int> {
-  void _setFromSystem(int id) {
-    if (state != id) {
-      state = id;
-    }
-  }
-
   @override
   int build() {
     // ✅ Imposta come default il business selezionato (superadmin)
@@ -59,18 +53,22 @@ class CurrentBusinessId extends Notifier<int> {
     final isSuperadmin = authState.user?.isSuperadmin ?? false;
 
     // Allinea al business selezionato quando cambia
+    // NOTE: non usare fireImmediately qui per evitare letture di `state`
+    // prima dell'inizializzazione del provider.
     ref.listen(superadminSelectedBusinessProvider, (previous, next) {
       if (!isSuperadmin) return;
       if (next != null && state != next) {
-        _setFromSystem(next);
+        state = next;
       }
-    }, fireImmediately: true);
+    });
 
     // Aspetta che businessesProvider carichi i dati
     ref.listen(businessesProvider, (previous, next) {
       next.whenData((businesses) {
         if (businesses.isEmpty) {
-          _setFromSystem(0);
+          if (state != 0) {
+            state = 0;
+          }
           return;
         }
 
@@ -79,7 +77,9 @@ class CurrentBusinessId extends Notifier<int> {
         if (isSuperadmin && selectedBusiness != null) {
           final exists = businesses.any((b) => b.id == selectedBusiness);
           if (exists) {
-            _setFromSystem(selectedBusiness);
+            if (state != selectedBusiness) {
+              state = selectedBusiness;
+            }
             return;
           }
 
@@ -87,7 +87,9 @@ class CurrentBusinessId extends Notifier<int> {
           ref
               .read(superadminSelectedBusinessProvider.notifier)
               .clearCompletely();
-          _setFromSystem(businesses.first.id);
+          if (state != businesses.first.id) {
+            state = businesses.first.id;
+          }
           return;
         }
 
@@ -95,18 +97,34 @@ class CurrentBusinessId extends Notifier<int> {
         // mantieni sempre un business valido (mai 0) per evitare rimbalzi di routing
         // quando la lista viene ricaricata o cambia dinamicamente.
         if (state == 0) {
-          _setFromSystem(businesses.first.id);
+          state = businesses.first.id;
           return;
         }
 
         // Se il business corrente non è più accessibile, fallback al primo disponibile.
         if (!businesses.any((b) => b.id == state)) {
-          _setFromSystem(businesses.first.id);
+          state = businesses.first.id;
           return;
         }
       });
-    }, fireImmediately: true);
-    return 0; // Inizializza a 0 per triggare il listen
+    });
+
+    // Inizializzazione deterministica senza leggere `state` in listener immediati.
+    final businessesAsync = ref.watch(businessesProvider);
+    return businessesAsync.when(
+      data: (businesses) {
+        if (businesses.isEmpty) return 0;
+        final selectedBusiness = ref.watch(superadminSelectedBusinessProvider);
+        if (isSuperadmin && selectedBusiness != null) {
+          if (businesses.any((b) => b.id == selectedBusiness)) {
+            return selectedBusiness;
+          }
+        }
+        return businesses.first.id;
+      },
+      loading: () => 0,
+      error: (_, __) => 0,
+    );
   }
 
   /// Selezione esplicita effettuata dall'utente (switch business).

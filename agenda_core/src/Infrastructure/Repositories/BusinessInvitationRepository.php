@@ -14,6 +14,7 @@ final class BusinessInvitationRepository
 {
     private const TOKEN_LENGTH = 32;
     private const DEFAULT_EXPIRY_DAYS = 7;
+    private ?bool $hasStaffIdColumn = null;
 
     public function __construct(
         private readonly Connection $db,
@@ -30,21 +31,40 @@ final class BusinessInvitationRepository
         $scopeType = $data['scope_type'] ?? 'business';
         $locationIds = $data['location_ids'] ?? [];
 
-        $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO business_invitations 
-                (business_id, email, role, scope_type, token, expires_at, invited_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
-        );
+        if ($this->supportsStaffIdColumn()) {
+            $stmt = $this->db->getPdo()->prepare(
+                'INSERT INTO business_invitations 
+                    (business_id, email, role, scope_type, staff_id, token, expires_at, invited_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            );
 
-        $stmt->execute([
-            $data['business_id'],
-            strtolower(trim($data['email'])),
-            $data['role'] ?? 'staff',
-            $scopeType,
-            $token,
-            $data['expires_at'] ?? $expiresAt,
-            $data['invited_by'],
-        ]);
+            $stmt->execute([
+                $data['business_id'],
+                strtolower(trim($data['email'])),
+                $data['role'] ?? 'staff',
+                $scopeType,
+                $data['staff_id'] ?? null,
+                $token,
+                $data['expires_at'] ?? $expiresAt,
+                $data['invited_by'],
+            ]);
+        } else {
+            $stmt = $this->db->getPdo()->prepare(
+                'INSERT INTO business_invitations 
+                    (business_id, email, role, scope_type, token, expires_at, invited_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+            );
+
+            $stmt->execute([
+                $data['business_id'],
+                strtolower(trim($data['email'])),
+                $data['role'] ?? 'staff',
+                $scopeType,
+                $token,
+                $data['expires_at'] ?? $expiresAt,
+                $data['invited_by'],
+            ]);
+        }
 
         $invitationId = (int) $this->db->getPdo()->lastInsertId();
         
@@ -65,15 +85,18 @@ final class BusinessInvitationRepository
      */
     public function findByToken(string $token): ?array
     {
+        $staffSelect = $this->supportsStaffIdColumn()
+            ? 'i.staff_id'
+            : 'NULL AS staff_id';
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT 
-                i.id, i.business_id, i.email, i.role, i.scope_type, i.token, 
+            "SELECT 
+                i.id, i.business_id, i.email, i.role, i.scope_type, {$staffSelect}, i.token, 
                 i.expires_at, i.status, i.accepted_by, i.accepted_at,
                 i.invited_by, i.created_at,
                 b.name as business_name, b.slug as business_slug
              FROM business_invitations i
              JOIN businesses b ON i.business_id = b.id
-             WHERE i.token = ?'
+             WHERE i.token = ?"
         );
         $stmt->execute([$token]);
         $result = $stmt->fetch();
@@ -164,16 +187,19 @@ final class BusinessInvitationRepository
      */
     public function findPendingByBusiness(int $businessId): array
     {
+        $staffSelect = $this->supportsStaffIdColumn()
+            ? 'i.staff_id'
+            : 'NULL AS staff_id';
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT 
-                i.id, i.email, i.role, i.scope_type, i.token, i.expires_at, 
+            "SELECT 
+                i.id, i.email, i.role, i.scope_type, {$staffSelect}, i.token, i.expires_at, 
                 i.status, i.invited_by, i.created_at,
                 u.first_name as inviter_first_name, u.last_name as inviter_last_name
              FROM business_invitations i
              LEFT JOIN users u ON i.invited_by = u.id
              WHERE i.business_id = ? AND i.status = \'pending\'
              AND i.expires_at > NOW()
-             ORDER BY i.created_at DESC'
+             ORDER BY i.created_at DESC"
         );
         $stmt->execute([$businessId]);
 
@@ -196,15 +222,18 @@ final class BusinessInvitationRepository
      */
     public function findByBusiness(int $businessId): array
     {
+        $staffSelect = $this->supportsStaffIdColumn()
+            ? 'i.staff_id'
+            : 'NULL AS staff_id';
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT 
-                i.id, i.email, i.role, i.scope_type, i.token, i.expires_at, 
+            "SELECT 
+                i.id, i.email, i.role, i.scope_type, {$staffSelect}, i.token, i.expires_at, 
                 i.status, i.accepted_at, i.invited_by, i.created_at,
                 u.first_name as inviter_first_name, u.last_name as inviter_last_name
              FROM business_invitations i
              LEFT JOIN users u ON i.invited_by = u.id
              WHERE i.business_id = ?
-             ORDER BY i.created_at DESC'
+             ORDER BY i.created_at DESC"
         );
         $stmt->execute([$businessId]);
 
@@ -332,6 +361,18 @@ final class BusinessInvitationRepository
     private function generateToken(): string
     {
         return bin2hex(random_bytes(self::TOKEN_LENGTH));
+    }
+
+    private function supportsStaffIdColumn(): bool
+    {
+        if ($this->hasStaffIdColumn !== null) {
+            return $this->hasStaffIdColumn;
+        }
+
+        $stmt = $this->db->getPdo()->query("SHOW COLUMNS FROM business_invitations LIKE 'staff_id'");
+        $this->hasStaffIdColumn = (bool) $stmt->fetch();
+
+        return $this->hasStaffIdColumn;
     }
 
     // ========== LOCATION MANAGEMENT ==========

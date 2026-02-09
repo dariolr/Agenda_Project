@@ -271,6 +271,19 @@ final class BusinessUsersController
             $updateData['location_ids'] = $body['location_ids'];
         }
 
+        // Enforce single-location assignment for staff when using locations scope.
+        $effectiveRole = $updateData['role'] ?? $businessUser['role'];
+        $effectiveScopeType = $updateData['scope_type'] ?? ($businessUser['scope_type'] ?? 'business');
+        $effectiveLocationIds = $updateData['location_ids'] ?? $this->businessUserRepo->getLocationIds((int) $businessUser['id']);
+        $normalizedEffectiveLocationIds = array_values(array_unique(array_map('intval', (array) $effectiveLocationIds)));
+        $normalizedEffectiveLocationIds = array_values(array_filter($normalizedEffectiveLocationIds, fn(int $id): bool => $id > 0));
+        if ($effectiveRole === 'staff' && $effectiveScopeType === 'locations' && count($normalizedEffectiveLocationIds) > 1) {
+            return Response::validationError(
+                ['staff role supports only one location when scope_type is locations'],
+                $request->traceId
+            );
+        }
+
         if (empty($updateData)) {
             return Response::validationError(['No fields to update'], $request->traceId);
         }

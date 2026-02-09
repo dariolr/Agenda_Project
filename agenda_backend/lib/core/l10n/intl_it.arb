@@ -648,6 +648,8 @@
   "operatorsRoleManagerDesc": "Gestisce agenda e clienti. Vede e gestisce tutti gli appuntamenti, ma non può gestire operatori né impostazioni.",
   "operatorsRoleStaff": "Staff",
   "operatorsRoleStaffDesc": "Vede e gestisce solo i propri appuntamenti. Può creare prenotazioni assegnate a sé stesso.",
+  "operatorsRoleViewer": "Visualizzatore",
+  "operatorsRoleViewerDesc": "Può consultare appuntamenti, servizi, staff e disponibilità. Nessuna modifica consentita.",
   "operatorsRoleDescription": "Seleziona il livello di accesso",
   "operatorsYou": "Tu",
   "operatorsInvitedBy": "Invitato da {name}",

@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/location.dart';
+import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../agenda/providers/location_providers.dart';
+import '../../../staff/providers/staff_providers.dart';
 import '../../providers/business_users_provider.dart';
 
 String _resolveInviteErrorMessage(
@@ -66,8 +68,9 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   String _selectedRole = 'staff';
-  String _selectedScopeType = 'business';
+  String _selectedScopeType = 'locations';
   final Set<int> _selectedLocationIds = {};
+  int? _selectedStaffId;
   bool _isLoading = false;
 
   @override
@@ -80,6 +83,9 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final locations = ref.watch(locationsProvider);
+    _ensureDefaultSingleLocationForStaff(locations);
+    final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
+    final availableStaff = _availableStaff(allStaff);
 
     return AppFormDialog(
       title: Text(l10n.operatorsInviteTitle),
@@ -126,33 +132,77 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
                 const SizedBox(height: 8),
                 _RoleSelector(
                   selectedRole: _selectedRole,
-                  onChanged: (role) => setState(() => _selectedRole = role),
+                  onChanged: (role) => setState(() {
+                    _selectedRole = role;
+                    if (role == 'staff') {
+                      _selectedScopeType = 'locations';
+                      _selectedLocationIds.clear();
+                      if (locations.length == 1) {
+                        _selectedLocationIds.add(locations.first.id);
+                      }
+                    }
+                    _enforceSingleLocationForStaff();
+                    if (role != 'staff') {
+                      _selectedStaffId = null;
+                    } else {
+                      _clearInvalidSelectedStaff(availableStaff);
+                    }
+                  }),
                 ),
                 if (locations.length > 1) ...[
                   const SizedBox(height: 24),
                   const Divider(),
                   const SizedBox(height: 16),
-                  _ScopeTypeSelector(
-                    selectedScopeType: _selectedScopeType,
-                    onChanged: (scope) => setState(() {
-                      _selectedScopeType = scope;
-                      if (scope == 'business') {
-                        _selectedLocationIds.clear();
-                      }
-                    }),
-                  ),
-                  if (_selectedScopeType == 'locations') ...[
+                  if (_selectedRole != 'staff') ...[
+                    _ScopeTypeSelector(
+                      selectedScopeType: _selectedScopeType,
+                      onChanged: (scope) => setState(() {
+                        _selectedScopeType = scope;
+                        if (scope == 'business') {
+                          _selectedLocationIds.clear();
+                        }
+                        _enforceSingleLocationForStaff();
+                        _clearInvalidSelectedStaff(availableStaff);
+                      }),
+                    ),
+                  ],
+                  if (_selectedRole == 'staff' || _selectedScopeType == 'locations') ...[
                     const SizedBox(height: 16),
                     _LocationsMultiSelect(
                       locations: locations,
                       selectedIds: _selectedLocationIds,
+                      singleSelection: _selectedRole == 'staff',
                       onChanged: (ids) => setState(() {
-                        _selectedLocationIds
-                          ..clear()
-                          ..addAll(ids);
+                        final previousSelection = Set<int>.from(_selectedLocationIds);
+                        _selectedLocationIds.clear();
+                        if (_selectedRole == 'staff') {
+                          if (ids.isNotEmpty) {
+                            _selectedLocationIds.add(ids.last);
+                          }
+                        } else {
+                          _selectedLocationIds.addAll(ids);
+                        }
+                        if (_selectedRole == 'staff' &&
+                            previousSelection.length == 1 &&
+                            _selectedLocationIds.length == 1 &&
+                            previousSelection.first != _selectedLocationIds.first) {
+                          _selectedStaffId = null;
+                        }
+                        _clearInvalidSelectedStaff(availableStaff);
                       }),
                     ),
                   ],
+                ],
+                if (_selectedRole == 'staff') ...[
+                  const SizedBox(height: 16),
+                  _StaffSingleSelect(
+                    staff: availableStaff,
+                    selectedStaffId: _selectedStaffId,
+                    isEnabled: _selectedScopeType != 'locations' ||
+                        _selectedLocationIds.isNotEmpty,
+                    onChanged: (staffId) =>
+                        setState(() => _selectedStaffId = staffId),
+                  ),
                 ],
               ],
             ),
@@ -176,15 +226,81 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
+  List<Staff> _availableStaff(List<Staff> allStaff) {
+    if (_selectedRole != 'staff') return const <Staff>[];
+    if (_selectedScopeType != 'locations') return allStaff;
+    if (_selectedLocationIds.isEmpty) return const <Staff>[];
+
+    return allStaff
+        .where((member) => member.locationIds.any(_selectedLocationIds.contains))
+        .toList();
+  }
+
+  void _clearInvalidSelectedStaff(List<Staff> availableStaff) {
+    if (_selectedStaffId == null) return;
+    final exists = availableStaff.any((s) => s.id == _selectedStaffId);
+    if (!exists) {
+      _selectedStaffId = null;
+    }
+  }
+
+  void _enforceSingleLocationForStaff() {
+    if (_selectedRole == 'staff' &&
+        _selectedScopeType == 'locations' &&
+        _selectedLocationIds.length > 1) {
+      final keep = _selectedLocationIds.last;
+      _selectedLocationIds
+        ..clear()
+        ..add(keep);
+    }
+  }
+
+  void _ensureDefaultSingleLocationForStaff(List<Location> locations) {
+    if (_selectedRole == 'staff' &&
+        _selectedScopeType == 'locations' &&
+        locations.length == 1 &&
+        _selectedLocationIds.isEmpty) {
+      _selectedLocationIds.add(locations.first.id);
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     // Validazione scope
     if (_selectedScopeType == 'locations' && _selectedLocationIds.isEmpty) {
+      final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
       FeedbackDialog.showError(
         context,
-        title: context.l10n.errorTitle,
+        title: isIt ? 'Attenzione' : 'Warning',
         message: context.l10n.operatorsScopeLocationsRequired,
+      );
+      return;
+    }
+
+    if (_selectedRole == 'staff' &&
+        _selectedScopeType == 'locations' &&
+        _selectedLocationIds.length > 1) {
+      final isIt =
+          Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+      FeedbackDialog.showError(
+        context,
+        title: isIt ? 'Attenzione' : 'Warning',
+        message: isIt
+            ? 'Per il ruolo Staff puoi selezionare una sola sede.'
+            : 'For Staff role you can select only one location.',
+      );
+      return;
+    }
+
+    if (_selectedRole == 'staff' && (_selectedStaffId == null || _selectedStaffId! <= 0)) {
+      final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+      FeedbackDialog.showError(
+        context,
+        title: isIt ? 'Attenzione' : 'Warning',
+        message: isIt
+            ? 'Per il ruolo Staff devi selezionare un membro staff.'
+            : 'For Staff role you must select one staff member.',
       );
       return;
     }
@@ -196,6 +312,7 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
         .createInvitation(
           email: _emailController.text.trim(),
           role: _selectedRole,
+          staffId: _selectedRole == 'staff' ? _selectedStaffId : null,
           scopeType: _selectedScopeType,
           locationIds: _selectedScopeType == 'locations'
               ? _selectedLocationIds.toList()
@@ -254,8 +371,9 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   String _selectedRole = 'staff';
-  String _selectedScopeType = 'business';
+  String _selectedScopeType = 'locations';
   final Set<int> _selectedLocationIds = {};
+  int? _selectedStaffId;
   bool _isLoading = false;
 
   @override
@@ -268,6 +386,9 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final locations = ref.watch(locationsProvider);
+    _ensureDefaultSingleLocationForStaff(locations);
+    final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
+    final availableStaff = _availableStaff(allStaff);
 
     return LocalLoadingOverlay(
       isLoading: _isLoading,
@@ -319,35 +440,79 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 8),
-                  _RoleSelector(
-                    selectedRole: _selectedRole,
-                    onChanged: (role) => setState(() => _selectedRole = role),
+                _RoleSelector(
+                  selectedRole: _selectedRole,
+                  onChanged: (role) => setState(() {
+                    _selectedRole = role;
+                    if (role == 'staff') {
+                      _selectedScopeType = 'locations';
+                      _selectedLocationIds.clear();
+                      if (locations.length == 1) {
+                        _selectedLocationIds.add(locations.first.id);
+                      }
+                    }
+                    _enforceSingleLocationForStaff();
+                    if (role != 'staff') {
+                      _selectedStaffId = null;
+                    } else {
+                      _clearInvalidSelectedStaff(availableStaff);
+                      }
+                    }),
                   ),
                   if (locations.length > 1) ...[
                     const SizedBox(height: 24),
                     const Divider(),
                     const SizedBox(height: 16),
-                    _ScopeTypeSelector(
-                      selectedScopeType: _selectedScopeType,
-                      onChanged: (scope) => setState(() {
-                        _selectedScopeType = scope;
-                        if (scope == 'business') {
-                          _selectedLocationIds.clear();
-                        }
-                      }),
-                    ),
-                    if (_selectedScopeType == 'locations') ...[
+                    if (_selectedRole != 'staff') ...[
+                      _ScopeTypeSelector(
+                        selectedScopeType: _selectedScopeType,
+                        onChanged: (scope) => setState(() {
+                          _selectedScopeType = scope;
+                          if (scope == 'business') {
+                            _selectedLocationIds.clear();
+                          }
+                          _enforceSingleLocationForStaff();
+                          _clearInvalidSelectedStaff(availableStaff);
+                        }),
+                      ),
+                    ],
+                    if (_selectedRole == 'staff' || _selectedScopeType == 'locations') ...[
                       const SizedBox(height: 16),
                       _LocationsMultiSelect(
                         locations: locations,
                         selectedIds: _selectedLocationIds,
+                        singleSelection: _selectedRole == 'staff',
                         onChanged: (ids) => setState(() {
-                          _selectedLocationIds
-                            ..clear()
-                            ..addAll(ids);
+                          final previousSelection = Set<int>.from(_selectedLocationIds);
+                          _selectedLocationIds.clear();
+                          if (_selectedRole == 'staff') {
+                            if (ids.isNotEmpty) {
+                              _selectedLocationIds.add(ids.last);
+                            }
+                          } else {
+                            _selectedLocationIds.addAll(ids);
+                          }
+                          if (_selectedRole == 'staff' &&
+                              previousSelection.length == 1 &&
+                              _selectedLocationIds.length == 1 &&
+                              previousSelection.first != _selectedLocationIds.first) {
+                            _selectedStaffId = null;
+                          }
+                          _clearInvalidSelectedStaff(availableStaff);
                         }),
                       ),
                     ],
+                  ],
+                  if (_selectedRole == 'staff') ...[
+                    const SizedBox(height: 16),
+                    _StaffSingleSelect(
+                      staff: availableStaff,
+                      selectedStaffId: _selectedStaffId,
+                      isEnabled: _selectedScopeType != 'locations' ||
+                          _selectedLocationIds.isNotEmpty,
+                      onChanged: (staffId) =>
+                          setState(() => _selectedStaffId = staffId),
+                    ),
                   ],
                 ],
               ),
@@ -384,15 +549,81 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
+  List<Staff> _availableStaff(List<Staff> allStaff) {
+    if (_selectedRole != 'staff') return const <Staff>[];
+    if (_selectedScopeType != 'locations') return allStaff;
+    if (_selectedLocationIds.isEmpty) return const <Staff>[];
+
+    return allStaff
+        .where((member) => member.locationIds.any(_selectedLocationIds.contains))
+        .toList();
+  }
+
+  void _clearInvalidSelectedStaff(List<Staff> availableStaff) {
+    if (_selectedStaffId == null) return;
+    final exists = availableStaff.any((s) => s.id == _selectedStaffId);
+    if (!exists) {
+      _selectedStaffId = null;
+    }
+  }
+
+  void _enforceSingleLocationForStaff() {
+    if (_selectedRole == 'staff' &&
+        _selectedScopeType == 'locations' &&
+        _selectedLocationIds.length > 1) {
+      final keep = _selectedLocationIds.last;
+      _selectedLocationIds
+        ..clear()
+        ..add(keep);
+    }
+  }
+
+  void _ensureDefaultSingleLocationForStaff(List<Location> locations) {
+    if (_selectedRole == 'staff' &&
+        _selectedScopeType == 'locations' &&
+        locations.length == 1 &&
+        _selectedLocationIds.isEmpty) {
+      _selectedLocationIds.add(locations.first.id);
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     // Validazione scope
     if (_selectedScopeType == 'locations' && _selectedLocationIds.isEmpty) {
+      final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
       FeedbackDialog.showError(
         context,
-        title: context.l10n.errorTitle,
+        title: isIt ? 'Attenzione' : 'Warning',
         message: context.l10n.operatorsScopeLocationsRequired,
+      );
+      return;
+    }
+
+    if (_selectedRole == 'staff' &&
+        _selectedScopeType == 'locations' &&
+        _selectedLocationIds.length > 1) {
+      final isIt =
+          Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+      FeedbackDialog.showError(
+        context,
+        title: isIt ? 'Attenzione' : 'Warning',
+        message: isIt
+            ? 'Per il ruolo Staff puoi selezionare una sola sede.'
+            : 'For Staff role you can select only one location.',
+      );
+      return;
+    }
+
+    if (_selectedRole == 'staff' && (_selectedStaffId == null || _selectedStaffId! <= 0)) {
+      final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+      FeedbackDialog.showError(
+        context,
+        title: isIt ? 'Attenzione' : 'Warning',
+        message: isIt
+            ? 'Per il ruolo Staff devi selezionare un membro staff.'
+            : 'For Staff role you must select one staff member.',
       );
       return;
     }
@@ -404,6 +635,7 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
         .createInvitation(
           email: _emailController.text.trim(),
           role: _selectedRole,
+          staffId: _selectedRole == 'staff' ? _selectedStaffId : null,
           scopeType: _selectedScopeType,
           locationIds: _selectedScopeType == 'locations'
               ? _selectedLocationIds.toList()
@@ -457,11 +689,6 @@ class _RoleSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final isIt = Localizations.localeOf(context).languageCode == 'it';
-    final viewerLabel = isIt ? 'Visualizzatore' : 'Viewer';
-    final viewerDesc = isIt
-        ? 'Può solo visualizzare appuntamenti e calendario. Nessuna modifica.'
-        : 'Can only view appointments and calendar. No changes allowed.';
 
     return Column(
       children: [
@@ -494,8 +721,8 @@ class _RoleSelector extends StatelessWidget {
         const SizedBox(height: 8),
         _RoleOption(
           role: 'viewer',
-          label: viewerLabel,
-          description: viewerDesc,
+          label: l10n.operatorsRoleViewer,
+          description: l10n.operatorsRoleViewerDesc,
           icon: Icons.visibility_outlined,
           isSelected: selectedRole == 'viewer',
           onTap: () => onChanged('viewer'),
@@ -699,28 +926,112 @@ class _ScopeOption extends StatelessWidget {
   }
 }
 
+class _StaffSingleSelect extends StatelessWidget {
+  const _StaffSingleSelect({
+    required this.staff,
+    required this.selectedStaffId,
+    required this.isEnabled,
+    required this.onChanged,
+  });
+
+  final List<Staff> staff;
+  final int? selectedStaffId;
+  final bool isEnabled;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+    final uniqueStaff = <int, Staff>{};
+    for (final member in staff) {
+      uniqueStaff.putIfAbsent(member.id, () => member);
+    }
+    final staffItems = uniqueStaff.values.toList();
+    final effectiveSelectedId = (selectedStaffId != null &&
+            uniqueStaff.containsKey(selectedStaffId))
+        ? selectedStaffId
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          isIt ? 'Membro staff da associare' : 'Staff member to associate',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<int>(
+          value: effectiveSelectedId,
+          isExpanded: true,
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            labelText: isIt ? 'Seleziona staff' : 'Select staff',
+          ),
+          items: staffItems
+              .map(
+                (member) => DropdownMenuItem<int>(
+                  value: member.id,
+                  child: Text(member.displayName),
+                ),
+              )
+              .toList(),
+          onChanged: (!isEnabled || staffItems.isEmpty) ? null : onChanged,
+        ),
+        if (!isEnabled) ...[
+          const SizedBox(height: 8),
+          Text(
+            isIt
+                ? 'Seleziona una sede per abilitare la scelta dello staff.'
+                : 'Select a location to enable staff selection.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ] else if (staffItems.isEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            isIt
+                ? 'Nessuno staff disponibile per lo scope selezionato.'
+                : 'No staff available for the selected scope.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 /// Widget per la selezione multipla delle location.
 class _LocationsMultiSelect extends StatelessWidget {
   const _LocationsMultiSelect({
     required this.locations,
     required this.selectedIds,
+    required this.singleSelection,
     required this.onChanged,
   });
 
   final List<Location> locations;
   final Set<int> selectedIds;
+  final bool singleSelection;
   final ValueChanged<Set<int>> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
+    final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+    final title = singleSelection
+        ? (isIt ? 'Seleziona una sede' : 'Select one location')
+        : l10n.operatorsScopeSelectLocations;
+    final listHeight = (locations.length * 72).clamp(72, 280).toDouble();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l10n.operatorsScopeSelectLocations,
+          title,
           style: Theme.of(context).textTheme.titleSmall,
         ),
         const SizedBox(height: 8),
@@ -729,25 +1040,39 @@ class _LocationsMultiSelect extends StatelessWidget {
             border: Border.all(color: colorScheme.outline),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Column(
-            children: [
-              for (var i = 0; i < locations.length; i++) ...[
-                if (i > 0) const Divider(height: 1),
-                _LocationCheckboxTile(
-                  location: locations[i],
-                  isSelected: selectedIds.contains(locations[i].id),
+          child: SizedBox(
+            height: listHeight,
+            child: ListView.separated(
+              primary: false,
+              itemCount: locations.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final location = locations[index];
+                if (singleSelection) {
+                  return _LocationRadioTile(
+                    location: location,
+                    selectedId: selectedIds.isEmpty ? null : selectedIds.first,
+                    onChanged: (locationId) {
+                      onChanged(locationId == null ? <int>{} : <int>{locationId});
+                    },
+                  );
+                }
+
+                return _LocationCheckboxTile(
+                  location: location,
+                  isSelected: selectedIds.contains(location.id),
                   onChanged: (selected) {
                     final newIds = Set<int>.from(selectedIds);
                     if (selected) {
-                      newIds.add(locations[i].id);
+                      newIds.add(location.id);
                     } else {
-                      newIds.remove(locations[i].id);
+                      newIds.remove(location.id);
                     }
                     onChanged(newIds);
                   },
-                ),
-              ],
-            ],
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -772,6 +1097,37 @@ class _LocationCheckboxTile extends StatelessWidget {
     return CheckboxListTile(
       value: isSelected,
       onChanged: (value) => onChanged(value ?? false),
+      title: Text(location.name),
+      subtitle: location.address != null
+          ? Text(
+              location.address!,
+              style: Theme.of(context).textTheme.bodySmall,
+            )
+          : null,
+      secondary: const Icon(Icons.store_outlined),
+      controlAffinity: ListTileControlAffinity.trailing,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    );
+  }
+}
+
+class _LocationRadioTile extends StatelessWidget {
+  const _LocationRadioTile({
+    required this.location,
+    required this.selectedId,
+    required this.onChanged,
+  });
+
+  final Location location;
+  final int? selectedId;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return RadioListTile<int>(
+      value: location.id,
+      groupValue: selectedId,
+      onChanged: onChanged,
       title: Text(location.name),
       subtitle: location.address != null
           ? Text(

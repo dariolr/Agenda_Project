@@ -55,6 +55,9 @@ class BusinessUsersState {
 class BusinessUsersNotifier extends _$BusinessUsersNotifier {
   @override
   BusinessUsersState build(int businessId) {
+    if (businessId <= 0) {
+      return const BusinessUsersState(isLoading: false);
+    }
     final initial = const BusinessUsersState(isLoading: true);
     // Defer loading to avoid reading state before initialization.
     Future.microtask(_loadData);
@@ -71,12 +74,20 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
 
   /// Carica operatori e inviti.
   Future<void> _loadData() async {
+    if (businessId <= 0) {
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false, error: null);
+      }
+      return;
+    }
+    if (!ref.mounted) return;
     state = state.copyWith(isLoading: true, error: null);
     try {
       final results = await Future.wait([
         _repository.getUsers(businessId),
         _repository.getInvitations(businessId, status: 'all'),
       ]);
+      if (!ref.mounted) return;
       state = state.copyWith(
         users: results[0] as List<BusinessUser>,
         invitations: results[1] as List<BusinessInvitation>,
@@ -106,6 +117,7 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
       }
     } catch (e) {
       debugPrint('BusinessUsersNotifier._loadData error: $e');
+      if (!ref.mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -119,6 +131,7 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
     required String role,
     String? scopeType,
     List<int>? locationIds,
+    int? staffId,
   }) async {
     final globalLoading = ref.read(globalLoadingProvider.notifier);
     globalLoading.show();
@@ -130,6 +143,7 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         role: role,
         scopeType: scopeType,
         locationIds: locationIds,
+        staffId: staffId,
       );
       // Always reload from API after update to keep scope/location state aligned
       // with server-side rules and avoid stale local UI.
@@ -137,7 +151,9 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
       return true;
     } catch (e) {
       debugPrint('BusinessUsersNotifier.updateUser error: $e');
-      state = state.copyWith(isLoading: false, error: _toUserError(e));
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false, error: _toUserError(e));
+      }
       return false;
     } finally {
       globalLoading.hide();
@@ -151,14 +167,18 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _repository.removeUser(businessId: businessId, userId: userId);
-      state = state.copyWith(
-        users: state.users.where((u) => u.userId != userId).toList(),
-        isLoading: false,
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          users: state.users.where((u) => u.userId != userId).toList(),
+          isLoading: false,
+        );
+      }
       return true;
     } catch (e) {
       debugPrint('BusinessUsersNotifier.removeUser error: $e');
-      state = state.copyWith(isLoading: false, error: _toUserError(e));
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false, error: _toUserError(e));
+      }
       return false;
     } finally {
       globalLoading.hide();
@@ -171,6 +191,7 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
     required String role,
     String scopeType = 'business',
     List<int>? locationIds,
+    int? staffId,
   }) async {
     final globalLoading = ref.read(globalLoadingProvider.notifier);
     globalLoading.show();
@@ -182,15 +203,20 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         role: role,
         scopeType: scopeType,
         locationIds: locationIds,
+        staffId: staffId,
       );
-      state = state.copyWith(
-        invitations: [...state.invitations, invitation],
-        isLoading: false,
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          invitations: [...state.invitations, invitation],
+          isLoading: false,
+        );
+      }
       return invitation;
     } catch (e) {
       debugPrint('BusinessUsersNotifier.createInvitation error: $e');
-      state = state.copyWith(isLoading: false, error: _toUserError(e));
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false, error: _toUserError(e));
+      }
       return null;
     } finally {
       globalLoading.hide();
@@ -199,7 +225,9 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
 
   /// Reinvia un invito pendente creando un nuovo token e una nuova scadenza.
   Future<bool> resendInvitation(BusinessInvitation invitation) async {
-    state = state.copyWith(isLoading: true, error: null);
+    if (ref.mounted) {
+      state = state.copyWith(isLoading: true, error: null);
+    }
     try {
       await _repository.createInvitation(
         businessId: businessId,
@@ -207,12 +235,15 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         role: invitation.role,
         scopeType: invitation.scopeType,
         locationIds: invitation.locationIds,
+        staffId: invitation.staffId,
       );
       await _loadData();
       return true;
     } catch (e) {
       debugPrint('BusinessUsersNotifier.resendInvitation error: $e');
-      state = state.copyWith(isLoading: false, error: _toUserError(e));
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false, error: _toUserError(e));
+      }
       return false;
     }
   }
@@ -227,16 +258,20 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         businessId: businessId,
         invitationId: invitationId,
       );
-      state = state.copyWith(
-        invitations: state.invitations
-            .where((i) => i.id != invitationId)
-            .toList(),
-        isLoading: false,
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          invitations: state.invitations
+              .where((i) => i.id != invitationId)
+              .toList(),
+          isLoading: false,
+        );
+      }
       return true;
     } catch (e) {
       debugPrint('BusinessUsersNotifier.deleteInvitation error: $e');
-      state = state.copyWith(isLoading: false, error: _toUserError(e));
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false, error: _toUserError(e));
+      }
       return false;
     } finally {
       globalLoading.hide();

@@ -10,6 +10,7 @@ use Agenda\Infrastructure\Repositories\BusinessRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\BusinessInvitationRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
+use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Notifications\EmailService;
 use Agenda\UseCases\Auth\RegisterUser;
@@ -35,6 +36,7 @@ final class BusinessInvitationsController
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly BusinessInvitationRepository $invitationRepo,
         private readonly LocationRepository $locationRepo,
+        private readonly StaffRepository $staffRepo,
         private readonly UserRepository $userRepo,
         private readonly RegisterUser $registerUser,
     ) {}
@@ -78,6 +80,7 @@ final class BusinessInvitationsController
                 'id' => (int) $inv['id'],
                 'email' => $inv['email'],
                 'role' => $inv['role'],
+                'staff_id' => isset($inv['staff_id']) && $inv['staff_id'] !== null ? (int) $inv['staff_id'] : null,
                 'scope_type' => $inv['scope_type'],
                 'location_ids' => array_map('intval', $inv['location_ids'] ?? []),
                 'status' => $inv['status'],
@@ -138,10 +141,19 @@ final class BusinessInvitationsController
 
         $email = strtolower(trim($body['email']));
         $role = $body['role'] ?? 'staff';
+        $staffId = isset($body['staff_id']) ? (int) $body['staff_id'] : null;
 
         // Validate role
         if (!in_array($role, ['staff', 'manager', 'viewer', 'admin'], true)) {
             return Response::validationError('Role must be staff, manager, viewer, or admin', $request->traceId);
+        }
+
+        if ($role === 'staff' && ($staffId === null || $staffId <= 0)) {
+            return Response::validationError('staff_id is required when role is staff', $request->traceId);
+        }
+
+        if ($role !== 'staff') {
+            $staffId = null;
         }
 
         // Check if user already has access
@@ -201,11 +213,39 @@ final class BusinessInvitationsController
             $locationIds = [];
         }
 
+        if ($role === 'staff' && $scopeType === 'locations' && count($locationIds) > 1) {
+            return Response::validationError(
+                'staff role supports only one location when scope_type is locations',
+                $request->traceId
+            );
+        }
+
+        if ($staffId !== null) {
+            if (!$this->staffRepo->belongsToBusiness($staffId, $businessId)) {
+                return Response::validationError(
+                    'staff_id must belong to the specified business',
+                    $request->traceId
+                );
+            }
+
+            if ($scopeType === 'locations') {
+                $staffLocationIds = array_map('intval', $this->staffRepo->getLocationIds($staffId));
+                $allowedLocationIds = array_map('intval', $locationIds);
+                if (empty(array_intersect($staffLocationIds, $allowedLocationIds))) {
+                    return Response::validationError(
+                        'staff_id must be assigned to at least one selected location',
+                        $request->traceId
+                    );
+                }
+            }
+        }
+
         // Create invitation
         $result = $this->invitationRepo->create([
             'business_id' => $businessId,
             'email' => $email,
             'role' => $role,
+            'staff_id' => $staffId,
             'scope_type' => $scopeType,
             'location_ids' => $locationIds,
             'invited_by' => $userId,
@@ -233,6 +273,7 @@ final class BusinessInvitationsController
             'id' => $result['id'],
             'email' => $email,
             'role' => $role,
+            'staff_id' => $staffId,
             'scope_type' => $scopeType,
             'location_ids' => array_map('intval', $locationIds),
             'token' => $result['token'],
@@ -312,6 +353,7 @@ final class BusinessInvitationsController
         return Response::success([
             'email' => $invitation['email'],
             'role' => $invitation['role'],
+            'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'user_exists' => $existingUser !== null,
             'business' => [
                 'id' => (int) $invitation['business_id'],
@@ -380,6 +422,7 @@ final class BusinessInvitationsController
             'business_id' => (int) $invitation['business_id'],
             'user_id' => $userId,
             'role' => $invitation['role'],
+            'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'scope_type' => $invitation['scope_type'],
             'location_ids' => $invitation['location_ids'] ?? [],
             'invited_by' => (int) $invitation['invited_by'],
@@ -394,6 +437,7 @@ final class BusinessInvitationsController
                 'name' => $invitation['business_name'],
             ],
             'role' => $invitation['role'],
+            'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'scope_type' => $invitation['scope_type'],
             'location_ids' => array_map('intval', $invitation['location_ids'] ?? []),
         ]);
@@ -449,6 +493,7 @@ final class BusinessInvitationsController
             'business_id' => $businessId,
             'user_id' => $userId,
             'role' => $invitation['role'],
+            'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'scope_type' => $invitation['scope_type'],
             'location_ids' => $invitation['location_ids'] ?? [],
             'invited_by' => (int) $invitation['invited_by'],
@@ -561,6 +606,7 @@ final class BusinessInvitationsController
             'business_id' => (int) $invitation['business_id'],
             'user_id' => $userId,
             'role' => $invitation['role'],
+            'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'scope_type' => $invitation['scope_type'],
             'location_ids' => $invitation['location_ids'] ?? [],
             'invited_by' => (int) $invitation['invited_by'],
@@ -650,6 +696,7 @@ final class BusinessInvitationsController
 
         $this->businessUserRepo->update((int) $businessUser['id'], [
             'role' => (string) ($invitation['role'] ?? 'staff'),
+            'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'scope_type' => $scopeType,
             'location_ids' => $locationIds,
         ]);
