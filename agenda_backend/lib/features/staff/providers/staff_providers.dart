@@ -23,10 +23,17 @@ class StaffNotifier extends AsyncNotifier<List<Staff>> {
     }
 
     final repository = ref.watch(staffRepositoryProvider);
+    final allowedLocationIds = ref.watch(allowedLocationIdsProvider);
 
     try {
       final staff = await repository.getByBusiness(business.id);
-      return staff;
+      if (allowedLocationIds == null) {
+        return staff;
+      }
+
+      return staff
+          .where((member) => member.locationIds.any(allowedLocationIds.contains))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -47,11 +54,23 @@ class StaffNotifier extends AsyncNotifier<List<Staff>> {
     }
 
     state = const AsyncLoading();
+    final allowedLocationIds = ref.read(allowedLocationIdsProvider);
 
     try {
       final repository = ref.read(staffRepositoryProvider);
       final staff = await repository.getByBusiness(business.id);
-      state = AsyncData(staff);
+      if (allowedLocationIds == null) {
+        state = AsyncData(staff);
+        return;
+      }
+
+      state = AsyncData(
+        staff
+            .where(
+              (member) => member.locationIds.any(allowedLocationIds.contains),
+            )
+            .toList(),
+      );
     } catch (e, st) {
       state = AsyncError(e, st);
     }
