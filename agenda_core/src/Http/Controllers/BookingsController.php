@@ -44,11 +44,11 @@ final class BookingsController
     ) {}
 
     /**
-
-    /**
-     * Check if authenticated user has access to the given business.
+     * Check if authenticated user can access bookings in the given business.
+     * - write operations: requires can_manage_bookings
+     * - read operations: allows role=viewer too
      */
-    private function hasBusinessAccess(Request $request, int $businessId): bool
+    private function hasBusinessAccess(Request $request, int $businessId, bool $allowReadOnly = false): bool
     {
         $userId = $request->getAttribute('user_id');
         if ($userId === null || $this->userRepo === null || $this->businessUserRepo === null) {
@@ -60,8 +60,15 @@ final class BookingsController
             return true;
         }
 
-        // Normal user: check business_users table
-        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+        if ($allowReadOnly) {
+            $role = $this->businessUserRepo->getRole($userId, $businessId);
+            if ($role === 'viewer') {
+                return true;
+            }
+        }
+
+        // Normal user: enforce bookings permission for write access
+        return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_bookings', false);
     }
 
     /**
@@ -89,7 +96,7 @@ final class BookingsController
         }
 
         // Authorization check (middleware should set business_id)
-        if ($businessId && !$this->hasBusinessAccess($request, (int) $businessId)) {
+        if ($businessId && !$this->hasBusinessAccess($request, (int) $businessId, true)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
@@ -133,7 +140,7 @@ final class BookingsController
         $businessId = (int) $request->getAttribute('business_id');
 
         // Authorization check
-        if (!$this->hasBusinessAccess($request, $businessId)) {
+        if (!$this->hasBusinessAccess($request, $businessId, true)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
@@ -272,7 +279,7 @@ final class BookingsController
 
         // Authorization check: verify user has access to the booking's business
         $businessId = (int) $booking['business_id'];
-        if (!$this->hasBusinessAccess($request, $businessId)) {
+        if (!$this->hasBusinessAccess($request, $businessId, true)) {
             return Response::notFound('Booking not found');
         }
 
@@ -299,7 +306,7 @@ final class BookingsController
 
         // Authorization check: verify user has access to the booking's business
         $businessId = (int) $booking['business_id'];
-        if (!$this->hasBusinessAccess($request, $businessId)) {
+        if (!$this->hasBusinessAccess($request, $businessId, true)) {
             return Response::notFound('Booking not found');
         }
 
@@ -1295,7 +1302,7 @@ final class BookingsController
         }
 
         // Check business access
-        if (!$this->hasBusinessAccess($request, $rule->businessId)) {
+        if (!$this->hasBusinessAccess($request, $rule->businessId, true)) {
             return Response::error('Recurrence rule not found', 'not_found', 404);
         }
 

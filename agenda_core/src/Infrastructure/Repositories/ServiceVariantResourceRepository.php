@@ -298,6 +298,24 @@ final class ServiceVariantResourceRepository
     }
 
     /**
+     * Get business_id for a resource (for authorization).
+     */
+    public function getBusinessIdForResource(int $resourceId): ?int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT l.business_id
+             FROM resources r
+             JOIN locations l ON r.location_id = l.id
+             WHERE r.id = ? AND r.is_active = 1
+             LIMIT 1'
+        );
+        $stmt->execute([$resourceId]);
+        $result = $stmt->fetchColumn();
+
+        return $result !== false ? (int) $result : null;
+    }
+
+    /**
      * Validate that all service_variant_ids belong to the same location as the resource.
      */
     public function validateVariantsForResource(int $resourceId, array $variantIds): bool

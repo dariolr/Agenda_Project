@@ -420,10 +420,11 @@ final class StaffPlanningController
             return true;
         }
 
-        // Verifica accesso al business
-        return $this->businessUserRepo->hasAccess(
+        // Verifica permesso gestione staff sul business
+        return $this->businessUserRepo->hasPermission(
             (int) $userId,
             (int) $staff['business_id'],
+            'can_manage_staff',
             false
         );
     }

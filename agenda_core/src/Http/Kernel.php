@@ -138,7 +138,7 @@ final class Kernel
         $this->router->delete('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'destroy', ['auth']);
         $this->router->post('/v1/admin/businesses/{id}/resend-invite', AdminBusinessesController::class, 'resendInvite', ['auth']);
         
-        // Business Sync (per sincronizzazione prod → staging)
+        // Business Sync (sincronizzazione tra ambienti)
         $this->router->get('/v1/admin/businesses/{id}/export', BusinessSyncController::class, 'export', ['auth']);
         $this->router->get('/v1/admin/businesses/by-slug/{slug}/export', BusinessSyncController::class, 'exportBySlug', ['auth']);
         $this->router->post('/v1/admin/businesses/import', BusinessSyncController::class, 'import', ['auth']);
@@ -221,6 +221,9 @@ final class Kernel
         $this->router->delete('/v1/businesses/{business_id}/invitations/{invitation_id}', BusinessInvitationsController::class, 'destroy', ['auth']);
         $this->router->get('/v1/invitations/{token}', BusinessInvitationsController::class, 'show');
         $this->router->post('/v1/invitations/{token}/accept', BusinessInvitationsController::class, 'accept', ['auth']);
+        $this->router->post('/v1/invitations/{token}/accept-public', BusinessInvitationsController::class, 'acceptPublic');
+        $this->router->post('/v1/invitations/{token}/decline', BusinessInvitationsController::class, 'decline');
+        $this->router->post('/v1/invitations/{token}/register', BusinessInvitationsController::class, 'register');
 
         // Public (business-scoped via query param)
         $this->router->get('/v1/services', ServicesController::class, 'index', ['location_query']);
@@ -429,7 +432,7 @@ final class Kernel
             CustomerAuthController::class => new CustomerAuthController($loginCustomer, $refreshCustomerToken, $logoutCustomer, $getCustomerMe, $registerCustomer, $requestCustomerPasswordReset, $resetCustomerPassword, $updateCustomerProfile, $changeCustomerPassword, $businessRepo),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo, $businessUserRepo, $userRepo),
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
-            ServicesController::class => new ServicesController($serviceRepo, $variantResourceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo),
+            ServicesController::class => new ServicesController($serviceRepo, $variantResourceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo, $staffRepo),
             ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo),
             StaffController::class => new StaffController($staffRepo, $staffScheduleRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
@@ -442,8 +445,8 @@ final class Kernel
                 new ImportBusiness($this->db),
                 $userRepo
             ),
-            BusinessUsersController::class => new BusinessUsersController($businessRepo, $businessUserRepo, $userRepo),
-            BusinessInvitationsController::class => new BusinessInvitationsController($businessRepo, $businessUserRepo, $businessInvitationRepo, $userRepo),
+            BusinessUsersController::class => new BusinessUsersController($businessRepo, $businessUserRepo, $businessInvitationRepo, $sessionRepo, $userRepo),
+            BusinessInvitationsController::class => new BusinessInvitationsController($businessRepo, $businessUserRepo, $businessInvitationRepo, $locationRepo, $userRepo, $registerUser),
             StaffAvailabilityExceptionController::class => new StaffAvailabilityExceptionController($staffExceptionRepo, $staffRepo, $businessUserRepo, $userRepo),
             StaffPlanningController::class => new StaffPlanningController($staffPlanningRepo, $staffRepo, $businessUserRepo, $userRepo),
             ResourcesController::class => new ResourcesController($resourceRepo, $locationRepo, $businessUserRepo, $userRepo, $variantResourceRepo),

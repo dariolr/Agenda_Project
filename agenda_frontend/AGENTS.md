@@ -7,9 +7,7 @@
 | **Nome progetto** | agenda_frontend |
 | **Scopo** | Prenotazioni online per CLIENTI |
 | **URL produzione** | **prenota**.romeolab.it |
-| **URL staging** | **prenota-staging**.romeolab.it |
 | **Cartella SiteGround PROD** | `www/prenota.romeolab.it/public_html/` |
-| **Cartella SiteGround STAGING** | `www/prenota-staging.romeolab.it/public_html/` |
 | **NON confondere con** | agenda_backend (gestionale.romeolab.it) |
 
 ### ⚠️ DEPLOY PRODUZIONE
@@ -19,15 +17,6 @@
 cd agenda_frontend
 flutter build web --release --dart-define=API_BASE_URL=https://api.romeolab.it
 rsync -avz --delete build/web/ siteground:www/prenota.romeolab.it/public_html/
-```
-
-### ⚠️ DEPLOY STAGING
-
-```bash
-# STAGING: prenota-staging.romeolab.it
-cd agenda_frontend
-flutter build web --release --dart-define=API_BASE_URL=https://api-staging.romeolab.it
-rsync -avz --delete build/web/ siteground:www/prenota-staging.romeolab.it/public_html/
 ```
 
 ❌ **MAI** deployare su `gestionale.romeolab.it` — quello è per agenda_backend!
@@ -219,10 +208,8 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
 
 ### 🚨 REGOLA CRITICA DEPLOY (29/01/2026)
 **MAI eseguire deploy (build + rsync) di progetti Flutter (agenda_frontend o agenda_backend) senza ESPLICITA richiesta dell'utente.**
-Questa regola si applica SEMPRE, sia per produzione che per staging.
 
 - **Eseguire deploy in PRODUZIONE** (build + rsync verso `prenota.romeolab.it`) senza richiesta esplicita dell'utente
-- **Eseguire deploy in STAGING** (build + rsync verso `prenota-staging.romeolab.it`) senza richiesta esplicita dell'utente
 - **Avviare l'applicazione** (`flutter run`) senza richiesta esplicita dell'utente
 - Aggiungere dipendenze non richieste
 - Modificare route o `router.dart` senza richiesta esplicita
@@ -478,9 +465,8 @@ YYYYMMDD-N.P
 | Script | Comportamento P |
 |--------|-----------------|
 | `deploy.sh` | Incrementa P automaticamente (+1 ad ogni deploy) |
-| `deploy-staging.sh` | NON incrementa P (mantiene valore esistente) |
 
-**Entrambi gli script:**
+**Lo script:**
 - Incrementano N se stesso giorno, resettano a 1 se giorno diverso
 - Aggiornano `web/index.html` (window.appVersion)
 - Aggiornano `web/app_version.txt` (per VersionChecker)
@@ -505,7 +491,6 @@ Il file `web/app_version.txt` contiene solo la stringa versione (es. `20260201-1
 | `lib/core/utils/app_version.dart` | Utility `getAppVersion()` per leggere da JS |
 | `lib/core/services/version_checker.dart` | Controllo periodico nuove versioni |
 | `scripts/deploy.sh` | Deploy PROD (incrementa P) |
-| `scripts/deploy-staging.sh` | Deploy STAGING (mantiene P) |
 
 ---
 

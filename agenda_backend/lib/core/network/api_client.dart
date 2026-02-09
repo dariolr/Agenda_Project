@@ -257,7 +257,7 @@ class ApiClient {
         data: data,
         options: headers != null ? Options(headers: headers) : null,
       );
-      final body = response.data as Map<String, dynamic>;
+      final body = _bodyAsMapOrThrow(response);
       if (body['success'] == true) {
         return body;
       }
@@ -310,7 +310,7 @@ class ApiClient {
 
   /// Gestisce risposta API
   Map<String, dynamic> _handleResponse(Response response) {
-    final body = response.data as Map<String, dynamic>;
+    final body = _bodyAsMapOrThrow(response);
     if (body['success'] == true) {
       final data = body['data'];
       if (data is Map<String, dynamic>) {
@@ -324,6 +324,22 @@ class ApiClient {
       message: body['error']?['message'] ?? 'Unknown error',
       statusCode: response.statusCode ?? 500,
       details: body['error']?['details'],
+    );
+  }
+
+  Map<String, dynamic> _bodyAsMapOrThrow(Response response) {
+    final body = response.data;
+    if (body is Map<String, dynamic>) {
+      return body;
+    }
+    if (body is Map) {
+      return Map<String, dynamic>.from(body);
+    }
+    throw ApiException(
+      code: 'invalid_response',
+      message: 'Invalid server response format',
+      statusCode: response.statusCode ?? 500,
+      details: {'response_type': body.runtimeType.toString()},
     );
   }
 
@@ -1025,7 +1041,12 @@ class ApiClient {
   /// GET /v1/businesses/{business_id}/locations
   Future<List<Map<String, dynamic>>> getLocations(int businessId) async {
     final response = await get('/v1/businesses/$businessId/locations');
-    return (response['data'] as List).cast<Map<String, dynamic>>();
+    final locations =
+        response['locations'] ?? response['_list'] ?? response['data'];
+    if (locations is List) {
+      return locations.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    }
+    return const <Map<String, dynamic>>[];
   }
 
   /// POST /v1/businesses/{business_id}/locations
@@ -1058,7 +1079,14 @@ class ApiClient {
         if (isActive != null) 'is_active': isActive,
       },
     );
-    return response['location'] as Map<String, dynamic>;
+    final location = response['location'];
+    if (location is Map<String, dynamic>) {
+      return location;
+    }
+    if (location is Map) {
+      return Map<String, dynamic>.from(location);
+    }
+    return _asMapPayload(response);
   }
 
   /// PUT /v1/locations/{id}
@@ -1098,7 +1126,14 @@ class ApiClient {
         if (isActive != null) 'is_active': isActive,
       },
     );
-    return response['location'] as Map<String, dynamic>;
+    final location = response['location'];
+    if (location is Map<String, dynamic>) {
+      return location;
+    }
+    if (location is Map) {
+      return Map<String, dynamic>.from(location);
+    }
+    return _asMapPayload(response);
   }
 
   /// DELETE /v1/locations/{id}
@@ -1385,7 +1420,11 @@ class ApiClient {
   /// GET /v1/businesses/{business_id}/staff
   Future<List<Map<String, dynamic>>> getStaffByBusiness(int businessId) async {
     final response = await get('/v1/businesses/$businessId/staff');
-    return (response['staff'] as List).cast<Map<String, dynamic>>();
+    final staff = response['staff'] ?? response['_list'];
+    if (staff is List) {
+      return staff.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    }
+    return const <Map<String, dynamic>>[];
   }
 
   /// POST /v1/businesses/{business_id}/staff
@@ -1412,7 +1451,14 @@ class ApiClient {
         if (serviceIds != null) 'service_ids': serviceIds,
       },
     );
-    return response['staff'] as Map<String, dynamic>;
+    final staff = response['staff'];
+    if (staff is Map<String, dynamic>) {
+      return staff;
+    }
+    if (staff is Map) {
+      return Map<String, dynamic>.from(staff);
+    }
+    return _asMapPayload(response);
   }
 
   /// PUT /v1/staff/{id}
@@ -1440,7 +1486,14 @@ class ApiClient {
         if (serviceIds != null) 'service_ids': serviceIds,
       },
     );
-    return response['staff'] as Map<String, dynamic>;
+    final staff = response['staff'];
+    if (staff is Map<String, dynamic>) {
+      return staff;
+    }
+    if (staff is Map) {
+      return Map<String, dynamic>.from(staff);
+    }
+    return _asMapPayload(response);
   }
 
   /// DELETE /v1/staff/{id}
@@ -1461,12 +1514,7 @@ class ApiClient {
   /// Lista operatori di un business.
   Future<List<Map<String, dynamic>>> getBusinessUsers(int businessId) async {
     final response = await get(ApiConfig.businessUsers(businessId));
-    final users =
-        response['users'] ??
-        (response['data'] is Map<String, dynamic>
-            ? (response['data'] as Map<String, dynamic>)['users']
-            : null) ??
-        response['_list'];
+    final users = response['users'] ?? response['_list'];
     if (users is List) {
       return users.cast<Map<String, dynamic>>();
     }
@@ -1484,7 +1532,7 @@ class ApiClient {
       ApiConfig.businessUsers(businessId),
       data: {'user_id': userId, 'role': role},
     );
-    return response['data'] as Map<String, dynamic>;
+    return _asMapPayload(response);
   }
 
   /// PATCH /v1/businesses/{business_id}/users/{user_id}
@@ -1504,7 +1552,7 @@ class ApiClient {
       ApiConfig.businessUser(businessId, userId),
       data: data,
     );
-    return response['data'] as Map<String, dynamic>;
+    return _asMapPayload(response);
   }
 
   /// DELETE /v1/businesses/{business_id}/users/{user_id}
@@ -1520,23 +1568,22 @@ class ApiClient {
   /// Ottiene il contesto dell'utente corrente per un business (scope_type, location_ids).
   Future<Map<String, dynamic>> getMyBusinessContext(int businessId) async {
     final response = await get('/v1/me/business/$businessId');
-    return response['data'] as Map<String, dynamic>;
+    return _asMapPayload(response);
   }
 
   // ========== BUSINESS INVITATIONS ==========
 
   /// GET /v1/businesses/{business_id}/invitations
-  /// Lista inviti pendenti.
+  /// Lista inviti del business.
   Future<List<Map<String, dynamic>>> getBusinessInvitations(
-    int businessId,
-  ) async {
-    final response = await get(ApiConfig.businessInvitations(businessId));
-    final invitations =
-        response['invitations'] ??
-        (response['data'] is Map<String, dynamic>
-            ? (response['data'] as Map<String, dynamic>)['invitations']
-            : null) ??
-        response['_list'];
+    int businessId, {
+    String status = 'pending',
+  }) async {
+    final response = await get(
+      ApiConfig.businessInvitations(businessId),
+      queryParameters: {'status': status},
+    );
+    final invitations = response['invitations'] ?? response['_list'];
     if (invitations is List) {
       return invitations.cast<Map<String, dynamic>>();
     }
@@ -1565,7 +1612,7 @@ class ApiClient {
       ApiConfig.businessInvitations(businessId),
       data: data,
     );
-    return response['data'] as Map<String, dynamic>;
+    return _asMapPayload(response);
   }
 
   /// DELETE /v1/businesses/{business_id}/invitations/{invitation_id}
@@ -1581,14 +1628,65 @@ class ApiClient {
   /// Dettagli di un invito (endpoint pubblico).
   Future<Map<String, dynamic>> getInvitationByToken(String token) async {
     final response = await get(ApiConfig.invitationByToken(token));
-    return response['data'] as Map<String, dynamic>;
+    return _asMapPayload(response);
   }
 
   /// POST /v1/invitations/{token}/accept
   /// Accetta un invito (richiede autenticazione).
   Future<Map<String, dynamic>> acceptInvitation(String token) async {
     final response = await post(ApiConfig.acceptInvitation(token));
-    return response['data'] as Map<String, dynamic>;
+    return _asMapPayload(response);
+  }
+
+  /// POST /v1/invitations/{token}/accept-public
+  /// Accetta invito senza autenticazione (account già esistente).
+  Future<Map<String, dynamic>> acceptInvitationPublic(String token) async {
+    final response = await post(ApiConfig.acceptInvitationPublic(token));
+    return _asMapPayload(response);
+  }
+
+  /// POST /v1/invitations/{token}/decline
+  /// Rifiuta un invito (richiede autenticazione).
+  Future<Map<String, dynamic>> declineInvitation(String token) async {
+    final response = await post(ApiConfig.declineInvitation(token));
+    return _asMapPayload(response);
+  }
+
+  /// POST /v1/invitations/{token}/register
+  /// Crea account operatore da invito e accetta invito.
+  Future<Map<String, dynamic>> registerInvitation({
+    required String token,
+    required String firstName,
+    required String lastName,
+    required String password,
+  }) async {
+    final response = await post(
+      ApiConfig.registerInvitation(token),
+      data: {
+        'first_name': firstName,
+        'last_name': lastName,
+        'password': password,
+      },
+    );
+    final data = _asMapPayload(response);
+    if (data['access_token'] is String) {
+      _accessToken = data['access_token'] as String;
+    }
+    if (data['refresh_token'] is String) {
+      await _tokenStorage.saveRefreshToken(data['refresh_token'] as String);
+    }
+    return data;
+  }
+
+  /// Normalizza payload map per endpoint legacy/nuovi.
+  /// `_handleResponse` ritorna già `data`, ma alcuni endpoint possono
+  /// ancora essere wrappati in `{ data: {...} }`.
+  Map<String, dynamic> _asMapPayload(Map<String, dynamic> response) {
+    final nested = response['data'];
+    if (nested is Map<String, dynamic>) {
+      return nested;
+    }
+    return response;
   }
 
   // ========== STAFF SCHEDULES ==========
@@ -1601,11 +1699,17 @@ class ApiClient {
   ) async {
     final response = await get(ApiConfig.staffSchedulesAll(businessId));
     // _handleResponse già ritorna body['data'], quindi response = { schedules: {...} }
-    final data = response['schedules'] as Map<String, dynamic>;
+    final data = response['schedules'];
+    if (data is! Map<String, dynamic>) {
+      return const <int, Map<int, List<Map<String, String>>>>{};
+    }
 
     final Map<int, Map<int, List<Map<String, String>>>> result = {};
     for (final entry in data.entries) {
       final staffId = int.parse(entry.key);
+      if (entry.value is! Map<String, dynamic>) {
+        continue;
+      }
       final weekData = entry.value as Map<String, dynamic>;
 
       result[staffId] = {};
@@ -1633,7 +1737,10 @@ class ApiClient {
   ) async {
     final response = await get(ApiConfig.staffSchedule(staffId));
     // _handleResponse già ritorna body['data'], quindi response = { staff_id: X, schedule: {...} }
-    final data = response['schedule'] as Map<String, dynamic>;
+    final data = response['schedule'];
+    if (data is! Map<String, dynamic>) {
+      return const <int, List<Map<String, String>>>{};
+    }
 
     final Map<int, List<Map<String, String>>> result = {};
     for (final entry in data.entries) {
@@ -1669,7 +1776,10 @@ class ApiClient {
     );
 
     // _handleResponse già ritorna body['data'], quindi response = { staff_id: X, schedule: {...} }
-    final data = response['schedule'] as Map<String, dynamic>;
+    final data = response['schedule'];
+    if (data is! Map<String, dynamic>) {
+      return const <int, List<Map<String, String>>>{};
+    }
     final Map<int, List<Map<String, String>>> result = {};
     for (final entry in data.entries) {
       final day = int.parse(entry.key);
@@ -1708,7 +1818,10 @@ class ApiClient {
     );
 
     // response = { exceptions: { staffId: [...], ... } }
-    final exceptionsMap = response['exceptions'] as Map<String, dynamic>;
+    final exceptionsMap = response['exceptions'];
+    if (exceptionsMap is! Map<String, dynamic>) {
+      return const <int, List<Map<String, dynamic>>>{};
+    }
     final Map<int, List<Map<String, dynamic>>> result = {};
 
     for (final entry in exceptionsMap.entries) {
@@ -1976,7 +2089,14 @@ class ApiClient {
       ApiConfig.staffPlanningForDate(staffId),
       queryParameters: {'date': date},
     );
-    return response['planning'] as Map<String, dynamic>?;
+    final planning = response['planning'];
+    if (planning is Map<String, dynamic>) {
+      return planning;
+    }
+    if (planning is Map) {
+      return Map<String, dynamic>.from(planning);
+    }
+    return null;
   }
 
   /// Get available slots for a staff on a date
@@ -2050,203 +2170,6 @@ class ApiClient {
     await delete(ApiConfig.staffPlanning(staffId, planningId));
   }
 
-  // ========== ADMIN BUSINESS SYNC ==========
-
-  /// Export business data from production (superadmin only)
-  /// GET /v1/admin/businesses/{businessId}/export
-  Future<Map<String, dynamic>> exportBusiness(int businessId) async {
-    final response = await get(ApiConfig.businessExport(businessId));
-    return Map<String, dynamic>.from(response);
-  }
-
-  /// Export business data by slug from production (superadmin only)
-  /// GET /v1/admin/businesses/by-slug/{slug}/export
-  Future<Map<String, dynamic>> exportBusinessBySlug(String slug) async {
-    final response = await get(ApiConfig.businessExportBySlug(slug));
-    return Map<String, dynamic>.from(response);
-  }
-
-  /// Sync business from production to staging (superadmin only, staging only)
-  /// POST /v1/admin/businesses/sync-from-production
-  Future<Map<String, dynamic>> syncBusinessFromProduction({
-    int? businessId,
-    String? slug,
-  }) async {
-    final data = <String, dynamic>{};
-    if (businessId != null) data['business_id'] = businessId;
-    if (slug != null) data['slug'] = slug;
-
-    final response = await post(
-      ApiConfig.businessSyncFromProduction,
-      data: data,
-    );
-    return Map<String, dynamic>.from(response);
-  }
-
-  /// Push business data to staging (superadmin only)
-  /// POST to staging API /v1/admin/businesses/import
-  /// Questa chiamata usa l'URL completo di staging, bypassando il baseUrl
-  Future<Map<String, dynamic>> pushBusinessToStaging(
-    Map<String, dynamic> exportData,
-  ) async {
-    // Chiamata diretta a staging API con URL completo
-    final stagingUrl = '${ApiConfig.stagingApiUrl}/v1/admin/businesses/import';
-
-    try {
-      final response = await _dio.post(
-        stagingUrl,
-        data: {
-          'data': exportData,
-        }, // Backend si aspetta { "data": { ...export... } }
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
-          },
-        ),
-      );
-
-      if (response.data is Map) {
-        return Map<String, dynamic>.from(response.data);
-      }
-      return {'success': true};
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  /// Push business data to production (from staging)
-  /// skipSessionsAndNotifications: se true, NON importa notification_queue, auth_sessions, client_sessions
-  Future<Map<String, dynamic>> pushBusinessToProduction(
-    Map<String, dynamic> exportData, {
-    bool skipSessionsAndNotifications = true,
-  }) async {
-    // Chiamata diretta a production API con URL completo
-    final productionUrl =
-        '${ApiConfig.productionApiUrl}/v1/admin/businesses/import';
-
-    try {
-      final response = await _dio.post(
-        productionUrl,
-        data: {
-          'data': exportData,
-          'skip_sessions_and_notifications': skipSessionsAndNotifications,
-        },
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
-          },
-        ),
-      );
-
-      if (response.data is Map) {
-        return Map<String, dynamic>.from(response.data);
-      }
-      return {'success': true};
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  /// Export business data from production (when on staging)
-  Future<Map<String, dynamic>> exportBusinessFromProduction(
-    int businessId,
-  ) async {
-    final productionUrl =
-        '${ApiConfig.productionApiUrl}/v1/admin/businesses/$businessId/export';
-
-    try {
-      final response = await _dio.get(
-        productionUrl,
-        options: Options(
-          headers: {
-            'Accept': 'application/json',
-            if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
-          },
-        ),
-      );
-
-      if (response.data is Map) {
-        final body = response.data as Map<String, dynamic>;
-        // Estrai 'data' dalla response wrappata {"success": true, "data": {...}}
-        if (body['success'] == true && body['data'] is Map) {
-          return Map<String, dynamic>.from(body['data']);
-        }
-        // Fallback: ritorna tutto se non wrappato
-        return Map<String, dynamic>.from(body);
-      }
-      throw const ApiException(
-        code: 'invalid_response',
-        message: 'Invalid export response',
-        statusCode: 500,
-      );
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  /// Export business data from staging (when on production)
-  Future<Map<String, dynamic>> exportBusinessFromStaging(int businessId) async {
-    final stagingUrl =
-        '${ApiConfig.stagingApiUrl}/v1/admin/businesses/$businessId/export';
-
-    try {
-      final response = await _dio.get(
-        stagingUrl,
-        options: Options(
-          headers: {
-            'Accept': 'application/json',
-            if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
-          },
-        ),
-      );
-
-      if (response.data is Map) {
-        final body = response.data as Map<String, dynamic>;
-        // Estrai 'data' dalla response wrappata {"success": true, "data": {...}}
-        if (body['success'] == true && body['data'] is Map) {
-          return Map<String, dynamic>.from(body['data']);
-        }
-        // Fallback: ritorna tutto se non wrappato
-        return Map<String, dynamic>.from(body);
-      }
-      throw const ApiException(
-        code: 'invalid_response',
-        message: 'Invalid export response',
-        statusCode: 500,
-      );
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  /// Import business data locally
-  /// skipSessionsAndNotifications: se true, NON importa notification_queue, auth_sessions, client_sessions
-  Future<Map<String, dynamic>> importBusiness(
-    Map<String, dynamic> exportData, {
-    bool skipSessionsAndNotifications = false,
-  }) async {
-    try {
-      final response = await _dio.post(
-        ApiConfig.businessImport,
-        data: {
-          'data': exportData,
-          'skip_sessions_and_notifications': skipSessionsAndNotifications,
-        },
-      );
-
-      if (response.data is Map) {
-        return Map<String, dynamic>.from(response.data);
-      }
-      return {'success': true};
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
   // ==========================================================================
   // CLOSURES (Chiusure multi-location)
   // ==========================================================================
@@ -2255,7 +2178,7 @@ class ApiClient {
   Future<List<LocationClosure>> getClosures(int businessId) async {
     try {
       final response = await _dio.get('/v1/businesses/$businessId/closures');
-      final body = response.data as Map<String, dynamic>;
+      final body = _bodyAsMapOrThrow(response);
       final data = body['data'] as Map<String, dynamic>? ?? body;
       final List<dynamic> closures = data['closures'] ?? [];
       return closures
@@ -2282,7 +2205,7 @@ class ApiClient {
           if (locationId != null) 'location_id': locationId,
         },
       );
-      final body = response.data as Map<String, dynamic>;
+      final body = _bodyAsMapOrThrow(response);
       final data = body['data'] as Map<String, dynamic>? ?? body;
       final List<dynamic> closures = data['closures'] ?? [];
       return closures
@@ -2311,8 +2234,10 @@ class ApiClient {
           if (reason != null && reason.isNotEmpty) 'reason': reason,
         },
       );
-      final body = response.data as Map<String, dynamic>;
-      final data = body['data'] as Map<String, dynamic>;
+      final body = _bodyAsMapOrThrow(response);
+      final data = body['data'] is Map<String, dynamic>
+          ? body['data'] as Map<String, dynamic>
+          : body;
       return LocationClosure.fromJson(data);
     } on DioException catch (e) {
       throw _handleError(e);
@@ -2337,8 +2262,10 @@ class ApiClient {
           if (reason != null) 'reason': reason,
         },
       );
-      final body = response.data as Map<String, dynamic>;
-      final data = body['data'] as Map<String, dynamic>;
+      final body = _bodyAsMapOrThrow(response);
+      final data = body['data'] is Map<String, dynamic>
+          ? body['data'] as Map<String, dynamic>
+          : body;
       return LocationClosure.fromJson(data);
     } on DioException catch (e) {
       throw _handleError(e);

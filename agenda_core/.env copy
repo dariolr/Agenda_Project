@@ -1,10 +1,10 @@
 # Environment
 APP_ENV=development
 APP_DEBUG=true
-APP_BASE_PATH=/api
+APP_BASE_PATH=
 
-# Database (MAMP)
-DB_HOST=localhost
+# Database
+DB_HOST=127.0.0.1
 DB_PORT=8889
 DB_DATABASE=agenda_core
 DB_USERNAME=root
@@ -62,15 +62,16 @@ MAILGUN_DOMAIN=mg.example.com
 MAILGUN_REGION=eu
 
 # ========================================
-# FRONTEND URLs (LOCAL)
+# FRONTEND URLs
 # ========================================
 
 # URL frontend prenotazione (per clienti)
-FRONTEND_URL=http://localhost:8888/prenota
+FRONTEND_URL=https://prenota.romeolab.it
 
 # URL backend/gestionale (per admin business)
-BACKEND_URL=http://localhost:8888/gestionale
+BACKEND_URL=https://gestionale.romeolab.it
 
-# Test mode: redirect all notification emails to this address
+# Test mode: redirect all notification emails to nome.cognome@romeolab.it
 NOTIFICATION_TEST_MODE=true
 NOTIFICATION_TEST_EMAIL=dariolarosa@hotmail.com
+

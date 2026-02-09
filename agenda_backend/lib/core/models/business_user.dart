@@ -52,6 +52,7 @@ class BusinessUser {
     'admin' => 'Amministratore',
     'manager' => 'Manager',
     'staff' => 'Staff',
+    'viewer' => 'Visualizzatore',
     _ => role,
   };
 

@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -12,7 +11,6 @@ import '../../../core/models/business_user.dart';
 import '../../../core/models/location.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_dialogs.dart';
-import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../providers/business_users_provider.dart';
@@ -49,14 +47,21 @@ class OperatorsScreen extends ConsumerWidget {
   }
 }
 
-class _OperatorsBody extends ConsumerWidget {
+class _OperatorsBody extends ConsumerStatefulWidget {
   const _OperatorsBody({required this.businessId});
 
   final int businessId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(businessUsersProvider(businessId));
+  ConsumerState<_OperatorsBody> createState() => _OperatorsBodyState();
+}
+
+class _OperatorsBodyState extends ConsumerState<_OperatorsBody> {
+  bool _showHistoricalInvitations = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(businessUsersProvider(widget.businessId));
     final l10n = context.l10n;
 
     return _buildBody(context, ref, state, l10n);
@@ -68,6 +73,12 @@ class _OperatorsBody extends ConsumerWidget {
     BusinessUsersState state,
     dynamic l10n,
   ) {
+    final pendingInvitations = state.invitations.where((i) => i.isPending).toList();
+    final historicalInvitations = state.invitations
+        // Non mostrare inviti già accettati: l'utente è ormai un operatore attivo.
+        .where((i) => !i.isPending && i.effectiveStatus != 'accepted')
+        .toList();
+
     if (state.isLoading && state.users.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -81,7 +92,7 @@ class _OperatorsBody extends ConsumerWidget {
             const SizedBox(height: 16),
             FilledButton(
               onPressed: () => ref
-                  .read(businessUsersProvider(businessId).notifier)
+                  .read(businessUsersProvider(widget.businessId).notifier)
                   .refresh(),
               child: Text(l10n.actionConfirm),
             ),
@@ -92,9 +103,13 @@ class _OperatorsBody extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () =>
-          ref.read(businessUsersProvider(businessId).notifier).refresh(),
+          ref.read(businessUsersProvider(widget.businessId).notifier).refresh(),
       child: CustomScrollView(
         slivers: [
+          if (state.isLoading && state.users.isNotEmpty)
+            const SliverToBoxAdapter(
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
           // Header con sottotitolo
           SliverToBoxAdapter(
             child: Padding(
@@ -109,7 +124,7 @@ class _OperatorsBody extends ConsumerWidget {
           ),
 
           // Sezione inviti pendenti
-          if (state.invitations.isNotEmpty) ...[
+          if (pendingInvitations.isNotEmpty) ...[
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -123,7 +138,7 @@ class _OperatorsBody extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Text(
                       l10n.operatorsPendingInvitesCount(
-                        state.invitations.length,
+                        pendingInvitations.length,
                       ),
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
@@ -136,10 +151,63 @@ class _OperatorsBody extends ConsumerWidget {
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) => _InvitationTile(
-                  invitation: state.invitations[index],
-                  businessId: businessId,
+                  invitation: pendingInvitations[index],
+                  businessId: widget.businessId,
+                  enableActions: !state.isLoading,
                 ),
-                childCount: state.invitations.length,
+                childCount: pendingInvitations.length,
+              ),
+            ),
+            const SliverToBoxAdapter(
+              child: Divider(height: 32, indent: 16, endIndent: 16),
+            ),
+          ],
+
+          if (historicalInvitations.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilterChip(
+                    selected: _showHistoricalInvitations,
+                    onSelected: (selected) {
+                      setState(() => _showHistoricalInvitations = selected);
+                    },
+                    label: Text(
+                      _historicalToggleLabel(
+                        context,
+                        historicalInvitations.length,
+                        _showHistoricalInvitations,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          if (historicalInvitations.isNotEmpty && _showHistoricalInvitations) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Text(
+                  l10n.operatorsInvitesHistoryCount(
+                    historicalInvitations.length,
+                  ),
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => _InvitationTile(
+                  invitation: historicalInvitations[index],
+                  businessId: widget.businessId,
+                  enableActions: !state.isLoading,
+                ),
+                childCount: historicalInvitations.length,
               ),
             ),
             const SliverToBoxAdapter(
@@ -170,7 +238,8 @@ class _OperatorsBody extends ConsumerWidget {
                     '${user.userId}_${user.role}_${user.scopeType}_${user.locationIds.join(',')}',
                   ),
                   user: user,
-                  businessId: businessId,
+                  businessId: widget.businessId,
+                  enableActions: !state.isLoading,
                 );
               }, childCount: state.users.length),
             ),
@@ -181,20 +250,118 @@ class _OperatorsBody extends ConsumerWidget {
       ),
     );
   }
+
+  String _historicalToggleLabel(
+    BuildContext context,
+    int count,
+    bool selected,
+  ) {
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    if (selected) {
+      return isEn ? 'Hide invite history' : 'Nascondi storico inviti';
+    }
+    return isEn ? 'Show invite history ($count)' : 'Mostra storico inviti ($count)';
+  }
 }
 
 /// Tile per visualizzare un invito pendente.
 class _InvitationTile extends ConsumerWidget {
-  const _InvitationTile({required this.invitation, required this.businessId});
+  const _InvitationTile({
+    required this.invitation,
+    required this.businessId,
+    this.enableActions = true,
+  });
 
   final BusinessInvitation invitation;
   final int businessId;
+  final bool enableActions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
     final dateFormat = DateFormat.yMd();
+    final statusColor = _statusColor(colorScheme, invitation.effectiveStatus);
+    final statusLabel = _statusLabel(l10n, invitation.effectiveStatus);
+    final canResend = enableActions && invitation.isPending;
+    final canRevoke = enableActions && invitation.isPending;
+    final canDelete = enableActions && !invitation.isPending;
+    final resendLabel = Localizations.localeOf(context).languageCode == 'en'
+        ? 'Resend invite'
+        : 'Reinvia invito';
+    final trailing = enableActions
+        ? PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'resend') {
+                _resendInvitation(context, ref);
+              } else if (value == 'revoke') {
+                _confirmRevoke(context, ref);
+              } else if (value == 'delete') {
+                _confirmDelete(context, ref);
+              }
+            },
+            itemBuilder: (context) {
+              final entries = <PopupMenuEntry<String>>[];
+              if (canResend) {
+                entries.add(
+                  PopupMenuItem(
+                    value: 'resend',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.refresh, size: 20),
+                        const SizedBox(width: 12),
+                        Text(resendLabel),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              if (canRevoke) {
+                entries.add(
+                  PopupMenuItem(
+                    value: 'revoke',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.block_outlined,
+                          size: 20,
+                          color: colorScheme.error,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          l10n.operatorsRevokeInvite,
+                          style: TextStyle(color: colorScheme.error),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              if (canDelete) {
+                entries.add(
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          size: 20,
+                          color: colorScheme.error,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          l10n.operatorsDeleteInvite,
+                          style: TextStyle(color: colorScheme.error),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return entries;
+            },
+          )
+        : null;
 
     return ListTile(
       leading: CircleAvatar(
@@ -209,10 +376,33 @@ class _InvitationTile extends ConsumerWidget {
             invitation.roleLabel,
             style: TextStyle(color: colorScheme.onSurfaceVariant),
           ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              statusLabel,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: statusColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
           Text(
-            l10n.operatorsExpires(dateFormat.format(invitation.expiresAt)),
+            invitation.effectiveStatus == 'accepted' &&
+                    invitation.acceptedAt != null
+                ? l10n.operatorsAcceptedOn(
+                    dateFormat.format(invitation.acceptedAt!),
+                  )
+                : l10n.operatorsExpires(
+                    dateFormat.format(invitation.expiresAt),
+                  ),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: invitation.isExpired
+              color: invitation.effectiveStatus == 'expired'
                   ? colorScheme.error
                   : colorScheme.onSurfaceVariant,
             ),
@@ -220,41 +410,45 @@ class _InvitationTile extends ConsumerWidget {
         ],
       ),
       isThreeLine: true,
-      trailing: PopupMenuButton<String>(
-        onSelected: (value) async {
-          if (value == 'revoke') {
-            _confirmRevoke(context, ref);
-          } else if (value == 'copy' && invitation.token != null) {
-            _copyInviteLink(context, invitation.token!);
-          }
-        },
-        itemBuilder: (context) => [
-          if (invitation.token != null)
-            PopupMenuItem(
-              value: 'copy',
-              child: Row(
-                children: [
-                  const Icon(Icons.copy, size: 20),
-                  const SizedBox(width: 12),
-                  Text(l10n.operatorsInviteCopied),
-                ],
-              ),
-            ),
-          PopupMenuItem(
-            value: 'revoke',
-            child: Row(
-              children: [
-                Icon(Icons.cancel_outlined, size: 20, color: colorScheme.error),
-                const SizedBox(width: 12),
-                Text(
-                  l10n.operatorsRevokeInvite,
-                  style: TextStyle(color: colorScheme.error),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      trailing: trailing,
+    );
+  }
+
+  Color _statusColor(ColorScheme scheme, String status) {
+    return switch (status) {
+      'pending' => scheme.primary,
+      'accepted' => Colors.green.shade700,
+      'declined' => Colors.orange.shade700,
+      'revoked' => scheme.onSurfaceVariant,
+      'expired' => scheme.error,
+      _ => scheme.onSurfaceVariant,
+    };
+  }
+
+  String _statusLabel(dynamic l10n, String status) {
+    return switch (status) {
+      'pending' => l10n.operatorsInviteStatusPending,
+      'accepted' => l10n.operatorsInviteStatusAccepted,
+      'declined' => l10n.operatorsInviteStatusDeclined,
+      'revoked' => l10n.operatorsInviteStatusRevoked,
+      'expired' => l10n.operatorsInviteStatusExpired,
+      _ => status,
+    };
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    showAppConfirmDialog(
+      context,
+      title: Text(l10n.operatorsDeleteInvite),
+      content: Text(l10n.operatorsDeleteInviteConfirm(invitation.email)),
+      confirmLabel: l10n.actionDelete,
+      danger: true,
+      onConfirm: () {
+        ref
+            .read(businessUsersProvider(businessId).notifier)
+            .deleteInvitation(invitation.id);
+      },
     );
   }
 
@@ -264,33 +458,46 @@ class _InvitationTile extends ConsumerWidget {
       context,
       title: Text(l10n.operatorsRevokeInvite),
       content: Text(l10n.operatorsRevokeInviteConfirm(invitation.email)),
-      confirmLabel: l10n.actionConfirm,
+      confirmLabel: l10n.operatorsRevokeInvite,
       danger: true,
       onConfirm: () {
         ref
             .read(businessUsersProvider(businessId).notifier)
-            .revokeInvitation(invitation.id);
+            .deleteInvitation(invitation.id);
       },
     );
   }
 
-  void _copyInviteLink(BuildContext context, String token) {
-    final url = 'https://agenda.example.com/invite/$token';
-    Clipboard.setData(ClipboardData(text: url));
-    FeedbackDialog.showSuccess(
-      context,
-      title: context.l10n.operatorsInviteCopied,
-      message: context.l10n.operatorsInviteCopied,
+  Future<void> _resendInvitation(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
+    final ok = await ref
+        .read(businessUsersProvider(businessId).notifier)
+        .resendInvitation(invitation);
+    if (!context.mounted) return;
+
+    final message = ok
+        ? l10n.operatorsInviteSuccess(invitation.email)
+        : (ref.read(businessUsersProvider(businessId)).error ??
+              l10n.operatorsInviteError);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 }
 
 /// Tile per visualizzare un operatore attivo.
 class _UserTile extends ConsumerWidget {
-  const _UserTile({super.key, required this.user, required this.businessId});
+  const _UserTile({
+    super.key,
+    required this.user,
+    required this.businessId,
+    this.enableActions = true,
+  });
 
   final BusinessUser user;
   final int businessId;
+  final bool enableActions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -334,7 +541,7 @@ class _UserTile extends ConsumerWidget {
         _getRoleLabel(user.role, l10n),
         style: TextStyle(color: colorScheme.onSurfaceVariant),
       ),
-      trailing: user.isCurrentUser || user.role == 'owner'
+      trailing: !enableActions || user.isCurrentUser || user.role == 'owner'
           ? null
           : PopupMenuButton<String>(
               onSelected: (value) {
@@ -392,6 +599,7 @@ class _UserTile extends ConsumerWidget {
       'admin' => l10n.operatorsRoleAdmin,
       'manager' => l10n.operatorsRoleManager,
       'staff' => l10n.operatorsRoleStaff,
+      'viewer' => 'Viewer',
       _ => role,
     };
   }

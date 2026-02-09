@@ -93,19 +93,70 @@ final class BusinessInvitationRepository
     }
 
     /**
+     * Find invitation by id.
+     */
+    public function findById(int $invitationId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT * FROM business_invitations WHERE id = ?'
+        );
+        $stmt->execute([$invitationId]);
+        $result = $stmt->fetch();
+
+        if (!$result) {
+            return null;
+        }
+
+        if (($result['scope_type'] ?? 'business') === 'locations') {
+            $result['location_ids'] = $this->getLocationIds((int) $result['id']);
+        } else {
+            $result['location_ids'] = [];
+        }
+
+        return $result;
+    }
+
+    /**
      * Find pending invitation by email and business.
      */
     public function findPendingByEmailAndBusiness(string $email, int $businessId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT * FROM business_invitations 
-             WHERE email = ? AND business_id = ? AND status = "pending"
+             WHERE email = ? AND business_id = ? AND status = \'pending\'
              AND expires_at > NOW()'
         );
         $stmt->execute([strtolower(trim($email)), $businessId]);
         $result = $stmt->fetch();
 
         return $result ?: null;
+    }
+
+    /**
+     * Revoke previous invitations for an email in a business.
+     * Keeps accepted invitations for audit/history.
+     *
+     * Requires DB schema with 'revoked' in business_invitations.status ENUM.
+     */
+    public function revokePreviousByEmailAndBusiness(string $email, int $businessId): int
+    {
+        $normalizedEmail = strtolower(trim($email));
+
+        try {
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE business_invitations
+                 SET status = \'revoked\'
+                 WHERE business_id = ? AND email = ? AND status <> \'accepted\''
+            );
+            $stmt->execute([$businessId, $normalizedEmail]);
+            return $stmt->rowCount();
+        } catch (\Throwable $e) {
+            throw new \RuntimeException(
+                "Cannot revoke previous invitations. Ensure migration 0041_business_invitations_reintroduce_revoked.sql is applied.",
+                0,
+                $e
+            );
+        }
     }
 
     /**
@@ -120,7 +171,7 @@ final class BusinessInvitationRepository
                 u.first_name as inviter_first_name, u.last_name as inviter_last_name
              FROM business_invitations i
              LEFT JOIN users u ON i.invited_by = u.id
-             WHERE i.business_id = ? AND i.status = "pending"
+             WHERE i.business_id = ? AND i.status = \'pending\'
              AND i.expires_at > NOW()
              ORDER BY i.created_at DESC'
         );
@@ -129,6 +180,36 @@ final class BusinessInvitationRepository
         $invitations = $stmt->fetchAll();
         
         // Fetch location_ids for invitations with scope_type=locations
+        foreach ($invitations as &$inv) {
+            if ($inv['scope_type'] === 'locations') {
+                $inv['location_ids'] = $this->getLocationIds((int)$inv['id']);
+            } else {
+                $inv['location_ids'] = [];
+            }
+        }
+
+        return $invitations;
+    }
+
+    /**
+     * Find all invitations for a business (any status).
+     */
+    public function findByBusiness(int $businessId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT 
+                i.id, i.email, i.role, i.scope_type, i.token, i.expires_at, 
+                i.status, i.accepted_at, i.invited_by, i.created_at,
+                u.first_name as inviter_first_name, u.last_name as inviter_last_name
+             FROM business_invitations i
+             LEFT JOIN users u ON i.invited_by = u.id
+             WHERE i.business_id = ?
+             ORDER BY i.created_at DESC'
+        );
+        $stmt->execute([$businessId]);
+
+        $invitations = $stmt->fetchAll();
+
         foreach ($invitations as &$inv) {
             if ($inv['scope_type'] === 'locations') {
                 $inv['location_ids'] = $this->getLocationIds((int)$inv['id']);
@@ -151,7 +232,7 @@ final class BusinessInvitationRepository
                 i.*, b.name as business_name
              FROM business_invitations i
              JOIN businesses b ON i.business_id = b.id
-             WHERE i.email = ? AND i.status = "pending"
+             WHERE i.email = ? AND i.status = \'pending\'
              AND i.expires_at > NOW()'
         );
         $stmt->execute([strtolower(trim($email))]);
@@ -166,25 +247,53 @@ final class BusinessInvitationRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE business_invitations 
-             SET status = "accepted", accepted_by = ?, accepted_at = NOW()
-             WHERE id = ? AND status = "pending"'
+             SET status = \'accepted\', accepted_by = ?, accepted_at = NOW()
+             WHERE id = ? AND status = \'pending\''
         );
 
         return $stmt->execute([$userId, $invitationId]);
     }
 
     /**
-     * Revoke an invitation.
+     * Decline an invitation.
      */
-    public function revoke(int $invitationId): bool
+    public function decline(int $invitationId): bool
     {
         $stmt = $this->db->getPdo()->prepare(
-            'UPDATE business_invitations 
-             SET status = "revoked"
-             WHERE id = ? AND status = "pending"'
+            'UPDATE business_invitations
+             SET status = \'declined\'
+             WHERE id = ? AND status = \'pending\''
         );
 
         return $stmt->execute([$invitationId]);
+    }
+
+    /**
+     * Restore a revoked invitation back to pending.
+     * Used as rollback safety when re-send email fails.
+     */
+    public function restorePending(int $invitationId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE business_invitations
+             SET status = \'pending\'
+             WHERE id = ? AND status = \'revoked\''
+        );
+        return $stmt->execute([$invitationId]);
+    }
+
+    /**
+     * Delete accepted invitations for an email in a business.
+     * Used when business access is removed from operators screen.
+     */
+    public function deleteAcceptedByEmailAndBusiness(string $email, int $businessId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'DELETE FROM business_invitations
+             WHERE business_id = ? AND email = ? AND status = \'accepted\''
+        );
+        $stmt->execute([$businessId, strtolower(trim($email))]);
+        return $stmt->rowCount() > 0;
     }
 
     /**
@@ -194,8 +303,8 @@ final class BusinessInvitationRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE business_invitations 
-             SET status = "expired"
-             WHERE status = "pending" AND expires_at < NOW()'
+             SET status = \'expired\'
+             WHERE status = \'pending\' AND expires_at < NOW()'
         );
         $stmt->execute();
 

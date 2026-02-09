@@ -47,7 +47,7 @@ final class StaffAvailabilityExceptionController
         }
 
         // Check user has access to business
-        if (!$this->businessUserRepo->hasAccess($userId, (int) $staff['business_id'], $isSuperadmin)) {
+        if (!$this->businessUserRepo->hasPermission($userId, (int) $staff['business_id'], 'can_manage_staff', $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -74,7 +74,7 @@ final class StaffAvailabilityExceptionController
         $isSuperadmin = $this->userRepo->isSuperadmin($userId);
 
         // Check user has access to business
-        if (!$this->businessUserRepo->hasAccess($userId, $businessId, $isSuperadmin)) {
+        if (!$this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_staff', $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -129,7 +129,7 @@ final class StaffAvailabilityExceptionController
         }
 
         // Check user has access to business
-        if (!$this->businessUserRepo->hasAccess($userId, (int) $staff['business_id'], $isSuperadmin)) {
+        if (!$this->businessUserRepo->hasPermission($userId, (int) $staff['business_id'], 'can_manage_staff', $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -211,7 +211,7 @@ final class StaffAvailabilityExceptionController
         }
 
         // Check user has access to business
-        if (!$this->businessUserRepo->hasAccess($userId, (int) $staff['business_id'], $isSuperadmin)) {
+        if (!$this->businessUserRepo->hasPermission($userId, (int) $staff['business_id'], 'can_manage_staff', $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -287,7 +287,7 @@ final class StaffAvailabilityExceptionController
         }
 
         // Check user has access to business
-        if (!$this->businessUserRepo->hasAccess($userId, (int) $staff['business_id'], $isSuperadmin)) {
+        if (!$this->businessUserRepo->hasPermission($userId, (int) $staff['business_id'], 'can_manage_staff', $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 

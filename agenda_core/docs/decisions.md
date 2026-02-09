@@ -872,7 +872,7 @@ Inclusa in: `migrations/FULL_DATABASE_SCHEMA.sql` (sezione BUSINESS USERS)
 **Decisione**: Tabella `business_invitations` separata:
 - Token univoco 64 caratteri (hex)
 - Scadenza 7 giorni default
-- Status: `pending`, `accepted`, `expired`, `revoked`
+- Status: `pending`, `accepted`, `expired`, `declined`
 - Constraint: un solo invito pending per (business_id, email)
 
 **Flusso invito**:
@@ -881,6 +881,11 @@ Inclusa in: `migrations/FULL_DATABASE_SCHEMA.sql` (sezione BUSINESS USERS)
 3. Email inviata con link `https://app/invite/{token}`
 4. Destinatario apre link, fa login o register
 5. `POST /v1/invitations/{token}/accept` verifica email match e crea record `business_users`
+
+**Aggiornamento successivo (2026-02-08):**
+- Stato `revoked` reintrodotto nel dominio inviti.
+- Reinvio invito: gli inviti precedenti per la stessa coppia `(business_id, email)` vengono marcati `revoked` (gli `accepted` restano invariati per audit).
+- Un solo token pending valido per `(business_id, email)` alla volta.
 
 **Gerarchia ruoli per inviti**:
 - Owner può invitare: admin, manager, staff
@@ -1350,3 +1355,34 @@ Il `BookingFlowNotifier`:
 - La funzionalità è disponibile sia nel menu dei turni base che nel menu delle eccezioni esistenti
 - Aggiornato `_countSegmentsForDay` per non contare +1 per il chip rimosso
 - File: `lib/features/staff/presentation/staff_week_overview_screen.dart`
+
+### 32. Enforcement permessi ruolo lato API (2026-02-07)
+**Contesto**: I ruoli `admin/manager/staff` avevano default permissions salvate a DB ma parte degli endpoint verificava solo accesso al business (`hasAccess`), non il singolo flag permesso.
+
+**Decisione**:
+- Introdotto metodo `BusinessUserRepository::hasPermission(user_id, business_id, permission, is_superadmin)` con whitelist permessi e shortcut `owner/superadmin`.
+- Aggiornati i controller per enforcement puntuale:
+- `can_manage_services`: Services, ServicePackages, ServiceVariantResource, Resources
+- `can_manage_clients`: Clients
+- `can_manage_bookings`: Bookings, Appointments
+- `can_manage_staff`: Staff, StaffPlanning, StaffAvailabilityException, TimeBlocks, LocationClosures
+- `can_view_reports`: Reports
+- Aggiunti regression test in `tests/RolePermissionsEnforcementTest.php`.
+
+**Nota**:
+- `BusinessController`, `BusinessUsersController`, `BusinessInvitationsController`, `LocationsController` restano governati da regole di accesso business/ruolo (non da flag `can_manage_*`), per coerenza con il modello operativo attuale.
+
+### 33. Ruolo viewer (sola lettura appuntamenti) (2026-02-07)
+**Contesto**: Necessità di invitare operatori con sola visualizzazione agenda, senza capacità di modifica.
+
+**Decisione**:
+- Nuovo ruolo `viewer` su `business_users.role` e `business_invitations.role`.
+- `viewer` ha tutti i `can_manage_*` e `can_view_reports` a `false`.
+- `viewer` può accedere in sola lettura a prenotazioni/appuntamenti:
+- `BookingsController` e `AppointmentsController` distinguono read vs write.
+- Read: consentito anche a `viewer`.
+- Write: richiede `can_manage_bookings`.
+- Gerarchia assegnazione aggiornata:
+- `owner/admin` possono assegnare `viewer`.
+- `manager/staff/viewer` non possono assegnare ruoli.
+- Migrazione: `migrations/0040_add_viewer_role.sql`.

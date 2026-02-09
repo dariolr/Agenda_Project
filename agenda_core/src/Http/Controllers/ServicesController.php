@@ -13,6 +13,7 @@ use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\ServicePackageRepository;
 use Agenda\Infrastructure\Repositories\PopularServiceRepository;
+use Agenda\Infrastructure\Repositories\StaffRepository;
 
 final class ServicesController
 {
@@ -24,10 +25,11 @@ final class ServicesController
         private readonly UserRepository $userRepo,
         private readonly ServicePackageRepository $packageRepo,
         private readonly PopularServiceRepository $popularServiceRepo,
+        private readonly StaffRepository $staffRepo,
     ) {}
 
     /**
-     * Check if authenticated user has access to the given business.
+     * Check if authenticated user has services permission in the given business.
      */
     private function hasBusinessAccess(Request $request, int $businessId): bool
     {
@@ -41,8 +43,8 @@ final class ServicesController
             return true;
         }
 
-        // Normal user: check business_users table
-        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+        // Normal user: enforce services permission
+        return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', false);
     }
 
     /**
@@ -601,11 +603,18 @@ final class ServicesController
     public function popular(Request $request): Response
     {
         $staffId = (int) $request->getRouteParam('staff_id');
-        $businessId = $request->getAttribute('business_id');
+        $staff = $this->staffRepo->findById($staffId);
+
+        // Do not reveal staff existence across businesses.
+        if ($staff === null) {
+            return Response::notFound('Staff not found', $request->traceId);
+        }
+
+        $businessId = (int) $staff['business_id'];
 
         // Authorization check
-        if ($businessId !== null && !$this->hasBusinessAccess($request, $businessId)) {
-            return Response::forbidden('You do not have access to this business', $request->traceId);
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Staff not found', $request->traceId);
         }
 
         // Count services enabled for this staff
@@ -750,4 +759,3 @@ final class ServicesController
         ]);
     }
 }
-

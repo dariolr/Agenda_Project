@@ -537,7 +537,7 @@ CREATE TABLE IF NOT EXISTS business_users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     business_id INT UNSIGNED NOT NULL,
     user_id INT UNSIGNED NOT NULL,
-    role ENUM('owner', 'admin', 'manager', 'staff') NOT NULL DEFAULT 'staff',
+    role ENUM('owner', 'admin', 'manager', 'staff', 'viewer') NOT NULL DEFAULT 'staff',
     scope_type ENUM('business','locations') NOT NULL DEFAULT 'business'
         COMMENT 'business = all locations, locations = only mapped locations',
     staff_id INT UNSIGNED NULL,
@@ -573,12 +573,12 @@ CREATE TABLE IF NOT EXISTS business_invitations (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     business_id INT UNSIGNED NOT NULL,
     email VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'manager', 'staff') NOT NULL DEFAULT 'staff',
+    role ENUM('admin', 'manager', 'staff', 'viewer') NOT NULL DEFAULT 'staff',
     scope_type ENUM('business','locations') NOT NULL DEFAULT 'business'
         COMMENT 'business = all locations, locations = only mapped locations',
     token VARCHAR(64) NOT NULL,
     expires_at TIMESTAMP NOT NULL,
-    status ENUM('pending', 'accepted', 'expired', 'revoked') NOT NULL DEFAULT 'pending',
+    status ENUM('pending', 'accepted', 'expired', 'declined', 'revoked') NOT NULL DEFAULT 'pending',
     accepted_by INT UNSIGNED NULL,
     accepted_at TIMESTAMP NULL,
     invited_by INT UNSIGNED NOT NULL,

@@ -45,6 +45,12 @@ final businessesProvider = FutureProvider<List<Business>>((ref) async {
 /// 🔹 BUSINESS CORRENTE (ID)
 ///
 class CurrentBusinessId extends Notifier<int> {
+  void _setFromSystem(int id) {
+    if (state != id) {
+      state = id;
+    }
+  }
+
   @override
   int build() {
     // ✅ Imposta come default il business selezionato (superadmin)
@@ -56,7 +62,7 @@ class CurrentBusinessId extends Notifier<int> {
     ref.listen(superadminSelectedBusinessProvider, (previous, next) {
       if (!isSuperadmin) return;
       if (next != null && state != next) {
-        state = next;
+        _setFromSystem(next);
       }
     });
 
@@ -64,7 +70,7 @@ class CurrentBusinessId extends Notifier<int> {
     ref.listen(businessesProvider, (previous, next) {
       next.whenData((businesses) {
         if (businesses.isEmpty) {
-          state = 0;
+          _setFromSystem(0);
           return;
         }
 
@@ -73,9 +79,7 @@ class CurrentBusinessId extends Notifier<int> {
         if (isSuperadmin && selectedBusiness != null) {
           final exists = businesses.any((b) => b.id == selectedBusiness);
           if (exists) {
-            if (state != selectedBusiness) {
-              state = selectedBusiness;
-            }
+            _setFromSystem(selectedBusiness);
             return;
           }
 
@@ -83,19 +87,33 @@ class CurrentBusinessId extends Notifier<int> {
           ref
               .read(superadminSelectedBusinessProvider.notifier)
               .clearCompletely();
-          state = businesses.first.id;
+          _setFromSystem(businesses.first.id);
           return;
         }
 
-        if (state == 0) {
-          state = businesses.first.id;
+        // Utente non superadmin:
+        // - Se ha un solo business, possiamo impostarlo automaticamente.
+        // - Se ne ha più di uno, la selezione avviene solo via UI esplicita.
+        if (state == 0 && businesses.length == 1) {
+          _setFromSystem(businesses.first.id);
+          return;
+        }
+
+        // Se il business corrente non è più accessibile, azzera e richiedi nuova scelta.
+        if (state != 0 && !businesses.any((b) => b.id == state)) {
+          _setFromSystem(0);
         }
       });
     });
     return 0; // Inizializza a 0 per triggare il listen
   }
 
-  void set(int id) => state = id;
+  /// Selezione esplicita effettuata dall'utente (switch business).
+  void selectByUser(int id) {
+    if (state != id) {
+      state = id;
+    }
+  }
 }
 
 final currentBusinessIdProvider = NotifierProvider<CurrentBusinessId, int>(

@@ -45,7 +45,7 @@ final class TimeBlocksController
             return Response::notFound('Location not found', $request->traceId);
         }
 
-        if (!$this->businessUserRepo->hasAccess($userId, (int) $location['business_id'], $isSuperadmin)) {
+        if (!$this->businessUserRepo->hasPermission($userId, (int) $location['business_id'], 'can_manage_staff', $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -92,7 +92,7 @@ final class TimeBlocksController
             return Response::notFound('Location not found', $request->traceId);
         }
 
-        if (!$this->businessUserRepo->hasAccess($userId, (int) $location['business_id'], $isSuperadmin)) {
+        if (!$this->businessUserRepo->hasPermission($userId, (int) $location['business_id'], 'can_manage_staff', $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -146,7 +146,7 @@ final class TimeBlocksController
             return Response::notFound('Time block not found', $request->traceId);
         }
 
-        if (!$this->businessUserRepo->hasAccess($userId, (int) $block['business_id'], $isSuperadmin)) {
+        if (!$this->businessUserRepo->hasPermission($userId, (int) $block['business_id'], 'can_manage_staff', $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -202,7 +202,7 @@ final class TimeBlocksController
             return Response::notFound('Time block not found', $request->traceId);
         }
 
-        if (!$this->businessUserRepo->hasAccess($userId, (int) $block['business_id'], $isSuperadmin)) {
+        if (!$this->businessUserRepo->hasPermission($userId, (int) $block['business_id'], 'can_manage_staff', $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 

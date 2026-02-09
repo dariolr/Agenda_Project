@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
@@ -9,6 +8,48 @@ import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../agenda/providers/location_providers.dart';
 import '../../providers/business_users_provider.dart';
+
+String _resolveInviteErrorMessage(
+  BuildContext context,
+  dynamic l10n,
+  String rawError,
+) {
+  final error = rawError.toLowerCase();
+  final isIt =
+      Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+
+  String emailUnavailable() => isIt
+      ? 'Invio email non disponibile in questo ambiente. Contatta il supporto.'
+      : 'Email sending is unavailable in this environment. Please contact support.';
+
+  String emailFailed() => isIt
+      ? 'Impossibile inviare l\'email di invito. Riprova più tardi.'
+      : 'Unable to send the invitation email. Please try again later.';
+
+  String alreadyHasAccess() => isIt
+      ? 'Questo utente ha già accesso al business.'
+      : 'This user already has access to the business.';
+
+  if (error.contains('already pending')) {
+    return l10n.operatorsInviteAlreadyPending;
+  }
+  if (error.contains('already has access')) {
+    return alreadyHasAccess();
+  }
+  if (error.contains('failed to send invitation email') ||
+      error.contains('mail_provider') ||
+      error.contains('mail_from_address') ||
+      error.contains('smtp') ||
+      error.contains('brevo') ||
+      error.contains('mailgun') ||
+      error.contains('not configured')) {
+    return emailUnavailable();
+  }
+  if (error.contains('internal_error') || error.contains('network')) {
+    return emailFailed();
+  }
+  return l10n.operatorsInviteError;
+}
 
 /// Dialog per invitare un nuovo operatore (desktop).
 class InviteOperatorDialog extends ConsumerStatefulWidget {
@@ -167,7 +208,7 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
 
     if (invitation != null) {
       Navigator.of(context).pop();
-      _showSuccessDialog(context, invitation.email, invitation.token);
+      _showSuccessDialog(context, invitation.email);
     } else {
       _showInviteError(context, ref);
     }
@@ -177,13 +218,7 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
     final state = ref.read(businessUsersProvider(widget.businessId));
     final errorMsg = state.error ?? '';
     final l10n = context.l10n;
-
-    String message;
-    if (errorMsg.contains('already pending')) {
-      message = l10n.operatorsInviteAlreadyPending;
-    } else {
-      message = errorMsg.isNotEmpty ? errorMsg : l10n.operatorsInviteError;
-    }
+    final message = _resolveInviteErrorMessage(context, l10n, errorMsg);
 
     FeedbackDialog.showError(
       context,
@@ -194,19 +229,12 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
     ref.read(businessUsersProvider(widget.businessId).notifier).clearError();
   }
 
-  void _showSuccessDialog(BuildContext context, String email, String? token) {
+  void _showSuccessDialog(BuildContext context, String email) {
     final l10n = context.l10n;
     FeedbackDialog.showSuccess(
       context,
       title: l10n.operatorsInviteTitle,
       message: l10n.operatorsInviteSuccess(email),
-      actionLabel: token != null ? 'Copia link' : null,
-      onAction: token != null
-          ? () {
-              final url = 'https://agenda.example.com/invite/$token';
-              Clipboard.setData(ClipboardData(text: url));
-            }
-          : null,
     );
   }
 }
@@ -388,7 +416,7 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
 
     if (invitation != null) {
       Navigator.of(context).pop();
-      _showSuccessDialog(context, invitation.email, invitation.token);
+      _showSuccessDialog(context, invitation.email);
     } else {
       _showInviteError(context, ref);
     }
@@ -398,13 +426,7 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
     final state = ref.read(businessUsersProvider(widget.businessId));
     final errorMsg = state.error ?? '';
     final l10n = context.l10n;
-
-    String message;
-    if (errorMsg.contains('already pending')) {
-      message = l10n.operatorsInviteAlreadyPending;
-    } else {
-      message = errorMsg.isNotEmpty ? errorMsg : l10n.operatorsInviteError;
-    }
+    final message = _resolveInviteErrorMessage(context, l10n, errorMsg);
 
     FeedbackDialog.showError(
       context,
@@ -415,19 +437,12 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
     ref.read(businessUsersProvider(widget.businessId).notifier).clearError();
   }
 
-  void _showSuccessDialog(BuildContext context, String email, String? token) {
+  void _showSuccessDialog(BuildContext context, String email) {
     final l10n = context.l10n;
     FeedbackDialog.showSuccess(
       context,
       title: l10n.operatorsInviteTitle,
       message: l10n.operatorsInviteSuccess(email),
-      actionLabel: token != null ? 'Copia link' : null,
-      onAction: token != null
-          ? () {
-              final url = 'https://agenda.example.com/invite/$token';
-              Clipboard.setData(ClipboardData(text: url));
-            }
-          : null,
     );
   }
 }
@@ -442,6 +457,11 @@ class _RoleSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final isIt = Localizations.localeOf(context).languageCode == 'it';
+    final viewerLabel = isIt ? 'Visualizzatore' : 'Viewer';
+    final viewerDesc = isIt
+        ? 'Può solo visualizzare appuntamenti e calendario. Nessuna modifica.'
+        : 'Can only view appointments and calendar. No changes allowed.';
 
     return Column(
       children: [
@@ -470,6 +490,15 @@ class _RoleSelector extends StatelessWidget {
           icon: Icons.person,
           isSelected: selectedRole == 'staff',
           onTap: () => onChanged('staff'),
+        ),
+        const SizedBox(height: 8),
+        _RoleOption(
+          role: 'viewer',
+          label: viewerLabel,
+          description: viewerDesc,
+          icon: Icons.visibility_outlined,
+          isSelected: selectedRole == 'viewer',
+          onTap: () => onChanged('viewer'),
         ),
       ],
     );
