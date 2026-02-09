@@ -11,6 +11,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
+import '../features/auth/providers/current_business_user_provider.dart';
 import '../features/bookings_list/presentation/bookings_list_screen.dart';
 import '../features/business/presentation/business_list_screen.dart';
 import '../features/business/presentation/invitation_accept_screen.dart';
@@ -54,6 +55,14 @@ final routerProvider = Provider<GoRouter>((ref) {
   final isAuthenticated = authInfo.isAuthenticated;
   final isSuperadmin = authInfo.isSuperadmin;
   final isInitialOrLoading = authInfo.isInitialOrLoading;
+  final canManageClients = ref.watch(currentUserCanManageClientsProvider);
+  final canManageServices = ref.watch(currentUserCanManageServicesProvider);
+  final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
+  final canManageOperators = ref.watch(canManageOperatorsProvider);
+  final canManageBusinessSettings = ref.watch(
+    canManageBusinessSettingsProvider,
+  );
+  final canViewReports = ref.watch(currentUserCanViewReportsProvider);
 
   final superadminSelectedBusiness = ref.watch(
     superadminSelectedBusinessProvider,
@@ -146,6 +155,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           !isOnUserBusinessSwitch &&
           !isLoggingIn) {
         return '/businesses';
+      }
+
+      // Route guard by explicit permissions.
+      if (isAuthenticated && !isSuperadmin) {
+        final path = state.uri.path;
+        if (path == '/clienti' && !canManageClients) return '/agenda';
+        if (path == '/servizi' && !canManageServices) return '/agenda';
+        if (path == '/staff' && !canManageStaff) return '/agenda';
+        if (path == '/report' && !canViewReports) return '/agenda';
+        if (path == '/chiusure' && !canManageBusinessSettings) return '/agenda';
+        if (path == '/permessi' && !canManageOperators) return '/agenda';
+        if (path.startsWith('/operatori/') && !canManageOperators) {
+          return '/agenda';
+        }
       }
 
       return null;

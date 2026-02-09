@@ -45,7 +45,8 @@ final class TimeBlocksController
             return Response::notFound('Location not found', $request->traceId);
         }
 
-        if (!$this->businessUserRepo->hasPermission($userId, (int) $location['business_id'], 'can_manage_staff', $isSuperadmin)) {
+        // Read-only access: any operator with business access can read blocks.
+        if (!$this->businessUserRepo->hasAccess($userId, (int) $location['business_id'], $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 

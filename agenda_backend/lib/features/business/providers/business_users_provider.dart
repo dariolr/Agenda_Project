@@ -124,19 +124,16 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
     globalLoading.show();
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final updated = await _repository.updateUser(
+      await _repository.updateUser(
         businessId: businessId,
         userId: userId,
         role: role,
         scopeType: scopeType,
         locationIds: locationIds,
       );
-      state = state.copyWith(
-        users: state.users
-            .map((u) => u.userId == userId ? updated : u)
-            .toList(),
-        isLoading: false,
-      );
+      // Always reload from API after update to keep scope/location state aligned
+      // with server-side rules and avoid stale local UI.
+      await _loadData();
       return true;
     } catch (e) {
       debugPrint('BusinessUsersNotifier.updateUser error: $e');

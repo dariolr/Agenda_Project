@@ -19,10 +19,13 @@ class MoreScreen extends ConsumerWidget {
     final isDesktop = formFactor == AppFormFactor.desktop;
     final canManageOperators = ref.watch(canManageOperatorsProvider);
     final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
+    final canManageServices = ref.watch(currentUserCanManageServicesProvider);
+    final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
+    final canViewReports = ref.watch(currentUserCanViewReportsProvider);
 
     final items = [
       // Servizi - visibile solo a chi può gestire impostazioni
-      if (canManageSettings)
+      if (canManageServices)
         _MoreItem(
           icon: Icons.category_outlined,
           title: l10n.navServices,
@@ -31,7 +34,7 @@ class MoreScreen extends ConsumerWidget {
           onTap: () => context.go('/servizi'),
         ),
       // Team - visibile solo a chi può gestire impostazioni
-      if (canManageSettings)
+      if (canManageStaff)
         _MoreItem(
           icon: Icons.badge_outlined,
           title: l10n.navStaff,
@@ -48,13 +51,14 @@ class MoreScreen extends ConsumerWidget {
           color: const Color(0xFF00BCD4), // Cyan
           onTap: () => context.go('/permessi'),
         ),
-      _MoreItem(
-        icon: Icons.bar_chart,
-        title: l10n.reportsTitle,
-        description: l10n.moreReportsDescription,
-        color: const Color(0xFFFF9800), // Orange
-        onTap: () => context.go('/report'),
-      ),
+      if (canViewReports)
+        _MoreItem(
+          icon: Icons.bar_chart,
+          title: l10n.reportsTitle,
+          description: l10n.moreReportsDescription,
+          color: const Color(0xFFFF9800), // Orange
+          onTap: () => context.go('/report'),
+        ),
       _MoreItem(
         icon: Icons.list_alt,
         title: l10n.bookingsListTitle,

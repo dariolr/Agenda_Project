@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../auth/providers/current_business_user_provider.dart';
 import '../../providers/clients_providers.dart';
 import '../dialogs/client_edit_dialog.dart';
 import 'client_card.dart';
@@ -44,6 +45,7 @@ class _ClientListState extends ConsumerState<ClientList> {
   Widget build(BuildContext context) {
     final clients = ref.watch(filteredClientsProvider);
     final clientsState = ref.watch(clientsProvider).value;
+    final canManageClients = ref.watch(currentUserCanManageClientsProvider);
     final hasMore = clientsState?.hasMore ?? false;
     final isLoadingMore = clientsState?.isLoadingMore ?? false;
 
@@ -80,7 +82,9 @@ class _ClientListState extends ConsumerState<ClientList> {
               final c = clients[i];
               return ClientCard(
                 client: c,
-                onTap: () => showClientEditDialog(context, ref, client: c),
+                onTap: canManageClients
+                    ? () => showClientEditDialog(context, ref, client: c)
+                    : null,
               );
             },
           );
@@ -107,7 +111,9 @@ class _ClientListState extends ConsumerState<ClientList> {
         final c = clients[i];
         return ClientCard(
           client: c,
-          onTap: () => showClientEditDialog(context, ref, client: c),
+          onTap: canManageClients
+              ? () => showClientEditDialog(context, ref, client: c)
+              : null,
         );
       },
       separatorBuilder: (_, __) => const SizedBox(height: 8),

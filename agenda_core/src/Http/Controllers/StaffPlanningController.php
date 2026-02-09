@@ -201,7 +201,7 @@ final class StaffPlanningController
     {
         $staffId = (int) $request->getAttribute('id');
 
-        if (!$this->hasStaffAccess($request, $staffId)) {
+        if (!$this->hasStaffAccess($request, $staffId, true)) {
             return Response::notFound('Staff not found', $request->traceId);
         }
 
@@ -328,7 +328,7 @@ final class StaffPlanningController
         $staffId = (int) $request->getAttribute('id');
         $planningId = (int) $request->getAttribute('planning_id');
 
-        if (!$this->hasStaffAccess($request, $staffId)) {
+        if (!$this->hasStaffAccess($request, $staffId, true)) {
             return Response::notFound('Staff not found', $request->traceId);
         }
 
@@ -386,7 +386,7 @@ final class StaffPlanningController
         $staffId = (int) $request->getAttribute('id');
         $planningId = (int) $request->getAttribute('planning_id');
 
-        if (!$this->hasStaffAccess($request, $staffId)) {
+        if (!$this->hasStaffAccess($request, $staffId, true)) {
             return Response::notFound('Staff not found', $request->traceId);
         }
 
@@ -403,7 +403,7 @@ final class StaffPlanningController
     /**
      * Verifica accesso allo staff.
      */
-    private function hasStaffAccess(Request $request, int $staffId): bool
+    private function hasStaffAccess(Request $request, int $staffId, bool $requireManageStaff = false): bool
     {
         $staff = $this->staffRepo->findById($staffId);
         if ($staff === null) {
@@ -420,11 +420,20 @@ final class StaffPlanningController
             return true;
         }
 
-        // Verifica permesso gestione staff sul business
-        return $this->businessUserRepo->hasPermission(
+        if ($requireManageStaff) {
+            // Write access: requires can_manage_staff
+            return $this->businessUserRepo->hasPermission(
+                (int) $userId,
+                (int) $staff['business_id'],
+                'can_manage_staff',
+                false
+            );
+        }
+
+        // Read access: any active operator in the business
+        return $this->businessUserRepo->hasAccess(
             (int) $userId,
             (int) $staff['business_id'],
-            'can_manage_staff',
             false
         );
     }

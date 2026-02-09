@@ -7,6 +7,7 @@ import '../../../core/models/service_variant.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../../staff/providers/staff_providers.dart';
 import '../utils/service_seed_texts.dart';
 import 'service_categories_provider.dart';
@@ -105,6 +106,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     if (!authState.isAuthenticated) {
       return [];
     }
+    final canManageServices = ref.watch(currentUserCanManageServicesProvider);
 
     final location = ref.watch(currentLocationProvider);
     if (location.id <= 0) {
@@ -123,9 +125,13 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
       locationId: location.id,
     );
 
-    // Popola le categorie nel provider dedicato
-    final categories = await repository.getCategories(businessId);
-    ref.read(serviceCategoriesProvider.notifier).setCategories(categories);
+    // Le categorie gestionali sono protette da permesso "manage_services".
+    if (canManageServices) {
+      final categories = await repository.getCategories(businessId);
+      ref.read(serviceCategoriesProvider.notifier).setCategories(categories);
+    } else {
+      ref.read(serviceCategoriesProvider.notifier).setCategories(const []);
+    }
 
     return result.services;
   }
@@ -137,6 +143,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     if (!authState.isAuthenticated) {
       return;
     }
+    final canManageServices = ref.read(currentUserCanManageServicesProvider);
 
     final location = ref.read(currentLocationProvider);
     if (location.id <= 0) {
@@ -156,9 +163,13 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         locationId: location.id,
       );
 
-      // Popola le categorie nel provider dedicato
-      final categories = await repository.getCategories(businessId);
-      ref.read(serviceCategoriesProvider.notifier).setCategories(categories);
+      // Le categorie gestionali sono protette da permesso "manage_services".
+      if (canManageServices) {
+        final categories = await repository.getCategories(businessId);
+        ref.read(serviceCategoriesProvider.notifier).setCategories(categories);
+      } else {
+        ref.read(serviceCategoriesProvider.notifier).setCategories(const []);
+      }
 
       state = AsyncData(result.services);
     } catch (e, st) {

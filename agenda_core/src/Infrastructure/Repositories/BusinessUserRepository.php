@@ -436,11 +436,21 @@ final class BusinessUserRepository
             'role', 'scope_type', 'staff_id', 'can_manage_bookings', 'can_manage_clients',
             'can_manage_services', 'can_manage_staff', 'can_view_reports', 'is_active'
         ];
+        $booleanPermissionFields = [
+            'can_manage_bookings',
+            'can_manage_clients',
+            'can_manage_services',
+            'can_manage_staff',
+            'can_view_reports',
+            'is_active',
+        ];
 
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "$field = ?";
-                $params[] = $data[$field];
+                $params[] = in_array($field, $booleanPermissionFields, true)
+                    ? $this->toDbBoolInt($data[$field])
+                    : $data[$field];
             }
         }
 

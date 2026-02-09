@@ -6,6 +6,7 @@ import '../../../core/models/appointment.dart';
 import '../../../core/network/network_providers.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../data/clients_api.dart';
 import '../data/clients_repository.dart';
 import '../domain/client_sort_option.dart';
@@ -95,6 +96,9 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
     if (business.id <= 0) {
       return const ClientsState();
     }
+    if (!ref.watch(currentUserCanManageClientsProvider)) {
+      return const ClientsState();
+    }
 
     final repository = ref.watch(clientsRepositoryProvider);
     final response = await repository.getPage(
@@ -121,6 +125,10 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
 
     final business = ref.read(currentBusinessProvider);
     if (business.id <= 0) return;
+    if (!ref.read(currentUserCanManageClientsProvider)) {
+      state = const AsyncValue.data(ClientsState());
+      return;
+    }
 
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -163,6 +171,10 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
 
     final business = ref.read(currentBusinessProvider);
     if (business.id <= 0) return;
+    if (!ref.read(currentUserCanManageClientsProvider)) {
+      state = const AsyncValue.data(ClientsState());
+      return;
+    }
 
     // Mantieni i dati visibili, mostra solo indicatore di ricerca
     state = AsyncValue.data(current.copyWith(isSearching: true));
@@ -204,6 +216,7 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
 
     final business = ref.read(currentBusinessProvider);
     if (business.id <= 0) return;
+    if (!ref.read(currentUserCanManageClientsProvider)) return;
 
     // Imposta loading state
     state = AsyncValue.data(current.copyWith(isLoadingMore: true));
@@ -240,6 +253,10 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
 
     final business = ref.read(currentBusinessProvider);
     if (business.id <= 0) return;
+    if (!ref.read(currentUserCanManageClientsProvider)) {
+      state = const AsyncValue.data(ClientsState());
+      return;
+    }
 
     final current = state.value;
     final searchQuery = current?.searchQuery ?? '';
@@ -500,6 +517,10 @@ class ClientPickerSearchNotifier extends Notifier<ClientPickerSearchState> {
       state = const ClientPickerSearchState();
       return;
     }
+    if (!ref.read(currentUserCanManageClientsProvider)) {
+      state = const ClientPickerSearchState();
+      return;
+    }
 
     try {
       final repository = ref.read(clientsRepositoryProvider);
@@ -548,6 +569,10 @@ class ClientPickerSearchNotifier extends Notifier<ClientPickerSearchState> {
 
     final business = ref.read(currentBusinessProvider);
     if (business.id <= 0) return;
+    if (!ref.read(currentUserCanManageClientsProvider)) {
+      state = const ClientPickerSearchState();
+      return;
+    }
 
     state = state.copyWith(isLoading: true, error: null);
 
