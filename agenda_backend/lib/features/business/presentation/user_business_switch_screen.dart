@@ -59,8 +59,11 @@ class UserBusinessSwitchScreen extends ConsumerWidget {
               ref
                   .read(currentBusinessIdProvider.notifier)
                   .selectByUser(business.id);
-              invalidateBusinessScopedProviders(ref);
-              context.go('/agenda');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!context.mounted) return;
+                invalidateBusinessScopedProviders(ref);
+                context.go('/agenda');
+              });
             },
           );
         },

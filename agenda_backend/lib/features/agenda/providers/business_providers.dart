@@ -64,7 +64,7 @@ class CurrentBusinessId extends Notifier<int> {
       if (next != null && state != next) {
         _setFromSystem(next);
       }
-    });
+    }, fireImmediately: true);
 
     // Aspetta che businessesProvider carichi i dati
     ref.listen(businessesProvider, (previous, next) {
@@ -105,7 +105,7 @@ class CurrentBusinessId extends Notifier<int> {
           return;
         }
       });
-    });
+    }, fireImmediately: true);
     return 0; // Inizializza a 0 per triggare il listen
   }
 
