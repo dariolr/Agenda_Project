@@ -24,6 +24,7 @@ import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
+import '../../../auth/providers/current_business_user_provider.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
@@ -247,13 +248,19 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final allStaff = ref.watch(staffForCurrentLocationProvider);
     final hasPackages =
         (ref.watch(servicePackagesProvider).value ?? []).isNotEmpty;
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
 
     // Usa lo staffId del primo item per i servizi popolari
     final firstStaffId = _serviceItems.isNotEmpty
         ? _serviceItems.first.staffId
         : null;
-    final popularServices = firstStaffId != null
-        ? ref.watch(popularServicesProvider(firstStaffId)).value
+    final validStaffIds = allStaff.map((s) => s.id).toSet();
+    final effectiveStaffId =
+        firstStaffId != null && validStaffIds.contains(firstStaffId)
+        ? firstStaffId
+        : null;
+    final popularServices = effectiveStaffId != null
+        ? ref.watch(popularServicesProvider(effectiveStaffId)).value
         : null;
 
     // Deriva il nome del cliente dal provider se _clientId è impostato,
@@ -408,9 +415,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         child: Text(l10n.actionCancel),
       ),
       AppAsyncFilledButton(
-        onPressed: _isSaving ? null : _onSave,
+        onPressed: _isSaving || !canManageBookings ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
-        isLoading: _isSaving,
+        isLoading: _isSaving && canManageBookings,
         showSpinner: false,
         child: Text(l10n.actionSave),
       ),
@@ -421,10 +428,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         bindings: {
           // Ctrl+Enter o Cmd+Enter per salvare
           const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
-            if (!_isSaving) _onSave();
+            if (!_isSaving && canManageBookings) _onSave();
           },
           const SingleActivator(LogicalKeyboardKey.enter, meta: true): () {
-            if (!_isSaving) _onSave();
+            if (!_isSaving && canManageBookings) _onSave();
           },
         },
         child: Focus(
@@ -1693,6 +1700,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
   Future<void> _onSave() async {
     if (!mounted) return;
+    final canManageBookings = ref.read(currentUserCanManageBookingsProvider);
+    if (!canManageBookings) return;
+
     final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
 

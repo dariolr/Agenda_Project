@@ -13,6 +13,7 @@ import '/core/network/network_providers.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/date_range_provider.dart';
 import '/features/agenda/providers/location_providers.dart';
+import '/features/auth/providers/current_business_user_provider.dart';
 import '/features/bookings_list/providers/bookings_list_filter_provider.dart';
 import '/features/bookings_list/providers/bookings_list_provider.dart';
 import '/features/bookings_list/widgets/bookings_list_header.dart';
@@ -102,6 +103,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   }
 
   Future<void> _cancelBooking(BookingListItem booking) async {
+    final canManageBookings = ref.read(currentUserCanManageBookingsProvider);
+    if (!canManageBookings) return;
+
     final l10n = context.l10n;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -538,6 +542,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   Widget _buildDataTable(BookingsListState state) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
 
     return SingleChildScrollView(
       controller: _scrollController,
@@ -569,7 +574,12 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                   DataColumn(label: Text(l10n.bookingsListColumnActions)),
                 ],
                 rows: state.bookings
-                    .map((booking) => _buildDataRow(booking))
+                    .map(
+                      (booking) => _buildDataRow(
+                        booking,
+                        canManageBookings: canManageBookings,
+                      ),
+                    )
                     .toList(),
               ),
             ),
@@ -594,7 +604,10 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     );
   }
 
-  DataRow _buildDataRow(BookingListItem booking) {
+  DataRow _buildDataRow(
+    BookingListItem booking, {
+    required bool canManageBookings,
+  }) {
     final l10n = context.l10n;
     final dateFormat = DateFormat('dd/MM/yy HH:mm');
     final dateOnlyFormat = DateFormat('dd/MM/yy');
@@ -695,7 +708,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                 onPressed: () => _viewBookingDetails(booking),
                 tooltip: l10n.bookingsListActionView,
               ),
-              if (booking.status != 'cancelled')
+              if (canManageBookings && booking.status != 'cancelled')
                 IconButton(
                   icon: Icon(
                     Icons.cancel,
@@ -713,6 +726,8 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   }
 
   Widget _buildCardList(BookingsListState state) {
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
+
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(8),
@@ -730,6 +745,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
           booking: state.bookings[index],
           onView: () => _viewBookingDetails(state.bookings[index]),
           onCancel: () => _cancelBooking(state.bookings[index]),
+          canManageBookings: canManageBookings,
           showStatus: _selectedStatuses.length > 1,
         );
       },
@@ -1425,12 +1441,14 @@ class _BookingCard extends StatelessWidget {
   final BookingListItem booking;
   final VoidCallback onView;
   final VoidCallback onCancel;
+  final bool canManageBookings;
   final bool showStatus;
 
   const _BookingCard({
     required this.booking,
     required this.onView,
     required this.onCancel,
+    required this.canManageBookings,
     this.showStatus = true,
   });
 
@@ -1556,7 +1574,7 @@ class _BookingCard extends StatelessWidget {
                         tooltip: l10n.bookingsListActionView,
                         iconSize: 20,
                       ),
-                      if (booking.status != 'cancelled')
+                      if (canManageBookings && booking.status != 'cancelled')
                         IconButton(
                           icon: Icon(
                             Icons.cancel,

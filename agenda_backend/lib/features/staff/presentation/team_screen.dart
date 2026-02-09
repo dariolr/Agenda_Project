@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../agenda/providers/location_providers.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../providers/staff_providers.dart';
 import '../providers/staff_reorder_provider.dart';
 import '../providers/staff_sorted_providers.dart';
@@ -322,6 +323,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
     List<Location> locations,
     bool isWide,
   ) {
+    final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
+    final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
+
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -333,16 +337,21 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
           location: loc,
           staff: staff,
           isWide: isWide,
-          onAddStaff: () =>
-              showStaffDialog(context, ref, initialLocationId: loc.id),
-          onManageResources: () =>
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                  builder: (_) => ResourcesScreen(location: loc),
-                ),
-              ),
-          onEditLocation: () => showLocationDialog(context, ref, initial: loc),
+          onAddStaff: canManageStaff
+              ? () => showStaffDialog(context, ref, initialLocationId: loc.id)
+              : () {},
+          onManageResources: canManageSettings
+              ? () => Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(
+                    builder: (_) => ResourcesScreen(location: loc),
+                  ),
+                )
+              : null,
+          onEditLocation: canManageSettings
+              ? () => showLocationDialog(context, ref, initial: loc)
+              : () {},
           onDeleteLocation: () async {
+            if (!canManageSettings) return;
             if (staff.isNotEmpty) {
               await showAppInfoDialog(
                 context,
@@ -365,14 +374,19 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
                   .deleteLocation(loc.id, currentLocationId: currentId);
             }
           },
-          onEditStaff: (staff) => showStaffDialog(context, ref, initial: staff),
-          onDuplicateStaff: (staff) => showStaffDialog(
-            context,
-            ref,
-            initial: staff,
-            duplicateFrom: true,
-          ),
+          onEditStaff: canManageStaff
+              ? (staff) => showStaffDialog(context, ref, initial: staff)
+              : (_) {},
+          onDuplicateStaff: canManageStaff
+              ? (staff) => showStaffDialog(
+                  context,
+                  ref,
+                  initial: staff,
+                  duplicateFrom: true,
+                )
+              : (_) {},
           onDeleteStaff: (staff) async {
+            if (!canManageStaff) return;
             final confirmed = await showConfirmDialog(
               context,
               title: Text(context.l10n.teamDeleteStaffTitle),

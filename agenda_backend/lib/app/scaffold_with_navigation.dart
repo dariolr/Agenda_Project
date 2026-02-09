@@ -95,6 +95,15 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isPast = agendaDate.isBefore(today);
     final user = ref.watch(authProvider).user;
     final isSuperadmin = user?.isSuperadmin ?? false;
+    final showClientsNav = ref.watch(currentUserCanManageClientsProvider);
+    final canCreateAgendaItems = ref.watch(
+      currentUserCanManageBookingsProvider,
+    );
+    final canManageServices = ref.watch(currentUserCanManageServicesProvider);
+    final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
+    final canViewReports = ref.watch(currentUserCanViewReportsProvider);
+    final canManageOperators = ref.watch(canManageOperatorsProvider);
+    final canManageClosures = ref.watch(canManageBusinessSettingsProvider);
     final businessesAsync = ref.watch(businessesProvider);
     final hasMultipleBusinesses = businessesAsync.maybeWhen(
       data: (businesses) => businesses.length > 1,
@@ -107,6 +116,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         _ScaffoldWithNavigationHelpers.getMobileDestinations(
           context,
           showSwitchBusiness: showSwitchBusiness,
+          includeClients: showClientsNav,
         );
 
     // Quando non siamo su oggi, mostra freccia per tornare a oggi
@@ -139,28 +149,32 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       List<Widget> buildActions() {
         final List<Widget> actions = [];
         if (isAgenda) {
-          actions.add(const _AgendaAddAction());
-        } else if (isServices) {
+          if (canCreateAgendaItems) {
+            actions.add(const _AgendaAddAction());
+          }
+        } else if (isServices && canManageServices) {
           actions.add(const _ServicesAddAction());
-        } else if (isClients) {
+        } else if (isClients && showClientsNav) {
           actions.add(const _ClientsAddAction());
-        } else if (isStaff) {
+        } else if (isStaff && canManageStaff) {
           actions.add(const _TeamAddAction());
-        } else if (isReport) {
+        } else if (isReport && canViewReports) {
           actions.add(_ReportRefreshAction(ref: ref));
         } else if (isBookingsList) {
           actions.add(_BookingsListRefreshAction(ref: ref));
-        } else if (isClosures) {
+        } else if (isClosures && canManageClosures) {
           actions.add(const _ClosuresAddAction());
-        } else if (isPermessi) {
+        } else if (isPermessi && canManageOperators) {
           actions.add(const _PermessiAddAction());
         }
         return actions;
       }
 
-      // Mappa indice corrente a indice compatto per desktop (3 voci: Agenda, Clienti, Altro)
+      // Mappa indice corrente a indice compatto per desktop.
       int desktopCurrentIndex;
-      if (navigationShell.currentIndex <= 1) {
+      if (!showClientsNav) {
+        desktopCurrentIndex = navigationShell.currentIndex == 0 ? 0 : 1;
+      } else if (navigationShell.currentIndex <= 1) {
         // Agenda o Clienti
         desktopCurrentIndex = navigationShell.currentIndex;
       } else {
@@ -200,8 +214,12 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 ),
                 child: NavigationRail(
                   selectedIndex: desktopCurrentIndex,
-                  onDestinationSelected: (index) =>
-                      _handleDesktopNavTap(context, index, ref),
+                  onDestinationSelected: (index) => _handleDesktopNavTap(
+                    context,
+                    index,
+                    ref,
+                    includeClients: showClientsNav,
+                  ),
                   labelType: NavigationRailLabelType.none,
                   useIndicator: false, // disattiva highlight di sistema su tap
                   // BusinessSelector rimosso - superadmin usa /businesses
@@ -237,20 +255,22 @@ class ScaffoldWithNavigation extends ConsumerWidget {
             const _AgendaFilterActions(padding: EdgeInsets.only(left: 8)),
           );
         }
-        actions.add(const _AgendaAddAction(compact: true));
-      } else if (isServices) {
+        if (canCreateAgendaItems) {
+          actions.add(const _AgendaAddAction(compact: true));
+        }
+      } else if (isServices && canManageServices) {
         actions.add(const _ServicesAddAction(compact: true));
-      } else if (isClients) {
+      } else if (isClients && showClientsNav) {
         actions.add(const _ClientsAddAction(compact: true));
-      } else if (isStaff) {
+      } else if (isStaff && canManageStaff) {
         actions.add(const _TeamAddAction(compact: true));
-      } else if (isReport) {
+      } else if (isReport && canViewReports) {
         actions.add(_ReportRefreshAction(ref: ref));
       } else if (isBookingsList) {
         actions.add(_BookingsListRefreshAction(ref: ref));
-      } else if (isClosures) {
+      } else if (isClosures && canManageClosures) {
         actions.add(const _ClosuresAddAction(compact: true));
-      } else if (isPermessi) {
+      } else if (isPermessi && canManageOperators) {
         actions.add(const _PermessiAddAction(compact: true));
       }
       return actions;
@@ -260,7 +280,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Prenotazioni, 6=Altro, 7=Chiusure, 8=Profilo
     // Mobile:  0=Agenda, 1=Clienti, 2=Altro
     int mobileCurrentIndex;
-    if (navigationShell.currentIndex <= 1) {
+    if (!showClientsNav) {
+      mobileCurrentIndex = navigationShell.currentIndex == 0 ? 0 : 1;
+    } else if (navigationShell.currentIndex <= 1) {
       // Agenda o Clienti
       mobileCurrentIndex = navigationShell.currentIndex;
     } else {
@@ -308,7 +330,12 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 minimum: const EdgeInsets.only(bottom: 15),
                 child: BottomNavigationBar(
                   currentIndex: mobileCurrentIndex,
-                  onTap: (index) => _handleMobileNavTap(context, index, ref),
+                  onTap: (index) => _handleMobileNavTap(
+                    context,
+                    index,
+                    ref,
+                    includeClients: showClientsNav,
+                  ),
                   type: BottomNavigationBarType.fixed,
                   items: resolvedMobileDestinations
                       .map(
@@ -356,9 +383,12 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
   /// Ricarica i provider relativi alla tab selezionata
   void _refreshProvidersForTab(int index, WidgetRef ref) {
+    final canManageSettings = ref.read(canManageBusinessSettingsProvider);
     switch (index) {
       case 0: // Agenda
-        ref.read(locationClosuresProvider.notifier).refresh();
+        if (canManageSettings) {
+          ref.read(locationClosuresProvider.notifier).refresh();
+        }
         break;
       case 1: // Clienti
         ref.read(clientsProvider.notifier).setSearchQuery('');
@@ -378,46 +408,88 @@ class ScaffoldWithNavigation extends ConsumerWidget {
   /// Gestisce tap su navigation desktop (compatta come mobile):
   /// - Index 0, 1: navigazione normale (Agenda, Clienti)
   /// - Index 2: naviga a "Altro" (schermata con cards)
-  /// - Index 3: Cambia Business
+  /// - Index 3: Cambia Business (se presente) o Logout
+  /// - Index 4: Logout (se Cambia Business presente)
   void _handleDesktopNavTap(
     BuildContext context,
     int desktopIndex,
-    WidgetRef ref,
-  ) {
-    switch (desktopIndex) {
-      case 0: // Agenda
-      case 1: // Clienti
-        _goBranch(desktopIndex, ref);
-        break;
-      case 2: // Altro → naviga alla schermata Altro
-        _goBranch(6, ref);
-        break;
-      case 3: // Cambia Business
-        _goToBusinessSwitcher(context, ref);
-        break;
+    WidgetRef ref, {
+    required bool includeClients,
+  }) {
+    final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
+    final businessesAsync = ref.read(businessesProvider);
+    final hasMultipleBusinesses = businessesAsync.maybeWhen(
+      data: (businesses) => businesses.length > 1,
+      orElse: () => false,
+    );
+    final showSwitchBusiness = isSuperadmin || hasMultipleBusinesses;
+    final baseCount = includeClients ? 3 : 2;
+    final logoutIndex = showSwitchBusiness ? baseCount + 1 : baseCount;
+    final switchBusinessIndex = showSwitchBusiness ? baseCount : -1;
+
+    if (desktopIndex == logoutIndex) {
+      _handleLogout(context, ref);
+      return;
+    }
+    if (desktopIndex == switchBusinessIndex) {
+      _goToBusinessSwitcher(context, ref);
+      return;
+    }
+    if (desktopIndex == 0) {
+      _goBranch(0, ref);
+      return;
+    }
+    if (includeClients && desktopIndex == 1) {
+      _goBranch(1, ref);
+      return;
+    }
+    final moreIndex = includeClients ? 2 : 1;
+    if (desktopIndex == moreIndex) {
+      _goBranch(6, ref);
     }
   }
 
   /// Gestisce tap su navigation mobile:
   /// - Index 0, 1: navigazione normale (Agenda, Clienti)
   /// - Index 2: naviga a "Altro" (schermata con cards)
-  /// - Index 3: Cambia Business
+  /// - Index 3: Cambia Business (se presente) o Logout
+  /// - Index 4: Logout (se Cambia Business presente)
   void _handleMobileNavTap(
     BuildContext context,
     int mobileIndex,
-    WidgetRef ref,
-  ) {
-    switch (mobileIndex) {
-      case 0: // Agenda
-      case 1: // Clienti
-        _goBranch(mobileIndex, ref);
-        break;
-      case 2: // Altro → naviga alla schermata Altro
-        _goBranch(6, ref);
-        break;
-      case 3: // Cambia Business
-        _goToBusinessSwitcher(context, ref);
-        break;
+    WidgetRef ref, {
+    required bool includeClients,
+  }) {
+    final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
+    final businessesAsync = ref.read(businessesProvider);
+    final hasMultipleBusinesses = businessesAsync.maybeWhen(
+      data: (businesses) => businesses.length > 1,
+      orElse: () => false,
+    );
+    final showSwitchBusiness = isSuperadmin || hasMultipleBusinesses;
+    final baseCount = includeClients ? 3 : 2;
+    final logoutIndex = showSwitchBusiness ? baseCount + 1 : baseCount;
+    final switchBusinessIndex = showSwitchBusiness ? baseCount : -1;
+
+    if (mobileIndex == logoutIndex) {
+      _handleLogout(context, ref);
+      return;
+    }
+    if (mobileIndex == switchBusinessIndex) {
+      _goToBusinessSwitcher(context, ref);
+      return;
+    }
+    if (mobileIndex == 0) {
+      _goBranch(0, ref);
+      return;
+    }
+    if (includeClients && mobileIndex == 1) {
+      _goBranch(1, ref);
+      return;
+    }
+    final moreIndex = includeClients ? 2 : 1;
+    if (mobileIndex == moreIndex) {
+      _goBranch(6, ref);
     }
   }
 
@@ -430,6 +502,30 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       return;
     }
     context.go('/my-businesses');
+  }
+
+  void _handleLogout(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.authLogout),
+        content: const Text('Vuoi uscire dal gestionale?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ref.read(authProvider.notifier).logout();
+            },
+            child: Text(l10n.authLogout),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1046,6 +1142,7 @@ class _ScaffoldWithNavigationHelpers {
   static List<NavigationDestination> getMobileDestinations(
     BuildContext context, {
     bool showSwitchBusiness = false,
+    bool includeClients = true,
   }) {
     final l10n = context.l10n;
     return [
@@ -1054,11 +1151,12 @@ class _ScaffoldWithNavigationHelpers {
         selectedIconData: Icons.calendar_month,
         label: l10n.navAgenda,
       ),
-      NavigationDestination(
-        iconData: Icons.people_outline,
-        selectedIconData: Icons.people,
-        label: l10n.navClients,
-      ),
+      if (includeClients)
+        NavigationDestination(
+          iconData: Icons.people_outline,
+          selectedIconData: Icons.people,
+          label: l10n.navClients,
+        ),
       NavigationDestination(
         iconData: Icons.more_horiz_outlined,
         selectedIconData: Icons.more_horiz,
@@ -1071,6 +1169,12 @@ class _ScaffoldWithNavigationHelpers {
           selectedIconData: Icons.business,
           label: l10n.switchBusiness,
         ),
+      // Esci / Logout
+      NavigationDestination(
+        iconData: Icons.logout_outlined,
+        selectedIconData: Icons.logout,
+        label: l10n.authLogout,
+      ),
     ];
   }
 

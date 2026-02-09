@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../auth/providers/current_business_user_provider.dart';
 import '../../domain/clients.dart';
 import '../../providers/clients_providers.dart';
 import '../dialogs/client_appointments_dialog.dart';
@@ -219,6 +220,11 @@ class _DeleteButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final canManageClients = ref.watch(currentUserCanManageClientsProvider);
+
+    if (!canManageClients) {
+      return const SizedBox(width: 32, height: 32);
+    }
 
     return SizedBox(
       width: 32,

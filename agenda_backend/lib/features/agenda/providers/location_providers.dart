@@ -28,10 +28,8 @@ final businessIdForLocationsProvider = Provider<int?>((ref) {
   }
 
   // Per utente normale: usa il business da businessesProvider
-  final businessesAsync = ref.watch(businessesProvider);
-  return businessesAsync.whenOrNull(
-    data: (businesses) => businesses.isNotEmpty ? businesses.first.id : null,
-  );
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
+  return currentBusinessId > 0 ? currentBusinessId : null;
 });
 
 ///

@@ -9,6 +9,7 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
+import '../../../auth/providers/current_business_user_provider.dart';
 import '../../domain/clients.dart';
 import '../../providers/clients_providers.dart';
 import '../widgets/client_form.dart';
@@ -24,6 +25,11 @@ Future<Client?> showClientEditDialog(
   WidgetRef ref, {
   Client? client,
 }) async {
+  final canManageClients = ref.read(currentUserCanManageClientsProvider);
+  if (!canManageClients) {
+    return null;
+  }
+
   final formFactor = ref.read(formFactorProvider);
 
   if (formFactor == AppFormFactor.desktop) {
@@ -159,6 +165,9 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
   }
 
   Future<void> _onDelete() async {
+    final canManageClients = ref.read(currentUserCanManageClientsProvider);
+    if (!canManageClients) return;
+
     final client = widget.initial;
     if (client == null) return;
 
@@ -181,6 +190,9 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
   }
 
   Future<void> _onSave() async {
+    final canManageClients = ref.read(currentUserCanManageClientsProvider);
+    if (!canManageClients) return;
+
     final formState = _form.currentState;
     if (formState == null) return;
     if (!formState.validate()) return;
@@ -360,6 +372,9 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
   }
 
   Future<void> _onDelete() async {
+    final canManageClients = ref.read(currentUserCanManageClientsProvider);
+    if (!canManageClients) return;
+
     final client = widget.initial;
     if (client == null) return;
 
@@ -382,6 +397,9 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
   }
 
   Future<void> _onSave() async {
+    final canManageClients = ref.read(currentUserCanManageClientsProvider);
+    if (!canManageClients) return;
+
     final formState = _form.currentState;
     if (formState == null) return;
     if (!formState.validate()) return;

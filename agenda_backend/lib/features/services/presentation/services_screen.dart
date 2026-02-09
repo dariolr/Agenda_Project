@@ -14,6 +14,7 @@ import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../../core/widgets/reorder_toggle_button.dart';
 import '../../../core/widgets/reorder_toggle_panel.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../../agenda/providers/resource_providers.dart';
 import '../providers/service_categories_provider.dart';
 import '../providers/service_packages_provider.dart';
@@ -696,6 +697,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       ),
       onServiceDelete: (id) => _confirmDelete(
         context,
+        ref,
         onConfirm: () async => servicesNotifier.deleteServiceApi(id),
       ),
       onPackageOpen: (package) =>
@@ -711,6 +713,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     WidgetRef ref,
     int categoryId,
   ) {
+    final canManageServices = ref.read(currentUserCanManageServicesProvider);
+    if (!canManageServices) return;
+
     showAppConfirmDialog(
       context,
       title: Text(context.l10n.deleteConfirmationTitle),
@@ -742,6 +747,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     Color? preselectedColor,
     bool duplicateFrom = false,
   }) {
+    final canManageServices = ref.read(currentUserCanManageServicesProvider);
+    if (!canManageServices) return Future.value();
+
     return showServiceDialog(
       context,
       ref,
@@ -758,6 +766,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     ServicePackage? package,
     int? preselectedCategoryId,
   }) {
+    final canManageServices = ref.read(currentUserCanManageServicesProvider);
+    if (!canManageServices) return Future.value();
+
     final services = ref.read(servicesProvider).value ?? [];
     final categories = ref.read(serviceCategoriesProvider);
     return showServicePackageDialog(
@@ -775,6 +786,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     WidgetRef ref,
     int packageId,
   ) {
+    final canManageServices = ref.read(currentUserCanManageServicesProvider);
+    if (!canManageServices) return;
+
     showAppConfirmDialog(
       context,
       title: Text(context.l10n.servicePackageDeleteTitle),
@@ -804,7 +818,14 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     );
   }
 
-  void _confirmDelete(BuildContext context, {required VoidCallback onConfirm}) {
+  void _confirmDelete(
+    BuildContext context,
+    WidgetRef ref, {
+    required VoidCallback onConfirm,
+  }) {
+    final canManageServices = ref.read(currentUserCanManageServicesProvider);
+    if (!canManageServices) return;
+
     showAppConfirmDialog(
       context,
       title: Text(context.l10n.deleteServiceQuestion),

@@ -11,6 +11,7 @@ import '../../../core/models/business_user.dart';
 import '../../../core/models/location.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_dialogs.dart';
+import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../providers/business_users_provider.dart';
@@ -363,54 +364,58 @@ class _InvitationTile extends ConsumerWidget {
           )
         : null;
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: colorScheme.primaryContainer,
-        child: Icon(Icons.mail_outline, color: colorScheme.onPrimaryContainer),
-      ),
-      title: Text(invitation.email),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            invitation.roleLabel,
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(999),
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      elevation: 1.5,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: colorScheme.primaryContainer,
+          child: Icon(Icons.mail_outline, color: colorScheme.onPrimaryContainer),
+        ),
+        title: Text(invitation.email),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              invitation.roleLabel,
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
-            child: Text(
-              statusLabel,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: statusColor,
-                fontWeight: FontWeight.w600,
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                statusLabel,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: statusColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            invitation.effectiveStatus == 'accepted' &&
-                    invitation.acceptedAt != null
-                ? l10n.operatorsAcceptedOn(
-                    dateFormat.format(invitation.acceptedAt!),
-                  )
-                : l10n.operatorsExpires(
-                    dateFormat.format(invitation.expiresAt),
-                  ),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: invitation.effectiveStatus == 'expired'
-                  ? colorScheme.error
-                  : colorScheme.onSurfaceVariant,
+            const SizedBox(height: 4),
+            Text(
+              invitation.effectiveStatus == 'accepted' &&
+                      invitation.acceptedAt != null
+                  ? l10n.operatorsAcceptedOn(
+                      dateFormat.format(invitation.acceptedAt!),
+                    )
+                  : l10n.operatorsExpires(
+                      dateFormat.format(invitation.expiresAt),
+                    ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: invitation.effectiveStatus == 'expired'
+                    ? colorScheme.error
+                    : colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+        isThreeLine: true,
+        trailing: trailing,
       ),
-      isThreeLine: true,
-      trailing: trailing,
     );
   }
 
@@ -504,83 +509,91 @@ class _UserTile extends ConsumerWidget {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
     final locations = ref.watch(locationsProvider);
+    final canEditRole = enableActions && !user.isCurrentUser && user.role != 'owner';
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: colorScheme.secondaryContainer,
-        child: Text(
-          _getInitials(user),
-          style: TextStyle(
-            color: colorScheme.onSecondaryContainer,
-            fontWeight: FontWeight.w600,
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      elevation: 1.5,
+      child: ListTile(
+        onTap: canEditRole
+            ? () => _showEditRoleDialog(context, ref, locations)
+            : null,
+        leading: CircleAvatar(
+          backgroundColor: colorScheme.secondaryContainer,
+          child: Text(
+            _getInitials(user),
+            style: TextStyle(
+              color: colorScheme.onSecondaryContainer,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
-      ),
-      title: Row(
-        children: [
-          Flexible(child: Text(user.fullName)),
-          if (user.isCurrentUser) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                l10n.operatorsYou,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onPrimaryContainer,
+        title: Row(
+          children: [
+            Flexible(child: Text(user.fullName)),
+            if (user.isCurrentUser) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  l10n.operatorsYou,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
-        ],
-      ),
-      subtitle: Text(
-        _getRoleLabel(user.role, l10n),
-        style: TextStyle(color: colorScheme.onSurfaceVariant),
-      ),
-      trailing: !enableActions || user.isCurrentUser || user.role == 'owner'
-          ? null
-          : PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') {
-                  _showEditRoleDialog(context, ref, locations);
-                } else if (value == 'remove') {
-                  _confirmRemove(context, ref);
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.edit_outlined, size: 20),
-                      const SizedBox(width: 12),
-                      Text(l10n.operatorsEditRole),
-                    ],
+        ),
+        subtitle: Text(
+          _getRoleLabel(user.role, l10n),
+          style: TextStyle(color: colorScheme.onSurfaceVariant),
+        ),
+        trailing: !canEditRole
+            ? null
+            : PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    _showEditRoleDialog(context, ref, locations);
+                  } else if (value == 'remove') {
+                    _confirmRemove(context, ref);
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.edit_outlined, size: 20),
+                        const SizedBox(width: 12),
+                        Text(l10n.operatorsEditRole),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'remove',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.person_remove,
-                        size: 20,
-                        color: colorScheme.error,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        l10n.operatorsRemove,
-                        style: TextStyle(color: colorScheme.error),
-                      ),
-                    ],
+                  PopupMenuItem(
+                    value: 'remove',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.person_remove,
+                          size: 20,
+                          color: colorScheme.error,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          l10n.operatorsRemove,
+                          style: TextStyle(color: colorScheme.error),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 
@@ -638,7 +651,7 @@ class _UserTile extends ConsumerWidget {
                     scopeType != user.scopeType ||
                     !setEquals(selectedLocationIds, currentLocationIds);
                 if (hasChanges) {
-                  await ref
+                  final ok = await ref
                       .read(businessUsersProvider(businessId).notifier)
                       .updateUser(
                         userId: user.userId,
@@ -648,6 +661,19 @@ class _UserTile extends ConsumerWidget {
                             ? selectedLocationIds.toList()
                             : <int>[],
                       );
+                  if (!context.mounted || ok) return;
+                  final isIt =
+                      Localizations.localeOf(context).languageCode == 'it';
+                  final message =
+                      ref.read(businessUsersProvider(businessId)).error ??
+                      (isIt
+                          ? 'Impossibile aggiornare i permessi dell\'operatore.'
+                          : 'Unable to update operator permissions.');
+                  FeedbackDialog.showError(
+                    context,
+                    title: context.l10n.errorTitle,
+                    message: message,
+                  );
                 }
               },
         ),
@@ -676,7 +702,7 @@ class _UserTile extends ConsumerWidget {
                     scopeType != user.scopeType ||
                     !setEquals(selectedLocationIds, currentLocationIds);
                 if (hasChanges) {
-                  await ref
+                  final ok = await ref
                       .read(businessUsersProvider(businessId).notifier)
                       .updateUser(
                         userId: user.userId,
@@ -686,6 +712,19 @@ class _UserTile extends ConsumerWidget {
                             ? selectedLocationIds.toList()
                             : <int>[],
                       );
+                  if (!context.mounted || ok) return;
+                  final isIt =
+                      Localizations.localeOf(context).languageCode == 'it';
+                  final message =
+                      ref.read(businessUsersProvider(businessId)).error ??
+                      (isIt
+                          ? 'Impossibile aggiornare i permessi dell\'operatore.'
+                          : 'Unable to update operator permissions.');
+                  FeedbackDialog.showError(
+                    context,
+                    title: context.l10n.errorTitle,
+                    message: message,
+                  );
                 }
               },
         ),

@@ -8,6 +8,7 @@ import 'package:agenda_backend/core/models/service_variant.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/hover_slot.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/unavailable_slot_pattern.dart';
+import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/dragged_card_size_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/pending_drop_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_slot_availability_provider.dart';
@@ -340,6 +341,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final totalSlots = layoutConfig.totalSlots;
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
     final agendaDate = ref.watch(agendaDateProvider);
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
 
     // Interaction lock propagated from parent (evaluated once per visible group)
     final isInteractionLocked = widget.isInteractionLocked;
@@ -349,7 +351,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final bool showAddButtonStrip =
         layoutConfig.enableOccupiedSlotStrip &&
         formFactor == AppFormFactor.desktop &&
-        !isInteractionLocked;
+        !isInteractionLocked &&
+        canManageBookings;
     final fullyOccupied = showAddButtonStrip
         ? ref.watch(fullyOccupiedSlotsProvider(widget.staff.id))
         : const <int>{};
@@ -429,7 +432,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             final slotTime = agendaDate.add(
               Duration(minutes: index * layoutConfig.minutesPerSlot),
             );
-            if (!isInteractionLocked) {
+            if (!isInteractionLocked && canManageBookings) {
               return LazyHoverSlot(
                 slotTime: slotTime,
                 height: slotHeight,
@@ -466,6 +469,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     return DragTarget<Appointment>(
       onWillAcceptWithDetails: (_) {
+        if (!canManageBookings) return false;
         setState(() => _isHighlighted = true);
         ref.read(highlightedStaffIdProvider.notifier).set(widget.staff.id);
         return true;
@@ -475,6 +479,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         ref.read(highlightedStaffIdProvider.notifier).clear();
       },
       onAcceptWithDetails: (details) async {
+        if (!canManageBookings) {
+          return;
+        }
         final previewTimes = ref.read(tempDragTimeProvider);
         setState(() {
           _isHighlighted = false;

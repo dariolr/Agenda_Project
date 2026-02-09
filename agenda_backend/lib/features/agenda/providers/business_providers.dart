@@ -92,16 +92,17 @@ class CurrentBusinessId extends Notifier<int> {
         }
 
         // Utente non superadmin:
-        // - Se ha un solo business, possiamo impostarlo automaticamente.
-        // - Se ne ha più di uno, la selezione avviene solo via UI esplicita.
-        if (state == 0 && businesses.length == 1) {
+        // mantieni sempre un business valido (mai 0) per evitare rimbalzi di routing
+        // quando la lista viene ricaricata o cambia dinamicamente.
+        if (state == 0) {
           _setFromSystem(businesses.first.id);
           return;
         }
 
-        // Se il business corrente non è più accessibile, azzera e richiedi nuova scelta.
-        if (state != 0 && !businesses.any((b) => b.id == state)) {
-          _setFromSystem(0);
+        // Se il business corrente non è più accessibile, fallback al primo disponibile.
+        if (!businesses.any((b) => b.id == state)) {
+          _setFromSystem(businesses.first.id);
+          return;
         }
       });
     });

@@ -18,6 +18,7 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
+import '../../../auth/providers/current_business_user_provider.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
@@ -288,6 +289,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   /// Se l'appuntamento fa parte di una serie ricorrente, mostra un dialog
   /// per scegliere lo scope dell'azione
   Future<void> _handleDelete() async {
+    final canManageBookings = ref.read(currentUserCanManageBookingsProvider);
+    if (!canManageBookings) return;
+
     final l10n = context.l10n;
     final appt = widget.initial;
 
@@ -404,13 +408,19 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final staff = ref.watch(staffForCurrentLocationProvider);
     final hasPackages =
         (ref.watch(servicePackagesProvider).value ?? []).isNotEmpty;
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
 
     // Usa lo staffId del primo item per i servizi popolari
     final firstStaffId = _serviceItems.isNotEmpty
         ? _serviceItems.first.staffId
         : null;
-    final popularServices = firstStaffId != null
-        ? ref.watch(popularServicesProvider(firstStaffId)).value
+    final validStaffIds = staff.map((s) => s.id).toSet();
+    final effectiveStaffId =
+        firstStaffId != null && validStaffIds.contains(firstStaffId)
+        ? firstStaffId
+        : null;
+    final popularServices = effectiveStaffId != null
+        ? ref.watch(popularServicesProvider(effectiveStaffId)).value
         : null;
 
     final title = l10n.appointmentDialogTitleEdit;
@@ -437,82 +447,85 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       behavior: const NoScrollbarBehavior(),
       child: SingleChildScrollView(
         controller: _scrollController,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: AppSpacing.formFirstRowSpacing),
-              // Client selection (first)
-              _ClientSelectionField(
-                clientId: _clientId,
-                clientName: _clientName,
-                clients: clients,
-                isLocked: isClientLocked,
-                onClientSelected: (id, name) {
-                  setState(() {
-                    _clientId = id;
-                    _clientName = name;
-                  });
-                },
-                onClientRemoved: () {
-                  setState(() {
-                    _clientId = null;
-                    _clientName = '';
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.formRowSpacing),
-              // Date
-              InkWell(
-                onTap: _pickDate,
-                borderRadius: BorderRadius.circular(4),
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: l10n.formDate,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
+        child: IgnorePointer(
+          ignoring: !canManageBookings,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: AppSpacing.formFirstRowSpacing),
+                // Client selection (first)
+                _ClientSelectionField(
+                  clientId: _clientId,
+                  clientName: _clientName,
+                  clients: clients,
+                  isLocked: isClientLocked,
+                  onClientSelected: (id, name) {
+                    setState(() {
+                      _clientId = id;
+                      _clientName = name;
+                    });
+                  },
+                  onClientRemoved: () {
+                    setState(() {
+                      _clientId = null;
+                      _clientName = '';
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.formRowSpacing),
+                // Date
+                InkWell(
+                  onTap: _pickDate,
+                  borderRadius: BorderRadius.circular(4),
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: l10n.formDate,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      isDense: true,
                     ),
+                    child: Text(DtFmt.shortDate(context, _date)),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.formRowSpacing),
+                // Services list
+                ..._buildServiceItems(
+                  services: services,
+                  categories: serviceCategories,
+                  variants: variants,
+                  allStaff: staff,
+                  formFactor: formFactor,
+                  conflictFlags: conflictFlags,
+                  showServiceWarnings: showServiceWarnings,
+                  serviceWarningMessage:
+                      l10n.bookingUnavailableTimeWarningService,
+                  popularServices: popularServices,
+                  hasPackages: hasPackages,
+                ),
+                const SizedBox(height: AppSpacing.formRowSpacing),
+                // Notes field
+                TextFormField(
+                  controller: _notesController,
+                  decoration: InputDecoration(
+                    labelText: l10n.formNotes,
+                    alignLabelWithHint: true,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    isDense: true,
                   ),
-                  child: Text(DtFmt.shortDate(context, _date)),
+                  maxLines: 3,
+                  minLines: 2,
                 ),
-              ),
-              const SizedBox(height: AppSpacing.formRowSpacing),
-              // Services list
-              ..._buildServiceItems(
-                services: services,
-                categories: serviceCategories,
-                variants: variants,
-                allStaff: staff,
-                formFactor: formFactor,
-                conflictFlags: conflictFlags,
-                showServiceWarnings: showServiceWarnings,
-                serviceWarningMessage:
-                    l10n.bookingUnavailableTimeWarningService,
-                popularServices: popularServices,
-                hasPackages: hasPackages,
-              ),
-              const SizedBox(height: AppSpacing.formRowSpacing),
-              // Notes field
-              TextFormField(
-                controller: _notesController,
-                decoration: InputDecoration(
-                  labelText: l10n.formNotes,
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                maxLines: 3,
-                minLines: 2,
-              ),
-              const SizedBox(height: AppSpacing.formRowSpacing),
-            ],
+                const SizedBox(height: AppSpacing.formRowSpacing),
+              ],
+            ),
           ),
         ),
       ),
@@ -520,9 +533,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
     final actions = [
       AppAsyncDangerButton(
-        onPressed: _isSaving ? null : _handleDelete,
+        onPressed: _isSaving || !canManageBookings ? null : _handleDelete,
         padding: AppButtonStyles.dialogButtonPadding,
-        disabled: _isSaving,
+        disabled: _isSaving || !canManageBookings,
         showSpinner: false,
         child: Text(l10n.actionDelete),
       ),
@@ -532,9 +545,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         child: Text(l10n.actionCancel),
       ),
       AppAsyncFilledButton(
-        onPressed: _isSaving ? null : _onSave,
+        onPressed: _isSaving || !canManageBookings ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
-        isLoading: _isSaving,
+        isLoading: _isSaving && canManageBookings,
         showSpinner: false,
         child: Text(l10n.actionSave),
       ),
@@ -1714,6 +1727,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   }
 
   Future<void> _onSave() async {
+    final canManageBookings = ref.read(currentUserCanManageBookingsProvider);
+    if (!canManageBookings) return;
+
     final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
 

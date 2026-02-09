@@ -88,7 +88,9 @@ final class StaffController
 
     /**
      * GET /v1/businesses/{business_id}/staff
-     * List all staff members for a business (admin view - all staff, not just bookable)
+     * List all staff members for a business.
+     * Read access is allowed to any operator with business access
+     * (including viewer), while write operations remain permission-based.
      */
     public function indexByBusiness(Request $request): Response
     {
@@ -96,8 +98,8 @@ final class StaffController
         $userId = $request->getAttribute('user_id');
         $isSuperadmin = $this->userRepo->isSuperadmin($userId);
 
-        // Check user has access to business
-        if (!$this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_staff', $isSuperadmin)) {
+        // Read-only access: any active operator in the business can read staff list.
+        if (!$this->businessUserRepo->hasAccess($userId, $businessId, $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
