@@ -3912,16 +3912,6 @@ class L10n {
     );
   }
 
-  /// `Vai all'agenda`
-  String get invitationAcceptGoAgenda {
-    return Intl.message(
-      'Vai all\'agenda',
-      name: 'invitationAcceptGoAgenda',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Invito rifiutato`
   String get invitationDeclineSuccessTitle {
     return Intl.message(
@@ -3972,11 +3962,21 @@ class L10n {
     );
   }
 
-  /// `Questo invito è associato a un'altra email. Sei stato disconnesso automaticamente: ora accedi con l'email invitata per continuare.`
+  /// `Questo invito è associato a un'altra email. Esegui il logout dall'account corrente, poi riapri questo link e accedi con l'email invitata.`
   String get invitationAcceptErrorEmailMismatch {
     return Intl.message(
-      'Questo invito è associato a un\'altra email. Sei stato disconnesso automaticamente: ora accedi con l\'email invitata per continuare.',
+      'Questo invito è associato a un\'altra email. Esegui il logout dall\'account corrente, poi riapri questo link e accedi con l\'email invitata.',
       name: 'invitationAcceptErrorEmailMismatch',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Vai all'applicazione`
+  String get invitationGoToApplication {
+    return Intl.message(
+      'Vai all\'applicazione',
+      name: 'invitationGoToApplication',
       desc: '',
       args: [],
     );

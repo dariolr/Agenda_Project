@@ -808,7 +808,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Accept invitation",
     ),
     "invitationAcceptErrorEmailMismatch": MessageLookupByLibrary.simpleMessage(
-      "This invitation is linked to a different email. You were signed out automatically: now sign in with the invited email to continue.",
+      "This invitation is linked to a different email. Sign out from the current account, then reopen this invitation link and sign in with the invited email.",
     ),
     "invitationAcceptErrorExpired": MessageLookupByLibrary.simpleMessage(
       "This invitation has expired.",
@@ -818,9 +818,6 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "invitationAcceptErrorInvalid": MessageLookupByLibrary.simpleMessage(
       "This invitation is not valid.",
-    ),
-    "invitationAcceptGoAgenda": MessageLookupByLibrary.simpleMessage(
-      "Go to agenda",
     ),
     "invitationAcceptHintExistingAccount": MessageLookupByLibrary.simpleMessage(
       "Already have an account? Sign in to accept the invitation.",
@@ -868,6 +865,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "invitationDeclineSuccessTitle": MessageLookupByLibrary.simpleMessage(
       "Invitation declined",
+    ),
+    "invitationGoToApplication": MessageLookupByLibrary.simpleMessage(
+      "Go to application",
     ),
     "invitationRegisterAction": MessageLookupByLibrary.simpleMessage(
       "Register to accept",

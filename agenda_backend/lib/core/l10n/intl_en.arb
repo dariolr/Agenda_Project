@@ -590,13 +590,13 @@
   "invitationDeclineInProgress": "Declining invitation...",
   "invitationAcceptSuccessTitle": "Invitation accepted",
   "invitationAcceptSuccessMessage": "You can now use the management app with assigned permissions.",
-  "invitationAcceptGoAgenda": "Go to agenda",
   "invitationDeclineSuccessTitle": "Invitation declined",
   "invitationDeclineSuccessMessage": "You declined the invitation. No permission has been granted.",
   "invitationDeclineGoLogin": "Go to login",
   "invitationAcceptErrorInvalid": "This invitation is not valid.",
   "invitationAcceptErrorExpired": "This invitation has expired.",
-  "invitationAcceptErrorEmailMismatch": "This invitation is linked to a different email. You were signed out automatically: now sign in with the invited email to continue.",
+  "invitationAcceptErrorEmailMismatch": "This invitation is linked to a different email. Sign out from the current account, then reopen this invitation link and sign in with the invited email.",
+  "invitationGoToApplication": "Go to application",
   "invitationAcceptErrorGeneric": "Unable to complete the operation. Please try again.",
   "operatorsScopeTitle": "Access",
   "operatorsScopeBusiness": "All locations",
@@ -1173,7 +1173,5 @@
       }
     }
   },
-  "closuresImportHolidaysUnsupportedCountry": "Automatic holidays are not available for the country configured in the location.",
-  "actionSelectAll": "Select all",
-  "actionDeselectAll": "Deselect all"
+  "closuresImportHolidaysUnsupportedCountry": "Automatic holidays are not available for the country configured in the location."
 }
