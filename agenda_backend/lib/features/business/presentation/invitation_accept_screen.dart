@@ -182,23 +182,6 @@ class _InvitationAcceptScreenState
                                 context,
                                 isPhone: isPhone,
                               ),
-                            if (isAuthenticated) ...[
-                              const SizedBox(height: 8),
-                              OutlinedButton.icon(
-                                onPressed: () async {
-                                  await ref
-                                      .read(authProvider.notifier)
-                                      .logout(silent: false);
-                                  if (!context.mounted) return;
-                                  final redirect = Uri.encodeComponent(
-                                    '/invitation/${widget.token}',
-                                  );
-                                  context.go('/login?redirect=$redirect');
-                                },
-                                icon: const Icon(Icons.switch_account_outlined),
-                                label: Text(l10n.invitationAcceptSwitchAccount),
-                              ),
-                            ],
                           ],
                         ),
                 ),
@@ -459,30 +442,9 @@ class _InvitationAcceptScreenState
           .read(businessUsersRepositoryProvider)
           .getInvitationByToken(widget.token);
 
-      final invitedEmail =
-          (data['email'] as String?)?.trim().toLowerCase() ?? '';
-      final authState = ref.read(authProvider);
-      final currentUser = authState.user;
-      final loggedEmail = currentUser is User
-          ? currentUser.email.trim().toLowerCase()
-          : '';
-
-      if (authState.isAuthenticated &&
-          invitedEmail.isNotEmpty &&
-          loggedEmail.isNotEmpty &&
-          loggedEmail != invitedEmail) {
-        await ref.read(authProvider.notifier).logout(silent: true);
-      }
-
       if (!mounted) return;
       setState(() {
         _invitation = data;
-        if (authState.isAuthenticated &&
-            invitedEmail.isNotEmpty &&
-            loggedEmail.isNotEmpty &&
-            loggedEmail != invitedEmail) {
-          _errorMessage = context.l10n.invitationAcceptErrorEmailMismatch;
-        }
         _isLoading = false;
       });
     } on ApiException catch (e) {
@@ -509,6 +471,25 @@ class _InvitationAcceptScreenState
     if (!ref.read(authProvider).isAuthenticated) {
       setState(() {
         _errorMessage = context.l10n.invitationAcceptLoginRequired;
+      });
+      return;
+    }
+
+    final invitedEmail =
+        (_invitation?['email'] as String?)?.trim().toLowerCase() ?? '';
+    final authState = ref.read(authProvider);
+    final currentUser = authState.user;
+    final loggedEmail = currentUser is User
+        ? currentUser.email.trim().toLowerCase()
+        : '';
+
+    if (invitedEmail.isNotEmpty &&
+        loggedEmail.isNotEmpty &&
+        loggedEmail != invitedEmail) {
+      await ref.read(authProvider.notifier).logout(silent: true);
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = context.l10n.invitationAcceptErrorEmailMismatch;
       });
       return;
     }
