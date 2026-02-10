@@ -428,7 +428,13 @@ final clientAppointmentsProvider =
     FutureProvider.family<ClientAppointmentsData, int>((ref, clientId) async {
       ref.watch(clientAppointmentsRefreshProvider);
       final api = ref.watch(clientsApiProvider);
-      return api.fetchClientAppointments(clientId);
+      final data = await api.fetchClientAppointments(clientId);
+      // Non mostrare appuntamenti di booking "replaced" nella vista cliente.
+      // (Quando un booking viene riprogrammato, il precedente viene marcato replaced.)
+      return ClientAppointmentsData(
+        upcoming: data.upcoming.where((a) => !a.isReplaced).toList(),
+        past: data.past.where((a) => !a.isReplaced).toList(),
+      );
     });
 
 // Provider di convenienza che unisce upcoming + past in una lista singola

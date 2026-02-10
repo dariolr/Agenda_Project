@@ -15,6 +15,22 @@ String? _extraMinutesTypeToJson(ExtraMinutesType? value) {
   return value?.name;
 }
 
+String? _bookingStatusFromJson(Map<String, dynamic> json) {
+  final value = (json['booking_status'] ?? json['status']);
+  if (value is! String) return null;
+
+  // Avoid accidentally mapping unrelated `status` fields from other payloads.
+  const allowed = <String>{
+    'pending',
+    'confirmed',
+    'cancelled',
+    'completed',
+    'no_show',
+    'replaced',
+  };
+  return allowed.contains(value) ? value : null;
+}
+
 class Appointment {
   final int id;
   final int bookingId;
@@ -70,6 +86,9 @@ class Appointment {
   /// Returns true if this appointment's booking was cancelled
   bool get isCancelled => bookingStatus == 'cancelled';
 
+  /// Returns true if this appointment's booking was replaced
+  bool get isReplaced => bookingStatus == 'replaced';
+
   /// Returns true if this appointment is part of a recurring series
   bool get isRecurring => recurrenceRuleId != null;
 
@@ -88,7 +107,7 @@ class Appointment {
     endTime: DateTime.parse(json['end_time'] as String),
     price: json['price'] != null ? (json['price'] as num).toDouble() : null,
     bookingSource: json['source'] as String?,
-    bookingStatus: json['booking_status'] as String?,
+    bookingStatus: _bookingStatusFromJson(json),
     extraMinutes: json['extra_minutes'] as int?,
     extraMinutesType: _extraMinutesTypeFromJson(json['extra_minutes_type']),
     extraBlockedMinutes: json['extra_blocked_minutes'] as int?,

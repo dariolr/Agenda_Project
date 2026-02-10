@@ -160,6 +160,10 @@ class ClientsApi {
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
       price: (json['price'] as num?)?.toDouble() ?? 0,
+      // `ClientsController::appointments` currently returns booking status as
+      // `status` (booking-level), while other endpoints may use `booking_status`.
+      bookingStatus:
+          json['booking_status'] as String? ?? json['status'] as String?,
     );
   }
 }
