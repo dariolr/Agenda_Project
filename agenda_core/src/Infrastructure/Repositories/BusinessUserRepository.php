@@ -363,7 +363,7 @@ final class BusinessUserRepository
             ],
             'staff' => [
                 'can_manage_bookings' => true,
-                'can_manage_clients' => false,
+                'can_manage_clients' => true,
                 'can_manage_services' => false,
                 'can_manage_staff' => false,
                 'can_view_reports' => false,

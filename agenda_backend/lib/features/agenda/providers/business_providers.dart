@@ -45,6 +45,8 @@ final businessesProvider = FutureProvider<List<Business>>((ref) async {
 /// 🔹 BUSINESS CORRENTE (ID)
 ///
 class CurrentBusinessId extends Notifier<int> {
+  int _lastKnownBusinessId = 0;
+
   @override
   int build() {
     // ✅ Imposta come default il business selezionato (superadmin)
@@ -58,6 +60,7 @@ class CurrentBusinessId extends Notifier<int> {
     ref.listen(superadminSelectedBusinessProvider, (previous, next) {
       if (!isSuperadmin) return;
       if (next != null && state != next) {
+        _lastKnownBusinessId = next;
         state = next;
       }
     });
@@ -67,6 +70,7 @@ class CurrentBusinessId extends Notifier<int> {
       next.whenData((businesses) {
         if (businesses.isEmpty) {
           if (state != 0) {
+            _lastKnownBusinessId = 0;
             state = 0;
           }
           return;
@@ -78,6 +82,7 @@ class CurrentBusinessId extends Notifier<int> {
           final exists = businesses.any((b) => b.id == selectedBusiness);
           if (exists) {
             if (state != selectedBusiness) {
+              _lastKnownBusinessId = selectedBusiness;
               state = selectedBusiness;
             }
             return;
@@ -88,6 +93,7 @@ class CurrentBusinessId extends Notifier<int> {
               .read(superadminSelectedBusinessProvider.notifier)
               .clearCompletely();
           if (state != businesses.first.id) {
+            _lastKnownBusinessId = businesses.first.id;
             state = businesses.first.id;
           }
           return;
@@ -97,12 +103,14 @@ class CurrentBusinessId extends Notifier<int> {
         // mantieni sempre un business valido (mai 0) per evitare rimbalzi di routing
         // quando la lista viene ricaricata o cambia dinamicamente.
         if (state == 0) {
+          _lastKnownBusinessId = businesses.first.id;
           state = businesses.first.id;
           return;
         }
 
         // Se il business corrente non è più accessibile, fallback al primo disponibile.
         if (!businesses.any((b) => b.id == state)) {
+          _lastKnownBusinessId = businesses.first.id;
           state = businesses.first.id;
           return;
         }
@@ -117,19 +125,22 @@ class CurrentBusinessId extends Notifier<int> {
         final selectedBusiness = ref.watch(superadminSelectedBusinessProvider);
         if (isSuperadmin && selectedBusiness != null) {
           if (businesses.any((b) => b.id == selectedBusiness)) {
+            _lastKnownBusinessId = selectedBusiness;
             return selectedBusiness;
           }
         }
+        _lastKnownBusinessId = businesses.first.id;
         return businesses.first.id;
       },
-      loading: () => 0,
-      error: (_, __) => 0,
+      loading: () => _lastKnownBusinessId,
+      error: (_, __) => _lastKnownBusinessId,
     );
   }
 
   /// Selezione esplicita effettuata dall'utente (switch business).
   void selectByUser(int id) {
     if (state != id) {
+      _lastKnownBusinessId = id;
       state = id;
     }
   }

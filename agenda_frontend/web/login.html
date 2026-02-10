@@ -308,6 +308,41 @@
       const from = (params.get("from") || "booking").trim();
       const routeFrom = new Set(["booking", "my-bookings", "profile", "change-password"]).has(from) ? from : "booking";
 
+      function resolveStorage() {
+        const candidates = [];
+        try { candidates.push(window.localStorage); } catch (_) { /* ignore */ }
+        try { candidates.push(window.sessionStorage); } catch (_) { /* ignore */ }
+
+        for (const storage of candidates) {
+          if (!storage) continue;
+          try {
+            const key = "__agenda_storage_probe__";
+            storage.setItem(key, "1");
+            storage.removeItem(key);
+            return storage;
+          } catch (_) {
+            // blocked/unavailable (private mode, embedded webview restrictions, etc.)
+          }
+        }
+        return null;
+      }
+
+      const storage = resolveStorage();
+
+      function storageGet(key) {
+        if (!storage) return null;
+        try { return storage.getItem(key); } catch (_) { return null; }
+      }
+
+      function storageSet(key, value) {
+        if (!storage) return;
+        try { storage.setItem(key, value); } catch (_) { /* ignore */ }
+      }
+
+      function storageRemove(key) {
+        if (!storage) return;
+        try { storage.removeItem(key); } catch (_) { /* ignore */ }
+      }
       const savedEmailKey = "agenda_frontend_saved_email";
       const savedPasswordKey = "agenda_frontend_saved_password";
       const savedBusinessIdKey = "agenda_business_id";
@@ -369,8 +404,8 @@
       }
 
       function restoreSavedCredentials() {
-        const encodedEmail = window.localStorage.getItem(savedEmailKey);
-        const encodedPassword = window.localStorage.getItem(savedPasswordKey);
+        const encodedEmail = storageGet(savedEmailKey);
+        const encodedPassword = storageGet(savedPasswordKey);
         if (!encodedEmail || !encodedPassword) return;
         const decodedEmail = safeDecodeBase64(encodedEmail);
         const decodedPassword = safeDecodeBase64(encodedPassword);
@@ -381,20 +416,20 @@
 
       function persistCredentials(email, password) {
         if (!rememberMe.checked) {
-          window.localStorage.removeItem(savedEmailKey);
-          window.localStorage.removeItem(savedPasswordKey);
+          storageRemove(savedEmailKey);
+          storageRemove(savedPasswordKey);
           return;
         }
-        window.localStorage.setItem(savedEmailKey, safeEncodeBase64(email));
-        window.localStorage.setItem(savedPasswordKey, safeEncodeBase64(password));
+        storageSet(savedEmailKey, safeEncodeBase64(email));
+        storageSet(savedPasswordKey, safeEncodeBase64(password));
       }
 
       function persistSessionContext(businessId) {
         // Keep the same keys used by Flutter Web token storage.
-        window.localStorage.setItem(savedBusinessIdKey, String(businessId));
+        storageSet(savedBusinessIdKey, String(businessId));
         // Refresh token is now managed via httpOnly cookie on web.
         // Remove stale client-stored token to avoid wrong refresh fallback.
-        window.localStorage.removeItem(savedRefreshTokenKey);
+        storageRemove(savedRefreshTokenKey);
       }
 
       async function getBusinessId() {
@@ -427,6 +462,39 @@
           const code = payload && payload.error && payload.error.code;
           if (code === "invalid_credentials") throw new Error("Credenziali non valide");
           throw new Error("Accesso non riuscito. Riprova.");
+        }
+      }
+
+      async function tryAutoRefreshSession() {
+        if (!slug) return false;
+        if (isSubmitting) return false;
+
+        setLoading(true);
+        showError("");
+
+        try {
+          const businessId = await getBusinessId();
+          const response = await fetch(`${apiBase}/v1/customer/${businessId}/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            credentials: "include",
+            body: JSON.stringify({}),
+          });
+
+          const payload = await response.json().catch(() => null);
+          if (!response.ok || !payload || payload.success !== true) {
+            return false;
+          }
+
+          // Session restored via httpOnly refresh cookie.
+          persistSessionContext(businessId);
+          window.location.assign(`/${encodeURIComponent(slug)}/${routeFrom}`);
+          return true;
+        } catch (_) {
+          return false;
+        } finally {
+          // Keep button disabled only if we are navigating away.
+          setLoading(false);
         }
       }
 
@@ -527,6 +595,9 @@
       }
 
       restoreSavedCredentials();
+      // Best-effort: if a refresh cookie is present, restore session without asking credentials.
+      // If cookies are blocked by the environment (some in-app browsers/webviews), this will be a no-op.
+      tryAutoRefreshSession();
     })();
   </script>
 </body>

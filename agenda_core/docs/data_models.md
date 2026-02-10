@@ -85,8 +85,9 @@ Associa utenti a businesses con ruoli e permessi.
 - id
 - business_id
 - user_id
-- role (enum: owner, admin, manager, staff)
+- role (enum: owner, admin, manager, staff, viewer)
 - staff_id (optional, link a staff record)
+- scope_type (`business` | `locations`)
 - can_manage_bookings
 - can_manage_clients
 - can_manage_services
@@ -102,8 +103,13 @@ Associa utenti a businesses con ruoli e permessi.
 **Role Hierarchy:**
 - `owner`: Full control, can delete business, manage all users
 - `admin`: Full control except delete business, can manage users
-- `manager`: Can manage appointments, clients, staff schedules
-- `staff`: Can view/edit own appointments only
+- `manager`: Operativita completa sul perimetro assegnato (business intero o sedi assegnate)
+- `staff`: Operativita sul solo staff associato (`staff_id`)
+- `viewer`: Sola lettura (agenda/prenotazioni/staff/servizi nel perimetro assegnato)
+
+**Scope Semantics:**
+- `scope_type=business`: accesso a tutte le sedi del business.
+- `scope_type=locations`: accesso limitato alle sedi assegnate in `business_user_locations`.
 
 **Unique Constraint:** `(business_id, user_id)`
 
@@ -113,10 +119,12 @@ Inviti via email per nuovi operatori.
 - id
 - business_id
 - email
-- role (enum: admin, manager, staff)
+- role (enum: admin, manager, staff, viewer)
+- scope_type (`business` | `locations`)
+- staff_id (nullable, obbligatorio quando `role=staff`)
 - token (64-char hex, unique)
 - expires_at (default: created_at + 7 days)
-- status (enum: pending, accepted, expired, declined)
+- status (enum: pending, accepted, expired, declined, revoked)
 - accepted_by (user_id, nullable)
 - accepted_at (nullable)
 - invited_by (user_id)
@@ -131,8 +139,8 @@ Inviti via email per nuovi operatori.
 - `email, status` - ricerca inviti per email
 
 **Note operative:**
-- Gli inviti `pending` revocati vengono eliminati direttamente.
-- Quando un accesso operatore viene rimosso, gli eventuali inviti `accepted` collegati vengono eliminati.
+- In caso di reinvio invito, i token precedenti vengono invalidati marcando gli inviti precedenti come `revoked`.
+- Per `role=staff` l'invito mantiene anche l'associazione allo `staff_id` selezionato.
 
 ---
 

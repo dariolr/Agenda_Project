@@ -128,8 +128,8 @@ final class StaffAvailabilityExceptionController
             return Response::notFound('Staff member not found', $request->traceId);
         }
 
-        // Check user has access to business
-        if (!$this->businessUserRepo->hasPermission($userId, (int) $staff['business_id'], 'can_manage_staff', $isSuperadmin)) {
+        // Write access: can_manage_staff OR scoped manager OR self-staff.
+        if (!$this->canEditStaffAvailability((int) $userId, $staff, $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -210,8 +210,8 @@ final class StaffAvailabilityExceptionController
             return Response::notFound('Staff member not found', $request->traceId);
         }
 
-        // Check user has access to business
-        if (!$this->businessUserRepo->hasPermission($userId, (int) $staff['business_id'], 'can_manage_staff', $isSuperadmin)) {
+        // Write access: can_manage_staff OR scoped manager OR self-staff.
+        if (!$this->canEditStaffAvailability((int) $userId, $staff, $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -286,8 +286,8 @@ final class StaffAvailabilityExceptionController
             return Response::notFound('Staff member not found', $request->traceId);
         }
 
-        // Check user has access to business
-        if (!$this->businessUserRepo->hasPermission($userId, (int) $staff['business_id'], 'can_manage_staff', $isSuperadmin)) {
+        // Write access: can_manage_staff OR scoped manager OR self-staff.
+        if (!$this->canEditStaffAvailability((int) $userId, $staff, $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
@@ -302,5 +302,46 @@ final class StaffAvailabilityExceptionController
     private function isValidTime(string $time): bool
     {
         return preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $time) === 1;
+    }
+
+    /**
+     * Write permissions for staff availability exceptions:
+     * - full staff management permission
+     * - role=staff for own staff_id
+     * - role=manager for staff inside assigned location scope
+     */
+    private function canEditStaffAvailability(int $userId, array $staff, bool $isSuperadmin): bool
+    {
+        if ($isSuperadmin) {
+            return true;
+        }
+
+        $businessId = (int) $staff['business_id'];
+        $staffId = (int) $staff['id'];
+
+        if ($this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_staff', false)) {
+            return true;
+        }
+
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness($userId, $businessId);
+        if ($businessUser === null) {
+            return false;
+        }
+
+        if (($businessUser['role'] ?? null) === 'staff'
+            && (int) ($businessUser['staff_id'] ?? 0) === $staffId) {
+            return true;
+        }
+
+        if (($businessUser['role'] ?? null) === 'manager') {
+            if (($businessUser['scope_type'] ?? 'business') === 'business') {
+                return true;
+            }
+            $managerLocationIds = $businessUser['location_ids'] ?? [];
+            $staffLocationIds = $this->staffRepo->getLocationIds($staffId);
+            return count(array_intersect($staffLocationIds, $managerLocationIds)) > 0;
+        }
+
+        return false;
     }
 }

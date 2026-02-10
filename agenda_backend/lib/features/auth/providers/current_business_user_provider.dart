@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/network_providers.dart';
 import '../../agenda/providers/business_providers.dart';
-import '../../agenda/providers/location_providers.dart';
+import '../../business/providers/superadmin_selected_business_provider.dart';
 import 'auth_provider.dart';
 
 /// Dati del contesto business dell'utente corrente.
@@ -47,7 +47,7 @@ class BusinessUserContext {
   bool get isStaffRole => role == 'staff' && staffId != null;
 
   factory BusinessUserContext.fromJson(Map<String, dynamic> json) {
-    final role = json['role'] as String;
+    final role = (json['role'] as String? ?? 'staff').trim().toLowerCase();
     final permissions = json['permissions'];
     final defaultCanManageBookings =
         role == 'owner' ||
@@ -160,7 +160,10 @@ final currentBusinessUserContextProvider = FutureProvider<BusinessUserContext?>(
     }
 
     // Ottieni il business ID corrente
-    final businessId = ref.watch(businessIdForLocationsProvider);
+    final isSuperadmin = user.isSuperadmin;
+    final businessId = isSuperadmin
+        ? ref.watch(superadminSelectedBusinessProvider)
+        : ref.watch(currentBusinessIdProvider);
     if (businessId == null || businessId <= 0) return null;
 
     try {
@@ -227,10 +230,9 @@ final currentUserRoleProvider = Provider<String>((ref) {
   final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
-    data: (data) =>
-        _isContextForCurrentBusiness(data, currentBusinessId)
-            ? data!.role
-            : 'staff',
+    data: (data) => _isContextForCurrentBusiness(data, currentBusinessId)
+        ? data!.role
+        : 'staff',
     loading: () => 'staff',
     error: (_, __) => 'staff',
   );
@@ -372,9 +374,12 @@ final currentUserCanViewStaffProvider = Provider<bool>((ref) {
     data: (data) {
       if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
       if (data!.isSuperadmin) return true;
-      return data.canManageStaff || data.role == 'viewer';
+      return data.canManageStaff ||
+          data.role == 'manager' ||
+          data.role == 'viewer' ||
+          data.role == 'staff';
     },
-    loading: () => false,
+    loading: () => true,
     error: (_, __) => false,
   );
 });
@@ -385,10 +390,9 @@ final currentUserStaffIdProvider = Provider<int?>((ref) {
   final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
   return contextAsync.when(
-    data: (data) =>
-        _isContextForCurrentBusiness(data, currentBusinessId)
-            ? data!.staffId
-            : null,
+    data: (data) => _isContextForCurrentBusiness(data, currentBusinessId)
+        ? data!.staffId
+        : null,
     loading: () => null,
     error: (_, __) => null,
   );

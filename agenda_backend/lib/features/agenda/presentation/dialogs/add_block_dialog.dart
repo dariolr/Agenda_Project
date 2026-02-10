@@ -15,6 +15,7 @@ import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
+import '../../../auth/providers/current_business_user_provider.dart';
 import '../../domain/config/layout_config.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
@@ -121,6 +122,12 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
           ? {widget.initialStaffId!}
           : {};
     }
+
+    final role = ref.read(currentUserRoleProvider);
+    final staffId = ref.read(currentUserStaffIdProvider);
+    if (role == 'staff' && staffId != null && staffId > 0) {
+      _selectedStaffIds = {staffId};
+    }
   }
 
   @override
@@ -135,6 +142,15 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
     final l10n = context.l10n;
     final isEdit = widget.initial != null;
     final staff = ref.watch(staffForCurrentLocationProvider);
+    final currentUserRole = ref.watch(currentUserRoleProvider);
+    final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
+    final isStaffRole =
+        currentUserRole == 'staff' &&
+        currentUserStaffId != null &&
+        currentUserStaffId > 0;
+    final visibleStaff = isStaffRole
+        ? staff.where((s) => s.id == currentUserStaffId).toList()
+        : staff;
     final isDialog = widget.presentation == _BlockDialogPresentation.dialog;
 
     final title = isEdit ? l10n.blockDialogTitleEdit : l10n.blockDialogTitleNew;
@@ -275,26 +291,28 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
                 constraints: const BoxConstraints(maxHeight: 200),
                 child: Scrollbar(
                   controller: _staffScrollController,
-                  thumbVisibility: staff.length * 48.0 > 200,
+                  thumbVisibility: visibleStaff.length * 48.0 > 200,
                   child: ListView.builder(
                     controller: _staffScrollController,
                     shrinkWrap: true,
-                    itemCount: staff.length,
+                    itemCount: visibleStaff.length,
                     itemBuilder: (context, index) {
-                      final member = staff[index];
+                      final member = visibleStaff[index];
                       final isSelected = _selectedStaffIds.contains(member.id);
                       return CheckboxListTile(
                         value: isSelected,
-                        onChanged: (v) {
-                          setState(() {
-                            _staffError = null;
-                            if (v == true) {
-                              _selectedStaffIds.add(member.id);
-                            } else {
-                              _selectedStaffIds.remove(member.id);
-                            }
-                          });
-                        },
+                        onChanged: isStaffRole
+                            ? null
+                            : (v) {
+                                setState(() {
+                                  _staffError = null;
+                                  if (v == true) {
+                                    _selectedStaffIds.add(member.id);
+                                  } else {
+                                    _selectedStaffIds.remove(member.id);
+                                  }
+                                });
+                              },
                         title: Text(member.name),
                         secondary: StaffCircleAvatar(
                           height: 24,
@@ -531,6 +549,11 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
   Future<void> _onSave() async {
     final l10n = context.l10n;
+    final role = ref.read(currentUserRoleProvider);
+    final staffId = ref.read(currentUserStaffIdProvider);
+    if (role == 'staff' && staffId != null && staffId > 0) {
+      _selectedStaffIds = {staffId};
+    }
     bool hasError = false;
 
     // Reset errori

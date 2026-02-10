@@ -62,6 +62,34 @@ final class AppointmentsController
     }
 
     /**
+     * For role=staff operators, returns the staff_id they are bound to in the business.
+     * Returns null if no staff-specific restriction applies.
+     */
+    private function getForcedStaffIdForStaffOperator(Request $request, int $businessId): ?int
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null) {
+            return null;
+        }
+
+        if ($this->userRepo->isSuperadmin((int) $userId)) {
+            return null;
+        }
+
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness((int) $userId, $businessId);
+        if ($businessUser === null) {
+            return null;
+        }
+
+        if (($businessUser['role'] ?? null) !== 'staff') {
+            return null;
+        }
+
+        $staffId = isset($businessUser['staff_id']) ? (int) $businessUser['staff_id'] : 0;
+        return $staffId > 0 ? $staffId : null;
+    }
+
+    /**
      * GET /v1/locations/{location_id}/appointments?date=YYYY-MM-DD
      * Returns all booking_items (appointments) for a specific location and date
      */
@@ -149,6 +177,16 @@ final class AppointmentsController
 
         if (!$isOwner && !$hasAccess) {
             return Response::forbidden('You do not have permission to modify this appointment');
+        }
+
+        $forcedStaffId = $this->getForcedStaffIdForStaffOperator($request, $businessId);
+        if ($forcedStaffId !== null) {
+            if ((int) $appointment['staff_id'] !== $forcedStaffId) {
+                return Response::forbidden('Staff operators can only modify appointments assigned to themselves');
+            }
+            if (isset($body['staff_id']) && (int) $body['staff_id'] !== $forcedStaffId) {
+                return Response::forbidden('Staff operators can only assign appointments to themselves');
+            }
         }
 
         // Update appointment fields
@@ -270,6 +308,11 @@ final class AppointmentsController
 
         if (!$isOwner && !$hasAccess) {
             return Response::forbidden('You do not have permission to modify this booking');
+        }
+
+        $forcedStaffId = $this->getForcedStaffIdForStaffOperator($request, $businessId);
+        if ($forcedStaffId !== null && (int) $body['staff_id'] !== $forcedStaffId) {
+            return Response::forbidden('Staff operators can only assign appointments to themselves');
         }
 
         // Validate required fields

@@ -421,13 +421,40 @@ final class StaffPlanningController
         }
 
         if ($requireManageStaff) {
-            // Write access: requires can_manage_staff
-            return $this->businessUserRepo->hasPermission(
+            // Write access: can_manage_staff OR self-staff planning edit.
+            $canManageStaff = $this->businessUserRepo->hasPermission(
                 (int) $userId,
                 (int) $staff['business_id'],
                 'can_manage_staff',
                 false
             );
+
+            if ($canManageStaff) {
+                return true;
+            }
+
+            $businessUser = $this->businessUserRepo->findByUserAndBusiness(
+                (int) $userId,
+                (int) $staff['business_id']
+            );
+
+            if ($businessUser !== null
+                && ($businessUser['role'] ?? null) === 'staff'
+                && (int) ($businessUser['staff_id'] ?? 0) === $staffId) {
+                return true;
+            }
+
+            // Scoped manager can edit planning for staff in assigned locations.
+            if ($businessUser !== null && ($businessUser['role'] ?? null) === 'manager') {
+                if (($businessUser['scope_type'] ?? 'business') === 'business') {
+                    return true;
+                }
+                $managerLocationIds = $businessUser['location_ids'] ?? [];
+                $staffLocationIds = $this->staffRepo->getLocationIds($staffId);
+                return count(array_intersect($staffLocationIds, $managerLocationIds)) > 0;
+            }
+
+            return false;
         }
 
         // Read access: any active operator in the business

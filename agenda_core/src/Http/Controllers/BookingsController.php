@@ -72,6 +72,63 @@ final class BookingsController
     }
 
     /**
+     * For role=staff operators, enforce booking assignment only to their own staff profile.
+     * Returns staff_id to enforce, or null if no staff-specific restriction applies.
+     */
+    private function getForcedStaffIdForStaffOperator(Request $request, int $businessId): ?int
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null || $this->businessUserRepo === null || $this->userRepo === null) {
+            return null;
+        }
+
+        if ($this->userRepo->isSuperadmin((int) $userId)) {
+            return null;
+        }
+
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness((int) $userId, $businessId);
+        if ($businessUser === null) {
+            return null;
+        }
+
+        if (($businessUser['role'] ?? null) !== 'staff') {
+            return null;
+        }
+
+        $staffId = isset($businessUser['staff_id']) ? (int) $businessUser['staff_id'] : 0;
+        return $staffId > 0 ? $staffId : null;
+    }
+
+    /**
+     * Validate that payload staff assignment respects forced staff_id for role=staff operators.
+     * Returns an error Response on violation, null otherwise.
+     */
+    private function validateForcedStaffAssignment(array $payload, int $forcedStaffId): ?Response
+    {
+        if (isset($payload['items']) && is_array($payload['items'])) {
+            foreach ($payload['items'] as $item) {
+                if (isset($item['staff_id']) && (int) $item['staff_id'] !== $forcedStaffId) {
+                    return Response::forbidden('Staff operators can only assign bookings to themselves');
+                }
+            }
+        }
+
+        if (isset($payload['staff_id']) && (int) $payload['staff_id'] !== $forcedStaffId) {
+            return Response::forbidden('Staff operators can only assign bookings to themselves');
+        }
+
+        if (isset($payload['staff_by_service']) && is_array($payload['staff_by_service'])) {
+            foreach ($payload['staff_by_service'] as $staffId) {
+                if ((int) $staffId !== $forcedStaffId) {
+                    return Response::forbidden('Staff operators can only assign bookings to themselves');
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * GET /v1/locations/{location_id}/bookings?date=YYYY-MM-DD[&staff_id=X]
      * Protected endpoint - gets bookings for a location on a date.
      */
@@ -499,6 +556,19 @@ final class BookingsController
             );
         }
 
+        $forcedStaffId = $this->getForcedStaffIdForStaffOperator($request, (int) $businessId);
+        if ($forcedStaffId !== null) {
+            if ($items !== null) {
+                foreach ($items as $item) {
+                    if ((int) $item['staff_id'] !== $forcedStaffId) {
+                        return Response::forbidden('Staff operators can only create bookings assigned to themselves');
+                    }
+                }
+            } elseif (isset($body['staff_id']) && (int) $body['staff_id'] !== $forcedStaffId) {
+                return Response::forbidden('Staff operators can only create bookings assigned to themselves');
+            }
+        }
+
         try {
             // Operatori del business possono creare appuntamenti nel passato e sovrapposti
             $isOperator = $this->hasBusinessAccess($request, $businessId);
@@ -516,7 +586,9 @@ final class BookingsController
             } else {
                 // Legacy format
                 $bookingData['service_ids'] = array_map('intval', $body['service_ids']);
-                $bookingData['staff_id'] = isset($body['staff_id']) ? (int) $body['staff_id'] : null;
+                $bookingData['staff_id'] = $forcedStaffId !== null
+                    ? $forcedStaffId
+                    : (isset($body['staff_id']) ? (int) $body['staff_id'] : null);
                 $bookingData['start_time'] = $body['start_time'];
             }
             
@@ -1016,6 +1088,17 @@ final class BookingsController
         $body = $request->getBody();
         $reason = $body['reason'] ?? null;
 
+        $forcedStaffId = $this->getForcedStaffIdForStaffOperator($request, $businessId);
+        if ($forcedStaffId !== null) {
+            $violation = $this->validateForcedStaffAssignment($body, $forcedStaffId);
+            if ($violation !== null) {
+                return $violation;
+            }
+            if (!isset($body['items']) && !isset($body['staff_id'])) {
+                $body['staff_id'] = $forcedStaffId;
+            }
+        }
+
         try {
             $result = $this->replaceBooking->execute(
                 $bookingId,
@@ -1144,6 +1227,17 @@ final class BookingsController
             return Response::error('recurrence.frequency is required', 'validation_error', 400);
         }
 
+        $forcedStaffId = $this->getForcedStaffIdForStaffOperator($request, (int) $businessId);
+        if ($forcedStaffId !== null) {
+            $violation = $this->validateForcedStaffAssignment($data, $forcedStaffId);
+            if ($violation !== null) {
+                return $violation;
+            }
+            if (!isset($data['staff_id']) && !isset($data['staff_by_service'])) {
+                $data['staff_id'] = $forcedStaffId;
+            }
+        }
+
         // Validate frequency
         $validFrequencies = ['daily', 'weekly', 'monthly', 'custom'];
         if (!in_array($data['recurrence']['frequency'], $validFrequencies)) {
@@ -1244,6 +1338,17 @@ final class BookingsController
 
         if (!isset($data['recurrence']) || !isset($data['recurrence']['frequency'])) {
             return Response::error('recurrence.frequency is required', 'validation_error', 400);
+        }
+
+        $forcedStaffId = $this->getForcedStaffIdForStaffOperator($request, (int) $businessId);
+        if ($forcedStaffId !== null) {
+            $violation = $this->validateForcedStaffAssignment($data, $forcedStaffId);
+            if ($violation !== null) {
+                return $violation;
+            }
+            if (!isset($data['staff_id']) && !isset($data['staff_by_service'])) {
+                $data['staff_id'] = $forcedStaffId;
+            }
         }
 
         try {
@@ -1433,6 +1538,11 @@ final class BookingsController
 
         if (empty($changes)) {
             return Response::error('No changes provided', 'validation_error', 400);
+        }
+
+        $forcedStaffId = $this->getForcedStaffIdForStaffOperator($request, $rule->businessId);
+        if ($forcedStaffId !== null && isset($changes['staff_id']) && (int) $changes['staff_id'] !== $forcedStaffId) {
+            return Response::forbidden('Staff operators can only assign bookings to themselves');
         }
 
         try {

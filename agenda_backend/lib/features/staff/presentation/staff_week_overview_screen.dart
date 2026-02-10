@@ -580,6 +580,14 @@ class _StaffWeekOverviewScreenState
     // Data sources
     final selectedDate = ref.watch(agendaDateProvider);
     final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
+    final currentUserRole = ref.watch(currentUserRoleProvider);
+    final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
+    final canEditAvailability =
+        canManageStaff ||
+        currentUserRole == 'manager' ||
+        (currentUserRole == 'staff' &&
+            currentUserStaffId != null &&
+            currentUserStaffId > 0);
     // Current location could influence future filtering (kept for clarity)
     // final location = ref.watch(currentLocationProvider); // not used yet
     final staffList = ref.watch(staffForStaffSectionProvider);
@@ -725,7 +733,12 @@ class _StaffWeekOverviewScreenState
       final minutes = _totalMinutesForStaff(availability[staffId] ?? const {});
       final isMobile = formFactor == AppFormFactor.mobile;
       void openStaffAvailability() {
-        if (!canManageStaff) return;
+        if (!canEditAvailability) return;
+        if (currentUserRole == 'staff' &&
+            currentUserStaffId != null &&
+            staffId != currentUserStaffId) {
+          return;
+        }
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => StaffPlanningScreen(initialStaffId: staffId),
@@ -775,7 +788,7 @@ class _StaffWeekOverviewScreenState
       if (isMobile) {
         // Mobile: avatar, nome e totale ore raggruppati al centro
         return GestureDetector(
-          onTap: canManageStaff ? openStaffAvailability : null,
+          onTap: canEditAvailability ? openStaffAvailability : null,
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -788,7 +801,7 @@ class _StaffWeekOverviewScreenState
                       isHighlighted: false,
                       initials: staff.initials,
                     ),
-                    if (canManageStaff)
+                    if (canEditAvailability)
                       Positioned(
                         right: -4,
                         bottom: -4,
@@ -840,7 +853,7 @@ class _StaffWeekOverviewScreenState
 
       // Desktop/Tablet: layout orizzontale
       return GestureDetector(
-        onTap: canManageStaff ? openStaffAvailability : null,
+        onTap: canEditAvailability ? openStaffAvailability : null,
         child: Row(
           children: [
             StaffCircleAvatar(
@@ -880,7 +893,7 @@ class _StaffWeekOverviewScreenState
                 ],
               ),
             ),
-            if (canManageStaff)
+            if (canEditAvailability)
               IconButton(
                 tooltip: context.l10n.staffEditHours,
                 iconSize: 20,
@@ -964,7 +977,7 @@ class _StaffWeekOverviewScreenState
 
     // Helper: mostra menu per eccezione "tutto il giorno"
     void showAllDayExceptionMenu(int staffId, int weekday, DateTime date) {
-      if (!canManageStaff) return;
+      if (!canEditAvailability) return;
       final l10n = context.l10n;
       final isMobile = formFactor == AppFormFactor.mobile;
       final locale = Intl.getCurrentLocale();
@@ -1139,7 +1152,7 @@ class _StaffWeekOverviewScreenState
       DateTime date, {
       bool isException = false,
     }) {
-      if (!canManageStaff) return;
+      if (!canEditAvailability) return;
       final l10n = context.l10n;
       final isMobile = formFactor == AppFormFactor.mobile;
       final locale = Intl.getCurrentLocale();
@@ -1610,11 +1623,11 @@ class _StaffWeekOverviewScreenState
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(6),
-            onTap: canManageStaff
+            onTap: canEditAvailability
                 ? () {
-              // Mostra menu per eccezione "tutto il giorno"
-              showAllDayExceptionMenu(staffId, weekday, date);
-            }
+                    // Mostra menu per eccezione "tutto il giorno"
+                    showAllDayExceptionMenu(staffId, weekday, date);
+                  }
                 : null,
             child: CustomPaint(
               painter: hasAllDayAvailable
@@ -1669,64 +1682,67 @@ class _StaffWeekOverviewScreenState
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(6),
-            onTap: canManageStaff
+            onTap: canEditAvailability
                 ? () {
-              if (range.hourRange != null) {
-                final isAllDayRange =
-                    range.hourRange!.startHour == 0 &&
-                    range.hourRange!.startMinute == 0 &&
-                    range.hourRange!.endHour == 24 &&
-                    range.hourRange!.endMinute == 0;
-                if (range.isException && isAllDayRange) {
-                  AvailabilityException? exc;
-                  for (final e in exceptions) {
-                    if (e.isAllDay) {
-                      exc = e;
-                      break;
+                    if (range.hourRange != null) {
+                      final isAllDayRange =
+                          range.hourRange!.startHour == 0 &&
+                          range.hourRange!.startMinute == 0 &&
+                          range.hourRange!.endHour == 24 &&
+                          range.hourRange!.endMinute == 0;
+                      if (range.isException && isAllDayRange) {
+                        AvailabilityException? exc;
+                        for (final e in exceptions) {
+                          if (e.isAllDay) {
+                            exc = e;
+                            break;
+                          }
+                        }
+                        if (exc != null) {
+                          showAddExceptionDialog(
+                            context,
+                            ref,
+                            staffId: staffId,
+                            initial: exc,
+                          );
+                          return;
+                        }
+                      }
+                      if (range.isException && !isAllDayRange) {
+                        AvailabilityException? exc;
+                        for (final e in exceptions) {
+                          if (e.startTime == null || e.endTime == null) {
+                            continue;
+                          }
+                          if (e.startTime!.hour == range.hourRange!.startHour &&
+                              e.startTime!.minute ==
+                                  range.hourRange!.startMinute &&
+                              e.endTime!.hour == range.hourRange!.endHour &&
+                              e.endTime!.minute == range.hourRange!.endMinute) {
+                            exc = e;
+                            break;
+                          }
+                        }
+                        if (exc != null) {
+                          showAddExceptionDialog(
+                            context,
+                            ref,
+                            staffId: staffId,
+                            initial: exc,
+                          );
+                          return;
+                        }
+                      }
+                      showShiftOptionsMenu(
+                        staffId,
+                        weekday,
+                        0,
+                        range.hourRange!,
+                        date,
+                        isException: range.isException,
+                      );
                     }
                   }
-                  if (exc != null) {
-                    showAddExceptionDialog(
-                      context,
-                      ref,
-                      staffId: staffId,
-                      initial: exc,
-                    );
-                    return;
-                  }
-                }
-                if (range.isException && !isAllDayRange) {
-                  AvailabilityException? exc;
-                  for (final e in exceptions) {
-                    if (e.startTime == null || e.endTime == null) continue;
-                    if (e.startTime!.hour == range.hourRange!.startHour &&
-                        e.startTime!.minute == range.hourRange!.startMinute &&
-                        e.endTime!.hour == range.hourRange!.endHour &&
-                        e.endTime!.minute == range.hourRange!.endMinute) {
-                      exc = e;
-                      break;
-                    }
-                  }
-                  if (exc != null) {
-                    showAddExceptionDialog(
-                      context,
-                      ref,
-                      staffId: staffId,
-                      initial: exc,
-                    );
-                    return;
-                  }
-                }
-                showShiftOptionsMenu(
-                  staffId,
-                  weekday,
-                  0,
-                  range.hourRange!,
-                  date,
-                  isException: range.isException,
-                );
-              }
-            }
                 : null,
             child: CustomPaint(
               painter: isUnavailableException

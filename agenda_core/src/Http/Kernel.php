@@ -459,54 +459,52 @@ final class Kernel
 
     public function handle(Request $request): Response
     {
+        $this->logger->info('Request', [
+            'method' => $request->method,
+            'path' => $request->path,
+            'trace_id' => $request->traceId,
+        ]);
+
+        $customerAuthAudit = $this->buildCustomerAuthAuditContext($request);
+        $response = null;
+
         try {
-            $this->logger->info('Request', [
-                'method' => $request->method,
-                'path' => $request->path,
-                'trace_id' => $request->traceId,
-            ]);
-
             $route = $this->router->match($request->method, $request->path);
-            
+
             if ($route === null) {
-                return Response::notFound('Endpoint not found', $request->traceId);
-            }
-
-            // Set path params as attributes
-            foreach ($route['params'] as $key => $value) {
-                $request->setAttribute($key, $value);
-            }
-
-            // Apply middleware
-            foreach ($route['middleware'] as $middlewareName) {
-                if (!isset($this->middleware[$middlewareName])) {
-                    continue;
+                $response = Response::notFound('Endpoint not found', $request->traceId);
+            } else {
+                // Set path params as attributes
+                foreach ($route['params'] as $key => $value) {
+                    $request->setAttribute($key, $value);
                 }
-                
-                $middleware = $this->middleware[$middlewareName];
-                $result = $middleware->handle($request);
-                
-                if ($result instanceof Response) {
-                    return $result;
+
+                // Apply middleware
+                foreach ($route['middleware'] as $middlewareName) {
+                    if (!isset($this->middleware[$middlewareName])) {
+                        continue;
+                    }
+
+                    $middleware = $this->middleware[$middlewareName];
+                    $result = $middleware->handle($request);
+
+                    if ($result instanceof Response) {
+                        $response = $result;
+                        break;
+                    }
+                }
+
+                if ($response === null) {
+                    // Call controller
+                    $controller = $this->controllers[$route['controller']] ?? null;
+                    if ($controller === null) {
+                        $response = Response::serverError('Controller not found', $request->traceId);
+                    } else {
+                        $method = $route['method'];
+                        $response = $controller->$method($request);
+                    }
                 }
             }
-
-            // Call controller
-            $controller = $this->controllers[$route['controller']] ?? null;
-            if ($controller === null) {
-                return Response::serverError('Controller not found', $request->traceId);
-            }
-
-            $method = $route['method'];
-            $response = $controller->$method($request);
-
-            $this->logger->info('Response', [
-                'status' => $response->status,
-                'trace_id' => $request->traceId,
-            ]);
-
-            return $response;
-
         } catch (\PDOException $e) {
             $this->logger->error('Database error', [
                 'message' => $e->getMessage(),
@@ -515,13 +513,12 @@ final class Kernel
             ]);
 
             // Return user-friendly message for database errors
-            return Response::error(
+            $response = Response::error(
                 'Service temporarily unavailable. Please try again later.',
                 'database_error',
                 503,
                 $request->traceId
             );
-
         } catch (Throwable $e) {
             $this->logger->error('Exception', [
                 'message' => $e->getMessage(),
@@ -532,8 +529,65 @@ final class Kernel
 
             $debug = ($_ENV['APP_DEBUG'] ?? false) === 'true';
             $message = $debug ? $e->getMessage() : 'Internal server error';
-            
-            return Response::serverError($message, $request->traceId);
+
+            $response = Response::serverError($message, $request->traceId);
         }
+
+        // Log response (include structured error code for quick filtering)
+        $errorCode = null;
+        if ($response->status >= 400) {
+            $errorCode = $response->data['error']['code'] ?? null;
+        }
+        $this->logger->info('Response', [
+            'status' => $response->status,
+            'error_code' => $errorCode,
+            'trace_id' => $request->traceId,
+        ]);
+
+        // Safe customer auth audit logging (hashed email; no PII in cleartext)
+        if ($customerAuthAudit !== null) {
+            $this->logger->info('CustomerAuth', [
+                ...$customerAuthAudit,
+                'status' => $response->status,
+                'error_code' => $errorCode,
+                'trace_id' => $request->traceId,
+            ]);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Builds a safe audit context for customer auth endpoints.
+     *
+     * - Never logs cleartext email/password.
+     * - Logs only sha256(email) to allow correlation between attempts.
+     *
+     * @return array{action:string,business_id:int,email_hash:?string}|null
+     */
+    private function buildCustomerAuthAuditContext(Request $request): ?array
+    {
+        // Match only customer auth login/register.
+        if (!preg_match('#^/v1/customer/([0-9]+)/auth/(login|register)$#', $request->path, $m)) {
+            return null;
+        }
+
+        $businessId = (int) $m[1];
+        $action = $m[2];
+        $body = $request->getBody() ?? [];
+        $email = $body['email'] ?? null;
+        $emailHash = null;
+        if (is_string($email)) {
+            $normalized = strtolower(trim($email));
+            if ($normalized !== '') {
+                $emailHash = hash('sha256', $normalized);
+            }
+        }
+
+        return [
+            'action' => $action,
+            'business_id' => $businessId,
+            'email_hash' => $emailHash,
+        ];
     }
 }

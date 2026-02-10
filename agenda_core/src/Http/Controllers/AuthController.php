@@ -383,6 +383,13 @@ final class AuthController
                     'role' => 'superadmin',
                     'scope_type' => 'business',
                     'location_ids' => [],
+                    'permissions' => [
+                        'can_manage_bookings' => true,
+                        'can_manage_clients' => true,
+                        'can_manage_services' => true,
+                        'can_manage_staff' => true,
+                        'can_view_reports' => true,
+                    ],
                     'is_superadmin' => true,
                 ],
             ], 200);
@@ -402,6 +409,13 @@ final class AuthController
                 'scope_type' => $businessUser['scope_type'] ?? 'business',
                 'location_ids' => $businessUser['location_ids'] ?? [],
                 'staff_id' => $businessUser['staff_id'] ?? null,
+                'permissions' => [
+                    'can_manage_bookings' => (bool) ($businessUser['can_manage_bookings'] ?? false),
+                    'can_manage_clients' => (bool) ($businessUser['can_manage_clients'] ?? false),
+                    'can_manage_services' => (bool) ($businessUser['can_manage_services'] ?? false),
+                    'can_manage_staff' => (bool) ($businessUser['can_manage_staff'] ?? false),
+                    'can_view_reports' => (bool) ($businessUser['can_view_reports'] ?? false),
+                ],
                 'is_superadmin' => false,
             ],
         ], 200);

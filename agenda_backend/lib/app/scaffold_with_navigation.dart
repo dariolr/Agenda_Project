@@ -547,6 +547,14 @@ class _AgendaAddAction extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final agendaDate = ref.watch(agendaDateProvider);
+    final currentUserRole = ref.watch(currentUserRoleProvider);
+    final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
+    final initialStaffIdForNewBooking =
+        (currentUserRole == 'staff' &&
+            currentUserStaffId != null &&
+            currentUserStaffId > 0)
+        ? currentUserStaffId
+        : null;
     final scheme = Theme.of(context).colorScheme;
     final onContainer = scheme.onSecondaryContainer;
     final layoutConfig = ref.watch(layoutConfigProvider);
@@ -585,9 +593,15 @@ class _AgendaAddAction extends ConsumerWidget {
               ref,
               date: agendaDate,
               autoOpenDatePicker: true,
+              initialStaffId: initialStaffIdForNewBooking,
             );
           } else if (value == 'block') {
-            showAddBlockDialog(context, ref, date: agendaDate);
+            showAddBlockDialog(
+              context,
+              ref,
+              date: agendaDate,
+              initialStaffId: initialStaffIdForNewBooking,
+            );
           }
         },
         child: Material(

@@ -1386,3 +1386,24 @@ Il `BookingFlowNotifier`:
 - `owner/admin` possono assegnare `viewer`.
 - `manager/staff/viewer` non possono assegnare ruoli.
 - Migrazione: `migrations/0040_add_viewer_role.sql`.
+
+### 34. Convergenza privilegi manager/staff con scope esplicito (2026-02-10)
+**Contesto**: Serviva allineare il comportamento operativo dei ruoli `manager` e `staff` mantenendo differenza solo nel perimetro: singolo staff vs team delle sedi assegnate.
+
+**Decisione**:
+- `staff`: può operare solo sul proprio `staff_id` associato.
+- `manager`: può operare sulle risorse staff in scope (business intero o sedi assegnate).
+- Le capability funzionali sono allineate per i due ruoli (profilo staff, planning, disponibilità, agenda) ma vincolate allo scope.
+- `viewer` resta in sola lettura.
+
+**Implementazione tecnica**:
+- Invito operatore staff con `staff_id` persistito su `business_invitations`.
+- In accettazione invito, propagazione relazione utente-business e scope sedi (`business_user_locations`).
+- Enforcement API esteso su:
+  - `StaffController`
+  - `StaffPlanningController`
+  - `StaffAvailabilityExceptionController`
+  con regole "can_manage_staff OR self-staff OR manager-in-scope".
+
+**Migrazione correlata**:
+- `migrations/0043_business_invitations_add_staff_id.sql`

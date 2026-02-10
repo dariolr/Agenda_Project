@@ -502,6 +502,13 @@ final class BusinessUsersController
                 'can_manage_staff' => false,
                 'can_view_reports' => false,
             ],
+            'staff' => [
+                'can_manage_bookings' => true,
+                'can_manage_clients' => true,
+                'can_manage_services' => false,
+                'can_manage_staff' => false,
+                'can_view_reports' => false,
+            ],
             'viewer' => [
                 'can_manage_bookings' => false,
                 'can_manage_clients' => false,
