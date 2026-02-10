@@ -21,6 +21,16 @@ import '../../../services/presentation/widgets/service_eligibility_selector.dart
 import '../../../services/providers/services_provider.dart';
 import '../../providers/staff_providers.dart';
 
+bool _canManagerEditStaffInScope(
+  String currentUserRole,
+  Staff? targetStaff,
+  List<int>? allowedLocationIds,
+) {
+  if (currentUserRole != 'manager' || targetStaff == null) return false;
+  if (allowedLocationIds == null) return true;
+  return targetStaff.locationIds.any(allowedLocationIds.contains);
+}
+
 Future<void> showStaffDialog(
   BuildContext context,
   WidgetRef ref, {
@@ -29,7 +39,28 @@ Future<void> showStaffDialog(
   bool duplicateFrom = false,
   bool readOnly = false,
 }) async {
-  if (!readOnly && !ref.read(currentUserCanManageStaffProvider)) return;
+  final canManageStaff = ref.read(currentUserCanManageStaffProvider);
+  final currentUserRole = ref.read(currentUserRoleProvider);
+  final currentUserStaffId = ref.read(currentUserStaffIdProvider);
+  final allowedLocationIds = ref.read(allowedLocationIdsProvider);
+  final isOwnStaff =
+      initial != null &&
+      currentUserStaffId != null &&
+      currentUserStaffId > 0 &&
+      initial.id == currentUserStaffId;
+  final canEditOwnStaffProfile = currentUserRole == 'staff' && isOwnStaff;
+  final canEditManagerScopedStaff = _canManagerEditStaffInScope(
+    currentUserRole,
+    initial,
+    allowedLocationIds,
+  );
+
+  if (!readOnly &&
+      !canManageStaff &&
+      !canEditOwnStaffProfile &&
+      !canEditManagerScopedStaff) {
+    return;
+  }
   final formFactor = ref.read(formFactorProvider);
   final isDesktop = formFactor == AppFormFactor.desktop;
 
@@ -198,7 +229,27 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         : l10n.teamNewStaffTitle;
     final formFactor = ref.read(formFactorProvider);
     final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
-    final isReadOnly = widget.readOnly || !canManageStaff;
+    final currentUserRole = ref.watch(currentUserRoleProvider);
+    final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
+    final allowedLocationIds = ref.watch(allowedLocationIdsProvider);
+    final isEditingOwnStaff =
+        widget.initial != null &&
+        currentUserRole == 'staff' &&
+        currentUserStaffId != null &&
+        currentUserStaffId > 0 &&
+        widget.initial!.id == currentUserStaffId;
+    final canEditOwnStaffProfile = !canManageStaff && isEditingOwnStaff;
+    final canEditManagerScopedStaff = _canManagerEditStaffInScope(
+      currentUserRole,
+      widget.initial,
+      allowedLocationIds,
+    );
+    final canEditScopedProfile =
+        canEditOwnStaffProfile || canEditManagerScopedStaff;
+    final isReadOnly =
+        widget.readOnly || (!canManageStaff && !canEditScopedProfile);
+    final canEditLocationAndServices = canManageStaff;
+    final canEditServices = canManageStaff || canEditScopedProfile;
     final isSingleColumn = formFactor != AppFormFactor.desktop;
     final locations = ref.watch(locationsProvider);
     // Carica servizi solo per le location selezionate
@@ -423,7 +474,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
           SizedBox(
             height: 48,
             child: AppOutlinedActionButton(
-              onPressed: isReadOnly ? null : _openLocationsSelector,
+              onPressed: canEditLocationAndServices
+                  ? _openLocationsSelector
+                  : null,
               expand: true,
               padding: AppButtonStyles.defaultPadding,
               child: Row(
@@ -482,7 +535,8 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
           SizedBox(
             height: 48,
             child: AppOutlinedActionButton(
-              onPressed: () => _openServicesSelector(readOnly: isReadOnly),
+              onPressed: () =>
+                  _openServicesSelector(readOnly: !canEditServices),
               expand: true,
               padding: AppButtonStyles.defaultPadding,
               child: Align(
@@ -524,9 +578,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
           _SwitchTile(
             title: l10n.teamStaffBookableOnlineLabel,
             value: _isBookableOnline,
-            onChanged: isReadOnly
-                ? null
-                : (v) => setState(() => _isBookableOnline = v),
+            onChanged: canEditLocationAndServices
+                ? (v) => setState(() => _isBookableOnline = v)
+                : null,
           ),
           if (_saveError != null) ...[
             const SizedBox(height: AppSpacing.formRowSpacing),
@@ -660,13 +714,34 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
   String? _saveError;
 
   Future<void> _onSave() async {
-    if (!ref.read(currentUserCanManageStaffProvider)) return;
+    final canManageStaff = ref.read(currentUserCanManageStaffProvider);
+    final currentUserRole = ref.read(currentUserRoleProvider);
+    final currentUserStaffId = ref.read(currentUserStaffIdProvider);
+    final allowedLocationIds = ref.read(allowedLocationIdsProvider);
+    final isEditingOwnStaff =
+        widget.initial != null &&
+        currentUserRole == 'staff' &&
+        currentUserStaffId != null &&
+        currentUserStaffId > 0 &&
+        widget.initial!.id == currentUserStaffId;
+    final canEditOwnStaffProfile = !canManageStaff && isEditingOwnStaff;
+    final canEditManagerScopedStaff = _canManagerEditStaffInScope(
+      currentUserRole,
+      widget.initial,
+      allowedLocationIds,
+    );
+    final canEditScopedProfile =
+        canEditOwnStaffProfile || canEditManagerScopedStaff;
+
+    if (!canManageStaff && !canEditScopedProfile) return;
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedLocationIds.isEmpty) {
+    if (canManageStaff && _selectedLocationIds.isEmpty) {
       setState(() => _locationsError = context.l10n.validationRequired);
       return;
     }
-    if (!kAllowStaffMultiLocationSelection && _selectedLocationIds.length > 1) {
+    if (canManageStaff &&
+        !kAllowStaffMultiLocationSelection &&
+        _selectedLocationIds.length > 1) {
       final firstId = _selectedLocationIds.first;
       _selectedLocationIds
         ..clear()
@@ -692,11 +767,14 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
           surname: surname,
           colorHex:
               '#${_selectedColor.value.toRadixString(16).substring(2).toUpperCase()}',
-          isBookableOnline: _isBookableOnline,
-          locationIds: _selectedLocationIds.toList(),
-          serviceIds: _selectedServiceIds.toList(),
+          isBookableOnline: canManageStaff ? _isBookableOnline : null,
+          locationIds: canManageStaff ? _selectedLocationIds.toList() : null,
+          serviceIds: (canManageStaff || canEditScopedProfile)
+              ? _selectedServiceIds.toList()
+              : null,
         );
       } else {
+        if (!canManageStaff) return;
         // Crea nuovo staff tramite API (include service_ids)
         await notifier.createStaff(
           name: name,

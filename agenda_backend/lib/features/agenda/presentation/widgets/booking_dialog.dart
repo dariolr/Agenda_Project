@@ -249,6 +249,14 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final hasPackages =
         (ref.watch(servicePackagesProvider).value ?? []).isNotEmpty;
     final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
+    final currentUserRole = ref.watch(currentUserRoleProvider);
+    final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
+    final forcedStaffId =
+        (currentUserRole == 'staff' &&
+            currentUserStaffId != null &&
+            currentUserStaffId > 0)
+        ? currentUserStaffId
+        : null;
 
     // Usa lo staffId del primo item per i servizi popolari
     final firstStaffId = _serviceItems.isNotEmpty
@@ -355,6 +363,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                   categories: serviceCategories,
                   variants: variants,
                   allStaff: allStaff,
+                  forcedStaffId: forcedStaffId,
                   formFactor: formFactor,
                   conflictFlags: conflictFlags,
                   showServiceWarnings: showServiceWarnings,
@@ -562,6 +571,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     required List<dynamic> categories,
     required List<dynamic> variants,
     required List<dynamic> allStaff,
+    required int? forcedStaffId,
     required AppFormFactor formFactor,
     required List<bool> conflictFlags,
     required bool showServiceWarnings,
@@ -589,7 +599,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     }
 
     for (int i = 0; i < _serviceItems.length; i++) {
-      final item = _serviceItems[i];
+      final item = forcedStaffId != null
+          ? _serviceItems[i].copyWith(staffId: forcedStaffId)
+          : _serviceItems[i];
       final TimeOfDay? suggestedStartTime = i > 0
           ? _resolveServiceEndTime(_serviceItems[i - 1], variants.cast())
           : null;
@@ -663,7 +675,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 popularServices: popularServices,
                 onPackageSelected: (package) =>
                     _onPackageSelectedFromPicker(package, i),
-                onChanged: (updated) => _updateServiceItem(i, updated),
+                onChanged: (updated) => _updateServiceItem(
+                  i,
+                  updated,
+                  forcedStaffId: forcedStaffId,
+                ),
                 onRemove: () => _removeServiceItem(i),
                 onStartTimeChanged: (time) => _updateServiceStartTime(i, time),
                 onEndTimeChanged: (time) => _updateServiceEndTime(i, time),
@@ -692,6 +708,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     ? context.l10n.bookingStaffNotEligibleWarning
                     : null,
                 preselectedStaffServiceIds: preselectedStaffServiceIds,
+                canSelectStaff: forcedStaffId == null,
               ),
             ),
             if (canAddDefaultExtra) ...[
@@ -1498,30 +1515,39 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     });
   }
 
-  void _updateServiceItem(int index, ServiceItemData updated) {
+  void _updateServiceItem(
+    int index,
+    ServiceItemData updated, {
+    int? forcedStaffId,
+  }) {
     final variants = ref.read(serviceVariantsProvider).value ?? [];
     final oldItem = _serviceItems[index];
+    final effectiveUpdated = forcedStaffId != null
+        ? updated.copyWith(staffId: forcedStaffId)
+        : updated;
 
     setState(() {
-      _serviceItems[index] = updated;
+      _serviceItems[index] = effectiveUpdated;
 
       // Se cambia il servizio, potremmo dover aggiornare lo staff
       // e ricalcolare gli orari successivi
       _recalculateTimesFrom(index + 1, variants);
 
       // Se lo staff è ancora null, seleziona automaticamente un eligible
-      if (updated.serviceId != null && updated.staffId == null) {
-        final newStaffId = _findBestStaff(updated.serviceId!);
-        _serviceItems[index] = updated.copyWith(staffId: newStaffId);
+      if (effectiveUpdated.serviceId != null &&
+          effectiveUpdated.staffId == null) {
+        final newStaffId = _findBestStaff(effectiveUpdated.serviceId!);
+        _serviceItems[index] = effectiveUpdated.copyWith(staffId: newStaffId);
       }
 
       // Propagate staff to subsequent services that don't have a staff yet
       // This is useful when user selects staff on first service of a package
-      if (updated.staffId != null && oldItem.staffId != updated.staffId) {
+      if (effectiveUpdated.staffId != null &&
+          oldItem.staffId != effectiveUpdated.staffId) {
         for (var i = index + 1; i < _serviceItems.length; i++) {
-          if (_serviceItems[i].staffId == null) {
+          if (forcedStaffId != null || _serviceItems[i].staffId == null) {
             _serviceItems[i] = _serviceItems[i].copyWith(
-              staffId: updated.staffId,
+              staffId: effectiveUpdated.staffId,
             );
           }
         }
@@ -1698,6 +1724,15 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     );
   }
 
+  int? _forcedStaffIdForCurrentUser() {
+    final role = ref.read(currentUserRoleProvider);
+    final staffId = ref.read(currentUserStaffIdProvider);
+    if (role == 'staff' && staffId != null && staffId > 0) {
+      return staffId;
+    }
+    return null;
+  }
+
   Future<void> _onSave() async {
     if (!mounted) return;
     final canManageBookings = ref.read(currentUserCanManageBookingsProvider);
@@ -1706,9 +1741,16 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
 
+    final forcedStaffId = _forcedStaffIdForCurrentUser();
+
     // Verifica che ci sia almeno un servizio con dati completi
     final validItems = _serviceItems
         .where((item) => item.serviceId != null && item.staffId != null)
+        .map(
+          (item) => forcedStaffId != null
+              ? item.copyWith(staffId: forcedStaffId)
+              : item,
+        )
         .toList();
 
     if (validItems.isEmpty) {

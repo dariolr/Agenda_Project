@@ -32,7 +32,9 @@ class StaffNotifier extends AsyncNotifier<List<Staff>> {
       }
 
       return staff
-          .where((member) => member.locationIds.any(allowedLocationIds.contains))
+          .where(
+            (member) => member.locationIds.any(allowedLocationIds.contains),
+          )
           .toList();
     } catch (e) {
       return [];
@@ -304,13 +306,23 @@ final staffSectionLocationIdProvider =
 final staffForStaffSectionProvider = Provider<List<Staff>>((ref) {
   final locationId = ref.watch(staffSectionLocationIdProvider);
   final allowedLocationIds = ref.watch(allowedLocationIdsProvider);
+  final currentUserRole = ref.watch(currentUserRoleProvider);
+  final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
   final staffAsync = ref.watch(allStaffProvider);
   final allStaff = staffAsync.value ?? [];
-  final staff = allowedLocationIds == null
+  final scopedStaff = allowedLocationIds == null
       ? allStaff
       : allStaff
-            .where((member) => member.locationIds.any(allowedLocationIds.contains))
+            .where(
+              (member) => member.locationIds.any(allowedLocationIds.contains),
+            )
             .toList();
+  final staff =
+      currentUserRole == 'staff' &&
+          currentUserStaffId != null &&
+          currentUserStaffId > 0
+      ? scopedStaff.where((s) => s.id == currentUserStaffId).toList()
+      : scopedStaff;
 
   if (locationId == null) {
     // Tutte le sedi consentite

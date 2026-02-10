@@ -42,14 +42,6 @@ class MoreScreen extends ConsumerWidget {
           color: const Color(0xFF2196F3), // Blue
           onTap: () => context.go('/staff'),
         ),
-      if (canViewStaff)
-        _MoreItem(
-          icon: Icons.schedule_outlined,
-          title: l10n.staffHubAvailabilityTitle,
-          description: l10n.moreTeamDescription,
-          color: const Color(0xFF3F51B5), // Indigo
-          onTap: () => context.pushNamed('staff-availability'),
-        ),
       // Permessi - visibile solo a chi può gestire operatori
       if (canManageOperators)
         _MoreItem(

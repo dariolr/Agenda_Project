@@ -70,6 +70,35 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     }).toList();
   }
 
+  Set<int> _forcedLocationIdsForStaff(Set<int> visibleLocationIds) {
+    final currentUserRole = ref.read(currentUserRoleProvider);
+    final currentUserStaffId = ref.read(currentUserStaffIdProvider);
+    if (currentUserRole != 'staff' ||
+        currentUserStaffId == null ||
+        currentUserStaffId <= 0) {
+      return {};
+    }
+
+    final allowedLocationIds = ref.read(allowedLocationIdsProvider);
+    if (allowedLocationIds != null && allowedLocationIds.isNotEmpty) {
+      return allowedLocationIds.toSet().intersection(visibleLocationIds);
+    }
+
+    final staff = ref.read(allStaffProvider).value ?? [];
+    final member = staff.where((s) => s.id == currentUserStaffId).firstOrNull;
+    if (member != null && member.locationIds.isNotEmpty) {
+      return member.locationIds.toSet().intersection(visibleLocationIds);
+    }
+
+    return {};
+  }
+
+  Set<int> _effectiveLocationSelection(Set<int> visibleLocationIds) {
+    final forced = _forcedLocationIdsForStaff(visibleLocationIds);
+    if (forced.isNotEmpty) return forced;
+    return _selectedLocationIds;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -97,6 +126,22 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   }
 
   Future<void> _loadInitialData() async {
+    final currentUserRole = ref.read(currentUserRoleProvider);
+    final currentUserStaffId = ref.read(currentUserStaffIdProvider);
+    final forcedStaffIds =
+        (currentUserRole == 'staff' &&
+            currentUserStaffId != null &&
+            currentUserStaffId > 0)
+        ? <int>[currentUserStaffId]
+        : null;
+    final visibleLocationIds = ref
+        .read(locationsProvider)
+        .map((l) => l.id)
+        .toSet();
+    final effectiveLocationIds = _effectiveLocationSelection(
+      visibleLocationIds,
+    );
+
     // Get filter state from provider (UI date range)
     final filterState = ref.read(bookingsListFilterProvider);
     // Get current API filters to preserve sortBy/sortOrder
@@ -107,12 +152,14 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         .read(bookingsListFiltersProvider.notifier)
         .updateFilters(
           BookingsListFilters(
-            locationIds: _selectedLocationIds.isNotEmpty
-                ? _selectedLocationIds.toList()
+            locationIds: effectiveLocationIds.isNotEmpty
+                ? effectiveLocationIds.toList()
                 : null,
-            staffIds: _selectedStaffIds.isNotEmpty
-                ? _selectedStaffIds.toList()
-                : null,
+            staffIds:
+                forcedStaffIds ??
+                (_selectedStaffIds.isNotEmpty
+                    ? _selectedStaffIds.toList()
+                    : null),
             serviceIds: _selectedServiceIds.isNotEmpty
                 ? _selectedServiceIds.toList()
                 : null,
@@ -195,6 +242,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   }
 
   void _showLocationFilter(BuildContext context) async {
+    final currentUserRole = ref.read(currentUserRoleProvider);
+    if (currentUserRole == 'staff') return;
+
     final locations = ref.read(locationsProvider);
     if (locations.isEmpty) return;
 
@@ -237,15 +287,21 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   }
 
   void _showStaffFilter(BuildContext context) async {
+    final currentUserRole = ref.read(currentUserRoleProvider);
+    if (currentUserRole == 'staff') return;
+
     final staff = ref.read(allStaffProvider).value ?? [];
     final visibleLocationIds = ref
         .read(locationsProvider)
         .map((l) => l.id)
         .toSet();
+    final effectiveLocationIds = _effectiveLocationSelection(
+      visibleLocationIds,
+    );
     final filteredStaff = _staffScopedByLocations(
       staff: staff,
       visibleLocationIds: visibleLocationIds,
-      selectedLocationIds: _selectedLocationIds,
+      selectedLocationIds: effectiveLocationIds,
     );
     if (filteredStaff.isEmpty) return;
 
@@ -271,10 +327,13 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         .read(locationsProvider)
         .map((l) => l.id)
         .toSet();
+    final effectiveLocationIds = _effectiveLocationSelection(
+      visibleLocationIds,
+    );
     final filteredServices = _servicesScopedByLocations(
       services: services,
       visibleLocationIds: visibleLocationIds,
-      selectedLocationIds: _selectedLocationIds,
+      selectedLocationIds: effectiveLocationIds,
     );
     final categories = ref.read(serviceCategoriesProvider);
     if (filteredServices.isEmpty) return;
@@ -397,6 +456,12 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   Widget _buildFiltersSection(BuildContext context) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
+    final currentUserRole = ref.watch(currentUserRoleProvider);
+    final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
+    final isStaffRole =
+        currentUserRole == 'staff' &&
+        currentUserStaffId != null &&
+        currentUserStaffId > 0;
 
     return Container(
       alignment: Alignment.centerLeft,
@@ -413,15 +478,18 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
           final staff = ref.watch(allStaffProvider).value ?? [];
           final services = ref.watch(servicesProvider).value ?? [];
           final visibleLocationIds = locations.map((l) => l.id).toSet();
+          final effectiveLocationIds = _effectiveLocationSelection(
+            visibleLocationIds,
+          );
           final filteredStaff = _staffScopedByLocations(
             staff: staff,
             visibleLocationIds: visibleLocationIds,
-            selectedLocationIds: _selectedLocationIds,
+            selectedLocationIds: effectiveLocationIds,
           );
           final filteredServices = _servicesScopedByLocations(
             services: services,
             visibleLocationIds: visibleLocationIds,
-            selectedLocationIds: _selectedLocationIds,
+            selectedLocationIds: effectiveLocationIds,
           );
 
           final hasMultipleLocations = locations.length > 1;
@@ -434,23 +502,25 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
             runSpacing: 8,
             children: [
               if (hasMultipleLocations)
-                _buildFilterChip(
-                  context,
-                  label: _selectedLocationIds.isEmpty
-                      ? l10n.reportsFilterLocations
-                      : '${l10n.reportsFilterLocations} (${_selectedLocationIds.length})',
-                  selected: _selectedLocationIds.isNotEmpty,
-                  onTap: () => _showLocationFilter(context),
-                ),
+                if (!isStaffRole)
+                  _buildFilterChip(
+                    context,
+                    label: _selectedLocationIds.isEmpty
+                        ? l10n.reportsFilterLocations
+                        : '${l10n.reportsFilterLocations} (${_selectedLocationIds.length})',
+                    selected: _selectedLocationIds.isNotEmpty,
+                    onTap: () => _showLocationFilter(context),
+                  ),
               if (hasMultipleStaff)
-                _buildFilterChip(
-                  context,
-                  label: _selectedStaffIds.isEmpty
-                      ? l10n.reportsFilterStaff
-                      : '${l10n.reportsFilterStaff} (${_selectedStaffIds.length})',
-                  selected: _selectedStaffIds.isNotEmpty,
-                  onTap: () => _showStaffFilter(context),
-                ),
+                if (!isStaffRole)
+                  _buildFilterChip(
+                    context,
+                    label: _selectedStaffIds.isEmpty
+                        ? l10n.reportsFilterStaff
+                        : '${l10n.reportsFilterStaff} (${_selectedStaffIds.length})',
+                    selected: _selectedStaffIds.isNotEmpty,
+                    onTap: () => _showStaffFilter(context),
+                  ),
               if (hasMultipleServices)
                 _buildFilterChip(
                   context,
