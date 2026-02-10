@@ -175,12 +175,40 @@ final class StaffController
             return Response::notFound('Staff member not found', $request->traceId);
         }
 
-        // Write access: requires can_manage_staff permission.
-        if (!$this->businessUserRepo->hasPermission($userId, (int) $staff['business_id'], 'can_manage_staff', $isSuperadmin)) {
+        $businessId = (int) $staff['business_id'];
+        $canManageStaff = $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_staff', $isSuperadmin);
+        $isSelfStaffProfile = false;
+        $isManagerInScope = false;
+        $businessUser = null;
+        if (!$isSuperadmin) {
+            $businessUser = $this->businessUserRepo->findByUserAndBusiness((int) $userId, $businessId);
+            $isSelfStaffProfile = $businessUser !== null
+                && ($businessUser['role'] ?? null) === 'staff'
+                && (int) ($businessUser['staff_id'] ?? 0) === $staffId;
+
+            if ($businessUser !== null && ($businessUser['role'] ?? null) === 'manager') {
+                $staffLocationIds = $this->staffRepository->getLocationIds($staffId);
+                if (($businessUser['scope_type'] ?? 'business') === 'business') {
+                    $isManagerInScope = true;
+                } else {
+                    $managerLocationIds = $businessUser['location_ids'] ?? [];
+                    $isManagerInScope = count(array_intersect($staffLocationIds, $managerLocationIds)) > 0;
+                }
+            }
+        }
+
+        // Write access: requires can_manage_staff OR scoped manager OR self-profile edit for role=staff.
+        if (!$canManageStaff && !$isSelfStaffProfile && !$isManagerInScope) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
 
         $body = $request->getBody();
+
+        // Scoped manager/self staff edit: limit editable fields to profile/services only.
+        if (($isSelfStaffProfile || $isManagerInScope) && !$canManageStaff) {
+            $allowedSelfFields = ['name', 'surname', 'color_hex', 'avatar_url', 'service_ids'];
+            $body = array_intersect_key($body, array_flip($allowedSelfFields));
+        }
 
         $updateData = [];
         if (isset($body['name'])) $updateData['name'] = $body['name'];
@@ -195,12 +223,12 @@ final class StaffController
         }
 
         // Update locations if provided
-        if (isset($body['location_ids']) && is_array($body['location_ids'])) {
+        if ($canManageStaff && isset($body['location_ids']) && is_array($body['location_ids'])) {
             $this->staffRepository->setLocations($staffId, array_map('intval', $body['location_ids']));
         }
 
         // Update services if provided
-        if (isset($body['service_ids']) && is_array($body['service_ids'])) {
+        if (($canManageStaff || $isSelfStaffProfile || $isManagerInScope) && isset($body['service_ids']) && is_array($body['service_ids'])) {
             $this->staffRepository->setServices($staffId, array_map('intval', $body['service_ids']));
         }
 
@@ -228,9 +256,23 @@ final class StaffController
             return Response::notFound('Staff member not found', $request->traceId);
         }
 
+        $businessId = (int) $staff['business_id'];
+        $canManageStaff = $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_staff', $isSuperadmin);
+
         // Check user has access to business
-        if (!$this->businessUserRepo->hasPermission($userId, (int) $staff['business_id'], 'can_manage_staff', $isSuperadmin)) {
+        if (!$canManageStaff) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
+        }
+
+        // A staff operator cannot delete their own staff profile.
+        if (!$isSuperadmin) {
+            $businessUser = $this->businessUserRepo->findByUserAndBusiness((int) $userId, $businessId);
+            $isSelfStaffProfile = $businessUser !== null
+                && ($businessUser['role'] ?? null) === 'staff'
+                && (int) ($businessUser['staff_id'] ?? 0) === $staffId;
+            if ($isSelfStaffProfile) {
+                return Response::error('You cannot delete your own staff profile', 'forbidden', 403, $request->traceId);
+            }
         }
 
         $this->staffRepository->delete($staffId);

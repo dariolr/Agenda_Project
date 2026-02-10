@@ -58,6 +58,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
     this.availabilityWarningMessage,
     this.staffEligibilityWarningMessage,
     this.preselectedStaffServiceIds,
+    this.canSelectStaff = true,
   });
 
   final ServiceItemData item;
@@ -98,6 +99,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
   /// IDs dei servizi abilitati per lo staff preselezionato.
   /// Se fornito, il picker mostrerà di default solo questi servizi.
   final List<int>? preselectedStaffServiceIds;
+  final bool canSelectStaff;
 
   @override
   ConsumerState<ServiceItemCard> createState() => _ServiceItemCardState();
@@ -139,6 +141,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
       widget.staffEligibilityWarningMessage;
   List<int>? get preselectedStaffServiceIds =>
       widget.preselectedStaffServiceIds;
+  bool get canSelectStaff => widget.canSelectStaff;
 
   @override
   void didUpdateWidget(covariant ServiceItemCard oldWidget) {
@@ -319,7 +322,9 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
           ? (v) => v == null ? l10n.validationRequired : null
           : null,
       builder: (field) {
-        if (_shouldAutoOpenStaff && !_autoOpenStaffRequested) {
+        if (canSelectStaff &&
+            _shouldAutoOpenStaff &&
+            !_autoOpenStaffRequested) {
           _autoOpenStaffRequested = true;
           _shouldAutoOpenStaff = false;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -340,7 +345,9 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
-              onTap: () => _showStaffPicker(context, availableStaff, field),
+              onTap: canSelectStaff
+                  ? () => _showStaffPicker(context, availableStaff, field)
+                  : null,
               borderRadius: BorderRadius.circular(4),
               child: InputDecorator(
                 decoration: InputDecoration(
@@ -357,8 +364,10 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
                     borderRadius: BorderRadius.circular(4),
                     borderSide: BorderSide(color: borderColor),
                   ),
-                  suffixIcon: const Icon(Icons.arrow_drop_down),
-                  enabled: true,
+                  suffixIcon: canSelectStaff
+                      ? const Icon(Icons.arrow_drop_down)
+                      : const Icon(Icons.lock_outline, size: 18),
+                  enabled: canSelectStaff,
                 ),
                 child: Row(
                   children: [

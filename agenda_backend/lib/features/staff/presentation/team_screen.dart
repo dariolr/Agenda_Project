@@ -325,14 +325,32 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   ) {
     final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
     final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
+    final currentUserRole = ref.watch(currentUserRoleProvider);
+    final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
+    final isManagerRole = currentUserRole == 'manager';
+    final isStaffRole =
+        currentUserRole == 'staff' &&
+        currentUserStaffId != null &&
+        currentUserStaffId > 0;
+    final visibleLocations = isStaffRole
+        ? locations.where((loc) {
+            final staffInLocation = ref.watch(staffByLocationProvider(loc.id));
+            return staffInLocation.any((s) => s.id == currentUserStaffId);
+          }).toList()
+        : locations;
 
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      itemCount: locations.length,
+      itemCount: visibleLocations.length,
       itemBuilder: (context, index) {
-        final loc = locations[index];
-        final staff = ref.watch(staffByLocationProvider(loc.id));
+        final loc = visibleLocations[index];
+        final allStaffInLocation = ref.watch(staffByLocationProvider(loc.id));
+        final staff = isStaffRole
+            ? allStaffInLocation
+                  .where((s) => s.id == currentUserStaffId)
+                  .toList()
+            : allStaffInLocation;
         return LocationItem(
           location: loc,
           staff: staff,
@@ -375,14 +393,18 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
                   .deleteLocation(loc.id, currentLocationId: currentId);
             }
           },
-          onEditStaff: canManageStaff
-              ? (staff) => showStaffDialog(context, ref, initial: staff)
-              : (staff) => showStaffDialog(
-                  context,
-                  ref,
-                  initial: staff,
-                  readOnly: true,
-                ),
+          onEditStaff: (staff) {
+            final isOwnStaff =
+                currentUserStaffId != null && staff.id == currentUserStaffId;
+            final canEditThisStaff =
+                canManageStaff || isManagerRole || (isStaffRole && isOwnStaff);
+            showStaffDialog(
+              context,
+              ref,
+              initial: staff,
+              readOnly: !canEditThisStaff,
+            );
+          },
           onDuplicateStaff: canManageStaff
               ? (staff) => showStaffDialog(
                   context,
@@ -392,6 +414,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
                 )
               : (_) {},
           onDeleteStaff: (staff) async {
+            final isOwnStaff =
+                currentUserStaffId != null && staff.id == currentUserStaffId;
+            if (isOwnStaff) return;
             if (!canManageStaff) return;
             final confirmed = await showConfirmDialog(
               context,
