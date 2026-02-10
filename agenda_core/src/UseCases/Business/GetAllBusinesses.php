@@ -49,6 +49,7 @@ final class GetAllBusinesses
                 'slug' => $b['slug'],
                 'email' => $b['email'],
                 'phone' => $b['phone'],
+                'online_bookings_notification_email' => $b['online_bookings_notification_email'] ?? null,
                 'timezone' => $b['timezone'],
                 'currency' => $b['currency'],
                 'is_active' => (bool) $b['is_active'],

@@ -4,6 +4,7 @@ class Business {
   final String? slug;
   final String? email;
   final String? phone;
+  final String? onlineBookingsNotificationEmail;
   final String? timezone;
   final DateTime createdAt;
   final String currency;
@@ -20,6 +21,7 @@ class Business {
     this.slug,
     this.email,
     this.phone,
+    this.onlineBookingsNotificationEmail,
     this.timezone,
     required this.createdAt,
     this.currency = 'EUR',
@@ -37,6 +39,7 @@ class Business {
     String? slug,
     String? email,
     String? phone,
+    String? onlineBookingsNotificationEmail,
     String? timezone,
     DateTime? createdAt,
     String? currency,
@@ -53,6 +56,8 @@ class Business {
       slug: slug ?? this.slug,
       email: email ?? this.email,
       phone: phone ?? this.phone,
+      onlineBookingsNotificationEmail:
+          onlineBookingsNotificationEmail ?? this.onlineBookingsNotificationEmail,
       timezone: timezone ?? this.timezone,
       createdAt: createdAt ?? this.createdAt,
       currency: currency ?? this.currency,
@@ -72,6 +77,8 @@ class Business {
       slug: json['slug'] as String?,
       email: json['email'] as String?,
       phone: json['phone'] as String?,
+      onlineBookingsNotificationEmail:
+          json['online_bookings_notification_email'] as String?,
       timezone: json['timezone'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -93,6 +100,7 @@ class Business {
       'slug': slug,
       'email': email,
       'phone': phone,
+      'online_bookings_notification_email': onlineBookingsNotificationEmail,
       'timezone': timezone,
       'created_at': createdAt.toIso8601String(),
       'currency': currency,

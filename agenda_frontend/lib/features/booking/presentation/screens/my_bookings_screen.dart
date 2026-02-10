@@ -190,7 +190,8 @@ class _BookingsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (bookings.isEmpty) {
+    final visibleBookings = bookings.where((b) => b.status != 'replaced').toList();
+    if (visibleBookings.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -214,9 +215,9 @@ class _BookingsList extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: bookings.length,
+      itemCount: visibleBookings.length,
       itemBuilder: (context, index) {
-        final booking = bookings[index];
+        final booking = visibleBookings[index];
         return _BookingCard(
           booking: booking,
           isUpcoming: isUpcoming,
@@ -250,12 +251,18 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     final booking = widget.booking;
     final formFactor = ref.watch(formFactorProvider);
     final locationsAsync = ref.watch(locationsProvider);
+    final location = locationsAsync.maybeWhen(
+      data: (locations) =>
+          locations.where((l) => l.id == booking.locationId).firstOrNull,
+      orElse: () => null,
+    );
+    final locale = _localeForLocation(context, location?.country);
     final showLocation = locationsAsync.maybeWhen(
       data: (locations) => locations.length > 1,
       orElse: () => true,
     );
-    final dateFormat = DateFormat('dd/MM/yyyy', 'it');
-    final timeFormat = DateFormat('HH:mm', 'it');
+    final dateFormat = DateFormat.yMd(locale);
+    final timeFormat = DateFormat.jm(locale);
     final theme = Theme.of(context);
     const actionButtonPadding = EdgeInsets.symmetric(horizontal: 12);
     final modifyButtonStyle = ElevatedButton.styleFrom(
@@ -427,12 +434,17 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (booking.canModify && booking.canModifyUntil != null)
+                    if (booking.canModifyEffective &&
+                        booking.canModifyUntil != null)
                       Text(
-                        _formatTimeUntil(context, booking.canModifyUntil!),
+                        _formatModifiableUntil(
+                          context,
+                          booking: booking,
+                          locale: locale,
+                        ),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                    if (booking.canModify) ...[
+                    if (booking.canModifyEffective) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -455,7 +467,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : Text(context.l10n.actionDelete),
+                                : Text(context.l10n.actionCancelBooking),
                           ),
                         ],
                       ),
@@ -466,16 +478,21 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                 Row(
                   children: [
                     // Countdown se modificabile
-                    if (booking.canModify && booking.canModifyUntil != null)
+                    if (booking.canModifyEffective &&
+                        booking.canModifyUntil != null)
                       Text(
-                        _formatTimeUntil(context, booking.canModifyUntil!),
+                        _formatModifiableUntil(
+                          context,
+                          booking: booking,
+                          locale: locale,
+                        ),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
 
                     const Spacer(),
 
                     // Pulsanti azione
-                    if (booking.canModify) ...[
+                    if (booking.canModifyEffective) ...[
                       ElevatedButton(
                         onPressed: () => _handleModify(context, ref),
                         style: modifyButtonStyle,
@@ -495,7 +512,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : Text(context.l10n.actionDelete),
+                            : Text(context.l10n.actionCancelBooking),
                       ),
                     ],
                   ],
@@ -507,18 +524,41 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     );
   }
 
-  String _formatTimeUntil(BuildContext context, DateTime deadline) {
-    final now = DateTime.now();
-    final diff = deadline.difference(now);
+  String _formatModifiableUntil(
+    BuildContext context, {
+    required BookingItem booking,
+    required String locale,
+  }) {
+    final deadline = _parseAsLocationTime(booking);
+    final formatted = DateFormat.yMd(locale).add_jm().format(deadline);
+    return context.l10n.modifiableUntilDateTime(formatted);
+  }
 
-    if (diff.inHours > 24) {
-      final days = diff.inDays;
-      return context.l10n.modifiableUntilDays(days);
-    } else if (diff.inHours > 0) {
-      return context.l10n.modifiableUntilHours(diff.inHours);
-    } else {
-      return context.l10n.modifiableUntilMinutes(diff.inMinutes);
+  static DateTime _parseAsLocationTime(BookingItem booking) {
+    final raw = booking.canModifyUntilRaw;
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        return _parseAsLocalTime(raw);
+      } catch (_) {
+        // Fallback to parsed DateTime if raw parsing fails.
+      }
     }
+    return booking.canModifyUntil!;
+  }
+
+  static DateTime _parseAsLocalTime(String isoString) {
+    final withoutOffset =
+        isoString.replaceAll(RegExp(r'[+-]\d{2}:\d{2}$'), '');
+    final cleaned = withoutOffset.replaceAll('Z', '');
+    return DateTime.parse(cleaned);
+  }
+
+  static String _localeForLocation(BuildContext context, String? country) {
+    final upper = (country ?? '').toUpperCase();
+    if (upper == 'IT') return 'it';
+
+    final appLocale = Localizations.localeOf(context);
+    return appLocale.languageCode == 'it' ? 'it' : 'en';
   }
 
   Future<void> _handleModify(BuildContext context, WidgetRef ref) async {
@@ -550,7 +590,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(context.l10n.actionDelete),
+            child: Text(context.l10n.actionCancelBooking),
           ),
         ],
       ),

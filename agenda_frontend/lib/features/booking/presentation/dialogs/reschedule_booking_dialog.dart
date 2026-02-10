@@ -26,6 +26,7 @@ class _RescheduleBookingDialogState
   String? _selectedTimeSlot;
   List<String> _availableSlots = [];
   bool _isLoadingSlots = false;
+  bool _isSubmitting = false;
   String? _error;
   final _notesController = TextEditingController();
 
@@ -100,6 +101,13 @@ class _RescheduleBookingDialogState
       );
 
       final slots = response['slots'] as List<dynamic>? ?? [];
+      final original = widget.booking.startTime;
+      final isSameDayAsOriginal =
+          date.year == original.year &&
+          date.month == original.month &&
+          date.day == original.day;
+      final originalTimeSlot =
+          isSameDayAsOriginal ? DateFormat('HH:mm').format(original) : null;
       setState(() {
         _availableSlots = slots
             .map((slot) {
@@ -108,6 +116,9 @@ class _RescheduleBookingDialogState
               final dt = _parseAsLocationTime(startTime);
               return DateFormat('HH:mm').format(dt);
             })
+            // Non mostrare lo stesso identico orario (data+ora) della prenotazione originale
+            // quando si sta modificando la prenotazione sulla stessa data.
+            .where((t) => originalTimeSlot == null || t != originalTimeSlot)
             .toList()
             .cast<String>();
         _isLoadingSlots = false;
@@ -146,6 +157,7 @@ class _RescheduleBookingDialogState
     if (_selectedDate == null || _selectedTimeSlot == null) {
       return;
     }
+    if (_isSubmitting) return;
 
     final serviceIds = widget.booking.serviceIds;
     if (serviceIds.isEmpty) {
@@ -156,6 +168,8 @@ class _RescheduleBookingDialogState
       );
       return;
     }
+
+    setState(() => _isSubmitting = true);
 
     // Costruisci nuovo start_time ISO8601
     final timeParts = _selectedTimeSlot!.split(':');
@@ -173,35 +187,41 @@ class _RescheduleBookingDialogState
     final idempotencyKey = const Uuid().v4();
 
     // Usa il pattern atomic replace
-    final result = await ref
-        .read(myBookingsProvider.notifier)
-        .replaceBooking(
-          originalBookingId: widget.booking.id,
-          locationId: widget.booking.locationId,
-          serviceIds: serviceIds,
-          startTime: newStartTime,
-          idempotencyKey: idempotencyKey,
-          notes: _notesController.text.isNotEmpty
-              ? _notesController.text
-              : null,
-        );
+    try {
+      final result = await ref
+          .read(myBookingsProvider.notifier)
+          .replaceBooking(
+            originalBookingId: widget.booking.id,
+            locationId: widget.booking.locationId,
+            serviceIds: serviceIds,
+            startTime: newStartTime,
+            idempotencyKey: idempotencyKey,
+            notes: _notesController.text.isNotEmpty
+                ? _notesController.text
+                : null,
+          );
 
-    if (mounted) {
+      if (!mounted) return;
+
       if (result.success) {
         Navigator.of(context).pop(true);
       } else {
         final bookingsState = ref.read(myBookingsProvider);
         // Messaggio specifico per conflitto slot (spec C6)
         final errorMessage =
-            bookingsState.error?.contains('slot_conflict') == true
-            ? context.l10n.slotNoLongerAvailable
-            : (bookingsState.error ?? context.l10n.errorGeneric);
+            bookingsState.errorCode == 'slot_conflict'
+                ? context.l10n.slotNoLongerAvailable
+                : bookingsState.errorCode == 'not_modifiable'
+                    ? context.l10n.bookingErrorNotModifiable
+                    : (bookingsState.error ?? context.l10n.errorGeneric);
         await FeedbackDialog.showError(
           context,
           title: context.l10n.errorTitle,
           message: errorMessage,
         );
       }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -295,14 +315,21 @@ class _RescheduleBookingDialogState
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed:
+              _isSubmitting ? null : () => Navigator.of(context).pop(false),
           child: Text(context.l10n.actionCancel),
         ),
         FilledButton(
-          onPressed: _selectedDate != null && _selectedTimeSlot != null
-              ? _confirmReschedule
+          onPressed: (_selectedDate != null && _selectedTimeSlot != null)
+              ? (_isSubmitting ? null : _confirmReschedule)
               : null,
-          child: Text(context.l10n.confirmReschedule),
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(context.l10n.confirmReschedule),
         ),
       ],
     );

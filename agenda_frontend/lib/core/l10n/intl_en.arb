@@ -193,6 +193,7 @@
   "bookingErrorUnauthorized": "You are not authorized to complete this action",
   "bookingErrorValidation": "Please check the entered data",
   "bookingErrorServer": "Something went wrong. Please try again",
+  "bookingErrorNotModifiable": "This booking cannot be modified",
   
   "confirmationTitle": "Booking confirmed!",
   "confirmationSubtitle": "We've sent you a confirmation email",
@@ -284,14 +285,24 @@
       "minutes": { "type": "int" }
     }
   },
-  "modify": "Modify",
+  "modifiableUntilDateTime": "Modifiable until {dateTime}",
+  "@modifiableUntilDateTime": {
+    "placeholders": {
+      "dateTime": {}
+    }
+  },
+  "modify": "Reschedule",
   "cancel": "Cancel",
   "yes": "Yes",
   "no": "No",
-  "cancelBookingTitle": "Delete booking",
-  "cancelBookingConfirm": "Are you sure you want to delete this booking?",
-  "bookingCancelled": "Booking deleted successfully",
-  "bookingCancelFailed": "Error deleting booking",
+  "cancelBookingTitle": "Cancel booking",
+  "cancelBookingConfirm": "Are you sure you want to cancel this booking?",
+  "bookingCancelled": "Booking cancelled successfully",
+  "bookingCancelFailed": "Error cancelling booking",
+  "actionCancelBooking": "Cancel",
+  "@actionCancelBooking": {
+    "description": "Action to cancel a booking from the customer app"
+  },
   "modifyNotImplemented": "Modify feature under development",
   "rescheduleBookingTitle": "Modify booking",
   "currentBooking": "Current booking",

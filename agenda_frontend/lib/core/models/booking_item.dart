@@ -17,6 +17,9 @@ class BookingItem {
   final String? notes;
   final bool canModify;
   final DateTime? canModifyUntil;
+  /// Raw API string for `can_modify_until` (ISO8601). Useful to display the
+  /// location time without device timezone conversion.
+  final String? canModifyUntilRaw;
   final String status;
 
   const BookingItem({
@@ -37,6 +40,7 @@ class BookingItem {
     this.notes,
     required this.canModify,
     this.canModifyUntil,
+    this.canModifyUntilRaw,
     this.status = 'confirmed',
   });
 
@@ -73,6 +77,7 @@ class BookingItem {
       canModifyUntil: json['can_modify_until'] != null
           ? DateTime.parse(json['can_modify_until'] as String)
           : null,
+      canModifyUntilRaw: json['can_modify_until'] as String?,
       status: json['status'] as String? ?? 'confirmed',
     );
   }
@@ -111,6 +116,13 @@ class BookingItem {
   bool get isUpcoming => !isPast;
   bool get isCancelled => status == 'cancelled';
 
+  bool get isModifiableStatus =>
+      status != 'cancelled' &&
+      status != 'completed' &&
+      status != 'no_show' &&
+      status != 'replaced';
+  bool get canModifyEffective => canModify && isModifiableStatus;
+
   /// Crea copia con nuovi valori (per update locale dopo reschedule)
   BookingItem copyWith({
     DateTime? startTime,
@@ -118,6 +130,7 @@ class BookingItem {
     String? notes,
     bool? canModify,
     DateTime? canModifyUntil,
+    String? canModifyUntilRaw,
     String? status,
   }) {
     return BookingItem(
@@ -138,6 +151,7 @@ class BookingItem {
       notes: notes ?? this.notes,
       canModify: canModify ?? this.canModify,
       canModifyUntil: canModifyUntil ?? this.canModifyUntil,
+      canModifyUntilRaw: canModifyUntilRaw ?? this.canModifyUntilRaw,
       status: status ?? this.status,
     );
   }
