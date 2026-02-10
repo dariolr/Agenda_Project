@@ -488,6 +488,12 @@ final class AppointmentsController
 
     private function formatAppointment(array $appointment): array
     {
+        // Prefer booking.client_name (snapshot/manual). Fallback to the canonical
+        // name from clients table (client_full_name) when available.
+        // Normalize empty strings to null.
+        $clientName = trim((string) ($appointment['client_name'] ?? $appointment['client_full_name'] ?? ''));
+        $clientName = $clientName !== '' ? $clientName : null;
+
         return [
             'id' => (int) $appointment['id'],
             'booking_id' => (int) $appointment['booking_id'],
@@ -508,7 +514,7 @@ final class AppointmentsController
             'booking_notes' => $appointment['booking_notes'] ?? null,
             'source' => $appointment['source'] ?? null,
             'client_id' => isset($appointment['client_id']) ? (int) $appointment['client_id'] : null,
-            'client_name' => $appointment['client_name'] ?? null,
+            'client_name' => $clientName,
             'service_name' => $appointment['service_name'] ?? null,
             'staff_name' => $appointment['staff_name'] ?? null,
             // Recurrence info
