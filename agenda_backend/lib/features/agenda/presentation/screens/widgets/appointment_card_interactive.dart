@@ -619,6 +619,19 @@ class _AppointmentCardInteractiveState
     int? recurrenceTotal,
     VoidCallback? onNotesTap,
   }) {
+    final formFactor = ref.watch(formFactorProvider);
+    final effectiveColumnWidth = widget.columnWidth ?? _lastSize?.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final approxVisibleColumns = (effectiveColumnWidth != null &&
+            effectiveColumnWidth > 0 &&
+            screenWidth > 0)
+        ? (screenWidth / effectiveColumnWidth).round()
+        : 0;
+    // Only on smartphone (AppFormFactor.mobile) and only when the agenda is
+    // effectively shown with 3 columns (narrow cards).
+    final stackClientUnderTime =
+        formFactor == AppFormFactor.mobile && approxVisibleColumns >= 3;
+
     final trailingIcons = <Widget>[];
 
     // Icona ricorrenza
@@ -681,34 +694,59 @@ class _AppointmentCardInteractiveState
             child: Row(
               children: [
                 Expanded(
-                  child: RichText(
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '$start - $end  ',
+                  child: stackClientUnderTime
+                      ? Text(
+                          '$start - $end',
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.black87,
                             fontWeight: FontWeight.w700,
                           ),
-                        ),
-                        TextSpan(
-                          text: client,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w600,
+                        )
+                      : RichText(
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '$start - $end  ',
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              TextSpan(
+                                text: client,
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
                 ),
                 if (trailingIcons.isNotEmpty) ...trailingIcons,
               ],
             ),
           ),
+          if (stackClientUnderTime && client.isNotEmpty)
+            Flexible(
+              child: Text(
+                client,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
+                  height: 1.1,
+                ),
+              ),
+            ),
           if (info.isNotEmpty)
             Flexible(
               child: Text(

@@ -514,6 +514,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "categoryDuplicateError": MessageLookupByLibrary.simpleMessage(
       "A category with this name already exists",
     ),
+    "clientAppointmentsCancelledBadge": MessageLookupByLibrary.simpleMessage(
+      "CANCELLED",
+    ),
     "clientAppointmentsEmpty": MessageLookupByLibrary.simpleMessage(
       "No appointments",
     ),
