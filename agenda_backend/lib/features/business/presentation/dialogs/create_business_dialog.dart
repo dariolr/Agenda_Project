@@ -24,6 +24,7 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
   final _adminEmailController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _onlineBookingsNotificationEmailController = TextEditingController();
 
   bool _isLoading = false;
   String? _error;
@@ -43,6 +44,7 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
     _adminEmailController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _onlineBookingsNotificationEmailController.dispose();
     super.dispose();
   }
 
@@ -89,6 +91,10 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
         phone: _phoneController.text.trim().isEmpty
             ? null
             : _phoneController.text.trim(),
+        onlineBookingsNotificationEmail:
+            _onlineBookingsNotificationEmailController.text.trim().isEmpty
+                ? null
+                : _onlineBookingsNotificationEmailController.text.trim(),
       );
 
       // Invalida il provider per ricaricare la lista
@@ -268,6 +274,29 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
                           r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                         ).hasMatch(value)) {
                           return 'Email non valida';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Notifiche prenotazioni online (solo azioni cliente)
+                  TextFormField(
+                    controller: _onlineBookingsNotificationEmailController,
+                    decoration: InputDecoration(
+                      labelText: l10n.businessOnlineBookingsNotificationEmailLabel,
+                      hintText: l10n.businessOnlineBookingsNotificationEmailHint,
+                      prefixIcon: const Icon(Icons.notifications_outlined),
+                      helperText:
+                          l10n.businessOnlineBookingsNotificationEmailHelper,
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value != null && value.trim().isNotEmpty) {
+                        if (!RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        ).hasMatch(value.trim())) {
+                          return l10n.authInvalidEmail;
                         }
                       }
                       return null;

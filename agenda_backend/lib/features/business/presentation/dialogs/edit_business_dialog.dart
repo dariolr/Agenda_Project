@@ -24,6 +24,7 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
   late final TextEditingController _adminEmailController;
+  late final TextEditingController _onlineBookingsNotificationEmailController;
 
   bool _isLoading = false;
   String? _error;
@@ -38,6 +39,9 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
     _adminEmailController = TextEditingController(
       text: widget.business.adminEmail ?? '',
     );
+    _onlineBookingsNotificationEmailController = TextEditingController(
+      text: widget.business.onlineBookingsNotificationEmail ?? '',
+    );
   }
 
   @override
@@ -47,6 +51,7 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
     _emailController.dispose();
     _phoneController.dispose();
     _adminEmailController.dispose();
+    _onlineBookingsNotificationEmailController.dispose();
     super.dispose();
   }
 
@@ -68,6 +73,14 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
           newAdminEmail.isNotEmpty &&
           newAdminEmail.toLowerCase() != oldAdminEmail.toLowerCase();
 
+      // Determina se email notifiche è cambiata (vuoto => clear)
+      final newNotifyEmail = _onlineBookingsNotificationEmailController.text
+          .trim();
+      final oldNotifyEmail =
+          widget.business.onlineBookingsNotificationEmail ?? '';
+      final notifyEmailChanged =
+          newNotifyEmail.toLowerCase() != oldNotifyEmail.toLowerCase();
+
       await repository.updateBusiness(
         businessId: widget.business.id,
         name: _nameController.text.trim(),
@@ -75,6 +88,10 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
         email: _emailController.text.trim().isEmpty
             ? null
             : _emailController.text.trim(),
+        // Se l'utente svuota il campo, inviamo stringa vuota per permettere al backend di resettare a NULL.
+        onlineBookingsNotificationEmail: notifyEmailChanged
+            ? newNotifyEmail
+            : null,
         phone: _phoneController.text.trim().isEmpty
             ? null
             : _phoneController.text.trim(),
@@ -116,154 +133,179 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                if (_error != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: colorScheme.onErrorContainer,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _error!,
-                            style: TextStyle(
-                              color: colorScheme.onErrorContainer,
+                  if (_error != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: colorScheme.onErrorContainer,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _error!,
+                              style: TextStyle(
+                                color: colorScheme.onErrorContainer,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Nome business
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome Business *',
+                      hintText: 'es. Salone Maria',
+                      prefixIcon: Icon(Icons.business),
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return l10n.authRequiredField;
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
-                ],
 
-                // Nome business
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome Business *',
-                    hintText: 'es. Salone Maria',
-                    prefixIcon: Icon(Icons.business),
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return l10n.authRequiredField;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Slug
-                TextFormField(
-                  controller: _slugController,
-                  decoration: const InputDecoration(
-                    labelText: 'Slug URL *',
-                    hintText: 'es. salone-maria',
-                    prefixIcon: Icon(Icons.link),
-                    helperText: 'Usato per URL pubblico',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return l10n.authRequiredField;
-                    }
-                    // Validate slug format
-                    final slugRegex = RegExp(r'^[a-z0-9-]+$');
-                    if (!slugRegex.hasMatch(value.trim())) {
-                      return 'Solo lettere minuscole, numeri e trattini';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Email
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'es. info@salone.it',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value != null && value.trim().isNotEmpty) {
-                      final emailRegex = RegExp(
-                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                      );
-                      if (!emailRegex.hasMatch(value.trim())) {
-                        return l10n.authInvalidEmail;
+                  // Slug
+                  TextFormField(
+                    controller: _slugController,
+                    decoration: const InputDecoration(
+                      labelText: 'Slug URL *',
+                      hintText: 'es. salone-maria',
+                      prefixIcon: Icon(Icons.link),
+                      helperText: 'Usato per URL pubblico',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return l10n.authRequiredField;
                       }
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Telefono
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Telefono',
-                    hintText: 'es. +39 333 1234567',
-                    prefixIcon: Icon(Icons.phone_outlined),
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 24),
-
-                // Divider e sezione admin
-                const Divider(),
-                const SizedBox(height: 8),
-                Text(
-                  'Amministratore',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Cambiando l\'email admin, verrà inviato un invito al nuovo amministratore.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Email Admin (opzionale)
-                TextFormField(
-                  controller: _adminEmailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email Admin',
-                    hintText: 'es. admin@salone.it',
-                    prefixIcon: const Icon(Icons.admin_panel_settings),
-                    helperText: widget.business.adminEmail != null
-                        ? 'Attuale: ${widget.business.adminEmail}'
-                        : 'Opzionale: riceverà email per configurare account',
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    // Solo valida se inserito
-                    if (value != null && value.trim().isNotEmpty) {
-                      final emailRegex = RegExp(
-                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                      );
-                      if (!emailRegex.hasMatch(value.trim())) {
-                        return l10n.authInvalidEmail;
+                      // Validate slug format
+                      final slugRegex = RegExp(r'^[a-z0-9-]+$');
+                      if (!slugRegex.hasMatch(value.trim())) {
+                        return 'Solo lettere minuscole, numeri e trattini';
                       }
-                    }
-                    return null;
-                  },
-                ),
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Email
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      hintText: 'es. info@salone.it',
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value != null && value.trim().isNotEmpty) {
+                        final emailRegex = RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        );
+                        if (!emailRegex.hasMatch(value.trim())) {
+                          return l10n.authInvalidEmail;
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Email notifiche prenotazioni online
+                  TextFormField(
+                    controller: _onlineBookingsNotificationEmailController,
+                    decoration: InputDecoration(
+                      labelText:
+                          l10n.businessOnlineBookingsNotificationEmailLabel,
+                      hintText:
+                          l10n.businessOnlineBookingsNotificationEmailHint,
+                      prefixIcon: const Icon(Icons.notifications_outlined),
+                      helperText:
+                          l10n.businessOnlineBookingsNotificationEmailHelper,
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value != null && value.trim().isNotEmpty) {
+                        final emailRegex = RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        );
+                        if (!emailRegex.hasMatch(value.trim())) {
+                          return l10n.authInvalidEmail;
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Telefono
+                  TextFormField(
+                    controller: _phoneController,
+                    decoration: const InputDecoration(
+                      labelText: 'Telefono',
+                      hintText: 'es. +39 333 1234567',
+                      prefixIcon: Icon(Icons.phone_outlined),
+                    ),
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 24),
+
+                  const SizedBox(height: 8),
+                  Text(
+                    'Amministratore',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cambiando l\'email admin, verrà inviato un invito al nuovo amministratore.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Email Admin (opzionale)
+                  TextFormField(
+                    controller: _adminEmailController,
+                    decoration: InputDecoration(
+                      labelText: 'Email Admin',
+                      hintText: 'es. admin@salone.it',
+                      prefixIcon: const Icon(Icons.admin_panel_settings),
+                      helperText: widget.business.adminEmail != null
+                          ? 'Attuale: ${widget.business.adminEmail}'
+                          : 'Opzionale: riceverà email per configurare account',
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      // Solo valida se inserito
+                      if (value != null && value.trim().isNotEmpty) {
+                        final emailRegex = RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        );
+                        if (!emailRegex.hasMatch(value.trim())) {
+                          return l10n.authInvalidEmail;
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),

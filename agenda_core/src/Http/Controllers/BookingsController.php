@@ -21,6 +21,7 @@ use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Notifications\EmailService;
 
 final class BookingsController
 {
@@ -754,7 +755,14 @@ final class BookingsController
                 false,
                 true
             );
-            return Response::success($this->formatBooking($updated));
+            $formatted = $this->formatBooking($updated);
+
+            $full = $this->bookingRepo->findById($bookingId);
+            if ($full !== null) {
+                $this->maybeNotifyOnlineBookingByCustomer('updated', $full, $booking['items'] ?? null);
+            }
+
+            return Response::success($formatted);
         } catch (BookingException $e) {
             return Response::json([
                 'success' => false,
@@ -795,6 +803,7 @@ final class BookingsController
 
         try {
             $this->deleteBooking->execute($bookingId, (int) $clientId, false, true);
+            $this->maybeNotifyOnlineBookingByCustomer('cancelled', $booking);
             return Response::success(['message' => 'Booking deleted successfully']);
         } catch (BookingException $e) {
             return Response::json([
@@ -838,6 +847,395 @@ final class BookingsController
     // CUSTOMER ENDPOINTS (self-service booking)
     // Uses client_id from CustomerAuthMiddleware instead of user_id
     // =========================================================================
+
+    /**
+     * Email notification for ONLINE bookings (source=online), but only when the actor is a customer
+     * (i.e. called from /v1/customer/* endpoints).
+     */
+    private function maybeNotifyOnlineBookingByCustomer(string $event, array $booking, ?array $previousItems = null): void
+    {
+        try {
+            if (($booking['source'] ?? null) !== 'online') {
+                return;
+            }
+
+            $to = $booking['online_bookings_notification_email'] ?? null;
+            if ($to === null || $to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+                return;
+            }
+
+            $locale = $this->resolveLocationLocale($booking);
+            $tz = $this->resolveLocationTimezone($booking);
+
+            $clientName = $this->resolveClientFullName($booking);
+            $locationName = $booking['location_name'] ?? '';
+            $locationCity = $booking['location_city'] ?? '';
+            $notes = $booking['notes'] ?? null;
+            $items = $booking['items'] ?? [];
+
+            $firstStart = $this->resolveFirstStartDateTime($items, $tz);
+            $firstStartLabel = $firstStart !== null
+                ? $this->formatDateTimeForLocale($firstStart, $locale, $tz, includeTime: true)
+                : '';
+
+            $rangeLabel = $this->formatTimeRangeForLocale($items, $locale, $tz);
+            $previousRangeLabel = ($previousItems !== null && !empty($previousItems))
+                ? $this->formatTimeRangeForLocale($previousItems, $locale, $tz)
+                : '';
+
+            $subjectPrefix = $this->localizedSubjectPrefix($event, $locale);
+
+            // Subject requirements:
+            // - no booking id
+            // - no business/location name
+            // - include client first+last name + date formatted using location locale
+            $subjectParts = [];
+            $subjectParts[] = $subjectPrefix;
+            if ($clientName !== '') $subjectParts[] = $clientName;
+            if ($firstStartLabel !== '') $subjectParts[] = $firstStartLabel;
+            $subject = implode(' - ', $subjectParts);
+
+            $backendUrl = $_ENV['BACKEND_URL'] ?? 'https://gestionale.romeolab.it';
+            // Requested: link without the trailing "/prenotazioni"
+            $backofficeUrl = $backendUrl;
+
+            $withWord = $this->localizedWithWord($locale);
+            $itemsHtml = '';
+            foreach ($items as $item) {
+                $serviceName = $item['service_name'] ?? $item['service_name_snapshot'] ?? '';
+                $staffFullName = $this->resolveStaffFullName($item);
+                $itemsHtml .= '<li>'
+                    . htmlspecialchars((string) $serviceName)
+                    . ($staffFullName !== ''
+                        ? ' ' . htmlspecialchars($withWord) . ' ' . htmlspecialchars($staffFullName)
+                        : '')
+                    . '</li>';
+            }
+
+            $html = '<div style="font-family: Arial, sans-serif; line-height: 1.5;">'
+                . ($clientName !== '' ? '<p style="margin: 0 0 8px 0;"><b>' . htmlspecialchars($this->localizedLabelCustomer($locale)) . ':</b> ' . htmlspecialchars((string) $clientName) . '</p>' : '')
+                . ($event === 'updated' && $previousRangeLabel !== ''
+                    ? '<p style="margin: 0 0 8px 0;"><b>' . htmlspecialchars($this->localizedLabelBefore($locale)) . ':</b> ' . htmlspecialchars((string) $previousRangeLabel) . '</p>'
+                        . '<p style="margin: 0 0 8px 0;"><b>' . htmlspecialchars($this->localizedLabelAfter($locale)) . ':</b> ' . htmlspecialchars((string) $rangeLabel) . '</p>'
+                    : ($firstStartLabel !== ''
+                        ? '<p style="margin: 0 0 8px 0;"><b>' . htmlspecialchars($this->localizedLabelDate($locale)) . ':</b> ' . htmlspecialchars((string) ($rangeLabel !== '' ? $rangeLabel : $firstStartLabel)) . '</p>'
+                        : '')
+                  )
+                . ($this->shouldIncludeLocationInEmail($booking) ? '<p style="margin: 0 0 8px 0;"><b>' . htmlspecialchars($this->localizedLabelLocation($locale)) . ':</b> ' . htmlspecialchars((string) $locationName . ($locationCity !== '' ? " ({$locationCity})" : '')) . '</p>' : '')
+                . (!empty($items) ? '<p style="margin: 12px 0 6px 0;"><b>' . htmlspecialchars($this->localizedLabelServices($locale)) . ':</b></p><ul style="margin: 0 0 12px 18px;">' . $itemsHtml . '</ul>' : '')
+                . ($notes !== null && trim((string) $notes) !== '' ? '<p style="margin: 0 0 12px 0;"><b>' . htmlspecialchars($this->localizedLabelNotes($locale)) . ':</b> ' . htmlspecialchars((string) $notes) . '</p>' : '')
+                . '<div style="margin-top: 18px; text-align: center;">'
+                . '<a href="' . htmlspecialchars($backofficeUrl) . '" '
+                . 'style="display:inline-block;padding:10px 14px;background:#111827;color:#ffffff;'
+                . 'text-decoration:none;border-radius:8px;font-weight:600;">'
+                . htmlspecialchars($this->localizedOpenBackofficeLabel($locale))
+                . '</a>'
+                . '</div>'
+                . '</div>';
+
+            EmailService::create()->send($to, $subject, $html);
+        } catch (\Throwable $e) {
+            error_log('[BookingsController] Online booking notification email failed: ' . $e->getMessage());
+        }
+    }
+
+    private function shouldIncludeLocationInEmail(array $booking): bool
+    {
+        $locationName = trim((string) ($booking['location_name'] ?? ''));
+        if ($locationName === '') return false;
+
+        // If we can't check how many locations exist, keep the location info.
+        if ($this->locationRepo === null) return true;
+
+        $businessId = $booking['business_id'] ?? null;
+        if (!is_numeric($businessId)) return true;
+
+        try {
+            $locations = $this->locationRepo->findByBusinessId((int) $businessId, false);
+            return count($locations) > 1;
+        } catch (\Throwable) {
+            // On any unexpected error, keep location info.
+            return true;
+        }
+    }
+
+    private function resolveClientFullName(array $booking): string
+    {
+        $first = trim((string) ($booking['client_first_name'] ?? ''));
+        $last = trim((string) ($booking['client_last_name'] ?? ''));
+        $full = trim($first . ' ' . $last);
+        if ($full !== '') return $full;
+        return trim((string) ($booking['client_name'] ?? ''));
+    }
+
+    private function resolveLocationTimezone(array $booking): string
+    {
+        $tz = (string) ($booking['location_timezone'] ?? '');
+        if ($tz !== '') return $tz;
+        // Fallback: use environment or Rome
+        return $_ENV['DEFAULT_TIMEZONE'] ?? 'Europe/Rome';
+    }
+
+    private function resolveLocationLocale(array $booking): string
+    {
+        // "locale della sede": we derive it from location country.
+        // Defaults to DEFAULT_LOCALE or it_IT.
+        $country = strtoupper(trim((string) ($booking['location_country'] ?? '')));
+        return match ($country) {
+            'IT' => 'it_IT',
+            'US' => 'en_US',
+            'GB' => 'en_GB',
+            'FR' => 'fr_FR',
+            'DE' => 'de_DE',
+            'ES' => 'es_ES',
+            default => ($_ENV['DEFAULT_LOCALE'] ?? 'it_IT'),
+        };
+    }
+
+    private function resolveStaffFullName(array $item): string
+    {
+        $first = trim((string) ($item['staff_name'] ?? ''));
+        $last = trim((string) ($item['staff_surname'] ?? ''));
+        $full = trim($first . ' ' . $last);
+        if ($full !== '') return $full;
+        return trim((string) ($item['staff_display_name'] ?? ''));
+    }
+
+    private function localizedWithWord(string $locale): string
+    {
+        $lang = strtolower(substr($locale, 0, 2));
+        return match ($lang) {
+            'it' => 'con',
+            'en' => 'with',
+            'fr' => 'avec',
+            'de' => 'mit',
+            'es' => 'con',
+            default => 'con',
+        };
+    }
+
+    private function localizedOpenBackofficeLabel(string $locale): string
+    {
+        $lang = strtolower(substr($locale, 0, 2));
+        return match ($lang) {
+            'it' => 'Apri gestionale',
+            'en' => 'Open back office',
+            'fr' => 'Ouvrir le back-office',
+            'de' => 'Backoffice öffnen',
+            'es' => 'Abrir backoffice',
+            default => 'Apri gestionale',
+        };
+    }
+
+    private function localizedSubjectPrefix(string $event, string $locale): string
+    {
+        $lang = strtolower(substr($locale, 0, 2));
+
+        return match ($lang) {
+            'en' => match ($event) {
+                'created' => 'New booking',
+                'updated' => 'Booking updated',
+                'cancelled' => 'Booking cancelled',
+                default => 'Booking update',
+            },
+            'fr' => match ($event) {
+                'created' => 'Nouvelle reservation',
+                'updated' => 'Reservation modifiee',
+                'cancelled' => 'Reservation annulee',
+                default => 'Mise a jour reservation',
+            },
+            'de' => match ($event) {
+                'created' => 'Neue Buchung',
+                'updated' => 'Buchung geaendert',
+                'cancelled' => 'Buchung storniert',
+                default => 'Buchungsupdate',
+            },
+            'es' => match ($event) {
+                'created' => 'Nueva reserva',
+                'updated' => 'Reserva modificada',
+                'cancelled' => 'Reserva cancelada',
+                default => 'Actualizacion de reserva',
+            },
+            default => match ($event) {
+                'created' => 'Nuova prenotazione',
+                'updated' => 'Prenotazione modificata',
+                'cancelled' => 'Prenotazione cancellata',
+                default => 'Aggiornamento prenotazione',
+            },
+        };
+    }
+
+    private function localizedLabelCustomer(string $locale): string
+    {
+        return match (strtolower(substr($locale, 0, 2))) {
+            'en' => 'Customer',
+            'fr' => 'Client',
+            'de' => 'Kunde',
+            'es' => 'Cliente',
+            default => 'Cliente',
+        };
+    }
+
+    private function localizedLabelDate(string $locale): string
+    {
+        return match (strtolower(substr($locale, 0, 2))) {
+            'en' => 'Date',
+            'fr' => 'Date',
+            'de' => 'Datum',
+            'es' => 'Fecha',
+            default => 'Data',
+        };
+    }
+
+    private function localizedLabelLocation(string $locale): string
+    {
+        return match (strtolower(substr($locale, 0, 2))) {
+            'en' => 'Location',
+            'fr' => 'Site',
+            'de' => 'Standort',
+            'es' => 'Sede',
+            default => 'Sede',
+        };
+    }
+
+    private function localizedLabelServices(string $locale): string
+    {
+        return match (strtolower(substr($locale, 0, 2))) {
+            'en' => 'Services',
+            'fr' => 'Services',
+            'de' => 'Leistungen',
+            'es' => 'Servicios',
+            default => 'Servizi',
+        };
+    }
+
+    private function localizedLabelNotes(string $locale): string
+    {
+        return match (strtolower(substr($locale, 0, 2))) {
+            'en' => 'Notes',
+            'fr' => 'Notes',
+            'de' => 'Notizen',
+            'es' => 'Notas',
+            default => 'Note',
+        };
+    }
+
+    private function localizedLabelBefore(string $locale): string
+    {
+        return match (strtolower(substr($locale, 0, 2))) {
+            'en' => 'Before',
+            'fr' => 'Avant',
+            'de' => 'Vorher',
+            'es' => 'Antes',
+            default => 'Prima',
+        };
+    }
+
+    private function localizedLabelAfter(string $locale): string
+    {
+        return match (strtolower(substr($locale, 0, 2))) {
+            'en' => 'After',
+            'fr' => 'Apres',
+            'de' => 'Nachher',
+            'es' => 'Despues',
+            default => 'Dopo',
+        };
+    }
+
+    private function resolveFirstStartDateTime(array $items, string $tz): ?\DateTimeImmutable
+    {
+        if (empty($items)) return null;
+        $first = $items[0]['start_time'] ?? null;
+        if (!is_string($first) || $first === '') return null;
+        try {
+            return (new \DateTimeImmutable($first))->setTimezone(new \DateTimeZone($tz));
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function formatTimeRangeForLocale(array $items, string $locale, string $tz): string
+    {
+        if (empty($items)) return '';
+
+        $firstStart = null;
+        $lastEnd = null;
+        foreach ($items as $item) {
+            $start = $item['start_time'] ?? null;
+            $end = $item['end_time'] ?? null;
+            if (!is_string($start) || $start === '') continue;
+            if (!is_string($end) || $end === '') continue;
+            if ($firstStart === null || $start < $firstStart) $firstStart = $start;
+            if ($lastEnd === null || $end > $lastEnd) $lastEnd = $end;
+        }
+        if ($firstStart === null) return '';
+
+        try {
+            $startDt = (new \DateTimeImmutable($firstStart))->setTimezone(new \DateTimeZone($tz));
+            $startLabel = $this->formatDateTimeForLocale($startDt, $locale, $tz, includeTime: true);
+            if ($lastEnd === null) return $startLabel;
+
+            $endDt = (new \DateTimeImmutable($lastEnd))->setTimezone(new \DateTimeZone($tz));
+            $endTimeLabel = $this->formatTimeForLocale($endDt, $locale, $tz);
+            return $startLabel . ' - ' . $endTimeLabel;
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    private function formatTimeForLocale(\DateTimeImmutable $dt, string $locale, string $tz): string
+    {
+        $dt = $dt->setTimezone(new \DateTimeZone($tz));
+
+        if (!class_exists(\IntlDateFormatter::class)) {
+            return $dt->format('H:i');
+        }
+
+        $formatter = new \IntlDateFormatter(
+            $locale,
+            \IntlDateFormatter::NONE,
+            \IntlDateFormatter::SHORT,
+            $tz,
+        );
+        $formatted = $formatter->format($dt);
+        if ($formatted === false) {
+            return $dt->format('H:i');
+        }
+        return (string) $formatted;
+    }
+
+    private function formatDateTimeStringForLocale(?string $dateTimeStr, string $locale, string $tz): string
+    {
+        if ($dateTimeStr === null || trim($dateTimeStr) === '') return '';
+        try {
+            $dt = (new \DateTimeImmutable($dateTimeStr))->setTimezone(new \DateTimeZone($tz));
+            return $this->formatDateTimeForLocale($dt, $locale, $tz, includeTime: true);
+        } catch (\Throwable) {
+            return (string) $dateTimeStr;
+        }
+    }
+
+    private function formatDateTimeForLocale(\DateTimeImmutable $dt, string $locale, string $tz, bool $includeTime): string
+    {
+        $dt = $dt->setTimezone(new \DateTimeZone($tz));
+
+        if (!class_exists(\IntlDateFormatter::class)) {
+            return $includeTime ? $dt->format('Y-m-d H:i') : $dt->format('Y-m-d');
+        }
+
+        $formatter = new \IntlDateFormatter(
+            $locale,
+            \IntlDateFormatter::MEDIUM,
+            $includeTime ? \IntlDateFormatter::SHORT : \IntlDateFormatter::NONE,
+            $tz,
+        );
+
+        $formatted = $formatter->format($dt);
+        if ($formatted === false) {
+            return $includeTime ? $dt->format('Y-m-d H:i') : $dt->format('Y-m-d');
+        }
+        return (string) $formatted;
+    }
 
     /**
      * POST /v1/customer/{business_id}/bookings
@@ -953,6 +1351,14 @@ final class BookingsController
                 );
             }
 
+            // Notify only for customer-originated online bookings
+            if (isset($booking['id'])) {
+                $full = $this->bookingRepo->findById((int) $booking['id']);
+                if ($full !== null) {
+                    $this->maybeNotifyOnlineBookingByCustomer('created', $full);
+                }
+            }
+
             return Response::success($booking, 201);
 
         } catch (BookingException $e) {
@@ -1023,7 +1429,10 @@ final class BookingsController
                     }
 
                     $canModifyUntil = $startTime->modify("-{$cancellationHours} hours");
-                    $formatted['can_modify'] = $now < $canModifyUntil;
+                    $blockedStatuses = ['cancelled', 'completed', 'no_show', 'replaced'];
+                    $formatted['can_modify'] =
+                        ($now < $canModifyUntil) &&
+                        !in_array($booking['status'] ?? null, $blockedStatuses, true);
                     $formatted['can_modify_until'] = $canModifyUntil->format('c');
                 }
 
@@ -1167,6 +1576,14 @@ final class BookingsController
                 (int) $clientId,
                 $reason
             );
+
+            if (isset($result['new_booking_id'])) {
+                $full = $this->bookingRepo->findById((int) $result['new_booking_id']);
+                if ($full !== null) {
+                    // Replacement is a modification.
+                    $this->maybeNotifyOnlineBookingByCustomer('updated', $full, $originalBooking['items'] ?? null);
+                }
+            }
 
             return Response::success($result, 200);
 
