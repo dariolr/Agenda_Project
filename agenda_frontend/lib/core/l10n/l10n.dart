@@ -1422,6 +1422,16 @@ class L10n {
     );
   }
 
+  /// `Questa prenotazione non può essere modificata`
+  String get bookingErrorNotModifiable {
+    return Intl.message(
+      'Questa prenotazione non può essere modificata',
+      name: 'bookingErrorNotModifiable',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Prenotazione confermata!`
   String get confirmationTitle {
     return Intl.message(
@@ -1728,9 +1738,19 @@ class L10n {
     );
   }
 
-  /// `Modifica`
+  /// `Modificabile fino al {dateTime}`
+  String modifiableUntilDateTime(Object dateTime) {
+    return Intl.message(
+      'Modificabile fino al $dateTime',
+      name: 'modifiableUntilDateTime',
+      desc: '',
+      args: [dateTime],
+    );
+  }
+
+  /// `Riprogramma`
   String get modify {
-    return Intl.message('Modifica', name: 'modify', desc: '', args: []);
+    return Intl.message('Riprogramma', name: 'modify', desc: '', args: []);
   }
 
   /// `Annulla`
@@ -1748,42 +1768,53 @@ class L10n {
     return Intl.message('No', name: 'no', desc: '', args: []);
   }
 
-  /// `Elimina prenotazione`
+  /// `Annulla prenotazione`
   String get cancelBookingTitle {
     return Intl.message(
-      'Elimina prenotazione',
+      'Annulla prenotazione',
       name: 'cancelBookingTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sei sicuro di voler eliminare questa prenotazione?`
+  /// `Sei sicuro di voler annullare questa prenotazione?`
   String get cancelBookingConfirm {
     return Intl.message(
-      'Sei sicuro di voler eliminare questa prenotazione?',
+      'Sei sicuro di voler annullare questa prenotazione?',
       name: 'cancelBookingConfirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione eliminata con successo`
+  /// `Prenotazione annullata con successo`
   String get bookingCancelled {
     return Intl.message(
-      'Prenotazione eliminata con successo',
+      'Prenotazione annullata con successo',
       name: 'bookingCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore durante l'eliminazione della prenotazione. Riprova.`
+  /// `Errore durante l'annullamento della prenotazione. Riprova.`
   String get bookingCancelFailed {
     return Intl.message(
-      'Errore durante l\'eliminazione della prenotazione. Riprova.',
+      'Errore durante l\'annullamento della prenotazione. Riprova.',
       name: 'bookingCancelFailed',
       desc: '',
+      args: [],
+    );
+  }
+
+  /// `Annulla`
+  String get actionCancelBooking {
+    return Intl.message(
+      'Annulla',
+      name: 'actionCancelBooking',
+      desc:
+          'Azione per annullare una prenotazione dal punto di vista del cliente',
       args: [],
     );
   }
@@ -1978,10 +2009,10 @@ class L10n {
     );
   }
 
-  /// `Prenotazione eliminata`
+  /// `Prenotazione annullata`
   String get bookingHistoryEventCancelled {
     return Intl.message(
-      'Prenotazione eliminata',
+      'Prenotazione annullata',
       name: 'bookingHistoryEventCancelled',
       desc: '',
       args: [],
@@ -2108,10 +2139,10 @@ class L10n {
     );
   }
 
-  /// `ELIMINATA`
+  /// `ANNULLATA`
   String get cancelledBadge {
     return Intl.message(
-      'ELIMINATA',
+      'ANNULLATA',
       name: 'cancelledBadge',
       desc: '',
       args: [],

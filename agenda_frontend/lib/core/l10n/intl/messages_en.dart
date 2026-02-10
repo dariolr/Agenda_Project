@@ -38,35 +38,38 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m8(path) => "Page not found: ${path}";
 
-  static String m9(days) =>
+  static String m9(dateTime) => "Modifiable until ${dateTime}";
+
+  static String m10(days) =>
       "${Intl.plural(days, one: 'Modifiable until tomorrow', other: 'Modifiable for ${days} days')}";
 
-  static String m10(hours) =>
+  static String m11(hours) =>
       "${Intl.plural(hours, one: 'Modifiable for 1 hour', other: 'Modifiable for ${hours} hours')}";
 
-  static String m11(minutes) =>
+  static String m12(minutes) =>
       "${Intl.plural(minutes, one: 'Modifiable for 1 minute', other: 'Modifiable for ${minutes} minutes')}";
 
-  static String m12(price) => "€${price}";
+  static String m13(price) => "€${price}";
 
-  static String m13(id) => "Category ${id}";
+  static String m14(id) => "Category ${id}";
 
-  static String m14(duration) => "${duration} min";
+  static String m15(duration) => "${duration} min";
 
-  static String m15(price) => "from ${price}";
+  static String m16(price) => "from ${price}";
 
-  static String m16(count) =>
+  static String m17(count) =>
       "${Intl.plural(count, zero: 'No service selected', one: '1 service selected', other: '${count} services selected')}";
 
-  static String m17(total) => "Total: ${total}";
+  static String m18(total) => "Total: ${total}";
 
-  static String m18(businessName) =>
+  static String m19(businessName) =>
       "To book at ${businessName}, you need to log in with an account registered here.";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "actionBack": MessageLookupByLibrary.simpleMessage("Back"),
     "actionCancel": MessageLookupByLibrary.simpleMessage("Cancel"),
+    "actionCancelBooking": MessageLookupByLibrary.simpleMessage("Cancel"),
     "actionClose": MessageLookupByLibrary.simpleMessage("Close"),
     "actionConfirm": MessageLookupByLibrary.simpleMessage("Confirm"),
     "actionDelete": MessageLookupByLibrary.simpleMessage("Delete"),
@@ -215,10 +218,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "authWelcome": MessageLookupByLibrary.simpleMessage("Welcome"),
     "bookingCancelFailed": MessageLookupByLibrary.simpleMessage(
-      "Error deleting booking",
+      "Error cancelling booking",
     ),
     "bookingCancelled": MessageLookupByLibrary.simpleMessage(
-      "Booking deleted successfully",
+      "Booking cancelled successfully",
     ),
     "bookingErrorInvalidClient": MessageLookupByLibrary.simpleMessage(
       "The selected client is not valid",
@@ -237,6 +240,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingErrorNotFound": MessageLookupByLibrary.simpleMessage(
       "Booking not found",
+    ),
+    "bookingErrorNotModifiable": MessageLookupByLibrary.simpleMessage(
+      "This booking cannot be modified",
     ),
     "bookingErrorOutsideWorkingHours": MessageLookupByLibrary.simpleMessage(
       "The selected time is outside working hours",
@@ -326,10 +332,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
     "cancelBookingConfirm": MessageLookupByLibrary.simpleMessage(
-      "Are you sure you want to delete this booking?",
+      "Are you sure you want to cancel this booking?",
     ),
     "cancelBookingTitle": MessageLookupByLibrary.simpleMessage(
-      "Delete booking",
+      "Cancel booking",
     ),
     "cancelledBadge": MessageLookupByLibrary.simpleMessage("CANCELLED"),
     "confirmReschedule": MessageLookupByLibrary.simpleMessage(
@@ -428,10 +434,11 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "locationTitle": MessageLookupByLibrary.simpleMessage("Choose location"),
     "modifiable": MessageLookupByLibrary.simpleMessage("Modifiable"),
-    "modifiableUntilDays": m9,
-    "modifiableUntilHours": m10,
-    "modifiableUntilMinutes": m11,
-    "modify": MessageLookupByLibrary.simpleMessage("Modify"),
+    "modifiableUntilDateTime": m9,
+    "modifiableUntilDays": m10,
+    "modifiableUntilHours": m11,
+    "modifiableUntilMinutes": m12,
+    "modify": MessageLookupByLibrary.simpleMessage("Reschedule"),
     "modifyNotImplemented": MessageLookupByLibrary.simpleMessage(
       "Modify feature under development",
     ),
@@ -460,7 +467,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "notModifiable": MessageLookupByLibrary.simpleMessage("Not modifiable"),
     "pastBookings": MessageLookupByLibrary.simpleMessage("Past"),
-    "priceFormat": m12,
+    "priceFormat": m13,
     "profileTitle": MessageLookupByLibrary.simpleMessage("Profile"),
     "rescheduleBookingTitle": MessageLookupByLibrary.simpleMessage(
       "Modify booking",
@@ -482,8 +489,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "Or pick a ready-made package",
     ),
     "servicePackagesTitle": MessageLookupByLibrary.simpleMessage("Packages"),
-    "servicesCategoryFallbackName": m13,
-    "servicesDuration": m14,
+    "servicesCategoryFallbackName": m14,
+    "servicesDuration": m15,
     "servicesEmpty": MessageLookupByLibrary.simpleMessage(
       "No services available at the moment",
     ),
@@ -491,13 +498,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "There are no services available for online booking at this business",
     ),
     "servicesFree": MessageLookupByLibrary.simpleMessage("Free"),
-    "servicesPriceFrom": m15,
-    "servicesSelected": m16,
+    "servicesPriceFrom": m16,
+    "servicesSelected": m17,
     "servicesSubtitle": MessageLookupByLibrary.simpleMessage(
       "You can select one or more services",
     ),
     "servicesTitle": MessageLookupByLibrary.simpleMessage("Choose services"),
-    "servicesTotal": m17,
+    "servicesTotal": m18,
     "sessionExpired": MessageLookupByLibrary.simpleMessage(
       "Session expired. Please log in again.",
     ),
@@ -552,7 +559,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "wrongBusinessAuthAction": MessageLookupByLibrary.simpleMessage(
       "Log out and sign in here",
     ),
-    "wrongBusinessAuthMessage": m18,
+    "wrongBusinessAuthMessage": m19,
     "wrongBusinessAuthTitle": MessageLookupByLibrary.simpleMessage(
       "Account linked to another business",
     ),

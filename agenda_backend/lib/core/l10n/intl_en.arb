@@ -1098,6 +1098,10 @@
   "moreBookingsDescription": "Browse booking history",
   "moreProfileDescription": "Manage your personal data and credentials",
   "moreSwitchBusinessDescription": "Switch to another business",
+
+  "businessOnlineBookingsNotificationEmailLabel": "Online bookings notification email",
+  "businessOnlineBookingsNotificationEmailHint": "e.g. bookings@business.com",
+  "businessOnlineBookingsNotificationEmailHelper": "Receives notifications only when customers create/modify/cancel online bookings",
   "moreSubtitle": "Access other application features",
 
   "closuresTitle": "Closure dates",

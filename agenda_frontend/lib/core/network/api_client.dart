@@ -119,14 +119,13 @@ class ApiClient {
   Future<bool> _refreshToken() async {
     final refreshToken = await _tokenStorage.getRefreshToken();
     if (_currentBusinessId == null) return false;
-    if (refreshToken == null && !kIsWeb) return false;
+    // Refresh token is required on every platform. If it's missing, don't call the API.
+    if (refreshToken == null) return false;
 
     try {
       final response = await _dio.post(
         ApiConfig.customerRefresh(_currentBusinessId!),
-        data: refreshToken != null
-            ? {'refresh_token': refreshToken}
-            : <String, dynamic>{},
+        data: {'refresh_token': refreshToken},
       );
 
       if (response.data['success'] == true) {
@@ -160,8 +159,9 @@ class ApiClient {
       debugPrint('API: no businessId, returning null');
       return null;
     }
-    if (refreshToken == null && !kIsWeb) {
-      debugPrint('API: no refreshToken and not web, returning null');
+    // Refresh token is required on every platform. If it's missing, don't call the API.
+    if (refreshToken == null) {
+      debugPrint('API: no refreshToken, returning null');
       return null;
     }
 
@@ -171,9 +171,7 @@ class ApiClient {
       );
       final response = await _dio.post(
         ApiConfig.customerRefresh(effectiveBusinessId),
-        data: refreshToken != null
-            ? {'refresh_token': refreshToken}
-            : <String, dynamic>{},
+        data: {'refresh_token': refreshToken},
       );
 
       debugPrint('API: refresh response: ${response.data}');

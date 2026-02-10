@@ -38,35 +38,38 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m8(path) => "Pagina non trovata: ${path}";
 
-  static String m9(days) =>
+  static String m9(dateTime) => "Modificabile fino al ${dateTime}";
+
+  static String m10(days) =>
       "${Intl.plural(days, one: 'Modificabile fino a domani', other: 'Modificabile fino a ${days} giorni')}";
 
-  static String m10(hours) =>
+  static String m11(hours) =>
       "${Intl.plural(hours, one: 'Modificabile fino a 1 ora', other: 'Modificabile fino a ${hours} ore')}";
 
-  static String m11(minutes) =>
+  static String m12(minutes) =>
       "${Intl.plural(minutes, one: 'Modificabile fino a 1 minuto', other: 'Modificabile fino a ${minutes} minuti')}";
 
-  static String m12(price) => "€${price}";
+  static String m13(price) => "€${price}";
 
-  static String m13(id) => "Categoria ${id}";
+  static String m14(id) => "Categoria ${id}";
 
-  static String m14(duration) => "${duration} min";
+  static String m15(duration) => "${duration} min";
 
-  static String m15(price) => "da ${price}";
+  static String m16(price) => "da ${price}";
 
-  static String m16(count) =>
+  static String m17(count) =>
       "${Intl.plural(count, zero: 'Nessun servizio selezionato', one: '1 servizio selezionato', other: '${count} servizi selezionati')}";
 
-  static String m17(total) => "Totale: ${total}";
+  static String m18(total) => "Totale: ${total}";
 
-  static String m18(businessName) =>
+  static String m19(businessName) =>
       "Per prenotare su ${businessName}, devi accedere con un account registrato qui.";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "actionBack": MessageLookupByLibrary.simpleMessage("Indietro"),
     "actionCancel": MessageLookupByLibrary.simpleMessage("Annulla"),
+    "actionCancelBooking": MessageLookupByLibrary.simpleMessage("Annulla"),
     "actionClose": MessageLookupByLibrary.simpleMessage("Chiudi"),
     "actionConfirm": MessageLookupByLibrary.simpleMessage("Conferma"),
     "actionDelete": MessageLookupByLibrary.simpleMessage("Elimina"),
@@ -219,10 +222,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "authWelcome": MessageLookupByLibrary.simpleMessage("Benvenuto"),
     "bookingCancelFailed": MessageLookupByLibrary.simpleMessage(
-      "Errore durante l\'eliminazione della prenotazione. Riprova.",
+      "Errore durante l\'annullamento della prenotazione. Riprova.",
     ),
     "bookingCancelled": MessageLookupByLibrary.simpleMessage(
-      "Prenotazione eliminata con successo",
+      "Prenotazione annullata con successo",
     ),
     "bookingErrorInvalidClient": MessageLookupByLibrary.simpleMessage(
       "Il cliente selezionato non è valido",
@@ -241,6 +244,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingErrorNotFound": MessageLookupByLibrary.simpleMessage(
       "Prenotazione non trovata",
+    ),
+    "bookingErrorNotModifiable": MessageLookupByLibrary.simpleMessage(
+      "Questa prenotazione non può essere modificata",
     ),
     "bookingErrorOutsideWorkingHours": MessageLookupByLibrary.simpleMessage(
       "L\'orario selezionato è fuori dall\'orario di lavoro",
@@ -277,7 +283,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingHistoryEventAppointmentUpdated":
         MessageLookupByLibrary.simpleMessage("Appuntamento modificato"),
     "bookingHistoryEventCancelled": MessageLookupByLibrary.simpleMessage(
-      "Prenotazione eliminata",
+      "Prenotazione annullata",
     ),
     "bookingHistoryEventCreated": MessageLookupByLibrary.simpleMessage(
       "Prenotazione creata",
@@ -334,12 +340,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "cancel": MessageLookupByLibrary.simpleMessage("Annulla"),
     "cancelBookingConfirm": MessageLookupByLibrary.simpleMessage(
-      "Sei sicuro di voler eliminare questa prenotazione?",
+      "Sei sicuro di voler annullare questa prenotazione?",
     ),
     "cancelBookingTitle": MessageLookupByLibrary.simpleMessage(
-      "Elimina prenotazione",
+      "Annulla prenotazione",
     ),
-    "cancelledBadge": MessageLookupByLibrary.simpleMessage("ELIMINATA"),
+    "cancelledBadge": MessageLookupByLibrary.simpleMessage("ANNULLATA"),
     "confirmReschedule": MessageLookupByLibrary.simpleMessage(
       "Conferma modifica",
     ),
@@ -442,10 +448,11 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "locationTitle": MessageLookupByLibrary.simpleMessage("Scegli la sede"),
     "modifiable": MessageLookupByLibrary.simpleMessage("Modificabile"),
-    "modifiableUntilDays": m9,
-    "modifiableUntilHours": m10,
-    "modifiableUntilMinutes": m11,
-    "modify": MessageLookupByLibrary.simpleMessage("Modifica"),
+    "modifiableUntilDateTime": m9,
+    "modifiableUntilDays": m10,
+    "modifiableUntilHours": m11,
+    "modifiableUntilMinutes": m12,
+    "modify": MessageLookupByLibrary.simpleMessage("Riprogramma"),
     "modifyNotImplemented": MessageLookupByLibrary.simpleMessage(
       "Funzione di modifica in sviluppo",
     ),
@@ -474,7 +481,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "notModifiable": MessageLookupByLibrary.simpleMessage("Non modificabile"),
     "pastBookings": MessageLookupByLibrary.simpleMessage("Passate"),
-    "priceFormat": m12,
+    "priceFormat": m13,
     "profileTitle": MessageLookupByLibrary.simpleMessage("Profilo"),
     "rescheduleBookingTitle": MessageLookupByLibrary.simpleMessage(
       "Modifica prenotazione",
@@ -500,8 +507,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "Oppure scegli un pacchetto pronto",
     ),
     "servicePackagesTitle": MessageLookupByLibrary.simpleMessage("Pacchetti"),
-    "servicesCategoryFallbackName": m13,
-    "servicesDuration": m14,
+    "servicesCategoryFallbackName": m14,
+    "servicesDuration": m15,
     "servicesEmpty": MessageLookupByLibrary.simpleMessage(
       "Nessun servizio disponibile al momento",
     ),
@@ -509,13 +516,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "Non ci sono servizi prenotabili online per questa attività",
     ),
     "servicesFree": MessageLookupByLibrary.simpleMessage("Gratis"),
-    "servicesPriceFrom": m15,
-    "servicesSelected": m16,
+    "servicesPriceFrom": m16,
+    "servicesSelected": m17,
     "servicesSubtitle": MessageLookupByLibrary.simpleMessage(
       "Puoi selezionare uno o più servizi",
     ),
     "servicesTitle": MessageLookupByLibrary.simpleMessage("Scegli i servizi"),
-    "servicesTotal": m17,
+    "servicesTotal": m18,
     "sessionExpired": MessageLookupByLibrary.simpleMessage(
       "Sessione scaduta. Effettua nuovamente l\'accesso.",
     ),
@@ -572,7 +579,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "wrongBusinessAuthAction": MessageLookupByLibrary.simpleMessage(
       "Esci e accedi qui",
     ),
-    "wrongBusinessAuthMessage": m18,
+    "wrongBusinessAuthMessage": m19,
     "wrongBusinessAuthTitle": MessageLookupByLibrary.simpleMessage(
       "Account associato ad un\'altra attività",
     ),

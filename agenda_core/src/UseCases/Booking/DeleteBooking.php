@@ -64,6 +64,14 @@ final class DeleteBooking
 
         // Verifica cancellation policy (skip per operatori)
         if (!$isOperator) {
+            // Non permettere cancellazioni su booking gia' in stato terminale.
+            $blockedStatuses = ['cancelled', 'completed', 'no_show', 'replaced'];
+            if (in_array($booking['status'] ?? null, $blockedStatuses, true)) {
+                throw BookingException::notModifiable(
+                    (int) $booking['id'],
+                    'Booking status does not allow cancellation'
+                );
+            }
             $this->validateCancellationPolicy($booking);
         }
         
@@ -248,9 +256,9 @@ final class DeleteBooking
         $deadline = $startTime->modify("-{$cancellationHours} hours");
         
         if ($now >= $deadline) {
-            throw BookingException::validationError(
-                "Cannot cancel booking within {$cancellationHours} hours of appointment start time",
-                ['cancellation_deadline' => $deadline->format('c')]
+            throw BookingException::notModifiable(
+                (int) $booking['id'],
+                "Booking cannot be cancelled less than {$cancellationHours} hours before start"
             );
         }
     }

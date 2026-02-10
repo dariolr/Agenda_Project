@@ -39,7 +39,7 @@ final class CreateBusiness
      * @param string $name Business name
      * @param string $slug Business slug (unique)
      * @param string|null $adminEmail Admin email address (optional, can be set later via update)
-     * @param array $options Optional: email (business), phone, timezone, currency, admin_first_name, admin_last_name
+     * @param array $options Optional: email (business), phone, online_bookings_notification_email, timezone, currency, admin_first_name, admin_last_name
      * @return array Created business data with admin info
      * @throws AuthException If user is not superadmin
      * @throws ValidationException If validation fails
@@ -62,6 +62,19 @@ final class CreateBusiness
             throw ValidationException::withErrors(['admin_email' => 'Invalid email address']);
         }
 
+        $notifyEmail = $options['online_bookings_notification_email'] ?? null;
+        if (is_string($notifyEmail)) {
+            $notifyEmail = trim($notifyEmail);
+            if ($notifyEmail === '') {
+                $notifyEmail = null;
+            }
+        }
+        if ($notifyEmail !== null && $notifyEmail !== '' && !filter_var($notifyEmail, FILTER_VALIDATE_EMAIL)) {
+            throw ValidationException::withErrors([
+                'online_bookings_notification_email' => 'Invalid email address',
+            ]);
+        }
+
         // Check slug uniqueness
         $existingBusiness = $this->businessRepo->findBySlug($slug);
         if ($existingBusiness !== null) {
@@ -79,6 +92,7 @@ final class CreateBusiness
                 [
                     'email' => $options['email'] ?? null,
                     'phone' => $options['phone'] ?? null,
+                    'online_bookings_notification_email' => $notifyEmail,
                     'timezone' => $options['timezone'] ?? 'Europe/Rome',
                     'currency' => $options['currency'] ?? 'EUR',
                 ]
@@ -146,6 +160,7 @@ final class CreateBusiness
                 'slug' => $business['slug'],
                 'email' => $business['email'],
                 'phone' => $business['phone'],
+                'online_bookings_notification_email' => $business['online_bookings_notification_email'] ?? null,
                 'timezone' => $business['timezone'],
                 'currency' => $business['currency'],
             ];

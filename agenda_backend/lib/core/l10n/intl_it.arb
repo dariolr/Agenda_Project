@@ -1096,6 +1096,10 @@
   "moreBookingsDescription": "Consulta lo storico delle prenotazioni",
   "moreProfileDescription": "Gestisci i tuoi dati personali e le credenziali",
   "moreSwitchBusinessDescription": "Passa a un altro business",
+
+  "businessOnlineBookingsNotificationEmailLabel": "Email Notifiche Prenotazioni Online",
+  "businessOnlineBookingsNotificationEmailHint": "es. prenotazioni@salone.it",
+  "businessOnlineBookingsNotificationEmailHelper": "Riceve notifiche solo per prenotazioni eseguite dal cliente",
   "moreSubtitle": "Accedi alle altre funzionalità dell'applicazione",
 
   "closuresTitle": "Date di chiusura",

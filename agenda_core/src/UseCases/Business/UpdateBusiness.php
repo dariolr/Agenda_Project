@@ -35,7 +35,7 @@ final class UpdateBusiness
     /**
      * @param int $executorUserId The user executing this action (must be superadmin)
      * @param int $businessId The business to update
-     * @param array $data Fields to update (name, slug, email, phone, timezone, currency, admin_email)
+     * @param array $data Fields to update (name, slug, email, phone, online_bookings_notification_email, timezone, currency, admin_email)
      * @return array The updated business data
      * @throws AuthException if user is not superadmin
      * @throws ValidationException if validation fails
@@ -68,8 +68,24 @@ final class UpdateBusiness
             $newAdminInfo = $this->handleAdminChange($businessId, $business, $data['admin_email']);
         }
 
+        if (array_key_exists('online_bookings_notification_email', $data)) {
+            $notifyEmail = $data['online_bookings_notification_email'];
+            if (is_string($notifyEmail)) {
+                $notifyEmail = trim($notifyEmail);
+                if ($notifyEmail === '') {
+                    $notifyEmail = null;
+                }
+                $data['online_bookings_notification_email'] = $notifyEmail;
+            }
+            if ($notifyEmail !== null && $notifyEmail !== '' && !filter_var($notifyEmail, FILTER_VALIDATE_EMAIL)) {
+                throw ValidationException::withErrors([
+                    'online_bookings_notification_email' => 'Invalid email address',
+                ]);
+            }
+        }
+
         // Filter allowed fields for business update
-        $allowedFields = ['name', 'slug', 'email', 'phone', 'timezone', 'currency'];
+        $allowedFields = ['name', 'slug', 'email', 'phone', 'online_bookings_notification_email', 'timezone', 'currency'];
         $updateData = array_intersect_key($data, array_flip($allowedFields));
 
         if (!empty($updateData)) {
@@ -87,6 +103,7 @@ final class UpdateBusiness
                 'slug' => $updated['slug'],
                 'email' => $updated['email'],
                 'phone' => $updated['phone'],
+                'online_bookings_notification_email' => $updated['online_bookings_notification_email'] ?? null,
                 'timezone' => $updated['timezone'],
                 'currency' => $updated['currency'],
                 'is_active' => (bool) $updated['is_active'],

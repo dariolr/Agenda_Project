@@ -167,11 +167,13 @@ final class ReplaceBooking
 
     private function validateBookingCanBeReplaced(array $booking): void
     {
-        // Check status is confirmed (or pending)
-        if (!in_array($booking['status'], ['confirmed', 'pending'], true)) {
+        // Customers can modify bookings as long as they are not in a terminal state.
+        // Time constraints are enforced below via cancellation policy.
+        $blockedStatuses = ['cancelled', 'completed', 'no_show', 'replaced'];
+        if (in_array($booking['status'], $blockedStatuses, true)) {
             throw BookingException::notModifiable(
                 (int) $booking['id'],
-                'Booking status must be confirmed or pending'
+                'Booking status does not allow modification'
             );
         }
 

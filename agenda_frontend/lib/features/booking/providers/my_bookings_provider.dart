@@ -15,12 +15,14 @@ class MyBookingsState {
   final List<BookingItem> past;
   final bool isLoading;
   final String? error;
+  final String? errorCode;
 
   const MyBookingsState({
     this.upcoming = const [],
     this.past = const [],
     this.isLoading = false,
     this.error,
+    this.errorCode,
   });
 
   MyBookingsState copyWith({
@@ -28,12 +30,14 @@ class MyBookingsState {
     List<BookingItem>? past,
     bool? isLoading,
     String? error,
+    String? errorCode,
   }) {
     return MyBookingsState(
       upcoming: upcoming ?? this.upcoming,
       past: past ?? this.past,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
+      errorCode: errorCode ?? this.errorCode,
     );
   }
 }
@@ -45,9 +49,12 @@ class MyBookings extends _$MyBookings {
     return const MyBookingsState();
   }
 
+  List<BookingItem> _withoutReplaced(List<BookingItem> items) =>
+      items.where((b) => b.status != 'replaced').toList();
+
   /// Carica le prenotazioni utente da API
   Future<void> loadBookings() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, errorCode: null);
 
     try {
       final apiClient = ref.read(apiClientProvider);
@@ -76,6 +83,7 @@ class MyBookings extends _$MyBookings {
               packagesByLocation: packagesByLocation,
             ),
           )
+          .where((b) => b.status != 'replaced')
           .toList();
 
       final past = pastJson
@@ -86,9 +94,20 @@ class MyBookings extends _$MyBookings {
               packagesByLocation: packagesByLocation,
             ),
           )
+          .where((b) => b.status != 'replaced')
           .toList();
 
-      state = MyBookingsState(upcoming: upcoming, past: past, isLoading: false);
+      state = MyBookingsState(
+        upcoming: _withoutReplaced(upcoming),
+        past: _withoutReplaced(past),
+        isLoading: false,
+      );
+    } on ApiException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.message,
+        errorCode: e.code,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -104,6 +123,9 @@ class MyBookings extends _$MyBookings {
       // perché il widget ha già il suo indicatore di loading per la cancellazione
       await _refreshBookingsAfterChange();
       return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message, errorCode: e.code);
+      return false;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
@@ -139,6 +161,7 @@ class MyBookings extends _$MyBookings {
               packagesByLocation: packagesByLocation,
             ),
           )
+          .where((b) => b.status != 'replaced')
           .toList();
 
       final past = pastJson
@@ -149,9 +172,16 @@ class MyBookings extends _$MyBookings {
               packagesByLocation: packagesByLocation,
             ),
           )
+          .where((b) => b.status != 'replaced')
           .toList();
 
-      state = MyBookingsState(upcoming: upcoming, past: past, isLoading: false);
+      state = MyBookingsState(
+        upcoming: _withoutReplaced(upcoming),
+        past: _withoutReplaced(past),
+        isLoading: false,
+      );
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message, errorCode: e.code);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -200,11 +230,14 @@ class MyBookings extends _$MyBookings {
       }
 
       state = state.copyWith(
-        upcoming: nextUpcoming,
-        past: nextPast,
+        upcoming: _withoutReplaced(nextUpcoming),
+        past: _withoutReplaced(nextPast),
         error: null,
       );
       return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(error: e.message, errorCode: e.code);
+      return false;
     } catch (e) {
       state = state.copyWith(error: e.toString());
       return false;
@@ -256,27 +289,14 @@ class MyBookings extends _$MyBookings {
         packagesByLocation: packagesByLocation,
       );
 
-      // Rimuovi la prenotazione originale dalla lista e aggiungi la nuova
-      final nextUpcoming = state.upcoming
-          .where((b) => b.id != originalBookingId)
-          .toList();
-      final nextPast = state.past
-          .where((b) => b.id != originalBookingId)
-          .toList();
-
-      if (newBooking.isUpcoming) {
-        nextUpcoming.insert(0, newBooking);
-      } else {
-        nextPast.insert(0, newBooking);
-      }
-
-      state = state.copyWith(
-        upcoming: nextUpcoming,
-        past: nextPast,
-        error: null,
-      );
+      // Dopo replace la prenotazione originale diventa 'replaced': ricarichiamo la lista
+      // per riflettere lo stato aggiornato dal server.
+      await _refreshBookingsAfterChange();
 
       return (success: true, newBookingId: newBooking.id);
+    } on ApiException catch (e) {
+      state = state.copyWith(error: e.message, errorCode: e.code);
+      return (success: false, newBookingId: null);
     } catch (e) {
       state = state.copyWith(error: e.toString());
       return (success: false, newBookingId: null);
@@ -390,6 +410,7 @@ BookingItem _fromCustomerBooking(
     canModifyUntil: json['can_modify_until'] != null
         ? DateTime.parse(json['can_modify_until'] as String)
         : null,
+    canModifyUntilRaw: json['can_modify_until'] as String?,
     status: json['status'] as String? ?? 'confirmed',
   );
 }

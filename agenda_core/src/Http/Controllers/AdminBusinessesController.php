@@ -83,6 +83,7 @@ final class AdminBusinessesController
      *   "admin_email": "admin@business.com",  // Optional: admin receives welcome email
      *   "email": "contact@business.com",      // Optional: business contact email
      *   "phone": "+39123456789",
+     *   "online_bookings_notification_email": "notify@business.com", // Optional: notifications for customer online bookings
      *   "timezone": "Europe/Rome",
      *   "currency": "EUR",
      *   "admin_first_name": "Mario",          // Optional
@@ -125,6 +126,7 @@ final class AdminBusinessesController
                 [
                     'email' => $body['email'] ?? null,
                     'phone' => $body['phone'] ?? null,
+                    'online_bookings_notification_email' => $body['online_bookings_notification_email'] ?? null,
                     'timezone' => $body['timezone'] ?? 'Europe/Rome',
                     'currency' => $body['currency'] ?? 'EUR',
                     'admin_first_name' => $body['admin_first_name'] ?? null,
@@ -151,6 +153,7 @@ final class AdminBusinessesController
      *   "admin_email": "newadmin@business.com",  // Changes business owner
      *   "email": "contact@business.com",
      *   "phone": "+39123456789",
+     *   "online_bookings_notification_email": "notify@business.com",
      *   "timezone": "Europe/Rome",
      *   "currency": "EUR"
      * }

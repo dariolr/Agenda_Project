@@ -954,6 +954,7 @@ class ApiClient {
     String? adminEmail,
     String? email,
     String? phone,
+    String? onlineBookingsNotificationEmail,
     String timezone = 'Europe/Rome',
     String currency = 'EUR',
     String? adminFirstName,
@@ -968,6 +969,8 @@ class ApiClient {
           'admin_email': adminEmail,
         if (email != null) 'email': email,
         if (phone != null) 'phone': phone,
+        if (onlineBookingsNotificationEmail != null)
+          'online_bookings_notification_email': onlineBookingsNotificationEmail,
         'timezone': timezone,
         'currency': currency,
         if (adminFirstName != null) 'admin_first_name': adminFirstName,
@@ -987,6 +990,7 @@ class ApiClient {
     String? slug,
     String? email,
     String? phone,
+    String? onlineBookingsNotificationEmail,
     String? timezone,
     String? currency,
     String? adminEmail,
@@ -998,6 +1002,8 @@ class ApiClient {
         if (slug != null) 'slug': slug,
         if (email != null) 'email': email,
         if (phone != null) 'phone': phone,
+        if (onlineBookingsNotificationEmail != null)
+          'online_bookings_notification_email': onlineBookingsNotificationEmail,
         if (timezone != null) 'timezone': timezone,
         if (currency != null) 'currency': currency,
         if (adminEmail != null) 'admin_email': adminEmail,

@@ -193,6 +193,7 @@
   "bookingErrorUnauthorized": "Non sei autorizzato a completare questa azione",
   "bookingErrorValidation": "Controlla i dati inseriti",
   "bookingErrorServer": "Si è verificato un errore. Riprova più tardi",
+  "bookingErrorNotModifiable": "Questa prenotazione non può essere modificata",
   
   "confirmationTitle": "Prenotazione confermata!",
   "confirmationSubtitle": "Ti abbiamo inviato un'email di conferma",
@@ -284,14 +285,24 @@
       "minutes": { "type": "int" }
     }
   },
-  "modify": "Modifica",
+  "modifiableUntilDateTime": "Modificabile fino al {dateTime}",
+  "@modifiableUntilDateTime": {
+    "placeholders": {
+      "dateTime": {}
+    }
+  },
+  "modify": "Riprogramma",
   "cancel": "Annulla",
   "yes": "Sì",
   "no": "No",
-  "cancelBookingTitle": "Elimina prenotazione",
-  "cancelBookingConfirm": "Sei sicuro di voler eliminare questa prenotazione?",
-  "bookingCancelled": "Prenotazione eliminata con successo",
-  "bookingCancelFailed": "Errore durante l'eliminazione della prenotazione. Riprova.",
+  "cancelBookingTitle": "Annulla prenotazione",
+  "cancelBookingConfirm": "Sei sicuro di voler annullare questa prenotazione?",
+  "bookingCancelled": "Prenotazione annullata con successo",
+  "bookingCancelFailed": "Errore durante l'annullamento della prenotazione. Riprova.",
+  "actionCancelBooking": "Annulla",
+  "@actionCancelBooking": {
+    "description": "Azione per annullare una prenotazione dal punto di vista del cliente"
+  },
   "modifyNotImplemented": "Funzione di modifica in sviluppo",
   "rescheduleBookingTitle": "Modifica prenotazione",
   "currentBooking": "Prenotazione attuale",
@@ -313,7 +324,7 @@
   "bookingHistoryError": "Errore nel caricamento dello storico",
   "bookingHistoryEventCreated": "Prenotazione creata",
   "bookingHistoryEventUpdated": "Prenotazione modificata",
-  "bookingHistoryEventCancelled": "Prenotazione eliminata",
+  "bookingHistoryEventCancelled": "Prenotazione annullata",
   "bookingHistoryEventItemAdded": "Servizio aggiunto",
   "bookingHistoryEventItemDeleted": "Servizio rimosso",
   "bookingHistoryEventAppointmentUpdated": "Appuntamento modificato",
@@ -332,7 +343,7 @@
     }
   },
 
-  "cancelledBadge": "ELIMINATA",
+  "cancelledBadge": "ANNULLATA",
 
   "businessNotFound": "Attività non trovata",
   "businessNotFoundHint": "Verifica l'indirizzo o contatta direttamente l'attività.",

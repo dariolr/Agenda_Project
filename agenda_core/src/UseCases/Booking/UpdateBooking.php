@@ -71,6 +71,14 @@ final class UpdateBooking
 
         // Verifica cancellation policy (skip per operatori)
         if (!$isOperator) {
+            // Non permettere modifiche su booking gia' in stato terminale.
+            $blockedStatuses = ['cancelled', 'completed', 'no_show', 'replaced'];
+            if (in_array($booking['status'] ?? null, $blockedStatuses, true)) {
+                throw BookingException::notModifiable(
+                    (int) $booking['id'],
+                    'Booking status does not allow modification'
+                );
+            }
             $this->validateCancellationPolicy($booking);
         }
 
@@ -228,9 +236,9 @@ final class UpdateBooking
         $deadline = $startTime->modify("-{$cancellationHours} hours");
         
         if ($now >= $deadline) {
-            throw BookingException::validationError(
-                "Cannot modify booking within {$cancellationHours} hours of appointment start time",
-                ['cancellation_deadline' => $deadline->format('c')]
+            throw BookingException::notModifiable(
+                (int) $booking['id'],
+                "Booking cannot be modified less than {$cancellationHours} hours before start"
             );
         }
     }
@@ -282,10 +290,7 @@ final class UpdateBooking
                     ];
                 }, $conflicts);
 
-                throw BookingException::slotConflict(
-                    'The requested time slot is no longer available for this staff member',
-                    ['conflicts' => $conflictDetails]
-                );
+                throw BookingException::slotConflict($conflictDetails);
             }
         }
     }

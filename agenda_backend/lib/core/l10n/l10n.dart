@@ -6932,6 +6932,36 @@ class L10n {
     );
   }
 
+  /// `Email Notifiche Prenotazioni Online`
+  String get businessOnlineBookingsNotificationEmailLabel {
+    return Intl.message(
+      'Email Notifiche Prenotazioni Online',
+      name: 'businessOnlineBookingsNotificationEmailLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `es. prenotazioni@salone.it`
+  String get businessOnlineBookingsNotificationEmailHint {
+    return Intl.message(
+      'es. prenotazioni@salone.it',
+      name: 'businessOnlineBookingsNotificationEmailHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Riceve notifiche solo per prenotazioni eseguite dal cliente`
+  String get businessOnlineBookingsNotificationEmailHelper {
+    return Intl.message(
+      'Riceve notifiche solo per prenotazioni eseguite dal cliente',
+      name: 'businessOnlineBookingsNotificationEmailHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Accedi alle altre funzionalità dell'applicazione`
   String get moreSubtitle {
     return Intl.message(

@@ -31,9 +31,13 @@ final class BookingRepository
                     b.is_recurrence_parent, b.has_conflict,
                     c.first_name AS client_first_name, c.last_name AS client_last_name,
                     bus.name AS business_name,
+                    bus.slug AS business_slug,
+                    bus.online_bookings_notification_email AS online_bookings_notification_email,
                     l.name AS location_name,
                     l.address AS location_address,
-                    l.city AS location_city
+                    l.city AS location_city,
+                    l.country AS location_country,
+                    l.timezone AS location_timezone
              FROM bookings b
              LEFT JOIN clients c ON b.client_id = c.id
              LEFT JOIN businesses bus ON b.business_id = bus.id
@@ -542,6 +546,7 @@ final class BookingRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id FROM bookings
              WHERE client_id = ?
+               AND status != "replaced"
              ORDER BY created_at DESC
              LIMIT ? OFFSET ?'
         );

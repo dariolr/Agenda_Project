@@ -528,6 +528,16 @@ class MessageLookup extends MessageLookupByLibrary {
       "Elenco Prenotazioni",
     ),
     "bookingsListTotalCount": m4,
+    "businessOnlineBookingsNotificationEmailHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "Riceve notifiche solo per prenotazioni eseguite dal cliente",
+        ),
+    "businessOnlineBookingsNotificationEmailHint":
+        MessageLookupByLibrary.simpleMessage("es. prenotazioni@salone.it"),
+    "businessOnlineBookingsNotificationEmailLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Email Notifiche Prenotazioni Online",
+        ),
     "cancelledBadge": MessageLookupByLibrary.simpleMessage("CANCELLATO"),
     "cannotDeleteCategoryContent": MessageLookupByLibrary.simpleMessage(
       "La categoria contiene uno o più servizi.",

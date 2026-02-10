@@ -1,33 +1,3 @@
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Agenda (Chrome)",
-      "request": "launch",
-      "type": "dart",
-      "flutterMode": "debug",
-      "program": "lib/main.dart",
-      "args": [
-        "-d",
-        "chrome"
-      ]
-    },
-    {
-      "name": "Agenda Release(Chrome)",
-      "request": "launch",
-      "type": "dart",
-      "flutterMode": "release",
-      "program": "lib/main.dart",
-      "args": [
-        "-d",
-        "chrome"
-      ]
-    },
-
-  ]
-}
-
-
 # Miscellaneous
 *.class
 *.log

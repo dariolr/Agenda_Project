@@ -493,6 +493,16 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingsListTitle": MessageLookupByLibrary.simpleMessage("Bookings List"),
     "bookingsListTotalCount": m4,
+    "businessOnlineBookingsNotificationEmailHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "Receives notifications only when customers create/modify/cancel online bookings",
+        ),
+    "businessOnlineBookingsNotificationEmailHint":
+        MessageLookupByLibrary.simpleMessage("e.g. bookings@business.com"),
+    "businessOnlineBookingsNotificationEmailLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Online bookings notification email",
+        ),
     "cancelledBadge": MessageLookupByLibrary.simpleMessage("CANCELLED"),
     "cannotDeleteCategoryContent": MessageLookupByLibrary.simpleMessage(
       "This category contains one or more services.",
