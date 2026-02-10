@@ -158,6 +158,7 @@ class _AppointmentTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final locale = Localizations.localeOf(context).toLanguageTag();
 
     // Recupera staff
@@ -219,6 +220,26 @@ class _AppointmentTile extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              if (appointment.isCancelled)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    l10n.clientAppointmentsCancelledBadge,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               Text(
                 '${appointment.totalDuration} min',
                 style: theme.textTheme.bodySmall?.copyWith(

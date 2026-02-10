@@ -5107,6 +5107,16 @@ class L10n {
     );
   }
 
+  /// `ANNULLATA`
+  String get clientAppointmentsCancelledBadge {
+    return Intl.message(
+      'ANNULLATA',
+      name: 'clientAppointmentsCancelledBadge',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Ripeti questo appuntamento`
   String get recurrenceRepeatBooking {
     return Intl.message(

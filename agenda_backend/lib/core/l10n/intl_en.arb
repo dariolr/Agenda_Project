@@ -826,6 +826,7 @@
     }
   },
   "cancelledBadge": "CANCELLED",
+  "clientAppointmentsCancelledBadge": "CANCELLED",
 
   "recurrenceRepeatBooking": "Repeat this appointment",
   "recurrenceFrequency": "Frequency",
