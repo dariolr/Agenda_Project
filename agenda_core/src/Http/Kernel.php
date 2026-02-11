@@ -24,6 +24,7 @@ use Agenda\Http\Controllers\ServicePackagesController;
 use Agenda\Http\Controllers\ServiceVariantResourceController;
 use Agenda\Http\Controllers\TimeBlocksController;
 use Agenda\Http\Controllers\AppointmentsController;
+use Agenda\Http\Controllers\BookingNotificationsController;
 use Agenda\Http\Controllers\BusinessSyncController;
 use Agenda\Http\Controllers\LocationClosuresController;
 use Agenda\Http\Controllers\ReportsController;
@@ -287,6 +288,7 @@ final class Kernel
         
         // Bookings list (paginated with filters)
         $this->router->get('/v1/businesses/{business_id}/bookings/list', BookingsController::class, 'listAll', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/booking-notifications', BookingNotificationsController::class, 'index', ['auth']);
 
         // Reports (admin/owner only)
         $this->router->get('/v1/reports/appointments', ReportsController::class, 'appointments', ['auth']);
@@ -437,6 +439,7 @@ final class Kernel
             StaffController::class => new StaffController($staffRepo, $staffScheduleRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo),
+            BookingNotificationsController::class => new BookingNotificationsController($notificationRepo, $businessUserRepo, $userRepo),
             ClientsController::class => new ClientsController($clientRepo, $businessUserRepo, $userRepo, $bookingRepo),
             AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $bookingAuditRepo, $notificationRepo, $this->db),
             AdminBusinessesController::class => new AdminBusinessesController($this->db, $businessRepo, $businessUserRepo, $userRepo),

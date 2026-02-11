@@ -66,6 +66,13 @@ class MoreScreen extends ConsumerWidget {
         color: const Color(0xFF9C27B0), // Purple
         onTap: () => context.go('/prenotazioni'),
       ),
+      _MoreItem(
+        icon: Icons.notifications_outlined,
+        title: l10n.bookingNotificationsTitle,
+        description: l10n.moreBookingNotificationsDescription,
+        color: const Color(0xFF3F51B5), // Indigo
+        onTap: () => context.go('/notifiche-prenotazioni'),
+      ),
       // Chiusure - visibile solo a chi può gestire impostazioni
       if (canManageSettings)
         _MoreItem(

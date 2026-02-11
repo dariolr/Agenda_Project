@@ -54,24 +54,9 @@ class TopControls extends ConsumerWidget {
     WidgetRef ref,
   ) {
     // Su mobile per agenda, il date picker è in basso (come tablet)
-    // Mostra solo il selettore location se ce ne sono più di una
+    // In agenda mobile i filtri (staff/location) sono in AppBar actions.
+    // Qui non mostriamo la combo location a sinistra per evitare duplicati.
     if (mode == TopControlsMode.agenda) {
-      if (data.locations.length > 1) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: AgendaLocationSelector(
-                locations: data.locations,
-                current: data.currentLocation,
-                onSelected: data.locationController.set,
-                iconOnly: true,
-              ),
-            ),
-          ],
-        );
-      }
       return const SizedBox.shrink();
     }
 

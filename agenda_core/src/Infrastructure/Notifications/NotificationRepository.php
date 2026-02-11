@@ -227,4 +227,125 @@ final class NotificationRepository
         
         return $stmt->rowCount();
     }
+
+    /**
+     * Find booking notifications for a business with pagination and filters.
+     *
+     * @param int $businessId
+     * @param array<string, mixed> $filters
+     * @return array{notifications: array<int, array<string, mixed>>, total: int}
+     */
+    public function findBookingNotificationsWithFilters(
+        int $businessId,
+        array $filters = [],
+        int $limit = 50,
+        int $offset = 0
+    ): array {
+        $baseSelect = '
+            SELECT nq.id, nq.type, nq.channel, nq.recipient_type, nq.recipient_id,
+                   nq.recipient_email, nq.recipient_name, nq.subject,
+                   nq.status, nq.priority, nq.attempts, nq.max_attempts,
+                   nq.scheduled_at, nq.sent_at, nq.failed_at, nq.error_message,
+                   nq.business_id, nq.booking_id, nq.created_at, nq.updated_at,
+                   b.location_id, l.name AS location_name,
+                   b.client_name AS booking_client_name,
+                   c.first_name AS client_first_name, c.last_name AS client_last_name,
+                   bi_range.first_start_time, bi_range.last_end_time
+            FROM notification_queue nq
+            LEFT JOIN bookings b ON nq.booking_id = b.id
+            LEFT JOIN clients c ON b.client_id = c.id
+            LEFT JOIN locations l ON b.location_id = l.id
+            LEFT JOIN (
+                SELECT booking_id,
+                       MIN(start_time) AS first_start_time,
+                       MAX(end_time) AS last_end_time
+                FROM booking_items
+                GROUP BY booking_id
+            ) bi_range ON bi_range.booking_id = b.id
+        ';
+
+        $countSelect = '
+            SELECT COUNT(DISTINCT nq.id)
+            FROM notification_queue nq
+            LEFT JOIN bookings b ON nq.booking_id = b.id
+            LEFT JOIN clients c ON b.client_id = c.id
+        ';
+
+        $where = ['nq.business_id = ?', 'nq.booking_id IS NOT NULL'];
+        $params = [$businessId];
+
+        if (!empty($filters['status'])) {
+            if (is_array($filters['status'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['status']), '?'));
+                $where[] = "nq.status IN ($placeholders)";
+                $params = array_merge($params, $filters['status']);
+            } else {
+                $where[] = 'nq.status = ?';
+                $params[] = (string) $filters['status'];
+            }
+        }
+
+        if (!empty($filters['channel'])) {
+            if (is_array($filters['channel'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['channel']), '?'));
+                $where[] = "nq.channel IN ($placeholders)";
+                $params = array_merge($params, $filters['channel']);
+            } else {
+                $where[] = 'nq.channel = ?';
+                $params[] = (string) $filters['channel'];
+            }
+        }
+
+        if (!empty($filters['search'])) {
+            $search = '%' . trim((string) $filters['search']) . '%';
+            $where[] = '(nq.recipient_name LIKE ? OR nq.recipient_email LIKE ? OR nq.subject LIKE ? OR b.client_name LIKE ? OR c.first_name LIKE ? OR c.last_name LIKE ?)';
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+        }
+
+        if (!empty($filters['start_date'])) {
+            $where[] = 'nq.created_at >= ?';
+            $params[] = (string) $filters['start_date'] . ' 00:00:00';
+        }
+
+        if (!empty($filters['end_date'])) {
+            $where[] = 'nq.created_at <= ?';
+            $params[] = (string) $filters['end_date'] . ' 23:59:59';
+        }
+
+        $whereClause = ' WHERE ' . implode(' AND ', $where);
+
+        $sortBy = (string) ($filters['sort_by'] ?? 'created');
+        $sortOrder = strtoupper((string) ($filters['sort_order'] ?? 'DESC'));
+        if (!in_array($sortOrder, ['ASC', 'DESC'], true)) {
+            $sortOrder = 'DESC';
+        }
+
+        $orderByColumn = match ($sortBy) {
+            'scheduled' => 'nq.scheduled_at',
+            'sent' => 'nq.sent_at',
+            default => 'nq.created_at',
+        };
+        $orderBy = " ORDER BY $orderByColumn $sortOrder, nq.id DESC";
+
+        $countStmt = $this->db->getPdo()->prepare($countSelect . $whereClause);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $safeLimit = max(1, min(100, $limit));
+        $safeOffset = max(0, $offset);
+        $sql = $baseSelect . $whereClause . $orderBy . " LIMIT $safeLimit OFFSET $safeOffset";
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
+        $notifications = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        return [
+            'notifications' => $notifications,
+            'total' => $total,
+        ];
+    }
 }

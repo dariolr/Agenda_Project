@@ -74,6 +74,10 @@ class ApiConfig {
   static String bookingsList(int businessId) =>
       '/v1/businesses/$businessId/bookings/list';
 
+  /// Lista notifiche prenotazioni per business (gestionale)
+  static String bookingNotifications(int businessId) =>
+      '/v1/businesses/$businessId/booking-notifications';
+
   // ========== SERVICE PACKAGES ENDPOINTS ==========
 
   /// Lista pacchetti servizi per location

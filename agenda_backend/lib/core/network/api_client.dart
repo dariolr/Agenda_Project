@@ -912,6 +912,49 @@ class ApiClient {
     );
   }
 
+  /// GET /v1/businesses/{business_id}/booking-notifications
+  /// Lista notifiche associate alle prenotazioni.
+  Future<Map<String, dynamic>> getBookingNotifications({
+    required int businessId,
+    String? search,
+    List<String>? status,
+    List<String>? channels,
+    String? startDate,
+    String? endDate,
+    String sortBy = 'created', // 'created' | 'scheduled' | 'sent'
+    String sortOrder = 'desc', // 'asc' | 'desc'
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final queryParameters = <String, dynamic>{
+      'sort_by': sortBy,
+      'sort_order': sortOrder,
+      'limit': limit.toString(),
+      'offset': offset.toString(),
+    };
+
+    if (search != null && search.isNotEmpty) {
+      queryParameters['search'] = search;
+    }
+    if (status != null && status.isNotEmpty) {
+      queryParameters['status'] = status.join(',');
+    }
+    if (channels != null && channels.isNotEmpty) {
+      queryParameters['channel'] = channels.join(',');
+    }
+    if (startDate != null) {
+      queryParameters['start_date'] = startDate;
+    }
+    if (endDate != null) {
+      queryParameters['end_date'] = endDate;
+    }
+
+    return get(
+      ApiConfig.bookingNotifications(businessId),
+      queryParameters: queryParameters,
+    );
+  }
+
   /// GET /v1/businesses
   Future<List<Map<String, dynamic>>> getBusinesses() async {
     final response = await get('/v1/businesses');

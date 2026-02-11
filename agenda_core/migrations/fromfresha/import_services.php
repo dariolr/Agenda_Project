@@ -128,12 +128,35 @@ function parseDuration($str) {
     return $minutes ?: 30; // default 30 min
 }
 
-// Funzione per estrarre tempo supplementare
-function parseProcessingTime($str) {
+// Funzione per estrarre minuti da stringhe tipo "1h 30m"
+function parseMinutes($str) {
     $minutes = 0;
     if (preg_match('/(\d+)h/', $str, $m)) $minutes += intval($m[1]) * 60;
     if (preg_match('/(\d+)m/', $str, $m)) $minutes += intval($m[1]);
-    return $minutes;
+    return $minutes > 0 ? $minutes : null;
+}
+
+// Funzione per mappare "Tempo supplementare":
+// - se contiene "fascia oraria bloccata" => blocked_time
+// - altrimenti => processing_time
+// - se vuoto => entrambi NULL
+function parseSupplementaryTimes($str) {
+    $raw = trim((string) $str);
+    if ($raw === '') {
+        return [null, null];
+    }
+
+    $minutes = parseMinutes($raw);
+    if ($minutes === null) {
+        return [null, null];
+    }
+
+    $isBlocked = mb_stripos($raw, 'fascia oraria bloccata', 0, 'UTF-8') !== false;
+    if ($isBlocked) {
+        return [null, $minutes];
+    }
+
+    return [$minutes, null];
 }
 
 // Funzione per formattare categoria (MAIUSCOLO)
@@ -156,7 +179,7 @@ function formatServiceName($name) {
 // Inserisci servizi
 echo "\nInserimento servizi...\n";
 $stmtService = $pdo->prepare("INSERT INTO services (business_id, category_id, name, description, sort_order, is_active) VALUES (?, ?, ?, ?, ?, 1)");
-$stmtVariant = $pdo->prepare("INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, currency, color_hex, is_bookable_online, is_free, is_price_starting_from, is_active) VALUES (?, ?, ?, ?, 0, ?, '€', ?, ?, ?, ?, 1)");
+$stmtVariant = $pdo->prepare("INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, currency, color_hex, is_bookable_online, is_free, is_price_starting_from, is_active) VALUES (?, ?, ?, ?, ?, ?, '€', ?, ?, ?, ?, 1)");
 
 $serviceCount = 0;
 $variantCount = 0;
@@ -165,7 +188,7 @@ foreach ($services as $idx => $row) {
     $nameRaw = trim($row[0]);
     $price = floatval(str_replace(',', '.', $row[1]));
     $duration = parseDuration($row[2]);
-    $processingTime = parseProcessingTime($row[3]);
+    [$processingTime, $blockedTime] = parseSupplementaryTimes($row[3] ?? '');
     $description = trim($row[5]) ?: null;
     $categoryOriginalName = trim($row[6]);
     $isBookableOnline = (trim($row[9]) === 'Abilitati') ? 1 : 0;
@@ -197,6 +220,7 @@ foreach ($services as $idx => $row) {
         $LOCATION_ID,
         $duration,
         $processingTime,
+        $blockedTime,
         $price,
         $colorHex,
         $isBookableOnline,

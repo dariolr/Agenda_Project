@@ -657,6 +657,23 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   ) {
     final canManageServices = ref.watch(currentUserCanManageServicesProvider);
     final servicesNotifier = ref.read(servicesProvider.notifier);
+    final visibleCategories = [
+      for (final category in cats)
+        if (ref.watch(sortedCategoryEntriesProvider(category.id)).isNotEmpty)
+          category,
+    ];
+
+    if (visibleCategories.isEmpty) {
+      return Center(
+        child: Text(
+          context.l10n.noServicesFound,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
     Color? mostUsedColorForCategory(ServiceCategory category) {
       final services = (ref.read(servicesProvider).value ?? [])
           .where((s) => s.categoryId == category.id)
@@ -689,7 +706,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     }
 
     return CategoriesList(
-      categories: cats,
+      categories: visibleCategories,
       isWide: isWide,
       colorScheme: colorScheme,
       hoveredService: _hoveredService,
@@ -890,7 +907,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('$durationLabelText: ${context.localizedDurationLabel(package.effectiveDurationMinutes)}'),
+          Text(
+            '$durationLabelText: ${context.localizedDurationLabel(package.effectiveDurationMinutes)}',
+          ),
           const SizedBox(height: 6),
           Text(
             '$priceLabelText: ${PriceFormatter.format(context: context, amount: package.effectivePrice, currencyCode: currencyCode)}',

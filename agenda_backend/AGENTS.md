@@ -146,6 +146,7 @@ lib/
 | 7 | `/chiusure` | LocationClosuresScreen |
 | 8 | `/profilo` | ProfileScreen |
 | 9 | `/permessi` | OperatorsScreen |
+| 10 | `/notifiche-prenotazioni` | BookingNotificationsScreen |
 
 **Route non-shell:**
 - `/change-password` → ChangePasswordScreen
@@ -171,6 +172,7 @@ lib/
 - **Permessi** → branch 9
 - Report → branch 4
 - Prenotazioni → branch 5
+- Notifiche Prenotazioni → branch 10
 - Chiusure → branch 7
 - Profilo → branch 8
 

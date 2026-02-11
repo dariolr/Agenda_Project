@@ -14,6 +14,7 @@ import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/providers/current_business_user_provider.dart';
 import '../features/bookings_list/presentation/bookings_list_screen.dart';
+import '../features/booking_notifications/presentation/booking_notifications_screen.dart';
 import '../features/business/presentation/business_list_screen.dart';
 import '../features/business/presentation/invitation_accept_screen.dart';
 import '../features/business/presentation/location_closures_screen.dart';
@@ -366,6 +367,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 name: 'permessi',
                 builder: (BuildContext context, GoRouterState state) =>
                     const OperatorsScreen(),
+              ),
+            ],
+          ),
+
+          // --- Ramo 10: Notifiche Prenotazioni ---
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/notifiche-prenotazioni',
+                name: 'notifiche-prenotazioni',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const BookingNotificationsScreen(),
               ),
             ],
           ),

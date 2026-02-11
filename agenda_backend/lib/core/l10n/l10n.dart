@@ -6922,6 +6922,16 @@ class L10n {
     );
   }
 
+  /// `Visualizza lo storico delle notifiche prenotazioni`
+  String get moreBookingNotificationsDescription {
+    return Intl.message(
+      'Visualizza lo storico delle notifiche prenotazioni',
+      name: 'moreBookingNotificationsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Gestisci i tuoi dati personali e le credenziali`
   String get moreProfileDescription {
     return Intl.message(
@@ -6937,6 +6947,296 @@ class L10n {
     return Intl.message(
       'Passa a un altro business',
       name: 'moreSwitchBusinessDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notifiche Prenotazioni`
+  String get bookingNotificationsTitle {
+    return Intl.message(
+      'Notifiche Prenotazioni',
+      name: 'bookingNotificationsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} notifiche`
+  String bookingNotificationsTotalCount(int count) {
+    return Intl.message(
+      '$count notifiche',
+      name: 'bookingNotificationsTotalCount',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Nessuna notifica trovata`
+  String get bookingNotificationsEmpty {
+    return Intl.message(
+      'Nessuna notifica trovata',
+      name: 'bookingNotificationsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prova a modificare i filtri di ricerca`
+  String get bookingNotificationsEmptyHint {
+    return Intl.message(
+      'Prova a modificare i filtri di ricerca',
+      name: 'bookingNotificationsEmptyHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Carica altre`
+  String get bookingNotificationsLoadMore {
+    return Intl.message(
+      'Carica altre',
+      name: 'bookingNotificationsLoadMore',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cerca`
+  String get bookingNotificationsSearchLabel {
+    return Intl.message(
+      'Cerca',
+      name: 'bookingNotificationsSearchLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cliente, destinatario, oggetto`
+  String get bookingNotificationsSearchHint {
+    return Intl.message(
+      'Cliente, destinatario, oggetto',
+      name: 'bookingNotificationsSearchHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Stato`
+  String get bookingNotificationsFilterStatus {
+    return Intl.message(
+      'Stato',
+      name: 'bookingNotificationsFilterStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo`
+  String get bookingNotificationsFilterType {
+    return Intl.message(
+      'Tipo',
+      name: 'bookingNotificationsFilterType',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tutti gli stati`
+  String get bookingNotificationsStatusAll {
+    return Intl.message(
+      'Tutti gli stati',
+      name: 'bookingNotificationsStatusAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `In coda`
+  String get bookingNotificationsStatusPending {
+    return Intl.message(
+      'In coda',
+      name: 'bookingNotificationsStatusPending',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `In elaborazione`
+  String get bookingNotificationsStatusProcessing {
+    return Intl.message(
+      'In elaborazione',
+      name: 'bookingNotificationsStatusProcessing',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inviata`
+  String get bookingNotificationsStatusSent {
+    return Intl.message(
+      'Inviata',
+      name: 'bookingNotificationsStatusSent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fallita`
+  String get bookingNotificationsStatusFailed {
+    return Intl.message(
+      'Fallita',
+      name: 'bookingNotificationsStatusFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tutti i tipi`
+  String get bookingNotificationsTypeAll {
+    return Intl.message(
+      'Tutti i tipi',
+      name: 'bookingNotificationsTypeAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione creata`
+  String get bookingNotificationsChannelConfirmed {
+    return Intl.message(
+      'Prenotazione creata',
+      name: 'bookingNotificationsChannelConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione riprogrammata`
+  String get bookingNotificationsChannelRescheduled {
+    return Intl.message(
+      'Prenotazione riprogrammata',
+      name: 'bookingNotificationsChannelRescheduled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione annullata`
+  String get bookingNotificationsChannelCancelled {
+    return Intl.message(
+      'Prenotazione annullata',
+      name: 'bookingNotificationsChannelCancelled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Promemoria prenotazione`
+  String get bookingNotificationsChannelReminder {
+    return Intl.message(
+      'Promemoria prenotazione',
+      name: 'bookingNotificationsChannelReminder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo`
+  String get bookingNotificationsFieldType {
+    return Intl.message(
+      'Tipo',
+      name: 'bookingNotificationsFieldType',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cliente`
+  String get bookingNotificationsFieldClient {
+    return Intl.message(
+      'Cliente',
+      name: 'bookingNotificationsFieldClient',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sede`
+  String get bookingNotificationsFieldLocation {
+    return Intl.message(
+      'Sede',
+      name: 'bookingNotificationsFieldLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appuntamento`
+  String get bookingNotificationsFieldAppointment {
+    return Intl.message(
+      'Appuntamento',
+      name: 'bookingNotificationsFieldAppointment',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Destinatario`
+  String get bookingNotificationsFieldRecipient {
+    return Intl.message(
+      'Destinatario',
+      name: 'bookingNotificationsFieldRecipient',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Creata il`
+  String get bookingNotificationsFieldCreatedAt {
+    return Intl.message(
+      'Creata il',
+      name: 'bookingNotificationsFieldCreatedAt',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inviata il`
+  String get bookingNotificationsFieldSentAt {
+    return Intl.message(
+      'Inviata il',
+      name: 'bookingNotificationsFieldSentAt',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Errore`
+  String get bookingNotificationsFieldError {
+    return Intl.message(
+      'Errore',
+      name: 'bookingNotificationsFieldError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun oggetto`
+  String get bookingNotificationsNoSubject {
+    return Intl.message(
+      'Nessun oggetto',
+      name: 'bookingNotificationsNoSubject',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `N/D`
+  String get bookingNotificationsNotAvailable {
+    return Intl.message(
+      'N/D',
+      name: 'bookingNotificationsNotAvailable',
       desc: '',
       args: [],
     );

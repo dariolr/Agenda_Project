@@ -99,7 +99,7 @@ if [[ "$MISSING_CSV" == "true" ]]; then
     exit 1
 fi
 
-# Info esecuzione
+# Info esecuzionee ai servizi della sede anche le categorie 
 if [[ "$DRY_RUN" == "false" ]]; then
     echo "${YELLOW}Esecuzione migrazione su database LOCALE...${NC}"
     echo ""

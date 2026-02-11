@@ -6,6 +6,7 @@ import 'package:agenda_backend/app/widgets/top_controls.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/bookings_list/providers/bookings_list_provider.dart';
+import 'package:agenda_backend/features/booking_notifications/providers/booking_notifications_provider.dart';
 import 'package:agenda_backend/features/reports/providers/reports_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -87,6 +88,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isStaff = navigationShell.currentIndex == 3;
     final isReport = navigationShell.currentIndex == 4;
     final isBookingsList = navigationShell.currentIndex == 5;
+    final isBookingNotifications = navigationShell.currentIndex == 10;
     final isClosures = navigationShell.currentIndex == 7;
     final isPermessi = navigationShell.currentIndex == 9;
     final agendaDate = ref.watch(agendaDateProvider);
@@ -153,6 +155,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
             actions.add(const _AgendaAddAction());
           }
         } else if (isServices && canManageServices) {
+          actions.add(const _ToolbarLocationSelectorAction());
           actions.add(const _ServicesAddAction());
         } else if (isClients && showClientsNav) {
           actions.add(const _ClientsAddAction());
@@ -162,6 +165,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           actions.add(_ReportRefreshAction(ref: ref));
         } else if (isBookingsList) {
           actions.add(_BookingsListRefreshAction(ref: ref));
+        } else if (isBookingNotifications) {
+          actions.add(_BookingNotificationsRefreshAction(ref: ref));
         } else if (isClosures && canManageClosures) {
           actions.add(const _ClosuresAddAction());
         } else if (isPermessi && canManageOperators) {
@@ -194,6 +199,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 ? Text(context.l10n.reportsTitle)
                 : isBookingsList
                 ? Text(context.l10n.bookingsListTitle)
+                : isBookingNotifications
+                ? Text(context.l10n.bookingNotificationsTitle)
                 : isClosures
                 ? Text(context.l10n.closuresTitle)
                 : isPermessi
@@ -259,6 +266,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           actions.add(const _AgendaAddAction(compact: true));
         }
       } else if (isServices && canManageServices) {
+        actions.add(const _ToolbarLocationSelectorAction(compact: true));
         actions.add(const _ServicesAddAction(compact: true));
       } else if (isClients && showClientsNav) {
         actions.add(const _ClientsAddAction(compact: true));
@@ -268,6 +276,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         actions.add(_ReportRefreshAction(ref: ref));
       } else if (isBookingsList) {
         actions.add(_BookingsListRefreshAction(ref: ref));
+      } else if (isBookingNotifications) {
+        actions.add(_BookingNotificationsRefreshAction(ref: ref));
       } else if (isClosures && canManageClosures) {
         actions.add(const _ClosuresAddAction(compact: true));
       } else if (isPermessi && canManageOperators) {
@@ -301,6 +311,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               ? Text(context.l10n.reportsTitle)
               : isBookingsList
               ? Text(context.l10n.bookingsListTitle)
+              : isBookingNotifications
+              ? Text(context.l10n.bookingNotificationsTitle)
               : isClosures
               ? Text(context.l10n.closuresTitle)
               : isPermessi
@@ -736,6 +748,100 @@ class _AgendaFilterActions extends ConsumerWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _showLocationSheet(
+    BuildContext context,
+    WidgetRef ref,
+    List<Location> locations,
+    int currentLocationId,
+    String title,
+  ) async {
+    final result = await AppBottomSheet.show<int?>(
+      context: context,
+      builder: (ctx) => LocationSheetContent(
+        locations: locations,
+        currentLocationId: currentLocationId,
+        title: title,
+        onSelected: (id) => Navigator.of(ctx).pop(id),
+      ),
+      useRootNavigator: true,
+      padding: EdgeInsets.zero,
+    );
+
+    if (result != null) {
+      ref.read(currentLocationIdProvider.notifier).set(result);
+    }
+  }
+}
+
+class _ToolbarLocationSelectorAction extends ConsumerWidget {
+  const _ToolbarLocationSelectorAction({this.compact = false});
+
+  static const double _actionButtonHeight = 40;
+  static const double _iconOnlyWidth = 46;
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locations = ref.watch(locationsProvider);
+    if (locations.length <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    final currentLocationId = ref.watch(currentLocationIdProvider);
+    final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective =
+        showLabel ||
+        formFactor == AppFormFactor.tablet ||
+        formFactor == AppFormFactor.desktop;
+    final bool isIconOnly = !showLabelEffective;
+
+    Widget buildActionLabel(IconData icon, String label) {
+      return showLabelEffective
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 22),
+                const SizedBox(width: 8),
+                Text(label),
+              ],
+            )
+          : Icon(icon, size: 22);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Tooltip(
+        message: l10n.agendaSelectLocation,
+        child: SizedBox(
+          height: _actionButtonHeight,
+          width: isIconOnly ? _iconOnlyWidth : null,
+          child: AppOutlinedActionButton(
+            onPressed: () => _showLocationSheet(
+              context,
+              ref,
+              locations,
+              currentLocationId,
+              l10n.agendaSelectLocation,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            borderRadius: BorderRadius.circular(8),
+            borderColor: scheme.primary,
+            foregroundColor: scheme.primary,
+            child: buildActionLabel(
+              Icons.place_outlined,
+              l10n.agendaSelectLocation,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1387,6 +1493,25 @@ class _BookingsListRefreshAction extends StatelessWidget {
     return IconButton(
       onPressed: () =>
           ref.read(bookingsListProvider.notifier).loadBookings(businessId),
+      icon: const Icon(Icons.refresh),
+      tooltip: context.l10n.actionRefresh,
+    );
+  }
+}
+
+/// Refresh button for BookingNotifications screen
+class _BookingNotificationsRefreshAction extends StatelessWidget {
+  const _BookingNotificationsRefreshAction({required this.ref});
+
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    final businessId = ref.read(currentLocationProvider).businessId;
+    return IconButton(
+      onPressed: () => ref
+          .read(bookingNotificationsProvider.notifier)
+          .loadNotifications(businessId),
       icon: const Icon(Icons.refresh),
       tooltip: context.l10n.actionRefresh,
     );
