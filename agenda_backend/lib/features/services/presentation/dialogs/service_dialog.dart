@@ -45,7 +45,8 @@ bool _setEquals<T>(Set<T> a, Set<T> b) {
 
 enum _AdditionalTimeSelection { none, processing, blocked }
 
-const List<Color> _serviceColorPalette = [
+// Palette originale mantenuta per utilizzo futuro.
+const List<Color> serviceColorPaletteLegacy = [
   // Reds
   Color(0xFFFFCDD2),
   Color(0xFFFFC1C9),
@@ -90,6 +91,54 @@ const List<Color> _serviceColorPalette = [
   Color(0xFFFFC7E3),
   Color(0xFFFFB7D9),
   Color(0xFFFFA8CF),
+];
+
+// Palette attiva leggermente più scura per migliorare contrasto nelle card.
+const List<Color> _serviceColorPalette = [
+  // Reds
+  Color(0xFFFFB7BC),
+  Color(0xFFFFADB5),
+  Color(0xFFFFA2AA),
+  // Oranges
+  Color(0xFFFFC29D),
+  Color(0xFFFFB58F),
+  Color(0xFFFFAA81),
+  // Yellows
+  Color(0xFFFFDB9F),
+  Color(0xFFFFD290),
+  Color(0xFFFFC87F),
+  // Yellow-greens
+  Color(0xFFD3DA9F),
+  Color(0xFFCBD690),
+  Color(0xFFC2CE81),
+  // Greens
+  Color(0xFFB8D8BB),
+  Color(0xFFAED0B1),
+  Color(0xFFA0C8A6),
+  // Teals
+  Color(0xFFAAD3CC),
+  Color(0xFF9DCCC2),
+  Color(0xFF8FC0B5),
+  // Cyans
+  Color(0xFFA7D9DF),
+  Color(0xFF9CD2DB),
+  Color(0xFF8EC8D5),
+  // Blues
+  Color(0xFFAAC4EA),
+  Color(0xFF9CB8EA),
+  Color(0xFF8EAFE9),
+  // Indigos
+  Color(0xFFB2BBEA),
+  Color(0xFFA6B0EA),
+  Color(0xFF99A4E9),
+  // Purples
+  Color(0xFFC6B4EA),
+  Color(0xFFBAA9EA),
+  Color(0xFFAE9DE9),
+  // Pinks
+  Color(0xFFEAB2CE),
+  Color(0xFFEAA4C5),
+  Color(0xFFE994BB),
 ];
 
 Color _contrastFor(Color color) {
