@@ -83,6 +83,7 @@ String _sortOptionToApiString(ClientSortOption option) {
 /// AsyncNotifier per caricare i clienti dall'API con paginazione, ricerca e ordinamento lato server
 class ClientsNotifier extends AsyncNotifier<ClientsState> {
   Timer? _searchDebounce;
+  int _searchRequestId = 0;
 
   @override
   Future<ClientsState> build() async {
@@ -152,19 +153,28 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
 
   /// Imposta la query di ricerca e ricarica i dati dal server (con debounce)
   void setSearchQuery(String query) {
+    final current = state.value;
+    if (current != null) {
+      // Aggiorna subito la query nello stato per evitare che UI e campo testo
+      // vengano sovrascritti da risposte async (sfarfallio).
+      if (current.searchQuery != query) {
+        state = AsyncValue.data(current.copyWith(searchQuery: query));
+      }
+    }
+
     _searchDebounce?.cancel();
+    final requestId = ++_searchRequestId;
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
-      _executeSearch(query);
+      _executeSearch(requestId);
     });
   }
 
   /// Esegue la ricerca immediatamente
-  Future<void> _executeSearch(String query) async {
+  Future<void> _executeSearch(int requestId) async {
     final current = state.value;
     if (current == null) return;
 
-    final trimmedQuery = query.trim();
-    if (current.searchQuery == trimmedQuery) return;
+    final trimmedQuery = current.searchQuery.trim();
 
     final authState = ref.read(authProvider);
     if (!authState.isAuthenticated) return;
@@ -188,17 +198,21 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
         search: trimmedQuery.isNotEmpty ? trimmedQuery : null,
         sort: _sortOptionToApiString(current.sortOption),
       );
+      if (requestId != _searchRequestId) return;
+
+      final latest = state.value ?? current;
       state = AsyncValue.data(
         ClientsState(
           clients: response.clients,
           total: response.total,
           hasMore: response.hasMore,
-          searchQuery: trimmedQuery,
-          sortOption: current.sortOption,
+          searchQuery: latest.searchQuery,
+          sortOption: latest.sortOption,
           isSearching: false,
         ),
       );
     } catch (e) {
+      if (requestId != _searchRequestId) return;
       // In caso di errore, mantieni i dati precedenti e mostra errore
       state = AsyncValue.data(current.copyWith(isSearching: false));
       // ignore: avoid_print
