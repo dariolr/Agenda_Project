@@ -242,10 +242,8 @@ final class CreateBooking
             throw BookingException::invalidStaff($staffId);
         }
 
-        // Validate staff can perform ALL requested services
-        if (!$this->staffRepository->canPerformServices($staffId, $serviceIds, $locationId, $businessId)) {
-            throw BookingException::invalidStaff($staffId);
-        }
+        // Note: canPerformServices check skipped for operator bookings.
+        // Operators can assign any service to any staff at the same location.
 
         // Determine client for this booking
         $clientId = null;
@@ -468,10 +466,8 @@ final class CreateBooking
                     throw BookingException::invalidStaff($staffId);
                 }
 
-                // Validate staff can perform this service
-                if (!$this->staffRepository->canPerformServices($staffId, [$serviceId], $locationId, $businessId)) {
-                    throw BookingException::invalidStaff($staffId);
-                }
+                // Note: canPerformServices check skipped for operator bookings.
+                // Operators can assign any service to any staff at the same location.
 
                 // Get service data
                 if (!isset($servicesById[$serviceId])) {
