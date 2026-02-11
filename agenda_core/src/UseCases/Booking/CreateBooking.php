@@ -482,7 +482,8 @@ final class CreateBooking
                 $blockedExtra = isset($item['blocked_extra_minutes']) ? (int) $item['blocked_extra_minutes'] : 0;
                 $processingExtra = isset($item['processing_extra_minutes']) ? (int) $item['processing_extra_minutes'] : 0;
 
-                $endTime = $startTime->modify("+{$duration} minutes");
+                $totalDuration = $duration + $blockedExtra + $processingExtra;
+                $endTime = $startTime->modify("+{$totalDuration} minutes");
 
                 // Conflict check
                 if (!$skipConflictCheck) {
