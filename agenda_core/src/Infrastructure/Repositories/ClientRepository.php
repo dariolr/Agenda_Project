@@ -229,17 +229,48 @@ final class ClientRepository
 
     public function searchByName(int $businessId, string $query, ?int $limit = null, int $offset = 0, string $sort = 'name_asc'): array
     {
-        $searchTerm = '%' . $query . '%';
         $orderBy = $this->getOrderByClause($sort);
-        
-        $sql = "SELECT id, business_id, user_id, first_name, last_name, email, phone, 
-                    notes, is_archived, created_at, updated_at
-             FROM clients
-             WHERE business_id = ? AND is_archived = 0
-               AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ?)
-             $orderBy";
-        
-        $params = [$businessId, $searchTerm, $searchTerm, $searchTerm, $searchTerm];
+
+        $normalizedQuery = preg_replace('/\s+/', ' ', trim($query)) ?? '';
+        $tokens = preg_split('/\s+/', $normalizedQuery) ?: [];
+        $tokens = array_values(array_filter($tokens, fn($t) => $t !== ''));
+        if (empty($tokens)) {
+            return $this->findByBusinessId($businessId, $limit, $offset, $sort);
+        }
+
+        // Multi-word query: users expect a full-name search.
+        // Avoid matching tokens inside email/phone (e.g. "la" matching "romeolab").
+        if (count($tokens) >= 2) {
+            $phraseLike = '%' . $normalizedQuery . '%';
+            $sql = "SELECT id, business_id, user_id, first_name, last_name, email, phone, 
+                        notes, is_archived, created_at, updated_at
+                 FROM clients
+                 WHERE business_id = ? AND is_archived = 0
+                   AND (
+                     CONCAT_WS(' ', first_name, last_name) LIKE ?
+                     OR CONCAT_WS(' ', last_name, first_name) LIKE ?
+                   )
+                 $orderBy";
+            $params = [$businessId, $phraseLike, $phraseLike];
+        } else {
+            $tokenClauses = [];
+            $params = [$businessId];
+            foreach ($tokens as $token) {
+                $like = '%' . $token . '%';
+                $tokenClauses[] =
+                    '(first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ? ' .
+                    'OR CONCAT_WS(" ", first_name, last_name) LIKE ? OR CONCAT_WS(" ", last_name, first_name) LIKE ?)';
+                // Same token across all supported fields for this AND-group.
+                array_push($params, $like, $like, $like, $like, $like, $like);
+            }
+
+            $sql = "SELECT id, business_id, user_id, first_name, last_name, email, phone, 
+                        notes, is_archived, created_at, updated_at
+                 FROM clients
+                 WHERE business_id = ? AND is_archived = 0
+                   AND (" . implode(' AND ', $tokenClauses) . ")
+                 $orderBy";
+        }
         
         if ($limit !== null) {
             $sql .= ' LIMIT ? OFFSET ?';
@@ -306,14 +337,42 @@ final class ClientRepository
      */
     public function countBySearch(int $businessId, string $query): int
     {
-        $searchTerm = '%' . $query . '%';
-        
-        $stmt = $this->db->getPdo()->prepare(
-            'SELECT COUNT(*) FROM clients
-             WHERE business_id = ? AND is_archived = 0
-               AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ?)'
-        );
-        $stmt->execute([$businessId, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+        $normalizedQuery = preg_replace('/\s+/', ' ', trim($query)) ?? '';
+        $tokens = preg_split('/\s+/', $normalizedQuery) ?: [];
+        $tokens = array_values(array_filter($tokens, fn($t) => $t !== ''));
+        if (empty($tokens)) {
+            return $this->countByBusinessId($businessId);
+        }
+
+        if (count($tokens) >= 2) {
+            $phraseLike = '%' . $normalizedQuery . '%';
+            $stmt = $this->db->getPdo()->prepare(
+                'SELECT COUNT(*) FROM clients
+                 WHERE business_id = ? AND is_archived = 0
+                   AND (
+                     CONCAT_WS(\' \', first_name, last_name) LIKE ?
+                     OR CONCAT_WS(\' \', last_name, first_name) LIKE ?
+                   )'
+            );
+            $stmt->execute([$businessId, $phraseLike, $phraseLike]);
+        } else {
+            $tokenClauses = [];
+            $params = [$businessId];
+            foreach ($tokens as $token) {
+                $like = '%' . $token . '%';
+                $tokenClauses[] =
+                    '(first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ? ' .
+                    'OR CONCAT_WS(" ", first_name, last_name) LIKE ? OR CONCAT_WS(" ", last_name, first_name) LIKE ?)';
+                array_push($params, $like, $like, $like, $like, $like, $like);
+            }
+
+            $stmt = $this->db->getPdo()->prepare(
+                'SELECT COUNT(*) FROM clients
+                 WHERE business_id = ? AND is_archived = 0
+                   AND (' . implode(' AND ', $tokenClauses) . ')'
+            );
+            $stmt->execute($params);
+        }
 
         return (int) $stmt->fetchColumn();
     }
