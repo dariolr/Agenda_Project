@@ -184,6 +184,11 @@
       padding: 0;
     }
 
+    .link-btn[disabled] {
+      opacity: 0.6;
+      cursor: default;
+    }
+
     .error {
       display: none;
       align-items: center;
@@ -498,15 +503,20 @@
         }
       }
 
-      async function requestPasswordReset() {
-        const enteredEmail = window.prompt("Inserisci la tua email per recuperare la password", emailInput.value.trim());
-        if (!enteredEmail) return;
+      async function requestPasswordReset(enteredEmail) {
+        const email = (enteredEmail || "").trim();
+        if (!email) {
+          throw new Error("Inserisci la tua email per recuperare la password.");
+        }
+        if (!email.includes("@")) {
+          throw new Error("Email non valida");
+        }
         const businessId = await getBusinessId();
         const response = await fetch(`${apiBase}/v1/customer/${businessId}/auth/forgot-password`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           credentials: "include",
-          body: JSON.stringify({ email: enteredEmail.trim() }),
+          body: JSON.stringify({ email }),
         });
         const payload = await response.json().catch(() => null);
         if (!response.ok || !payload || payload.success !== true) {
@@ -514,7 +524,7 @@
           if (code === "email_not_found") throw new Error("Email non trovata nel sistema. Verifica l'indirizzo o registrati.");
           throw new Error("Errore durante l'invio. Riprova.");
         }
-        window.alert("Email inviata! Controlla la tua casella di posta.");
+        showInfo("Email inviata! Controlla la tua casella di posta.");
       }
 
       togglePasswordBtn.addEventListener("click", function () {
@@ -538,11 +548,21 @@
       });
 
       forgotBtn.addEventListener("click", async function () {
+        if (isSubmitting) return;
+        const enteredEmail = emailInput.value.trim();
         showError("");
+        if (!enteredEmail) {
+          showError("Inserisci la tua email nel campo Email.");
+          emailInput.focus();
+          return;
+        }
+        forgotBtn.disabled = true;
         try {
-          await requestPasswordReset();
+          await requestPasswordReset(enteredEmail);
         } catch (error) {
           showError(error && error.message ? error.message : "Errore durante l'invio. Riprova.");
+        } finally {
+          forgotBtn.disabled = false;
         }
       });
 
