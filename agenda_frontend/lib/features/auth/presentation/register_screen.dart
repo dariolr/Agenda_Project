@@ -33,6 +33,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _hasAttemptedRegister = false;
   bool _isInitialized = false;
+  bool _isRegistering = false;
 
   @override
   void initState() {
@@ -99,56 +100,64 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
+    if (_isRegistering) return;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _hasAttemptedRegister = true);
+    setState(() => _isRegistering = true);
 
-    // Ottieni il businessId - prima prova il provider sincrono
-    var businessId = ref.read(currentBusinessIdProvider);
+    try {
+      // Ottieni il businessId - prima prova il provider sincrono
+      var businessId = ref.read(currentBusinessIdProvider);
 
-    // Se null, attendi che il business sia caricato (necessario quando
-    // l'utente arriva direttamente sulla pagina via URL)
-    if (businessId == null) {
-      final businessAsync = await ref.read(currentBusinessProvider.future);
-      businessId = businessAsync?.id;
-    }
-
-    if (businessId == null) {
-      if (mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: context.l10n.errorTitle,
-          message: context.l10n.authBusinessNotFound,
-        );
+      // Se null, attendi che il business sia caricato (necessario quando
+      // l'utente arriva direttamente sulla pagina via URL)
+      if (businessId == null) {
+        final businessAsync = await ref.read(currentBusinessProvider.future);
+        businessId = businessAsync?.id;
       }
-      return;
-    }
 
-    final success = await ref
-        .read(authProvider.notifier)
-        .register(
-          businessId: businessId,
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-          firstName: _firstNameController.text.trim(),
-          lastName: _lastNameController.text.trim(),
-          phone: _phoneController.text.trim().isNotEmpty
-              ? _phoneController.text.trim()
-              : null,
-        );
-
-    if (success && mounted) {
-      // Segnala al browser che l'autofill è completato con successo
-      TextInput.finishAutofillContext();
-      final slug = ref.read(routeSlugProvider);
-
-      // Se l'utente voleva vedere my-bookings, portalo lì
-      if (widget.redirectFrom == 'my-bookings') {
-        context.go('/$slug/my-bookings');
+      if (businessId == null) {
+        if (mounted) {
+          await FeedbackDialog.showError(
+            context,
+            title: context.l10n.errorTitle,
+            message: context.l10n.authBusinessNotFound,
+          );
+        }
         return;
       }
 
-      context.go('/$slug/booking');
+      final success = await ref
+          .read(authProvider.notifier)
+          .register(
+            businessId: businessId,
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+            firstName: _firstNameController.text.trim(),
+            lastName: _lastNameController.text.trim(),
+            phone: _phoneController.text.trim().isNotEmpty
+                ? _phoneController.text.trim()
+                : null,
+          );
+
+      if (success && mounted) {
+        // Segnala al browser che l'autofill è completato con successo
+        TextInput.finishAutofillContext();
+        final slug = ref.read(routeSlugProvider);
+
+        // Se l'utente voleva vedere my-bookings, portalo lì
+        if (widget.redirectFrom == 'my-bookings') {
+          context.go('/$slug/my-bookings');
+          return;
+        }
+
+        context.go('/$slug/booking');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRegistering = false);
+      }
     }
   }
 
@@ -158,6 +167,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isLoading = _isRegistering || authState.isLoading;
 
     return Scaffold(
       appBar: AppBar(
@@ -380,8 +390,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   // Bottone Registra
                   ElevatedButton(
-                    onPressed: authState.isLoading ? null : _handleRegister,
-                    child: authState.isLoading
+                    onPressed: isLoading ? null : _handleRegister,
+                    child: isLoading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
