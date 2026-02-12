@@ -2,7 +2,6 @@ import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/resource_providers.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +22,7 @@ import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
+import '../../../agenda/providers/business_providers.dart';
 import '../../../auth/providers/current_business_user_provider.dart';
 import '../../../staff/providers/staff_providers.dart';
 import '../../providers/service_categories_provider.dart';
@@ -94,7 +94,7 @@ const List<Color> serviceColorPaletteLegacy = [
 ];
 
 // Palette attiva leggermente più scura per migliorare contrasto nelle card.
-const List<Color> _serviceColorPalette = [
+const List<Color> serviceColorPaletteEnhanced = [
   // Reds
   Color(0xFFFFB7BC),
   Color(0xFFFFADB5),
@@ -140,6 +140,16 @@ const List<Color> _serviceColorPalette = [
   Color(0xFFEAA4C5),
   Color(0xFFE994BB),
 ];
+
+List<Color> _paletteForBusinessSetting(String setting) {
+  switch (setting) {
+    case 'enhanced':
+      return serviceColorPaletteEnhanced;
+    case 'legacy':
+    default:
+      return serviceColorPaletteLegacy;
+  }
+}
 
 Color _contrastFor(Color color) {
   return color.computeLuminance() > 0.5 ? Colors.black : Colors.white;
@@ -396,8 +406,6 @@ Future<void> showServiceDialog(
     name: currencyCode,
   ).currencySymbol;
   final isDesktop = ref.read(formFactorProvider) == AppFormFactor.desktop;
-  final colorScrollController = ScrollController();
-  bool didAutoScroll = false;
 
   String makeDuplicateName(String originalName) {
     final copyWord = ServiceSeedTexts.duplicateCopyWord;
@@ -496,7 +504,12 @@ Future<void> showServiceDialog(
   int? selectedDuration = existingVariant?.durationMinutes;
   int selectedProcessingTime = existingVariant?.processingTime ?? 0;
   int selectedBlockedTime = existingVariant?.blockedTime ?? 0;
-  final palette = <Color>[..._serviceColorPalette];
+  final businessPaletteSetting = ref
+      .read(currentBusinessProvider)
+      .serviceColorPalette;
+  final palette = <Color>[
+    ..._paletteForBusinessSetting(businessPaletteSetting),
+  ];
   final seen = <int>{};
   final uniquePalette = <Color>[
     for (final c in palette)
@@ -536,33 +549,6 @@ Future<void> showServiceDialog(
   bool durationError = false;
   bool categoryError = false;
   bool isSaving = false;
-
-  void scrollToSelected({required bool animate}) {
-    if (!colorScrollController.hasClients) return;
-    final index = uniquePalette.indexWhere(
-      (c) => c.value == selectedColor.value,
-    );
-    if (index < 0) return;
-    const double colorItemSize = 36;
-    const double colorItemSpacing = 10;
-    const double colorListPadding = 4;
-    final viewport = colorScrollController.position.viewportDimension;
-    final target =
-        index * (colorItemSize + colorItemSpacing) -
-        (viewport - colorItemSize) / 2 -
-        colorListPadding;
-    final maxExtent = colorScrollController.position.maxScrollExtent;
-    final clamped = target.clamp(0.0, maxExtent);
-    if (animate) {
-      colorScrollController.animateTo(
-        clamped,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-      );
-    } else {
-      colorScrollController.jumpTo(clamped);
-    }
-  }
 
   Future<void> handleSave() async {
     if (!ref.read(currentUserCanManageServicesProvider)) return;
@@ -793,15 +779,15 @@ Future<void> showServiceDialog(
               selected: allSelected,
               onTap: canEditDialog
                   ? () {
-                if (allSelected) {
-                  current.clear();
-                } else {
-                  current
-                    ..clear()
-                    ..addAll(allIds);
-                }
-                setStateLocal(() {});
-              }
+                      if (allSelected) {
+                        current.clear();
+                      } else {
+                        current
+                          ..clear()
+                          ..addAll(allIds);
+                      }
+                      setStateLocal(() {});
+                    }
                   : () {},
             ),
             const Divider(height: 1),
@@ -811,13 +797,13 @@ Future<void> showServiceDialog(
                 selected: current.contains(member.id),
                 onTap: canEditDialog
                     ? () {
-                  if (current.contains(member.id)) {
-                    current.remove(member.id);
-                  } else {
-                    current.add(member.id);
-                  }
-                  setStateLocal(() {});
-                }
+                        if (current.contains(member.id)) {
+                          current.remove(member.id);
+                        } else {
+                          current.add(member.id);
+                        }
+                        setStateLocal(() {});
+                      }
                     : () {},
               ),
           ],
@@ -865,7 +851,9 @@ Future<void> showServiceDialog(
                             onPressed: () => Navigator.of(dialogCtx).pop(),
                             padding: AppButtonStyles.dialogButtonPadding,
                             child: Text(
-                              canEditDialog ? l10n.actionConfirm : l10n.actionClose,
+                              canEditDialog
+                                  ? l10n.actionConfirm
+                                  : l10n.actionClose,
                             ),
                           ),
                         ),
@@ -913,7 +901,9 @@ Future<void> showServiceDialog(
                           onPressed: () => Navigator.of(sheetCtx).pop(),
                           padding: AppButtonStyles.dialogButtonPadding,
                           child: Text(
-                            canEditDialog ? l10n.actionConfirm : l10n.actionClose,
+                            canEditDialog
+                                ? l10n.actionConfirm
+                                : l10n.actionClose,
                           ),
                         ),
                       ),
@@ -1448,86 +1438,49 @@ Future<void> showServiceDialog(
         const SizedBox(height: AppSpacing.formRowSpacing),
         LabeledFormField(
           label: context.l10n.serviceColorLabel,
-          child: SizedBox(
-            height: 44,
-            child: Row(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
               children: [
-                Expanded(
-                  child: ShaderMask(
-                    shaderCallback: (rect) {
-                      return const LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black,
-                          Colors.black,
-                          Colors.transparent,
+                for (final color in uniquePalette)
+                  GestureDetector(
+                    onTap: canEditDialog
+                        ? () => setState(() {
+                            selectedColor = color;
+                          })
+                        : null,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selectedColor.value == color.value
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Colors.black.withOpacity(0.08),
+                          width: selectedColor.value == color.value ? 2 : 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
                         ],
-                        stops: [0.0, 0.01, 0.99, 1.0],
-                      ).createShader(rect);
-                    },
-                    blendMode: BlendMode.dstIn,
-                    child: ScrollConfiguration(
-                      behavior: const ScrollBehavior().copyWith(
-                        dragDevices: {
-                          PointerDeviceKind.touch,
-                          PointerDeviceKind.mouse,
-                          PointerDeviceKind.trackpad,
-                        },
                       ),
-                      child: ListView.separated(
-                        controller: colorScrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: uniquePalette.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
-                        itemBuilder: (context, index) {
-                          final color = uniquePalette[index];
-                          return GestureDetector(
-                            onTap: canEditDialog
-                                ? () => setState(() {
-                                    selectedColor = color;
-                                  })
-                                : null,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: selectedColor.value == color.value
-                                      ? Theme.of(context).colorScheme.onSurface
-                                      : Colors.black.withOpacity(0.08),
-                                  width: selectedColor.value == color.value
-                                      ? 2
-                                      : 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.08),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: selectedColor.value == color.value
-                                  ? Icon(
-                                      Icons.check,
-                                      color: _contrastFor(color),
-                                      size: 18,
-                                    )
-                                  : null,
-                            ),
-                          );
-                        },
-                      ),
+                      child: selectedColor.value == color.value
+                          ? Icon(
+                              Icons.check,
+                              color: _contrastFor(color),
+                              size: 18,
+                            )
+                          : null,
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -1633,7 +1586,8 @@ Future<void> showServiceDialog(
                   ? (sel) => setState(() {
                       additionalSelection =
                           sel ?? _AdditionalTimeSelection.none;
-                      if (additionalSelection == _AdditionalTimeSelection.none) {
+                      if (additionalSelection ==
+                          _AdditionalTimeSelection.none) {
                         additionalMinutes = 0;
                       }
                     })
@@ -1716,13 +1670,15 @@ Future<void> showServiceDialog(
               ? context.l10n.setPriceToEnable
               : null,
           value: isPriceStartingFrom,
-          onChanged: (canEditDialog &&
+          onChanged:
+              (canEditDialog &&
                   !isFree &&
                   priceController.text.trim().isNotEmpty)
               ? (v) => setState(() => isPriceStartingFrom = v)
               : null,
           enabled:
-              canEditDialog && (!isFree && priceController.text.trim().isNotEmpty),
+              canEditDialog &&
+              (!isFree && priceController.text.trim().isNotEmpty),
         ),
         const SizedBox(height: 40),
         _SwitchTile(
@@ -1744,12 +1700,6 @@ Future<void> showServiceDialog(
     builder: (context, setState) {
       final canManageServices = ref.watch(currentUserCanManageServicesProvider);
       final canEdit = canManageServices && !readOnly;
-      if (!didAutoScroll) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          scrollToSelected(animate: false);
-        });
-        didAutoScroll = true;
-      }
 
       // Load service locations on first build (for editing)
       if (isEditing && isLoadingLocations) {

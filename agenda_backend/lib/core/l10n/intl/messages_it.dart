@@ -620,6 +620,18 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "Email Notifiche Prenotazioni Online",
         ),
+    "businessServiceColorPaletteEnhanced": MessageLookupByLibrary.simpleMessage(
+      "Scura (consigliata)",
+    ),
+    "businessServiceColorPaletteHelper": MessageLookupByLibrary.simpleMessage(
+      "Definisce i colori usati nella selezione servizi e nelle card agenda",
+    ),
+    "businessServiceColorPaletteLabel": MessageLookupByLibrary.simpleMessage(
+      "Palette colori servizi",
+    ),
+    "businessServiceColorPaletteLegacy": MessageLookupByLibrary.simpleMessage(
+      "Originale",
+    ),
     "cancelledBadge": MessageLookupByLibrary.simpleMessage("CANCELLATO"),
     "cannotDeleteCategoryContent": MessageLookupByLibrary.simpleMessage(
       "La categoria contiene uno o più servizi.",

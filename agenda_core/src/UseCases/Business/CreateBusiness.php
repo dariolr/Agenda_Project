@@ -39,7 +39,7 @@ final class CreateBusiness
      * @param string $name Business name
      * @param string $slug Business slug (unique)
      * @param string|null $adminEmail Admin email address (optional, can be set later via update)
-     * @param array $options Optional: email (business), phone, online_bookings_notification_email, timezone, currency, admin_first_name, admin_last_name
+     * @param array $options Optional: email (business), phone, online_bookings_notification_email, service_color_palette, timezone, currency, admin_first_name, admin_last_name
      * @return array Created business data with admin info
      * @throws AuthException If user is not superadmin
      * @throws ValidationException If validation fails
@@ -75,6 +75,19 @@ final class CreateBusiness
             ]);
         }
 
+        $serviceColorPalette = $options['service_color_palette'] ?? 'legacy';
+        if (!is_string($serviceColorPalette)) {
+            throw ValidationException::withErrors([
+                'service_color_palette' => 'Invalid palette value',
+            ]);
+        }
+        $serviceColorPalette = trim(strtolower($serviceColorPalette));
+        if (!in_array($serviceColorPalette, ['enhanced', 'legacy'], true)) {
+            throw ValidationException::withErrors([
+                'service_color_palette' => 'Invalid palette value',
+            ]);
+        }
+
         // Check slug uniqueness
         $existingBusiness = $this->businessRepo->findBySlug($slug);
         if ($existingBusiness !== null) {
@@ -93,6 +106,7 @@ final class CreateBusiness
                     'email' => $options['email'] ?? null,
                     'phone' => $options['phone'] ?? null,
                     'online_bookings_notification_email' => $notifyEmail,
+                    'service_color_palette' => $serviceColorPalette,
                     'timezone' => $options['timezone'] ?? 'Europe/Rome',
                     'currency' => $options['currency'] ?? 'EUR',
                 ]
@@ -161,6 +175,7 @@ final class CreateBusiness
                 'email' => $business['email'],
                 'phone' => $business['phone'],
                 'online_bookings_notification_email' => $business['online_bookings_notification_email'] ?? null,
+                'service_color_palette' => $business['service_color_palette'] ?? 'legacy',
                 'timezone' => $business['timezone'],
                 'currency' => $business['currency'],
             ];

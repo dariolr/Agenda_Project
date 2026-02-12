@@ -28,6 +28,7 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
 
   bool _isLoading = false;
   String? _error;
+  String _selectedServiceColorPalette = 'legacy';
 
   @override
   void initState() {
@@ -42,6 +43,7 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
     _onlineBookingsNotificationEmailController = TextEditingController(
       text: widget.business.onlineBookingsNotificationEmail ?? '',
     );
+    _selectedServiceColorPalette = widget.business.serviceColorPalette;
   }
 
   @override
@@ -80,6 +82,8 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
           widget.business.onlineBookingsNotificationEmail ?? '';
       final notifyEmailChanged =
           newNotifyEmail.toLowerCase() != oldNotifyEmail.toLowerCase();
+      final paletteChanged =
+          _selectedServiceColorPalette != widget.business.serviceColorPalette;
 
       await repository.updateBusiness(
         businessId: widget.business.id,
@@ -91,6 +95,9 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
         // Se l'utente svuota il campo, inviamo stringa vuota per permettere al backend di resettare a NULL.
         onlineBookingsNotificationEmail: notifyEmailChanged
             ? newNotifyEmail
+            : null,
+        serviceColorPalette: paletteChanged
+            ? _selectedServiceColorPalette
             : null,
         phone: _phoneController.text.trim().isEmpty
             ? null
@@ -248,6 +255,29 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
                         }
                       }
                       return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _selectedServiceColorPalette,
+                    decoration: InputDecoration(
+                      labelText: l10n.businessServiceColorPaletteLabel,
+                      helperText: l10n.businessServiceColorPaletteHelper,
+                      prefixIcon: const Icon(Icons.palette_outlined),
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'enhanced',
+                        child: Text(l10n.businessServiceColorPaletteEnhanced),
+                      ),
+                      DropdownMenuItem(
+                        value: 'legacy',
+                        child: Text(l10n.businessServiceColorPaletteLegacy),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _selectedServiceColorPalette = value);
                     },
                   ),
                   const SizedBox(height: 16),

@@ -998,6 +998,7 @@ class ApiClient {
     String? email,
     String? phone,
     String? onlineBookingsNotificationEmail,
+    String? serviceColorPalette,
     String timezone = 'Europe/Rome',
     String currency = 'EUR',
     String? adminFirstName,
@@ -1014,6 +1015,8 @@ class ApiClient {
         if (phone != null) 'phone': phone,
         if (onlineBookingsNotificationEmail != null)
           'online_bookings_notification_email': onlineBookingsNotificationEmail,
+        if (serviceColorPalette != null)
+          'service_color_palette': serviceColorPalette,
         'timezone': timezone,
         'currency': currency,
         if (adminFirstName != null) 'admin_first_name': adminFirstName,
@@ -1034,6 +1037,7 @@ class ApiClient {
     String? email,
     String? phone,
     String? onlineBookingsNotificationEmail,
+    String? serviceColorPalette,
     String? timezone,
     String? currency,
     String? adminEmail,
@@ -1047,6 +1051,8 @@ class ApiClient {
         if (phone != null) 'phone': phone,
         if (onlineBookingsNotificationEmail != null)
           'online_bookings_notification_email': onlineBookingsNotificationEmail,
+        if (serviceColorPalette != null)
+          'service_color_palette': serviceColorPalette,
         if (timezone != null) 'timezone': timezone,
         if (currency != null) 'currency': currency,
         if (adminEmail != null) 'admin_email': adminEmail,

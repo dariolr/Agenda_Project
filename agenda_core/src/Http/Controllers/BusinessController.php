@@ -127,6 +127,7 @@ final class BusinessController
             'phone' => $row['phone'],
             'timezone' => $row['timezone'],
             'currency' => $row['currency'],
+            'service_color_palette' => $row['service_color_palette'] ?? 'legacy',
             'default_location_id' => $defaultLocationId,
         ];
     }
@@ -139,8 +140,10 @@ final class BusinessController
             'slug' => $row['slug'],
             'email' => $row['email'],
             'phone' => $row['phone'],
+            'online_bookings_notification_email' => $row['online_bookings_notification_email'] ?? null,
             'timezone' => $row['timezone'],
             'currency' => $row['currency'],
+            'service_color_palette' => $row['service_color_palette'] ?? 'legacy',
             'is_active' => (bool) $row['is_active'],
             'created_at' => $row['created_at'],
             'updated_at' => $row['updated_at'],

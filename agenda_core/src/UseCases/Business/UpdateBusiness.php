@@ -35,7 +35,7 @@ final class UpdateBusiness
     /**
      * @param int $executorUserId The user executing this action (must be superadmin)
      * @param int $businessId The business to update
-     * @param array $data Fields to update (name, slug, email, phone, online_bookings_notification_email, timezone, currency, admin_email)
+     * @param array $data Fields to update (name, slug, email, phone, online_bookings_notification_email, service_color_palette, timezone, currency, admin_email)
      * @return array The updated business data
      * @throws AuthException if user is not superadmin
      * @throws ValidationException if validation fails
@@ -84,8 +84,24 @@ final class UpdateBusiness
             }
         }
 
+        if (array_key_exists('service_color_palette', $data)) {
+            $palette = $data['service_color_palette'];
+            if (!is_string($palette)) {
+                throw ValidationException::withErrors([
+                    'service_color_palette' => 'Invalid palette value',
+                ]);
+            }
+            $palette = trim(strtolower($palette));
+            if (!in_array($palette, ['enhanced', 'legacy'], true)) {
+                throw ValidationException::withErrors([
+                    'service_color_palette' => 'Invalid palette value',
+                ]);
+            }
+            $data['service_color_palette'] = $palette;
+        }
+
         // Filter allowed fields for business update
-        $allowedFields = ['name', 'slug', 'email', 'phone', 'online_bookings_notification_email', 'timezone', 'currency'];
+        $allowedFields = ['name', 'slug', 'email', 'phone', 'online_bookings_notification_email', 'service_color_palette', 'timezone', 'currency'];
         $updateData = array_intersect_key($data, array_flip($allowedFields));
 
         if (!empty($updateData)) {
@@ -104,6 +120,7 @@ final class UpdateBusiness
                 'email' => $updated['email'],
                 'phone' => $updated['phone'],
                 'online_bookings_notification_email' => $updated['online_bookings_notification_email'] ?? null,
+                'service_color_palette' => $updated['service_color_palette'] ?? 'legacy',
                 'timezone' => $updated['timezone'],
                 'currency' => $updated['currency'],
                 'is_active' => (bool) $updated['is_active'],

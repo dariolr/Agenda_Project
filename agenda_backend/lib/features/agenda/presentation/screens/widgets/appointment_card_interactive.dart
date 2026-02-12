@@ -500,7 +500,7 @@ class _AppointmentCardInteractiveState
     final hasClientNotes = clientNotes != null && clientNotes.isNotEmpty;
     final hasNotes = hasBookingNotes || hasClientNotes;
 
-    final baseColor = widget.color.withOpacity(0.15);
+    final baseColor = widget.color.withOpacity(0.55);
     const r = BorderRadius.all(Radius.circular(6));
 
     final startTime = overrideStart ?? widget.appointment.startTime;
@@ -622,7 +622,8 @@ class _AppointmentCardInteractiveState
     final formFactor = ref.watch(formFactorProvider);
     final effectiveColumnWidth = widget.columnWidth ?? _lastSize?.width;
     final screenWidth = MediaQuery.of(context).size.width;
-    final approxVisibleColumns = (effectiveColumnWidth != null &&
+    final approxVisibleColumns =
+        (effectiveColumnWidth != null &&
             effectiveColumnWidth > 0 &&
             screenWidth > 0)
         ? (screenWidth / effectiveColumnWidth).round()

@@ -84,6 +84,7 @@ final class AdminBusinessesController
      *   "email": "contact@business.com",      // Optional: business contact email
      *   "phone": "+39123456789",
      *   "online_bookings_notification_email": "notify@business.com", // Optional: notifications for customer online bookings
+     *   "service_color_palette": "legacy", // Optional: enhanced|legacy
      *   "timezone": "Europe/Rome",
      *   "currency": "EUR",
      *   "admin_first_name": "Mario",          // Optional
@@ -127,6 +128,7 @@ final class AdminBusinessesController
                     'email' => $body['email'] ?? null,
                     'phone' => $body['phone'] ?? null,
                     'online_bookings_notification_email' => $body['online_bookings_notification_email'] ?? null,
+                    'service_color_palette' => $body['service_color_palette'] ?? 'legacy',
                     'timezone' => $body['timezone'] ?? 'Europe/Rome',
                     'currency' => $body['currency'] ?? 'EUR',
                     'admin_first_name' => $body['admin_first_name'] ?? null,
@@ -154,6 +156,7 @@ final class AdminBusinessesController
      *   "email": "contact@business.com",
      *   "phone": "+39123456789",
      *   "online_bookings_notification_email": "notify@business.com",
+     *   "service_color_palette": "legacy", // enhanced|legacy
      *   "timezone": "Europe/Rome",
      *   "currency": "EUR"
      * }
