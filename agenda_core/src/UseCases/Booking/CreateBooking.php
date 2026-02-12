@@ -482,12 +482,17 @@ final class CreateBooking
                 $blockedExtra = isset($item['blocked_extra_minutes']) ? (int) $item['blocked_extra_minutes'] : 0;
                 $processingExtra = isset($item['processing_extra_minutes']) ? (int) $item['processing_extra_minutes'] : 0;
 
-                $totalDuration = $duration + $blockedExtra + $processingExtra;
-                $endTime = $startTime->modify("+{$totalDuration} minutes");
+                // Display end_time: includes blocked time (extends visible card)
+                // Processing time is empty space, NOT part of the visible duration
+                $displayDuration = $duration + $blockedExtra;
+                $endTime = $startTime->modify("+{$displayDuration} minutes");
 
-                // Conflict check
+                // Conflict check uses full blocked duration (includes processing time)
+                $totalBlockedDuration = $duration + $blockedExtra + $processingExtra;
+                $blockedEndTime = $startTime->modify("+{$totalBlockedDuration} minutes");
+
                 if (!$skipConflictCheck) {
-                    $conflicts = $this->bookingRepository->checkConflicts($staffId, $locationId, $startTime, $endTime);
+                    $conflicts = $this->bookingRepository->checkConflicts($staffId, $locationId, $startTime, $blockedEndTime);
                     if (!empty($conflicts)) {
                         $this->db->rollBack();
                         throw BookingException::slotConflict($conflicts);
