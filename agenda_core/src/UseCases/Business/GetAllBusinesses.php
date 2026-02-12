@@ -50,6 +50,7 @@ final class GetAllBusinesses
                 'email' => $b['email'],
                 'phone' => $b['phone'],
                 'online_bookings_notification_email' => $b['online_bookings_notification_email'] ?? null,
+                'service_color_palette' => $b['service_color_palette'] ?? 'legacy',
                 'timezone' => $b['timezone'],
                 'currency' => $b['currency'],
                 'is_active' => (bool) $b['is_active'],

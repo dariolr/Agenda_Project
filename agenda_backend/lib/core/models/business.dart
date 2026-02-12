@@ -5,6 +5,7 @@ class Business {
   final String? email;
   final String? phone;
   final String? onlineBookingsNotificationEmail;
+  final String serviceColorPalette;
   final String? timezone;
   final DateTime createdAt;
   final String currency;
@@ -22,6 +23,7 @@ class Business {
     this.email,
     this.phone,
     this.onlineBookingsNotificationEmail,
+    this.serviceColorPalette = 'legacy',
     this.timezone,
     required this.createdAt,
     this.currency = 'EUR',
@@ -40,6 +42,7 @@ class Business {
     String? email,
     String? phone,
     String? onlineBookingsNotificationEmail,
+    String? serviceColorPalette,
     String? timezone,
     DateTime? createdAt,
     String? currency,
@@ -57,7 +60,9 @@ class Business {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       onlineBookingsNotificationEmail:
-          onlineBookingsNotificationEmail ?? this.onlineBookingsNotificationEmail,
+          onlineBookingsNotificationEmail ??
+          this.onlineBookingsNotificationEmail,
+      serviceColorPalette: serviceColorPalette ?? this.serviceColorPalette,
       timezone: timezone ?? this.timezone,
       createdAt: createdAt ?? this.createdAt,
       currency: currency ?? this.currency,
@@ -79,6 +84,7 @@ class Business {
       phone: json['phone'] as String?,
       onlineBookingsNotificationEmail:
           json['online_bookings_notification_email'] as String?,
+      serviceColorPalette: json['service_color_palette'] as String? ?? 'legacy',
       timezone: json['timezone'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -101,6 +107,7 @@ class Business {
       'email': email,
       'phone': phone,
       'online_bookings_notification_email': onlineBookingsNotificationEmail,
+      'service_color_palette': serviceColorPalette,
       'timezone': timezone,
       'created_at': createdAt.toIso8601String(),
       'currency': currency,

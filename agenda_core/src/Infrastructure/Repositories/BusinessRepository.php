@@ -17,6 +17,7 @@ final class BusinessRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, name, slug, email, phone, timezone, currency, 
                     online_bookings_notification_email,
+                    service_color_palette,
                     is_active, is_suspended, suspension_message, created_at, updated_at
              FROM businesses
              WHERE is_active = 1
@@ -35,6 +36,7 @@ final class BusinessRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency, 
                     b.online_bookings_notification_email,
+                    b.service_color_palette,
                     b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at,
                     bu.role AS user_role, bu.scope_type AS user_scope_type
              FROM businesses b
@@ -52,6 +54,7 @@ final class BusinessRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, name, slug, email, phone, timezone, currency,
                     online_bookings_notification_email,
+                    service_color_palette,
                     is_active, is_suspended, suspension_message, created_at, updated_at
              FROM businesses
              WHERE id = ? AND is_active = 1'
@@ -71,6 +74,7 @@ final class BusinessRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency,
                     b.online_bookings_notification_email,
+                    b.service_color_palette,
                     b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at,
                     u.email as admin_email
              FROM businesses b
@@ -97,8 +101,8 @@ final class BusinessRepository
     public function create(string $name, string $slug, array $data = []): int
     {
         $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO businesses (name, slug, email, phone, online_bookings_notification_email, timezone, currency) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO businesses (name, slug, email, phone, online_bookings_notification_email, service_color_palette, timezone, currency) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $name,
@@ -106,6 +110,7 @@ final class BusinessRepository
             $data['email'] ?? null,
             $data['phone'] ?? null,
             $data['online_bookings_notification_email'] ?? null,
+            $data['service_color_palette'] ?? 'legacy',
             $data['timezone'] ?? 'Europe/Rome',
             $data['currency'] ?? 'EUR',
         ]);
@@ -137,6 +142,10 @@ final class BusinessRepository
         if (array_key_exists('online_bookings_notification_email', $data)) {
             $fields[] = 'online_bookings_notification_email = ?';
             $params[] = $data['online_bookings_notification_email'];
+        }
+        if (isset($data['service_color_palette'])) {
+            $fields[] = 'service_color_palette = ?';
+            $params[] = $data['service_color_palette'];
         }
         if (isset($data['timezone'])) {
             $fields[] = 'timezone = ?';
@@ -183,6 +192,7 @@ final class BusinessRepository
     {
         $sql = 'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency, 
                        b.online_bookings_notification_email,
+                       b.service_color_palette,
                        b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at,
                        u.email as admin_email
                 FROM businesses b
@@ -237,6 +247,7 @@ final class BusinessRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, name, slug, email, phone, timezone, currency,
                     online_bookings_notification_email,
+                    service_color_palette,
                     is_active, is_suspended, suspension_message, created_at, updated_at
              FROM businesses
              WHERE slug = ?'
