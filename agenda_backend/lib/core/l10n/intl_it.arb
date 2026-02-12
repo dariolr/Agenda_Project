@@ -1138,6 +1138,10 @@
   "businessOnlineBookingsNotificationEmailLabel": "Email Notifiche Prenotazioni Online",
   "businessOnlineBookingsNotificationEmailHint": "es. prenotazioni@salone.it",
   "businessOnlineBookingsNotificationEmailHelper": "Riceve notifiche solo per prenotazioni eseguite dal cliente",
+  "businessServiceColorPaletteLabel": "Palette colori servizi",
+  "businessServiceColorPaletteHelper": "Definisce i colori usati nella selezione servizi e nelle card agenda",
+  "businessServiceColorPaletteEnhanced": "Scura (consigliata)",
+  "businessServiceColorPaletteLegacy": "Originale",
   "moreSubtitle": "Accedi alle altre funzionalità dell'applicazione",
 
   "closuresTitle": "Date di chiusura",

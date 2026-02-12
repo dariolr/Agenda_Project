@@ -29,6 +29,7 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
   bool _isLoading = false;
   String? _error;
   bool _autoGenerateSlug = true;
+  String _selectedServiceColorPalette = 'legacy';
 
   @override
   void initState() {
@@ -93,8 +94,9 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
             : _phoneController.text.trim(),
         onlineBookingsNotificationEmail:
             _onlineBookingsNotificationEmailController.text.trim().isEmpty
-                ? null
-                : _onlineBookingsNotificationEmailController.text.trim(),
+            ? null
+            : _onlineBookingsNotificationEmailController.text.trim(),
+        serviceColorPalette: _selectedServiceColorPalette,
       );
 
       // Invalida il provider per ricaricare la lista
@@ -284,8 +286,10 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
                   TextFormField(
                     controller: _onlineBookingsNotificationEmailController,
                     decoration: InputDecoration(
-                      labelText: l10n.businessOnlineBookingsNotificationEmailLabel,
-                      hintText: l10n.businessOnlineBookingsNotificationEmailHint,
+                      labelText:
+                          l10n.businessOnlineBookingsNotificationEmailLabel,
+                      hintText:
+                          l10n.businessOnlineBookingsNotificationEmailHint,
                       prefixIcon: const Icon(Icons.notifications_outlined),
                       helperText:
                           l10n.businessOnlineBookingsNotificationEmailHelper,
@@ -300,6 +304,29 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
                         }
                       }
                       return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _selectedServiceColorPalette,
+                    decoration: InputDecoration(
+                      labelText: l10n.businessServiceColorPaletteLabel,
+                      helperText: l10n.businessServiceColorPaletteHelper,
+                      prefixIcon: const Icon(Icons.palette_outlined),
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'enhanced',
+                        child: Text(l10n.businessServiceColorPaletteEnhanced),
+                      ),
+                      DropdownMenuItem(
+                        value: 'legacy',
+                        child: Text(l10n.businessServiceColorPaletteLegacy),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _selectedServiceColorPalette = value);
                     },
                   ),
                   const SizedBox(height: 16),

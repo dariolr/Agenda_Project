@@ -1140,6 +1140,10 @@
   "businessOnlineBookingsNotificationEmailLabel": "Online bookings notification email",
   "businessOnlineBookingsNotificationEmailHint": "e.g. bookings@business.com",
   "businessOnlineBookingsNotificationEmailHelper": "Receives notifications only when customers create/modify/cancel online bookings",
+  "businessServiceColorPaletteLabel": "Service color palette",
+  "businessServiceColorPaletteHelper": "Defines colors used in service selection and agenda cards",
+  "businessServiceColorPaletteEnhanced": "Darker (recommended)",
+  "businessServiceColorPaletteLegacy": "Original",
   "moreSubtitle": "Access other application features",
 
   "closuresTitle": "Closure dates",

@@ -7272,6 +7272,46 @@ class L10n {
     );
   }
 
+  /// `Palette colori servizi`
+  String get businessServiceColorPaletteLabel {
+    return Intl.message(
+      'Palette colori servizi',
+      name: 'businessServiceColorPaletteLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Definisce i colori usati nella selezione servizi e nelle card agenda`
+  String get businessServiceColorPaletteHelper {
+    return Intl.message(
+      'Definisce i colori usati nella selezione servizi e nelle card agenda',
+      name: 'businessServiceColorPaletteHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Scura (consigliata)`
+  String get businessServiceColorPaletteEnhanced {
+    return Intl.message(
+      'Scura (consigliata)',
+      name: 'businessServiceColorPaletteEnhanced',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Originale`
+  String get businessServiceColorPaletteLegacy {
+    return Intl.message(
+      'Originale',
+      name: 'businessServiceColorPaletteLegacy',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Accedi alle altre funzionalità dell'applicazione`
   String get moreSubtitle {
     return Intl.message(
