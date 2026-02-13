@@ -185,6 +185,7 @@ final class BookingsController
      * - service_ids: filter by services (comma-separated, for multi-select)
      * - client_search: search in client name/email/phone
      * - status: filter by status (comma-separated for multiple)
+     * - source: filter by source (comma-separated for multiple, es. online,onlinestaff)
      * - start_date: filter from date (YYYY-MM-DD)
      * - end_date: filter to date (YYYY-MM-DD)
      * - include_past: bool, include past bookings (default: false, only future)
@@ -244,6 +245,15 @@ final class BookingsController
             $filters['status'] = strpos($statusParam, ',') !== false 
                 ? explode(',', $statusParam) 
                 : $statusParam;
+        }
+
+        if ($request->queryParam('source') !== null) {
+            $sourceParam = trim((string) $request->queryParam('source'));
+            if ($sourceParam !== '') {
+                $filters['source'] = strpos($sourceParam, ',') !== false
+                    ? array_filter(array_map('trim', explode(',', $sourceParam)))
+                    : $sourceParam;
+            }
         }
         
         if ($request->queryParam('start_date') !== null) {
