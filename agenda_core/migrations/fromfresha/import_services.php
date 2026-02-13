@@ -51,12 +51,24 @@ $CATEGORY_COLORS = [
     '#FFC7E3', // Pinks
 ];
 
-// Leggi CSV
-$csv = array_map(function($line) {
-    return str_getcsv($line);
-}, file(__DIR__ . '/' . $CSV_FILE));
+// Leggi CSV con parser stream-safe per gestire campi multilinea
+$csvPath = __DIR__ . '/' . $CSV_FILE;
+$handle = fopen($csvPath, 'rb');
+if ($handle === false) {
+    throw new RuntimeException("Impossibile aprire il file CSV: {$csvPath}");
+}
 
-$header = array_shift($csv); // rimuovi header
+$header = fgetcsv($handle);
+if ($header === false) {
+    fclose($handle);
+    throw new RuntimeException("CSV vuoto o non valido: {$csvPath}");
+}
+
+$csv = [];
+while (($row = fgetcsv($handle)) !== false) {
+    $csv[] = $row;
+}
+fclose($handle);
 
 // Filtra righe vuote e servizi senza Risorsa (colonna 8)
 $services = array_filter($csv, function($row) {
