@@ -89,6 +89,7 @@ class BookingListItem {
     final l10n = context.l10n;
     switch (source) {
       case 'online':
+      case 'onlinestaff':
         return l10n.bookingsListSourceOnline;
       case 'phone':
         return l10n.bookingsListSourcePhone;
@@ -123,6 +124,7 @@ class BookingListItem {
   IconData get sourceIcon {
     switch (source) {
       case 'online':
+      case 'onlinestaff':
         return Icons.cloud_outlined;
       case 'phone':
         return Icons.phone;

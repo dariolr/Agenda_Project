@@ -34,10 +34,20 @@
   
   <!-- Versione app esposta a Flutter -->
   <script>
-    window.appVersion = "20260212-2.49";
+    window.appVersion = "20260213-4.53";
   </script>
 </head>
-<body>
+<body style="overscroll-behavior-x: none;">
+  <script>
+    // Prevent browser back/forward navigation on horizontal scroll/swipe.
+    // capture: true ensures this fires BEFORE Flutter's own handlers,
+    // preventDefault() blocks browser navigation but not Flutter's internal scroll.
+    document.addEventListener('wheel', function(e) {
+      if (e.deltaX !== 0) {
+        e.preventDefault();
+      }
+    }, { passive: false, capture: true });
+  </script>
   <script>
     document.write('<script src="flutter_bootstrap.js?v=' + window.appVersion + '" async><\/script>');
   </script>

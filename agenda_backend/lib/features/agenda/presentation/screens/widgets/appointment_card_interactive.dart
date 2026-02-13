@@ -654,13 +654,15 @@ class _AppointmentCardInteractiveState
     final showSourceIcon =
         bookingSource == 'online' || bookingSource == 'onlinestaff';
     if (showSourceIcon) {
-      final sourceIcon = bookingSource == 'onlinestaff'
-          ? Icons.favorite_border
-          : Icons.cloud_outlined;
+      final isOnlineStaff = bookingSource == 'onlinestaff';
       trailingIcons.add(
         Padding(
           padding: const EdgeInsets.only(left: 4),
-          child: Icon(sourceIcon, size: 14, color: Colors.black54),
+          child: Icon(
+            Icons.cloud_outlined,
+            size: 14,
+            color: isOnlineStaff ? Colors.red : Colors.black54,
+          ),
         ),
       );
     }

@@ -965,8 +965,8 @@ final class BookingRepository
      * Find bookings with advanced filters for the bookings list view.
      * 
      * @param int $businessId Business ID
-     * @param array $filters Filters: location_id, staff_id, service_id, client_search, 
-     *                       status, start_date, end_date, include_past, sort_by, sort_order
+     * @param array $filters Filters: location_id, staff_id, service_id, client_search,
+     *                       status, source, start_date, end_date, include_past, sort_by, sort_order
      * @param int $limit Max results
      * @param int $offset Pagination offset
      * @return array{bookings: array, total: int}
@@ -1056,6 +1056,18 @@ final class BookingRepository
             } else {
                 $where[] = 'b.status = ?';
                 $params[] = $filters['status'];
+            }
+        }
+
+        // Source filter
+        if (!empty($filters['source'])) {
+            if (is_array($filters['source'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['source']), '?'));
+                $where[] = "b.source IN ($placeholders)";
+                $params = array_merge($params, $filters['source']);
+            } else {
+                $where[] = 'b.source = ?';
+                $params[] = $filters['source'];
             }
         }
         

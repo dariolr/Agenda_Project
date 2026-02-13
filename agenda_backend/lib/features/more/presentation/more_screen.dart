@@ -144,13 +144,14 @@ class MoreScreen extends ConsumerWidget {
   Widget _buildDesktopGrid(List<_MoreItem> items, BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount = screenWidth > 1200 ? 4 : (screenWidth > 800 ? 3 : 2);
+    final childAspectRatio = crossAxisCount >= 4 ? 1.12 : 1.0;
 
     return SliverGrid(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 1.3,
+        childAspectRatio: childAspectRatio,
       ),
       delegate: SliverChildBuilderDelegate(
         (context, index) => _MoreCardDesktop(item: items[index]),
