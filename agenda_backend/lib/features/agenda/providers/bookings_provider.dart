@@ -86,14 +86,18 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
     state = {
       for (final e in state.entries)
         e.key: e.key == bookingId
-            ? Booking(
-                id: bk.id,
-                businessId: bk.businessId,
-                locationId: bk.locationId,
-                clientId: bk.clientId,
-                clientName: bk.clientName,
-                notes: notes,
-              )
+            ? bk.copyWith(notes: notes)
+            : e.value,
+    };
+  }
+
+  void setStatus(int bookingId, String status) {
+    final bk = state[bookingId];
+    if (bk == null) return;
+    state = {
+      for (final e in state.entries)
+        e.key: e.key == bookingId
+            ? bk.copyWith(status: status)
             : e.value,
     };
   }
@@ -128,13 +132,9 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
     state = {
       for (final e in state.entries)
         e.key: e.key == bookingId
-            ? Booking(
-                id: bk.id,
-                businessId: bk.businessId,
-                locationId: bk.locationId,
+            ? bk.copyWith(
                 clientId: clientId,
                 clientName: clientName ?? bk.clientName,
-                notes: bk.notes,
               )
             : e.value,
     };

@@ -104,6 +104,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   int? _autoOpenServicePickerIndex;
   bool _isSaving = false;
   bool _isAddingPackage = false;
+  late final String _currentBookingStatus;
+  String? _selectedBookingStatus;
 
   /// Stato iniziale per rilevare modifiche
   late DateTime _initialDate;
@@ -124,6 +126,13 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     );
     _clientId = appt.clientId;
     _clientName = appt.clientName;
+    final booking = ref.read(bookingsProvider)[appt.bookingId];
+    _currentBookingStatus =
+        booking?.status ?? appt.bookingStatus ?? 'confirmed';
+    _selectedBookingStatus =
+        _availableStatusOptions().contains(_currentBookingStatus)
+        ? _currentBookingStatus
+        : null;
     Future.microtask(() {
       if (!mounted) return;
       ref
@@ -139,7 +148,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           );
     });
     // Leggi le note dalla Booking associata
-    final booking = ref.read(bookingsProvider)[appt.bookingId];
     _notesController.text = booking?.notes ?? '';
 
     // Carica tutti gli appuntamenti della stessa prenotazione
@@ -232,12 +240,43 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     return base > 0 ? base : 0;
   }
 
+  List<String> _availableStatusOptions() {
+    return const <String>[
+      'confirmed',
+      'completed',
+      'cancelled',
+      'no_show',
+    ];
+  }
+
+  String _statusLabel(BuildContext context, String status) {
+    final l10n = context.l10n;
+    switch (status) {
+      case 'confirmed':
+        return l10n.statusConfirmed;
+      case 'cancelled':
+        return l10n.statusCancelled;
+      case 'pending':
+        return l10n.bookingsListStatusPending;
+      case 'completed':
+        return l10n.statusCompleted;
+      case 'no_show':
+        return l10n.bookingsListStatusNoShow;
+      default:
+        return status;
+    }
+  }
+
   /// Verifica se ci sono modifiche non salvate
   bool get _hasUnsavedChanges {
     if (_date != _initialDate) return true;
     if (_clientId != _initialClientId) return true;
     if (_clientName != _initialClientName) return true;
     if (_notesController.text != _initialNotes) return true;
+    if (_selectedBookingStatus != null &&
+        _selectedBookingStatus != _currentBookingStatus) {
+      return true;
+    }
     if (_serviceItems.length != _initialServiceItems.length) return true;
 
     // Confronto dettagliato dei servizi
@@ -432,6 +471,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         : null;
 
     final title = l10n.appointmentDialogTitleEdit;
+    final statusOptions = _availableStatusOptions();
 
     // Il campo cliente è bloccato se l'appuntamento
     // aveva già un cliente associato (clientId != null)
@@ -532,6 +572,32 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   maxLines: 3,
                   minLines: 2,
                 ),
+                if (statusOptions.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.formRowSpacing),
+                  DropdownButtonFormField<String>(
+                    value: _selectedBookingStatus,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.bookingsListFilterStatus,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    hint: Text(
+                      _statusLabel(context, _currentBookingStatus),
+                    ),
+                    items: [
+                      for (final status in statusOptions)
+                        DropdownMenuItem<String>(
+                          value: status,
+                          child: Text(_statusLabel(context, status)),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _selectedBookingStatus = value);
+                    },
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.formRowSpacing),
               ],
             ),
@@ -1959,6 +2025,27 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       // Aggiorna le note nella booking associata
       ref.read(bookingsProvider.notifier).setNotes(bookingId, notes);
 
+      // Aggiorna stato prenotazione solo se selezionato e diverso dall'attuale.
+      if (_selectedBookingStatus != null &&
+          _selectedBookingStatus != _currentBookingStatus) {
+        final location = ref.read(currentLocationProvider);
+        final repository = ref.read(bookingsRepositoryProvider);
+        await repository.updateBooking(
+          locationId: location.id,
+          bookingId: bookingId,
+          status: _selectedBookingStatus,
+        );
+        ref
+            .read(bookingsProvider.notifier)
+            .setStatus(bookingId, _selectedBookingStatus!);
+        ref
+            .read(appointmentsProvider.notifier)
+            .setBookingStatusForBooking(
+              bookingId: bookingId,
+              status: _selectedBookingStatus!,
+            );
+      }
+
       // Rimuovi la booking se vuota
       ref.read(bookingsProvider.notifier).removeIfEmpty(bookingId);
 
@@ -1967,6 +2054,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       }
       if (mounted) {
         Navigator.of(context).pop();
+      }
+    } catch (_) {
+      if (mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.errorTitle,
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

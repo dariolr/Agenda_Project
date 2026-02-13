@@ -230,6 +230,11 @@ class RecurrenceConfig {
             current.year,
             current.month + intervalValue,
             current.day,
+            current.hour,
+            current.minute,
+            current.second,
+            current.millisecond,
+            current.microsecond,
           );
       }
 

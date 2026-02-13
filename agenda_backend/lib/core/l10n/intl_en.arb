@@ -844,6 +844,7 @@
   "clientAppointmentsCancelledBadge": "CANCELLED",
 
   "recurrenceRepeatBooking": "Repeat this appointment",
+  "recurrenceRepeatBlock": "Repeat this block",
   "recurrenceFrequency": "Frequency",
   "recurrenceEvery": "Every",
   "recurrenceDay": "day",
@@ -1084,6 +1085,7 @@
   "bookingsListStatusCompleted": "Completed",
   "bookingsListStatusNoShow": "No show",
   "bookingsListStatusPending": "Pending",
+  "bookingsListStatusReplaced": "Replaced",
   "bookingsListSourceOnline": "Online",
   "bookingsListSourcePhone": "Phone",
   "bookingsListSourceWalkIn": "Walk-in",

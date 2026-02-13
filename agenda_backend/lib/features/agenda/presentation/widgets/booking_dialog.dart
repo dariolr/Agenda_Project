@@ -144,6 +144,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
   /// Configurazione ricorrenza (null = appuntamento singolo)
   RecurrenceConfig? _recurrenceConfig;
+  late final String _currentBookingStatus;
+  String? _selectedBookingStatus;
 
   @override
   void initState() {
@@ -202,6 +204,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         ),
       );
     }
+    _currentBookingStatus = widget.existing?.status ?? 'confirmed';
+    _selectedBookingStatus =
+        _availableStatusOptions().contains(_currentBookingStatus)
+        ? _currentBookingStatus
+        : null;
 
     if (widget.existing == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -232,6 +239,33 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   }
 
   String _nextItemKey() => 'item_${_itemKeyCounter++}';
+
+  List<String> _availableStatusOptions() {
+    return const <String>[
+      'confirmed',
+      'completed',
+      'cancelled',
+      'no_show',
+    ];
+  }
+
+  String _statusLabel(BuildContext context, String status) {
+    final l10n = context.l10n;
+    switch (status) {
+      case 'confirmed':
+        return l10n.statusConfirmed;
+      case 'cancelled':
+        return l10n.statusCancelled;
+      case 'pending':
+        return l10n.bookingsListStatusPending;
+      case 'completed':
+        return l10n.statusCompleted;
+      case 'no_show':
+        return l10n.bookingsListStatusNoShow;
+      default:
+        return status;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -280,6 +314,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final title = isEdit
         ? l10n.appointmentDialogTitleEdit
         : l10n.appointmentDialogTitleNew;
+    final statusOptions = _availableStatusOptions();
 
     final isDesktop = widget.presentation == _BookingPresentation.dialog;
     final conflictFlags = _serviceConflictFlags();
@@ -389,6 +424,33 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                     textCapitalization: TextCapitalization.sentences,
                   ),
                 ),
+                if (statusOptions.isNotEmpty && _recurrenceConfig == null) ...[
+                  const SizedBox(height: AppSpacing.formRowSpacing),
+                  LabeledFormField(
+                    label: l10n.bookingsListFilterStatus,
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedBookingStatus,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      hint: Text(
+                        _statusLabel(context, _currentBookingStatus),
+                      ),
+                      items: [
+                        for (final status in statusOptions)
+                          DropdownMenuItem<String>(
+                            value: status,
+                            child: Text(_statusLabel(context, status)),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        setState(() => _selectedBookingStatus = value);
+                      },
+                    ),
+                  ),
+                ],
 
                 // Ricorrenza (solo per nuovi appuntamenti)
                 if (!isEdit) ...[
@@ -1797,6 +1859,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           location: location,
           validItems: validItems,
           clientName: clientName,
+          desiredStatus: _selectedBookingStatus,
           bookingsNotifier: bookingsNotifier,
           repository: repository,
         );
@@ -1822,6 +1885,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     required dynamic location,
     required List<ServiceItemData> validItems,
     required String clientName,
+    required String? desiredStatus,
     required dynamic bookingsNotifier,
     required dynamic repository,
   }) async {
@@ -1873,6 +1937,21 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       replacesBookingId: bookingResponse.replacesBookingId,
       replacedByBookingId: bookingResponse.replacedByBookingId,
     );
+
+    if (desiredStatus != null && desiredStatus != bookingResponse.status) {
+      await repository.updateBooking(
+        locationId: location.id,
+        bookingId: bookingResponse.id,
+        status: desiredStatus,
+      );
+      bookingsNotifier.setStatus(bookingResponse.id, desiredStatus);
+      ref
+          .read(appointmentsProvider.notifier)
+          .setBookingStatusForBooking(
+            bookingId: bookingResponse.id,
+            status: desiredStatus,
+          );
+    }
 
     // Refresh appointments per caricare i nuovi
     ref.invalidate(appointmentsProvider);

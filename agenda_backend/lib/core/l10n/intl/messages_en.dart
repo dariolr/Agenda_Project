@@ -581,6 +581,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingsListStatusPending": MessageLookupByLibrary.simpleMessage(
       "Pending",
     ),
+    "bookingsListStatusReplaced": MessageLookupByLibrary.simpleMessage(
+      "Replaced",
+    ),
     "bookingsListTitle": MessageLookupByLibrary.simpleMessage("Bookings List"),
     "bookingsListTotalCount": m5,
     "businessOnlineBookingsNotificationEmailHelper":
@@ -1292,6 +1295,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "recurrencePreviewSelected": m48,
     "recurrencePreviewTitle": MessageLookupByLibrary.simpleMessage(
       "Appointment preview",
+    ),
+    "recurrenceRepeatBlock": MessageLookupByLibrary.simpleMessage(
+      "Repeat this block",
     ),
     "recurrenceRepeatBooking": MessageLookupByLibrary.simpleMessage(
       "Repeat this appointment",

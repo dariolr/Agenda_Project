@@ -614,6 +614,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingsListStatusPending": MessageLookupByLibrary.simpleMessage(
       "In attesa",
     ),
+    "bookingsListStatusReplaced": MessageLookupByLibrary.simpleMessage(
+      "Sostituito",
+    ),
     "bookingsListTitle": MessageLookupByLibrary.simpleMessage(
       "Elenco Prenotazioni",
     ),
@@ -1371,6 +1374,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "recurrencePreviewSelected": m48,
     "recurrencePreviewTitle": MessageLookupByLibrary.simpleMessage(
       "Anteprima appuntamenti",
+    ),
+    "recurrenceRepeatBlock": MessageLookupByLibrary.simpleMessage(
+      "Ripeti questo blocco",
     ),
     "recurrenceRepeatBooking": MessageLookupByLibrary.simpleMessage(
       "Ripeti questo appuntamento",

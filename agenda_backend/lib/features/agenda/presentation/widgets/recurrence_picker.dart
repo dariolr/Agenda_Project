@@ -10,11 +10,15 @@ class RecurrencePicker extends StatefulWidget {
     super.key,
     required this.startDate,
     this.initialConfig,
+    this.title,
+    this.showConflictHandling = true,
     required this.onChanged,
   });
 
   final DateTime startDate;
   final RecurrenceConfig? initialConfig;
+  final String? title;
+  final bool showConflictHandling;
   final ValueChanged<RecurrenceConfig?> onChanged;
 
   @override
@@ -143,7 +147,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  l10n.recurrenceRepeatBooking,
+                  widget.title ?? l10n.recurrenceRepeatBooking,
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: _isEnabled
                         ? theme.colorScheme.onSurface
@@ -174,10 +178,13 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
 
                 // Termine
                 _buildEndSelector(context),
-                const SizedBox(height: 16),
 
-                // Gestione conflitti
-                _buildConflictSelector(context),
+                if (widget.showConflictHandling) ...[
+                  const SizedBox(height: 16),
+
+                  // Gestione conflitti
+                  _buildConflictSelector(context),
+                ],
               ],
             ),
           ),

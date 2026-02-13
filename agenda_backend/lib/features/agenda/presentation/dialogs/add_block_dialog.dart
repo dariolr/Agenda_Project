@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/date_time_formats.dart';
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/recurrence_rule.dart';
 import '../../../../core/models/time_block.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
@@ -20,6 +21,7 @@ import '../../domain/config/layout_config.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
 import '../../providers/time_blocks_provider.dart';
+import '../widgets/recurrence_picker.dart';
 
 /// Mostra il dialog per creare o modificare un blocco di non disponibilità.
 Future<void> showAddBlockDialog(
@@ -84,6 +86,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
   final _reasonController = TextEditingController();
   final ScrollController _staffScrollController = ScrollController();
   bool _isAllDay = false;
+  RecurrenceConfig? _recurrenceConfig;
   String? _staffError;
   String? _timeError;
   bool _isSaving = false;
@@ -355,6 +358,18 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
             ),
           ),
         ),
+        if (!isEdit) ...[
+          const SizedBox(height: 12),
+          RecurrencePicker(
+            startDate: _date,
+            initialConfig: _recurrenceConfig,
+            title: l10n.recurrenceRepeatBlock,
+            showConflictHandling: false,
+            onChanged: (config) {
+              setState(() => _recurrenceConfig = config);
+            },
+          ),
+        ],
       ],
     );
 
@@ -610,16 +625,29 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
           : _reasonController.text.trim();
 
       if (widget.initial == null) {
-        // Nuovo blocco
-        await ref
-            .read(timeBlocksProvider.notifier)
-            .addBlock(
-              staffIds: _selectedStaffIds.toList(),
-              startTime: startDateTime,
-              endTime: endDateTime,
-              reason: reason,
-              isAllDay: _isAllDay,
-            );
+        if (_recurrenceConfig != null) {
+          await ref
+              .read(timeBlocksProvider.notifier)
+              .addRecurringBlocks(
+                staffIds: _selectedStaffIds.toList(),
+                startTime: startDateTime,
+                endTime: endDateTime,
+                recurrence: _recurrenceConfig!,
+                reason: reason,
+                isAllDay: _isAllDay,
+              );
+        } else {
+          // Nuovo blocco singolo
+          await ref
+              .read(timeBlocksProvider.notifier)
+              .addBlock(
+                staffIds: _selectedStaffIds.toList(),
+                startTime: startDateTime,
+                endTime: endDateTime,
+                reason: reason,
+                isAllDay: _isAllDay,
+              );
+        }
       } else {
         // Aggiorna blocco esistente
         await ref
