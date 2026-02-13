@@ -73,10 +73,10 @@ class AuthNotifier extends Notifier<AuthState> {
       state = AuthState.authenticated(user);
       return true;
     } on ApiException catch (e) {
-      state = AuthState.error(e.message);
+      state = AuthState.error(e.message, code: e.code);
       return false;
     } catch (e) {
-      state = AuthState.error(e.toString());
+      state = AuthState.error(e.toString(), code: 'network_error');
       return false;
     }
   }

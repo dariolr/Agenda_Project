@@ -21,11 +21,13 @@ class AuthState {
   final AuthStatus status;
   final dynamic user;
   final String? errorMessage;
+  final String? errorCode;
 
   const AuthState({
     this.status = AuthStatus.initial,
     this.user,
     this.errorMessage,
+    this.errorCode,
   });
 
   /// Verifica se l'utente è autenticato.
@@ -42,12 +44,14 @@ class AuthState {
     AuthStatus? status,
     dynamic user,
     String? errorMessage,
+    String? errorCode,
     bool clearUser = false,
     bool clearError = false,
   }) => AuthState(
     status: status ?? this.status,
     user: clearUser ? null : (user ?? this.user),
     errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    errorCode: clearError ? null : (errorCode ?? this.errorCode),
   );
 
   factory AuthState.initial() => const AuthState(status: AuthStatus.initial);
@@ -60,6 +64,6 @@ class AuthState {
   factory AuthState.unauthenticated() =>
       const AuthState(status: AuthStatus.unauthenticated);
 
-  factory AuthState.error(String message) =>
-      AuthState(status: AuthStatus.error, errorMessage: message);
+  factory AuthState.error(String message, {String? code}) =>
+      AuthState(status: AuthStatus.error, errorMessage: message, errorCode: code);
 }
