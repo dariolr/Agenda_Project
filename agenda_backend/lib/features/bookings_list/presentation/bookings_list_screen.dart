@@ -37,6 +37,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   final Set<int> _selectedStaffIds = {};
   final Set<int> _selectedServiceIds = {};
   Set<String> _selectedStatuses = {'confirmed'};
+  bool _onlineOnly = false;
 
   List<Staff> _staffScopedByLocations({
     required List<Staff> staff,
@@ -167,6 +168,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                 ? _clientSearchController.text
                 : null,
             status: _selectedStatuses.toList(),
+            source: _onlineOnly ? 'online,onlinestaff' : null,
             startDate: _formatDate(filterState.startDate),
             endDate: _formatDate(filterState.endDate),
             includePast: true, // Always include past within range
@@ -536,6 +538,15 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                 selected: _selectedStatuses.length < 2,
                 onTap: () => _showStatusFilter(context),
               ),
+              _buildFilterChip(
+                context,
+                label: l10n.bookingsListSourceOnline,
+                selected: _onlineOnly,
+                onTap: () {
+                  setState(() => _onlineOnly = !_onlineOnly);
+                  _loadInitialData();
+                },
+              ),
               // Client search chip
               _buildSearchChip(context),
             ],
@@ -777,7 +788,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                     child: Icon(
                       booking.sourceIcon,
                       size: 16,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: booking.source == 'onlinestaff'
+                          ? Colors.red
+                          : Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -1633,7 +1646,9 @@ class _BookingCard extends StatelessWidget {
                             child: Icon(
                               booking.sourceIcon,
                               size: 18,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: booking.source == 'onlinestaff'
+                                  ? Colors.red
+                                  : Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ),

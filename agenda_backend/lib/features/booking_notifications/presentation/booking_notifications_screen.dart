@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -21,6 +23,7 @@ class _BookingNotificationsScreenState
     extends ConsumerState<BookingNotificationsScreen> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
   String? _selectedStatus;
   String? _selectedChannel;
 
@@ -35,6 +38,7 @@ class _BookingNotificationsScreenState
   void dispose() {
     _scrollController.dispose();
     _searchController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -61,9 +65,12 @@ class _BookingNotificationsScreenState
 
   void _onSearchChanged(String value) {
     ref.read(bookingNotificationsFiltersProvider.notifier).setSearch(value);
-    ref
-        .read(bookingNotificationsProvider.notifier)
-        .loadNotifications(_businessId);
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      ref
+          .read(bookingNotificationsProvider.notifier)
+          .loadNotifications(_businessId);
+    });
   }
 
   void _onStatusChanged(String? value) {
@@ -220,6 +227,9 @@ class _BookingNotificationsScreenState
                       label: Text(l10n.bookingNotificationsFieldCreatedAt),
                     ),
                     DataColumn(
+                      label: Text(l10n.bookingNotificationsFieldSentAt),
+                    ),
+                    DataColumn(
                       label: Text(l10n.bookingNotificationsFieldClient),
                     ),
                     DataColumn(label: Text(l10n.bookingNotificationsFieldType)),
@@ -268,6 +278,7 @@ class _BookingNotificationsScreenState
     return DataRow(
       cells: [
         DataCell(Text(_formatDateTime(context, item.createdAt))),
+        DataCell(Text(item.sentAt != null ? _formatDateTime(context, item.sentAt) : '')),
         DataCell(
           SizedBox(
             width: 180,

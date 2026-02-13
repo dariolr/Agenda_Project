@@ -12,6 +12,7 @@ class BookingsListFilters {
   final List<int>? serviceIds;
   final String? clientSearch;
   final List<String>? status;
+  final String? source;
   final String? startDate;
   final String? endDate;
   final bool includePast;
@@ -26,6 +27,7 @@ class BookingsListFilters {
     this.serviceIds,
     this.clientSearch,
     this.status,
+    this.source,
     this.startDate,
     this.endDate,
     this.includePast = false,
@@ -48,6 +50,8 @@ class BookingsListFilters {
     bool clearClientSearch = false,
     List<String>? status,
     bool clearStatus = false,
+    String? source,
+    bool clearSource = false,
     String? startDate,
     bool clearStartDate = false,
     String? endDate,
@@ -66,6 +70,7 @@ class BookingsListFilters {
           ? null
           : (clientSearch ?? this.clientSearch),
       status: clearStatus ? null : (status ?? this.status),
+      source: clearSource ? null : (source ?? this.source),
       startDate: clearStartDate ? null : (startDate ?? this.startDate),
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
       includePast: includePast ?? this.includePast,
@@ -100,12 +105,13 @@ class BookingsListFilters {
         (staffIds != null && staffIds!.isNotEmpty) ||
         (serviceIds != null && serviceIds!.isNotEmpty) ||
         (clientSearch != null && clientSearch!.isNotEmpty) ||
-        (status != null && status!.isNotEmpty);
+        (status != null && status!.isNotEmpty) ||
+        (source != null && source!.isNotEmpty);
   }
 
   @override
   String toString() {
-    return 'BookingsListFilters(locationId: $locationId, locationIds: $locationIds, staffId: $staffId, staffIds: $staffIds, serviceIds: $serviceIds, clientSearch: $clientSearch, status: $status, startDate: $startDate, endDate: $endDate, includePast: $includePast, sortBy: $sortBy, sortOrder: $sortOrder)';
+    return 'BookingsListFilters(locationId: $locationId, locationIds: $locationIds, staffId: $staffId, staffIds: $staffIds, serviceIds: $serviceIds, clientSearch: $clientSearch, status: $status, source: $source, startDate: $startDate, endDate: $endDate, includePast: $includePast, sortBy: $sortBy, sortOrder: $sortOrder)';
   }
 }
 
@@ -171,6 +177,13 @@ class BookingsListFiltersNotifier extends Notifier<BookingsListFilters> {
 
   void setStatus(List<String>? status) {
     state = state.copyWith(status: status, clearStatus: status == null);
+  }
+
+  void setSource(String? source) {
+    state = state.copyWith(
+      source: source,
+      clearSource: source == null || source.isEmpty,
+    );
   }
 
   void setDateRange(String? startDate, String? endDate) {
@@ -276,6 +289,7 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
         serviceIds: filters.serviceIds,
         clientSearch: filters.clientSearch,
         status: filters.status,
+        source: filters.source,
         startDate: filters.startDate,
         endDate: filters.endDate,
         includePast: filters.includePast,
@@ -317,6 +331,7 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
         serviceIds: filters.serviceIds,
         clientSearch: filters.clientSearch,
         status: filters.status,
+        source: filters.source,
         startDate: filters.startDate,
         endDate: filters.endDate,
         includePast: filters.includePast,

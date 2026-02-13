@@ -863,6 +863,7 @@ class ApiClient {
     List<int>? serviceIds,
     String? clientSearch,
     List<String>? status,
+    String? source,
     String? startDate,
     String? endDate,
     bool includePast = false,
@@ -898,6 +899,9 @@ class ApiClient {
     }
     if (status != null && status.isNotEmpty) {
       queryParameters['status'] = status.join(',');
+    }
+    if (source != null && source.isNotEmpty) {
+      queryParameters['source'] = source;
     }
     if (startDate != null) {
       queryParameters['start_date'] = startDate;
