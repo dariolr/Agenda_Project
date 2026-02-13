@@ -538,8 +538,8 @@ class _PlanningCard extends StatelessWidget {
   final StaffPlanning planning;
   final VoidCallback onTap;
 
-  /// Calcola ore settimanali da un template
-  int _calculateWeeklyHours(
+  /// Calcola minuti settimanali da un template.
+  int _calculateWeeklyMinutes(
     StaffPlanningWeekTemplate? template, {
     int minutesPerSlot = 15,
   }) {
@@ -548,7 +548,14 @@ class _PlanningCard extends StatelessWidget {
     for (final daySlots in template.daySlots.values) {
       totalMinutes += daySlots.length * minutesPerSlot;
     }
-    return (totalMinutes / 60).round();
+    return totalMinutes;
+  }
+
+  String _formatDuration(BuildContext context, int totalMinutes) {
+    final h = totalMinutes ~/ 60;
+    final m = totalMinutes % 60;
+    if (m == 0) return context.l10n.hoursHoursOnly(h);
+    return context.l10n.hoursMinutesCompact(h, m);
   }
 
   @override
@@ -577,14 +584,14 @@ class _PlanningCard extends StatelessWidget {
     }
 
     // Calcola ore settimanali (serve prima per determinare il tipo label)
-    final hoursA = _calculateWeeklyHours(planning.templateA);
-    final hoursB = _calculateWeeklyHours(planning.templateB);
-    final totalHours = hoursA + hoursB;
+    final minutesA = _calculateWeeklyMinutes(planning.templateA);
+    final minutesB = _calculateWeeklyMinutes(planning.templateB);
+    final totalMinutes = minutesA + minutesB;
 
     // Tipo planning: se 0 ore mostra "Non disponibile"
     final String typeLabel;
     final IconData typeIcon;
-    if (totalHours == 0) {
+    if (totalMinutes == 0) {
       typeLabel = l10n.planningTypeUnavailable;
       typeIcon = Icons.event_busy_outlined;
     } else if (planning.type == StaffPlanningType.weekly) {
@@ -606,9 +613,15 @@ class _PlanningCard extends StatelessWidget {
 
     String hoursText;
     if (planning.type == StaffPlanningType.weekly) {
-      hoursText = l10n.planningWeeklyHours(hoursA);
+      hoursText = l10n.planningWeeklyDuration(
+        _formatDuration(context, minutesA),
+      );
     } else {
-      hoursText = l10n.planningBiweeklyHours(hoursA, hoursB, hoursA + hoursB);
+      hoursText = l10n.planningBiweeklyDuration(
+        _formatDuration(context, minutesA),
+        _formatDuration(context, minutesB),
+        _formatDuration(context, totalMinutes),
+      );
     }
 
     return Card(

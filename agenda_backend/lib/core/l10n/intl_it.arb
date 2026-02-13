@@ -756,6 +756,20 @@
       "total": { "type": "int" }
     }
   },
+  "planningWeeklyDuration": "{duration}/settimana",
+  "@planningWeeklyDuration": {
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "planningBiweeklyDuration": "Sett. A: {durationA} | Sett. B: {durationB} | Tot: {totalDuration}",
+  "@planningBiweeklyDuration": {
+    "placeholders": {
+      "durationA": { "type": "String" },
+      "durationB": { "type": "String" },
+      "totalDuration": { "type": "String" }
+    }
+  },
   "planningShowExpired": "Mostra planning scaduti ({count})",
   "@planningShowExpired": {
     "placeholders": {

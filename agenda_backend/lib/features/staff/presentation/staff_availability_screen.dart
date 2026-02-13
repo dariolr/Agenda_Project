@@ -44,6 +44,13 @@ import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+String _formatHoursMinutesLabel(BuildContext context, int totalMinutes) {
+  final h = totalMinutes ~/ 60;
+  final m = totalMinutes % 60;
+  if (m == 0) return context.l10n.hoursHoursOnly(h);
+  return context.l10n.hoursMinutesCompact(h, m);
+}
+
 // ──────────────────────────────────────────────
 // 📦 MODEL: TimeRange (ore intere)
 // ──────────────────────────────────────────────
@@ -680,8 +687,9 @@ class _StaffAvailabilityScreenState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        context.l10n.weeklyScheduleTotalHours(
-                          schedule.totalHours,
+                        _formatHoursMinutesLabel(
+                          context,
+                          schedule.totalMinutes,
                         ),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
