@@ -411,7 +411,7 @@ final class UpdateBooking
     private function captureBookingState(int $bookingId): array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, business_id, location_id, client_id, customer_name, status, notes, source
+            'SELECT id, business_id, location_id, client_id, client_name, status, notes, source
              FROM bookings
              WHERE id = ?'
         );
@@ -437,7 +437,7 @@ final class UpdateBooking
         
         // Calcola campi modificati
         $changedFields = [];
-        $fieldsToTrack = ['client_id', 'customer_name', 'status', 'notes'];
+        $fieldsToTrack = ['client_id', 'client_name', 'status', 'notes'];
         foreach ($fieldsToTrack as $field) {
             if (($before[$field] ?? null) !== ($after[$field] ?? null)) {
                 $changedFields[] = $field;

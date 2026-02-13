@@ -5161,6 +5161,16 @@ class L10n {
     );
   }
 
+  /// `Ripeti questo blocco`
+  String get recurrenceRepeatBlock {
+    return Intl.message(
+      'Ripeti questo blocco',
+      name: 'recurrenceRepeatBlock',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Frequenza`
   String get recurrenceFrequency {
     return Intl.message(
@@ -6751,6 +6761,16 @@ class L10n {
     return Intl.message(
       'In attesa',
       name: 'bookingsListStatusPending',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sostituito`
+  String get bookingsListStatusReplaced {
+    return Intl.message(
+      'Sostituito',
+      name: 'bookingsListStatusReplaced',
       desc: '',
       args: [],
     );

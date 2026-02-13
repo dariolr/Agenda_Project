@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/models/recurrence_rule.dart';
 import '../../../core/models/time_block.dart';
 import '../../../core/network/network_providers.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -87,6 +88,38 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     final current = state.value ?? [];
     state = AsyncData([...current, block]);
     return block;
+  }
+
+  /// Aggiunge una serie di blocchi ricorrenti.
+  Future<List<TimeBlock>> addRecurringBlocks({
+    required List<int> staffIds,
+    required DateTime startTime,
+    required DateTime endTime,
+    required RecurrenceConfig recurrence,
+    String? reason,
+    bool isAllDay = false,
+  }) async {
+    final apiClient = ref.read(apiClientProvider);
+    final location = ref.read(currentLocationProvider);
+    final duration = endTime.difference(startTime);
+    final occurrences = recurrence.calculateOccurrences(startTime);
+    final createdBlocks = <TimeBlock>[];
+
+    for (final occurrenceStart in occurrences) {
+      final data = await apiClient.createTimeBlock(
+        locationId: location.id,
+        startTime: _formatDateTime(occurrenceStart),
+        endTime: _formatDateTime(occurrenceStart.add(duration)),
+        staffIds: staffIds,
+        isAllDay: isAllDay,
+        reason: reason,
+      );
+      createdBlocks.add(_parseTimeBlock(data));
+    }
+
+    final current = state.value ?? [];
+    state = AsyncData([...current, ...createdBlocks]);
+    return createdBlocks;
   }
 
   /// Aggiorna un blocco esistente.

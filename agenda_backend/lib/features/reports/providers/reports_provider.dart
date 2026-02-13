@@ -13,7 +13,10 @@ class ReportParams {
     this.locationIds = const [],
     this.staffIds = const [],
     this.serviceIds = const [],
-    this.statuses = const ['confirmed', 'completed'],
+    this.statuses = const [
+      'confirmed',
+      'completed',
+    ],
   });
 
   final int businessId;

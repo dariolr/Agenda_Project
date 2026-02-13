@@ -29,6 +29,13 @@ class BookingsListScreen extends ConsumerStatefulWidget {
 }
 
 class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
+  static const List<String> _allBookingStatuses = <String>[
+    'confirmed',
+    'completed',
+    'cancelled',
+    'no_show',
+  ];
+
   final _scrollController = ScrollController();
   final _clientSearchController = TextEditingController();
 
@@ -36,7 +43,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   final Set<int> _selectedLocationIds = {};
   final Set<int> _selectedStaffIds = {};
   final Set<int> _selectedServiceIds = {};
-  Set<String> _selectedStatuses = {'confirmed'};
+  Set<String> _selectedStatuses = _allBookingStatuses.toSet();
   bool _onlineOnly = false;
 
   List<Staff> _staffScopedByLocations({
@@ -361,10 +368,11 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
 
   void _showStatusFilter(BuildContext context) async {
     final l10n = context.l10n;
-    // Solo confirmed e cancelled (rimosso completed e no_show)
     final allStatuses = {
       'confirmed': l10n.bookingsListStatusConfirmed,
+      'completed': l10n.bookingsListStatusCompleted,
       'cancelled': l10n.bookingsListStatusCancelled,
+      'no_show': l10n.bookingsListStatusNoShow,
     };
 
     final selected = await showDialog<Set<String>>(
@@ -535,7 +543,8 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
               _buildFilterChip(
                 context,
                 label: l10n.reportsFilterStatus,
-                selected: _selectedStatuses.length < 2,
+                selected:
+                    _selectedStatuses.length < _allBookingStatuses.length,
                 onTap: () => _showStatusFilter(context),
               ),
               _buildFilterChip(
@@ -1559,6 +1568,9 @@ class _StatusChip extends StatelessWidget {
       case 'pending':
         backgroundColor = Colors.amber.shade100;
         textColor = Colors.amber.shade800;
+      case 'replaced':
+        backgroundColor = Colors.grey.shade200;
+        textColor = Colors.grey.shade800;
       default:
         backgroundColor = Colors.grey.shade100;
         textColor = Colors.grey.shade800;
@@ -1576,6 +1588,8 @@ class _StatusChip extends StatelessWidget {
         label = context.l10n.bookingsListStatusNoShow;
       case 'pending':
         label = context.l10n.bookingsListStatusPending;
+      case 'replaced':
+        label = context.l10n.bookingsListStatusReplaced;
       default:
         label = status;
     }
