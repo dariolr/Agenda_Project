@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +14,7 @@ import '/core/models/staff.dart';
 import '/core/network/network_providers.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/date_range_provider.dart';
+import '/features/agenda/presentation/dialogs/booking_history_dialog.dart';
 import '/features/agenda/providers/location_providers.dart';
 import '/features/auth/providers/current_business_user_provider.dart';
 import '/features/bookings_list/providers/bookings_list_filter_provider.dart';
@@ -38,6 +41,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
 
   final _scrollController = ScrollController();
   final _clientSearchController = TextEditingController();
+  Timer? _clientSearchDebounce;
 
   // Multi-select filters (like Reports)
   final Set<int> _selectedLocationIds = {};
@@ -121,6 +125,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   void dispose() {
     _scrollController.dispose();
     _clientSearchController.dispose();
+    _clientSearchDebounce?.cancel();
     super.dispose();
   }
 
@@ -248,6 +253,14 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
       ref.read(agendaDateProvider.notifier).set(booking.firstStartTime!);
       context.go('/agenda');
     }
+  }
+
+  Future<void> _viewBookingHistory(BookingListItem booking) async {
+    await showBookingHistoryDialog(
+      context,
+      ref,
+      bookingId: booking.id,
+    );
   }
 
   void _showLocationFilter(BuildContext context) async {
@@ -390,6 +403,17 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     }
   }
 
+  void _onClientSearchChanged(String value) {
+    if (mounted) {
+      setState(() {});
+    }
+    _clientSearchDebounce?.cancel();
+    _clientSearchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      _loadInitialData();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -508,6 +532,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
 
           return Wrap(
             alignment: WrapAlignment.start,
+            crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 8,
             runSpacing: 8,
             children: [
@@ -556,8 +581,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                   _loadInitialData();
                 },
               ),
-              // Client search chip
-              _buildSearchChip(context),
+              _buildClientSearchField(context),
             ],
           );
         },
@@ -579,75 +603,62 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
       onSelected: (_) => onTap(),
       selectedColor: colorScheme.primaryContainer,
       checkmarkColor: colorScheme.onPrimaryContainer,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 
-  Widget _buildSearchChip(BuildContext context) {
+  Widget _buildClientSearchField(BuildContext context) {
     final l10n = context.l10n;
-    final colorScheme = Theme.of(context).colorScheme;
-    final hasSearch = _clientSearchController.text.isNotEmpty;
+    final availableWidth = MediaQuery.sizeOf(context).width - 32;
+    final fieldWidth = availableWidth < 300 ? availableWidth : 300.0;
+    const fieldHeight = 34.0;
 
-    return ActionChip(
-      avatar: Icon(
-        Icons.search,
-        size: 18,
-        color: hasSearch ? colorScheme.onPrimaryContainer : null,
-      ),
-      label: Text(
-        hasSearch
-            ? '${l10n.bookingsListFilterClient}: ${_clientSearchController.text}'
-            : l10n.bookingsListFilterClient,
-      ),
-      labelStyle: hasSearch
-          ? TextStyle(color: colorScheme.onPrimaryContainer)
-          : null,
-      backgroundColor: hasSearch ? colorScheme.primaryContainer : null,
-      onPressed: () => _showClientSearchDialog(context),
-    );
-  }
-
-  void _showClientSearchDialog(BuildContext context) async {
-    final l10n = context.l10n;
-    final controller = TextEditingController(
-      text: _clientSearchController.text,
-    );
-
-    final result = await showDialog<String?>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.bookingsListFilterClient),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: l10n.bookingsListFilterClientHint,
-            prefixIcon: const Icon(Icons.search),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () => controller.clear(),
-            ),
+    return SizedBox(
+      width: fieldWidth,
+      height: fieldHeight,
+      child: TextField(
+        controller: _clientSearchController,
+        onChanged: _onClientSearchChanged,
+        style: Theme.of(context).textTheme.bodyMedium,
+        textAlignVertical: TextAlignVertical.center,
+        decoration: InputDecoration(
+          hintText: l10n.bookingsListFilterClient,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
           ),
-          onSubmitted: (value) => Navigator.of(ctx).pop(value),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 0,
+          ),
+          prefixIcon: const Icon(Icons.search, size: 17),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 32,
+            maxWidth: 32,
+            minHeight: fieldHeight,
+            maxHeight: fieldHeight,
+          ),
+          suffixIcon: _clientSearchController.text.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.clear, size: 17),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    _clientSearchController.clear();
+                    _onClientSearchChanged('');
+                    setState(() {});
+                  },
+                ),
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 32,
+            maxWidth: 32,
+            minHeight: fieldHeight,
+            maxHeight: fieldHeight,
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(l10n.actionCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(controller.text),
-            child: Text(l10n.actionApply),
-          ),
-        ],
       ),
     );
-
-    if (result != null) {
-      setState(() {
-        _clientSearchController.text = result;
-      });
-      _loadInitialData();
-    }
   }
 
   Widget _buildContent(BookingsListState state, bool isDesktop) {
@@ -876,6 +887,11 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              IconButton(
+                icon: const Icon(Icons.history, size: 20),
+                onPressed: () => _viewBookingHistory(booking),
+                tooltip: l10n.bookingHistoryTitle,
+              ),
               if (booking.status != 'cancelled')
                 IconButton(
                   icon: const Icon(Icons.visibility, size: 20),
@@ -917,6 +933,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         }
         return _BookingCard(
           booking: state.bookings[index],
+          onHistory: () => _viewBookingHistory(state.bookings[index]),
           onView: () => _viewBookingDetails(state.bookings[index]),
           onCancel: () => _cancelBooking(state.bookings[index]),
           canManageBookings: canManageBookings,
@@ -1618,6 +1635,7 @@ class _StatusChip extends StatelessWidget {
 
 class _BookingCard extends StatelessWidget {
   final BookingListItem booking;
+  final VoidCallback onHistory;
   final VoidCallback onView;
   final VoidCallback onCancel;
   final bool canManageBookings;
@@ -1625,6 +1643,7 @@ class _BookingCard extends StatelessWidget {
 
   const _BookingCard({
     required this.booking,
+    required this.onHistory,
     required this.onView,
     required this.onCancel,
     required this.canManageBookings,
@@ -1749,6 +1768,12 @@ class _BookingCard extends StatelessWidget {
                   ),
                   Row(
                     children: [
+                      IconButton(
+                        icon: const Icon(Icons.history),
+                        onPressed: onHistory,
+                        tooltip: l10n.bookingHistoryTitle,
+                        iconSize: 20,
+                      ),
                       if (booking.status != 'cancelled')
                         IconButton(
                           icon: const Icon(Icons.visibility),
