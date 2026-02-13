@@ -4742,6 +4742,30 @@ class L10n {
     );
   }
 
+  /// `{duration}/settimana`
+  String planningWeeklyDuration(String duration) {
+    return Intl.message(
+      '$duration/settimana',
+      name: 'planningWeeklyDuration',
+      desc: '',
+      args: [duration],
+    );
+  }
+
+  /// `Sett. A: {durationA} | Sett. B: {durationB} | Tot: {totalDuration}`
+  String planningBiweeklyDuration(
+    String durationA,
+    String durationB,
+    String totalDuration,
+  ) {
+    return Intl.message(
+      'Sett. A: $durationA | Sett. B: $durationB | Tot: $totalDuration',
+      name: 'planningBiweeklyDuration',
+      desc: '',
+      args: [durationA, durationB, totalDuration],
+    );
+  }
+
   /// `Mostra planning scaduti ({count})`
   String planningShowExpired(int count) {
     return Intl.message(
