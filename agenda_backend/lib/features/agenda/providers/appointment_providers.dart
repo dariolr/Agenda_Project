@@ -423,6 +423,23 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     }
   }
 
+  /// Aggiorna localmente lo stato booking per tutti gli appuntamenti della prenotazione.
+  void setBookingStatusForBooking({
+    required int bookingId,
+    required String status,
+  }) {
+    final currentList = state.value;
+    if (currentList == null) return;
+
+    state = AsyncData([
+      for (final appt in currentList)
+        if (appt.bookingId == bookingId)
+          appt.copyWith(bookingStatus: status)
+        else
+          appt,
+    ]);
+  }
+
   /// Duplica un appuntamento
   Future<Appointment?> duplicateAppointment(
     Appointment original, {

@@ -32,10 +32,17 @@ class ReportsScreen extends ConsumerStatefulWidget {
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen>
     with SingleTickerProviderStateMixin {
+  static const List<String> _allReportStatuses = <String>[
+    'confirmed',
+    'completed',
+    'cancelled',
+    'no_show',
+  ];
+
   final Set<int> _selectedLocationIds = {};
   final Set<int> _selectedStaffIds = {};
   final Set<int> _selectedServiceIds = {};
-  Set<String> _selectedStatuses = {'confirmed'};
+  Set<String> _selectedStatuses = {'confirmed', 'completed'};
 
   late final TabController _tabController;
 
@@ -382,7 +389,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                     _buildFilterChip(
                       context,
                       label: l10n.reportsFilterStatus,
-                      selected: _selectedStatuses.length < 3,
+                      selected:
+                          _selectedStatuses.length < _allReportStatuses.length,
                       onTap: () => _showStatusFilter(context),
                     ),
                 ],
@@ -560,8 +568,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final l10n = context.l10n;
     final allStatuses = {
       'confirmed': l10n.statusConfirmed,
-      // 'completed': l10n.statusCompleted,
+      'completed': l10n.statusCompleted,
       'cancelled': l10n.statusCancelled,
+      'no_show': l10n.bookingsListStatusNoShow,
     };
 
     final selected = await showDialog<Set<String>>(

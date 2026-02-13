@@ -70,6 +70,30 @@ class _AppointmentCardInteractiveState
 
   LayoutConfig get _layoutConfig => ref.read(layoutConfigProvider);
 
+  _CardStatusVisual? _statusVisual(BuildContext context) {
+    final status = widget.appointment.bookingStatus;
+    if (status == null) return null;
+
+    switch (status) {
+      case 'completed':
+        return _CardStatusVisual(
+          borderColor: Colors.green.shade800,
+          fillColor: Colors.green.shade500,
+          fillHighlightColor: Colors.green.shade200,
+          label: context.l10n.statusCompleted,
+        );
+      case 'no_show':
+        return _CardStatusVisual(
+          borderColor: Colors.red.shade800,
+          fillColor: Colors.red.shade500,
+          fillHighlightColor: Colors.red.shade200,
+          label: context.l10n.bookingsListStatusNoShow,
+        );
+      default:
+        return null;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -519,6 +543,14 @@ class _AppointmentCardInteractiveState
     }
     final info = pieces.join(' – ');
     final borderWidth = showThickBorder ? 2.5 : 1.0;
+    final statusVisual = _statusVisual(context);
+    final cardHeight = _lastSize?.height ?? 0;
+    final showCompactStatusBar =
+        statusVisual != null &&
+        !forFeedback &&
+        cardHeight > 0 &&
+        cardHeight < 34;
+    final showStatusIcon = statusVisual != null && !forFeedback;
 
     final animationDuration = _isDraggingResize || forFeedback
         ? Duration.zero
@@ -551,6 +583,21 @@ class _AppointmentCardInteractiveState
           ),
           child: Stack(
             children: [
+              if (showCompactStatusBar)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 3,
+                    decoration: BoxDecoration(
+                      color: statusVisual.borderColor.withOpacity(0.9),
+                      borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(6),
+                      ),
+                    ),
+                  ),
+                ),
               _ExtraMinutesBand(
                 ratio: _extraMinutesRatio(startTime, endTime),
                 color: widget.color,
@@ -569,6 +616,8 @@ class _AppointmentCardInteractiveState
                     bookingSource: forFeedback
                         ? ''
                         : (widget.appointment.bookingSource ?? ''),
+                    statusVisual: statusVisual,
+                    showStatusIcon: showStatusIcon && !showCompactStatusBar,
                     isRecurring: widget.appointment.isRecurring,
                     recurrenceIndex: widget.appointment.recurrenceIndex,
                     recurrenceTotal: widget.appointment.recurrenceTotal,
@@ -614,6 +663,8 @@ class _AppointmentCardInteractiveState
     String info, {
     required bool showNotes,
     required String bookingSource,
+    required _CardStatusVisual? statusVisual,
+    required bool showStatusIcon,
     bool isRecurring = false,
     int? recurrenceIndex,
     int? recurrenceTotal,
@@ -634,38 +685,40 @@ class _AppointmentCardInteractiveState
         formFactor == AppFormFactor.mobile && approxVisibleColumns >= 3;
 
     final trailingIcons = <Widget>[];
+    final effectiveCardHeight = _lastSize?.height ?? 0;
+    final isCompactIconsLayout =
+        (effectiveColumnWidth != null && effectiveColumnWidth < 120) ||
+        (effectiveCardHeight > 0 && effectiveCardHeight < 52);
+    final maxIcons = isCompactIconsLayout ? 2 : 4;
 
-    // Icona ricorrenza
-    if (isRecurring) {
-      final tooltipText = recurrenceIndex != null && recurrenceTotal != null
-          ? context.l10n.recurrenceSeriesOf(recurrenceIndex, recurrenceTotal)
-          : context.l10n.recurrenceSeriesIcon;
+    // Priorità: stato > note > online > ricorrenza
+    if (showStatusIcon && statusVisual != null) {
       trailingIcons.add(
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Tooltip(
-            message: tooltipText,
-            child: const Icon(Icons.repeat, size: 14, color: Colors.black54),
+            message: statusVisual.label,
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(-0.25, -0.25),
+                  radius: 0.95,
+                  colors: [
+                    statusVisual.fillHighlightColor,
+                    statusVisual.fillColor,
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(color: statusVisual.borderColor, width: 1.4),
+              ),
+            ),
           ),
         ),
       );
     }
 
-    final showSourceIcon =
-        bookingSource == 'online' || bookingSource == 'onlinestaff';
-    if (showSourceIcon) {
-      final isOnlineStaff = bookingSource == 'onlinestaff';
-      trailingIcons.add(
-        Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: Icon(
-            Icons.cloud_outlined,
-            size: 14,
-            color: isOnlineStaff ? Colors.red : Colors.black54,
-          ),
-        ),
-      );
-    }
     if (showNotes) {
       trailingIcons.add(
         Padding(
@@ -688,6 +741,39 @@ class _AppointmentCardInteractiveState
         ),
       );
     }
+
+    final showSourceIcon =
+        bookingSource == 'online' || bookingSource == 'onlinestaff';
+    if (showSourceIcon) {
+      final isOnlineStaff = bookingSource == 'onlinestaff';
+      trailingIcons.add(
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Icon(
+            Icons.cloud_outlined,
+            size: 14,
+            color: isOnlineStaff ? Colors.red : Colors.black54,
+          ),
+        ),
+      );
+    }
+
+    if (isRecurring) {
+      final tooltipText = recurrenceIndex != null && recurrenceTotal != null
+          ? context.l10n.recurrenceSeriesOf(recurrenceIndex, recurrenceTotal)
+          : context.l10n.recurrenceSeriesIcon;
+      trailingIcons.add(
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Tooltip(
+            message: tooltipText,
+            child: const Icon(Icons.repeat, size: 14, color: Colors.black54),
+          ),
+        ),
+      );
+    }
+
+    final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
     return ClipRect(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -732,7 +818,7 @@ class _AppointmentCardInteractiveState
                           ),
                         ),
                 ),
-                if (trailingIcons.isNotEmpty) ...trailingIcons,
+                if (visibleTrailingIcons.isNotEmpty) ...visibleTrailingIcons,
               ],
             ),
           ),
@@ -1088,4 +1174,18 @@ class _ExtraMinutesBand extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CardStatusVisual {
+  const _CardStatusVisual({
+    required this.borderColor,
+    required this.fillColor,
+    required this.fillHighlightColor,
+    required this.label,
+  });
+
+  final Color borderColor;
+  final Color fillColor;
+  final Color fillHighlightColor;
+  final String label;
 }

@@ -307,6 +307,7 @@ class BookingsRepository {
       endTime: DateTime.parse(json['end_time'] as String),
       price: null, // Non sempre presente
       bookingSource: json['source'] as String?,
+      bookingStatus: json['booking_status'] as String?,
       extraMinutes: json['extra_blocked_minutes'] as int?,
       extraMinutesType:
           (json['extra_blocked_minutes'] as int?) != null &&
@@ -339,6 +340,7 @@ class BookingsRepository {
       endTime: item.endDateTime,
       price: item.price,
       bookingSource: booking.source,
+      bookingStatus: booking.status,
     );
   }
 }
