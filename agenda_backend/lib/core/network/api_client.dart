@@ -361,6 +361,7 @@ class ApiClient {
       code: 'network_error',
       message: error.message ?? 'Network error',
       statusCode: error.response?.statusCode ?? 0,
+      details: {'type': error.type.name, 'uri': error.requestOptions.uri.toString()},
     );
   }
 
