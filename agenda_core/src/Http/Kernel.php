@@ -28,6 +28,7 @@ use Agenda\Http\Controllers\BookingNotificationsController;
 use Agenda\Http\Controllers\BusinessSyncController;
 use Agenda\Http\Controllers\LocationClosuresController;
 use Agenda\Http\Controllers\ReportsController;
+use Agenda\Http\Controllers\WhatsAppController;
 use Agenda\Http\Middleware\AuthMiddleware;
 use Agenda\Http\Middleware\BusinessAccessMiddleware;
 use Agenda\Http\Middleware\CustomerAuthMiddleware;
@@ -55,10 +56,12 @@ use Agenda\Infrastructure\Repositories\ServiceVariantResourceRepository;
 use Agenda\Infrastructure\Repositories\TimeBlockRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Notifications\WhatsAppRepository;
 use Agenda\Infrastructure\Repositories\PopularServiceRepository;
 use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
+use Agenda\Infrastructure\Security\EncryptionService;
 use Agenda\UseCases\Auth\GetMe;
 use Agenda\UseCases\Auth\LoginUser;
 use Agenda\UseCases\Auth\LogoutUser;
@@ -290,6 +293,16 @@ final class Kernel
         $this->router->get('/v1/businesses/{business_id}/bookings/list', BookingsController::class, 'listAll', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/booking-notifications', BookingNotificationsController::class, 'index', ['auth']);
 
+        // WhatsApp integration
+        $this->router->get('/v1/businesses/{business_id}/whatsapp/config', WhatsAppController::class, 'getConfig', ['auth']);
+        $this->router->put('/v1/businesses/{business_id}/whatsapp/config', WhatsAppController::class, 'upsertConfig', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/whatsapp/templates', WhatsAppController::class, 'listTemplates', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp/templates', WhatsAppController::class, 'upsertTemplate', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp/consents', WhatsAppController::class, 'saveConsent', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp/outbox', WhatsAppController::class, 'queueNotification', ['auth']);
+        $this->router->get('/v1/webhooks/whatsapp', WhatsAppController::class, 'webhookVerify');
+        $this->router->post('/v1/webhooks/whatsapp', WhatsAppController::class, 'webhookReceive');
+
         // Reports (admin/owner only)
         $this->router->get('/v1/reports/appointments', ReportsController::class, 'appointments', ['auth']);
         $this->router->get('/v1/reports/work-hours', ReportsController::class, 'workHours', ['auth']);
@@ -384,12 +397,14 @@ final class Kernel
         $clientRepo = new ClientRepository($this->db);
         $clientAuthRepo = new ClientAuthRepository($this->db);
         $notificationRepo = new NotificationRepository($this->db);
+        $whatsAppRepo = new WhatsAppRepository($this->db);
         $popularServiceRepo = new PopularServiceRepository($this->db);
         $locationClosureRepo = new LocationClosureRepository($this->db);
 
         // Services
         $jwtService = new JwtService();
         $passwordHasher = new PasswordHasher();
+        $encryptionService = new EncryptionService();
 
         // Operator Auth Use Cases
         $loginUser = new LoginUser($userRepo, $sessionRepo, $jwtService, $passwordHasher);
@@ -456,6 +471,7 @@ final class Kernel
             ServiceVariantResourceController::class => new ServiceVariantResourceController($variantResourceRepo, $businessUserRepo, $userRepo),
             TimeBlocksController::class => new TimeBlocksController($timeBlockRepo, $locationRepo, $businessUserRepo, $userRepo),
             ReportsController::class => new ReportsController($this->db, $businessUserRepo, $userRepo, $locationClosureRepo),
+            WhatsAppController::class => new WhatsAppController($whatsAppRepo, $businessUserRepo, $userRepo, $clientRepo, $encryptionService),
             LocationClosuresController::class => new LocationClosuresController($locationClosureRepo, $locationRepo, $businessUserRepo, $userRepo),
         ];
     }
