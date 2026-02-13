@@ -4507,6 +4507,16 @@ class L10n {
     );
   }
 
+  /// `Connessione al server non riuscita. Controlla la tua connessione internet.`
+  String get authNetworkError {
+    return Intl.message(
+      'Connessione al server non riuscita. Controlla la tua connessione internet.',
+      name: 'authNetworkError',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Accesso riservato agli operatori autorizzati`
   String get authLoginFooter {
     return Intl.message(

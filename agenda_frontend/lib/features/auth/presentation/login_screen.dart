@@ -192,7 +192,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         .login(
           businessId: businessId,
           email: _emailController.text.trim(),
-          password: _passwordController.text,
+          password: _passwordController.text.trim(),
         );
     debugPrint('LOGIN API returned: success=$success');
 
@@ -202,7 +202,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (_rememberMe) {
         await storage.saveCredentials(
           _emailController.text.trim(),
-          _passwordController.text,
+          _passwordController.text.trim(),
         );
       } else {
         await storage.clearCredentials();

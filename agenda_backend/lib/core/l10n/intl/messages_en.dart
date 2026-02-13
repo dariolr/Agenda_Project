@@ -281,6 +281,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Sign in to the management system",
     ),
     "authLogout": MessageLookupByLibrary.simpleMessage("Sign Out"),
+    "authNetworkError": MessageLookupByLibrary.simpleMessage(
+      "Could not connect to the server. Check your internet connection.",
+    ),
     "authPassword": MessageLookupByLibrary.simpleMessage("Password"),
     "authPasswordTooShort": MessageLookupByLibrary.simpleMessage(
       "Password too short",

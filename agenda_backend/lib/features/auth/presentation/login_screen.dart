@@ -90,7 +90,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.read(globalLoadingProvider.notifier).show();
 
     final email = _emailController.text.trim();
-    final password = _passwordController.text;
+    final password = _passwordController.text.trim();
 
     try {
       final success = await ref
@@ -115,14 +115,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         TextInput.finishAutofillContext();
         context.go(_postLoginRoute);
       } else {
+        final authState = ref.read(authProvider);
         setState(() {
-          _errorMessage = context.l10n.authLoginFailed;
+          _errorMessage = authState.errorCode == 'network_error'
+              ? context.l10n.authNetworkError
+              : context.l10n.authLoginFailed;
         });
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = context.l10n.authLoginFailed;
+        _errorMessage = context.l10n.authNetworkError;
       });
     } finally {
       if (mounted) {
