@@ -116,16 +116,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         context.go(_postLoginRoute);
       } else {
         final authState = ref.read(authProvider);
+        final isNetwork = authState.errorCode == 'network_error';
+        final details = authState.errorDetails;
         setState(() {
-          _errorMessage = authState.errorCode == 'network_error'
-              ? context.l10n.authNetworkError
+          _errorMessage = isNetwork
+              ? '${context.l10n.authNetworkError}${details != null ? '\n[$details]' : ''}'
               : context.l10n.authLoginFailed;
         });
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = context.l10n.authNetworkError;
+        _errorMessage = '${context.l10n.authNetworkError}\n[${e.runtimeType}]';
       });
     } finally {
       if (mounted) {
