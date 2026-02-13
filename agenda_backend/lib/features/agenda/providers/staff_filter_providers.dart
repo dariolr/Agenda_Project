@@ -18,7 +18,7 @@ class StaffFilterModeNotifier extends Notifier<StaffFilterMode> {
   @override
   StaffFilterMode build() {
     final businessId = ref.watch(currentBusinessIdProvider);
-    if (businessId <= 0) return StaffFilterMode.allTeam;
+    if (businessId <= 0) return StaffFilterMode.onDutyTeam;
 
     // Carica da preferenze salvate
     final prefs = ref.watch(preferencesServiceProvider);
@@ -26,10 +26,10 @@ class StaffFilterModeNotifier extends Notifier<StaffFilterMode> {
     if (saved != null) {
       return StaffFilterMode.values.firstWhere(
         (m) => m.name == saved,
-        orElse: () => StaffFilterMode.allTeam,
+        orElse: () => StaffFilterMode.onDutyTeam,
       );
     }
-    return StaffFilterMode.allTeam;
+    return StaffFilterMode.onDutyTeam;
   }
 
   void set(StaffFilterMode mode) {

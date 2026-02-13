@@ -657,13 +657,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   ) {
     final canManageServices = ref.watch(currentUserCanManageServicesProvider);
     final servicesNotifier = ref.read(servicesProvider.notifier);
-    final visibleCategories = [
-      for (final category in cats)
-        if (ref.watch(sortedCategoryEntriesProvider(category.id)).isNotEmpty)
-          category,
-    ];
-
-    if (visibleCategories.isEmpty) {
+    if (cats.isEmpty) {
       return Center(
         child: Text(
           context.l10n.noServicesFound,
@@ -706,7 +700,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     }
 
     return CategoriesList(
-      categories: visibleCategories,
+      categories: cats,
       isWide: isWide,
       colorScheme: colorScheme,
       hoveredService: _hoveredService,
