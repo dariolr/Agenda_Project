@@ -294,6 +294,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Accedi al gestionale",
     ),
     "authLogout": MessageLookupByLibrary.simpleMessage("Esci"),
+    "authNetworkError": MessageLookupByLibrary.simpleMessage(
+      "Connessione al server non riuscita. Controlla la tua connessione internet.",
+    ),
     "authPassword": MessageLookupByLibrary.simpleMessage("Password"),
     "authPasswordTooShort": MessageLookupByLibrary.simpleMessage(
       "Password troppo corta",

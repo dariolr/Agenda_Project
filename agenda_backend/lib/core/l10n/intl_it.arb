@@ -707,6 +707,7 @@
   "authInvalidEmail": "Email non valida",
   "authPasswordTooShort": "Password troppo corta",
   "authLoginFailed": "Credenziali non valide. Riprova.",
+  "authNetworkError": "Connessione al server non riuscita. Controlla la tua connessione internet.",
   "authLoginFooter": "Accesso riservato agli operatori autorizzati",
   "authFirstName": "Nome",
   "authLastName": "Cognome",

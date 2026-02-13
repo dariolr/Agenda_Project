@@ -45,8 +45,8 @@ final class AuthController
     {
         $body = $request->getBody();
 
-        $email = $body['email'] ?? null;
-        $password = $body['password'] ?? null;
+        $email = isset($body['email']) ? trim((string) $body['email']) : null;
+        $password = isset($body['password']) ? trim((string) $body['password']) : null;
 
         if ($email === null || $password === null) {
             return Response::error('Email and password are required', 'validation_error', 400);

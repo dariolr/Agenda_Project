@@ -709,6 +709,7 @@
   "authInvalidEmail": "Invalid email",
   "authPasswordTooShort": "Password too short",
   "authLoginFailed": "Invalid credentials. Please try again.",
+  "authNetworkError": "Could not connect to the server. Check your internet connection.",
   "authLoginFooter": "Access reserved for authorized operators",
   "authFirstName": "First Name",
   "authLastName": "Last Name",
