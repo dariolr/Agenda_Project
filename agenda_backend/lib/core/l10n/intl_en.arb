@@ -758,6 +758,20 @@
       "total": { "type": "int" }
     }
   },
+  "planningWeeklyDuration": "{duration}/week",
+  "@planningWeeklyDuration": {
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "planningBiweeklyDuration": "Week A: {durationA} | Week B: {durationB} | Tot: {totalDuration}",
+  "@planningBiweeklyDuration": {
+    "placeholders": {
+      "durationA": { "type": "String" },
+      "durationB": { "type": "String" },
+      "totalDuration": { "type": "String" }
+    }
+  },
   "planningShowExpired": "Show expired ({count})",
   "@planningShowExpired": {
     "placeholders": {

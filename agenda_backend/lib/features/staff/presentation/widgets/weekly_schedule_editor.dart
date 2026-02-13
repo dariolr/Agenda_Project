@@ -5,6 +5,13 @@ import 'package:agenda_backend/features/agenda/domain/config/layout_config.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+String _formatHoursMinutesLabel(BuildContext context, int totalMinutes) {
+  final h = totalMinutes ~/ 60;
+  final m = totalMinutes % 60;
+  if (m == 0) return context.l10n.hoursHoursOnly(h);
+  return context.l10n.hoursMinutesCompact(h, m);
+}
+
 /// Rappresenta un singolo turno di lavoro (orario inizio - orario fine).
 class WorkShift {
   final TimeOfDay startTime;
@@ -44,14 +51,18 @@ class DaySchedule {
     );
   }
 
-  /// Totale ore lavorate nel giorno.
-  int get totalHours {
+  /// Totale minuti lavorati nel giorno.
+  int get totalMinutes {
     if (!isEnabled || shifts.isEmpty) return 0;
-    final totalMinutes = shifts.fold<int>(
+    return shifts.fold<int>(
       0,
       (sum, shift) => sum + shift.durationMinutes,
     );
-    return (totalMinutes / 60).round();
+  }
+
+  /// Totale ore lavorate nel giorno (solo parte intera).
+  int get totalHours {
+    return totalMinutes ~/ 60;
   }
 }
 
@@ -94,6 +105,11 @@ class WeeklySchedule {
   /// Totale ore settimanali.
   int get totalHours {
     return days.values.fold<int>(0, (sum, day) => sum + day.totalHours);
+  }
+
+  /// Totale minuti settimanali.
+  int get totalMinutes {
+    return days.values.fold<int>(0, (sum, day) => sum + day.totalMinutes);
   }
 
   /// Unifica le fasce orarie contigue (dove la fine di una coincide con l'inizio della successiva).
@@ -402,7 +418,7 @@ class _WeeklyScheduleEditorState extends State<WeeklyScheduleEditor> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  l10n.weeklyScheduleTotalHours(_schedule.totalHours),
+                  _formatHoursMinutesLabel(context, _schedule.totalMinutes),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -540,10 +556,13 @@ class _DayRow extends ConsumerWidget {
                       width: maxDayNameWidth,
                       child: Text(dayName, style: dayNameStyle),
                     ),
-                    if (schedule.isEnabled && schedule.totalHours > 0) ...[
+                    if (schedule.isEnabled && schedule.totalMinutes > 0) ...[
                       const SizedBox(width: 8),
                       Text(
-                        '${schedule.totalHours}h',
+                        _formatHoursMinutesLabel(
+                          context,
+                          schedule.totalMinutes,
+                        ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -655,9 +674,9 @@ class _DayRow extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(dayName, style: dayNameStyle),
-                  if (schedule.isEnabled && schedule.totalHours > 0)
+                  if (schedule.isEnabled && schedule.totalMinutes > 0)
                     Text(
-                      '${schedule.totalHours}h',
+                      _formatHoursMinutesLabel(context, schedule.totalMinutes),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
