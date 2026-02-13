@@ -19,6 +19,7 @@ final class Request
         public readonly ?array $body,
         public readonly string $traceId,
         array $cookies = [],
+        public readonly string $rawBody = '',
     ) {
         $this->cookies = $cookies;
     }
@@ -75,7 +76,7 @@ final class Request
         
         $traceId = Uuid::uuid4()->toString();
         
-        return new self($method, $path, $query, $headers, $body, $traceId, $_COOKIE);
+        return new self($method, $path, $query, $headers, $body, $traceId, $_COOKIE, (string) $rawBody);
     }
 
     public function getHeader(string $name): ?string
@@ -110,6 +111,11 @@ final class Request
     public function getBody(): ?array
     {
         return $this->body;
+    }
+
+    public function getRawBody(): string
+    {
+        return $this->rawBody;
     }
 
     public function getQuery(): array
