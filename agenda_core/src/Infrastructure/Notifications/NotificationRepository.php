@@ -89,7 +89,7 @@ final class NotificationRepository
     /**
      * Mark notification as sent.
      */
-    public function markSent(int $id): void
+    public function markSent(int $id, bool $writeBookingAuditEvent = true): void
     {
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE notification_queue 
@@ -97,6 +97,10 @@ final class NotificationRepository
              WHERE id = :id'
         );
         $stmt->execute(['id' => $id]);
+
+        if ($writeBookingAuditEvent) {
+            $this->createBookingNotificationSentEvent($id);
+        }
     }
 
     /**
@@ -226,6 +230,56 @@ final class NotificationRepository
         $stmt->execute(['rule_id' => $recurrenceRuleId, 'from_index' => $fromIndex]);
         
         return $stmt->rowCount();
+    }
+
+    /**
+     * Writes booking audit event for sent notification (if linked to a booking).
+     */
+    private function createBookingNotificationSentEvent(int $notificationId): void
+    {
+        try {
+            $stmt = $this->db->getPdo()->prepare(
+                'SELECT id, booking_id, channel, recipient_email, subject
+                 FROM notification_queue
+                 WHERE id = :id
+                 LIMIT 1'
+            );
+            $stmt->execute(['id' => $notificationId]);
+            $notification = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$notification) {
+                return;
+            }
+
+            $bookingId = isset($notification['booking_id']) ? (int) $notification['booking_id'] : 0;
+            if ($bookingId <= 0) {
+                return;
+            }
+
+            $payload = json_encode([
+                'notification_id' => (int) ($notification['id'] ?? $notificationId),
+                'channel' => (string) ($notification['channel'] ?? ''),
+                'recipient_email' => $notification['recipient_email'] ?? null,
+                'subject' => $notification['subject'] ?? null,
+                'sent_at' => gmdate('Y-m-d H:i:s'),
+            ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+
+            $insert = $this->db->getPdo()->prepare(
+                'INSERT INTO booking_events
+                 (booking_id, event_type, actor_type, actor_id, actor_name, payload_json, correlation_id, created_at)
+                 VALUES
+                 (:booking_id, :event_type, :actor_type, NULL, :actor_name, :payload_json, NULL, NOW())'
+            );
+            $insert->execute([
+                'booking_id' => $bookingId,
+                'event_type' => 'booking_notification_sent',
+                'actor_type' => 'system',
+                'actor_name' => 'Notification Worker',
+                'payload_json' => $payload ?: '{}',
+            ]);
+        } catch (\Throwable $e) {
+            error_log("Failed to create booking_notification_sent event for notification {$notificationId}: " . $e->getMessage());
+        }
     }
 
     /**

@@ -843,6 +843,13 @@
   "bookingHistoryEventCreated": "Prenotazione creata",
   "bookingHistoryEventUpdated": "Prenotazione modificata",
   "bookingHistoryEventCancelled": "Prenotazione cancellata",
+  "bookingHistoryEventNotificationSent": "Email inviata al cliente",
+  "bookingHistoryEventNotificationSentTitle": "Inviata email di tipo: {type}",
+  "@bookingHistoryEventNotificationSentTitle": {
+    "placeholders": {
+      "type": {}
+    }
+  },
   "bookingHistoryEventItemAdded": "Servizio aggiunto",
   "bookingHistoryEventItemDeleted": "Servizio rimosso",
   "bookingHistoryEventAppointmentUpdated": "Appuntamento modificato",
@@ -854,6 +861,34 @@
   "bookingHistoryActorStaff": "Operatore",
   "bookingHistoryActorCustomer": "Cliente",
   "bookingHistoryActorSystem": "Sistema",
+  "bookingHistoryNotificationChannel": "Tipo: {channel}",
+  "@bookingHistoryNotificationChannel": {
+    "placeholders": {
+      "channel": {}
+    }
+  },
+  "bookingHistoryNotificationRecipient": "Destinatario: {email}",
+  "@bookingHistoryNotificationRecipient": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "bookingHistoryNotificationSentAt": "Data invio: {dateTime}",
+  "@bookingHistoryNotificationSentAt": {
+    "placeholders": {
+      "dateTime": {}
+    }
+  },
+  "bookingHistoryNotificationSubject": "Oggetto: {subject}",
+  "@bookingHistoryNotificationSubject": {
+    "placeholders": {
+      "subject": {}
+    }
+  },
+  "bookingHistoryNotificationChannelConfirmed": "Conferma prenotazione",
+  "bookingHistoryNotificationChannelReminder": "Promemoria prenotazione",
+  "bookingHistoryNotificationChannelCancelled": "Cancellazione prenotazione",
+  "bookingHistoryNotificationChannelRescheduled": "Riprogrammazione prenotazione",
   "bookingHistoryChangedFields": "Campi modificati: {fields}",
   "@bookingHistoryChangedFields": {
     "placeholders": {
