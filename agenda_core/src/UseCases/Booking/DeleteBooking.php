@@ -8,6 +8,7 @@ use Agenda\Domain\Exceptions\BookingException;
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\UseCases\Notifications\QueueBookingCancellation;
 use DateTimeImmutable;
@@ -39,7 +40,8 @@ final class DeleteBooking
         int $bookingId,
         int $userId,
         bool $isOperator = false,
-        bool $isCustomer = false
+        bool $isCustomer = false,
+        ?string $requestedLocale = null
     ): void
     {
         // Verifica che il booking esista
@@ -76,7 +78,7 @@ final class DeleteBooking
         }
         
         // Prepara i dati per la notifica prima di cancellare
-        $notificationData = $this->prepareNotificationData($booking);
+        $notificationData = $this->prepareNotificationData($booking, $requestedLocale);
         
         // Cattura stato booking per audit prima della cancellazione
         $bookingStateForAudit = $this->captureBookingStateForAudit($bookingId);
@@ -104,7 +106,7 @@ final class DeleteBooking
         $this->queueCancellationNotification($notificationData);
     }
 
-    private function prepareNotificationData(array $booking): array
+    private function prepareNotificationData(array $booking, ?string $requestedLocale = null): array
     {
         // Get booking details before deletion including location and business emails
         // NOTE: notifications go to CLIENT (from clients table), not user (operator)
@@ -166,6 +168,11 @@ final class DeleteBooking
         $senderName = $details['location_email'] 
             ? $details['location_name'] 
             : ($details['business_email'] ? $details['business_name'] : null);
+        $locale = EmailTemplateRenderer::resolvePreferredLocale(
+            $requestedLocale,
+            $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,
+            $_ENV['DEFAULT_LOCALE'] ?? 'it'
+        );
         
         // Build booking URL for "Book again" button (with location pre-selected)
         $bookingUrl = ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($details['business_slug'] ?? '') . '/booking';
@@ -193,7 +200,7 @@ final class DeleteBooking
             'sender_email' => $senderEmail,
             'sender_name' => $senderName,
             'booking_url' => $bookingUrl,
-            'locale' => $_ENV['DEFAULT_LOCALE'] ?? 'it',
+            'locale' => $locale,
         ];
     }
 

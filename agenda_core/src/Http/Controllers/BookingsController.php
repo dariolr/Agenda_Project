@@ -21,6 +21,7 @@ use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Notifications\EmailService;
 
 final class BookingsController
@@ -511,6 +512,12 @@ final class BookingsController
         }
 
         $body = $request->getBody();
+        $body = is_array($body) ? $body : [];
+        $requestLocale = EmailTemplateRenderer::resolvePreferredLocale(
+            isset($body['locale']) ? (string) $body['locale'] : null,
+            $request->header('accept-language'),
+            $_ENV['DEFAULT_LOCALE'] ?? 'it'
+        );
 
         // Support both new "items" format and legacy "service_ids" format
         $items = null;
@@ -589,6 +596,7 @@ final class BookingsController
                 'client_id' => isset($body['client_id']) ? (int) $body['client_id'] : null,
                 'allow_past' => $isOperator,
                 'skip_conflict_check' => $isOperator,
+                'locale' => $requestLocale,
             ];
             
             if ($items !== null) {
@@ -649,6 +657,18 @@ final class BookingsController
         }
 
         $body = $request->getBody();
+        $body = is_array($body) ? $body : [];
+        $requestLocale = EmailTemplateRenderer::resolvePreferredLocale(
+            isset($body['locale']) ? (string) $body['locale'] : null,
+            $request->header('accept-language'),
+            $_ENV['DEFAULT_LOCALE'] ?? 'it'
+        );
+        $body = is_array($body) ? $body : [];
+        $body['locale'] = EmailTemplateRenderer::resolvePreferredLocale(
+            isset($body['locale']) ? (string) $body['locale'] : null,
+            $request->header('accept-language'),
+            $_ENV['DEFAULT_LOCALE'] ?? 'it'
+        );
 
         // Valida che ci sia almeno un campo da aggiornare
         // Nota: array_key_exists per client_id perché può essere null (rimuovi cliente)
@@ -701,8 +721,13 @@ final class BookingsController
             // Operatori possono cancellare qualsiasi booking senza vincoli
             $businessId = $request->getAttribute('business_id');
             $isOperator = $businessId !== null && $this->hasBusinessAccess($request, $businessId);
-            
-            $this->deleteBooking->execute($bookingId, $userId, $isOperator, false);
+            $requestLocale = EmailTemplateRenderer::resolvePreferredLocale(
+                null,
+                $request->header('accept-language'),
+                $_ENV['DEFAULT_LOCALE'] ?? 'it'
+            );
+
+            $this->deleteBooking->execute($bookingId, $userId, $isOperator, false, $requestLocale);
             return Response::success(['message' => 'Booking deleted successfully']);
 
         } catch (BookingException $e) {
@@ -736,6 +761,12 @@ final class BookingsController
         }
 
         $body = $request->getBody();
+        $body = is_array($body) ? $body : [];
+        $body['locale'] = EmailTemplateRenderer::resolvePreferredLocale(
+            isset($body['locale']) ? (string) $body['locale'] : null,
+            $request->header('accept-language'),
+            $_ENV['DEFAULT_LOCALE'] ?? 'it'
+        );
 
         if (!isset($body['notes']) && !isset($body['start_time'])) {
             return Response::error(
@@ -812,7 +843,18 @@ final class BookingsController
         }
 
         try {
-            $this->deleteBooking->execute($bookingId, (int) $clientId, false, true);
+            $requestLocale = EmailTemplateRenderer::resolvePreferredLocale(
+                null,
+                $request->header('accept-language'),
+                $_ENV['DEFAULT_LOCALE'] ?? 'it'
+            );
+            $this->deleteBooking->execute(
+                $bookingId,
+                (int) $clientId,
+                false,
+                true,
+                $requestLocale
+            );
             $this->maybeNotifyOnlineBookingByCustomer('cancelled', $booking);
             return Response::success(['message' => 'Booking deleted successfully']);
         } catch (BookingException $e) {
@@ -1277,6 +1319,12 @@ final class BookingsController
         }
 
         $body = $request->getBody();
+        $body = is_array($body) ? $body : [];
+        $requestLocale = EmailTemplateRenderer::resolvePreferredLocale(
+            isset($body['locale']) ? (string) $body['locale'] : null,
+            $request->header('accept-language'),
+            $_ENV['DEFAULT_LOCALE'] ?? 'it'
+        );
 
         // DEBUG: Log request body
         file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " storeCustomer body: " . json_encode($body) . "\n", FILE_APPEND);
@@ -1342,6 +1390,7 @@ final class BookingsController
                     [
                         'items' => $items,
                         'notes' => $body['notes'] ?? null,
+                        'locale' => $requestLocale,
                     ],
                     $idempotencyKey
                 );
@@ -1356,6 +1405,7 @@ final class BookingsController
                         'staff_id' => isset($body['staff_id']) ? (int) $body['staff_id'] : null,
                         'start_time' => $body['start_time'],
                         'notes' => $body['notes'] ?? null,
+                        'locale' => $requestLocale,
                     ],
                     $idempotencyKey
                 );
