@@ -262,8 +262,10 @@
   "myBookings": "Le mie prenotazioni",
   "upcomingBookings": "Prossime",
   "pastBookings": "Passate",
+  "cancelledBookings": "Annullate",
   "noUpcomingBookings": "Non hai prenotazioni in programma",
   "noPastBookings": "Non hai prenotazioni passate",
+  "noCancelledBookings": "Non hai prenotazioni annullate",
   "errorLoadingBookings": "Errore nel caricamento delle prenotazioni",
   "modifiable": "Modificabile",
   "notModifiable": "Non modificabile",
@@ -333,9 +335,31 @@
   "bookingHistoryEventPriceChanged": "Prezzo modificato",
   "bookingHistoryEventDurationChanged": "Durata modificata",
   "bookingHistoryEventReplaced": "Prenotazione sostituita",
+  "bookingHistoryEventNotificationSentTitle": "Inviata email di tipo: {type}",
+  "@bookingHistoryEventNotificationSentTitle": {
+    "placeholders": {
+      "type": {}
+    }
+  },
   "bookingHistoryActorCustomer": "Cliente",
   "bookingHistoryActorStaff": "Staff",
   "bookingHistoryActorSystem": "Sistema",
+  "bookingHistoryNotificationRecipient": "Destinatario: {email}",
+  "@bookingHistoryNotificationRecipient": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "bookingHistoryNotificationSentAt": "Data invio: {dateTime}",
+  "@bookingHistoryNotificationSentAt": {
+    "placeholders": {
+      "dateTime": {}
+    }
+  },
+  "bookingHistoryNotificationChannelConfirmed": "Conferma prenotazione",
+  "bookingHistoryNotificationChannelReminder": "Promemoria prenotazione",
+  "bookingHistoryNotificationChannelCancelled": "Cancellazione prenotazione",
+  "bookingHistoryNotificationChannelRescheduled": "Riprogrammazione prenotazione",
   "bookingHistoryChangedFields": "Campi modificati: {fields}",
   "@bookingHistoryChangedFields": {
     "placeholders": {
