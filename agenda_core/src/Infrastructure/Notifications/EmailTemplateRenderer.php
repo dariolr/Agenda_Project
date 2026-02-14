@@ -40,6 +40,29 @@ final class EmailTemplateRenderer
         return in_array($primary, ['it', 'en'], true) ? $primary : 'it';
     }
 
+    public static function resolvePreferredLocale(
+        ?string $explicitLocale,
+        ?string $acceptLanguageHeader = null,
+        ?string $defaultLocale = null
+    ): string {
+        if ($explicitLocale !== null && trim($explicitLocale) !== '') {
+            return self::normalizeLocale($explicitLocale);
+        }
+
+        $acceptLanguageHeader = trim((string) $acceptLanguageHeader);
+        if ($acceptLanguageHeader !== '') {
+            $parts = explode(',', $acceptLanguageHeader);
+            if (!empty($parts)) {
+                $first = trim((string) $parts[0]);
+                if ($first !== '') {
+                    return self::normalizeLocale($first);
+                }
+            }
+        }
+
+        return self::normalizeLocale($defaultLocale ?? ($_ENV['DEFAULT_LOCALE'] ?? 'it'));
+    }
+
     /**
      * @return array<string, string>
      */
@@ -51,11 +74,13 @@ final class EmailTemplateRenderer
                 'where_label' => 'Dove',
                 'at_label' => 'alle',
                 'client_fallback' => 'Cliente',
+                'operator_fallback' => 'Operatore',
             ],
             'en' => [
                 'where_label' => 'Where',
                 'at_label' => 'at',
                 'client_fallback' => 'Customer',
+                'operator_fallback' => 'Operator',
             ],
         ];
 

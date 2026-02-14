@@ -9,6 +9,7 @@ use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\UseCases\Notifications\QueueBookingRescheduled;
 use DateTimeImmutable;
@@ -128,7 +129,11 @@ final class UpdateBooking
             $updatedBooking = $this->bookingRepo->findById($bookingId);
             
             // Queue reschedule notification (if client is associated)
-            $this->queueRescheduleNotification($updatedBooking, $oldStartTime);
+            $this->queueRescheduleNotification(
+                $updatedBooking,
+                $oldStartTime,
+                isset($data['locale']) ? (string) $data['locale'] : null
+            );
 
             return $updatedBooking;
         }
@@ -298,7 +303,11 @@ final class UpdateBooking
     /**
      * Queue reschedule notification for client.
      */
-    private function queueRescheduleNotification(array $booking, ?string $oldStartTime): void
+    private function queueRescheduleNotification(
+        array $booking,
+        ?string $oldStartTime,
+        ?string $requestedLocale = null
+    ): void
     {
         // No client = no notification
         $clientId = $booking['client_id'] ?? null;
@@ -313,10 +322,16 @@ final class UpdateBooking
         try {
             // Get location and business details
             $locationData = $this->getLocationAndBusinessData((int) $booking['location_id']);
+            $locale = EmailTemplateRenderer::resolvePreferredLocale(
+                $requestedLocale,
+                $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,
+                $_ENV['DEFAULT_LOCALE'] ?? 'it'
+            );
+            $strings = EmailTemplateRenderer::strings($locale);
             
             // Get client email
             $clientEmail = null;
-            $clientName = $booking['client_name'] ?? 'Cliente';
+            $clientName = $booking['client_name'] ?? $strings['client_fallback'];
             if ($this->clientRepo !== null) {
                 $client = $this->clientRepo->findById((int) $clientId);
                 if ($client !== null) {
@@ -370,7 +385,7 @@ final class UpdateBooking
                 'services' => implode(', ', array_column($booking['items'] ?? [], 'service_name')),
                 'manage_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($locationData['business_slug'] ?? '') . '/my-bookings',
                 'booking_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($locationData['business_slug'] ?? '') . '/booking',
-                'locale' => $_ENV['DEFAULT_LOCALE'] ?? 'it',
+                'locale' => $locale,
             ];
 
             $rescheduledUseCase = new QueueBookingRescheduled($this->db, $this->notificationRepo);

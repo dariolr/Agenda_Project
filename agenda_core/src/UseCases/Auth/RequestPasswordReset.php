@@ -53,7 +53,7 @@ final class RequestPasswordReset
         // Send email with reset link
         $this->sendPasswordResetEmail(
             email: $email,
-            userName: trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Operatore',
+            userName: trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')),
             resetToken: $token
         );
 
@@ -66,15 +66,20 @@ final class RequestPasswordReset
         string $resetToken
     ): void {
         try {
-            $locale = $_ENV['DEFAULT_LOCALE'] ?? 'it';
+            $locale = EmailTemplateRenderer::resolvePreferredLocale(
+                null,
+                $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,
+                $_ENV['DEFAULT_LOCALE'] ?? 'it'
+            );
             $template = EmailTemplateRenderer::operatorPasswordReset($locale);
+            $strings = EmailTemplateRenderer::strings($locale);
             
             // Reset URL va al GESTIONALE (usa BACKEND_URL dalla config)
             $gestionaleUrl = $_ENV['BACKEND_URL'] ?? 'https://gestionale.romeolab.it';
             $resetUrl = $gestionaleUrl . '/reset-password/' . $resetToken;
 
             $variables = [
-                'user_name' => $userName,
+                'user_name' => $userName !== '' ? $userName : $strings['operator_fallback'],
                 'reset_url' => $resetUrl,
             ];
 

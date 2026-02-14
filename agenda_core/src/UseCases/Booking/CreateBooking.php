@@ -14,6 +14,7 @@ use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\UseCases\Notifications\QueueBookingConfirmation;
 use Agenda\UseCases\Notifications\QueueBookingReminder;
 use Agenda\Domain\Exceptions\BookingException;
@@ -74,12 +75,13 @@ final class CreateBooking
         $allowPast = $data['allow_past'] ?? false;
         $skipConflictCheck = $data['skip_conflict_check'] ?? false;
         $requestedClientId = $data['client_id'] ?? null;
+        $requestedLocale = $data['locale'] ?? null;
 
         // Check if using new "items" format or legacy "service_ids" format
         if (isset($data['items']) && is_array($data['items']) && !empty($data['items'])) {
             return $this->executeWithItems(
                 $userId, $locationId, $businessId, $data['items'],
-                $notes, $allowPast, $skipConflictCheck, $requestedClientId, $idempotencyKey
+                $notes, $allowPast, $skipConflictCheck, $requestedClientId, $idempotencyKey, $requestedLocale
             );
         }
 
@@ -345,7 +347,7 @@ final class CreateBooking
             $this->createBookingCreatedEvent($bookingId, 'staff', $userId, $booking);
             
             // Queue notifications (async, non-blocking)
-            $this->queueNotifications($booking, $location, $userId);
+            $this->queueNotifications($booking, $location, $userId, $requestedLocale);
             
             return $this->formatBookingResponse($booking);
 
@@ -374,7 +376,8 @@ final class CreateBooking
         bool $allowPast,
         bool $skipConflictCheck,
         ?int $requestedClientId,
-        ?string $idempotencyKey
+        ?string $idempotencyKey,
+        ?string $requestedLocale = null
     ): array {
         // Validate location
         $location = $this->locationRepository->findById($locationId);
@@ -539,7 +542,7 @@ final class CreateBooking
             // Create audit event for booking_created
             $this->createBookingCreatedEvent($bookingId, 'staff', $userId, $booking);
             
-            $this->queueNotifications($booking, $location, $userId);
+            $this->queueNotifications($booking, $location, $userId, $requestedLocale);
 
             return $this->formatBookingResponse($booking);
 
@@ -596,7 +599,12 @@ final class CreateBooking
      * Queue notifications for booking - sends to CLIENT (not operator).
      * Used when operator creates booking from gestionale.
      */
-    private function queueNotifications(array $booking, array $location, int $userId): void
+    private function queueNotifications(
+        array $booking,
+        array $location,
+        int $userId,
+        ?string $requestedLocale = null
+    ): void
     {
         // Get client_id from booking - notifications go to CLIENT, not operator
         $clientId = $booking['client_id'] ?? null;
@@ -606,7 +614,7 @@ final class CreateBooking
         }
         
         // Use the same method as customer bookings
-        $this->queueNotificationsForClient($booking, $location, (int) $clientId);
+        $this->queueNotificationsForClient($booking, $location, (int) $clientId, $requestedLocale);
     }
 
     /**
@@ -637,12 +645,13 @@ final class CreateBooking
         }
 
         $notes = $data['notes'] ?? null;
+        $requestedLocale = $data['locale'] ?? null;
 
         // Check if using new "items" format or legacy "service_ids" format
         if (isset($data['items']) && is_array($data['items']) && !empty($data['items'])) {
             return $this->executeForCustomerWithItems(
                 $clientId, $locationId, $businessId, $data['items'],
-                $notes, $idempotencyKey
+                $notes, $idempotencyKey, $requestedLocale
             );
         }
 
@@ -864,7 +873,7 @@ final class CreateBooking
             $this->createBookingCreatedEvent($bookingId, 'customer', $clientId, $booking);
             
             // Queue notifications
-            $this->queueNotificationsForClient($booking, $location, $clientId);
+            $this->queueNotificationsForClient($booking, $location, $clientId, $requestedLocale);
             
             return $this->formatBookingResponse($booking);
 
@@ -890,7 +899,8 @@ final class CreateBooking
         int $businessId,
         array $items,
         ?string $notes,
-        ?string $idempotencyKey
+        ?string $idempotencyKey,
+        ?string $requestedLocale = null
     ): array {
         // Validate location
         $location = $this->locationRepository->findById($locationId);
@@ -1044,7 +1054,7 @@ final class CreateBooking
             $this->createBookingCreatedEvent($bookingId, 'customer', $clientId, $booking);
 
             // Queue notifications
-            $this->queueNotificationsForClient($booking, $location, $clientId);
+            $this->queueNotificationsForClient($booking, $location, $clientId, $requestedLocale);
 
             return $this->formatBookingResponse($booking);
 
@@ -1064,7 +1074,12 @@ final class CreateBooking
     /**
      * Queue email notifications for customer booking.
      */
-    private function queueNotificationsForClient(array $booking, array $location, int $clientId): void
+    private function queueNotificationsForClient(
+        array $booking,
+        array $location,
+        int $clientId,
+        ?string $requestedLocale = null
+    ): void
     {
         file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " queueNotificationsForClient: notificationRepo=" . ($this->notificationRepo === null ? 'NULL' : 'OK') . " booking_id={$booking['id']} client_id={$clientId}\n", FILE_APPEND);
         
@@ -1095,6 +1110,11 @@ final class CreateBooking
 
             $senderEmail = $location['email'] ?? $location['business_email'] ?? null;
             $senderName = $location['email'] ? $location['name'] : ($location['business_email'] ? $location['business_name'] : null);
+            $locale = EmailTemplateRenderer::resolvePreferredLocale(
+                $requestedLocale,
+                $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,
+                $_ENV['DEFAULT_LOCALE'] ?? 'it'
+            );
             
             $notificationData = [
                 'booking_id' => (int) $booking['id'],
@@ -1119,7 +1139,7 @@ final class CreateBooking
                 'cancellation_hours' => $location['cancellation_hours'] ?? 24,
                 'manage_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($location['business_slug'] ?? '') . '/my-bookings',
                 'booking_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($location['business_slug'] ?? '') . '/booking',
-                'locale' => $_ENV['DEFAULT_LOCALE'] ?? 'it',
+                'locale' => $locale,
             ];
 
             $confirmationUseCase = new QueueBookingConfirmation($this->db, $this->notificationRepo);

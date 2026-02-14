@@ -77,6 +77,7 @@ final class QueueBookingReminder
         $recipientEmail = null;
         $clientName = $this->extractFirstName($booking['client_name'] ?? null);
         $locale = $this->resolveLocale($booking);
+        $strings = EmailTemplateRenderer::strings($locale);
         
         // Notifications go ONLY to clients, never to operators
         if (!isset($booking['client_id']) || empty($booking['client_id'])) {
@@ -85,7 +86,9 @@ final class QueueBookingReminder
         
         $recipientType = 'client';
         $recipientId = (int) $booking['client_id'];
-        $clientName = $this->extractFirstName($booking['client_name'] ?? 'Cliente');
+        $clientName = $this->extractFirstName(
+            $booking['client_name'] ?? $strings['client_fallback']
+        );
         $recipientEmail = [
             'email' => $booking['client_email'] ?? null,
             'name' => $clientName,
@@ -125,7 +128,6 @@ final class QueueBookingReminder
         // Prepare variables
         $locationName = $booking['location_name'] ?? '';
         $locationAddress = $booking['location_address'] ?? '';
-        $strings = EmailTemplateRenderer::strings($locale);
         $hasMultipleLocations = $this->hasMultipleLocations((int) ($booking['business_id'] ?? 0));
         $locationBlockHtml = $hasMultipleLocations ? sprintf(
             '<tr>
