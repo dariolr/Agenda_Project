@@ -48,43 +48,74 @@ class TimeBlockWidget extends ConsumerWidget {
                   color: colorScheme.error.withOpacity(0.1),
                 ),
               ),
-              // Contenuto
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.block, size: 14, color: colorScheme.error),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            block.reason ?? 'Blocco',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.error,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+              // Contenuto adattivo: evita overflow quando il blocco e' molto basso.
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final maxHeight = constraints.maxHeight;
+                  if (maxHeight < 18) {
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Container(
+                          width: 22,
+                          height: 2,
+                          decoration: BoxDecoration(
+                            color: colorScheme.error.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
+                      ),
+                    );
+                  }
+
+                  final isCompact = maxHeight < 30;
+                  final horizontalPadding = isCompact ? 6.0 : 8.0;
+                  final verticalPadding = isCompact ? 2.0 : 4.0;
+
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: verticalPadding,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            if (!isCompact) ...[
+                              Icon(Icons.block, size: 14, color: colorScheme.error),
+                              const SizedBox(width: 4),
+                            ],
+                            Expanded(
+                              child: Text(
+                                block.reason ?? 'Blocco',
+                                style: TextStyle(
+                                  fontSize: isCompact ? 10 : 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.error,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (maxHeight > 40) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            _formatTimeRange(context, block),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colorScheme.error.withOpacity(0.8),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                    if (height > 40) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        _formatTimeRange(context, block),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: colorScheme.error.withOpacity(0.8),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                  );
+                },
               ),
             ],
           ),

@@ -224,7 +224,10 @@ class _EventTile extends StatelessWidget {
     }
 
     // Build user-friendly description based on event type and payload
-    final description = _buildDescription(eventType, payload, locale);
+    final description = _buildDescription(eventType, payload, locale, l10n);
+    final isNotificationSent = eventType == 'booking_notification_sent';
+    final recipientEmail =
+        (payload['recipient_email'] as String?)?.trim() ?? '';
 
     return ListTile(
       leading: CircleAvatar(
@@ -240,13 +243,24 @@ class _EventTile extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(description, style: theme.textTheme.bodySmall),
             ),
+          if (isNotificationSent && recipientEmail.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                l10n.bookingHistoryNotificationRecipient(recipientEmail),
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
           Text(
-            '$formattedDate • $actorLabel',
+            isNotificationSent
+                ? l10n.bookingHistoryNotificationSentAt(formattedDate)
+                : '$formattedDate • $actorLabel',
             style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
           ),
         ],
       ),
-      isThreeLine: description != null,
+      isThreeLine:
+          description != null || (isNotificationSent && recipientEmail.isNotEmpty),
     );
   }
 
@@ -254,12 +268,15 @@ class _EventTile extends StatelessWidget {
     String eventType,
     Map<String, dynamic> payload,
     String locale,
+    dynamic l10n,
   ) {
     switch (eventType) {
       case 'appointment_updated':
         return _describeAppointmentUpdate(payload, locale);
       case 'booking_created':
         return _describeBookingCreated(payload, locale);
+      case 'booking_notification_sent':
+        return null;
       case 'booking_cancelled':
         return _describeBookingCancelled(payload, locale);
       case 'booking_item_added':
@@ -415,6 +432,21 @@ class _EventTile extends StatelessWidget {
     return null;
   }
 
+  String _notificationChannelLabel(String channel, dynamic l10n) {
+    switch (channel) {
+      case 'booking_confirmed':
+        return l10n.bookingHistoryNotificationChannelConfirmed;
+      case 'booking_reminder':
+        return l10n.bookingHistoryNotificationChannelReminder;
+      case 'booking_cancelled':
+        return l10n.bookingHistoryNotificationChannelCancelled;
+      case 'booking_rescheduled':
+        return l10n.bookingHistoryNotificationChannelRescheduled;
+      default:
+        return channel;
+    }
+  }
+
   String? _describeItemAdded(Map<String, dynamic> payload) {
     // Il nome servizio può essere in item_data.service_name_snapshot o direttamente in payload
     final itemData = payload['item_data'] as Map<String, dynamic>? ?? {};
@@ -547,6 +579,15 @@ class _EventTile extends StatelessWidget {
           Icons.cancel_outlined,
           Colors.red,
           l10n.bookingHistoryEventCancelled,
+        );
+      case 'booking_notification_sent':
+        final channel = ((payload['channel'] as String?) ?? '').trim();
+        return (
+          Icons.mail_outline,
+          Colors.lightBlue,
+          l10n.bookingHistoryEventNotificationSentTitle(
+            _notificationChannelLabel(channel, l10n),
+          ),
         );
       case 'booking_item_added':
         return (
