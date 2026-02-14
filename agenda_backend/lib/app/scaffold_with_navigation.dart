@@ -647,6 +647,7 @@ class _AgendaFilterActions extends ConsumerWidget {
 
   static const double _actionButtonHeight = 40;
   static const double _iconOnlyWidth = 46;
+  static const double _locationComboWidth = 200;
   static const double _spacing = 8;
   final EdgeInsetsGeometry padding;
 
@@ -676,11 +677,17 @@ class _AgendaFilterActions extends ConsumerWidget {
     Widget buildActionLabel(IconData icon, String label) {
       return showLabelEffective
           ? Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
               children: [
                 Icon(icon, size: 22),
                 const SizedBox(width: 8),
-                Text(label),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             )
           : Icon(icon, size: 22);
@@ -724,7 +731,7 @@ class _AgendaFilterActions extends ConsumerWidget {
               message: l10n.agendaSelectLocation,
               child: SizedBox(
                 height: _actionButtonHeight,
-                width: showLabelEffective ? null : _iconOnlyWidth,
+                width: showLabelEffective ? _locationComboWidth : _iconOnlyWidth,
                 child: AppOutlinedActionButton(
                   onPressed: () => _showLocationSheet(
                     context,
@@ -782,6 +789,7 @@ class _ToolbarLocationSelectorAction extends ConsumerWidget {
 
   static const double _actionButtonHeight = 40;
   static const double _iconOnlyWidth = 46;
+  static const double _locationComboWidth = 200;
 
   final bool compact;
 
@@ -797,21 +805,33 @@ class _ToolbarLocationSelectorAction extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final layoutConfig = ref.watch(layoutConfigProvider);
     final formFactor = ref.watch(formFactorProvider);
+
     final showLabel = layoutConfig.showTopbarAddLabel;
     final showLabelEffective =
         showLabel ||
         formFactor == AppFormFactor.tablet ||
         formFactor == AppFormFactor.desktop;
     final bool isIconOnly = !showLabelEffective;
+    final selectedLocationName = locations
+        .where((location) => location.id == currentLocationId)
+        .map((location) => location.name)
+        .firstOrNull;
+    final buttonLabel = selectedLocationName ?? l10n.agendaSelectLocation;
 
     Widget buildActionLabel(IconData icon, String label) {
       return showLabelEffective
           ? Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
               children: [
                 Icon(icon, size: 22),
                 const SizedBox(width: 8),
-                Text(label),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             )
           : Icon(icon, size: 22);
@@ -823,7 +843,7 @@ class _ToolbarLocationSelectorAction extends ConsumerWidget {
         message: l10n.agendaSelectLocation,
         child: SizedBox(
           height: _actionButtonHeight,
-          width: isIconOnly ? _iconOnlyWidth : null,
+          width: isIconOnly ? _iconOnlyWidth : _locationComboWidth,
           child: AppOutlinedActionButton(
             onPressed: () => _showLocationSheet(
               context,
@@ -838,7 +858,7 @@ class _ToolbarLocationSelectorAction extends ConsumerWidget {
             foregroundColor: scheme.primary,
             child: buildActionLabel(
               Icons.place_outlined,
-              l10n.agendaSelectLocation,
+              buttonLabel,
             ),
           ),
         ),

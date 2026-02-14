@@ -6,6 +6,7 @@ import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/service_variant.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
+import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/hover_slot.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/unavailable_slot_pattern.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
@@ -22,7 +23,9 @@ import '/core/utils/color_utils.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
+import '../../../providers/agenda_scroll_request_provider.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/booking_reschedule_provider.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
@@ -70,6 +73,7 @@ class StaffColumn extends ConsumerStatefulWidget {
 class _StaffColumnState extends ConsumerState<StaffColumn> {
   bool _isHighlighted = false;
   double? _hoverY;
+  bool _isApplyingBookingReschedule = false;
   late final ProviderSubscription<Offset?> _dragListener;
   late final HighlightedStaffIdNotifier _highlightedNotifier;
   late final StaffColumnsGeometryNotifier _geometryNotifier;
@@ -345,6 +349,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     // Interaction lock propagated from parent (evaluated once per visible group)
     final isInteractionLocked = widget.isInteractionLocked;
+    final rescheduleSession = ref.watch(bookingRescheduleSessionProvider);
 
     // 🔹 Calcola slot pieni PRIMA del layout (solo desktop e se abilitato)
     final formFactor = ref.watch(formFactorProvider);
@@ -437,15 +442,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                 slotTime: slotTime,
                 height: slotHeight,
                 colorPrimary1: Theme.of(context).colorScheme.primary,
-                onTap: (dt) {
-                  showBookingDialog(
-                    context,
-                    ref,
-                    date: DateUtils.dateOnly(dt),
-                    time: TimeOfDay(hour: dt.hour, minute: dt.minute),
-                    initialStaffId: widget.staff.id,
-                  );
-                },
+                onTap: (dt) => _handleSlotTap(
+                  dt: dt,
+                  rescheduleSession: rescheduleSession,
+                ),
               );
             }
 
@@ -930,5 +930,108 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }
 
     return positionedBlocks;
+  }
+
+  Future<void> _handleSlotTap({
+    required DateTime dt,
+    required BookingRescheduleSession? rescheduleSession,
+  }) async {
+    if (rescheduleSession == null) {
+      showBookingDialog(
+        context,
+        ref,
+        date: DateUtils.dateOnly(dt),
+        time: TimeOfDay(hour: dt.hour, minute: dt.minute),
+        initialStaffId: widget.staff.id,
+      );
+      return;
+    }
+
+    if (_isApplyingBookingReschedule) return;
+
+    if (rescheduleSession.items.isEmpty) {
+      ref.read(bookingRescheduleSessionProvider.notifier).clear();
+      if (mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.bookingRescheduleMissingBooking,
+        );
+      }
+      return;
+    }
+
+    final anchorId = rescheduleSession.anchorAppointmentId;
+    final targetStart = DateTime(
+      dt.year,
+      dt.month,
+      dt.day,
+      dt.hour,
+      dt.minute,
+    );
+
+    final l10n = context.l10n;
+    final targetDateStr = DtFmt.longDate(context, targetStart);
+    final targetTimeStr = DtFmt.hm(
+      context,
+      targetStart.hour,
+      targetStart.minute,
+    );
+
+    final confirmed = await showConfirmDialog(
+      context,
+      title: Text(l10n.bookingRescheduleConfirmTitle),
+      content: Text(
+        l10n.bookingRescheduleConfirmMessage(
+          targetDateStr,
+          targetTimeStr,
+          widget.staff.displayName,
+        ),
+      ),
+      confirmLabel: l10n.actionConfirm,
+      cancelLabel: l10n.actionCancel,
+    );
+    if (confirmed != true) return;
+
+    setState(() => _isApplyingBookingReschedule = true);
+    try {
+      final success = await ref
+          .read(appointmentsProvider.notifier)
+          .moveBookingByAnchor(
+            session: rescheduleSession,
+            targetStart: targetStart,
+            targetStaffId: widget.staff.id,
+          );
+
+      if (!mounted) return;
+
+      if (!success) {
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.bookingRescheduleMoveFailed,
+        );
+        return;
+      }
+
+      ref.read(bookingRescheduleSessionProvider.notifier).clear();
+      final refreshedAppointments = ref.read(appointmentsProvider).value ?? [];
+      Appointment? movedAnchor;
+      for (final appointment in refreshedAppointments) {
+        if (appointment.id == anchorId) {
+          movedAnchor = appointment;
+          break;
+        }
+      }
+      if (movedAnchor != null) {
+        ref.read(agendaScrollRequestProvider.notifier).request(movedAnchor);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isApplyingBookingReschedule = false);
+      } else {
+        _isApplyingBookingReschedule = false;
+      }
+    }
   }
 }

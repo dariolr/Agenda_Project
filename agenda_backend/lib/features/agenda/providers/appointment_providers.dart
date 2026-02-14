@@ -7,6 +7,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../../clients/providers/clients_providers.dart';
 import '../../services/providers/services_provider.dart';
+import 'booking_reschedule_provider.dart';
 import 'bookings_provider.dart';
 import 'bookings_repository_provider.dart';
 import 'business_providers.dart';
@@ -144,6 +145,101 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     } catch (_) {
       // Rollback on error
       state = AsyncData(currentList);
+    }
+  }
+
+  Future<bool> moveBookingByAnchor({
+    required BookingRescheduleSession session,
+    required DateTime targetStart,
+    required int targetStaffId,
+  }) async {
+    if (session.items.isEmpty) return false;
+    final currentList = state.value;
+
+    final anchor = session.items.firstWhere(
+      (i) => i.appointmentId == session.anchorAppointmentId,
+      orElse: () => session.items.first,
+    );
+    final delta = targetStart.difference(anchor.startTime);
+
+    final updates = <int, ({Appointment appointment, int blockedMinutes})>{};
+    final updatedStarts = <int, DateTime>{};
+    final updatedEnds = <int, DateTime>{};
+    final updatedStaffIds = <int, int>{};
+    final updatedBlocked = <int, int>{};
+
+    for (final item in session.items) {
+      final rawStart = item.startTime.add(delta);
+      final rawEnd = item.endTime.add(delta);
+
+      final roundedStart = _roundToNearestFiveMinutes(rawStart);
+      final duration = rawEnd.difference(rawStart);
+      final roundedEnd = roundedStart.add(duration);
+
+      final oldTotalMinutes = item.endTime.difference(item.startTime).inMinutes;
+      final newTotalMinutes = roundedEnd.difference(roundedStart).inMinutes;
+      final oldBlocked = item.blockedExtraMinutes;
+      final baseMinutes = oldTotalMinutes - oldBlocked;
+
+      int newBlocked = oldBlocked;
+      if (newTotalMinutes <= baseMinutes) {
+        newBlocked = 0;
+      } else {
+        newBlocked = newTotalMinutes - baseMinutes;
+      }
+
+      final newStaffId = item.appointmentId == anchor.appointmentId
+          ? targetStaffId
+          : item.staffId;
+
+      updatedStarts[item.appointmentId] = roundedStart;
+      updatedEnds[item.appointmentId] = roundedEnd;
+      updatedStaffIds[item.appointmentId] = newStaffId;
+      updatedBlocked[item.appointmentId] = newBlocked;
+    }
+
+    if (currentList != null) {
+      for (final appt in currentList) {
+        if (!updatedStarts.containsKey(appt.id)) continue;
+        updates[appt.id] = (
+          appointment: _applyResizeToAppointment(
+            appt,
+            staffId: updatedStaffIds[appt.id]!,
+            startTime: updatedStarts[appt.id]!,
+            endTime: updatedEnds[appt.id]!,
+          ),
+          blockedMinutes: updatedBlocked[appt.id]!,
+        );
+      }
+
+      final optimistic = [
+        for (final appt in currentList)
+          if (updates.containsKey(appt.id)) updates[appt.id]!.appointment else appt,
+      ];
+      state = AsyncData(optimistic);
+    }
+
+    final location = ref.read(currentLocationProvider);
+    final repository = ref.read(bookingsRepositoryProvider);
+
+    try {
+      for (final item in session.items) {
+        await repository.updateAppointment(
+          locationId: location.id,
+          appointmentId: item.appointmentId,
+          startTime: updatedStarts[item.appointmentId],
+          endTime: updatedEnds[item.appointmentId],
+          staffId: updatedStaffIds[item.appointmentId],
+          extraBlockedMinutes: updatedBlocked[item.appointmentId],
+        );
+      }
+      ref.invalidateSelf();
+      return true;
+    } catch (_) {
+      if (currentList != null) {
+        state = AsyncData(currentList);
+      }
+      return false;
     }
   }
 
@@ -488,8 +584,19 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
 
     final location = ref.read(currentLocationProvider);
     final repository = ref.read(bookingsRepositoryProvider);
+    final bookingsNotifier = ref.read(bookingsProvider.notifier);
 
     try {
+      // Associa esplicitamente lo stato "cancelled" prima della cancellazione
+      // definitiva della prenotazione.
+      await repository.updateBooking(
+        locationId: location.id,
+        bookingId: bookingId,
+        status: 'cancelled',
+      );
+      bookingsNotifier.setStatus(bookingId, 'cancelled');
+      setBookingStatusForBooking(bookingId: bookingId, status: 'cancelled');
+
       // Chiama API per cancellare il booking
       await repository.deleteBooking(
         locationId: location.id,

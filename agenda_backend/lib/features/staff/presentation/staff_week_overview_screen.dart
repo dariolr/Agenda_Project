@@ -11,6 +11,7 @@ import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/domain/config/agenda_theme.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/staff/presentation/dialogs/add_exception_dialog.dart';
 import 'package:agenda_backend/features/staff/presentation/staff_availability_screen.dart';
 import 'package:agenda_backend/features/staff/presentation/staff_planning_screen.dart';
@@ -554,6 +555,24 @@ class _StaffWeekOverviewScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final selectedStaffSectionLocation = ref.read(
+        staffSectionLocationIdProvider,
+      );
+      // Se l'utente ha già una selezione (incluso "Tutte le sedi"), non forzare.
+      if (selectedStaffSectionLocation != null) return;
+
+      final currentLocationId = ref.read(currentLocationIdProvider);
+      if (currentLocationId <= 0) return;
+
+      final locations = ref.read(locationsProvider);
+      final exists = locations.any((location) => location.id == currentLocationId);
+      if (!exists) return; // fallback implicito: "Tutte le sedi" (null)
+
+      ref.read(staffSectionLocationIdProvider.notifier).set(currentLocationId);
+    });
+
     // Sync header position from body only (unidirectional) per evitare conflitti di inerzia.
     _bodyHController.addListener(() {
       if (!_bodyHController.hasClients) return;

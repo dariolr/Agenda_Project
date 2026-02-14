@@ -244,7 +244,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     return const <String>[
       'confirmed',
       'completed',
-      'cancelled',
       'no_show',
     ];
   }

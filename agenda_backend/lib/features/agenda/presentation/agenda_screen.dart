@@ -7,7 +7,9 @@ import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/agenda_day.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/components/hour_column.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
+import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/booking_reschedule_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/is_resizing_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
@@ -35,6 +37,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   final ScrollController _hourColumnController = ScrollController();
   final AgendaDayController _timelineController = AgendaDayController();
   late final ProviderSubscription<AgendaScrollRequest?> _scrollRequestSub;
+  late final ProviderSubscription<int> _locationSub;
   Timer? _pollingTimer;
 
   /// Intervallo polling: 10 secondi in debug, 5 minuti in produzione
@@ -55,6 +58,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   void dispose() {
     _pollingTimer?.cancel();
     _scrollRequestSub.close();
+    _locationSub.close();
     _timelineController.dispose();
     _hourColumnController.dispose();
     super.dispose();
@@ -151,6 +155,17 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
         }
       },
     );
+
+    _locationSub = ref.listenManual<int>(
+      currentLocationIdProvider,
+      (prev, next) {
+        if (prev == null || prev == next) return;
+        final session = ref.read(bookingRescheduleSessionProvider);
+        if (session == null) return;
+        ref.read(agendaDateProvider.notifier).set(session.originDate);
+        ref.read(bookingRescheduleSessionProvider.notifier).clear();
+      },
+    );
   }
 
   @override
@@ -163,6 +178,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final locationsLoaded = ref.watch(locationsLoadedProvider);
     final currentLocationId = ref.watch(currentLocationIdProvider);
     final appointmentsAsync = ref.watch(appointmentsProvider);
+    final rescheduleSession = ref.watch(bookingRescheduleSessionProvider);
     final currentBusinessId = ref.watch(currentBusinessIdProvider);
     final globalLoadingCount = ref.watch(globalLoadingProvider);
     final isGlobalLoading = globalLoadingCount > 0;
@@ -295,6 +311,39 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (rescheduleSession != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer.withOpacity(0.18),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          context.l10n.bookingRescheduleModeHint,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      AppOutlinedActionButton(
+                        onPressed: () {
+                          ref
+                              .read(agendaDateProvider.notifier)
+                              .set(rescheduleSession.originDate);
+                          ref
+                              .read(bookingRescheduleSessionProvider.notifier)
+                              .clear();
+                        },
+                        child: Text(context.l10n.bookingRescheduleCancelAction),
+                      ),
+                    ],
+                  ),
+                ),
               Expanded(
                 child: isLoading
                     // Mostra loading indicator durante il caricamento
