@@ -47,7 +47,7 @@ class MultiplePlanningsFound extends PlanningLookupResult {
 
 /// Servizio per la selezione del planning valido per una data.
 ///
-/// Implementa le regole di STAFF_PLANNING_MODEL.md:
+/// Implementa le regole di docs/STAFF_PLANNING_MODEL.md:
 /// - Filtra planning con valid_from ≤ D ≤ valid_to (o valid_to null)
 /// - Nessun planning → staff non disponibile
 /// - Più di uno → errore di consistenza

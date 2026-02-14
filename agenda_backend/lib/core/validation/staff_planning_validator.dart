@@ -28,7 +28,7 @@ class StaffPlanningValidationResult {
 
 /// Validatore per StaffPlanning.
 ///
-/// Implementa le regole definite in STAFF_PLANNING_MODEL.md:
+/// Implementa le regole definite in docs/STAFF_PLANNING_MODEL.md:
 /// - Obbligatori: valid_from, type, template A (e B se biweekly)
 /// - valid_to ≥ valid_from quando presente
 /// - Non sovrapposizione intervalli per stesso staff
