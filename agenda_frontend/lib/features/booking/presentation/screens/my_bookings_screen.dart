@@ -32,7 +32,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -62,6 +62,11 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     }
 
     final bookingsState = ref.watch(myBookingsProvider);
+    final cancelledBookings = [
+      ...bookingsState.upcoming,
+      ...bookingsState.past,
+    ].where((b) => b.isCancelled && b.status != 'replaced').toList()
+      ..sort((a, b) => b.startTime.compareTo(a.startTime));
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
@@ -91,6 +96,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
           tabs: [
             Tab(text: context.l10n.upcomingBookings),
             Tab(text: context.l10n.pastBookings),
+            Tab(text: context.l10n.cancelledBookings),
           ],
         ),
       ),
@@ -109,12 +115,17 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
                         children: [
                           _BookingsList(
                             bookings: bookingsState.upcoming,
-                            isUpcoming: true,
+                            tabType: _BookingsTabType.upcoming,
                             onCancelLoadingChanged: _setCancelLoading,
                           ),
                           _BookingsList(
                             bookings: bookingsState.past,
-                            isUpcoming: false,
+                            tabType: _BookingsTabType.past,
+                            onCancelLoadingChanged: _setCancelLoading,
+                          ),
+                          _BookingsList(
+                            bookings: cancelledBookings,
+                            tabType: _BookingsTabType.cancelled,
                             onCancelLoadingChanged: _setCancelLoading,
                           ),
                         ],
@@ -180,32 +191,51 @@ class _ErrorView extends StatelessWidget {
 class _BookingsList extends StatelessWidget {
   const _BookingsList({
     required this.bookings,
-    required this.isUpcoming,
+    required this.tabType,
     required this.onCancelLoadingChanged,
   });
 
   final List<BookingItem> bookings;
-  final bool isUpcoming;
+  final _BookingsTabType tabType;
   final ValueChanged<bool> onCancelLoadingChanged;
 
   @override
   Widget build(BuildContext context) {
-    final visibleBookings = bookings.where((b) => b.status != 'replaced').toList();
+    final visibleBookings = bookings
+        .where((b) => b.status != 'replaced')
+        .where((b) {
+          switch (tabType) {
+            case _BookingsTabType.upcoming:
+            case _BookingsTabType.past:
+              return !b.isCancelled;
+            case _BookingsTabType.cancelled:
+              return b.isCancelled;
+          }
+        })
+        .toList();
     if (visibleBookings.isEmpty) {
+      final emptyIcon = switch (tabType) {
+        _BookingsTabType.upcoming => Icons.event_busy,
+        _BookingsTabType.past => Icons.history,
+        _BookingsTabType.cancelled => Icons.cancel_outlined,
+      };
+      final emptyText = switch (tabType) {
+        _BookingsTabType.upcoming => context.l10n.noUpcomingBookings,
+        _BookingsTabType.past => context.l10n.noPastBookings,
+        _BookingsTabType.cancelled => context.l10n.noCancelledBookings,
+      };
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isUpcoming ? Icons.event_busy : Icons.history,
+              emptyIcon,
               size: 64,
               color: Colors.grey,
             ),
             const SizedBox(height: 16),
             Text(
-              isUpcoming
-                  ? context.l10n.noUpcomingBookings
-                  : context.l10n.noPastBookings,
+              emptyText,
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
@@ -220,13 +250,15 @@ class _BookingsList extends StatelessWidget {
         final booking = visibleBookings[index];
         return _BookingCard(
           booking: booking,
-          isUpcoming: isUpcoming,
+          isUpcoming: tabType == _BookingsTabType.upcoming,
           onCancelLoadingChanged: onCancelLoadingChanged,
         );
       },
     );
   }
 }
+
+enum _BookingsTabType { upcoming, past, cancelled }
 
 class _BookingCard extends ConsumerStatefulWidget {
   const _BookingCard({
