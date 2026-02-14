@@ -30,8 +30,10 @@ import '../../../services/providers/services_provider.dart';
 import '../../domain/service_item_data.dart';
 import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/appointment_providers.dart';
+import '../../providers/booking_reschedule_provider.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/bookings_repository_provider.dart';
+import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
 import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
@@ -244,7 +246,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     return const <String>[
       'confirmed',
       'completed',
-      'cancelled',
       'no_show',
     ];
   }
@@ -300,28 +301,63 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
   /// Gestisce la chiusura del dialog con controllo modifiche
   Future<void> _handleClose() async {
-    if (_hasUnsavedChanges) {
-      final l10n = context.l10n;
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: Text(l10n.discardChangesTitle),
-          content: Text(l10n.discardChangesMessage),
-          actions: [
-            AppOutlinedActionButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.actionKeepEditing),
-            ),
-            AppDangerButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(l10n.actionDiscard),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true) return;
-    }
+    final shouldProceed = await _confirmDiscardChangesIfNeeded();
+    if (!shouldProceed) return;
     if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<bool> _confirmDiscardChangesIfNeeded() async {
+    if (!_hasUnsavedChanges) return true;
+
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(l10n.discardChangesTitle),
+        content: Text(l10n.discardChangesMessage),
+        actions: [
+          AppOutlinedActionButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.actionKeepEditing),
+          ),
+          AppDangerButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.actionDiscard),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed == true;
+  }
+
+  Future<void> _startBookingReschedule() async {
+    if (_isSaving) return;
+    final canProceed = await _confirmDiscardChangesIfNeeded();
+    if (!canProceed || !mounted) return;
+
+    final bookingAppointments = ref
+        .read(appointmentsProvider.notifier)
+        .getByBookingId(widget.initial.bookingId);
+    if (bookingAppointments.isEmpty) {
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: context.l10n.bookingRescheduleMissingBooking,
+      );
+      return;
+    }
+
+    final currentAgendaDate = ref.read(agendaDateProvider);
+    ref
+        .read(bookingRescheduleSessionProvider.notifier)
+        .start(
+          bookingId: widget.initial.bookingId,
+          originDate: currentAgendaDate,
+          bookingAppointments: bookingAppointments,
+        );
+
+    Navigator.of(context).pop();
   }
 
   /// Gestisce la cancellazione dell'appuntamento/prenotazione
@@ -606,27 +642,31 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       ),
     );
 
-    final actions = [
-      AppAsyncDangerButton(
-        onPressed: _isSaving || !canManageBookings ? null : _handleDelete,
-        padding: AppButtonStyles.dialogButtonPadding,
-        disabled: _isSaving || !canManageBookings,
-        showSpinner: false,
-        child: Text(l10n.actionDelete),
-      ),
-      AppOutlinedActionButton(
-        onPressed: _isSaving ? null : _handleClose,
-        padding: AppButtonStyles.dialogButtonPadding,
-        child: Text(l10n.actionCancel),
-      ),
-      AppAsyncFilledButton(
-        onPressed: _isSaving || !canManageBookings ? null : _onSave,
-        padding: AppButtonStyles.dialogButtonPadding,
-        isLoading: _isSaving && canManageBookings,
-        showSpinner: false,
-        child: Text(l10n.actionSave),
-      ),
-    ];
+    final deleteAction = AppAsyncDangerButton(
+      onPressed: _isSaving || !canManageBookings ? null : _handleDelete,
+      padding: AppButtonStyles.dialogButtonPadding,
+      disabled: _isSaving || !canManageBookings,
+      showSpinner: false,
+      child: Text(l10n.actionDelete),
+    );
+    final cancelAction = AppOutlinedActionButton(
+      onPressed: _isSaving ? null : _handleClose,
+      padding: AppButtonStyles.dialogButtonPadding,
+      child: Text(l10n.actionCancel),
+    );
+    final rescheduleAction = AppOutlinedActionButton(
+      onPressed: _isSaving || !canManageBookings ? null : _startBookingReschedule,
+      padding: AppButtonStyles.dialogButtonPadding,
+      child: Text(l10n.actionReschedule),
+    );
+    final saveAction = AppAsyncFilledButton(
+      onPressed: _isSaving || !canManageBookings ? null : _onSave,
+      padding: AppButtonStyles.dialogButtonPadding,
+      isLoading: _isSaving && canManageBookings,
+      showSpinner: false,
+      child: Text(l10n.actionSave),
+    );
+    final actions = [deleteAction, cancelAction, rescheduleAction, saveAction];
 
     if (isDialog) {
       return PopScope(
@@ -678,16 +718,17 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                         l10n.bookingUnavailableTimeWarningAppointment,
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                    OverflowBar(
+                      alignment: MainAxisAlignment.end,
+                      overflowAlignment: OverflowBarAlignment.end,
+                      spacing: 8,
+                      overflowSpacing: 8,
                       children: [
-                        for (int i = 0; i < actions.length; i++) ...[
-                          if (i > 0) const SizedBox(width: 8),
+                        for (final action in actions)
                           SizedBox(
                             width: AppButtonStyles.dialogButtonWidth,
-                            child: actions[i],
+                            child: action,
                           ),
-                        ],
                       ],
                     ),
                   ],
@@ -759,18 +800,23 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                     horizontalPadding,
                     0,
                   ),
-                  child: Row(
-                    mainAxisAlignment: actions.length == 3
-                        ? MainAxisAlignment.center
-                        : MainAxisAlignment.end,
+                  child: Column(
                     children: [
-                      for (int i = 0; i < actions.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 8),
-                        SizedBox(
-                          width: AppButtonStyles.dialogButtonWidth,
-                          child: actions[i],
-                        ),
-                      ],
+                      Row(
+                        children: [
+                          Expanded(child: cancelAction),
+                          const SizedBox(width: 8),
+                          Expanded(child: rescheduleAction),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(child: deleteAction),
+                          const SizedBox(width: 8),
+                          Expanded(child: saveAction),
+                        ],
+                      ),
                     ],
                   ),
                 ),

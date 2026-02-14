@@ -39,7 +39,29 @@
   "actionDelete": "Elimina",
   "actionCancel": "Annulla",
   "actionConfirm": "Conferma",
-  "actionClose": "Chiudi",  "actionRetry": "Riprova",  "deleteConfirmationTitle": "Confermi l’eliminazione?",
+  "actionClose": "Chiudi",
+  "actionRetry": "Riprova",
+  "actionReschedule": "Riprogramma",
+  "deleteConfirmationTitle": "Confermi l’eliminazione?",
+  "bookingRescheduleModeHint": "Modalità riprogrammazione attiva: seleziona una data e clicca uno slot.",
+  "bookingRescheduleCancelAction": "Annulla riprogrammazione",
+  "bookingRescheduleConfirmTitle": "Confermi la riprogrammazione?",
+  "bookingRescheduleConfirmMessage": "La prenotazione verrà spostata al {date} alle {time} per {staffName}.",
+  "@bookingRescheduleConfirmMessage": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "staffName": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingRescheduleMoveFailed": "Impossibile riprogrammare la prenotazione.",
+  "bookingRescheduleMissingBooking": "Prenotazione non trovata.",
   "agendaToday": "Oggi",
   "agendaPrevDay": "Giorno precedente",
   "agendaNextDay": "Giorno successivo",

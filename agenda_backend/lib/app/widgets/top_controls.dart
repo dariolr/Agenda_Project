@@ -91,7 +91,14 @@ class TopControls extends ConsumerWidget {
             child: AgendaLocationSelector(
               locations: data.locations,
               current: data.currentLocation,
-              onSelected: data.locationController.set,
+              onSelected: (locationId) {
+                data.locationController.set(locationId);
+                if (mode == TopControlsMode.staff) {
+                  ref
+                      .read(staffSectionLocationIdProvider.notifier)
+                      .set(locationId);
+                }
+              },
               iconOnly: true,
             ),
           ),
@@ -164,7 +171,14 @@ class TopControls extends ConsumerWidget {
             child: AgendaLocationSelector(
               locations: data.locations,
               current: data.currentLocation,
-              onSelected: data.locationController.set,
+              onSelected: (locationId) {
+                data.locationController.set(locationId);
+                if (mode == TopControlsMode.staff) {
+                  ref
+                      .read(staffSectionLocationIdProvider.notifier)
+                      .set(locationId);
+                }
+              },
             ),
           ),
         ],

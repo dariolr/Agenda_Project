@@ -271,9 +271,9 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
         builder: (context, constraints) {
           final maxWidth = constraints.maxWidth;
           const compactBreakpoint = 330.0;
-          final isCompact =
+          final compactByBreakpoint =
               maxWidth.isFinite && maxWidth > 0 && maxWidth < compactBreakpoint;
-          final horizontalPadding = isCompact
+          double horizontalPadding = compactByBreakpoint
               ? 12.0
               : kAgendaControlHorizontalPadding;
           final labelSemantics = MaterialLocalizations.of(
@@ -436,6 +436,25 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
               ),
             );
           }
+
+          final leadingInternalDividers = leadingSpecs.length > 1
+              ? leadingSpecs.length - 1
+              : 0;
+          final trailingInternalDividers = trailingSpecs.length > 1
+              ? trailingSpecs.length - 1
+              : 0;
+          final nonCompactMinWidth =
+              (leadingSpecs.length * arrowExtent) +
+              (leadingInternalDividers * dividerWidth) +
+              dividerWidth +
+              kAgendaMinDateLabelWidth +
+              dividerWidth +
+              (trailingSpecs.length * arrowExtent) +
+              (trailingInternalDividers * dividerWidth);
+          final isCompact =
+              compactByBreakpoint ||
+              (maxWidth.isFinite && maxWidth > 0 && maxWidth < nonCompactMinWidth);
+          horizontalPadding = isCompact ? 12.0 : kAgendaControlHorizontalPadding;
 
           final labelRegion = buildLabelRegion();
           final children = <Widget>[
@@ -952,6 +971,7 @@ class AgendaLocationSelector extends ConsumerStatefulWidget {
 
 class _AgendaLocationSelectorState
     extends ConsumerState<AgendaLocationSelector> {
+  static const double _fixedWidth = 200;
   bool _isHovered = false;
 
   @override
@@ -1012,52 +1032,36 @@ class _AgendaLocationSelectorState
                 )
               : ClipRRect(
                   borderRadius: kAgendaPillRadius,
-                  child: Container(
-                    height: kAgendaControlHeight,
-                    decoration: BoxDecoration(
-                      borderRadius: kAgendaPillRadius,
-                      border: Border.all(color: Colors.grey.withOpacity(0.35)),
-                      color: backgroundColor,
-                    ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        const compactBreakpoint = 220.0;
-                        final maxWidth = constraints.maxWidth;
-                        final isCompact =
-                            maxWidth.isFinite &&
-                            maxWidth > 0 &&
-                            maxWidth < compactBreakpoint;
-                        final horizontalPadding = isCompact
-                            ? 12.0
-                            : kAgendaControlHorizontalPadding;
-
-                        if (maxWidth.isFinite &&
-                            maxWidth < kAgendaControlHeight) {
-                          return const SizedBox.shrink();
-                        }
-
-                        return Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: horizontalPadding,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  widget.current.name,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                  child: SizedBox(
+                    width: _fixedWidth,
+                    child: Container(
+                      height: kAgendaControlHeight,
+                      decoration: BoxDecoration(
+                        borderRadius: kAgendaPillRadius,
+                        border: Border.all(color: Colors.grey.withOpacity(0.35)),
+                        color: backgroundColor,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: kAgendaControlHorizontalPadding,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.current.name,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(width: 8),
-                              const Icon(
-                                Icons.keyboard_arrow_down_rounded,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1087,6 +1091,7 @@ class StaffLocationSelector extends ConsumerStatefulWidget {
 }
 
 class _StaffLocationSelectorState extends ConsumerState<StaffLocationSelector> {
+  static const double _fixedWidth = 200;
   bool _isHovered = false;
 
   String _getDisplayName(BuildContext context) {
@@ -1141,44 +1146,33 @@ class _StaffLocationSelectorState extends ConsumerState<StaffLocationSelector> {
           label: l10n.agendaSelectLocation,
           child: ClipRRect(
             borderRadius: kAgendaPillRadius,
-            child: Container(
-              height: kAgendaControlHeight,
-              decoration: BoxDecoration(
-                borderRadius: kAgendaPillRadius,
-                border: Border.all(color: Colors.grey.withOpacity(0.35)),
-                color: backgroundColor,
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  const compactBreakpoint = 220.0;
-                  final maxWidth = constraints.maxWidth;
-                  final isCompact =
-                      maxWidth.isFinite &&
-                      maxWidth > 0 &&
-                      maxWidth < compactBreakpoint;
-                  final horizontalPadding = isCompact
-                      ? 12.0
-                      : kAgendaControlHorizontalPadding;
-
-                  return Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            _getDisplayName(context),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+            child: SizedBox(
+              width: _fixedWidth,
+              child: Container(
+                height: kAgendaControlHeight,
+                decoration: BoxDecoration(
+                  borderRadius: kAgendaPillRadius,
+                  border: Border.all(color: Colors.grey.withOpacity(0.35)),
+                  color: backgroundColor,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: kAgendaControlHorizontalPadding,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _getDisplayName(context),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
-                      ],
-                    ),
-                  );
-                },
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

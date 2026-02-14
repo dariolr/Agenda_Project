@@ -194,11 +194,85 @@ class L10n {
     return Intl.message('Riprova', name: 'actionRetry', desc: '', args: []);
   }
 
+  /// `Riprogramma`
+  String get actionReschedule {
+    return Intl.message(
+      'Riprogramma',
+      name: 'actionReschedule',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Confermi l’eliminazione?`
   String get deleteConfirmationTitle {
     return Intl.message(
       'Confermi l’eliminazione?',
       name: 'deleteConfirmationTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modalità riprogrammazione attiva: seleziona una data e clicca uno slot.`
+  String get bookingRescheduleModeHint {
+    return Intl.message(
+      'Modalità riprogrammazione attiva: seleziona una data e clicca uno slot.',
+      name: 'bookingRescheduleModeHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Annulla riprogrammazione`
+  String get bookingRescheduleCancelAction {
+    return Intl.message(
+      'Annulla riprogrammazione',
+      name: 'bookingRescheduleCancelAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confermi la riprogrammazione?`
+  String get bookingRescheduleConfirmTitle {
+    return Intl.message(
+      'Confermi la riprogrammazione?',
+      name: 'bookingRescheduleConfirmTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La prenotazione verrà spostata al {date} alle {time} per {staffName}.`
+  String bookingRescheduleConfirmMessage(
+    String date,
+    String time,
+    String staffName,
+  ) {
+    return Intl.message(
+      'La prenotazione verrà spostata al $date alle $time per $staffName.',
+      name: 'bookingRescheduleConfirmMessage',
+      desc: '',
+      args: [date, time, staffName],
+    );
+  }
+
+  /// `Impossibile riprogrammare la prenotazione.`
+  String get bookingRescheduleMoveFailed {
+    return Intl.message(
+      'Impossibile riprogrammare la prenotazione.',
+      name: 'bookingRescheduleMoveFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenotazione non trovata.`
+  String get bookingRescheduleMissingBooking {
+    return Intl.message(
+      'Prenotazione non trovata.',
+      name: 'bookingRescheduleMissingBooking',
       desc: '',
       args: [],
     );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../agenda/providers/agenda_scroll_provider.dart';
 import '../../agenda/providers/appointment_providers.dart';
+import '../../agenda/providers/booking_reschedule_provider.dart';
 import '../../agenda/providers/bookings_provider.dart';
 import '../../agenda/providers/date_range_provider.dart';
 import '../../agenda/providers/drag_session_provider.dart';
@@ -108,6 +109,7 @@ void invalidateBusinessScopedProviders(Object refObj) {
   ref.invalidate(tempDragTimeProvider);
   ref.invalidate(resizingProvider);
   ref.invalidate(pendingDropProvider);
+  ref.invalidate(bookingRescheduleSessionProvider);
 
   // NOTE: currentBusinessIdProvider NON va invalidato qui perché usa ref.listen
   // su superadminSelectedBusinessProvider, quindi si aggiorna automaticamente.

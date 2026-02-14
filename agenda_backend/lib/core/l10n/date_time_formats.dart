@@ -34,4 +34,10 @@ class DtFmt {
     // E = giorno settimana abbreviato, d = giorno, MMM = mese abbreviato, yy = anno a 2 cifre
     return DateFormat('E d MMM yy', locale).format(date);
   }
+
+  /// Data estesa localizzata: es. "sabato 14 febbraio 2026" / "Saturday, February 14, 2026".
+  static String longDate(BuildContext context, DateTime date) {
+    final locale = Intl.getCurrentLocale();
+    return DateFormat.yMMMMEEEEd(locale).format(date);
+  }
 }

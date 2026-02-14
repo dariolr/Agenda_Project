@@ -307,28 +307,28 @@ class _EventTile extends StatelessWidget {
         if (beforeDuration == afterDuration) {
           // Same duration = moved
           descriptions.add(
-            'Orario spostato da ${_formatTime(beforeStart, locale)} a ${_formatTime(afterStart, locale)}',
+            'Orario spostato da ${_formatTimeWithOptionalDate(beforeStart, locale, reference: afterStart)} a ${_formatTimeWithOptionalDate(afterStart, locale, reference: beforeStart)}',
           );
         } else {
           // Different duration = resized and possibly moved
           if (beforeStart != afterStart) {
             descriptions.add(
-              'Orario spostato da ${_formatTime(beforeStart, locale)} a ${_formatTime(afterStart, locale)}',
+              'Orario spostato da ${_formatTimeWithOptionalDate(beforeStart, locale, reference: afterStart)} a ${_formatTimeWithOptionalDate(afterStart, locale, reference: beforeStart)}',
             );
           }
           descriptions.add(
-            'Durata modificata da ${_formatDuration(beforeDuration)} a ${_formatDuration(afterDuration)}, termina alle ${_formatTime(afterEnd, locale)}',
+            'Durata modificata da ${_formatDuration(beforeDuration)} a ${_formatDuration(afterDuration)}, termina alle ${_formatTimeWithOptionalDate(afterEnd, locale, reference: afterStart)}',
           );
         }
       } else if (endChanged && !startChanged) {
         // Only end changed = resize
         descriptions.add(
-          'Durata modificata da ${_formatDuration(beforeDuration)} a ${_formatDuration(afterDuration)}, termina alle ${_formatTime(afterEnd, locale)}',
+          'Durata modificata da ${_formatDuration(beforeDuration)} a ${_formatDuration(afterDuration)}, termina alle ${_formatTimeWithOptionalDate(afterEnd, locale, reference: afterStart)}',
         );
       } else if (startChanged && !endChanged) {
         // Only start changed (rare)
         descriptions.add(
-          'Orario inizio modificato da ${_formatTime(beforeStart, locale)} a ${_formatTime(afterStart, locale)}',
+          'Orario inizio modificato da ${_formatTimeWithOptionalDate(beforeStart, locale, reference: afterStart)} a ${_formatTimeWithOptionalDate(afterStart, locale, reference: beforeStart)}',
         );
       }
     }
@@ -495,6 +495,21 @@ class _EventTile extends StatelessWidget {
 
   String _formatTime(DateTime time, String locale) {
     return DateFormat.Hm(locale).format(time);
+  }
+
+  String _formatTimeWithOptionalDate(
+    DateTime value,
+    String locale, {
+    DateTime? reference,
+  }) {
+    final includeDate =
+        reference == null || !DateUtils.isSameDay(value, reference);
+    if (!includeDate) {
+      return _formatTime(value, locale);
+    }
+    final date = DateFormat.yMMMd(locale).format(value);
+    final time = _formatTime(value, locale);
+    return '$date $time';
   }
 
   String _formatDuration(int minutes) {
