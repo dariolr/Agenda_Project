@@ -28,7 +28,6 @@ ITEMS_TO_REMOVE=(
   "AGENTS.md"
   "DEPLOY.md"
   "README.md"
-  "STAFF_PLANNING_MODEL.m"
   "agenda_all_bundle.txt"
   "agenda_core_snapshot.txt"
   "lib_bundle_backend.txt"

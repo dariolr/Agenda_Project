@@ -234,7 +234,7 @@ flutter analyze
 - Integration test opzionali contro backend reale
 - **Mock eliminati**: Tutti i provider usano API reali
 
-Vedere file INTEGRATION_COMPLETE.md per dettagli integrazione API.
+Lo storico integrazione API e disponibile nella cronologia Git del repository.
 
 ---
 
@@ -243,7 +243,6 @@ Vedere file INTEGRATION_COMPLETE.md per dettagli integrazione API.
 | File | Descrizione |
 |------|-------------|
 | [AGENTS.md](AGENTS.md) | Istruzioni per AI agents |
-| [INTEGRATION_COMPLETE.md](INTEGRATION_COMPLETE.md) | Storia integrazione API |
 
 **Documentazione backend:**
 - [agenda_core/docs/decisions.md](../agenda_core/docs/decisions.md) — Decisioni architetturali
