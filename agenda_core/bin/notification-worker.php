@@ -142,7 +142,7 @@ foreach ($notifications as $notification) {
             if ($verbose) {
                 echo "DRY-RUN OK\n";
             }
-            $notificationRepo->markSent($id);
+            $notificationRepo->markSent($id, false);
             $sent++;
             continue;
         }

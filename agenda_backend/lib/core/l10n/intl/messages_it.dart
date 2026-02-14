@@ -24,160 +24,170 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m1(fields) => "Campi modificati: ${fields}";
 
-  static String m2(count) => "${count} notifiche";
+  static String m2(type) => "Inviata email di tipo: ${type}";
 
-  static String m3(date, time, staffName) =>
+  static String m3(channel) => "Tipo: ${channel}";
+
+  static String m4(email) => "Destinatario: ${email}";
+
+  static String m5(dateTime) => "Data invio: ${dateTime}";
+
+  static String m6(subject) => "Oggetto: ${subject}";
+
+  static String m7(count) => "${count} notifiche";
+
+  static String m8(date, time, staffName) =>
       "La prenotazione verrà spostata al ${date} alle ${time} per ${staffName}.";
 
-  static String m4(duration) => "Durata totale: ${duration}";
+  static String m9(duration) => "Durata totale: ${duration}";
 
-  static String m5(price) => "Totale: ${price}";
+  static String m10(price) => "Totale: ${price}";
 
-  static String m6(count) => "${count} prenotazioni";
+  static String m11(count) => "${count} prenotazioni";
 
-  static String m7(clientName) => "Appuntamenti di ${clientName}";
+  static String m12(clientName) => "Appuntamenti di ${clientName}";
 
-  static String m8(count) =>
+  static String m13(count) =>
       "${Intl.plural(count, one: '1 giorno', other: '${count} giorni')}";
 
-  static String m9(count) =>
+  static String m14(count) =>
       "Importa ${Intl.plural(count, one: '1 festività', other: '${count} festività')}";
 
-  static String m10(count) =>
+  static String m15(count) =>
       "${Intl.plural(count, one: '1 festività già presente', other: '${count} festività già presenti')} (contrassegnate con ✓)";
 
-  static String m11(count) =>
+  static String m16(count) =>
       "${Intl.plural(count, one: '1 festività importata', other: '${count} festività importate')}";
 
-  static String m12(count) =>
+  static String m17(count) =>
       "per un totale di ${Intl.plural(count, one: '1 giorno', other: '${count} giorni')}";
 
-  static String m13(hours) => "${hours} ora";
+  static String m18(hours) => "${hours} ora";
 
-  static String m14(hours, minutes) => "${hours} ora ${minutes} min";
+  static String m19(hours, minutes) => "${hours} ora ${minutes} min";
 
-  static String m15(minutes) => "${minutes} min";
+  static String m20(minutes) => "${minutes} min";
 
-  static String m16(id) => "Eccezione non trovata: ${id}";
+  static String m21(id) => "Eccezione non trovata: ${id}";
 
-  static String m17(factor) => "Nessun builder disponibile per ${factor}";
+  static String m22(factor) => "Nessun builder disponibile per ${factor}";
 
-  static String m18(path) => "Pagina non trovata: ${path}";
+  static String m23(path) => "Pagina non trovata: ${path}";
 
-  static String m19(count) =>
+  static String m24(count) =>
       "${count} ${Intl.plural(count, one: 'giorno', other: 'giorni')}";
 
-  static String m20(dates) => "Alcuni giorni non sono stati salvati: ${dates}.";
+  static String m25(dates) => "Alcuni giorni non sono stati salvati: ${dates}.";
 
-  static String m21(details) =>
+  static String m26(details) =>
       "Alcuni giorni non sono stati salvati: ${details}.";
 
-  static String m22(hours) => "${hours}h";
+  static String m27(hours) => "${hours}h";
 
-  static String m23(hours, minutes) => "${hours}h ${minutes}m";
+  static String m28(hours, minutes) => "${hours}h ${minutes}m";
 
-  static String m24(businessName, role) =>
+  static String m29(businessName, role) =>
       "Sei stato invitato a collaborare con ${businessName} come ${role}.";
 
-  static String m25(date) => "Ultima visita: ${date}";
+  static String m30(date) => "Ultima visita: ${date}";
 
-  static String m26(newTime, staffName) =>
+  static String m31(newTime, staffName) =>
       "L\'appuntamento verrà spostato alle ${newTime} per ${staffName}.";
 
-  static String m27(date) => "Accettato il ${date}";
+  static String m32(date) => "Accettato il ${date}";
 
-  static String m28(email) =>
+  static String m33(email) =>
       "Vuoi eliminare definitivamente l\'invito per ${email}?";
 
-  static String m29(date) => "Scade il ${date}";
+  static String m34(date) => "Scade il ${date}";
 
-  static String m30(email) => "Invito inviato a ${email}";
+  static String m35(email) => "Invito inviato a ${email}";
 
-  static String m31(name) => "Invitato da ${name}";
+  static String m36(name) => "Invitato da ${name}";
 
-  static String m32(count) => "${count} inviti archiviati";
+  static String m37(count) => "${count} inviti archiviati";
 
-  static String m33(count) => "${count} inviti in attesa";
+  static String m38(count) => "${count} inviti in attesa";
 
-  static String m34(name) => "Vuoi rimuovere ${name} dal team?";
+  static String m39(name) => "Vuoi rimuovere ${name} dal team?";
 
-  static String m35(email) => "Vuoi revocare l\'invito per ${email}?";
+  static String m40(email) => "Vuoi revocare l\'invito per ${email}?";
 
-  static String m36(durationA, durationB, totalDuration) =>
+  static String m41(durationA, durationB, totalDuration) =>
       "Sett. A: ${durationA} | Sett. B: ${durationB} | Tot: ${totalDuration}";
 
-  static String m37(hoursA, hoursB, total) =>
+  static String m42(hoursA, hoursB, total) =>
       "Sett. A: ${hoursA}h | Sett. B: ${hoursB}h | Tot: ${total}h";
 
-  static String m38(week) => "Settimana attuale: ${week}";
+  static String m43(week) => "Settimana attuale: ${week}";
 
-  static String m39(count) => "Mostra planning scaduti (${count})";
+  static String m44(count) => "Mostra planning scaduti (${count})";
 
-  static String m40(from) => "Valida dal ${from}";
+  static String m45(from) => "Valida dal ${from}";
 
-  static String m41(from, to) => "Valida dal ${from} al ${to}";
+  static String m46(from, to) => "Valida dal ${from} al ${to}";
 
-  static String m42(from) => "Dal ${from}";
+  static String m47(from) => "Dal ${from}";
 
-  static String m43(from, to) => "Dal ${from} al ${to}";
+  static String m48(from, to) => "Dal ${from} al ${to}";
 
-  static String m44(duration) => "${duration}/settimana";
+  static String m49(duration) => "${duration}/settimana";
 
-  static String m45(hours) => "${hours}h/settimana";
+  static String m50(hours) => "${hours}h/settimana";
 
-  static String m46(count) => "Crea ${count} appuntamenti";
+  static String m51(count) => "Crea ${count} appuntamenti";
 
-  static String m47(count) => "${count} conflitti";
+  static String m52(count) => "${count} conflitti";
 
-  static String m48(count) => "${count} appuntamenti";
+  static String m53(count) => "${count} appuntamenti";
 
-  static String m49(count) => "${count} selezionati";
+  static String m54(count) => "${count} selezionati";
 
-  static String m50(index, total) => "${index} di ${total}";
+  static String m55(index, total) => "${index} di ${total}";
 
-  static String m51(count) => "${count} appuntamenti creati";
+  static String m56(count) => "${count} appuntamenti creati";
 
-  static String m52(count) => "${count} saltati per conflitto";
+  static String m57(count) => "${count} saltati per conflitto";
 
-  static String m53(index, total) =>
+  static String m58(index, total) =>
       "Questo è l\'appuntamento ${index} di ${total} nella serie.";
 
-  static String m54(index, total) =>
+  static String m59(index, total) =>
       "Questo è l\'appuntamento ${index} di ${total} nella serie.";
 
-  static String m55(count) => "${count} servizi";
+  static String m60(count) => "${count} servizi";
 
-  static String m56(count) => "${count} membri abilitati";
+  static String m61(count) => "${count} membri abilitati";
 
-  static String m57(count, total) => "${count} di ${total} sedi";
+  static String m62(count, total) => "${count} di ${total} sedi";
 
-  static String m58(count) =>
+  static String m63(count) =>
       "${Intl.plural(count, one: '1 servizio selezionato', other: '${count} servizi selezionati')}";
 
-  static String m59(dayName) =>
+  static String m64(dayName) =>
       "Elimina la fascia oraria settimanale di ogni ${dayName}";
 
-  static String m60(date) => "Elimina solo la fascia oraria di ${date}";
+  static String m65(date) => "Elimina solo la fascia oraria di ${date}";
 
-  static String m61(dayName) =>
+  static String m66(dayName) =>
       "Modifica la fascia oraria settimanale di ogni ${dayName}";
 
-  static String m62(date) => "Modifica solo la fascia oraria di ${date}";
+  static String m67(date) => "Modifica solo la fascia oraria di ${date}";
 
-  static String m63(count) => "${count} servizi abilitati";
+  static String m68(count) => "${count} servizi abilitati";
 
-  static String m64(count) =>
+  static String m69(count) =>
       "${Intl.plural(count, one: '1 giorno', other: '${count} giorni')}";
 
-  static String m65(count) =>
+  static String m70(count) =>
       "${Intl.plural(count, one: '1 ora', other: '${count} ore')}";
 
-  static String m66(count) =>
+  static String m71(count) =>
       "${Intl.plural(count, one: '1 minuto', other: '${count} minuti')}";
 
-  static String m67(selected, total) => "${selected} su ${total}";
+  static String m72(selected, total) => "${selected} su ${total}";
 
-  static String m68(hours) => "${hours} ore totale";
+  static String m73(hours) => "${hours} ore totale";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -390,6 +400,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingHistoryEventItemDeleted": MessageLookupByLibrary.simpleMessage(
       "Servizio rimosso",
     ),
+    "bookingHistoryEventNotificationSent": MessageLookupByLibrary.simpleMessage(
+      "Email inviata al cliente",
+    ),
+    "bookingHistoryEventNotificationSentTitle": m2,
     "bookingHistoryEventPriceChanged": MessageLookupByLibrary.simpleMessage(
       "Prezzo modificato",
     ),
@@ -408,6 +422,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingHistoryLoading": MessageLookupByLibrary.simpleMessage(
       "Caricamento storico...",
     ),
+    "bookingHistoryNotificationChannel": m3,
+    "bookingHistoryNotificationChannelCancelled":
+        MessageLookupByLibrary.simpleMessage("Cancellazione prenotazione"),
+    "bookingHistoryNotificationChannelConfirmed":
+        MessageLookupByLibrary.simpleMessage("Conferma prenotazione"),
+    "bookingHistoryNotificationChannelReminder":
+        MessageLookupByLibrary.simpleMessage("Promemoria prenotazione"),
+    "bookingHistoryNotificationChannelRescheduled":
+        MessageLookupByLibrary.simpleMessage("Riprogrammazione prenotazione"),
+    "bookingHistoryNotificationRecipient": m4,
+    "bookingHistoryNotificationSentAt": m5,
+    "bookingHistoryNotificationSubject": m6,
     "bookingHistoryTitle": MessageLookupByLibrary.simpleMessage(
       "Storico prenotazione",
     ),
@@ -489,14 +515,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsTitle": MessageLookupByLibrary.simpleMessage(
       "Notifiche Prenotazioni",
     ),
-    "bookingNotificationsTotalCount": m2,
+    "bookingNotificationsTotalCount": m7,
     "bookingNotificationsTypeAll": MessageLookupByLibrary.simpleMessage(
       "Tutti i tipi",
     ),
     "bookingRescheduleCancelAction": MessageLookupByLibrary.simpleMessage(
       "Annulla riprogrammazione",
     ),
-    "bookingRescheduleConfirmMessage": m3,
+    "bookingRescheduleConfirmMessage": m8,
     "bookingRescheduleConfirmTitle": MessageLookupByLibrary.simpleMessage(
       "Confermi la riprogrammazione?",
     ),
@@ -513,8 +539,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "Attenzione: il membro del team selezionato non è abilitato per questo servizio.",
     ),
     "bookingTotal": MessageLookupByLibrary.simpleMessage("Totale"),
-    "bookingTotalDuration": m4,
-    "bookingTotalPrice": m5,
+    "bookingTotalDuration": m9,
+    "bookingTotalPrice": m10,
     "bookingUnavailableTimeWarningAppointment":
         MessageLookupByLibrary.simpleMessage(
           "Attenzione: l’orario selezionato per l’appuntamento include fasce non disponibili per il team scelto.",
@@ -640,7 +666,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingsListTitle": MessageLookupByLibrary.simpleMessage(
       "Elenco Prenotazioni",
     ),
-    "bookingsListTotalCount": m6,
+    "bookingsListTotalCount": m11,
     "businessOnlineBookingsNotificationEmailHelper":
         MessageLookupByLibrary.simpleMessage(
           "Riceve notifiche solo per prenotazioni eseguite dal cliente",
@@ -683,7 +709,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Nessun appuntamento",
     ),
     "clientAppointmentsPast": MessageLookupByLibrary.simpleMessage("Passati"),
-    "clientAppointmentsTitle": m7,
+    "clientAppointmentsTitle": m12,
     "clientAppointmentsUpcoming": MessageLookupByLibrary.simpleMessage(
       "Prossimi",
     ),
@@ -708,7 +734,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Tutte le sedi",
     ),
     "closuresDateRange": MessageLookupByLibrary.simpleMessage("Periodo"),
-    "closuresDays": m8,
+    "closuresDays": m13,
     "closuresDeleteConfirm": MessageLookupByLibrary.simpleMessage(
       "Eliminare questa chiusura?",
     ),
@@ -741,15 +767,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "closuresImportHolidays": MessageLookupByLibrary.simpleMessage(
       "Importa festività",
     ),
-    "closuresImportHolidaysAction": m9,
-    "closuresImportHolidaysAlreadyAdded": m10,
+    "closuresImportHolidaysAction": m14,
+    "closuresImportHolidaysAlreadyAdded": m15,
     "closuresImportHolidaysList": MessageLookupByLibrary.simpleMessage(
       "Seleziona le festività da importare:",
     ),
     "closuresImportHolidaysLocations": MessageLookupByLibrary.simpleMessage(
       "Applica alle sedi:",
     ),
-    "closuresImportHolidaysSuccess": m11,
+    "closuresImportHolidaysSuccess": m16,
     "closuresImportHolidaysTitle": MessageLookupByLibrary.simpleMessage(
       "Importa festività nazionali",
     ),
@@ -787,7 +813,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "closuresSingleDay": MessageLookupByLibrary.simpleMessage("Giorno singolo"),
     "closuresStartDate": MessageLookupByLibrary.simpleMessage("Data inizio"),
     "closuresTitle": MessageLookupByLibrary.simpleMessage("Date di chiusura"),
-    "closuresTotalDays": m12,
+    "closuresTotalDays": m17,
     "closuresUpcoming": MessageLookupByLibrary.simpleMessage(
       "Prossime chiusure",
     ),
@@ -846,9 +872,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Modifiche non salvate",
     ),
     "duplicateAction": MessageLookupByLibrary.simpleMessage("Duplica"),
-    "durationHour": m13,
-    "durationHourMinute": m14,
-    "durationMinute": m15,
+    "durationHour": m18,
+    "durationHourMinute": m19,
+    "durationMinute": m20,
     "editCategoryTitle": MessageLookupByLibrary.simpleMessage(
       "Modifica categoria",
     ),
@@ -858,12 +884,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "emptyCategoriesNotReorderableNote": MessageLookupByLibrary.simpleMessage(
       "Le categorie senza servizi non sono riordinabili e restano in coda.",
     ),
-    "errorExceptionNotFound": m16,
-    "errorFormFactorBuilderMissing": m17,
+    "errorExceptionNotFound": m21,
+    "errorFormFactorBuilderMissing": m22,
     "errorFormFactorBuilderRequired": MessageLookupByLibrary.simpleMessage(
       "Specificare almeno un builder per form factor",
     ),
-    "errorNotFound": m18,
+    "errorNotFound": m23,
     "errorServiceNotFound": MessageLookupByLibrary.simpleMessage(
       "Servizio non trovato",
     ),
@@ -895,7 +921,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "exceptionDuration": MessageLookupByLibrary.simpleMessage(
       "Durata (giorni)",
     ),
-    "exceptionDurationDays": m19,
+    "exceptionDurationDays": m24,
     "exceptionEditShift": MessageLookupByLibrary.simpleMessage(
       "Modifica eccezione",
     ),
@@ -903,8 +929,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "Modifica gli orari di questa eccezione",
     ),
     "exceptionEndTime": MessageLookupByLibrary.simpleMessage("Orario fine"),
-    "exceptionPartialSaveInfo": m20,
-    "exceptionPartialSaveInfoDetailed": m21,
+    "exceptionPartialSaveInfo": m25,
+    "exceptionPartialSaveInfoDetailed": m26,
     "exceptionPartialSaveMessage": MessageLookupByLibrary.simpleMessage(
       "I giorni sotto non erano congruenti e non sono stati salvati:",
     ),
@@ -998,8 +1024,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "freeServiceSwitch": MessageLookupByLibrary.simpleMessage(
       "Servizio gratuito",
     ),
-    "hoursHoursOnly": m22,
-    "hoursMinutesCompact": m23,
+    "hoursHoursOnly": m27,
+    "hoursMinutesCompact": m28,
     "invitationAcceptAndLoginAction": MessageLookupByLibrary.simpleMessage(
       "Accetta e accedi",
     ),
@@ -1027,7 +1053,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "invitationAcceptInProgress": MessageLookupByLibrary.simpleMessage(
       "Accettazione in corso...",
     ),
-    "invitationAcceptIntro": m24,
+    "invitationAcceptIntro": m29,
     "invitationAcceptLoading": MessageLookupByLibrary.simpleMessage(
       "Verifica invito in corso...",
     ),
@@ -1094,7 +1120,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "labelSelect": MessageLookupByLibrary.simpleMessage("Seleziona"),
     "labelStaff": MessageLookupByLibrary.simpleMessage("Team:"),
-    "lastVisitLabel": m25,
+    "lastVisitLabel": m30,
     "minutesLabel": MessageLookupByLibrary.simpleMessage("min"),
     "moreBookingNotificationsDescription": MessageLookupByLibrary.simpleMessage(
       "Visualizza lo storico delle notifiche prenotazioni",
@@ -1120,7 +1146,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "moreTeamDescription": MessageLookupByLibrary.simpleMessage(
       "Gestisci operatori, sedi e orari di lavoro",
     ),
-    "moveAppointmentConfirmMessage": m26,
+    "moveAppointmentConfirmMessage": m31,
     "moveAppointmentConfirmTitle": MessageLookupByLibrary.simpleMessage(
       "Confermi lo spostamento?",
     ),
@@ -1153,16 +1179,16 @@ class MessageLookup extends MessageLookupByLibrary {
     "notesPlaceholder": MessageLookupByLibrary.simpleMessage(
       "Note sull\'appuntamento...",
     ),
-    "operatorsAcceptedOn": m27,
+    "operatorsAcceptedOn": m32,
     "operatorsDeleteInvite": MessageLookupByLibrary.simpleMessage(
       "Elimina invito",
     ),
-    "operatorsDeleteInviteConfirm": m28,
+    "operatorsDeleteInviteConfirm": m33,
     "operatorsEditRole": MessageLookupByLibrary.simpleMessage("Modifica ruolo"),
     "operatorsEmpty": MessageLookupByLibrary.simpleMessage(
       "Nessun operatore configurato",
     ),
-    "operatorsExpires": m29,
+    "operatorsExpires": m34,
     "operatorsInviteAlreadyHasAccess": MessageLookupByLibrary.simpleMessage(
       "Questo utente ha già accesso al business.",
     ),
@@ -1202,27 +1228,27 @@ class MessageLookup extends MessageLookupByLibrary {
     "operatorsInviteSubtitle": MessageLookupByLibrary.simpleMessage(
       "Invia un invito via email",
     ),
-    "operatorsInviteSuccess": m30,
+    "operatorsInviteSuccess": m35,
     "operatorsInviteTitle": MessageLookupByLibrary.simpleMessage(
       "Invita operatore",
     ),
-    "operatorsInvitedBy": m31,
-    "operatorsInvitesHistoryCount": m32,
+    "operatorsInvitedBy": m36,
+    "operatorsInvitesHistoryCount": m37,
     "operatorsPendingInvites": MessageLookupByLibrary.simpleMessage(
       "Inviti in attesa",
     ),
-    "operatorsPendingInvitesCount": m33,
+    "operatorsPendingInvitesCount": m38,
     "operatorsRemove": MessageLookupByLibrary.simpleMessage(
       "Rimuovi operatore",
     ),
-    "operatorsRemoveConfirm": m34,
+    "operatorsRemoveConfirm": m39,
     "operatorsRemoveSuccess": MessageLookupByLibrary.simpleMessage(
       "Operatore rimosso",
     ),
     "operatorsRevokeInvite": MessageLookupByLibrary.simpleMessage(
       "Revoca invito",
     ),
-    "operatorsRevokeInviteConfirm": m35,
+    "operatorsRevokeInviteConfirm": m40,
     "operatorsRoleAdmin": MessageLookupByLibrary.simpleMessage(
       "Amministratore",
     ),
@@ -1276,12 +1302,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "permissionsTitle": MessageLookupByLibrary.simpleMessage("Permessi"),
     "planningActive": MessageLookupByLibrary.simpleMessage("Attivo"),
-    "planningBiweeklyDuration": m36,
-    "planningBiweeklyHours": m37,
+    "planningBiweeklyDuration": m41,
+    "planningBiweeklyHours": m42,
     "planningCreateTitle": MessageLookupByLibrary.simpleMessage(
       "Nuovo planning",
     ),
-    "planningCurrentWeek": m38,
+    "planningCurrentWeek": m43,
     "planningDeleteConfirm": MessageLookupByLibrary.simpleMessage(
       "Sei sicuro di voler eliminare questo planning? Gli orari settimanali verranno rimossi.",
     ),
@@ -1310,7 +1336,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "planningSetEndDate": MessageLookupByLibrary.simpleMessage(
       "Imposta data fine",
     ),
-    "planningShowExpired": m39,
+    "planningShowExpired": m44,
     "planningType": MessageLookupByLibrary.simpleMessage("Tipo planning"),
     "planningTypeBiweekly": MessageLookupByLibrary.simpleMessage(
       "Bisettimanale",
@@ -1322,17 +1348,17 @@ class MessageLookup extends MessageLookupByLibrary {
     "planningValidFrom": MessageLookupByLibrary.simpleMessage(
       "Data inizio validità",
     ),
-    "planningValidFromOnly": m40,
-    "planningValidFromTo": m41,
+    "planningValidFromOnly": m45,
+    "planningValidFromTo": m46,
     "planningValidTo": MessageLookupByLibrary.simpleMessage(
       "Data fine validità",
     ),
-    "planningValidityFrom": m42,
-    "planningValidityRange": m43,
+    "planningValidityFrom": m47,
+    "planningValidityRange": m48,
     "planningWeekA": MessageLookupByLibrary.simpleMessage("Settimana A"),
     "planningWeekB": MessageLookupByLibrary.simpleMessage("Settimana B"),
-    "planningWeeklyDuration": m44,
-    "planningWeeklyHours": m45,
+    "planningWeeklyDuration": m49,
+    "planningWeeklyHours": m50,
     "popularServicesTitle": MessageLookupByLibrary.simpleMessage(
       "I più richiesti",
     ),
@@ -1385,13 +1411,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "recurrenceNever": MessageLookupByLibrary.simpleMessage("Per un anno"),
     "recurrenceOccurrences": MessageLookupByLibrary.simpleMessage("occorrenze"),
     "recurrenceOnDate": MessageLookupByLibrary.simpleMessage("Il"),
-    "recurrencePreviewConfirm": m46,
-    "recurrencePreviewConflicts": m47,
-    "recurrencePreviewCount": m48,
+    "recurrencePreviewConfirm": m51,
+    "recurrencePreviewConflicts": m52,
+    "recurrencePreviewCount": m53,
     "recurrencePreviewHint": MessageLookupByLibrary.simpleMessage(
       "Deseleziona le date che non vuoi creare",
     ),
-    "recurrencePreviewSelected": m49,
+    "recurrencePreviewSelected": m54,
     "recurrencePreviewTitle": MessageLookupByLibrary.simpleMessage(
       "Anteprima appuntamenti",
     ),
@@ -1407,21 +1433,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "recurrenceSeriesIcon": MessageLookupByLibrary.simpleMessage(
       "Appuntamento ricorrente",
     ),
-    "recurrenceSeriesOf": m50,
+    "recurrenceSeriesOf": m55,
     "recurrenceSummaryAppointments": MessageLookupByLibrary.simpleMessage(
       "Appuntamenti:",
     ),
     "recurrenceSummaryConflict": MessageLookupByLibrary.simpleMessage(
       "Saltato per conflitto",
     ),
-    "recurrenceSummaryCreated": m51,
+    "recurrenceSummaryCreated": m56,
     "recurrenceSummaryDeleted": MessageLookupByLibrary.simpleMessage(
       "Eliminato",
     ),
     "recurrenceSummaryError": MessageLookupByLibrary.simpleMessage(
       "Errore nella creazione della serie",
     ),
-    "recurrenceSummarySkipped": m52,
+    "recurrenceSummarySkipped": m57,
     "recurrenceSummaryTitle": MessageLookupByLibrary.simpleMessage(
       "Serie creata",
     ),
@@ -1430,14 +1456,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "recurringDeleteChooseScope": MessageLookupByLibrary.simpleMessage(
       "Quali appuntamenti vuoi eliminare?",
     ),
-    "recurringDeleteMessage": m53,
+    "recurringDeleteMessage": m58,
     "recurringDeleteTitle": MessageLookupByLibrary.simpleMessage(
       "Elimina appuntamento ricorrente",
     ),
     "recurringEditChooseScope": MessageLookupByLibrary.simpleMessage(
       "Quali appuntamenti vuoi modificare?",
     ),
-    "recurringEditMessage": m54,
+    "recurringEditMessage": m59,
     "recurringEditTitle": MessageLookupByLibrary.simpleMessage(
       "Modifica appuntamento ricorrente",
     ),
@@ -1596,7 +1622,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "resourceSelectServices": MessageLookupByLibrary.simpleMessage(
       "Seleziona servizi",
     ),
-    "resourceServiceCountPlural": m55,
+    "resourceServiceCountPlural": m60,
     "resourceServiceCountSingular": MessageLookupByLibrary.simpleMessage(
       "1 servizio",
     ),
@@ -1631,11 +1657,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "serviceDuplicateError": MessageLookupByLibrary.simpleMessage(
       "Esiste già un servizio con questo nome",
     ),
-    "serviceEligibleStaffCount": m56,
+    "serviceEligibleStaffCount": m61,
     "serviceEligibleStaffNone": MessageLookupByLibrary.simpleMessage(
       "Nessun membro abilitato",
     ),
-    "serviceLocationsCount": m57,
+    "serviceLocationsCount": m62,
     "serviceLocationsLabel": MessageLookupByLibrary.simpleMessage(
       "Sedi disponibili",
     ),
@@ -1768,7 +1794,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "servicesNewServiceMenu": MessageLookupByLibrary.simpleMessage(
       "Nuovo servizio",
     ),
-    "servicesSelectedCount": m58,
+    "servicesSelectedCount": m63,
     "servicesTabLabel": MessageLookupByLibrary.simpleMessage("Servizi"),
     "setPriceToEnable": MessageLookupByLibrary.simpleMessage(
       "Imposta un prezzo per abilitarlo",
@@ -1776,19 +1802,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "shiftDeleteAll": MessageLookupByLibrary.simpleMessage(
       "Elimina tutti questi turni",
     ),
-    "shiftDeleteAllDesc": m59,
+    "shiftDeleteAllDesc": m64,
     "shiftDeleteThisOnly": MessageLookupByLibrary.simpleMessage(
       "Elimina solo questo turno",
     ),
-    "shiftDeleteThisOnlyDesc": m60,
+    "shiftDeleteThisOnlyDesc": m65,
     "shiftEditAll": MessageLookupByLibrary.simpleMessage(
       "Modifica tutti questi turni",
     ),
-    "shiftEditAllDesc": m61,
+    "shiftEditAllDesc": m66,
     "shiftEditThisOnly": MessageLookupByLibrary.simpleMessage(
       "Modifica solo questo turno",
     ),
-    "shiftEditThisOnlyDesc": m62,
+    "shiftEditThisOnlyDesc": m67,
     "shiftEditTitle": MessageLookupByLibrary.simpleMessage("Modifica turno"),
     "shiftEndTime": MessageLookupByLibrary.simpleMessage("Ora fine"),
     "shiftStartTime": MessageLookupByLibrary.simpleMessage("Ora inizio"),
@@ -1878,7 +1904,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamEditStaffTitle": MessageLookupByLibrary.simpleMessage(
       "Modifica membro del team",
     ),
-    "teamEligibleServicesCount": m63,
+    "teamEligibleServicesCount": m68,
     "teamEligibleServicesLabel": MessageLookupByLibrary.simpleMessage(
       "Servizi abilitati",
     ),
@@ -1902,12 +1928,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Limiti prenotazione online",
     ),
-    "teamLocationDays": m64,
+    "teamLocationDays": m69,
     "teamLocationEmailHint": MessageLookupByLibrary.simpleMessage(
       "Email per notifiche ai clienti",
     ),
     "teamLocationEmailLabel": MessageLookupByLibrary.simpleMessage("Email"),
-    "teamLocationHours": m65,
+    "teamLocationHours": m70,
     "teamLocationIsActiveHint": MessageLookupByLibrary.simpleMessage(
       "Se disattivata, la sede non sarà visibile ai clienti",
     ),
@@ -1933,7 +1959,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationMinGapLabel": MessageLookupByLibrary.simpleMessage(
       "Gap minimo accettabile",
     ),
-    "teamLocationMinutes": m66,
+    "teamLocationMinutes": m71,
     "teamLocationNameLabel": MessageLookupByLibrary.simpleMessage("Nome sede"),
     "teamLocationSlotDisplayModeAll": MessageLookupByLibrary.simpleMessage(
       "Massima disponibilità",
@@ -1983,7 +2009,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamSelectedServicesButton": MessageLookupByLibrary.simpleMessage(
       "Servizi selezionati",
     ),
-    "teamSelectedServicesCount": m67,
+    "teamSelectedServicesCount": m72,
     "teamServicesLabel": MessageLookupByLibrary.simpleMessage("Servizi"),
     "teamStaffBookableOnlineLabel": MessageLookupByLibrary.simpleMessage(
       "Abilitato alle prenotazioni online",
@@ -2024,6 +2050,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "weeklyScheduleTitle": MessageLookupByLibrary.simpleMessage(
       "Orario settimanale",
     ),
-    "weeklyScheduleTotalHours": m68,
+    "weeklyScheduleTotalHours": m73,
   };
 }
