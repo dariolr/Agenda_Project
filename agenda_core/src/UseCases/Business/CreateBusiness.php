@@ -206,7 +206,11 @@ final class CreateBusiness
         string $resetToken
     ): void {
         try {
-            $locale = $_ENV['DEFAULT_LOCALE'] ?? 'it';
+            $locale = EmailTemplateRenderer::resolvePreferredLocale(
+                null,
+                $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,
+                $_ENV['DEFAULT_LOCALE'] ?? 'it'
+            );
             $template = EmailTemplateRenderer::businessAdminWelcome($locale);
             // Reset password va al GESTIONALE (backend), non al frontend prenotazioni
             $backendUrl = $_ENV['BACKEND_URL'] ?? 'https://gestionale.romeolab.it';

@@ -68,7 +68,11 @@ final class RequestCustomerPasswordReset
         string $resetToken
     ): void {
         try {
-            $locale = $_ENV['DEFAULT_LOCALE'] ?? 'it';
+            $locale = EmailTemplateRenderer::resolvePreferredLocale(
+                null,
+                $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,
+                $_ENV['DEFAULT_LOCALE'] ?? 'it'
+            );
             $template = EmailTemplateRenderer::customerPasswordReset($locale);
             
             // Reset URL va al FRONTEND prenotazioni
