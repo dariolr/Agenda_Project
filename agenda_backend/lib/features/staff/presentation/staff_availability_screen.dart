@@ -34,6 +34,7 @@ import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
 import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
 import 'package:agenda_backend/core/widgets/staff_picker_sheet.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/exception_calendar_view.dart';
@@ -261,6 +262,23 @@ class _StaffAvailabilityScreenState
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final selectedStaffSectionLocation = ref.read(
+        staffSectionLocationIdProvider,
+      );
+      // Se l'utente ha già una selezione (incluso "Tutte le sedi"), non forzare.
+      if (selectedStaffSectionLocation != null) return;
+
+      final currentLocationId = ref.read(currentLocationIdProvider);
+      if (currentLocationId <= 0) return;
+
+      final locations = ref.read(locationsProvider);
+      final exists = locations.any((location) => location.id == currentLocationId);
+      if (!exists) return; // fallback implicito: "Tutte le sedi" (null)
+
+      ref.read(staffSectionLocationIdProvider.notifier).set(currentLocationId);
+    });
   }
 
   @override
@@ -458,6 +476,26 @@ class _StaffAvailabilityScreenState
           _switchStaff(requested);
           ref.read(initialStaffToEditProvider).value = null;
         }
+      });
+    }
+
+    // Se cambia filtro sede, assicura che lo staff selezionato sia valido
+    // nella lista filtrata corrente.
+    final hasSelectedInFilteredList =
+        _selectedStaffId != null &&
+        staffList.any((staff) => staff.id == _selectedStaffId);
+    if (_selectedStaffId != null && !hasSelectedInFilteredList) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (staffList.isEmpty) {
+          setState(() {
+            _selectedStaffId = null;
+            _selectedPlanning = null;
+            _selectedWeekLabel = WeekLabel.a;
+          });
+          return;
+        }
+        _switchStaff(staffList.first.id);
       });
     }
 

@@ -41,7 +41,27 @@
   "actionConfirm": "Confirm",
   "actionClose": "Close",
   "actionRetry": "Retry",
+  "actionReschedule": "Reschedule",
   "deleteConfirmationTitle": "Confirm deletion?",
+  "bookingRescheduleModeHint": "Reschedule mode active: select a date and click a slot.",
+  "bookingRescheduleCancelAction": "Cancel reschedule",
+  "bookingRescheduleConfirmTitle": "Confirm reschedule?",
+  "bookingRescheduleConfirmMessage": "The booking will be moved to {date} at {time} for {staffName}.",
+  "@bookingRescheduleConfirmMessage": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "staffName": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingRescheduleMoveFailed": "Unable to reschedule the booking.",
+  "bookingRescheduleMissingBooking": "Booking not found.",
   "agendaToday": "Today",
   "agendaPrevDay": "Previous day",
   "agendaNextDay": "Next day",
