@@ -68,8 +68,12 @@ class _BookingHistoryContentState
       );
 
       if (mounted) {
+        final rawEvents = List<Map<String, dynamic>>.from(events);
+        final filteredEvents = rawEvents
+            .where((event) => !_isRedundantCancellationUpdate(event))
+            .toList();
         setState(() {
-          _events = events;
+          _events = filteredEvents;
           _isLoading = false;
         });
       }
@@ -87,6 +91,24 @@ class _BookingHistoryContentState
         });
       }
     }
+  }
+
+  bool _isRedundantCancellationUpdate(Map<String, dynamic> event) {
+    final eventType = event['event_type'] as String? ?? '';
+    if (eventType != 'booking_updated') {
+      return false;
+    }
+
+    final payload = event['payload'] as Map<String, dynamic>? ?? {};
+    final changedFields =
+        (payload['changed_fields'] as List<dynamic>?)?.cast<String>() ?? const [];
+    if (changedFields.length != 1 || changedFields.first != 'status') {
+      return false;
+    }
+
+    final after = payload['after'] as Map<String, dynamic>? ?? {};
+    final status = (after['status'] as String?)?.trim().toLowerCase();
+    return status == 'cancelled';
   }
 
   @override
@@ -239,6 +261,9 @@ class _EventTile extends StatelessWidget {
 
     // Build user-friendly description based on event type and payload
     final description = _buildDescription(eventType, payload, locale);
+    final isNotificationSent = eventType == 'booking_notification_sent';
+    final recipientEmail =
+        (payload['recipient_email'] as String?)?.trim() ?? '';
 
     return ListTile(
       leading: CircleAvatar(
@@ -254,13 +279,24 @@ class _EventTile extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(description, style: theme.textTheme.bodySmall),
             ),
+          if (isNotificationSent && recipientEmail.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                l10n.bookingHistoryNotificationRecipient(recipientEmail),
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
           Text(
-            '$formattedDate • $actorLabel',
+            isNotificationSent
+                ? l10n.bookingHistoryNotificationSentAt(formattedDate)
+                : '$formattedDate • $actorLabel',
             style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
           ),
         ],
       ),
-      isThreeLine: description != null,
+      isThreeLine:
+          description != null || (isNotificationSent && recipientEmail.isNotEmpty),
     );
   }
 
@@ -282,6 +318,8 @@ class _EventTile extends StatelessWidget {
         return _describeItemDeleted(payload);
       case 'booking_updated':
         return _describeBookingUpdate(payload);
+      case 'booking_notification_sent':
+        return null;
       default:
         return null;
     }
@@ -547,6 +585,15 @@ class _EventTile extends StatelessWidget {
           Colors.red,
           l10n.bookingHistoryEventCancelled,
         );
+      case 'booking_notification_sent':
+        final channel = ((payload['channel'] as String?) ?? '').trim();
+        return (
+          Icons.mail_outline,
+          Colors.lightBlue,
+          l10n.bookingHistoryEventNotificationSentTitle(
+            _notificationChannelLabel(channel, l10n),
+          ),
+        );
       case 'booking_item_added':
         return (
           Icons.add_box_outlined,
@@ -572,6 +619,21 @@ class _EventTile extends StatelessWidget {
         );
       default:
         return (Icons.info_outline, Colors.grey, eventType);
+    }
+  }
+
+  String _notificationChannelLabel(String channel, dynamic l10n) {
+    switch (channel) {
+      case 'booking_confirmed':
+        return l10n.bookingHistoryNotificationChannelConfirmed;
+      case 'booking_reminder':
+        return l10n.bookingHistoryNotificationChannelReminder;
+      case 'booking_cancelled':
+        return l10n.bookingHistoryNotificationChannelCancelled;
+      case 'booking_rescheduled':
+        return l10n.bookingHistoryNotificationChannelRescheduled;
+      default:
+        return channel;
     }
   }
 

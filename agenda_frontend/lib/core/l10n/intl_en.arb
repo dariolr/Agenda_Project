@@ -262,8 +262,10 @@
   "myBookings": "My bookings",
   "upcomingBookings": "Upcoming",
   "pastBookings": "Past",
+  "cancelledBookings": "Cancelled",
   "noUpcomingBookings": "You have no upcoming bookings",
   "noPastBookings": "You have no past bookings",
+  "noCancelledBookings": "You have no cancelled bookings",
   "errorLoadingBookings": "Error loading bookings",
   "modifiable": "Modifiable",
   "notModifiable": "Not modifiable",
@@ -333,9 +335,31 @@
   "bookingHistoryEventPriceChanged": "Price changed",
   "bookingHistoryEventDurationChanged": "Duration changed",
   "bookingHistoryEventReplaced": "Booking replaced",
+  "bookingHistoryEventNotificationSentTitle": "Email sent of type: {type}",
+  "@bookingHistoryEventNotificationSentTitle": {
+    "placeholders": {
+      "type": {}
+    }
+  },
   "bookingHistoryActorCustomer": "Customer",
   "bookingHistoryActorStaff": "Staff",
   "bookingHistoryActorSystem": "System",
+  "bookingHistoryNotificationRecipient": "Recipient: {email}",
+  "@bookingHistoryNotificationRecipient": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "bookingHistoryNotificationSentAt": "Sent at: {dateTime}",
+  "@bookingHistoryNotificationSentAt": {
+    "placeholders": {
+      "dateTime": {}
+    }
+  },
+  "bookingHistoryNotificationChannelConfirmed": "Booking confirmation",
+  "bookingHistoryNotificationChannelReminder": "Booking reminder",
+  "bookingHistoryNotificationChannelCancelled": "Booking cancellation",
+  "bookingHistoryNotificationChannelRescheduled": "Booking rescheduled",
   "bookingHistoryChangedFields": "Changed fields: {fields}",
   "@bookingHistoryChangedFields": {
     "placeholders": {

@@ -1657,6 +1657,16 @@ class L10n {
     return Intl.message('Passate', name: 'pastBookings', desc: '', args: []);
   }
 
+  /// `Annullate`
+  String get cancelledBookings {
+    return Intl.message(
+      'Annullate',
+      name: 'cancelledBookings',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Non hai prenotazioni in programma`
   String get noUpcomingBookings {
     return Intl.message(
@@ -1672,6 +1682,16 @@ class L10n {
     return Intl.message(
       'Non hai prenotazioni passate',
       name: 'noPastBookings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Non hai prenotazioni annullate`
+  String get noCancelledBookings {
+    return Intl.message(
+      'Non hai prenotazioni annullate',
+      name: 'noCancelledBookings',
       desc: '',
       args: [],
     );
@@ -2099,6 +2119,16 @@ class L10n {
     );
   }
 
+  /// `Inviata email di tipo: {type}`
+  String bookingHistoryEventNotificationSentTitle(Object type) {
+    return Intl.message(
+      'Inviata email di tipo: $type',
+      name: 'bookingHistoryEventNotificationSentTitle',
+      desc: '',
+      args: [type],
+    );
+  }
+
   /// `Cliente`
   String get bookingHistoryActorCustomer {
     return Intl.message(
@@ -2124,6 +2154,66 @@ class L10n {
     return Intl.message(
       'Sistema',
       name: 'bookingHistoryActorSystem',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Destinatario: {email}`
+  String bookingHistoryNotificationRecipient(Object email) {
+    return Intl.message(
+      'Destinatario: $email',
+      name: 'bookingHistoryNotificationRecipient',
+      desc: '',
+      args: [email],
+    );
+  }
+
+  /// `Data invio: {dateTime}`
+  String bookingHistoryNotificationSentAt(Object dateTime) {
+    return Intl.message(
+      'Data invio: $dateTime',
+      name: 'bookingHistoryNotificationSentAt',
+      desc: '',
+      args: [dateTime],
+    );
+  }
+
+  /// `Conferma prenotazione`
+  String get bookingHistoryNotificationChannelConfirmed {
+    return Intl.message(
+      'Conferma prenotazione',
+      name: 'bookingHistoryNotificationChannelConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Promemoria prenotazione`
+  String get bookingHistoryNotificationChannelReminder {
+    return Intl.message(
+      'Promemoria prenotazione',
+      name: 'bookingHistoryNotificationChannelReminder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancellazione prenotazione`
+  String get bookingHistoryNotificationChannelCancelled {
+    return Intl.message(
+      'Cancellazione prenotazione',
+      name: 'bookingHistoryNotificationChannelCancelled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Riprogrammazione prenotazione`
+  String get bookingHistoryNotificationChannelRescheduled {
+    return Intl.message(
+      'Riprogrammazione prenotazione',
+      name: 'bookingHistoryNotificationChannelRescheduled',
       desc: '',
       args: [],
     );
