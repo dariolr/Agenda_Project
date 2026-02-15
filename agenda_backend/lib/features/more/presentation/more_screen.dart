@@ -22,6 +22,7 @@ class MoreScreen extends ConsumerWidget {
     final canViewServices = ref.watch(currentUserCanViewServicesProvider);
     final canViewStaff = ref.watch(currentUserCanViewStaffProvider);
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
+    final canManageClassEvents = ref.watch(currentUserCanManageClassEventsProvider);
 
     final items = [
       // Servizi - visibile solo a chi può gestire impostazioni
@@ -66,6 +67,14 @@ class MoreScreen extends ConsumerWidget {
         color: const Color(0xFF9C27B0), // Purple
         onTap: () => context.go('/prenotazioni'),
       ),
+      if (canManageClassEvents)
+        _MoreItem(
+          icon: Icons.groups_outlined,
+          title: 'Class events',
+          description: 'Manage group sessions and participant waitlists',
+          color: const Color(0xFF795548),
+          onTap: () => context.go('/altro/classi'),
+        ),
       _MoreItem(
         icon: Icons.notifications_outlined,
         title: l10n.bookingNotificationsTitle,

@@ -78,6 +78,27 @@ class ApiConfig {
   static String bookingNotifications(int businessId) =>
       '/v1/businesses/$businessId/booking-notifications';
 
+  // ========== CLASS EVENTS ENDPOINTS ==========
+
+  /// Lista class events per business.
+  static String classEvents(int businessId) => '/v1/businesses/$businessId/class-events';
+
+  /// Singolo class event.
+  static String classEvent(int businessId, int classEventId) =>
+      '/v1/businesses/$businessId/class-events/$classEventId';
+
+  /// Prenotazione di un class event (customer/staff scoped endpoint).
+  static String classEventBook(int businessId, int classEventId) =>
+      '/v1/businesses/$businessId/class-events/$classEventId/book';
+
+  /// Cancellazione prenotazione class event.
+  static String classEventCancelBooking(int businessId, int classEventId) =>
+      '/v1/businesses/$businessId/class-events/$classEventId/cancel-booking';
+
+  /// Lista partecipanti class event.
+  static String classEventParticipants(int businessId, int classEventId) =>
+      '/v1/businesses/$businessId/class-events/$classEventId/participants';
+
   // ========== SERVICE PACKAGES ENDPOINTS ==========
 
   /// Lista pacchetti servizi per location
