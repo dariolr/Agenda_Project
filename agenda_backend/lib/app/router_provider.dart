@@ -23,6 +23,7 @@ import '../features/business/presentation/user_business_switch_screen.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
 import '../features/class_events/presentation/class_events_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
+import '../features/class_events/presentation/class_events_screen.dart';
 import '../features/more/presentation/more_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
