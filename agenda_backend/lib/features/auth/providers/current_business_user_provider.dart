@@ -446,7 +446,6 @@ final currentUserCanViewReportsProvider = Provider<bool>((ref) {
   );
 });
 
-
 final currentUserCanManageClassEventsProvider = Provider<bool>((ref) {
   final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
@@ -487,4 +486,13 @@ final currentUserCanBookClassEventsProvider = Provider<bool>((ref) {
     loading: () => false,
     error: (_, __) => false,
   );
+});
+
+final currentUserCanAccessClassEventsProvider = Provider<bool>((ref) {
+  final canManage = ref.watch(currentUserCanManageClassEventsProvider);
+  final canReadParticipants = ref.watch(
+    currentUserCanReadClassParticipantsProvider,
+  );
+  final canBook = ref.watch(currentUserCanBookClassEventsProvider);
+  return canManage || canReadParticipants || canBook;
 });
