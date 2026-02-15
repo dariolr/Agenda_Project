@@ -21,6 +21,9 @@ class BusinessUserContext {
   final bool canManageServices;
   final bool canManageStaff;
   final bool canViewReports;
+  final bool canManageClassEvents;
+  final bool canReadClassEventParticipants;
+  final bool canBookClassEvents;
 
   const BusinessUserContext({
     required this.userId,
@@ -35,6 +38,9 @@ class BusinessUserContext {
     required this.canManageServices,
     required this.canManageStaff,
     required this.canViewReports,
+    required this.canManageClassEvents,
+    required this.canReadClassEventParticipants,
+    required this.canBookClassEvents,
   });
 
   /// Indica se l'utente ha accesso a tutte le location del business.
@@ -89,6 +95,27 @@ class BusinessUserContext {
             fallback: defaultCanViewReports,
           )
         : defaultCanViewReports;
+    final canManageClassEvents = permissions is Map
+        ? _toBool(
+            permissions['class_event.manage'] ??
+                permissions['can_manage_class_events'],
+            fallback: defaultCanManageBookings,
+          )
+        : defaultCanManageBookings;
+    final canReadClassEventParticipants = permissions is Map
+        ? _toBool(
+            permissions['class_event.participants.read'] ??
+                permissions['can_read_class_event_participants'],
+            fallback: defaultCanManageBookings,
+          )
+        : defaultCanManageBookings;
+    final canBookClassEvents = permissions is Map
+        ? _toBool(
+            permissions['class_event.book'] ??
+                permissions['can_book_class_events'],
+            fallback: defaultCanManageBookings,
+          )
+        : defaultCanManageBookings;
 
     return BusinessUserContext(
       userId: json['user_id'] as int,
@@ -107,6 +134,9 @@ class BusinessUserContext {
       canManageServices: canManageServices,
       canManageStaff: canManageStaff,
       canViewReports: canViewReports,
+      canManageClassEvents: canManageClassEvents,
+      canReadClassEventParticipants: canReadClassEventParticipants,
+      canBookClassEvents: canBookClassEvents,
     );
   }
 
@@ -156,6 +186,9 @@ final currentBusinessUserContextProvider = FutureProvider<BusinessUserContext?>(
         canManageServices: true,
         canManageStaff: true,
         canViewReports: true,
+        canManageClassEvents: true,
+        canReadClassEventParticipants: true,
+        canBookClassEvents: true,
       );
     }
 
@@ -407,6 +440,49 @@ final currentUserCanViewReportsProvider = Provider<bool>((ref) {
       if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
       if (data!.isSuperadmin) return true;
       return data.canViewReports;
+    },
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
+
+final currentUserCanManageClassEventsProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.when(
+    data: (data) {
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
+      return data.canManageClassEvents;
+    },
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
+final currentUserCanReadClassParticipantsProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.when(
+    data: (data) {
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
+      return data.canReadClassEventParticipants;
+    },
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
+final currentUserCanBookClassEventsProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.when(
+    data: (data) {
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
+      return data.canBookClassEvents;
     },
     loading: () => false,
     error: (_, __) => false,
