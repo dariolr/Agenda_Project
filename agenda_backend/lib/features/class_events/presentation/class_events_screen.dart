@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/app/providers/form_factor_provider.dart';
 import '/core/models/class_event.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../providers/class_events_providers.dart';
 
 class ClassEventsScreen extends ConsumerWidget {
@@ -12,6 +13,10 @@ class ClassEventsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final eventsAsync = ref.watch(classEventsProvider);
     final formFactor = ref.watch(formFactorProvider);
+    final canReadParticipants = ref.watch(
+      currentUserCanReadClassParticipantsProvider,
+    );
+    final canBookClassEvents = ref.watch(currentUserCanBookClassEventsProvider);
     final isDesktop = formFactor == AppFormFactor.desktop;
 
     return Scaffold(
@@ -39,7 +44,11 @@ class ClassEventsScreen extends ConsumerWidget {
               horizontal: isDesktop ? 24 : 12,
               vertical: 12,
             ),
-            itemBuilder: (_, index) => _ClassEventTile(event: events[index]),
+            itemBuilder: (_, index) => _ClassEventTile(
+              event: events[index],
+              canReadParticipants: canReadParticipants,
+              canBookClassEvents: canBookClassEvents,
+            ),
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemCount: events.length,
           );
@@ -50,9 +59,15 @@ class ClassEventsScreen extends ConsumerWidget {
 }
 
 class _ClassEventTile extends ConsumerWidget {
-  const _ClassEventTile({required this.event});
+  const _ClassEventTile({
+    required this.event,
+    required this.canReadParticipants,
+    required this.canBookClassEvents,
+  });
 
   final ClassEvent event;
+  final bool canReadParticipants;
+  final bool canBookClassEvents;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -81,7 +96,7 @@ class _ClassEventTile extends ConsumerWidget {
               runSpacing: 8,
               children: [
                 FilledButton.icon(
-                  onPressed: isWorking
+                  onPressed: (!canBookClassEvents || isWorking)
                       ? null
                       : () => ref
                             .read(classEventBookingControllerProvider.notifier)
@@ -90,7 +105,7 @@ class _ClassEventTile extends ConsumerWidget {
                   label: const Text('Book'),
                 ),
                 OutlinedButton.icon(
-                  onPressed: isWorking
+                  onPressed: (!canBookClassEvents || isWorking)
                       ? null
                       : () => ref
                             .read(classEventBookingControllerProvider.notifier)
@@ -99,13 +114,16 @@ class _ClassEventTile extends ConsumerWidget {
                   label: const Text('Cancel booking'),
                 ),
                 TextButton(
-                  onPressed: () {
-                    showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (_) => _ParticipantsSheet(classEventId: event.id),
-                    );
-                  },
+                  onPressed: !canReadParticipants
+                      ? null
+                      : () {
+                          showModalBottomSheet<void>(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (_) =>
+                                _ParticipantsSheet(classEventId: event.id),
+                          );
+                        },
                   child: const Text('Participants'),
                 ),
               ],
@@ -124,7 +142,9 @@ class _ParticipantsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final participantsAsync = ref.watch(classEventParticipantsProvider(classEventId));
+    final participantsAsync = ref.watch(
+      classEventParticipantsProvider(classEventId),
+    );
 
     return SafeArea(
       child: Padding(

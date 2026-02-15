@@ -13,16 +13,16 @@ import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/providers/current_business_user_provider.dart';
-import '../features/bookings_list/presentation/bookings_list_screen.dart';
 import '../features/booking_notifications/presentation/booking_notifications_screen.dart';
+import '../features/bookings_list/presentation/bookings_list_screen.dart';
 import '../features/business/presentation/business_list_screen.dart';
 import '../features/business/presentation/invitation_accept_screen.dart';
 import '../features/business/presentation/location_closures_screen.dart';
 import '../features/business/presentation/operators_screen.dart';
 import '../features/business/presentation/user_business_switch_screen.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
-import '../features/clients/presentation/clients_screen.dart';
 import '../features/class_events/presentation/class_events_screen.dart';
+import '../features/clients/presentation/clients_screen.dart';
 import '../features/more/presentation/more_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
@@ -108,8 +108,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         canManageBusinessSettingsProvider,
       );
       final canViewReports = ref.read(currentUserCanViewReportsProvider);
-      final canManageClassEvents = ref.read(
-        currentUserCanManageClassEventsProvider,
+      final canAccessClassEvents = ref.read(
+        currentUserCanAccessClassEventsProvider,
       );
       final currentBusinessId = ref.read(currentBusinessIdProvider);
       final superadminSelectedBusiness = ref.read(
@@ -185,7 +185,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (path == '/staff-availability' && !canViewStaff) return '/agenda';
         if (path == '/report' && !canViewReports) return '/agenda';
         if (path == '/chiusure' && !canManageBusinessSettings) return '/agenda';
-        if (path == '/altro/classi' && !canManageClassEvents) return '/agenda';
+        if (path == '/altro/classi' && !canAccessClassEvents) return '/agenda';
         if (path == '/permessi' && !canManageOperators) return '/agenda';
         if (path.startsWith('/operatori/') && !canManageOperators) {
           return '/agenda';
