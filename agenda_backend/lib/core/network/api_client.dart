@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '/core/models/class_booking.dart';
+import '/core/models/class_event.dart';
 import '/core/models/location_closure.dart';
 import 'api_config.dart';
 import 'token_storage.dart';
@@ -915,6 +917,141 @@ class ApiClient {
       ApiConfig.bookingsList(businessId),
       queryParameters: queryParameters,
     );
+  }
+
+
+
+  /// GET /v1/businesses/{business_id}/class-events
+  Future<List<ClassEvent>> getClassEvents({
+    required int businessId,
+    required DateTime fromUtc,
+    required DateTime toUtc,
+    int? locationId,
+    int? classTypeId,
+  }) async {
+    final response = await get(
+      ApiConfig.classEvents(businessId),
+      queryParameters: {
+        'from': fromUtc.toIso8601String(),
+        'to': toUtc.toIso8601String(),
+        if (locationId != null) 'location_id': locationId.toString(),
+        if (classTypeId != null) 'class_type_id': classTypeId.toString(),
+      },
+    );
+    final data = response['data'];
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ClassEvent.fromJson)
+          .toList();
+    }
+    if (data is Map && data['items'] is List) {
+      return (data['items'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map(ClassEvent.fromJson)
+          .toList();
+    }
+    return const [];
+  }
+
+  /// GET /v1/businesses/{business_id}/class-events/{id}
+  Future<ClassEvent> getClassEvent({
+    required int businessId,
+    required int classEventId,
+  }) async {
+    final response = await get(ApiConfig.classEvent(businessId, classEventId));
+    final data = response['data'];
+    final payload = data is Map<String, dynamic> ? data : response;
+    return ClassEvent.fromJson(payload);
+  }
+
+  /// GET /v1/businesses/{business_id}/class-events/{id}/participants
+  Future<List<ClassBooking>> getClassEventParticipants({
+    required int businessId,
+    required int classEventId,
+    String? status,
+  }) async {
+    final response = await get(
+      ApiConfig.classEventParticipants(businessId, classEventId),
+      queryParameters: {if (status != null && status.isNotEmpty) 'status': status},
+    );
+    final data = response['data'];
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ClassBooking.fromJson)
+          .toList();
+    }
+    if (data is Map && data['items'] is List) {
+      return (data['items'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map(ClassBooking.fromJson)
+          .toList();
+    }
+    return const [];
+  }
+
+  /// POST /v1/businesses/{business_id}/class-events/{id}/book
+  Future<ClassBooking> bookClassEvent({
+    required int businessId,
+    required int classEventId,
+    int? customerId,
+  }) async {
+    final response = await post(
+      ApiConfig.classEventBook(businessId, classEventId),
+      data: {if (customerId != null) 'customer_id': customerId},
+    );
+    final data = response['data'];
+    final payload = data is Map<String, dynamic> ? data : response;
+    return ClassBooking.fromJson(payload);
+  }
+
+  /// POST /v1/businesses/{business_id}/class-events/{id}/cancel-booking
+  Future<void> cancelClassEventBooking({
+    required int businessId,
+    required int classEventId,
+    int? customerId,
+  }) async {
+    await post(
+      ApiConfig.classEventCancelBooking(businessId, classEventId),
+      data: {if (customerId != null) 'customer_id': customerId},
+    );
+  }
+
+  /// POST /v1/businesses/{business_id}/class-events
+  Future<ClassEvent> createClassEvent({
+    required int businessId,
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await post(ApiConfig.classEvents(businessId), data: data);
+    final payload = response['data'];
+    return ClassEvent.fromJson(
+      payload is Map<String, dynamic> ? payload : response,
+    );
+  }
+
+  /// PUT /v1/businesses/{business_id}/class-events/{id}
+  Future<ClassEvent> updateClassEvent({
+    required int businessId,
+    required int classEventId,
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await put(
+      ApiConfig.classEvent(businessId, classEventId),
+      data: data,
+    );
+    final payload = response['data'];
+    return ClassEvent.fromJson(
+      payload is Map<String, dynamic> ? payload : response,
+    );
+  }
+
+  /// POST /v1/businesses/{business_id}/class-events/{id}/cancel
+  Future<void> cancelClassEvent({
+    required int businessId,
+    required int classEventId,
+  }) async {
+    await post('${ApiConfig.classEvent(businessId, classEventId)}/cancel');
   }
 
   /// GET /v1/businesses/{business_id}/booking-notifications
