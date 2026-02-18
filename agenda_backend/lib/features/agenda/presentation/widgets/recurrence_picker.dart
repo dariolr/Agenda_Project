@@ -12,6 +12,8 @@ class RecurrencePicker extends StatefulWidget {
     this.initialConfig,
     this.title,
     this.showConflictHandling = true,
+    this.conflictSkipDescription,
+    this.conflictForceDescription,
     required this.onChanged,
   });
 
@@ -19,6 +21,8 @@ class RecurrencePicker extends StatefulWidget {
   final RecurrenceConfig? initialConfig;
   final String? title;
   final bool showConflictHandling;
+  final String? conflictSkipDescription;
+  final String? conflictForceDescription;
   final ValueChanged<RecurrenceConfig?> onChanged;
 
   @override
@@ -95,16 +99,24 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
       widget.onChanged(null);
       return;
     }
+    final safeOccurrenceCount = _safeOccurrenceCount();
 
     widget.onChanged(
       RecurrenceConfig(
         frequency: _frequency,
         intervalValue: _intervalValue,
-        maxOccurrences: _endType == _EndType.count ? _occurrenceCount : null,
+        maxOccurrences: _endType == _EndType.count ? safeOccurrenceCount : null,
         endDate: _endType == _EndType.date ? _endDate : null,
         conflictStrategy: _conflictStrategy,
       ),
     );
+  }
+
+  int _safeOccurrenceCount() {
+    final options = _getOccurrenceOptions();
+    if (options.isEmpty) return 1;
+    if (options.contains(_occurrenceCount)) return _occurrenceCount;
+    return options.last;
   }
 
   @override
@@ -288,7 +300,10 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                       // Reset occurrence count se non è tra le opzioni valide
                       final options = _getOccurrenceOptions();
                       if (!options.contains(_occurrenceCount)) {
-                        _occurrenceCount = _getDefaultOccurrenceCount();
+                        final defaultCount = _getDefaultOccurrenceCount();
+                        _occurrenceCount = options.contains(defaultCount)
+                            ? defaultCount
+                            : options.last;
                       }
                     });
                     _notifyChange();
@@ -305,6 +320,8 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
   Widget _buildEndSelector(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final occurrenceOptions = _getOccurrenceOptions();
+    final selectedOccurrenceCount = _safeOccurrenceCount();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,7 +363,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
               SizedBox(
                 width: 70,
                 child: DropdownButtonFormField<int>(
-                  value: _occurrenceCount,
+                  value: selectedOccurrenceCount,
                   isExpanded: true,
                   decoration: const InputDecoration(
                     isDense: true,
@@ -356,7 +373,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                     ),
                     border: OutlineInputBorder(),
                   ),
-                  items: _getOccurrenceOptions()
+                  items: occurrenceOptions
                       .map((v) => DropdownMenuItem(value: v, child: Text('$v')))
                       .toList(),
                   onChanged: _endType == _EndType.count
@@ -463,7 +480,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
           },
           title: Text(l10n.recurrenceConflictSkip),
           subtitle: Text(
-            l10n.recurrenceConflictSkipDescription,
+            widget.conflictSkipDescription ?? l10n.recurrenceConflictSkipDescription,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -481,7 +498,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
           },
           title: Text(l10n.recurrenceConflictForce),
           subtitle: Text(
-            l10n.recurrenceConflictForceDescription,
+            widget.conflictForceDescription ?? l10n.recurrenceConflictForceDescription,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

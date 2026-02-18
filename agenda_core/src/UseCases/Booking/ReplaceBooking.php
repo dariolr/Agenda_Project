@@ -88,7 +88,7 @@ final class ReplaceBooking
             $beforeSnapshot = $this->createBookingSnapshot($originalBookingId);
 
             // 5. Prepare new booking data
-            $items = $this->prepareItems($newBookingData, $locationId, $businessId, $originalBookingId);
+            $items = $this->prepareItems($newBookingData, $locationId, $businessId, $originalBookingId, $actorType);
             
             // 6. Calculate total duration for availability check
             $totalDuration = 0;
@@ -234,9 +234,10 @@ final class ReplaceBooking
         // Staff permissions are validated by the controller/middleware
     }
 
-    private function prepareItems(array $newBookingData, int $locationId, int $businessId, int $excludeBookingId): array
+    private function prepareItems(array $newBookingData, int $locationId, int $businessId, int $excludeBookingId, string $actorType): array
     {
         $items = [];
+        $requireBookableOnline = $actorType === 'customer';
 
         if (isset($newBookingData['items']) && is_array($newBookingData['items'])) {
             foreach ($newBookingData['items'] as $item) {
@@ -251,7 +252,7 @@ final class ReplaceBooking
                 }
 
                 // Validate staff can perform service
-                if (!$this->staffRepository->canPerformServices($staffId, [$serviceId], $locationId, $businessId)) {
+                if (!$this->staffRepository->canPerformServices($staffId, [$serviceId], $locationId, $businessId, $requireBookableOnline)) {
                     throw BookingException::invalidStaff($staffId);
                 }
 

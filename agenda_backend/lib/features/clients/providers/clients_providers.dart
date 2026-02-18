@@ -513,6 +513,7 @@ class ClientPickerSearchState {
 /// Usa autoDispose per resettarsi quando il picker viene chiuso
 class ClientPickerSearchNotifier extends Notifier<ClientPickerSearchState> {
   Timer? _searchDebounce;
+  int _requestId = 0;
 
   @override
   ClientPickerSearchState build() {
@@ -526,18 +527,22 @@ class ClientPickerSearchNotifier extends Notifier<ClientPickerSearchState> {
 
   /// Carica i primi clienti senza filtro all'apertura del picker
   Future<void> _loadInitialClients() async {
+    final requestId = ++_requestId;
     final authState = ref.read(authProvider);
     if (!authState.isAuthenticated) {
+      if (!ref.mounted || requestId != _requestId) return;
       state = const ClientPickerSearchState();
       return;
     }
 
     final business = ref.read(currentBusinessProvider);
     if (business.id <= 0) {
+      if (!ref.mounted || requestId != _requestId) return;
       state = const ClientPickerSearchState();
       return;
     }
     if (!ref.read(currentUserCanManageClientsProvider)) {
+      if (!ref.mounted || requestId != _requestId) return;
       state = const ClientPickerSearchState();
       return;
     }
@@ -550,11 +555,13 @@ class ClientPickerSearchNotifier extends Notifier<ClientPickerSearchState> {
         offset: 0,
         sort: 'name_asc',
       );
+      if (!ref.mounted || requestId != _requestId) return;
       state = ClientPickerSearchState(
         clients: response.clients.where((c) => !c.isArchived).toList(),
         isLoading: false,
       );
     } catch (e) {
+      if (!ref.mounted || requestId != _requestId) return;
       state = ClientPickerSearchState(isLoading: false, error: e.toString());
     }
   }
@@ -578,22 +585,25 @@ class ClientPickerSearchNotifier extends Notifier<ClientPickerSearchState> {
 
     // Debounce per evitare troppe chiamate durante la digitazione
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
-      _executeSearch(trimmed);
+      if (!ref.mounted) return;
+      _executeSearch(trimmed, ++_requestId);
     });
   }
 
   /// Esegue la ricerca lato server
-  Future<void> _executeSearch(String query) async {
+  Future<void> _executeSearch(String query, int requestId) async {
     final authState = ref.read(authProvider);
     if (!authState.isAuthenticated) return;
 
     final business = ref.read(currentBusinessProvider);
     if (business.id <= 0) return;
     if (!ref.read(currentUserCanManageClientsProvider)) {
+      if (!ref.mounted || requestId != _requestId) return;
       state = const ClientPickerSearchState();
       return;
     }
 
+    if (!ref.mounted || requestId != _requestId) return;
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -605,12 +615,14 @@ class ClientPickerSearchNotifier extends Notifier<ClientPickerSearchState> {
         search: query,
         sort: 'name_asc',
       );
+      if (!ref.mounted || requestId != _requestId) return;
       state = ClientPickerSearchState(
         clients: response.clients.where((c) => !c.isArchived).toList(),
         isLoading: false,
         searchQuery: query,
       );
     } catch (e) {
+      if (!ref.mounted || requestId != _requestId) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -622,7 +634,7 @@ class ClientPickerSearchNotifier extends Notifier<ClientPickerSearchState> {
       state = state.copyWith(isLoading: true);
       await _loadInitialClients();
     } else {
-      await _executeSearch(query);
+      await _executeSearch(query, ++_requestId);
     }
   }
 }

@@ -934,6 +934,8 @@
     }
   },
   "recurrencePreviewHint": "Uncheck the dates you don't want to create",
+  "recurrencePreviewConflictSkip": "Skip due to conflict",
+  "recurrencePreviewConflictForce": "Create anyway",
   "recurrencePreviewConfirm": "Create {count} appointments",
   "@recurrencePreviewConfirm": {
     "placeholders": {
@@ -1293,5 +1295,114 @@
       }
     }
   },
-  "closuresImportHolidaysUnsupportedCountry": "Automatic holidays are not available for the country configured in the location."
+  "closuresImportHolidaysUnsupportedCountry": "Automatic holidays are not available for the country configured in the location.",
+  "classEventsEmpty": "No classes in the selected day.",
+  "classEventsTitle": "Classes",
+  "classEventsUntitled": "Class",
+  "classEventsActionBook": "Book",
+  "classEventsActionCancelBooking": "Cancel booking",
+  "classEventsAddButton": "Add",
+  "classEventsCreateTitle": "Scheduling",
+  "classEventsNewScheduleButton": "New schedule",
+  "classEventsEditTitle": "Edit scheduling",
+  "classEventsEditModeLabel": "Edit mode",
+  "classEventsFieldTitleOptional": "Title (optional)",
+  "classEventsFieldClassType": "Class type",
+  "classEventsFieldLocation": "Location",
+  "classEventsFieldStaff": "Staff",
+  "classEventsFieldDate": "Date",
+  "classEventsFieldStartTime": "Start time",
+  "classEventsFieldEndTime": "End time",
+  "classEventsRepeatSchedule": "Repeat schedule",
+  "classEventsRecurrenceConflictSkipDescription": "Do not create schedules if there are overlaps",
+  "classEventsRecurrenceConflictForceDescription": "Create schedules even if there are overlaps",
+  "classEventsRecurrencePreviewTitle": "Schedule preview",
+  "classEventsRecurrencePreviewHint": "Deselect schedules you do not want to create",
+  "classEventsRecurrencePreviewConfirm": "Create {count} schedules",
+  "@classEventsRecurrencePreviewConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "classEventsFieldCapacity": "Capacity",
+  "classEventsNoLocationsForClassType": "No enabled location for this class type",
+  "classEventsValidationRequired": "Fill all required fields",
+  "classEventsValidationEndAfterStart": "End time must be after start time",
+  "classEventsNoClassTypes": "No class types available",
+  "classEventsNoStaffForLocation": "No staff available for selected location",
+  "classEventsSchedulesListTitle": "Existing schedules",
+  "classEventsSchedulesListEmpty": "No schedules",
+  "classEventsFutureBadge": "Future",
+  "classEventsExpiredBadge": "Expired",
+  "classEventsShowExpiredSchedules": "Show expired too",
+  "classEventsSchedulesDeleteConfirmTitle": "Delete schedule?",
+  "classEventsSchedulesDeleteConfirmMessage": "Deleting the schedule will also delete any existing bookings.",
+  "classEventsSchedulesDeleteSuccessTitle": "Schedule deleted",
+  "classEventsSchedulesDeleteSuccessMessage": "The schedule and related bookings have been deleted",
+  "classEventsSchedulesUpdateSuccessTitle": "Schedule updated",
+  "classEventsSchedulesUpdateSuccessMessage": "Schedule updated successfully",
+  "classEventsCreateSuccessTitle": "Class created",
+  "classEventsCreateSuccessMessage": "The class was created successfully",
+  "classEventsCreateErrorMessage": "Unable to create class",
+  "classTypesManageButton": "Class types",
+  "classTypesManageTitle": "Class types",
+  "classTypesAddButton": "New type",
+  "classTypesEmpty": "No class types configured",
+  "classTypesStatusActive": "Active",
+  "classTypesStatusInactive": "Inactive",
+  "classTypesCreateTitle": "New class type",
+  "classTypesEditTitle": "Edit class type",
+  "classTypesFieldName": "Name",
+  "classTypesFieldDescriptionOptional": "Description (optional)",
+  "classTypesFieldIsActive": "Type active",
+  "classTypesCreateSuccessTitle": "Class type created",
+  "classTypesCreateSuccessMessage": "Class type created successfully",
+  "classTypesUpdateSuccessTitle": "Class type updated",
+  "classTypesUpdateSuccessMessage": "Class type updated successfully",
+  "classTypesActionScheduleClass": "Scheduling",
+  "classTypesActionClone": "Duplicate",
+  "classTypesActionDeactivate": "Delete",
+  "classTypesActionReactivate": "Reactivate",
+  "classTypesCloneSuffix": "Copy",
+  "classTypesCloneSuccessTitle": "Class type duplicated",
+  "classTypesCloneSuccessMessage": "Class type duplicated successfully",
+  "classTypesDeleteConfirmTitle": "Delete class type?",
+  "classTypesDeleteConfirmMessage": "This action permanently deletes the class type.",
+  "classTypesDeleteSuccessTitle": "Class type deleted",
+  "classTypesDeleteSuccessMessage": "Class type has been deleted",
+  "classTypesDeleteInUseErrorMessage": "Cannot delete class type because there are associated schedules",
+  "classTypesDeactivateConfirmTitle": "Delete class type?",
+  "classTypesDeactivateConfirmMessage": "The class type will be deactivated and unavailable for new schedules.",
+  "classTypesReactivateConfirmTitle": "Reactivate class type?",
+  "classTypesReactivateConfirmMessage": "The class type will be available again for new schedules.",
+  "classTypesDeactivateSuccessTitle": "Class type deleted",
+  "classTypesDeactivateSuccessMessage": "Class type has been deactivated",
+  "classTypesReactivateSuccessTitle": "Class type reactivated",
+  "classTypesReactivateSuccessMessage": "Class type has been reactivated",
+  "classTypesMutationErrorMessage": "Unable to save class type",
+  "classEventsParticipantsTitle": "Participants",
+  "classEventsCapacitySummary": "Confirmed: {confirmed}/{capacity} • Waitlist: {waitlist}",
+  "@classEventsCapacitySummary": {
+    "placeholders": {
+      "confirmed": {
+        "type": "int"
+      },
+      "capacity": {
+        "type": "int"
+      },
+      "waitlist": {
+        "type": "int"
+      }
+    }
+  },
+  "classEventsParticipantCustomer": "Customer {customerId}",
+  "@classEventsParticipantCustomer": {
+    "placeholders": {
+      "customerId": {
+        "type": "int"
+      }
+    }
+  }
 }

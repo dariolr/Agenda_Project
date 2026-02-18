@@ -108,9 +108,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         canManageBusinessSettingsProvider,
       );
       final canViewReports = ref.read(currentUserCanViewReportsProvider);
-      final canAccessClassEvents = ref.read(
-        currentUserCanAccessClassEventsProvider,
-      );
+      final canAccessClassEvents = ref.read(currentUserCanViewServicesProvider);
       final currentBusinessId = ref.read(currentBusinessIdProvider);
       final superadminSelectedBusiness = ref.read(
         superadminSelectedBusinessProvider,

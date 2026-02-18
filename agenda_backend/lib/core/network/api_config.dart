@@ -83,6 +83,13 @@ class ApiConfig {
   /// Lista class events per business.
   static String classEvents(int businessId) => '/v1/businesses/$businessId/class-events';
 
+  /// Lista class types per business.
+  static String classTypes(int businessId) => '/v1/businesses/$businessId/class-types';
+
+  /// Singolo class type.
+  static String classType(int businessId, int classTypeId) =>
+      '/v1/businesses/$businessId/class-types/$classTypeId';
+
   /// Singolo class event.
   static String classEvent(int businessId, int classEventId) =>
       '/v1/businesses/$businessId/class-events/$classEventId';

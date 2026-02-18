@@ -125,6 +125,8 @@ void invalidateBusinessScopedProviders(Object refObj) {
 
   // Class events
   ref.invalidate(classEventsProvider);
+  ref.invalidate(classTypesProvider);
+  ref.invalidate(selectedClassTypeIdProvider);
 
   // Business User Context (permessi location)
   ref.invalidate(currentBusinessUserContextProvider);

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,9 +23,7 @@ class MoreScreen extends ConsumerWidget {
     final canViewServices = ref.watch(currentUserCanViewServicesProvider);
     final canViewStaff = ref.watch(currentUserCanViewStaffProvider);
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
-    final canAccessClassEvents = ref.watch(
-      currentUserCanAccessClassEventsProvider,
-    );
+    final canAccessClassEvents = canViewServices && kDebugMode;
 
     final items = [
       // Servizi - visibile solo a chi può gestire impostazioni

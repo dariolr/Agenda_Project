@@ -38,10 +38,34 @@ final businessIdForLocationsProvider = Provider<int?>((ref) {
 ///
 final locationsAsyncProvider = FutureProvider<List<Location>>((ref) async {
   final businessId = ref.watch(businessIdForLocationsProvider);
+  final authState = ref.watch(authProvider);
 
   // Se non c'è un business valido, ritorna lista vuota
   if (businessId == null || businessId <= 0) {
     return [];
+  }
+
+  final isSuperadmin = authState.user?.isSuperadmin ?? false;
+  Set<int>? allowedIdsSet;
+  if (!isSuperadmin) {
+    final context = ref.watch(currentBusinessUserContextProvider).maybeWhen(
+          data: (ctx) => ctx,
+          orElse: () => null,
+        );
+
+    // Evita bootstrap con scope non ancora risolto: senza contesto non esporre sedi.
+    if (context == null) {
+      return [];
+    }
+
+    // Guard rail contro contesto stale durante switch business.
+    if (!context.isSuperadmin && context.businessId != businessId) {
+      return [];
+    }
+
+    if (context.hasLocationScope) {
+      allowedIdsSet = context.locationIds.toSet();
+    }
   }
 
   final repository = ref.watch(locationsRepositoryProvider);
@@ -51,10 +75,10 @@ final locationsAsyncProvider = FutureProvider<List<Location>>((ref) async {
   var locations = allLocations.where((l) => l.isActive).toList();
 
   // Filtra in base ai permessi utente (scopeType)
-  final allowedIds = ref.watch(allowedLocationIdsProvider);
-  if (allowedIds != null) {
+  final effectiveAllowedIds = allowedIdsSet;
+  if (effectiveAllowedIds != null) {
     // L'utente ha accesso limitato a specifiche location
-    locations = locations.where((l) => allowedIds.contains(l.id)).toList();
+    locations = locations.where((l) => effectiveAllowedIds.contains(l.id)).toList();
   }
 
   return locations;

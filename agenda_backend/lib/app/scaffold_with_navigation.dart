@@ -7,6 +7,7 @@ import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agen
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/bookings_list/providers/bookings_list_provider.dart';
 import 'package:agenda_backend/features/booking_notifications/providers/booking_notifications_provider.dart';
+import 'package:agenda_backend/features/class_events/presentation/class_events_screen.dart';
 import 'package:agenda_backend/features/reports/providers/reports_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -91,6 +92,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isBookingNotifications = navigationShell.currentIndex == 10;
     final isClosures = navigationShell.currentIndex == 7;
     final isPermessi = navigationShell.currentIndex == 9;
+    final currentPath = GoRouterState.of(context).uri.path;
+    final isClassEvents = currentPath == '/altro/classi';
     final agendaDate = ref.watch(agendaDateProvider);
     final today = DateUtils.dateOnly(DateTime.now());
     final isToday = DateUtils.isSameDay(agendaDate, today);
@@ -165,6 +168,11 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           actions.add(_ReportRefreshAction(ref: ref));
         } else if (isBookingsList) {
           actions.add(_BookingsListRefreshAction(ref: ref));
+        } else if (isClassEvents) {
+          actions.add(const _ToolbarLocationSelectorAction());
+          if (canManageServices) {
+            actions.add(const _ClassEventsAddAction());
+          }
         } else if (isBookingNotifications) {
           actions.add(_BookingNotificationsRefreshAction(ref: ref));
         } else if (isClosures && canManageClosures) {
@@ -199,6 +207,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 ? Text(context.l10n.reportsTitle)
                 : isBookingsList
                 ? Text(context.l10n.bookingsListTitle)
+                : isClassEvents
+                ? Text(context.l10n.classEventsTitle)
                 : isBookingNotifications
                 ? Text(context.l10n.bookingNotificationsTitle)
                 : isClosures
@@ -276,6 +286,11 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         actions.add(_ReportRefreshAction(ref: ref));
       } else if (isBookingsList) {
         actions.add(_BookingsListRefreshAction(ref: ref));
+      } else if (isClassEvents) {
+        actions.add(const _ToolbarLocationSelectorAction(compact: true));
+        if (canManageServices) {
+          actions.add(const _ClassEventsAddAction(compact: true));
+        }
       } else if (isBookingNotifications) {
         actions.add(_BookingNotificationsRefreshAction(ref: ref));
       } else if (isClosures && canManageClosures) {
@@ -311,6 +326,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
               ? Text(context.l10n.reportsTitle)
               : isBookingsList
               ? Text(context.l10n.bookingsListTitle)
+              : isClassEvents
+              ? Text(context.l10n.classEventsTitle)
               : isBookingNotifications
               ? Text(context.l10n.bookingNotificationsTitle)
               : isClosures
@@ -367,7 +384,11 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     );
   }
 
-  void _goBranch(int index, WidgetRef ref) {
+  void _goBranch(
+    int index,
+    WidgetRef ref, {
+    bool forceInitialLocation = false,
+  }) {
     // Protezione: i branch validi sono 0-6
     if (index < 0 || index > 6) {
       debugPrint('_goBranch: invalid index $index, ignoring');
@@ -389,7 +410,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
     navigationShell.goBranch(
       index,
-      initialLocation: index == navigationShell.currentIndex,
+      initialLocation:
+          forceInitialLocation || index == navigationShell.currentIndex,
     );
   }
 
@@ -466,7 +488,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
     final moreIndex = includeClients ? 2 : 1;
     if (desktopIndex == moreIndex) {
-      _goBranch(6, ref);
+      _goBranch(6, ref, forceInitialLocation: true);
     }
   }
 
@@ -510,7 +532,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
     final moreIndex = includeClients ? 2 : 1;
     if (mobileIndex == moreIndex) {
-      _goBranch(6, ref);
+      _goBranch(6, ref, forceInitialLocation: true);
     }
   }
 
@@ -1534,6 +1556,62 @@ class _BookingNotificationsRefreshAction extends StatelessWidget {
           .loadNotifications(businessId),
       icon: const Icon(Icons.refresh),
       tooltip: context.l10n.actionRefresh,
+    );
+  }
+}
+
+/// Add button for ClassEvents screen
+class _ClassEventsAddAction extends ConsumerWidget {
+  const _ClassEventsAddAction({this.compact = false});
+
+  final bool compact;
+  static const double _actionButtonHeight = 40;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: GestureDetector(
+        onTap: () => showCreateClassTypeDialog(context, ref),
+        child: Builder(
+          builder: (buttonContext) {
+            final scheme = Theme.of(buttonContext).colorScheme;
+            final onContainer = scheme.onSecondaryContainer;
+            return Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: _buildAddButtonContent(
+                    showLabelEffective: showLabelEffective,
+                    compact: compact,
+                    label: l10n.classEventsAddButton,
+                    onContainer: onContainer,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

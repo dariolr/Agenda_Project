@@ -5495,6 +5495,26 @@ class L10n {
     );
   }
 
+  /// `Esclusa per conflitto`
+  String get recurrencePreviewConflictSkip {
+    return Intl.message(
+      'Esclusa per conflitto',
+      name: 'recurrencePreviewConflictSkip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crea comunque`
+  String get recurrencePreviewConflictForce {
+    return Intl.message(
+      'Crea comunque',
+      name: 'recurrencePreviewConflictForce',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Crea {count} appuntamenti`
   String recurrencePreviewConfirm(int count) {
     return Intl.message(
@@ -7956,6 +7976,821 @@ class L10n {
       name: 'closuresImportHolidaysUnsupportedCountry',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Nessuna classe nel giorno selezionato.`
+  String get classEventsEmpty {
+    return Intl.message(
+      'Nessuna classe nel giorno selezionato.',
+      name: 'classEventsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Classi`
+  String get classEventsTitle {
+    return Intl.message('Classi', name: 'classEventsTitle', desc: '', args: []);
+  }
+
+  /// `Classe`
+  String get classEventsUntitled {
+    return Intl.message(
+      'Classe',
+      name: 'classEventsUntitled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prenota`
+  String get classEventsActionBook {
+    return Intl.message(
+      'Prenota',
+      name: 'classEventsActionBook',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Annulla prenotazione`
+  String get classEventsActionCancelBooking {
+    return Intl.message(
+      'Annulla prenotazione',
+      name: 'classEventsActionCancelBooking',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Aggiungi`
+  String get classEventsAddButton {
+    return Intl.message(
+      'Aggiungi',
+      name: 'classEventsAddButton',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Programmazione`
+  String get classEventsCreateTitle {
+    return Intl.message(
+      'Programmazione',
+      name: 'classEventsCreateTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nuova programmazione`
+  String get classEventsNewScheduleButton {
+    return Intl.message(
+      'Nuova programmazione',
+      name: 'classEventsNewScheduleButton',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modifica programmazione`
+  String get classEventsEditTitle {
+    return Intl.message(
+      'Modifica programmazione',
+      name: 'classEventsEditTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modalità modifica`
+  String get classEventsEditModeLabel {
+    return Intl.message(
+      'Modalità modifica',
+      name: 'classEventsEditModeLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Titolo (opzionale)`
+  String get classEventsFieldTitleOptional {
+    return Intl.message(
+      'Titolo (opzionale)',
+      name: 'classEventsFieldTitleOptional',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo classe`
+  String get classEventsFieldClassType {
+    return Intl.message(
+      'Tipo classe',
+      name: 'classEventsFieldClassType',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sede`
+  String get classEventsFieldLocation {
+    return Intl.message(
+      'Sede',
+      name: 'classEventsFieldLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Staff`
+  String get classEventsFieldStaff {
+    return Intl.message(
+      'Staff',
+      name: 'classEventsFieldStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Data`
+  String get classEventsFieldDate {
+    return Intl.message(
+      'Data',
+      name: 'classEventsFieldDate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ora inizio`
+  String get classEventsFieldStartTime {
+    return Intl.message(
+      'Ora inizio',
+      name: 'classEventsFieldStartTime',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ora fine`
+  String get classEventsFieldEndTime {
+    return Intl.message(
+      'Ora fine',
+      name: 'classEventsFieldEndTime',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ripeti programmazione`
+  String get classEventsRepeatSchedule {
+    return Intl.message(
+      'Ripeti programmazione',
+      name: 'classEventsRepeatSchedule',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Non crea programmazioni se ci sono sovrapposizioni`
+  String get classEventsRecurrenceConflictSkipDescription {
+    return Intl.message(
+      'Non crea programmazioni se ci sono sovrapposizioni',
+      name: 'classEventsRecurrenceConflictSkipDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crea le programmazioni anche se ci sono sovrapposizioni`
+  String get classEventsRecurrenceConflictForceDescription {
+    return Intl.message(
+      'Crea le programmazioni anche se ci sono sovrapposizioni',
+      name: 'classEventsRecurrenceConflictForceDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Anteprima programmazioni`
+  String get classEventsRecurrencePreviewTitle {
+    return Intl.message(
+      'Anteprima programmazioni',
+      name: 'classEventsRecurrencePreviewTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Deseleziona le programmazioni che non vuoi creare`
+  String get classEventsRecurrencePreviewHint {
+    return Intl.message(
+      'Deseleziona le programmazioni che non vuoi creare',
+      name: 'classEventsRecurrencePreviewHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crea {count} programmazioni`
+  String classEventsRecurrencePreviewConfirm(int count) {
+    return Intl.message(
+      'Crea $count programmazioni',
+      name: 'classEventsRecurrencePreviewConfirm',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Capienza`
+  String get classEventsFieldCapacity {
+    return Intl.message(
+      'Capienza',
+      name: 'classEventsFieldCapacity',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna sede abilitata per questo tipo classe`
+  String get classEventsNoLocationsForClassType {
+    return Intl.message(
+      'Nessuna sede abilitata per questo tipo classe',
+      name: 'classEventsNoLocationsForClassType',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Compila tutti i campi obbligatori`
+  String get classEventsValidationRequired {
+    return Intl.message(
+      'Compila tutti i campi obbligatori',
+      name: 'classEventsValidationRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `L'ora di fine deve essere successiva all'ora di inizio`
+  String get classEventsValidationEndAfterStart {
+    return Intl.message(
+      'L\'ora di fine deve essere successiva all\'ora di inizio',
+      name: 'classEventsValidationEndAfterStart',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun tipo classe disponibile`
+  String get classEventsNoClassTypes {
+    return Intl.message(
+      'Nessun tipo classe disponibile',
+      name: 'classEventsNoClassTypes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuno staff disponibile per la sede selezionata`
+  String get classEventsNoStaffForLocation {
+    return Intl.message(
+      'Nessuno staff disponibile per la sede selezionata',
+      name: 'classEventsNoStaffForLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Programmazioni esistenti`
+  String get classEventsSchedulesListTitle {
+    return Intl.message(
+      'Programmazioni esistenti',
+      name: 'classEventsSchedulesListTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna programmazione`
+  String get classEventsSchedulesListEmpty {
+    return Intl.message(
+      'Nessuna programmazione',
+      name: 'classEventsSchedulesListEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Future`
+  String get classEventsFutureBadge {
+    return Intl.message(
+      'Future',
+      name: 'classEventsFutureBadge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Scadute`
+  String get classEventsExpiredBadge {
+    return Intl.message(
+      'Scadute',
+      name: 'classEventsExpiredBadge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mostra anche scadute`
+  String get classEventsShowExpiredSchedules {
+    return Intl.message(
+      'Mostra anche scadute',
+      name: 'classEventsShowExpiredSchedules',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Eliminare la programmazione?`
+  String get classEventsSchedulesDeleteConfirmTitle {
+    return Intl.message(
+      'Eliminare la programmazione?',
+      name: 'classEventsSchedulesDeleteConfirmTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Eliminando la programmazione verranno eliminate anche le eventuali prenotazioni esistenti.`
+  String get classEventsSchedulesDeleteConfirmMessage {
+    return Intl.message(
+      'Eliminando la programmazione verranno eliminate anche le eventuali prenotazioni esistenti.',
+      name: 'classEventsSchedulesDeleteConfirmMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Programmazione eliminata`
+  String get classEventsSchedulesDeleteSuccessTitle {
+    return Intl.message(
+      'Programmazione eliminata',
+      name: 'classEventsSchedulesDeleteSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La programmazione e le prenotazioni collegate sono state eliminate`
+  String get classEventsSchedulesDeleteSuccessMessage {
+    return Intl.message(
+      'La programmazione e le prenotazioni collegate sono state eliminate',
+      name: 'classEventsSchedulesDeleteSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Programmazione aggiornata`
+  String get classEventsSchedulesUpdateSuccessTitle {
+    return Intl.message(
+      'Programmazione aggiornata',
+      name: 'classEventsSchedulesUpdateSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La programmazione è stata aggiornata correttamente`
+  String get classEventsSchedulesUpdateSuccessMessage {
+    return Intl.message(
+      'La programmazione è stata aggiornata correttamente',
+      name: 'classEventsSchedulesUpdateSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Classe creata`
+  String get classEventsCreateSuccessTitle {
+    return Intl.message(
+      'Classe creata',
+      name: 'classEventsCreateSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La classe è stata creata correttamente`
+  String get classEventsCreateSuccessMessage {
+    return Intl.message(
+      'La classe è stata creata correttamente',
+      name: 'classEventsCreateSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile creare la classe`
+  String get classEventsCreateErrorMessage {
+    return Intl.message(
+      'Impossibile creare la classe',
+      name: 'classEventsCreateErrorMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipi classe`
+  String get classTypesManageButton {
+    return Intl.message(
+      'Tipi classe',
+      name: 'classTypesManageButton',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Gestione tipi classe`
+  String get classTypesManageTitle {
+    return Intl.message(
+      'Gestione tipi classe',
+      name: 'classTypesManageTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nuovo tipo`
+  String get classTypesAddButton {
+    return Intl.message(
+      'Nuovo tipo',
+      name: 'classTypesAddButton',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun tipo classe configurato`
+  String get classTypesEmpty {
+    return Intl.message(
+      'Nessun tipo classe configurato',
+      name: 'classTypesEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Attivo`
+  String get classTypesStatusActive {
+    return Intl.message(
+      'Attivo',
+      name: 'classTypesStatusActive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Non attivo`
+  String get classTypesStatusInactive {
+    return Intl.message(
+      'Non attivo',
+      name: 'classTypesStatusInactive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nuovo tipo classe`
+  String get classTypesCreateTitle {
+    return Intl.message(
+      'Nuovo tipo classe',
+      name: 'classTypesCreateTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modifica tipo classe`
+  String get classTypesEditTitle {
+    return Intl.message(
+      'Modifica tipo classe',
+      name: 'classTypesEditTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nome`
+  String get classTypesFieldName {
+    return Intl.message(
+      'Nome',
+      name: 'classTypesFieldName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Descrizione (opzionale)`
+  String get classTypesFieldDescriptionOptional {
+    return Intl.message(
+      'Descrizione (opzionale)',
+      name: 'classTypesFieldDescriptionOptional',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo attivo`
+  String get classTypesFieldIsActive {
+    return Intl.message(
+      'Tipo attivo',
+      name: 'classTypesFieldIsActive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo classe creato`
+  String get classTypesCreateSuccessTitle {
+    return Intl.message(
+      'Tipo classe creato',
+      name: 'classTypesCreateSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il tipo classe è stato creato correttamente`
+  String get classTypesCreateSuccessMessage {
+    return Intl.message(
+      'Il tipo classe è stato creato correttamente',
+      name: 'classTypesCreateSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo classe aggiornato`
+  String get classTypesUpdateSuccessTitle {
+    return Intl.message(
+      'Tipo classe aggiornato',
+      name: 'classTypesUpdateSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il tipo classe è stato aggiornato correttamente`
+  String get classTypesUpdateSuccessMessage {
+    return Intl.message(
+      'Il tipo classe è stato aggiornato correttamente',
+      name: 'classTypesUpdateSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Programmazione`
+  String get classTypesActionScheduleClass {
+    return Intl.message(
+      'Programmazione',
+      name: 'classTypesActionScheduleClass',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Duplica`
+  String get classTypesActionClone {
+    return Intl.message(
+      'Duplica',
+      name: 'classTypesActionClone',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancella`
+  String get classTypesActionDeactivate {
+    return Intl.message(
+      'Cancella',
+      name: 'classTypesActionDeactivate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Riattiva`
+  String get classTypesActionReactivate {
+    return Intl.message(
+      'Riattiva',
+      name: 'classTypesActionReactivate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copia`
+  String get classTypesCloneSuffix {
+    return Intl.message(
+      'Copia',
+      name: 'classTypesCloneSuffix',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo classe duplicato`
+  String get classTypesCloneSuccessTitle {
+    return Intl.message(
+      'Tipo classe duplicato',
+      name: 'classTypesCloneSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il tipo classe è stato duplicato correttamente`
+  String get classTypesCloneSuccessMessage {
+    return Intl.message(
+      'Il tipo classe è stato duplicato correttamente',
+      name: 'classTypesCloneSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Eliminare il tipo classe?`
+  String get classTypesDeleteConfirmTitle {
+    return Intl.message(
+      'Eliminare il tipo classe?',
+      name: 'classTypesDeleteConfirmTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questa azione elimina definitivamente il tipo classe.`
+  String get classTypesDeleteConfirmMessage {
+    return Intl.message(
+      'Questa azione elimina definitivamente il tipo classe.',
+      name: 'classTypesDeleteConfirmMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo classe eliminato`
+  String get classTypesDeleteSuccessTitle {
+    return Intl.message(
+      'Tipo classe eliminato',
+      name: 'classTypesDeleteSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il tipo classe è stato eliminato`
+  String get classTypesDeleteSuccessMessage {
+    return Intl.message(
+      'Il tipo classe è stato eliminato',
+      name: 'classTypesDeleteSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile eliminare il tipo classe perché esistono programmazioni associate`
+  String get classTypesDeleteInUseErrorMessage {
+    return Intl.message(
+      'Impossibile eliminare il tipo classe perché esistono programmazioni associate',
+      name: 'classTypesDeleteInUseErrorMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancellare il tipo classe?`
+  String get classTypesDeactivateConfirmTitle {
+    return Intl.message(
+      'Cancellare il tipo classe?',
+      name: 'classTypesDeactivateConfirmTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il tipo classe verrà disattivato e non sarà selezionabile per nuove programmazioni.`
+  String get classTypesDeactivateConfirmMessage {
+    return Intl.message(
+      'Il tipo classe verrà disattivato e non sarà selezionabile per nuove programmazioni.',
+      name: 'classTypesDeactivateConfirmMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Riattivare il tipo classe?`
+  String get classTypesReactivateConfirmTitle {
+    return Intl.message(
+      'Riattivare il tipo classe?',
+      name: 'classTypesReactivateConfirmTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il tipo classe tornerà disponibile per nuove programmazioni.`
+  String get classTypesReactivateConfirmMessage {
+    return Intl.message(
+      'Il tipo classe tornerà disponibile per nuove programmazioni.',
+      name: 'classTypesReactivateConfirmMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo classe cancellato`
+  String get classTypesDeactivateSuccessTitle {
+    return Intl.message(
+      'Tipo classe cancellato',
+      name: 'classTypesDeactivateSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il tipo classe è stato disattivato`
+  String get classTypesDeactivateSuccessMessage {
+    return Intl.message(
+      'Il tipo classe è stato disattivato',
+      name: 'classTypesDeactivateSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tipo classe riattivato`
+  String get classTypesReactivateSuccessTitle {
+    return Intl.message(
+      'Tipo classe riattivato',
+      name: 'classTypesReactivateSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il tipo classe è stato riattivato`
+  String get classTypesReactivateSuccessMessage {
+    return Intl.message(
+      'Il tipo classe è stato riattivato',
+      name: 'classTypesReactivateSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile salvare il tipo classe`
+  String get classTypesMutationErrorMessage {
+    return Intl.message(
+      'Impossibile salvare il tipo classe',
+      name: 'classTypesMutationErrorMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Partecipanti`
+  String get classEventsParticipantsTitle {
+    return Intl.message(
+      'Partecipanti',
+      name: 'classEventsParticipantsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confermati: {confirmed}/{capacity} • Lista attesa: {waitlist}`
+  String classEventsCapacitySummary(int confirmed, int capacity, int waitlist) {
+    return Intl.message(
+      'Confermati: $confirmed/$capacity • Lista attesa: $waitlist',
+      name: 'classEventsCapacitySummary',
+      desc: '',
+      args: [confirmed, capacity, waitlist],
+    );
+  }
+
+  /// `Cliente {customerId}`
+  String classEventsParticipantCustomer(int customerId) {
+    return Intl.message(
+      'Cliente $customerId',
+      name: 'classEventsParticipantCustomer',
+      desc: '',
+      args: [customerId],
     );
   }
 }

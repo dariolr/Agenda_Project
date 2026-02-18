@@ -2,14 +2,15 @@ import 'class_booking.dart';
 
 class ClassEvent {
   final int id;
-  final int tenantId;
+  final int businessId;
   final int classTypeId;
-  final String title;
   final DateTime startsAtUtc;
   final DateTime endsAtUtc;
-  final int? locationId;
+  final DateTime? startsAtLocal;
+  final DateTime? endsAtLocal;
+  final int locationId;
   final int? resourceId;
-  final int? instructorStaffId;
+  final int staffId;
   final int capacityTotal;
   final int capacityReserved;
   final int confirmedCount;
@@ -27,11 +28,12 @@ class ClassEvent {
 
   const ClassEvent({
     required this.id,
-    required this.tenantId,
+    required this.businessId,
     required this.classTypeId,
-    required this.title,
     required this.startsAtUtc,
     required this.endsAtUtc,
+    this.startsAtLocal,
+    this.endsAtLocal,
     required this.capacityTotal,
     required this.capacityReserved,
     required this.confirmedCount,
@@ -40,9 +42,9 @@ class ClassEvent {
     required this.cancelCutoffMinutes,
     required this.status,
     required this.visibility,
-    this.locationId,
+    required this.locationId,
+    required this.staffId,
     this.resourceId,
-    this.instructorStaffId,
     this.bookingOpenAtUtc,
     this.bookingCloseAtUtc,
     this.priceCents,
@@ -55,29 +57,53 @@ class ClassEvent {
   bool get isFull => spotsLeft <= 0;
 
   factory ClassEvent.fromJson(Map<String, dynamic> json) {
-    final rawTitle = json['title'] as String?;
-    final fallbackTitle = json['class_type_name'] as String?;
     return ClassEvent(
       id: (json['id'] as num).toInt(),
-      tenantId: (json['tenant_id'] as num?)?.toInt() ?? 0,
+      businessId:
+          (json['business_id'] as num?)?.toInt() ??
+          (json['tenant_id'] as num?)?.toInt() ??
+          0,
       classTypeId: (json['class_type_id'] as num?)?.toInt() ?? 0,
-      title: rawTitle ?? fallbackTitle ?? 'Class event',
-      startsAtUtc: DateTime.parse(json['starts_at_utc'] as String),
-      endsAtUtc: DateTime.parse(json['ends_at_utc'] as String),
-      locationId: (json['location_id'] as num?)?.toInt(),
-      resourceId: (json['resource_id'] as num?)?.toInt(),
-      instructorStaffId: (json['instructor_staff_id'] as num?)?.toInt(),
+      startsAtUtc: _parseUtcDateTime(
+        (json['starts_at'] ?? json['starts_at_utc']) as String,
+      ),
+      endsAtUtc: _parseUtcDateTime(
+        (json['ends_at'] ?? json['ends_at_utc']) as String,
+      ),
+      startsAtLocal:
+          (json['starts_at_local'] as String?) != null
+          ? _parseLocalDateTime(json['starts_at_local'] as String)
+          : null,
+      endsAtLocal:
+          (json['ends_at_local'] as String?) != null
+          ? _parseLocalDateTime(json['ends_at_local'] as String)
+          : null,
+      locationId: (json['location_id'] as num).toInt(),
+      resourceId:
+          (json['resource_id'] as num?)?.toInt() ??
+          _firstResourceId(json['resource_requirements']),
+      staffId:
+          (json['staff_id'] as num?)?.toInt() ??
+          (json['instructor_staff_id'] as num?)?.toInt() ??
+          0,
       capacityTotal: (json['capacity_total'] as num?)?.toInt() ?? 1,
       capacityReserved: (json['capacity_reserved'] as num?)?.toInt() ?? 0,
       confirmedCount: (json['confirmed_count'] as num?)?.toInt() ?? 0,
       waitlistCount: (json['waitlist_count'] as num?)?.toInt() ?? 0,
       waitlistEnabled: (json['waitlist_enabled'] as bool?) ??
           ((json['waitlist_enabled'] as num?)?.toInt() == 1),
-      bookingOpenAtUtc: json['booking_open_at_utc'] != null
-          ? DateTime.parse(json['booking_open_at_utc'] as String)
+      bookingOpenAtUtc: (json['booking_open_at'] ?? json['booking_open_at_utc']) !=
+              null
+          ? _parseUtcDateTime(
+              (json['booking_open_at'] ?? json['booking_open_at_utc']) as String,
+            )
           : null,
-      bookingCloseAtUtc: json['booking_close_at_utc'] != null
-          ? DateTime.parse(json['booking_close_at_utc'] as String)
+      bookingCloseAtUtc:
+          (json['booking_close_at'] ?? json['booking_close_at_utc']) != null
+          ? _parseUtcDateTime(
+              (json['booking_close_at'] ?? json['booking_close_at_utc'])
+                  as String,
+            )
           : null,
       cancelCutoffMinutes:
           (json['cancel_cutoff_minutes'] as num?)?.toInt() ?? 0,
@@ -90,5 +116,32 @@ class ClassEvent {
           ? ClassBooking.fromJson(json['my_booking'] as Map<String, dynamic>)
           : null,
     );
+  }
+
+  static int? _firstResourceId(dynamic rawRequirements) {
+    if (rawRequirements is! List || rawRequirements.isEmpty) {
+      return null;
+    }
+    final first = rawRequirements.first;
+    if (first is! Map<String, dynamic>) {
+      return null;
+    }
+    return (first['resource_id'] as num?)?.toInt();
+  }
+
+  static DateTime _parseUtcDateTime(String raw) {
+    final trimmed = raw.trim();
+    final hasOffset =
+        trimmed.endsWith('Z') ||
+        trimmed.contains('+') ||
+        RegExp(r'-\d{2}:\d{2}$').hasMatch(trimmed);
+    if (hasOffset) {
+      return DateTime.parse(trimmed).toUtc();
+    }
+    return DateTime.parse('${trimmed.replaceFirst(' ', 'T')}Z').toUtc();
+  }
+
+  static DateTime _parseLocalDateTime(String raw) {
+    return DateTime.parse(raw.trim().replaceFirst(' ', 'T'));
   }
 }
