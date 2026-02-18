@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '/core/models/class_booking.dart';
 import '/core/models/class_event.dart';
+import '/core/models/class_type.dart';
 import '/core/models/location_closure.dart';
 import 'api_config.dart';
 import 'token_storage.dart';
@@ -938,7 +939,7 @@ class ApiClient {
         if (classTypeId != null) 'class_type_id': classTypeId.toString(),
       },
     );
-    final data = response['data'];
+    final data = response['_list'] ?? response['data'] ?? response;
     if (data is List) {
       return data
           .whereType<Map<String, dynamic>>()
@@ -952,6 +953,65 @@ class ApiClient {
           .toList();
     }
     return const [];
+  }
+
+  /// GET /v1/businesses/{business_id}/class-types
+  Future<List<ClassType>> getClassTypes({
+    required int businessId,
+    bool includeInactive = false,
+  }) async {
+    final response = await get(
+      ApiConfig.classTypes(businessId),
+      queryParameters: {
+        if (includeInactive) 'include_inactive': '1',
+      },
+    );
+    final data = response['_list'] ?? response['data'] ?? response;
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ClassType.fromJson)
+          .toList();
+    }
+    if (data is Map && data['items'] is List) {
+      return (data['items'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map(ClassType.fromJson)
+          .toList();
+    }
+    return const [];
+  }
+
+  /// POST /v1/businesses/{business_id}/class-types
+  Future<ClassType> createClassType({
+    required int businessId,
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await post(ApiConfig.classTypes(businessId), data: data);
+    final payload = response['data'];
+    return ClassType.fromJson(payload is Map<String, dynamic> ? payload : response);
+  }
+
+  /// PUT /v1/businesses/{business_id}/class-types/{id}
+  Future<ClassType> updateClassType({
+    required int businessId,
+    required int classTypeId,
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await put(
+      ApiConfig.classType(businessId, classTypeId),
+      data: data,
+    );
+    final payload = response['data'];
+    return ClassType.fromJson(payload is Map<String, dynamic> ? payload : response);
+  }
+
+  /// DELETE /v1/businesses/{business_id}/class-types/{id}
+  Future<void> deleteClassType({
+    required int businessId,
+    required int classTypeId,
+  }) async {
+    await delete(ApiConfig.classType(businessId, classTypeId));
   }
 
   /// GET /v1/businesses/{business_id}/class-events/{id}
@@ -975,7 +1035,7 @@ class ApiClient {
       ApiConfig.classEventParticipants(businessId, classEventId),
       queryParameters: {if (status != null && status.isNotEmpty) 'status': status},
     );
-    final data = response['data'];
+    final data = response['_list'] ?? response['data'] ?? response;
     if (data is List) {
       return data
           .whereType<Map<String, dynamic>>()
@@ -1052,6 +1112,14 @@ class ApiClient {
     required int classEventId,
   }) async {
     await post('${ApiConfig.classEvent(businessId, classEventId)}/cancel');
+  }
+
+  /// DELETE /v1/businesses/{business_id}/class-events/{id}
+  Future<void> deleteClassEvent({
+    required int businessId,
+    required int classEventId,
+  }) async {
+    await delete(ApiConfig.classEvent(businessId, classEventId));
   }
 
   /// GET /v1/businesses/{business_id}/booking-notifications

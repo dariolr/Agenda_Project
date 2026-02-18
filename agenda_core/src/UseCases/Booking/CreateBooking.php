@@ -240,7 +240,7 @@ final class CreateBooking
         }
 
         // Validate staff belongs to location
-        if (!$this->staffRepository->belongsToLocation($staffId, $locationId)) {
+        if (!$this->staffRepository->belongsToLocation($staffId, $locationId, false)) {
             throw BookingException::invalidStaff($staffId);
         }
 
@@ -465,7 +465,7 @@ final class CreateBooking
                 }
 
                 // Validate staff belongs to location
-                if (!$this->staffRepository->belongsToLocation($staffId, $locationId)) {
+                if (!$this->staffRepository->belongsToLocation($staffId, $locationId, false)) {
                     throw BookingException::invalidStaff($staffId);
                 }
 
@@ -789,12 +789,12 @@ final class CreateBooking
         }
 
         // Validate staff belongs to location
-        if (!$this->staffRepository->belongsToLocation($staffId, $locationId)) {
+        if (!$this->staffRepository->belongsToLocation($staffId, $locationId, true)) {
             throw BookingException::invalidStaff($staffId);
         }
 
         // Validate staff can perform ALL requested services
-        if (!$this->staffRepository->canPerformServices($staffId, $serviceIds, $locationId, $businessId)) {
+        if (!$this->staffRepository->canPerformServices($staffId, $serviceIds, $locationId, $businessId, true)) {
             throw BookingException::invalidStaff($staffId);
         }
 
@@ -973,12 +973,12 @@ final class CreateBooking
                 $startTime = new DateTimeImmutable($item['start_time'], $locationTimezone);
 
                 // Validate staff belongs to location
-                if (!$this->staffRepository->belongsToLocation($staffId, $locationId)) {
+                if (!$this->staffRepository->belongsToLocation($staffId, $locationId, true)) {
                     throw BookingException::invalidStaff($staffId);
                 }
 
                 // Validate staff can perform this service
-                if (!$this->staffRepository->canPerformServices($staffId, [$serviceId], $locationId, $businessId)) {
+                if (!$this->staffRepository->canPerformServices($staffId, [$serviceId], $locationId, $businessId, true)) {
                     throw BookingException::invalidStaff($staffId);
                 }
 

@@ -221,7 +221,7 @@ final class BusinessInvitationsController
         }
 
         if ($staffId !== null) {
-            if (!$this->staffRepo->belongsToBusiness($staffId, $businessId)) {
+            if (!$this->staffRepo->belongsToBusiness($staffId, $businessId, false)) {
                 return Response::validationError(
                     'staff_id must belong to the specified business',
                     $request->traceId

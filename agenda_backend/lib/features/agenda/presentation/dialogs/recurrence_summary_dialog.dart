@@ -473,20 +473,41 @@ class _CombinedDateItem {
 /// Permette di escludere date prima di confermare
 /// Ritorna la lista degli indici da ESCLUDERE, oppure null se annullato
 class RecurrencePreviewDialog extends StatefulWidget {
-  const RecurrencePreviewDialog({super.key, required this.preview});
+  const RecurrencePreviewDialog({
+    super.key,
+    required this.preview,
+    this.titleText,
+    this.hintText,
+    this.confirmLabelBuilder,
+    this.excludeConflictsByDefault = true,
+  });
 
   final RecurringPreviewResult preview;
+  final String? titleText;
+  final String? hintText;
+  final String Function(int count)? confirmLabelBuilder;
+  final bool excludeConflictsByDefault;
 
   /// Mostra il dialog e ritorna la lista degli indici da escludere.
   /// Ritorna null se l'utente annulla.
   static Future<List<int>?> show(
     BuildContext context,
-    RecurringPreviewResult preview,
-  ) async {
+    RecurringPreviewResult preview, {
+    String? titleText,
+    String? hintText,
+    String Function(int count)? confirmLabelBuilder,
+    bool excludeConflictsByDefault = true,
+  }) async {
     return showDialog<List<int>>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => RecurrencePreviewDialog(preview: preview),
+      builder: (ctx) => RecurrencePreviewDialog(
+        preview: preview,
+        titleText: titleText,
+        hintText: hintText,
+        confirmLabelBuilder: confirmLabelBuilder,
+        excludeConflictsByDefault: excludeConflictsByDefault,
+      ),
     );
   }
 
@@ -501,11 +522,12 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
   @override
   void initState() {
     super.initState();
-    // Escludi di default le date con conflitto
-    _excludedIndices = widget.preview.dates
-        .where((d) => d.hasConflict)
-        .map((d) => d.recurrenceIndex)
-        .toSet();
+    _excludedIndices = widget.excludeConflictsByDefault
+        ? widget.preview.dates
+              .where((d) => d.hasConflict)
+              .map((d) => d.recurrenceIndex)
+              .toSet()
+        : <int>{};
   }
 
   void _toggleDate(int index) {
@@ -543,7 +565,7 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
         children: [
           Icon(Icons.preview, color: theme.colorScheme.primary, size: 28),
           const SizedBox(width: 12),
-          Expanded(child: Text(l10n.recurrencePreviewTitle)),
+          Expanded(child: Text(widget.titleText ?? l10n.recurrencePreviewTitle)),
         ],
       ),
       content: SizedBox(
@@ -587,7 +609,7 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
 
             // Hint per escludere date
             Text(
-              l10n.recurrencePreviewHint,
+              widget.hintText ?? l10n.recurrencePreviewHint,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -636,9 +658,13 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
                     ),
                     subtitle: hasConflict
                         ? Text(
-                            l10n.recurrenceSummaryConflict,
+                            isExcluded
+                                ? l10n.recurrencePreviewConflictSkip
+                                : l10n.recurrencePreviewConflictForce,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.error,
+                              color: isExcluded
+                                  ? theme.colorScheme.error
+                                  : theme.colorScheme.primary,
                             ),
                           )
                         : Text(
@@ -665,7 +691,10 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
         const SizedBox(width: 8),
         FilledButton(
           onPressed: selectedCount > 0 ? _confirm : null,
-          child: Text(l10n.recurrencePreviewConfirm(selectedCount)),
+          child: Text(
+            widget.confirmLabelBuilder?.call(selectedCount) ??
+                l10n.recurrencePreviewConfirm(selectedCount),
+          ),
         ),
       ],
     );

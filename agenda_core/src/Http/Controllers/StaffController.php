@@ -65,7 +65,7 @@ final class StaffController
         }
 
         // Verify staff belongs to this location
-        if ($locationId !== null && !$this->staffRepository->belongsToLocation($id, $locationId)) {
+        if ($locationId !== null && !$this->staffRepository->belongsToLocation($id, $locationId, false)) {
             return Response::error('Staff member not found', 'not_found', 404);
         }
 

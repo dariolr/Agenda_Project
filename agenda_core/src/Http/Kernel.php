@@ -27,6 +27,7 @@ use Agenda\Http\Controllers\AppointmentsController;
 use Agenda\Http\Controllers\BookingNotificationsController;
 use Agenda\Http\Controllers\BusinessSyncController;
 use Agenda\Http\Controllers\LocationClosuresController;
+use Agenda\Http\Controllers\ClassEventsController;
 use Agenda\Http\Controllers\ReportsController;
 use Agenda\Http\Middleware\AuthMiddleware;
 use Agenda\Http\Middleware\BusinessAccessMiddleware;
@@ -57,6 +58,7 @@ use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Repositories\PopularServiceRepository;
 use Agenda\Infrastructure\Repositories\LocationClosureRepository;
+use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
 use Agenda\UseCases\Auth\GetMe;
@@ -241,6 +243,21 @@ final class Kernel
         $this->router->get('/v1/services/{id}/locations', ServicesController::class, 'getLocations', ['auth']);
         $this->router->put('/v1/services/{id}/locations', ServicesController::class, 'updateLocations', ['auth']);
 
+        // Class Events (auth required)
+        $this->router->get('/v1/businesses/{business_id}/class-types', ClassEventsController::class, 'indexTypes', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/class-types', ClassEventsController::class, 'storeType', ['auth']);
+        $this->router->put('/v1/businesses/{business_id}/class-types/{id}', ClassEventsController::class, 'updateType', ['auth']);
+        $this->router->delete('/v1/businesses/{business_id}/class-types/{id}', ClassEventsController::class, 'destroyType', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/class-events', ClassEventsController::class, 'index', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/class-events', ClassEventsController::class, 'store', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/class-events/{id}', ClassEventsController::class, 'show', ['auth']);
+        $this->router->put('/v1/businesses/{business_id}/class-events/{id}', ClassEventsController::class, 'update', ['auth']);
+        $this->router->delete('/v1/businesses/{business_id}/class-events/{id}', ClassEventsController::class, 'destroy', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/class-events/{id}/cancel', ClassEventsController::class, 'cancel', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/class-events/{id}/participants', ClassEventsController::class, 'participants', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/class-events/{id}/book', ClassEventsController::class, 'book', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/class-events/{id}/cancel-booking', ClassEventsController::class, 'cancelBooking', ['auth']);
+
         // Service Packages (public)
         $this->router->get('/v1/locations/{location_id}/service-packages', ServicePackagesController::class, 'index', ['location_path']);
         $this->router->get('/v1/locations/{location_id}/service-packages/{id}/expand', ServicePackagesController::class, 'expand', ['location_path']);
@@ -386,6 +403,7 @@ final class Kernel
         $notificationRepo = new NotificationRepository($this->db);
         $popularServiceRepo = new PopularServiceRepository($this->db);
         $locationClosureRepo = new LocationClosureRepository($this->db);
+        $classEventRepo = new ClassEventRepository($this->db);
 
         // Services
         $jwtService = new JwtService();
@@ -457,6 +475,7 @@ final class Kernel
             TimeBlocksController::class => new TimeBlocksController($timeBlockRepo, $locationRepo, $businessUserRepo, $userRepo),
             ReportsController::class => new ReportsController($this->db, $businessUserRepo, $userRepo, $locationClosureRepo),
             LocationClosuresController::class => new LocationClosuresController($locationClosureRepo, $locationRepo, $businessUserRepo, $userRepo),
+            ClassEventsController::class => new ClassEventsController($classEventRepo, $businessUserRepo, $locationRepo, $userRepo),
         ];
     }
 

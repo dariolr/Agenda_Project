@@ -21,6 +21,7 @@ class RoleSelectionDialog extends StatefulWidget {
     required this.currentLocationIds,
     required this.locations,
     required this.userName,
+    required this.userEmail,
     required this.onSave,
   });
 
@@ -29,6 +30,7 @@ class RoleSelectionDialog extends StatefulWidget {
   final List<int> currentLocationIds;
   final List<Location> locations;
   final String userName;
+  final String userEmail;
   final RoleScopeSaveCallback onSave;
 
   @override
@@ -76,6 +78,15 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
             'Modifica il ruolo di ${widget.userName}',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            initialValue: widget.userEmail,
+            enabled: false,
+            decoration: InputDecoration(
+              labelText: l10n.operatorsInviteEmail,
+              prefixIcon: const Icon(Icons.email_outlined),
             ),
           ),
           const SizedBox(height: 24),
@@ -173,6 +184,7 @@ class RoleSelectionSheet extends StatefulWidget {
     required this.currentLocationIds,
     required this.locations,
     required this.userName,
+    required this.userEmail,
     required this.onSave,
   });
 
@@ -181,6 +193,7 @@ class RoleSelectionSheet extends StatefulWidget {
   final List<int> currentLocationIds;
   final List<Location> locations;
   final String userName;
+  final String userEmail;
   final RoleScopeSaveCallback onSave;
 
   @override
@@ -233,6 +246,15 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
             'Modifica il ruolo di ${widget.userName}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            initialValue: widget.userEmail,
+            enabled: false,
+            decoration: InputDecoration(
+              labelText: l10n.operatorsInviteEmail,
+              prefixIcon: const Icon(Icons.email_outlined),
             ),
           ),
           const SizedBox(height: 16),

@@ -1,6 +1,6 @@
 class ClassBooking {
   final int id;
-  final int tenantId;
+  final int businessId;
   final int classEventId;
   final int customerId;
   final String status;
@@ -13,7 +13,7 @@ class ClassBooking {
 
   const ClassBooking({
     required this.id,
-    required this.tenantId,
+    required this.businessId,
     required this.classEventId,
     required this.customerId,
     required this.status,
@@ -31,17 +31,26 @@ class ClassBooking {
   factory ClassBooking.fromJson(Map<String, dynamic> json) {
     return ClassBooking(
       id: (json['id'] as num).toInt(),
-      tenantId: (json['tenant_id'] as num?)?.toInt() ?? 0,
+      businessId:
+          (json['business_id'] as num?)?.toInt() ??
+          (json['tenant_id'] as num?)?.toInt() ??
+          0,
       classEventId: (json['class_event_id'] as num).toInt(),
       customerId: (json['customer_id'] as num).toInt(),
       status: (json['status'] as String? ?? 'WAITLISTED').toUpperCase(),
       waitlistPosition: (json['waitlist_position'] as num?)?.toInt(),
-      bookedAtUtc: DateTime.parse(json['booked_at_utc'] as String),
-      cancelledAtUtc: json['cancelled_at_utc'] != null
-          ? DateTime.parse(json['cancelled_at_utc'] as String)
+      bookedAtUtc: DateTime.parse(
+        (json['booked_at'] ?? json['booked_at_utc']) as String,
+      ),
+      cancelledAtUtc: (json['cancelled_at'] ?? json['cancelled_at_utc']) != null
+          ? DateTime.parse(
+              (json['cancelled_at'] ?? json['cancelled_at_utc']) as String,
+            )
           : null,
-      checkedInAtUtc: json['checked_in_at_utc'] != null
-          ? DateTime.parse(json['checked_in_at_utc'] as String)
+      checkedInAtUtc: (json['checked_in_at'] ?? json['checked_in_at_utc']) != null
+          ? DateTime.parse(
+              (json['checked_in_at'] ?? json['checked_in_at_utc']) as String,
+            )
           : null,
       paymentStatus: json['payment_status'] as String?,
       notes: json['notes'] as String?,

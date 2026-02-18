@@ -80,24 +80,28 @@ final class StaffRepository
         return $results;
     }
 
-    public function belongsToLocation(int $staffId, int $locationId): bool
+    public function belongsToLocation(int $staffId, int $locationId, bool $requireBookableOnline = true): bool
     {
-        $stmt = $this->db->getPdo()->prepare(
-            'SELECT 1 FROM staff s
-             JOIN staff_locations sl ON s.id = sl.staff_id
-             WHERE s.id = ? AND sl.location_id = ? AND s.is_active = 1 AND s.is_bookable_online = 1'
-        );
+        $sql = 'SELECT 1 FROM staff s
+                JOIN staff_locations sl ON s.id = sl.staff_id
+                WHERE s.id = ? AND sl.location_id = ? AND s.is_active = 1';
+        if ($requireBookableOnline) {
+            $sql .= ' AND s.is_bookable_online = 1';
+        }
+        $stmt = $this->db->getPdo()->prepare($sql);
         $stmt->execute([$staffId, $locationId]);
 
         return $stmt->fetchColumn() !== false;
     }
 
-    public function belongsToBusiness(int $staffId, int $businessId): bool
+    public function belongsToBusiness(int $staffId, int $businessId, bool $requireBookableOnline = true): bool
     {
-        $stmt = $this->db->getPdo()->prepare(
-            'SELECT 1 FROM staff 
-             WHERE id = ? AND business_id = ? AND is_active = 1 AND is_bookable_online = 1'
-        );
+        $sql = 'SELECT 1 FROM staff 
+                WHERE id = ? AND business_id = ? AND is_active = 1';
+        if ($requireBookableOnline) {
+            $sql .= ' AND is_bookable_online = 1';
+        }
+        $stmt = $this->db->getPdo()->prepare($sql);
         $stmt->execute([$staffId, $businessId]);
 
         return $stmt->fetchColumn() !== false;
@@ -107,10 +111,16 @@ final class StaffRepository
      * Check if staff can perform all given services.
      * Checks staff_services table if exists, otherwise allows all services.
      */
-    public function canPerformServices(int $staffId, array $serviceIds, int $locationId, int $businessId): bool
+    public function canPerformServices(
+        int $staffId,
+        array $serviceIds,
+        int $locationId,
+        int $businessId,
+        bool $requireBookableOnline = true
+    ): bool
     {
         // First verify staff belongs to location
-        if (!$this->belongsToLocation($staffId, $locationId)) {
+        if (!$this->belongsToLocation($staffId, $locationId, $requireBookableOnline)) {
             return false;
         }
         

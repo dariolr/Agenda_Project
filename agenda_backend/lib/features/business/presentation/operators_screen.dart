@@ -510,6 +510,8 @@ class _UserTile extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final locations = ref.watch(locationsProvider);
     final canEditRole = enableActions && !user.isCurrentUser && user.role != 'owner';
+    final showLocationsInfo = locations.length > 1;
+    final enabledLocationsInfo = _buildEnabledLocationsInfo(l10n, locations);
 
     return Card(
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
@@ -549,9 +551,23 @@ class _UserTile extends ConsumerWidget {
             ],
           ],
         ),
-        subtitle: Text(
-          _getRoleLabel(user.role, l10n),
-          style: TextStyle(color: colorScheme.onSurfaceVariant),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _getRoleLabel(user.role, l10n),
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+            if (showLocationsInfo) ...[
+              const SizedBox(height: 4),
+              Text(
+                '${l10n.teamStaffLocationsLabel}: $enabledLocationsInfo',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
         ),
         trailing: !canEditRole
             ? null
@@ -617,6 +633,24 @@ class _UserTile extends ConsumerWidget {
     };
   }
 
+  String _buildEnabledLocationsInfo(dynamic l10n, List<Location> locations) {
+    if (user.scopeType != 'locations' || user.locationIds.isEmpty) {
+      return l10n.allLocations;
+    }
+
+    final selectedNames = locations
+        .where((location) => user.locationIds.contains(location.id))
+        .map((location) => location.name)
+        .where((name) => name.trim().isNotEmpty)
+        .toList();
+
+    if (selectedNames.isEmpty) {
+      return l10n.allLocations;
+    }
+
+    return selectedNames.join(', ');
+  }
+
   void _showEditRoleDialog(
     BuildContext context,
     WidgetRef ref,
@@ -636,6 +670,7 @@ class _UserTile extends ConsumerWidget {
           currentLocationIds: user.locationIds,
           locations: locations,
           userName: user.fullName,
+          userEmail: user.email,
           onSave:
               ({
                 required String role,
@@ -687,6 +722,7 @@ class _UserTile extends ConsumerWidget {
           currentLocationIds: user.locationIds,
           locations: locations,
           userName: user.fullName,
+          userEmail: user.email,
           onSave:
               ({
                 required String role,
