@@ -7,10 +7,12 @@ const colorPrimary1 = Color(0xFF141414); // colore base scuro
 const colorPrimary2 = Color(0xFFFEFEFE); // colore contrasto chiaro
 const _appFontFamily = 'Roboto';
 const List<String> _emojiFontFallback = [
-  'Noto Color Emoji',
   'Apple Color Emoji',
   'Segoe UI Emoji',
   'Segoe UI Symbol',
+  'Noto Color Emoji',
+  'Noto Emoji',
+  'Emoji',
   'sans-serif',
 ];
 
