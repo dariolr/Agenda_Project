@@ -236,8 +236,8 @@ final class LocationsController
         // Handle smart slot display settings
         if (array_key_exists('slot_interval_minutes', $body)) {
             $interval = (int) $body['slot_interval_minutes'];
-            // Validate interval is reasonable (5-60 minutes)
-            if ($interval >= 5 && $interval <= 60) {
+            // Validate interval is reasonable (5-120 minutes)
+            if ($interval >= 5 && $interval <= 120) {
                 $updateData['slot_interval_minutes'] = $interval;
             }
         }

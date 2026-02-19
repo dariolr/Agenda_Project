@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/business.dart';
+import '../../core/utils/initials_utils.dart';
 import '../../features/agenda/providers/business_providers.dart';
 import '../../features/business/providers/superadmin_selected_business_provider.dart';
 import '../../features/auth/providers/auth_provider.dart';
@@ -68,6 +69,10 @@ class _BusinessDropdown extends StatelessWidget {
       (b) => b.id == currentBusinessId,
       orElse: () => businesses.first,
     );
+    final currentBusinessInitial = InitialsUtils.fromName(
+      currentBusiness.name,
+      maxChars: 1,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
@@ -78,6 +83,7 @@ class _BusinessDropdown extends StatelessWidget {
         onSelected: onChanged,
         itemBuilder: (context) => businesses.map((b) {
           final isSelected = b.id == currentBusinessId;
+          final businessInitial = InitialsUtils.fromName(b.name, maxChars: 1);
           return PopupMenuItem<int>(
             value: b.id,
             child: Row(
@@ -88,7 +94,7 @@ class _BusinessDropdown extends StatelessWidget {
                       ? colorScheme.primaryContainer
                       : colorScheme.surfaceContainerHighest,
                   child: Text(
-                    b.name.isNotEmpty ? b.name[0].toUpperCase() : '?',
+                    businessInitial.isNotEmpty ? businessInitial : '?',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -125,9 +131,7 @@ class _BusinessDropdown extends StatelessWidget {
           ),
           child: Center(
             child: Text(
-              currentBusiness.name.isNotEmpty
-                  ? currentBusiness.name[0].toUpperCase()
-                  : '?',
+              currentBusinessInitial.isNotEmpty ? currentBusinessInitial : '?',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,

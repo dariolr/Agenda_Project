@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Infrastructure\Repositories;
 
+use Agenda\Domain\Helpers\Unicode;
 use Agenda\Infrastructure\Database\Connection;
 use DateTimeImmutable;
 
@@ -117,7 +118,9 @@ final class BookingRepository
 
         $items = $stmt->fetchAll();
         foreach ($items as &$item) {
-            $item['staff_display_name'] = trim($item['staff_name'] . ' ' . substr($item['staff_surname'] ?? '', 0, 1) . '.');
+            $item['staff_display_name'] = trim(
+                $item['staff_name'] . ' ' . Unicode::firstCharacter((string) ($item['staff_surname'] ?? '')) . '.'
+            );
             $item['duration_minutes'] = $this->calculateItemDuration($item);
             // Alias for client_name (uses snapshot or booking's client_name)
             $item['client_name'] = $item['client_name_snapshot'] ?? $item['booking_client_name'] ?? '';
@@ -988,7 +991,7 @@ final class BookingRepository
                    MAX(bi.end_time) AS last_end_time,
                    SUM(bi.price) AS total_price,
                    GROUP_CONCAT(DISTINCT s.name ORDER BY bi.start_time SEPARATOR ', ') AS service_names,
-                   GROUP_CONCAT(DISTINCT CONCAT(st.name, ' ', SUBSTR(st.surname, 1, 1), '.') ORDER BY bi.start_time SEPARATOR ', ') AS staff_names,
+                   GROUP_CONCAT(DISTINCT CONCAT(st.name, ' ', LEFT(st.surname, 1), '.') ORDER BY bi.start_time SEPARATOR ', ') AS staff_names,
                    creator.first_name AS creator_first_name, creator.last_name AS creator_last_name
             FROM bookings b
             LEFT JOIN clients c ON b.client_id = c.id
@@ -1126,4 +1129,5 @@ final class BookingRepository
             'total' => $total,
         ];
     }
+
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Http\Controllers;
 
+use Agenda\Domain\Helpers\Unicode;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\StaffRepository;
@@ -447,7 +448,9 @@ final class StaffController
             'business_id' => (int) $s['business_id'],
             'name' => $s['name'],
             'surname' => $s['surname'] ?? '',
-            'display_name' => $s['display_name'] ?? trim($s['name'] . ' ' . substr($s['surname'] ?? '', 0, 1) . '.'),
+            'display_name' => $s['display_name'] ?? trim(
+                $s['name'] . ' ' . Unicode::firstCharacter((string) ($s['surname'] ?? '')) . '.'
+            ),
             'color_hex' => $s['color_hex'],
             'avatar_url' => $s['avatar_url'] ?? null,
             'is_bookable_online' => (bool) ($s['is_bookable_online'] ?? true),
@@ -499,4 +502,5 @@ final class StaffController
 
         return Response::success(['updated' => count($staffList)]);
     }
+
 }

@@ -28,8 +28,8 @@ final class DataMasker
         $domain = $parts[1];
 
         // Keep first character, mask the rest
-        $maskedLocal = strlen($localPart) > 1
-            ? $localPart[0] . '***'
+        $maskedLocal = Unicode::length($localPart) > 1
+            ? Unicode::firstCharacter($localPart) . '***'
             : '***';
 
         return $maskedLocal . '@' . $domain;
@@ -72,8 +72,8 @@ final class DataMasker
             return null;
         }
 
-        return strlen($value) > 1
-            ? $value[0] . '***'
+        return Unicode::length($value) > 1
+            ? Unicode::firstCharacter($value) . '***'
             : '***';
     }
 }

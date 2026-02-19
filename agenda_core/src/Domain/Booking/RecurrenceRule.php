@@ -47,7 +47,9 @@ final class RecurrenceRule implements JsonSerializable
             maxOccurrences: isset($data['max_occurrences']) ? (int) $data['max_occurrences'] : null,
             endDate: isset($data['end_date']) ? new DateTimeImmutable($data['end_date']) : null,
             conflictStrategy: $data['conflict_strategy'] ?? self::CONFLICT_SKIP,
-            daysOfWeek: isset($data['days_of_week']) ? json_decode($data['days_of_week'], true) : null,
+            daysOfWeek: isset($data['days_of_week'])
+                ? json_decode($data['days_of_week'], true, 512, JSON_INVALID_UTF8_SUBSTITUTE)
+                : null,
             dayOfMonth: isset($data['day_of_month']) ? (int) $data['day_of_month'] : null,
             createdAt: isset($data['created_at']) ? new DateTimeImmutable($data['created_at']) : null,
             updatedAt: isset($data['updated_at']) ? new DateTimeImmutable($data['updated_at']) : null,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Agenda\Infrastructure\Repositories;
 
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Support\Json;
 
 /**
  * Repository per staff planning settimanale/bisettimanale.
@@ -152,7 +153,7 @@ final class StaffPlanningRepository
             }
 
             $dayOfWeek = (int) $row['day_of_week'];
-            $slots = json_decode($row['slots'], true) ?? [];
+            $slots = Json::decodeAssoc((string) $row['slots']) ?? [];
             $templates[$weekLabel]['day_slots'][$dayOfWeek] = $slots;
         }
 
@@ -299,7 +300,12 @@ final class StaffPlanningRepository
              SET slots = ?
              WHERE staff_planning_id = ? AND week_label = ? AND day_of_week = ?'
         );
-        $stmt->execute([json_encode($slots), $planningId, strtoupper($weekLabel), $dayOfWeek]);
+        $stmt->execute([
+            Json::encode($slots),
+            $planningId,
+            strtoupper($weekLabel),
+            $dayOfWeek
+        ]);
 
         if ($stmt->rowCount() === 0) {
             // Nessuna riga aggiornata, fai INSERT
@@ -307,7 +313,12 @@ final class StaffPlanningRepository
                 'INSERT INTO staff_planning_week_template (staff_planning_id, week_label, day_of_week, slots)
                  VALUES (?, ?, ?, ?)'
             );
-            $stmt->execute([$planningId, strtoupper($weekLabel), $dayOfWeek, json_encode($slots)]);
+            $stmt->execute([
+                $planningId,
+                strtoupper($weekLabel),
+                $dayOfWeek,
+                Json::encode($slots)
+            ]);
         }
     }
 

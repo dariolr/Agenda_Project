@@ -1,3 +1,5 @@
+import '../utils/initials_utils.dart';
+
 /// Modello utente per l'autenticazione.
 /// Rappresenta l'utente loggato nel gestionale.
 class User {
@@ -24,9 +26,8 @@ class User {
 
   /// Iniziali dell'utente (per avatar).
   String get initials {
-    final first = firstName.isNotEmpty ? firstName[0].toUpperCase() : '';
-    final last = lastName.isNotEmpty ? lastName[0].toUpperCase() : '';
-    return '$first$last';
+    final fullName = '$firstName $lastName'.trim();
+    return InitialsUtils.fromName(fullName, maxChars: 2);
   }
 
   User copyWith({

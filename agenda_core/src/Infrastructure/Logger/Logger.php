@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Agenda\Infrastructure\Logger;
 
+use Agenda\Infrastructure\Support\Json;
+
 final class Logger
 {
     private string $logFile;
@@ -35,7 +37,9 @@ final class Logger
     private function log(string $level, string $message, array $context): void
     {
         $timestamp = date('Y-m-d H:i:s');
-        $contextJson = empty($context) ? '' : ' ' . json_encode($context, JSON_UNESCAPED_UNICODE);
+        $contextJson = empty($context)
+            ? ''
+            : ' ' . Json::encode($context);
         $line = "[{$timestamp}] [{$level}] {$message}{$contextJson}\n";
         
         file_put_contents($this->logFile, $line, FILE_APPEND | LOCK_EX);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../utils/initials_utils.dart';
 import '../utils/color_utils.dart';
 
 class Staff {
@@ -92,40 +93,7 @@ class Staff {
   }
 
   String get initials {
-    final nameInitial = name.isNotEmpty
-        ? name.trim().split(RegExp(r'\s+')).first[0].toUpperCase()
-        : '';
-
-    final surnameParts = surname.trim().split(RegExp(r'\s+'))
-      ..removeWhere((p) => p.isEmpty);
-
-    if (nameInitial.isEmpty && surnameParts.isEmpty) {
-      return '';
-    }
-
-    var initials = nameInitial;
-
-    if (surnameParts.isNotEmpty) {
-      for (final part in surnameParts) {
-        initials += part[0].toUpperCase();
-        if (initials.length >= 3) break;
-      }
-    }
-
-    if (initials.length < 3 && surnameParts.isEmpty) {
-      final nameParts = name.trim().split(RegExp(r'\s+'))
-        ..removeWhere((p) => p.isEmpty);
-      if (nameParts.length > 1) {
-        for (int i = 1; i < nameParts.length; i++) {
-          initials += nameParts[i][0].toUpperCase();
-          if (initials.length >= 3) break;
-        }
-      } else if (name.length > 1) {
-        initials += name[1].toUpperCase();
-      }
-    }
-
-    final endIndex = initials.length.clamp(1, 3).toInt();
-    return initials.substring(0, endIndex);
+    final fullName = '$name $surname'.trim();
+    return InitialsUtils.fromName(fullName, maxChars: 3);
   }
 }

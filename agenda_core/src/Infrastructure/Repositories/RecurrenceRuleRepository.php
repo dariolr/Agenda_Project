@@ -6,6 +6,7 @@ namespace Agenda\Infrastructure\Repositories;
 
 use Agenda\Domain\Booking\RecurrenceRule;
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Support\Json;
 
 /**
  * Repository per la gestione delle regole di ricorrenza.
@@ -39,7 +40,9 @@ final class RecurrenceRuleRepository
             'max_occurrences' => $rule->maxOccurrences,
             'end_date' => $rule->endDate?->format('Y-m-d'),
             'conflict_strategy' => $rule->conflictStrategy,
-            'days_of_week' => $rule->daysOfWeek !== null ? json_encode($rule->daysOfWeek) : null,
+            'days_of_week' => $rule->daysOfWeek !== null
+                ? Json::encode($rule->daysOfWeek)
+                : null,
             'day_of_month' => $rule->dayOfMonth,
         ]);
 
@@ -110,7 +113,9 @@ final class RecurrenceRuleRepository
             'max_occurrences' => $rule->maxOccurrences,
             'end_date' => $rule->endDate?->format('Y-m-d'),
             'conflict_strategy' => $rule->conflictStrategy,
-            'days_of_week' => $rule->daysOfWeek !== null ? json_encode($rule->daysOfWeek) : null,
+            'days_of_week' => $rule->daysOfWeek !== null
+                ? Json::encode($rule->daysOfWeek)
+                : null,
             'day_of_month' => $rule->dayOfMonth,
         ]);
     }

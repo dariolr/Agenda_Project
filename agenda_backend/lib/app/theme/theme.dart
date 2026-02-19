@@ -5,6 +5,37 @@ import 'theme_config.dart';
 
 const colorPrimary1 = Color(0xFF141414); // colore base scuro
 const colorPrimary2 = Color(0xFFFEFEFE); // colore contrasto chiaro
+const _appFontFamily = 'Roboto';
+const List<String> _emojiFontFallback = [
+  'Noto Color Emoji',
+  'Apple Color Emoji',
+  'Segoe UI Emoji',
+  'Segoe UI Symbol',
+  'sans-serif',
+];
+
+TextTheme _withEmojiFallback(TextTheme textTheme) {
+  TextStyle? apply(TextStyle? style) =>
+      style?.copyWith(fontFamilyFallback: _emojiFontFallback);
+
+  return textTheme.copyWith(
+    displayLarge: apply(textTheme.displayLarge),
+    displayMedium: apply(textTheme.displayMedium),
+    displaySmall: apply(textTheme.displaySmall),
+    headlineLarge: apply(textTheme.headlineLarge),
+    headlineMedium: apply(textTheme.headlineMedium),
+    headlineSmall: apply(textTheme.headlineSmall),
+    titleLarge: apply(textTheme.titleLarge),
+    titleMedium: apply(textTheme.titleMedium),
+    titleSmall: apply(textTheme.titleSmall),
+    bodyLarge: apply(textTheme.bodyLarge),
+    bodyMedium: apply(textTheme.bodyMedium),
+    bodySmall: apply(textTheme.bodySmall),
+    labelLarge: apply(textTheme.labelLarge),
+    labelMedium: apply(textTheme.labelMedium),
+    labelSmall: apply(textTheme.labelSmall),
+  );
+}
 
 /// Crea un tema coerente partendo dal seed definito in [AppThemeConfig].
 ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
@@ -38,6 +69,7 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
     brightness: brightness,
     scaffoldBackgroundColor: background,
     canvasColor: surface,
+    fontFamily: _appFontFamily,
   );
 
   final titleStyle =
@@ -74,9 +106,12 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
         side: BorderSide(color: onBackground.withOpacity(0.1), width: 0.5),
       ),
     ),
-    textTheme: base.textTheme.apply(
-      bodyColor: onBackground,
-      displayColor: onBackground,
+    textTheme: _withEmojiFallback(
+      base.textTheme.apply(
+        bodyColor: onBackground,
+        displayColor: onBackground,
+        fontFamily: _appFontFamily,
+      ),
     ),
     iconTheme: IconThemeData(color: onBackground),
     dividerColor: onBackground.withOpacity(0.12),

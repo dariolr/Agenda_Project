@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Infrastructure\Repositories;
 
+use Agenda\Domain\Helpers\Unicode;
 use Agenda\Infrastructure\Database\Connection;
 
 /**
@@ -31,7 +32,7 @@ final class StaffRepository
         $result = $stmt->fetch();
 
         if ($result) {
-            $result['display_name'] = trim($result['name'] . ' ' . substr($result['surname'], 0, 1) . '.');
+            $result['display_name'] = trim($result['name'] . ' ' . Unicode::firstCharacter((string) ($result['surname'] ?? '')) . '.');
         }
 
         return $result ?: null;
@@ -51,7 +52,7 @@ final class StaffRepository
 
         $results = $stmt->fetchAll();
         foreach ($results as &$result) {
-            $result['display_name'] = trim($result['name'] . ' ' . substr($result['surname'], 0, 1) . '.');
+            $result['display_name'] = trim($result['name'] . ' ' . Unicode::firstCharacter((string) ($result['surname'] ?? '')) . '.');
         }
 
         return $results;
@@ -70,7 +71,7 @@ final class StaffRepository
 
         $results = $stmt->fetchAll();
         foreach ($results as &$result) {
-            $result['display_name'] = trim($result['name'] . ' ' . substr($result['surname'], 0, 1) . '.');
+            $result['display_name'] = trim($result['name'] . ' ' . Unicode::firstCharacter((string) ($result['surname'] ?? '')) . '.');
             // Carica location_ids per ogni staff
             $result['location_ids'] = $this->getLocationIds((int) $result['id']);
             // Carica service_ids per ogni staff
@@ -352,7 +353,7 @@ final class StaffRepository
             'SELECT location_id FROM staff_locations WHERE staff_id = ?'
         );
         $stmt->execute([$staffId]);
-        return array_column($stmt->fetchAll(), 'location_id');
+        return array_map('intval', array_column($stmt->fetchAll(), 'location_id'));
     }
 
     /**
@@ -457,4 +458,5 @@ final class StaffRepository
 
         return (int) $businesses[0];
     }
+
 }

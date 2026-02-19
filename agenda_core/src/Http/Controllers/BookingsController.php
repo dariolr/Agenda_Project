@@ -23,6 +23,7 @@ use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Notifications\EmailService;
+use Agenda\Infrastructure\Support\Json;
 
 final class BookingsController
 {
@@ -472,7 +473,7 @@ final class BookingsController
             'actor_id' => $actorId,
             'actor_name' => $actorName, // null only if actor deleted AND no stored name
             'correlation_id' => $event['correlation_id'],
-            'payload' => json_decode($event['payload_json'], true),
+            'payload' => Json::decodeAssoc((string) $event['payload_json']) ?? [],
             'created_at' => $event['created_at'],
         ];
     }
@@ -1327,7 +1328,11 @@ final class BookingsController
         );
 
         // DEBUG: Log request body
-        file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " storeCustomer body: " . json_encode($body) . "\n", FILE_APPEND);
+        file_put_contents(
+            __DIR__ . '/../../../logs/debug.log',
+            date('Y-m-d H:i:s') . " storeCustomer body: " . Json::encode($body) . "\n",
+            FILE_APPEND
+        );
 
         // Validate required fields
         if (!isset($body['location_id'])) {

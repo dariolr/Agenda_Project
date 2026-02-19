@@ -19,7 +19,6 @@ import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../auth/providers/current_business_user_provider.dart';
 import '../../domain/config/layout_config.dart';
 import '../../providers/date_range_provider.dart';
-import '../../providers/layout_config_provider.dart';
 import '../../providers/time_blocks_provider.dart';
 import '../widgets/recurrence_picker.dart';
 
@@ -79,6 +78,8 @@ class _AddBlockDialog extends ConsumerStatefulWidget {
 }
 
 class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
+  static const int _timePickerStepMinutes = 5;
+
   late DateTime _date;
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
@@ -523,7 +524,6 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
   }
 
   Future<void> _pickTime({required bool isStart}) async {
-    final step = ref.read(layoutConfigProvider).minutesPerSlot;
     final l10n = context.l10n;
     final selected = await AppBottomSheet.show<TimeOfDay>(
       context: context,
@@ -535,7 +535,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
           height: height,
           child: _TimeGridPicker(
             initial: isStart ? _startTime : _endTime,
-            stepMinutes: step,
+            stepMinutes: _timePickerStepMinutes,
             title: isStart ? l10n.blockStartTime : l10n.blockEndTime,
           ),
         );

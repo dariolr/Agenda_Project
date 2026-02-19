@@ -6,6 +6,7 @@ import '../../../app/widgets/user_menu_button.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
 import '../../../core/models/location.dart';
+import '../../../core/utils/initials_utils.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../auth/providers/current_business_user_provider.dart';
@@ -127,6 +128,10 @@ class _UserBusinessList extends StatelessWidget {
           itemCount: businesses.length,
           itemBuilder: (context, index) {
             final business = businesses[index];
+            final businessInitial = InitialsUtils.fromName(
+              business.name,
+              maxChars: 1,
+            );
             return Card(
               clipBehavior: Clip.antiAlias,
               child: InkWell(
@@ -137,11 +142,7 @@ class _UserBusinessList extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 24,
-                        child: Text(
-                          business.name.isNotEmpty
-                              ? business.name[0].toUpperCase()
-                              : '?',
-                        ),
+                        child: Text(businessInitial.isNotEmpty ? businessInitial : '?'),
                       ),
                       const SizedBox(width: 14),
                       Expanded(

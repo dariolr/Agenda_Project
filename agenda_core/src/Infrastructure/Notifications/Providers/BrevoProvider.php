@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Agenda\Infrastructure\Notifications\Providers;
 
 use Agenda\Infrastructure\Notifications\EmailProviderInterface;
+use Agenda\Infrastructure\Support\Json;
 
 /**
  * Brevo (ex Sendinblue) email provider.
@@ -102,7 +103,7 @@ final class BrevoProvider implements EmailProviderInterface
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
+            CURLOPT_POSTFIELDS => Json::encode($data),
             CURLOPT_HTTPHEADER => [
                 'Accept: application/json',
                 'Content-Type: application/json',

@@ -1,3 +1,5 @@
+import '../utils/initials_utils.dart';
+
 /// Modello Staff/Operatore
 class Staff {
   final int id;
@@ -28,9 +30,7 @@ class Staff {
   String get fullName => '${name.trim()} ${surname.trim()}'.trim();
 
   String get initials {
-    final nameInitial = name.isNotEmpty ? name[0].toUpperCase() : '';
-    final surnameInitial = surname.isNotEmpty ? surname[0].toUpperCase() : '';
-    return '$nameInitial$surnameInitial';
+    return InitialsUtils.fromName(fullName, maxChars: 2);
   }
 
   Staff copyWith({
