@@ -9,6 +9,7 @@ use Agenda\Http\Response;
 use Agenda\UseCases\Admin\ExportBusiness;
 use Agenda\UseCases\Admin\ImportBusiness;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Support\Json;
 
 /**
  * Controller per sincronizzazione business tra ambienti
@@ -186,13 +187,13 @@ final class BusinessSyncController
             }
             
             if ($httpCode !== 200) {
-                $errorData = json_decode($response, true);
+                $errorData = Json::decodeAssoc((string) $response);
                 $errorMsg = $errorData['error']['message'] ?? 'Errore sconosciuto';
                 return Response::error('production_error', "Errore da produzione: $errorMsg", $httpCode >= 400 ? $httpCode : 500);
             }
             
-            $exportResponse = json_decode($response, true);
-            if (!$exportResponse['success'] || empty($exportResponse['data'])) {
+            $exportResponse = Json::decodeAssoc((string) $response);
+            if (!is_array($exportResponse) || !($exportResponse['success'] ?? false) || empty($exportResponse['data'])) {
                 return Response::error('invalid_export', 'Risposta export non valida', 500);
             }
             

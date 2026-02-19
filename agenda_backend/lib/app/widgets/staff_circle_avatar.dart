@@ -1,21 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../core/utils/initials_utils.dart';
+
 String initialsFromName(String name, {int maxChars = 3}) {
-  final trimmed = name.trim();
-  if (trimmed.isEmpty) return '';
-  final parts = trimmed.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-  var initials = '';
-  if (parts.isNotEmpty) {
-    initials += parts.first[0].toUpperCase();
-  }
-  for (int i = 1; i < parts.length && initials.length < maxChars; i++) {
-    initials += parts[i][0].toUpperCase();
-  }
-  if (parts.length == 1 && initials.length < maxChars && trimmed.length > 1) {
-    initials += trimmed[1].toUpperCase();
-  }
-  final end = initials.length.clamp(1, maxChars);
-  return initials.substring(0, end);
+  return InitialsUtils.fromName(name, maxChars: maxChars);
 }
 
 class StaffCircleAvatar extends StatelessWidget {
@@ -36,7 +24,7 @@ class StaffCircleAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasThreeLetterInitials = initials.length == 3;
+    final hasThreeLetterInitials = InitialsUtils.length(initials) == 3;
     final initialsFontSize = height * (hasThreeLetterInitials ? 0.30 : 0.35);
     return Container(
       width: height,

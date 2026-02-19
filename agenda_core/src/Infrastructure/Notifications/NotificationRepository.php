@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Agenda\Infrastructure\Notifications;
 
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Support\Json;
 
 /**
  * Repository for notification queue operations.
@@ -43,7 +44,7 @@ final class NotificationRepository
             'recipient_email' => $data['recipient_email'] ?? null,
             'recipient_name' => $data['recipient_name'] ?? null,
             'subject' => $data['subject'] ?? null,
-            'payload' => json_encode($data['payload'] ?? []),
+            'payload' => Json::encode($data['payload'] ?? []),
             'priority' => $data['priority'] ?? 5,
             'scheduled_at' => $data['scheduled_at'] ?? null,
             'business_id' => $data['business_id'] ?? null,
@@ -256,13 +257,13 @@ final class NotificationRepository
                 return;
             }
 
-            $payload = json_encode([
+            $payload = Json::encode([
                 'notification_id' => (int) ($notification['id'] ?? $notificationId),
                 'channel' => (string) ($notification['channel'] ?? ''),
                 'recipient_email' => $notification['recipient_email'] ?? null,
                 'subject' => $notification['subject'] ?? null,
                 'sent_at' => gmdate('Y-m-d H:i:s'),
-            ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+            ]);
 
             $insert = $this->db->getPdo()->prepare(
                 'INSERT INTO booking_events

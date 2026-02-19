@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Http;
 
+use Agenda\Infrastructure\Support\Json;
 use Ramsey\Uuid\Uuid;
 
 final class Request
@@ -70,7 +71,7 @@ final class Request
         $body = null;
         $rawBody = file_get_contents('php://input');
         if ($rawBody !== '' && $rawBody !== false) {
-            $body = json_decode($rawBody, true);
+            $body = Json::decodeAssoc($rawBody);
         }
         
         $traceId = Uuid::uuid4()->toString();

@@ -100,6 +100,29 @@ try {
         }
         return false;
     }
+
+    /**
+     * Normalizza una stringa in UTF-8 valido preservando emoji e caratteri Unicode.
+     * Converte solo quando l'input non è UTF-8 ben formato.
+     */
+    function normalizeUtf8(string $value): string {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (mb_check_encoding($value, 'UTF-8')) {
+            return $value;
+        }
+
+        $converted = mb_convert_encoding(
+            $value,
+            'UTF-8',
+            'UTF-8, ISO-8859-1, Windows-1252'
+        );
+
+        return trim($converted);
+    }
     
     // Trova indici colonne (supporta IT e EN)
     $colFirstName = findColumn($headers, ['First Name', 'Nome']);
@@ -127,10 +150,10 @@ try {
         }
         
         $staffToImport[] = [
-            'first_name' => trim($row[$colFirstName] ?? ''),
-            'last_name' => trim($row[$colLastName] ?? ''),
-            'email' => trim($row[$colEmail] ?? ''),
-            'job_title' => trim($row[$colJobTitle] ?? ''),
+            'first_name' => normalizeUtf8((string) ($row[$colFirstName] ?? '')),
+            'last_name' => normalizeUtf8((string) ($row[$colLastName] ?? '')),
+            'email' => normalizeUtf8((string) ($row[$colEmail] ?? '')),
+            'job_title' => normalizeUtf8((string) ($row[$colJobTitle] ?? '')),
         ];
     }
     fclose($handle);

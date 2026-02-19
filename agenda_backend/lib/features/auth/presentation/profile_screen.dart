@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/utils/initials_utils.dart';
 import '../../../core/widgets/app_buttons.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../../core/widgets/local_loading_overlay.dart';
@@ -354,9 +355,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   String _getInitials(String? firstName, String? lastName) {
-    final first = firstName?.isNotEmpty == true ? firstName![0] : '';
-    final last = lastName?.isNotEmpty == true ? lastName![0] : '';
-    return '$first$last'.toUpperCase();
+    final fullName = '${firstName ?? ''} ${lastName ?? ''}'.trim();
+    return InitialsUtils.fromName(fullName, maxChars: 2);
   }
 }
 

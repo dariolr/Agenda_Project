@@ -6,6 +6,7 @@ import '../../app/providers/route_slug_provider.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/booking/providers/business_provider.dart';
 import '../l10n/l10_extension.dart';
+import '../utils/initials_utils.dart';
 
 /// AppBar professionale per il sistema di prenotazione.
 ///
@@ -224,9 +225,9 @@ class _UserMenuButton extends ConsumerWidget {
   }
 
   String _getInitials(String? firstName, String? lastName) {
-    final f = firstName?.isNotEmpty == true ? firstName![0].toUpperCase() : '';
-    final l = lastName?.isNotEmpty == true ? lastName![0].toUpperCase() : '';
-    return '$f$l'.isNotEmpty ? '$f$l' : '?';
+    final fullName = '${firstName ?? ''} ${lastName ?? ''}'.trim();
+    final initials = InitialsUtils.fromName(fullName, maxChars: 2);
+    return initials.isNotEmpty ? initials : '?';
   }
 }
 

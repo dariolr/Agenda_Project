@@ -6,6 +6,7 @@ import '../../../app/widgets/user_menu_button.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/utils/initials_utils.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../providers/business_providers.dart';
@@ -493,6 +494,7 @@ class _BusinessCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 400;
+    final businessInitial = InitialsUtils.fromName(business.name, maxChars: 1);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -507,9 +509,7 @@ class _BusinessCard extends StatelessWidget {
                 radius: isCompact ? 18 : 24,
                 backgroundColor: colorScheme.primaryContainer,
                 child: Text(
-                  business.name.isNotEmpty
-                      ? business.name[0].toUpperCase()
-                      : '?',
+                  businessInitial.isNotEmpty ? businessInitial : '?',
                   style: TextStyle(
                     fontSize: isCompact ? 14 : 20,
                     fontWeight: FontWeight.bold,

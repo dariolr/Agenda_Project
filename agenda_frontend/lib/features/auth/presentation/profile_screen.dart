@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/utils/initials_utils.dart';
 import '../providers/auth_provider.dart';
 
 /// Schermata profilo utente per il frontend clienti.
@@ -355,8 +356,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   String _getInitials(String? firstName, String? lastName) {
-    final first = firstName?.isNotEmpty == true ? firstName![0] : '';
-    final last = lastName?.isNotEmpty == true ? lastName![0] : '';
-    return '$first$last'.toUpperCase();
+    return InitialsUtils.fromName(
+      '${firstName ?? ''} ${lastName ?? ''}'.trim(),
+      maxChars: 2,
+    );
   }
 }

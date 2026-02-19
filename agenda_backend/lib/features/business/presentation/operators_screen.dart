@@ -9,6 +9,7 @@ import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business_invitation.dart';
 import '../../../core/models/business_user.dart';
 import '../../../core/models/location.dart';
+import '../../../core/utils/initials_utils.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/feedback_dialog.dart';
@@ -614,12 +615,13 @@ class _UserTile extends ConsumerWidget {
   }
 
   String _getInitials(BusinessUser user) {
-    final first = user.firstName.isNotEmpty ? user.firstName[0] : '';
-    final last = user.lastName.isNotEmpty ? user.lastName[0] : '';
-    if (first.isEmpty && last.isEmpty) {
-      return user.email.isNotEmpty ? user.email[0].toUpperCase() : '?';
+    final fullName = '${user.firstName} ${user.lastName}'.trim();
+    final nameInitials = InitialsUtils.fromName(fullName, maxChars: 2);
+    if (nameInitials.isEmpty) {
+      final emailInitial = InitialsUtils.fromName(user.email, maxChars: 1);
+      return emailInitial.isNotEmpty ? emailInitial : '?';
     }
-    return '$first$last'.toUpperCase();
+    return nameInitials;
   }
 
   String _getRoleLabel(String role, dynamic l10n) {

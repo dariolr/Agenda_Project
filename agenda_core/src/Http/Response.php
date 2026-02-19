@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Agenda\Http;
 
+use Agenda\Infrastructure\Support\Json;
+
 final class Response
 {
     private array $cookies = [];
@@ -130,6 +132,6 @@ final class Response
             setcookie($name, $cookie['value'], $cookieOptions);
         }
         
-        echo json_encode($this->data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        echo Json::encode($this->data);
     }
 }

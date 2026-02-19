@@ -10,6 +10,7 @@ use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Support\Json;
 use PDO;
 
 final class ReportsController
@@ -464,7 +465,7 @@ final class ReportsController
                     $template = $stmt->fetch(PDO::FETCH_ASSOC);
 
                     if ($template && $template['slots']) {
-                        $slots = json_decode($template['slots'], true);
+                        $slots = Json::decodeAssoc((string) $template['slots']);
                         if (is_array($slots)) {
                             // Slots are indices (each slot = 15 minutes)
                             // E.g., slot 36 = 09:00, slot 40 = 10:00
@@ -788,7 +789,7 @@ final class ReportsController
                 $template = $stmt->fetch(\PDO::FETCH_ASSOC);
 
                 if ($template && $template['slots']) {
-                    $slots = json_decode($template['slots'], true);
+                    $slots = Json::decodeAssoc((string) $template['slots']);
                     if (is_array($slots)) {
                         $plannedMinutesToday = count($slots) * 15;
                         $scheduledMinutes += $plannedMinutesToday;
@@ -890,7 +891,7 @@ final class ReportsController
         $template = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         if ($template && $template['slots']) {
-            $slots = json_decode($template['slots'], true);
+            $slots = Json::decodeAssoc((string) $template['slots']);
             if (is_array($slots)) {
                 return count($slots) * 15;
             }

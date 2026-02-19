@@ -315,6 +315,7 @@ final class ComputeAvailability
         DateTimeImmutable $minBookingTime
     ): array {
         $dateStr = $date->format('Y-m-d');
+        $slotIntervalMinutes = $this->getSlotIntervalMinutes();
         
         // Usa StaffPlanningRepository per ottenere gli slot index disponibili
         $slotIndices = $this->staffPlanningRepository->getSlotsForDate($staffId, $dateStr);
@@ -415,7 +416,7 @@ final class ComputeAvailability
 
                 // Skip if slot starts before minimum booking time (includes past + notice hours)
                 if ($current <= $minBookingTime) {
-                    $current = $current->modify('+' . self::SLOT_INTERVAL_MINUTES . ' minutes');
+                    $current = $current->modify('+' . $slotIntervalMinutes . ' minutes');
                     continue;
                 }
 
@@ -439,7 +440,7 @@ final class ComputeAvailability
                     }
                 }
 
-                $current = $current->modify('+' . self::SLOT_INTERVAL_MINUTES . ' minutes');
+                $current = $current->modify('+' . $slotIntervalMinutes . ' minutes');
             }
         }
 
@@ -449,9 +450,8 @@ final class ComputeAvailability
         foreach ($occupied as $occ) {
             $opportunisticStart = $occ['end'];
             
-            // Skip se è già un orario multiplo di SLOT_INTERVAL_MINUTES
-            $minutes = (int) $opportunisticStart->format('i');
-            if ($minutes % self::SLOT_INTERVAL_MINUTES === 0) {
+            // Skip se è già allineato all'intervallo slot configurato
+            if ($this->isAlignedToSlotInterval($opportunisticStart, $slotIntervalMinutes)) {
                 continue;
             }
             
@@ -502,9 +502,8 @@ final class ComputeAvailability
             $opportunisticEnd = $occ['start'];
             $opportunisticStart = $opportunisticEnd->modify("-{$durationMinutes} minutes");
             
-            // Skip se è già un orario multiplo di SLOT_INTERVAL_MINUTES
-            $minutes = (int) $opportunisticStart->format('i');
-            if ($minutes % self::SLOT_INTERVAL_MINUTES === 0) {
+            // Skip se è già allineato all'intervallo slot configurato
+            if ($this->isAlignedToSlotInterval($opportunisticStart, $slotIntervalMinutes)) {
                 continue;
             }
             
@@ -611,6 +610,22 @@ final class ComputeAvailability
             'start' => $date->setTime($startHour, $startMin),
             'end' => $date->setTime($endHour, $endMin),
         ];
+    }
+
+    private function getSlotIntervalMinutes(): int
+    {
+        $interval = (int) ($this->currentLocationSlotSettings['slot_interval_minutes'] ?? self::SLOT_INTERVAL_MINUTES);
+        return $interval > 0 ? $interval : self::SLOT_INTERVAL_MINUTES;
+    }
+
+    private function isAlignedToSlotInterval(DateTimeImmutable $time, int $slotIntervalMinutes): bool
+    {
+        if ($slotIntervalMinutes <= 1) {
+            return true;
+        }
+
+        $minutesFromMidnight = ((int) $time->format('H')) * 60 + ((int) $time->format('i'));
+        return $minutesFromMidnight % $slotIntervalMinutes === 0;
     }
 
     /**

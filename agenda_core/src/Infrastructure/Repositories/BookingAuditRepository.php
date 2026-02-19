@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Agenda\Infrastructure\Repositories;
 
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Support\Json;
 use DateTimeImmutable;
 
 /**
@@ -144,7 +145,7 @@ final class BookingAuditRepository
             $actorType,
             $actorId,
             $actorName,
-            json_encode($payload),
+            Json::encode($payload),
             $correlationId,
         ]);
 
@@ -165,7 +166,7 @@ final class BookingAuditRepository
         
         $events = $stmt->fetchAll();
         foreach ($events as &$event) {
-            $event['payload'] = json_decode($event['payload_json'], true);
+            $event['payload'] = Json::decodeAssoc((string) $event['payload_json']) ?? [];
         }
         return $events;
     }
@@ -184,7 +185,7 @@ final class BookingAuditRepository
         
         $events = $stmt->fetchAll();
         foreach ($events as &$event) {
-            $event['payload'] = json_decode($event['payload_json'], true);
+            $event['payload'] = Json::decodeAssoc((string) $event['payload_json']) ?? [];
         }
         return $events;
     }
@@ -203,7 +204,7 @@ final class BookingAuditRepository
         
         $events = $stmt->fetchAll();
         foreach ($events as &$event) {
-            $event['payload'] = json_decode($event['payload_json'], true);
+            $event['payload'] = Json::decodeAssoc((string) $event['payload_json']) ?? [];
         }
         return $events;
     }

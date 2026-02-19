@@ -106,6 +106,8 @@ class ServiceItemCard extends ConsumerStatefulWidget {
 }
 
 class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
+  static const int _startTimeStepMinutes = 5;
+
   bool _autoOpenStaffRequested = false;
   bool _shouldAutoOpenStaff = false;
 
@@ -655,7 +657,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
         builder: (ctx) => _TimeGridPicker(
           initial: item.startTime,
           includeTime: suggestedStartTime,
-          stepMinutes: 15,
+          stepMinutes: _startTimeStepMinutes,
           title: l10n.blockStartTime,
         ),
       );
@@ -678,7 +680,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
               child: _TimeGridPicker(
                 initial: item.startTime,
                 includeTime: suggestedStartTime,
-                stepMinutes: 15,
+                stepMinutes: _startTimeStepMinutes,
                 title: l10n.blockStartTime,
                 useSafeArea: false,
               ),
@@ -700,11 +702,9 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
     final startMinutes = item.startTime.hour * 60 + item.startTime.minute;
     final maxMinutesAvailable = (24 * 60) - startMinutes;
 
-    // Durate comuni in minuti: fino a 60 con step variabili, dopo 60 con step di 15 min
+    // Durate selezionabili da 5 minuti a 6 ore con step fisso di 5 minuti.
     final allDurations = <int>[
-      5, 10, 15, 30, 45, 60,
-      // Dopo 60 minuti, incrementi di 15 fino a 6 ore (360 min)
-      for (int m = 75; m <= 360; m += 15) m,
+      for (int m = 5; m <= 360; m += 5) m,
     ];
     final durations = allDurations
         .where((d) => d <= maxMinutesAvailable)
@@ -1046,15 +1046,9 @@ class _ExtraTimeCardState extends State<ExtraTimeCard> {
     final startMinutes = widget.startTime.hour * 60 + widget.startTime.minute;
     final maxMinutesAvailable = (24 * 60) - startMinutes;
 
-    // Durate comuni in minuti: fino a 60 con step variabili, dopo 60 con step di 15 min
+    // Durate selezionabili da 5 minuti a 6 ore con step fisso di 5 minuti.
     final allDurations = <int>[
-      5,
-      10,
-      15,
-      30,
-      45,
-      60,
-      for (int m = 75; m <= 360; m += 15) m,
+      for (int m = 5; m <= 360; m += 5) m,
     ];
     final durations = allDurations
         .where((d) => d <= maxMinutesAvailable)

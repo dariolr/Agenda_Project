@@ -3,12 +3,10 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Creato il: Feb 09, 2026 alle 05:13
+-- Creato il: Feb 19, 2026 alle 05:46
 -- Versione del server: 8.4.5-5
 -- Versione PHP: 8.2.30
 
-SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS=0;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
@@ -22,8 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `db5hleekkbuuhm`
 --
-CREATE DATABASE IF NOT EXISTS `db5hleekkbuuhm` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-USE `db5hleekkbuuhm`;
 
 -- --------------------------------------------------------
 
@@ -161,7 +157,8 @@ CREATE TABLE `businesses` (
   `slug` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `phone` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `online_bookings_notification_email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `online_bookings_notification_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `service_color_palette` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'legacy',
   `timezone` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Europe/Rome',
   `currency` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EUR',
   `cancellation_hours` int UNSIGNED NOT NULL DEFAULT '24' COMMENT 'Default hours before appointment when cancellation/modification is allowed',
@@ -246,6 +243,100 @@ CREATE TABLE `business_user_locations` (
   `location_id` int UNSIGNED NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Location assegnate a utenti con scope_type=locations';
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `class_bookings`
+--
+
+CREATE TABLE `class_bookings` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `class_event_id` int UNSIGNED NOT NULL,
+  `customer_id` int UNSIGNED NOT NULL COMMENT 'FK clients.id',
+  `status` enum('CONFIRMED','WAITLISTED','CANCELLED_BY_CUSTOMER','CANCELLED_BY_STAFF','NO_SHOW','ATTENDED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `waitlist_position` int UNSIGNED DEFAULT NULL,
+  `booked_at` timestamp NOT NULL COMMENT 'UTC',
+  `cancelled_at` timestamp NULL DEFAULT NULL,
+  `checked_in_at` timestamp NULL DEFAULT NULL,
+  `payment_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `class_events`
+--
+
+CREATE TABLE `class_events` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `class_type_id` int UNSIGNED NOT NULL COMMENT 'FK class_types.id',
+  `starts_at` timestamp NOT NULL COMMENT 'UTC',
+  `ends_at` timestamp NOT NULL COMMENT 'UTC',
+  `location_id` int UNSIGNED NOT NULL,
+  `staff_id` int UNSIGNED NOT NULL,
+  `capacity_total` int UNSIGNED NOT NULL DEFAULT '1',
+  `capacity_reserved` int UNSIGNED NOT NULL DEFAULT '0',
+  `confirmed_count` int UNSIGNED NOT NULL DEFAULT '0',
+  `waitlist_count` int UNSIGNED NOT NULL DEFAULT '0',
+  `waitlist_enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `booking_open_at` timestamp NULL DEFAULT NULL,
+  `booking_close_at` timestamp NULL DEFAULT NULL,
+  `cancel_cutoff_minutes` int UNSIGNED NOT NULL DEFAULT '0',
+  `status` enum('SCHEDULED','CANCELLED','COMPLETED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'SCHEDULED',
+  `visibility` enum('PUBLIC','PRIVATE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PUBLIC',
+  `price_cents` int UNSIGNED DEFAULT NULL,
+  `currency` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `class_event_resource_requirements`
+--
+
+CREATE TABLE `class_event_resource_requirements` (
+  `id` int UNSIGNED NOT NULL,
+  `class_event_id` int UNSIGNED NOT NULL,
+  `resource_id` int UNSIGNED NOT NULL,
+  `quantity` int UNSIGNED NOT NULL DEFAULT '1' COMMENT 'Quantita richiesta della risorsa',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Requisiti risorse per evento classe';
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `class_types`
+--
+
+CREATE TABLE `class_types` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `class_type_locations`
+--
+
+CREATE TABLE `class_type_locations` (
+  `class_type_id` int UNSIGNED NOT NULL,
+  `location_id` int UNSIGNED NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Abilitazione tipi classe per sede';
 
 -- --------------------------------------------------------
 
@@ -897,10 +988,10 @@ ALTER TABLE `business_invitations`
   ADD UNIQUE KEY `uk_pending_invitation` (`business_id`,`email`,`status`),
   ADD KEY `fk_invitations_invited_by` (`invited_by`),
   ADD KEY `fk_invitations_accepted_by` (`accepted_by`),
-  ADD KEY `idx_invitations_staff` (`staff_id`),
   ADD KEY `idx_invitations_token` (`token`,`status`),
   ADD KEY `idx_invitations_business_status` (`business_id`,`status`),
-  ADD KEY `idx_invitations_email_status` (`email`,`status`);
+  ADD KEY `idx_invitations_email_status` (`email`,`status`),
+  ADD KEY `idx_invitations_staff` (`staff_id`);
 
 --
 -- Indici per le tabelle `business_invitation_locations`
@@ -928,6 +1019,56 @@ ALTER TABLE `business_user_locations`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uk_business_user_location` (`business_user_id`,`location_id`),
   ADD KEY `idx_bul_location` (`location_id`);
+
+--
+-- Indici per le tabelle `class_bookings`
+--
+ALTER TABLE `class_bookings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_class_bookings_business_event_customer` (`business_id`,`class_event_id`,`customer_id`),
+  ADD KEY `idx_class_bookings_business_event_status` (`business_id`,`class_event_id`,`status`),
+  ADD KEY `idx_class_bookings_business_customer_status` (`business_id`,`customer_id`,`status`),
+  ADD KEY `idx_class_bookings_business_event_waitlist` (`business_id`,`class_event_id`,`waitlist_position`),
+  ADD KEY `fk_class_bookings_event` (`class_event_id`),
+  ADD KEY `fk_class_bookings_customer` (`customer_id`);
+
+--
+-- Indici per le tabelle `class_events`
+--
+ALTER TABLE `class_events`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_class_events_business_starts` (`business_id`,`starts_at`),
+  ADD KEY `idx_class_events_business_staff_starts` (`business_id`,`staff_id`,`starts_at`),
+  ADD KEY `idx_class_events_business_type_starts` (`business_id`,`class_type_id`,`starts_at`),
+  ADD KEY `idx_class_events_business_status_starts` (`business_id`,`status`,`starts_at`),
+  ADD KEY `fk_class_events_type` (`class_type_id`,`business_id`),
+  ADD KEY `fk_class_events_location` (`location_id`),
+  ADD KEY `fk_class_events_staff` (`staff_id`);
+
+--
+-- Indici per le tabelle `class_event_resource_requirements`
+--
+ALTER TABLE `class_event_resource_requirements`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_class_event_resource` (`class_event_id`,`resource_id`),
+  ADD KEY `idx_cerr_event` (`class_event_id`),
+  ADD KEY `idx_cerr_resource` (`resource_id`);
+
+--
+-- Indici per le tabelle `class_types`
+--
+ALTER TABLE `class_types`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_class_types_id_business` (`id`,`business_id`),
+  ADD UNIQUE KEY `uk_class_types_business_name` (`business_id`,`name`),
+  ADD KEY `idx_class_types_business_active` (`business_id`,`is_active`);
+
+--
+-- Indici per le tabelle `class_type_locations`
+--
+ALTER TABLE `class_type_locations`
+  ADD PRIMARY KEY (`class_type_id`,`location_id`),
+  ADD KEY `idx_ctl_location_type` (`location_id`,`class_type_id`);
 
 --
 -- Indici per le tabelle `clients`
@@ -1265,6 +1406,30 @@ ALTER TABLE `business_user_locations`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `class_bookings`
+--
+ALTER TABLE `class_bookings`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `class_events`
+--
+ALTER TABLE `class_events`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `class_event_resource_requirements`
+--
+ALTER TABLE `class_event_resource_requirements`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `class_types`
+--
+ALTER TABLE `class_types`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `clients`
 --
 ALTER TABLE `clients`
@@ -1478,7 +1643,7 @@ ALTER TABLE `business_invitations`
   ADD CONSTRAINT `fk_invitations_accepted_by` FOREIGN KEY (`accepted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_invitations_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_invitations_invited_by` FOREIGN KEY (`invited_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_invitations_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `fk_invitations_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Limiti per la tabella `business_invitation_locations`
@@ -1502,6 +1667,43 @@ ALTER TABLE `business_users`
 ALTER TABLE `business_user_locations`
   ADD CONSTRAINT `fk_bul_business_user` FOREIGN KEY (`business_user_id`) REFERENCES `business_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_bul_location` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Limiti per la tabella `class_bookings`
+--
+ALTER TABLE `class_bookings`
+  ADD CONSTRAINT `fk_class_bookings_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_class_bookings_customer` FOREIGN KEY (`customer_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_class_bookings_event` FOREIGN KEY (`class_event_id`) REFERENCES `class_events` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Limiti per la tabella `class_events`
+--
+ALTER TABLE `class_events`
+  ADD CONSTRAINT `fk_class_events_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_class_events_location` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_class_events_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_class_events_type` FOREIGN KEY (`class_type_id`,`business_id`) REFERENCES `class_types` (`id`, `business_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--
+-- Limiti per la tabella `class_event_resource_requirements`
+--
+ALTER TABLE `class_event_resource_requirements`
+  ADD CONSTRAINT `fk_cerr_event` FOREIGN KEY (`class_event_id`) REFERENCES `class_events` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_cerr_resource` FOREIGN KEY (`resource_id`) REFERENCES `resources` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Limiti per la tabella `class_types`
+--
+ALTER TABLE `class_types`
+  ADD CONSTRAINT `fk_class_types_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Limiti per la tabella `class_type_locations`
+--
+ALTER TABLE `class_type_locations`
+  ADD CONSTRAINT `fk_ctl_class_type` FOREIGN KEY (`class_type_id`) REFERENCES `class_types` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_ctl_location` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Limiti per la tabella `clients`
@@ -1696,7 +1898,6 @@ ALTER TABLE `webhook_deliveries`
 --
 ALTER TABLE `webhook_endpoints`
   ADD CONSTRAINT `fk_webhook_endpoints_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-SET FOREIGN_KEY_CHECKS=1;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

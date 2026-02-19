@@ -65,8 +65,12 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   // Opzioni disponibili per i dropdown
   static const _noticeHoursOptions = [1, 2, 4, 6, 12, 24, 48];
   static const _advanceDaysOptions = [7, 14, 30, 60, 90, 180, 365];
-  static const _slotIntervalOptions = [5, 10, 15, 20, 30, 45, 60];
-  static const _minGapOptions = [15, 20, 30, 45, 60, 90, 120];
+  static final List<int> _slotIntervalOptions = [
+    for (int minutes = 5; minutes <= 120; minutes += 5) minutes,
+  ];
+  static final List<int> _minGapOptions = [
+    for (int minutes = 5; minutes <= 120; minutes += 5) minutes,
+  ];
 
   @override
   void initState() {
