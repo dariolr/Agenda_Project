@@ -5,6 +5,39 @@ import 'theme_config.dart';
 const colorPrimary = Color(0xFF141414);
 const colorBackground = Color(0xFFFEFEFE);
 const colorAccent = Color(0xFF2196F3);
+const _appFontFamily = 'Roboto';
+const List<String> _emojiFontFallback = [
+  'Apple Color Emoji',
+  'Segoe UI Emoji',
+  'Segoe UI Symbol',
+  'Noto Color Emoji',
+  'Noto Emoji',
+  'Emoji',
+  'sans-serif',
+];
+
+TextTheme _withEmojiFallback(TextTheme textTheme) {
+  TextStyle? apply(TextStyle? style) =>
+      style?.copyWith(fontFamilyFallback: _emojiFontFallback);
+
+  return textTheme.copyWith(
+    displayLarge: apply(textTheme.displayLarge),
+    displayMedium: apply(textTheme.displayMedium),
+    displaySmall: apply(textTheme.displaySmall),
+    headlineLarge: apply(textTheme.headlineLarge),
+    headlineMedium: apply(textTheme.headlineMedium),
+    headlineSmall: apply(textTheme.headlineSmall),
+    titleLarge: apply(textTheme.titleLarge),
+    titleMedium: apply(textTheme.titleMedium),
+    titleSmall: apply(textTheme.titleSmall),
+    bodyLarge: apply(textTheme.bodyLarge),
+    bodyMedium: apply(textTheme.bodyMedium),
+    bodySmall: apply(textTheme.bodySmall),
+    labelLarge: apply(textTheme.labelLarge),
+    labelMedium: apply(textTheme.labelMedium),
+    labelSmall: apply(textTheme.labelSmall),
+  );
+}
 
 /// Crea il tema dell'app
 ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
@@ -25,11 +58,12 @@ ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
     onSurface: onBackground,
   );
 
-  return ThemeData(
+  final base = ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,
     brightness: brightness,
     scaffoldBackgroundColor: background,
+    fontFamily: _appFontFamily,
     appBarTheme: AppBarTheme(
       backgroundColor: background,
       foregroundColor: onBackground,
@@ -99,6 +133,16 @@ ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
     dividerColor: onBackground.withOpacity(0.1),
     progressIndicatorTheme: const ProgressIndicatorThemeData(
       color: colorAccent,
+    ),
+  );
+
+  return base.copyWith(
+    textTheme: _withEmojiFallback(
+      base.textTheme.apply(
+        bodyColor: onBackground,
+        displayColor: onBackground,
+        fontFamily: _appFontFamily,
+      ),
     ),
   );
 }
