@@ -141,15 +141,6 @@ class StaffPlanningsNotifier extends Notifier<StaffPlanningsState> {
     StaffPlanning planning,
     StaffPlanning original,
   ) async {
-    // ignore: avoid_print
-    print(
-      'DEBUG updatePlanning called: planningId=${planning.id}, staffId=${planning.staffId}',
-    );
-    // ignore: avoid_print
-    print(
-      'DEBUG updatePlanning templates: ${planning.templates.map((t) => t.toJson()).toList()}',
-    );
-
     final result = _validator.validateForUpdate(
       planning,
       _allPlannings,

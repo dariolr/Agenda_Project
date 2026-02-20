@@ -117,14 +117,50 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final canManageServices = ref.watch(currentUserCanManageServicesProvider);
     final servicesAsync = ref.watch(servicesProvider);
     final allCategories = ref.watch(sortedCategoriesProvider);
-    ref.watch(servicePackagesProvider);
+    final packages = ref.watch(servicePackagesProvider).value ?? const <ServicePackage>[];
+    final services = servicesAsync.value ?? const <Service>[];
     // Pre-carica le risorse solo per ruoli che possono modificare servizi.
     if (canManageServices) {
       ref.watch(resourcesProvider);
     }
 
-    // Mostriamo sempre tutte le categorie; i provider di sort sposteranno le vuote in coda.
-    final categories = allCategories;
+    final localNonEmptyCategoryIds = <int>{
+      for (final s in services)
+        if (s.categoryId > 0) s.categoryId,
+    };
+    final serviceById = {for (final s in services) s.id: s};
+    for (final package in packages) {
+      var categoryId = package.categoryId;
+      if (categoryId == 0 && package.items.isNotEmpty) {
+        categoryId = serviceById[package.items.first.serviceId]?.categoryId ?? 0;
+      }
+      if (categoryId > 0) {
+        localNonEmptyCategoryIds.add(categoryId);
+      }
+    }
+
+    var categoriesWithServicesElsewhere = <int>{};
+    final locations = ref.watch(locationsProvider);
+    if (locations.length > 1) {
+      final allLocationIds = locations.map((location) => location.id).toSet();
+      final allLocationsServicesAsync = ref.watch(
+        servicesForLocationsProvider(locationIdsToKey(allLocationIds)),
+      );
+      final allCategoriesWithServices = <int>{
+        for (final s in allLocationsServicesAsync.value?.services ?? const <Service>[])
+          if (s.categoryId > 0) s.categoryId,
+      };
+      categoriesWithServicesElsewhere = allCategoriesWithServices.difference(
+        localNonEmptyCategoryIds,
+      );
+    }
+
+    final categories = allCategories.where((category) {
+      if (localNonEmptyCategoryIds.contains(category.id)) {
+        return true;
+      }
+      return !categoriesWithServicesElsewhere.contains(category.id);
+    }).toList();
 
     final colorScheme = Theme.of(context).colorScheme;
     final isWide = ref.watch(formFactorProvider) != AppFormFactor.mobile;

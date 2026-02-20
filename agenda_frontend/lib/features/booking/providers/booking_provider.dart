@@ -993,6 +993,12 @@ class ServicesData {
   List<Service> get bookableServices =>
       services.where((s) => s.isBookableOnline && s.isActive).toList();
 
+  /// Compat getter usato dalla UI servizi.
+  /// In assenza di un calcolo separato di eleggibilità staff, considera eleggibili
+  /// i servizi prenotabili/attivi visibili in lista.
+  Set<int> get serviceIdsWithEligibleStaff =>
+      bookableServices.map((s) => s.id).toSet();
+
   bool get isEmpty => bookableServices.isEmpty;
 }
 

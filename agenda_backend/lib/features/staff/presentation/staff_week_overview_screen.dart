@@ -10,7 +10,6 @@ import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/domain/config/agenda_theme.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
-import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/staff/presentation/dialogs/add_exception_dialog.dart';
 import 'package:agenda_backend/features/staff/presentation/staff_availability_screen.dart';
@@ -23,6 +22,9 @@ import 'package:agenda_backend/features/auth/providers/current_business_user_pro
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
+const int _weeklyOverviewMinutesPerSlot = 15;
+const int _weeklyOverviewTotalSlotsPerDay = (24 * 60) ~/ _weeklyOverviewMinutesPerSlot;
 
 // Lightweight range used only for the overview chips
 class HourRange {
@@ -312,9 +314,8 @@ final weeklyExceptionsLoadKeyProvider =
 final weeklyStaffAvailabilityFromEditorProvider =
     Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
       final staffList = ref.watch(staffForStaffSectionProvider);
-      final layout = ref.watch(layoutConfigProvider);
-      final minutesPerSlot = layout.minutesPerSlot;
-      final totalSlots = layout.totalSlots;
+      final minutesPerSlot = _weeklyOverviewMinutesPerSlot;
+      final totalSlots = _weeklyOverviewTotalSlotsPerDay;
 
       // Ottieni la data corrente dell'agenda per calcolare la settimana mostrata
       final agendaDate = ref.watch(agendaDateProvider);
@@ -412,8 +413,7 @@ final weeklyStaffAvailabilityFromEditorProvider =
 final weeklyStaffBaseAvailabilityProvider =
     Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
       final staffList = ref.watch(staffForStaffSectionProvider);
-      final layout = ref.watch(layoutConfigProvider);
-      final minutesPerSlot = layout.minutesPerSlot;
+      final minutesPerSlot = _weeklyOverviewMinutesPerSlot;
       final agendaDate = ref.watch(agendaDateProvider);
       final monday = _mondayOfWeek(agendaDate);
 
@@ -956,7 +956,6 @@ class _StaffWeekOverviewScreenState
 
     // Helper: elimina una fascia oraria
     Future<void> deleteShift(int staffId, int weekday, int shiftIndex) async {
-      final layout = ref.read(layoutConfigProvider);
       final asyncByStaff = ref.read(staffAvailabilityByStaffProvider);
       final allData = asyncByStaff.value;
       if (allData == null) return;
@@ -968,7 +967,7 @@ class _StaffWeekOverviewScreenState
       if (daySlots == null || daySlots.isEmpty) return;
 
       // Converti slots in ranges per identificare quale eliminare
-      final ranges = slotsToRanges(daySlots, layout.minutesPerSlot);
+      final ranges = slotsToRanges(daySlots, _weeklyOverviewMinutesPerSlot);
       if (shiftIndex >= ranges.length) return;
 
       final rangeToDelete = ranges[shiftIndex];
@@ -977,10 +976,10 @@ class _StaffWeekOverviewScreenState
       final newSlots = Set<int>.from(daySlots);
       final startSlot =
           (rangeToDelete.startHour * 60 + rangeToDelete.startMinute) ~/
-          layout.minutesPerSlot;
+          _weeklyOverviewMinutesPerSlot;
       final endSlot =
           (rangeToDelete.endHour * 60 + rangeToDelete.endMinute) ~/
-          layout.minutesPerSlot;
+          _weeklyOverviewMinutesPerSlot;
       for (int slot = startSlot; slot < endSlot; slot++) {
         newSlots.remove(slot);
       }
@@ -1803,11 +1802,10 @@ class _StaffWeekOverviewScreenState
           const SizedBox(height: chipTopPadding),
           if (displayRanges.isEmpty && hasException) ...[
             buildAllDayChip(),
-            SizedBox(height: chipVGap),
           ],
           for (int i = 0; i < displayRanges.length; i++) ...[
             buildChipForRange(displayRanges[i]),
-            SizedBox(height: chipVGap),
+            if (i < displayRanges.length - 1) SizedBox(height: chipVGap),
           ],
         ],
       );
@@ -2101,8 +2099,7 @@ class _EditShiftContentState extends ConsumerState<_EditShiftContent> {
   }
 
   Future<void> _pickTime({required bool isStart}) async {
-    final layout = ref.read(layoutConfigProvider);
-    final step = layout.minutesPerSlot;
+    final step = _weeklyOverviewMinutesPerSlot;
     final selected = await AppBottomSheet.show<TimeOfDay>(
       context: context,
       useRootNavigator: true,

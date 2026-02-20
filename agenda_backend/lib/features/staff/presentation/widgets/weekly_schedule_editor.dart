@@ -794,6 +794,8 @@ class _ShiftRowMobile extends StatelessWidget {
 
 /// Riga per un singolo turno con dropdown orari.
 class _ShiftRow extends StatelessWidget {
+  static const double _actionButtonWidth = 32;
+
   final WorkShift shift;
   final ValueChanged<WorkShift> onChanged;
   final VoidCallback onAdd;
@@ -852,34 +854,45 @@ class _ShiftRow extends StatelessWidget {
         const SizedBox(width: 4),
 
         // Pulsante aggiungi (solo sull'ultimo turno)
-        if (showAddButton)
-          IconButton(
-            onPressed: onAdd,
-            icon: Icon(
-              Icons.add_circle_outline,
-              color: theme.colorScheme.primary,
-              size: 20,
-            ),
-            tooltip: l10n.weeklyScheduleAddShift,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-          )
-        else
-          const SizedBox(width: 32),
+        SizedBox(
+          width: _actionButtonWidth,
+          child: showAddButton
+              ? IconButton(
+                  onPressed: onAdd,
+                  icon: Icon(
+                    Icons.add_circle_outline,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  tooltip: l10n.weeklyScheduleAddShift,
+                  constraints: const BoxConstraints(
+                    minWidth: _actionButtonWidth,
+                    minHeight: _actionButtonWidth,
+                  ),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                )
+              : null,
+        ),
 
         // Pulsante rimuovi
-        IconButton(
-          onPressed: onRemove,
-          icon: Icon(
-            Icons.delete_outline,
-            color: theme.colorScheme.error,
-            size: 20,
+        SizedBox(
+          width: _actionButtonWidth,
+          child: IconButton(
+            onPressed: onRemove,
+            icon: Icon(
+              Icons.delete_outline,
+              color: theme.colorScheme.error,
+              size: 20,
+            ),
+            tooltip: l10n.weeklyScheduleRemoveShift,
+            constraints: const BoxConstraints(
+              minWidth: _actionButtonWidth,
+              minHeight: _actionButtonWidth,
+            ),
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
           ),
-          tooltip: l10n.weeklyScheduleRemoveShift,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          padding: EdgeInsets.zero,
-          visualDensity: VisualDensity.compact,
         ),
       ],
     );

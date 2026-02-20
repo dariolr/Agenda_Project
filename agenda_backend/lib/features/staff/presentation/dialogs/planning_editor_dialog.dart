@@ -18,7 +18,6 @@ import 'package:agenda_backend/core/models/staff_planning.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
-import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/weekly_schedule_editor.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:flutter/material.dart';
@@ -84,6 +83,8 @@ class _PlanningEditorContent extends ConsumerStatefulWidget {
 
 class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
     with SingleTickerProviderStateMixin {
+  static const int _fixedMinuteStep = 15;
+
   late StaffPlanningType _type;
   late DateTime _validFrom;
   DateTime? _validTo;
@@ -252,8 +253,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
 
     try {
       final notifier = ref.read(staffPlanningsProvider.notifier);
-      final layout = ref.read(layoutConfigProvider);
-      final minutesPerSlot = layout.minutesPerSlot;
+      final minutesPerSlot = _fixedMinuteStep;
 
       // Unifica slot contigui
       final mergedSlotsA = _mergeSlots(_slotsA, minutesPerSlot);
@@ -648,9 +648,14 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
 
                 // ── Griglia Orari ──
                 WeeklyScheduleEditor(
-                  initialSchedule: WeeklySchedule.fromSlots(currentSlots),
+                  initialSchedule: WeeklySchedule.fromSlots(
+                    currentSlots,
+                    minutesPerSlot: _fixedMinuteStep,
+                  ),
                   onChanged: (schedule) {
-                    final newSlots = schedule.toSlots();
+                    final newSlots = schedule.toSlots(
+                      minutesPerSlot: _fixedMinuteStep,
+                    );
                     _onSlotsChanged(newSlots);
                   },
                   showHeader: true,
@@ -693,28 +698,27 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
         SizedBox(height: MediaQuery.of(context).viewPadding.bottom + 16),
       ],
     );
-    final loadingContent = LocalLoadingOverlay(
-      isLoading: isBusy,
-      child: content,
-    );
-
     if (widget.isDesktop) {
       return Dialog(
         insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 540, maxHeight: 720),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Titolo
-                Text(title, style: theme.textTheme.headlineSmall),
-                const SizedBox(height: 16),
-                // Contenuto scrollabile
-                Flexible(child: loadingContent),
-              ],
+        clipBehavior: Clip.antiAlias,
+        child: LocalLoadingOverlay(
+          isLoading: isBusy,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540, maxHeight: 720),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Titolo
+                  Text(title, style: theme.textTheme.headlineSmall),
+                  const SizedBox(height: 16),
+                  // Contenuto scrollabile
+                  Flexible(child: content),
+                ],
+              ),
             ),
           ),
         ),
@@ -723,32 +727,35 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
 
     // BottomSheet mode
     return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header con titolo
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
+      child: LocalLoadingOverlay(
+        isLoading: isBusy,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header con titolo
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(false),
-                ),
-              ],
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(false),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Divider(height: 1),
-          Expanded(child: loadingContent),
-        ],
+            const Divider(height: 1),
+            Expanded(child: content),
+          ],
+        ),
       ),
     );
   }

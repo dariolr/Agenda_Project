@@ -198,6 +198,11 @@ class _LocationCard extends StatelessWidget {
                   color: isSelected
                       ? theme.colorScheme.primary.withOpacity(0.1)
                       : theme.colorScheme.surfaceContainerHighest,
+                  border: Border.all(
+                    color: isSelected
+                        ? theme.colorScheme.primary.withOpacity(0.35)
+                        : theme.dividerColor.withOpacity(0.8),
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
