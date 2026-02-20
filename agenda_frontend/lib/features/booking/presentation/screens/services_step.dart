@@ -78,6 +78,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
                     ref,
                     data.categories,
                     data.bookableServices,
+                    data.serviceIdsWithEligibleStaff,
                     data.services,
                     bookingState.request.selectedServiceIds,
                     bookingState.request.selectedPackageIds,
@@ -157,6 +158,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     WidgetRef ref,
     List<ServiceCategory> categories,
     List<Service> services,
+    Set<int> serviceIdsWithEligibleStaff,
     List<Service> allServices,
     Set<int> selectedServiceIds,
     Set<int> selectedPackageIds,
@@ -165,6 +167,17 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
   ) {
     final widgets = <Widget>[];
     final packages = packagesAsync.value ?? [];
+    final visibleServiceIds = services.map((s) => s.id).toSet();
+    final visiblePackages = packages.where((package) {
+      if (!package.isActive || package.isBroken) return false;
+      final packageServiceIds = package.orderedServiceIds;
+      if (packageServiceIds.isEmpty) return false;
+      return packageServiceIds.every(
+        (serviceId) =>
+            visibleServiceIds.contains(serviceId) &&
+            serviceIdsWithEligibleStaff.contains(serviceId),
+      );
+    }).toList();
     final serviceById = {for (final s in allServices) s.id: s};
     final l10n = context.l10n;
 
@@ -187,8 +200,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     );
     var extraIndex = 0;
     final extraCategories = <ServiceCategory>[];
-    for (final package in packages) {
-      if (!package.isActive || package.isBroken) continue;
+    for (final package in visiblePackages) {
       final packageCategoryId = package.categoryId;
       if (packageCategoryId <= 0 || categoryIds.contains(packageCategoryId)) {
         continue;
@@ -219,7 +231,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
               .toList()
             ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       final categoryPackages =
-          packages.where((p) {
+          visiblePackages.where((p) {
             final effectiveCategoryId = p.categoryId != 0
                 ? p.categoryId
                 : (p.items.isNotEmpty
