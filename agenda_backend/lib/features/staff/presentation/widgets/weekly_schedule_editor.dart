@@ -524,16 +524,21 @@ class _DayRow extends ConsumerWidget {
     );
     final maxDayNameWidth = _getMaxDayNameWidth(context, dayNameStyle);
 
-    return Container(
-      color: backgroundColor,
-      padding: EdgeInsets.only(top: isFirst ? 16 : 8, bottom: 8),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: IntrinsicWidth(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        color: backgroundColor,
+        child: InkWell(
+          onTap: onToggle,
+          child: Padding(
+            padding: EdgeInsets.only(top: isFirst ? 16 : 8, bottom: 8),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: IntrinsicWidth(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 // Header: checkbox + nome giorno + ore + icone
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -623,7 +628,10 @@ class _DayRow extends ConsumerWidget {
                       ),
                     ),
                   ),
-              ],
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -648,15 +656,20 @@ class _DayRow extends ConsumerWidget {
     );
     final maxDayNameWidth = _getMaxDayNameWidth(context, dayNameStyle);
 
-    return Container(
-      color: backgroundColor,
-      padding: EdgeInsets.only(top: isFirst ? 16 : 8, bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        color: backgroundColor,
+        child: InkWell(
+          onTap: onToggle,
+          child: Padding(
+            padding: EdgeInsets.only(top: isFirst ? 16 : 8, bottom: 8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
             // Checkbox
             Checkbox(
               value: schedule.isEnabled,
@@ -717,7 +730,10 @@ class _DayRow extends ConsumerWidget {
                       ),
                     ),
             ),
-          ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -944,35 +960,58 @@ class _TimeDropdown extends StatelessWidget {
 
     // Se non ci sono opzioni valide, usa tutte le opzioni
     final effectiveOptions = options.isEmpty ? allOptions : options;
+    final currentValue = _findClosestOption(value, effectiveOptions);
 
     return SizedBox(
       width: dropdownWidth,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.5)),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
           borderRadius: BorderRadius.circular(8),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<TimeOfDay>(
-            value: _findClosestOption(value, effectiveOptions),
-            isExpanded: true,
-            alignment: Alignment.center,
-            borderRadius: BorderRadius.circular(8),
-            icon: const SizedBox.shrink(),
-            items: effectiveOptions.map((time) {
-              return DropdownMenuItem(
-                value: time,
-                alignment: Alignment.center,
-                child: Text(_formatTime(time)),
-              );
-            }).toList(),
-            onChanged: (time) {
-              if (time != null) onChanged(time);
-            },
+          onTap: () => _openPicker(context, effectiveOptions, currentValue),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.outline.withOpacity(0.5)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: Center(
+              child: Text(
+                _formatTime(currentValue),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
         ),
       ),
     );
+  }
+
+  void _openPicker(
+    BuildContext context,
+    List<TimeOfDay> options,
+    TimeOfDay selected,
+  ) {
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
+    final future = isMobile
+        ? showModalBottomSheet<TimeOfDay>(
+            context: context,
+            showDragHandle: true,
+            builder: (_) => _TimeOptionsList(options: options, selected: selected),
+          )
+        : showDialog<TimeOfDay>(
+            context: context,
+            builder: (_) => Dialog(
+              child: SizedBox(
+                width: 320,
+                height: 420,
+                child: _TimeOptionsList(options: options, selected: selected),
+              ),
+            ),
+          );
+    future.then((picked) {
+      if (picked != null) onChanged(picked);
+    });
   }
 
   TimeOfDay _findClosestOption(TimeOfDay value, List<TimeOfDay> options) {
@@ -998,5 +1037,88 @@ class _TimeDropdown extends StatelessWidget {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+}
+
+class _TimeOptionsList extends StatefulWidget {
+  const _TimeOptionsList({required this.options, required this.selected});
+
+  final List<TimeOfDay> options;
+  final TimeOfDay selected;
+
+  @override
+  State<_TimeOptionsList> createState() => _TimeOptionsListState();
+}
+
+class _TimeOptionsListState extends State<_TimeOptionsList> {
+  static const double _checkSlotWidth = 28;
+  static const double _itemExtent = 40;
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final selectedIndex = widget.options.indexWhere(
+        (option) =>
+            option.hour == widget.selected.hour &&
+            option.minute == widget.selected.minute,
+      );
+      if (selectedIndex < 0) return;
+      final selectedOffset = selectedIndex * _itemExtent;
+      final targetOffset = (selectedOffset - (_itemExtent * 2)).clamp(
+        0.0,
+        _scrollController.position.maxScrollExtent,
+      );
+      _scrollController.jumpTo(targetOffset);
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: widget.options.length,
+      itemBuilder: (context, index) {
+        final option = widget.options[index];
+        final isSelected =
+            option.hour == widget.selected.hour &&
+            option.minute == widget.selected.minute;
+        final label =
+            '${option.hour.toString().padLeft(2, '0')}:${option.minute.toString().padLeft(2, '0')}';
+        return InkWell(
+          onTap: () => Navigator.of(context).pop(option),
+          child: SizedBox(
+            height: _itemExtent,
+            child: Row(
+              children: [
+                const SizedBox(width: _checkSlotWidth),
+                Expanded(child: Text(label, textAlign: TextAlign.center)),
+                SizedBox(
+                  width: _checkSlotWidth,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: isSelected
+                        ? const Align(
+                            alignment: Alignment.centerRight,
+                            child: Icon(Icons.check, size: 18),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

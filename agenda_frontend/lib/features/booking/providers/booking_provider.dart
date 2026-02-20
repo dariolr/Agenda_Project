@@ -467,6 +467,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       case BookingStep.location:
         return request.copyWith(
           services: const [],
+          selectedServiceIds: const {},
+          selectedPackageIds: const {},
+          selectedPackageServiceIdsByPackage: const {},
           clearStaff: true,
           clearStaffSelections: true,
           clearAnyOperatorSelections: true,
