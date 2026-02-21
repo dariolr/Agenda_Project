@@ -119,8 +119,8 @@ final class CreateBooking
             throw BookingException::invalidLocation($locationId);
         }
 
-        // Check if location is closed on this date
-        if ($this->locationClosureRepository !== null) {
+        // Operators can create bookings even on closure dates.
+        if ($this->locationClosureRepository !== null && !$skipConflictCheck) {
             $dateStr = $startTime->format('Y-m-d');
             $closure = $this->locationClosureRepository->findClosureForDate($locationId, $dateStr);
             if ($closure !== null) {
@@ -388,8 +388,8 @@ final class CreateBooking
         // Collect all service IDs for validation
         $serviceIds = array_map(fn($item) => (int) $item['service_id'], $items);
 
-        // Check if location is closed on booking date(s)
-        if ($this->locationClosureRepository !== null && !empty($items)) {
+        // Operators can create bookings even on closure dates.
+        if ($this->locationClosureRepository !== null && !empty($items) && !$skipConflictCheck) {
             // Check first item's start_time date
             $firstItemTime = $items[0]['start_time'] ?? null;
             if ($firstItemTime !== null) {
