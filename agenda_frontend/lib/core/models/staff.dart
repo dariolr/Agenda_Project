@@ -9,6 +9,7 @@ class Staff {
   final String? avatarUrl;
   final int sortOrder;
   final bool isBookableOnline;
+  final bool isActive;
   final List<int> serviceIds;
 
   const Staff({
@@ -19,6 +20,7 @@ class Staff {
     this.avatarUrl,
     this.sortOrder = 0,
     this.isBookableOnline = true,
+    this.isActive = true,
     this.serviceIds = const [],
   });
 
@@ -41,6 +43,7 @@ class Staff {
     String? avatarUrl,
     int? sortOrder,
     bool? isBookableOnline,
+    bool? isActive,
     List<int>? serviceIds,
   }) =>
       Staff(
@@ -51,6 +54,7 @@ class Staff {
         avatarUrl: avatarUrl ?? this.avatarUrl,
         sortOrder: sortOrder ?? this.sortOrder,
         isBookableOnline: isBookableOnline ?? this.isBookableOnline,
+        isActive: isActive ?? this.isActive,
         serviceIds: serviceIds ?? this.serviceIds,
       );
 
@@ -62,6 +66,7 @@ class Staff {
         avatarUrl: json['avatar_url'] as String?,
         sortOrder: json['sort_order'] as int? ?? 0,
         isBookableOnline: json['is_bookable_online'] as bool? ?? true,
+        isActive: json['is_active'] as bool? ?? true,
         serviceIds: (json['service_ids'] as List<dynamic>? ?? [])
             .map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0)
             .where((id) => id > 0)
@@ -76,6 +81,7 @@ class Staff {
         if (avatarUrl != null) 'avatar_url': avatarUrl,
         'sort_order': sortOrder,
         'is_bookable_online': isBookableOnline,
+        'is_active': isActive,
         'service_ids': serviceIds,
       };
 }

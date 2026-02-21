@@ -14,6 +14,7 @@ void main() {
     int id = 1,
     int staffId = 10,
     StaffPlanningType type = StaffPlanningType.weekly,
+    int planningSlotMinutes = StaffPlanning.defaultPlanningSlotMinutes,
     required DateTime validFrom,
     DateTime? validTo,
     bool withTemplateA = true,
@@ -54,6 +55,7 @@ void main() {
       id: id,
       staffId: staffId,
       type: type,
+      planningSlotMinutes: planningSlotMinutes,
       validFrom: validFrom,
       validTo: validTo,
       templates: templates,
@@ -98,6 +100,36 @@ void main() {
         final result = validator.validateForCreate(planning, []);
 
         expect(result.isValid, isTrue);
+      });
+
+      test('planning_slot_minutes <= 0 → errore', () {
+        final planning = createPlanning(
+          validFrom: DateTime(2026, 6, 1),
+          planningSlotMinutes: 0,
+        );
+
+        final result = validator.validateForCreate(planning, []);
+
+        expect(result.isValid, isFalse);
+        expect(
+          result.errors,
+          contains('planning_slot_minutes deve essere > 0'),
+        );
+      });
+
+      test('planning_slot_minutes che non divide 24h → errore', () {
+        final planning = createPlanning(
+          validFrom: DateTime(2026, 6, 1),
+          planningSlotMinutes: 7,
+        );
+
+        final result = validator.validateForCreate(planning, []);
+
+        expect(result.isValid, isFalse);
+        expect(
+          result.errors,
+          contains('planning_slot_minutes deve dividere 24h senza resto'),
+        );
       });
     });
 
@@ -156,9 +188,38 @@ void main() {
 
         expect(result.isValid, isTrue);
       });
+
+      test('slot index fuori range con step 30 minuti → errore', () {
+        final planning = StaffPlanning(
+          id: 1,
+          staffId: 10,
+          type: StaffPlanningType.weekly,
+          planningSlotMinutes: 30, // max index = 47
+          validFrom: DateTime(2026, 1, 1),
+          templates: [
+            StaffPlanningWeekTemplate(
+              id: 100,
+              staffPlanningId: 1,
+              weekLabel: WeekLabel.a,
+              daySlots: {
+                1: {48}, // invalido
+              },
+            ),
+          ],
+          createdAt: DateTime.now(),
+        );
+
+        final result = validator.validateForCreate(planning, []);
+
+        expect(result.isValid, isFalse);
+        expect(
+          result.errors.first,
+          contains('deve essere 0-47 per slot da 30 minuti'),
+        );
+      });
     });
 
-    group('Non sovrapposizione intervalli', () {
+    group('Overlapping gestito lato API (client non blocca)', () {
       test('intervalli completamente separati → valido', () {
         final existing = createPlanning(
           id: 1,
@@ -196,7 +257,9 @@ void main() {
         },
       );
 
-      test('stesso giorno (new.validFrom = existing.validTo) → OVERLAP', () {
+      test(
+        'stesso giorno (new.validFrom = existing.validTo) → valido lato client',
+        () {
         final existing = createPlanning(
           id: 1,
           validFrom: DateTime(2026, 1, 1),
@@ -210,11 +273,10 @@ void main() {
 
         final result = validator.validateForCreate(newPlanning, [existing]);
 
-        expect(result.isValid, isFalse);
-        expect(result.errors.first, contains('Sovrapposizione'));
+        expect(result.isValid, isTrue);
       });
 
-      test('nuovo dentro esistente → OVERLAP', () {
+      test('nuovo dentro esistente → valido lato client', () {
         final existing = createPlanning(
           id: 1,
           validFrom: DateTime(2026, 1, 1),
@@ -228,11 +290,10 @@ void main() {
 
         final result = validator.validateForCreate(newPlanning, [existing]);
 
-        expect(result.isValid, isFalse);
-        expect(result.errors.first, contains('Sovrapposizione'));
+        expect(result.isValid, isTrue);
       });
 
-      test('nuovo con existing open-ended che inizia prima → OVERLAP', () {
+      test('nuovo con existing open-ended che inizia prima → valido lato client', () {
         final existing = createPlanning(
           id: 1,
           validFrom: DateTime(2026, 1, 1),
@@ -246,11 +307,10 @@ void main() {
 
         final result = validator.validateForCreate(newPlanning, [existing]);
 
-        expect(result.isValid, isFalse);
-        expect(result.errors.first, contains('Sovrapposizione'));
+        expect(result.isValid, isTrue);
       });
 
-      test('nuovo open-ended con existing che inizia dopo → OVERLAP', () {
+      test('nuovo open-ended con existing che inizia dopo → valido lato client', () {
         final existing = createPlanning(
           id: 1,
           validFrom: DateTime(2026, 6, 1),
@@ -264,11 +324,10 @@ void main() {
 
         final result = validator.validateForCreate(newPlanning, [existing]);
 
-        expect(result.isValid, isFalse);
-        expect(result.errors.first, contains('Sovrapposizione'));
+        expect(result.isValid, isTrue);
       });
 
-      test('due open-ended → OVERLAP', () {
+      test('due open-ended → valido lato client', () {
         final existing = createPlanning(
           id: 1,
           validFrom: DateTime(2026, 1, 1),
@@ -282,7 +341,7 @@ void main() {
 
         final result = validator.validateForCreate(newPlanning, [existing]);
 
-        expect(result.isValid, isFalse);
+        expect(result.isValid, isTrue);
       });
 
       test('planning di staff diversi → non sovrapposti', () {
@@ -426,7 +485,7 @@ void main() {
     });
 
     test(
-      'valid_to = X e new.valid_from = X → sovrapposti (giorno X doppio)',
+      'valid_to = X e new.valid_from = X → consentito lato client (autosplit server)',
       () {
         final existing = createPlanning(
           id: 1,
@@ -441,8 +500,7 @@ void main() {
 
         final result = validator.validateForCreate(newPlanning, [existing]);
 
-        expect(result.isValid, isFalse);
-        expect(result.errors.first, contains('Sovrapposizione'));
+        expect(result.isValid, isTrue);
       },
     );
 
@@ -463,7 +521,9 @@ void main() {
       expect(result.isValid, isTrue);
     });
 
-    test('overlap con planning illimitato (valid_to null) → rifiutare', () {
+    test(
+      'overlap con planning illimitato (valid_to null) → consentito lato client (autosplit server)',
+      () {
       final existing = createPlanning(
         id: 1,
         validFrom: DateTime(2026, 1, 1),
@@ -477,7 +537,7 @@ void main() {
 
       final result = validator.validateForCreate(newPlanning, [existing]);
 
-      expect(result.isValid, isFalse);
+      expect(result.isValid, isTrue);
     });
 
     test(

@@ -1262,6 +1262,76 @@ class L10n {
     );
   }
 
+  /// `Policy modifica/cancellazione`
+  String get summaryCancellationPolicyTitle {
+    return Intl.message(
+      'Policy modifica/cancellazione',
+      name: 'summaryCancellationPolicyTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sempre`
+  String get summaryCancellationPolicyAlways {
+    return Intl.message(
+      'Sempre',
+      name: 'summaryCancellationPolicyAlways',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mai (non consentita dopo la prenotazione)`
+  String get summaryCancellationPolicyNever {
+    return Intl.message(
+      'Mai (non consentita dopo la prenotazione)',
+      name: 'summaryCancellationPolicyNever',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fino a {hours} ore prima`
+  String summaryCancellationPolicyHours(int hours) {
+    return Intl.message(
+      'Fino a $hours ore prima',
+      name: 'summaryCancellationPolicyHours',
+      desc: '',
+      args: [hours],
+    );
+  }
+
+  /// `Fino a {days} giorni prima`
+  String summaryCancellationPolicyDays(int days) {
+    return Intl.message(
+      'Fino a $days giorni prima',
+      name: 'summaryCancellationPolicyDays',
+      desc: '',
+      args: [days],
+    );
+  }
+
+  /// `Accetto la policy di modifica/cancellazione`
+  String get summaryCancellationPolicyAcceptLabel {
+    return Intl.message(
+      'Accetto la policy di modifica/cancellazione',
+      name: 'summaryCancellationPolicyAcceptLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per confermare devi accettare la policy di modifica/cancellazione.`
+  String get summaryCancellationPolicyAcceptRequiredError {
+    return Intl.message(
+      'Per confermare devi accettare la policy di modifica/cancellazione.',
+      name: 'summaryCancellationPolicyAcceptRequiredError',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Durata totale`
   String get summaryDuration {
     return Intl.message(

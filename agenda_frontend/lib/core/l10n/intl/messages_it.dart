@@ -68,7 +68,11 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m21(total) => "Totale: ${total}";
 
-  static String m22(businessName) =>
+  static String m22(days) => "Fino a ${days} giorni prima";
+
+  static String m23(hours) => "Fino a ${hours} ore prima";
+
+  static String m24(businessName) =>
       "Per prenotare su ${businessName}, devi accedere con un account registrato qui.";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -563,6 +567,25 @@ class MessageLookup extends MessageLookupByLibrary {
       "Seleziona con chi desideri essere servito",
     ),
     "staffTitle": MessageLookupByLibrary.simpleMessage("Scegli l\'operatore"),
+    "summaryCancellationPolicyAcceptLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Accetto la policy di modifica/cancellazione",
+        ),
+    "summaryCancellationPolicyAcceptRequiredError":
+        MessageLookupByLibrary.simpleMessage(
+          "Per confermare devi accettare la policy di modifica/cancellazione.",
+        ),
+    "summaryCancellationPolicyAlways": MessageLookupByLibrary.simpleMessage(
+      "Sempre",
+    ),
+    "summaryCancellationPolicyDays": m22,
+    "summaryCancellationPolicyHours": m23,
+    "summaryCancellationPolicyNever": MessageLookupByLibrary.simpleMessage(
+      "Mai (non consentita dopo la prenotazione)",
+    ),
+    "summaryCancellationPolicyTitle": MessageLookupByLibrary.simpleMessage(
+      "Policy modifica/cancellazione",
+    ),
     "summaryDateTime": MessageLookupByLibrary.simpleMessage("Data e ora"),
     "summaryDuration": MessageLookupByLibrary.simpleMessage("Durata totale"),
     "summaryNotes": MessageLookupByLibrary.simpleMessage("Note (opzionale)"),
@@ -600,7 +623,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "wrongBusinessAuthAction": MessageLookupByLibrary.simpleMessage(
       "Esci e accedi qui",
     ),
-    "wrongBusinessAuthMessage": m22,
+    "wrongBusinessAuthMessage": m24,
     "wrongBusinessAuthTitle": MessageLookupByLibrary.simpleMessage(
       "Account associato ad un\'altra attività",
     ),

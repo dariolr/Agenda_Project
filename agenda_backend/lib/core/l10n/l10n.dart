@@ -1493,6 +1493,66 @@ class L10n {
     );
   }
 
+  /// `Finestra modifica/cancellazione`
+  String get teamLocationCancellationHoursLabel {
+    return Intl.message(
+      'Finestra modifica/cancellazione',
+      name: 'teamLocationCancellationHoursLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tempo minimo prima dell'appuntamento entro cui il cliente può ancora modificare o cancellare`
+  String get teamLocationCancellationHoursHint {
+    return Intl.message(
+      'Tempo minimo prima dell\'appuntamento entro cui il cliente può ancora modificare o cancellare',
+      name: 'teamLocationCancellationHoursHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Usa policy del business`
+  String get teamLocationCancellationHoursUseBusiness {
+    return Intl.message(
+      'Usa policy del business',
+      name: 'teamLocationCancellationHoursUseBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Usa policy del business ({value})`
+  String teamLocationCancellationHoursUseBusinessWithValue(String value) {
+    return Intl.message(
+      'Usa policy del business ($value)',
+      name: 'teamLocationCancellationHoursUseBusinessWithValue',
+      desc: '',
+      args: [value],
+    );
+  }
+
+  /// `Sempre`
+  String get teamLocationCancellationHoursAlways {
+    return Intl.message(
+      'Sempre',
+      name: 'teamLocationCancellationHoursAlways',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mai`
+  String get teamLocationCancellationHoursNever {
+    return Intl.message(
+      'Mai',
+      name: 'teamLocationCancellationHoursNever',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `{count, plural, =1{1 ora} other{{count} ore}}`
   String teamLocationHours(int count) {
     return Intl.plural(
@@ -1539,10 +1599,10 @@ class L10n {
     );
   }
 
-  /// `Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online`
+  /// `Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online. Non modifica il planning dello staff.`
   String get teamLocationSmartSlotDescription {
     return Intl.message(
-      'Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online',
+      'Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online. Non modifica il planning dello staff.',
       name: 'teamLocationSmartSlotDescription',
       desc: '',
       args: [],
@@ -1559,10 +1619,10 @@ class L10n {
     );
   }
 
-  /// `Ogni quanti minuti mostrare un orario disponibile`
+  /// `Ogni quanti minuti mostrare un orario disponibile nelle prenotazioni online (non influisce sugli slot del planning staff)`
   String get teamLocationSlotIntervalHint {
     return Intl.message(
-      'Ogni quanti minuti mostrare un orario disponibile',
+      'Ogni quanti minuti mostrare un orario disponibile nelle prenotazioni online (non influisce sugli slot del planning staff)',
       name: 'teamLocationSlotIntervalHint',
       desc: '',
       args: [],

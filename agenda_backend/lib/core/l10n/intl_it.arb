@@ -211,6 +211,17 @@
   "teamLocationMinBookingNoticeHint": "Quanto tempo prima devono prenotare i clienti",
   "teamLocationMaxBookingAdvanceLabel": "Prenotazione massima anticipata",
   "teamLocationMaxBookingAdvanceHint": "Fino a quanto tempo in anticipo possono prenotare",
+  "teamLocationCancellationHoursLabel": "Finestra modifica/cancellazione",
+  "teamLocationCancellationHoursHint": "Tempo minimo prima dell'appuntamento entro cui il cliente può ancora modificare o cancellare",
+  "teamLocationCancellationHoursUseBusiness": "Usa policy del business",
+  "teamLocationCancellationHoursUseBusinessWithValue": "Usa policy del business ({value})",
+  "@teamLocationCancellationHoursUseBusinessWithValue": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "teamLocationCancellationHoursAlways": "Sempre",
+  "teamLocationCancellationHoursNever": "Mai",
   "teamLocationHours": "{count, plural, =1{1 ora} other{{count} ore}}",
   "@teamLocationHours": {
     "placeholders": {
@@ -230,9 +241,9 @@
     }
   },
   "teamLocationSmartSlotSection": "Fasce orarie intelligenti",
-  "teamLocationSmartSlotDescription": "Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online",
+  "teamLocationSmartSlotDescription": "Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online. Non modifica il planning dello staff.",
   "teamLocationSlotIntervalLabel": "Intervallo tra gli orari",
-  "teamLocationSlotIntervalHint": "Ogni quanti minuti mostrare un orario disponibile",
+  "teamLocationSlotIntervalHint": "Ogni quanti minuti mostrare un orario disponibile nelle prenotazioni online (non influisce sugli slot del planning staff)",
   "teamLocationSlotDisplayModeLabel": "Modalità visualizzazione",
   "teamLocationSlotDisplayModeAll": "Massima disponibilità",
   "teamLocationSlotDisplayModeMinGap": "Riduci spazi vuoti",

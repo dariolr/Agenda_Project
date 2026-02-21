@@ -8,6 +8,8 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/business_provider.dart';
+import '../../providers/locations_provider.dart';
 import '../widgets/wrong_business_auth_banner.dart';
 
 class SummaryStep extends ConsumerStatefulWidget {
@@ -18,11 +20,28 @@ class SummaryStep extends ConsumerStatefulWidget {
 }
 
 class _SummaryStepState extends ConsumerState<SummaryStep> {
+  static const int _neverCancellationHours = 100000;
   final _notesController = TextEditingController();
+  final _scrollController = ScrollController();
+  bool _cancellationPolicyAccepted = false;
+  bool _showCancellationPolicyWarning = false;
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      final max = _scrollController.position.maxScrollExtent;
+      _scrollController.animateTo(
+        max,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   @override
   void dispose() {
     _notesController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -33,6 +52,10 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     final bookingState = ref.watch(bookingFlowProvider);
     final request = bookingState.request;
     final totals = ref.watch(bookingTotalsProvider);
+    final location = ref.watch(effectiveLocationProvider);
+    final business = ref.watch(currentBusinessProvider).value;
+    final cancellationHours =
+        location?.cancellationHours ?? business?.cancellationHours ?? 24;
 
     return Column(
       children: [
@@ -61,6 +84,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
         ),
         Expanded(
           child: SingleChildScrollView(
+            controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,6 +356,84 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                     ref.read(bookingFlowProvider.notifier).updateNotes(value);
                   },
                 ),
+                const SizedBox(height: 16),
+
+                // Policy modifica/cancellazione (ultima informazione)
+                _SummarySection(
+                  title: l10n.summaryCancellationPolicyTitle,
+                  icon: Icons.policy_outlined,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _formatCancellationPolicy(context, cancellationHours),
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: Theme(
+                              data: theme.copyWith(
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: const VisualDensity(
+                                  horizontal: -4,
+                                  vertical: -4,
+                                ),
+                              ),
+                              child: Checkbox(
+                                value: _cancellationPolicyAccepted,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _cancellationPolicyAccepted =
+                                        value ?? false;
+                                    if (_cancellationPolicyAccepted) {
+                                      _showCancellationPolicyWarning = false;
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                setState(() {
+                                  _cancellationPolicyAccepted =
+                                      !_cancellationPolicyAccepted;
+                                  if (_cancellationPolicyAccepted) {
+                                    _showCancellationPolicyWarning = false;
+                                  }
+                                });
+                              },
+                              child: Text(
+                                l10n.summaryCancellationPolicyAcceptLabel,
+                                textAlign: TextAlign.left,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_showCancellationPolicyWarning) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.summaryCancellationPolicyAcceptRequiredError,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -404,6 +506,18 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                         context.go('/$slug/login');
                         return;
                       }
+                      if (!_cancellationPolicyAccepted) {
+                        setState(() {
+                          _showCancellationPolicyWarning = true;
+                        });
+                        _scrollToBottom();
+                        return;
+                      }
+                      if (_showCancellationPolicyWarning) {
+                        setState(() {
+                          _showCancellationPolicyWarning = false;
+                        });
+                      }
                       try {
                         await ref
                             .read(bookingFlowProvider.notifier)
@@ -471,6 +585,20 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
         return l10n.bookingErrorServer;
     }
     return state.errorMessage ?? l10n.errorGeneric;
+  }
+
+  String _formatCancellationPolicy(BuildContext context, int hours) {
+    final l10n = context.l10n;
+    if (hours == _neverCancellationHours) {
+      return l10n.summaryCancellationPolicyNever;
+    }
+    if (hours == 0) {
+      return l10n.summaryCancellationPolicyAlways;
+    }
+    if (hours >= 24 && hours % 24 == 0) {
+      return l10n.summaryCancellationPolicyDays(hours ~/ 24);
+    }
+    return l10n.summaryCancellationPolicyHours(hours);
   }
 }
 

@@ -16,6 +16,7 @@ final class BusinessRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, name, slug, email, phone, timezone, currency, 
+                    cancellation_hours,
                     online_bookings_notification_email,
                     service_color_palette,
                     is_active, is_suspended, suspension_message, created_at, updated_at
@@ -35,6 +36,7 @@ final class BusinessRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency, 
+                    b.cancellation_hours,
                     b.online_bookings_notification_email,
                     b.service_color_palette,
                     b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at,
@@ -53,6 +55,7 @@ final class BusinessRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, name, slug, email, phone, timezone, currency,
+                    cancellation_hours,
                     online_bookings_notification_email,
                     service_color_palette,
                     is_active, is_suspended, suspension_message, created_at, updated_at
@@ -73,6 +76,7 @@ final class BusinessRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency,
+                    b.cancellation_hours,
                     b.online_bookings_notification_email,
                     b.service_color_palette,
                     b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at,
@@ -191,6 +195,7 @@ final class BusinessRepository
     public function findAllWithSearch(?string $search, ?int $limit, int $offset): array
     {
         $sql = 'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency, 
+                       b.cancellation_hours,
                        b.online_bookings_notification_email,
                        b.service_color_palette,
                        b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at,
@@ -246,6 +251,7 @@ final class BusinessRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, name, slug, email, phone, timezone, currency,
+                    cancellation_hours,
                     online_bookings_notification_email,
                     service_color_palette,
                     is_active, is_suspended, suspension_message, created_at, updated_at

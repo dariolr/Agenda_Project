@@ -15,6 +15,11 @@ use PDO;
 
 final class ReportsController
 {
+    /**
+     * Fallback step (minutes) for planning rows without explicit slot duration.
+     */
+    private const PLANNING_SLOT_MINUTES = 15;
+
     private ?LocationClosureRepository $locationClosureRepo;
     
     public function __construct(
@@ -392,7 +397,7 @@ final class ReportsController
 
             foreach ($staffList as $staffId) {
                 // Get all plannings for this staff
-                $planningQuery = "SELECT sp.id, sp.type, sp.valid_from, sp.valid_to 
+                $planningQuery = "SELECT sp.id, sp.type, sp.planning_slot_minutes, sp.valid_from, sp.valid_to 
                     FROM staff_planning sp 
                     WHERE sp.staff_id = ? 
                     ORDER BY sp.valid_from DESC";
@@ -467,9 +472,7 @@ final class ReportsController
                     if ($template && $template['slots']) {
                         $slots = Json::decodeAssoc((string) $template['slots']);
                         if (is_array($slots)) {
-                            // Slots are indices (each slot = 15 minutes)
-                            // E.g., slot 36 = 09:00, slot 40 = 10:00
-                            $totalMinutes += count($slots) * 15;
+                            $totalMinutes += count($slots) * $this->getPlanningSlotMinutes($validPlanning);
                         }
                     }
                 }
@@ -633,7 +636,7 @@ final class ReportsController
             }
 
             // Get all plannings for this staff
-            $planningQuery = "SELECT sp.id, sp.type, sp.valid_from, sp.valid_to 
+            $planningQuery = "SELECT sp.id, sp.type, sp.planning_slot_minutes, sp.valid_from, sp.valid_to 
                 FROM staff_planning sp WHERE sp.staff_id = ? ORDER BY sp.valid_from DESC";
             $stmt = $pdo->prepare($planningQuery);
             $stmt->execute([$staffId]);
@@ -791,7 +794,7 @@ final class ReportsController
                 if ($template && $template['slots']) {
                     $slots = Json::decodeAssoc((string) $template['slots']);
                     if (is_array($slots)) {
-                        $plannedMinutesToday = count($slots) * 15;
+                        $plannedMinutesToday = count($slots) * $this->getPlanningSlotMinutes($validPlanning);
                         $scheduledMinutes += $plannedMinutesToday;
                     }
                 }
@@ -893,10 +896,19 @@ final class ReportsController
         if ($template && $template['slots']) {
             $slots = Json::decodeAssoc((string) $template['slots']);
             if (is_array($slots)) {
-                return count($slots) * 15;
+                return count($slots) * $this->getPlanningSlotMinutes($validPlanning);
             }
         }
 
         return 0;
+    }
+
+    /**
+     * @param array<string, mixed> $planning
+     */
+    private function getPlanningSlotMinutes(array $planning): int
+    {
+        $slotMinutes = (int) ($planning['planning_slot_minutes'] ?? self::PLANNING_SLOT_MINUTES);
+        return $slotMinutes > 0 ? $slotMinutes : self::PLANNING_SLOT_MINUTES;
     }
 }

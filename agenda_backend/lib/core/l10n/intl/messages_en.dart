@@ -182,18 +182,20 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m71(count) => "${count} eligible services";
 
-  static String m72(count) =>
-      "${Intl.plural(count, one: '1 day', other: '${count} days')}";
+  static String m72(value) => "Use business policy (${value})";
 
   static String m73(count) =>
-      "${Intl.plural(count, one: '1 hour', other: '${count} hours')}";
+      "${Intl.plural(count, one: '1 day', other: '${count} days')}";
 
   static String m74(count) =>
+      "${Intl.plural(count, one: '1 hour', other: '${count} hours')}";
+
+  static String m75(count) =>
       "${Intl.plural(count, one: '1 minute', other: '${count} minutes')}";
 
-  static String m75(selected, total) => "${selected} of ${total}";
+  static String m76(selected, total) => "${selected} of ${total}";
 
-  static String m76(hours) => "${hours} hours total";
+  static String m77(hours) => "${hours} hours total";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -2056,12 +2058,27 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Online booking limits",
     ),
-    "teamLocationDays": m72,
+    "teamLocationCancellationHoursAlways": MessageLookupByLibrary.simpleMessage(
+      "Always",
+    ),
+    "teamLocationCancellationHoursHint": MessageLookupByLibrary.simpleMessage(
+      "Minimum time before the appointment during which customers can still modify or cancel",
+    ),
+    "teamLocationCancellationHoursLabel": MessageLookupByLibrary.simpleMessage(
+      "Modify/cancel window",
+    ),
+    "teamLocationCancellationHoursNever": MessageLookupByLibrary.simpleMessage(
+      "Never",
+    ),
+    "teamLocationCancellationHoursUseBusiness":
+        MessageLookupByLibrary.simpleMessage("Use business policy"),
+    "teamLocationCancellationHoursUseBusinessWithValue": m72,
+    "teamLocationDays": m73,
     "teamLocationEmailHint": MessageLookupByLibrary.simpleMessage(
       "Email for customer notifications",
     ),
     "teamLocationEmailLabel": MessageLookupByLibrary.simpleMessage("Email"),
-    "teamLocationHours": m73,
+    "teamLocationHours": m74,
     "teamLocationIsActiveHint": MessageLookupByLibrary.simpleMessage(
       "If disabled, the location will not be visible to customers",
     ),
@@ -2087,7 +2104,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationMinGapLabel": MessageLookupByLibrary.simpleMessage(
       "Minimum acceptable gap",
     ),
-    "teamLocationMinutes": m74,
+    "teamLocationMinutes": m75,
     "teamLocationNameLabel": MessageLookupByLibrary.simpleMessage(
       "Location name",
     ),
@@ -2108,13 +2125,13 @@ class MessageLookup extends MessageLookupByLibrary {
           "Hide slots that would create gaps too small to fill",
         ),
     "teamLocationSlotIntervalHint": MessageLookupByLibrary.simpleMessage(
-      "How many minutes between each available slot",
+      "How many minutes between each available slot in online booking (does not affect staff planning slots)",
     ),
     "teamLocationSlotIntervalLabel": MessageLookupByLibrary.simpleMessage(
       "Time slot interval",
     ),
     "teamLocationSmartSlotDescription": MessageLookupByLibrary.simpleMessage(
-      "Configure how available times are shown to customers booking online",
+      "Configure how available times are shown to customers booking online. This does not change staff planning.",
     ),
     "teamLocationSmartSlotSection": MessageLookupByLibrary.simpleMessage(
       "Smart time slots",
@@ -2139,7 +2156,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamSelectedServicesButton": MessageLookupByLibrary.simpleMessage(
       "Selected services",
     ),
-    "teamSelectedServicesCount": m75,
+    "teamSelectedServicesCount": m76,
     "teamServicesLabel": MessageLookupByLibrary.simpleMessage("Services"),
     "teamStaffBookableOnlineLabel": MessageLookupByLibrary.simpleMessage(
       "Enabled for online bookings",
@@ -2176,6 +2193,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Remove shift",
     ),
     "weeklyScheduleTitle": MessageLookupByLibrary.simpleMessage("Weekly"),
-    "weeklyScheduleTotalHours": m76,
+    "weeklyScheduleTotalHours": m77,
   };
 }

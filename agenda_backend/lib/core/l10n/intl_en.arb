@@ -211,6 +211,17 @@
   "teamLocationMinBookingNoticeHint": "How far in advance customers must book",
   "teamLocationMaxBookingAdvanceLabel": "Maximum booking advance",
   "teamLocationMaxBookingAdvanceHint": "How far ahead customers can book",
+  "teamLocationCancellationHoursLabel": "Modify/cancel window",
+  "teamLocationCancellationHoursHint": "Minimum time before the appointment during which customers can still modify or cancel",
+  "teamLocationCancellationHoursUseBusiness": "Use business policy",
+  "teamLocationCancellationHoursUseBusinessWithValue": "Use business policy ({value})",
+  "@teamLocationCancellationHoursUseBusinessWithValue": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "teamLocationCancellationHoursAlways": "Always",
+  "teamLocationCancellationHoursNever": "Never",
   "teamLocationHours": "{count, plural, =1{1 hour} other{{count} hours}}",
   "@teamLocationHours": {
     "placeholders": {
@@ -230,9 +241,9 @@
     }
   },
   "teamLocationSmartSlotSection": "Smart time slots",
-  "teamLocationSmartSlotDescription": "Configure how available times are shown to customers booking online",
+  "teamLocationSmartSlotDescription": "Configure how available times are shown to customers booking online. This does not change staff planning.",
   "teamLocationSlotIntervalLabel": "Time slot interval",
-  "teamLocationSlotIntervalHint": "How many minutes between each available slot",
+  "teamLocationSlotIntervalHint": "How many minutes between each available slot in online booking (does not affect staff planning slots)",
   "teamLocationSlotDisplayModeLabel": "Display mode",
   "teamLocationSlotDisplayModeAll": "Maximum availability",
   "teamLocationSlotDisplayModeMinGap": "Reduce empty gaps",

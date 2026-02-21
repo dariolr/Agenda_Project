@@ -11,6 +11,7 @@ import '/core/widgets/booking_app_bar.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/auth/domain/auth_state.dart';
 import '/features/auth/providers/auth_provider.dart';
+import '/features/booking/providers/business_provider.dart';
 import '/features/booking/providers/locations_provider.dart';
 import '/features/booking/providers/my_bookings_provider.dart';
 import '../dialogs/booking_history_dialog.dart';
@@ -276,6 +277,7 @@ class _BookingCard extends ConsumerStatefulWidget {
 }
 
 class _BookingCardState extends ConsumerState<_BookingCard> {
+  static const int _neverCancellationHours = 100000;
   bool _isCancelling = false;
 
   @override
@@ -289,13 +291,30 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
       orElse: () => null,
     );
     final locale = _localeForLocation(context, location?.country);
+    final business = ref.watch(currentBusinessProvider).value;
     final showLocation = locationsAsync.maybeWhen(
       data: (locations) => locations.length > 1,
       orElse: () => true,
     );
+    final cancellationHours =
+        location?.cancellationHours ?? business?.cancellationHours ?? 24;
+    final showCancellationPolicy = widget.isUpcoming && !booking.isCancelled;
+    final fallbackAddressParts = <String>[
+      if ((booking.locationAddress ?? '').trim().isNotEmpty)
+        booking.locationAddress!.trim(),
+      if ((booking.locationCity ?? '').trim().isNotEmpty)
+        booking.locationCity!.trim(),
+    ];
+    final locationAddress = location?.formattedAddress.isNotEmpty == true
+        ? location!.formattedAddress
+        : fallbackAddressParts.join(', ');
+    final locationDisplayText = locationAddress.isNotEmpty
+        ? '${booking.locationName} - $locationAddress'
+        : booking.locationName;
     final dateFormat = DateFormat.yMd(locale);
     final timeFormat = DateFormat.jm(locale);
     final theme = Theme.of(context);
+    final rowIconColor = theme.colorScheme.onSurface.withOpacity(0.6);
     const actionButtonPadding = EdgeInsets.symmetric(horizontal: 12);
     final modifyButtonStyle = ElevatedButton.styleFrom(
       minimumSize: const Size(0, 40),
@@ -318,7 +337,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
             // Intestazione con business e location
             Row(
               children: [
-                const Icon(Icons.business, size: 20),
+                Icon(Icons.business, size: 20, color: rowIconColor),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -349,7 +368,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                   ),
                 // Pulsante storico
                 IconButton(
-                  icon: const Icon(Icons.history, size: 20),
+                  icon: Icon(Icons.history, size: 20, color: rowIconColor),
                   tooltip: context.l10n.bookingHistoryTitle,
                   onPressed: () => showBookingHistoryDialog(
                     context,
@@ -363,18 +382,27 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
             if (showLocation)
               Row(
                 children: [
-                  const Icon(Icons.location_on, size: 18, color: Colors.grey),
+                  Icon(Icons.location_on, size: 18, color: rowIconColor),
                   const SizedBox(width: 8),
-                  Text(booking.locationName, style: theme.textTheme.bodyMedium),
+                  Expanded(
+                    child: Text(
+                      locationDisplayText,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
                 ],
               ),
-            const Divider(height: 24),
+            Divider(
+              height: 24,
+              thickness: 0.8,
+              color: theme.colorScheme.outline.withOpacity(0.25),
+            ),
 
             // Servizi
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.list_alt, size: 18),
+                Icon(Icons.list_alt, size: 18, color: rowIconColor),
                 const SizedBox(width: 8),
                 Expanded(
                   child: booking.serviceNames.length <= 1
@@ -398,7 +426,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.person, size: 18, color: Colors.grey),
+                  Icon(Icons.person, size: 18, color: rowIconColor),
                   const SizedBox(width: 8),
                   Text(
                     booking.staffName!,
@@ -412,11 +440,11 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
             // Data e ora
             Row(
               children: [
-                const Icon(Icons.calendar_today, size: 18),
+                Icon(Icons.calendar_today, size: 18, color: rowIconColor),
                 const SizedBox(width: 8),
                 Text(dateFormat.format(booking.startTime)),
                 const SizedBox(width: 16),
-                const Icon(Icons.access_time, size: 18),
+                Icon(Icons.access_time, size: 18, color: rowIconColor),
                 const SizedBox(width: 8),
                 Text(
                   '${timeFormat.format(booking.startTime)} - ${timeFormat.format(booking.endTime)}',
@@ -429,12 +457,29 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.euro, size: 18, color: Colors.grey),
+                  Icon(Icons.euro, size: 18, color: rowIconColor),
                   const SizedBox(width: 8),
                   Text(
                     booking.totalPrice.toStringAsFixed(2),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            if (showCancellationPolicy) ...[
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.policy_outlined, size: 18, color: rowIconColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${context.l10n.summaryCancellationPolicyTitle}: ${_formatCancellationPolicy(context, cancellationHours)}',
+                      style: theme.textTheme.bodySmall,
                     ),
                   ),
                 ],
@@ -447,7 +492,11 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.sticky_note_2_outlined, size: 18),
+                  Icon(
+                    Icons.sticky_note_2_outlined,
+                    size: 18,
+                    color: rowIconColor,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -591,6 +640,20 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
 
     final appLocale = Localizations.localeOf(context);
     return appLocale.languageCode == 'it' ? 'it' : 'en';
+  }
+
+  String _formatCancellationPolicy(BuildContext context, int hours) {
+    final l10n = context.l10n;
+    if (hours == _neverCancellationHours) {
+      return l10n.summaryCancellationPolicyNever;
+    }
+    if (hours == 0) {
+      return l10n.summaryCancellationPolicyAlways;
+    }
+    if (hours >= 24 && hours % 24 == 0) {
+      return l10n.summaryCancellationPolicyDays(hours ~/ 24);
+    }
+    return l10n.summaryCancellationPolicyHours(hours);
   }
 
   Future<void> _handleModify(BuildContext context, WidgetRef ref) async {

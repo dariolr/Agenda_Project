@@ -23,7 +23,7 @@ void main() {
         formFactor: AppFormFactor.desktop,
       );
 
-      expect(mobileResult, 3); // 500 / 140 = 3.57 -> floor = 3
+      expect(mobileResult, 5); // 500 / 100 = 5
       expect(desktopResult, LayoutConfig.maxVisibleStaff);
     });
 
@@ -44,7 +44,7 @@ void main() {
           formFactor: AppFormFactor.desktop,
         );
 
-        expect(narrowMobile, LayoutConfig.minColumnWidthMobile);
+        expect(narrowMobile, closeTo(420 / 3, 0.0001));
         expect(spaciousDesktop, closeTo(1920 / 4, 0.0001));
       },
     );

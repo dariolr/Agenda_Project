@@ -12,6 +12,8 @@ use Agenda\Infrastructure\Repositories\UserRepository;
 
 final class LocationsController
 {
+    private const NEVER_CANCELLATION_HOURS = 100000;
+
     public function __construct(
         private readonly LocationRepository $locationRepo,
         private readonly BusinessUserRepository $businessUserRepo,
@@ -119,7 +121,8 @@ final class LocationsController
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
-            'slot_interval_minutes' => (int) ($row['slot_interval_minutes'] ?? 15),
+            'cancellation_hours' => isset($row['cancellation_hours']) ? (int) $row['cancellation_hours'] : null,
+            'online_booking_slot_interval_minutes' => (int) ($row['online_booking_slot_interval_minutes'] ?? 15),
             'slot_display_mode' => $row['slot_display_mode'] ?? 'all',
             'min_gap_minutes' => (int) ($row['min_gap_minutes'] ?? 30),
             'is_default' => (bool) $row['is_default'],
@@ -146,6 +149,7 @@ final class LocationsController
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
+            'cancellation_hours' => isset($row['cancellation_hours']) ? (int) $row['cancellation_hours'] : null,
             'is_default' => (bool) $row['is_default'],
         ];
     }
@@ -172,6 +176,18 @@ final class LocationsController
             return Response::error('Name is required', 'validation_error', 400, $request->traceId);
         }
 
+        $cancellationHours = null;
+        if (array_key_exists('cancellation_hours', $body)) {
+            if ($body['cancellation_hours'] === null) {
+                $cancellationHours = null;
+            } else {
+                $hours = (int) $body['cancellation_hours'];
+                if (($hours >= 0 && $hours <= 720) || $hours === self::NEVER_CANCELLATION_HOURS) {
+                    $cancellationHours = $hours;
+                }
+            }
+        }
+
         $locationId = $this->locationRepo->create($businessId, $body['name'], [
             'address' => $body['address'] ?? null,
             'phone' => $body['phone'] ?? null,
@@ -180,6 +196,7 @@ final class LocationsController
             'min_booking_notice_hours' => $body['min_booking_notice_hours'] ?? 1,
             'max_booking_advance_days' => $body['max_booking_advance_days'] ?? 90,
             'allow_customer_choose_staff' => $body['allow_customer_choose_staff'] ?? false,
+            'cancellation_hours' => $cancellationHours,
             'is_active' => $body['is_active'] ?? true,
         ]);
 
@@ -232,13 +249,23 @@ final class LocationsController
         if (array_key_exists('max_booking_advance_days', $body)) {
             $updateData['max_booking_advance_days'] = (int) $body['max_booking_advance_days'];
         }
+        if (array_key_exists('cancellation_hours', $body)) {
+            if ($body['cancellation_hours'] === null) {
+                $updateData['cancellation_hours'] = null;
+            } else {
+                $hours = (int) $body['cancellation_hours'];
+                if (($hours >= 0 && $hours <= 720) || $hours === self::NEVER_CANCELLATION_HOURS) {
+                    $updateData['cancellation_hours'] = $hours;
+                }
+            }
+        }
 
         // Handle smart slot display settings
-        if (array_key_exists('slot_interval_minutes', $body)) {
-            $interval = (int) $body['slot_interval_minutes'];
+        if (array_key_exists('online_booking_slot_interval_minutes', $body)) {
+            $interval = (int) $body['online_booking_slot_interval_minutes'];
             // Validate interval is reasonable (5-120 minutes)
             if ($interval >= 5 && $interval <= 120) {
-                $updateData['slot_interval_minutes'] = $interval;
+                $updateData['online_booking_slot_interval_minutes'] = $interval;
             }
         }
         if (array_key_exists('slot_display_mode', $body)) {

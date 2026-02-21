@@ -48,6 +48,7 @@ class _LocationDialog extends ConsumerStatefulWidget {
 }
 
 class _LocationDialogState extends ConsumerState<_LocationDialog> {
+  static const int _neverCancellationHours = 100000;
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
@@ -55,17 +56,59 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   bool _isActive = true;
   int _minBookingNoticeHours = 1;
   int _maxBookingAdvanceDays = 90;
-  bool _allowCustomerChooseStaff = false;
+  int? _cancellationHours;
+  bool _allowCustomerChooseStaff = true;
 
   // Smart Slot Display Settings
-  int _slotIntervalMinutes = 15;
+  int _onlineBookingSlotIntervalMinutes = 15;
   String _slotDisplayMode = 'all';
   int _minGapMinutes = 30;
 
   // Opzioni disponibili per i dropdown
   static const _noticeHoursOptions = [1, 2, 4, 6, 12, 24, 48];
   static const _advanceDaysOptions = [7, 14, 30, 60, 90, 180, 365];
-  static final List<int> _slotIntervalOptions = [
+  static const List<int?> _cancellationHoursOptions = [
+    null,
+    0,
+    1,
+    2,
+    4,
+    8,
+    12,
+    24,
+    48,
+    72,
+    96,
+    120,
+    168,
+    _neverCancellationHours,
+  ];
+
+  String _formatCancellationPolicyValue(BuildContext context, int hours) {
+    final l10n = context.l10n;
+    if (hours == 0) {
+      return l10n.teamLocationCancellationHoursAlways;
+    }
+    if (hours == _neverCancellationHours) {
+      return l10n.teamLocationCancellationHoursNever;
+    }
+    if (hours >= 24 && hours % 24 == 0) {
+      return l10n.teamLocationDays(hours ~/ 24);
+    }
+    return l10n.teamLocationHours(hours);
+  }
+
+  Widget _buildComboText(String text, {bool selected = false}) {
+    return Tooltip(
+      message: text,
+      child: Text(
+        text,
+        maxLines: selected ? 1 : 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+  static final List<int> _onlineBookingSlotIntervalOptions = [
     for (int minutes = 5; minutes <= 120; minutes += 5) minutes,
   ];
   static final List<int> _minGapOptions = [
@@ -82,8 +125,10 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       _isActive = widget.initial!.isActive;
       _minBookingNoticeHours = widget.initial!.minBookingNoticeHours;
       _maxBookingAdvanceDays = widget.initial!.maxBookingAdvanceDays;
+      _cancellationHours = widget.initial!.cancellationHours;
       _allowCustomerChooseStaff = widget.initial!.allowCustomerChooseStaff;
-      _slotIntervalMinutes = widget.initial!.slotIntervalMinutes;
+      _onlineBookingSlotIntervalMinutes =
+          widget.initial!.onlineBookingSlotIntervalMinutes;
       _slotDisplayMode = widget.initial!.slotDisplayMode;
       _minGapMinutes = widget.initial!.minGapMinutes;
     } else {
@@ -257,6 +302,87 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
               },
             ),
           ),
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          LabeledFormField(
+            label: l10n.teamLocationCancellationHoursLabel,
+            child: DropdownButtonFormField<int?>(
+              value: _cancellationHours,
+              isExpanded: true,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                isDense: true,
+                helperText: l10n.teamLocationCancellationHoursHint,
+              ),
+              items: _cancellationHoursOptions.map((hours) {
+                String label;
+                if (hours == null) {
+                  final businessCancellationHours = ref
+                      .read(currentBusinessProvider)
+                      .cancellationHours;
+                  if (businessCancellationHours != null) {
+                    final businessPolicy = _formatCancellationPolicyValue(
+                      context,
+                      businessCancellationHours,
+                    );
+                    label = l10n.teamLocationCancellationHoursUseBusinessWithValue(
+                      businessPolicy,
+                    );
+                  } else {
+                    label = l10n.teamLocationCancellationHoursUseBusiness;
+                  }
+                } else if (hours == 0) {
+                  label = l10n.teamLocationCancellationHoursAlways;
+                } else if (hours == _neverCancellationHours) {
+                  label = l10n.teamLocationCancellationHoursNever;
+                } else if (hours >= 24 && hours % 24 == 0) {
+                  label = l10n.teamLocationDays(hours ~/ 24);
+                } else {
+                  label = l10n.teamLocationHours(hours);
+                }
+                return DropdownMenuItem<int?>(
+                  value: hours,
+                  child: _buildComboText(label),
+                );
+              }).toList(),
+              selectedItemBuilder: (context) {
+                return _cancellationHoursOptions.map((hours) {
+                  String label;
+                  if (hours == null) {
+                    final businessCancellationHours = ref
+                        .read(currentBusinessProvider)
+                        .cancellationHours;
+                    if (businessCancellationHours != null) {
+                      final businessPolicy = _formatCancellationPolicyValue(
+                        context,
+                        businessCancellationHours,
+                      );
+                      label = l10n
+                          .teamLocationCancellationHoursUseBusinessWithValue(
+                            businessPolicy,
+                          );
+                    } else {
+                      label = l10n.teamLocationCancellationHoursUseBusiness;
+                    }
+                  } else if (hours == 0) {
+                    label = l10n.teamLocationCancellationHoursAlways;
+                  } else if (hours == _neverCancellationHours) {
+                    label = l10n.teamLocationCancellationHoursNever;
+                  } else if (hours >= 24 && hours % 24 == 0) {
+                    label = l10n.teamLocationDays(hours ~/ 24);
+                  } else {
+                    label = l10n.teamLocationHours(hours);
+                  }
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: _buildComboText(label, selected: true),
+                  );
+                }).toList();
+              },
+              onChanged: (v) {
+                setState(() => _cancellationHours = v);
+              },
+            ),
+          ),
           const SizedBox(height: AppSpacing.formRowSpacing * 2),
           // Sezione Smart Slot Display
           Text(
@@ -279,20 +405,22 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           LabeledFormField(
             label: l10n.teamLocationSlotIntervalLabel,
             child: DropdownButtonFormField<int>(
-              value: _slotIntervalMinutes,
+              value: _onlineBookingSlotIntervalMinutes,
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
                 isDense: true,
                 helperText: l10n.teamLocationSlotIntervalHint,
               ),
-              items: _slotIntervalOptions.map((minutes) {
+              items: _onlineBookingSlotIntervalOptions.map((minutes) {
                 return DropdownMenuItem(
                   value: minutes,
                   child: Text(l10n.teamLocationMinutes(minutes)),
                 );
               }).toList(),
               onChanged: (v) {
-                if (v != null) setState(() => _slotIntervalMinutes = v);
+                if (v != null) {
+                  setState(() => _onlineBookingSlotIntervalMinutes = v);
+                }
               },
             ),
           ),
@@ -490,8 +618,10 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           isActive: _isActive,
           minBookingNoticeHours: _minBookingNoticeHours,
           maxBookingAdvanceDays: _maxBookingAdvanceDays,
+          cancellationHours: _cancellationHours,
           allowCustomerChooseStaff: _allowCustomerChooseStaff,
-          slotIntervalMinutes: _slotIntervalMinutes,
+          onlineBookingSlotIntervalMinutes:
+              _onlineBookingSlotIntervalMinutes,
           slotDisplayMode: _slotDisplayMode,
           minGapMinutes: _minGapMinutes,
         );
@@ -504,6 +634,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           isActive: _isActive,
           minBookingNoticeHours: _minBookingNoticeHours,
           maxBookingAdvanceDays: _maxBookingAdvanceDays,
+          cancellationHours: _cancellationHours,
           allowCustomerChooseStaff: _allowCustomerChooseStaff,
         );
       }

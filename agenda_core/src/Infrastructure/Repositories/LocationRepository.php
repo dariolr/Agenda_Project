@@ -18,7 +18,8 @@ final class LocationRepository
             'SELECT l.id, l.business_id, l.name, l.address, l.city, l.region, l.country,
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
                     l.allow_customer_choose_staff, l.is_default, l.is_active, l.created_at, l.updated_at,
-                    l.slot_interval_minutes, l.slot_display_mode, l.min_gap_minutes,
+                    l.cancellation_hours,
+                    l.online_booking_slot_interval_minutes, l.slot_display_mode, l.min_gap_minutes,
                     l.min_booking_notice_hours, l.max_booking_advance_days,
                     b.name AS business_name,
                     b.email AS business_email,
@@ -42,7 +43,8 @@ final class LocationRepository
         $sql = 'SELECT id, business_id, name, address, city, region, country, 
                     phone, email, latitude, longitude, currency, timezone,
                     allow_customer_choose_staff,
-                    slot_interval_minutes, slot_display_mode, min_gap_minutes,
+                    cancellation_hours,
+                    online_booking_slot_interval_minutes, slot_display_mode, min_gap_minutes,
                     is_default, sort_order, is_active, created_at, updated_at
              FROM locations
              WHERE business_id = ?';
@@ -157,8 +159,8 @@ final class LocationRepository
     {
         $isActive = $data['is_active'] ?? 1;
         $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO locations (business_id, name, address, phone, email, timezone, min_booking_notice_hours, max_booking_advance_days, allow_customer_choose_staff, is_active) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO locations (business_id, name, address, phone, email, timezone, min_booking_notice_hours, max_booking_advance_days, allow_customer_choose_staff, cancellation_hours, is_active) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
@@ -170,6 +172,7 @@ final class LocationRepository
             $data['min_booking_notice_hours'] ?? 1,
             $data['max_booking_advance_days'] ?? 90,
             !empty($data['allow_customer_choose_staff']) ? 1 : 0,
+            $data['cancellation_hours'] ?? null,
             $isActive ? 1 : 0,
         ]);
 
@@ -189,10 +192,10 @@ final class LocationRepository
         }
 
         // Integer fields
-        foreach (['min_booking_notice_hours', 'max_booking_advance_days', 'slot_interval_minutes', 'min_gap_minutes'] as $field) {
+        foreach (['min_booking_notice_hours', 'max_booking_advance_days', 'online_booking_slot_interval_minutes', 'min_gap_minutes', 'cancellation_hours'] as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "{$field} = ?";
-                $values[] = (int) $data[$field];
+                $values[] = $data[$field] === null ? null : (int) $data[$field];
             }
         }
 

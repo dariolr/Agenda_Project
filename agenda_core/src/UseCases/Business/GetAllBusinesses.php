@@ -53,6 +53,7 @@ final class GetAllBusinesses
                 'service_color_palette' => $b['service_color_palette'] ?? 'legacy',
                 'timezone' => $b['timezone'],
                 'currency' => $b['currency'],
+                'cancellation_hours' => isset($b['cancellation_hours']) ? (int) $b['cancellation_hours'] : null,
                 'is_active' => (bool) $b['is_active'],
                 'is_suspended' => (bool) ($b['is_suspended'] ?? false),
                 'suspension_message' => $b['suspension_message'] ?? null,

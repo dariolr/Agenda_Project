@@ -440,7 +440,7 @@ CREATE TABLE `locations` (
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `slot_interval_minutes` int UNSIGNED NOT NULL DEFAULT '15' COMMENT 'Intervallo tra slot mostrati ai clienti online (minuti)',
+  `online_booking_slot_interval_minutes` int UNSIGNED NOT NULL DEFAULT '15' COMMENT 'Intervallo tra slot mostrati ai clienti online (minuti)',
   `slot_display_mode` enum('all','min_gap') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'all' COMMENT 'Modalità visualizzazione: all=tutti, min_gap=filtra gap piccoli',
   `min_gap_minutes` int UNSIGNED NOT NULL DEFAULT '30' COMMENT 'Gap minimo accettabile in minuti (usato solo se mode=min_gap)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -768,6 +768,7 @@ CREATE TABLE `staff_planning` (
   `id` int UNSIGNED NOT NULL,
   `staff_id` int UNSIGNED NOT NULL,
   `type` enum('weekly','biweekly') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'weekly',
+  `planning_slot_minutes` tinyint UNSIGNED NOT NULL DEFAULT '15' COMMENT 'Passo (in minuti) usato per generare il planning',
   `valid_from` date NOT NULL,
   `valid_to` date DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
