@@ -17,6 +17,7 @@ import '../../../../core/models/booking.dart';
 import '../../../../core/models/recurrence_rule.dart';
 import '../../../../core/models/service_package.dart';
 import '../../../../core/models/service_variant.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/price_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
@@ -1863,12 +1864,13 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           repository: repository,
         );
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
+        final message = error is ApiException ? error.message : l10n.errorTitle;
         await FeedbackDialog.showError(
           context,
           title: l10n.errorTitle,
-          message: l10n.errorTitle,
+          message: message,
         );
       }
       return;

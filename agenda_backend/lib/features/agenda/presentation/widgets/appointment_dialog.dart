@@ -12,6 +12,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
 import '../../../../core/models/service_package.dart';
 import '../../../../core/models/service_variant.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/price_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
@@ -2101,12 +2102,13 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       if (mounted) {
         Navigator.of(context).pop();
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
+        final message = error is ApiException ? error.message : l10n.errorTitle;
         await FeedbackDialog.showError(
           context,
           title: l10n.errorTitle,
-          message: l10n.errorTitle,
+          message: message,
         );
       }
     } finally {

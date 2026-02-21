@@ -1,11 +1,11 @@
 {
-    "name": "agenda_frontend",
-    "short_name": "agenda_frontend",
+    "name": "Prenota online",
+    "short_name": "Prenota online",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Gestisci i tuoi appuntamenti online in completa autonomia",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
