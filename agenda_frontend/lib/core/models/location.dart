@@ -17,6 +17,7 @@ class Location {
   final String? currency;
   final String timezone;
   final bool allowCustomerChooseStaff;
+  final int? cancellationHours;
   final bool isDefault;
   final int maxBookingAdvanceDays;
 
@@ -35,6 +36,7 @@ class Location {
     this.currency,
     this.timezone = 'Europe/Rome',
     this.allowCustomerChooseStaff = false,
+    this.cancellationHours,
     this.isDefault = false,
     this.maxBookingAdvanceDays = 90,
   });
@@ -60,6 +62,7 @@ class Location {
       timezone: json['timezone'] as String? ?? 'Europe/Rome',
       allowCustomerChooseStaff:
           json['allow_customer_choose_staff'] as bool? ?? false,
+      cancellationHours: json['cancellation_hours'] as int?,
       isDefault: json['is_default'] as bool? ?? false,
       maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
     );
@@ -81,6 +84,7 @@ class Location {
       'currency': currency,
       'timezone': timezone,
       'allow_customer_choose_staff': allowCustomerChooseStaff,
+      if (cancellationHours != null) 'cancellation_hours': cancellationHours,
       'is_default': isDefault,
       'max_booking_advance_days': maxBookingAdvanceDays,
     };

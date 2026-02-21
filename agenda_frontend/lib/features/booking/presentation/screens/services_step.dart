@@ -230,6 +230,10 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
               .where((s) => s.categoryId == category.id && s.isBookableOnline)
               .toList()
             ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+      // Regola UX: non mostrare categorie senza servizi prenotabili visibili.
+      if (categoryServices.isEmpty) continue;
+
       final categoryPackages =
           visiblePackages.where((p) {
             final effectiveCategoryId = p.categoryId != 0

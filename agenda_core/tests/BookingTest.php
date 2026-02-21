@@ -14,12 +14,19 @@ use DateTimeZone;
  */
 final class BookingTest extends TestCase
 {
-    public function testSlotIntervalIs15Minutes(): void
+    public function testPlanningSlotIs15Minutes(): void
     {
-        // Verify the constant value through reflection
         $class = new \ReflectionClass(ComputeAvailability::class);
-        $constant = $class->getReflectionConstant('SLOT_INTERVAL_MINUTES');
-        
+        $constant = $class->getReflectionConstant('PLANNING_SLOT_MINUTES');
+
+        $this->assertEquals(15, $constant->getValue());
+    }
+
+    public function testDefaultDisplaySlotIntervalIs15Minutes(): void
+    {
+        $class = new \ReflectionClass(ComputeAvailability::class);
+        $constant = $class->getReflectionConstant('DEFAULT_DISPLAY_SLOT_INTERVAL_MINUTES');
+
         $this->assertEquals(15, $constant->getValue());
     }
 

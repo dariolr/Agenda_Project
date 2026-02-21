@@ -27,9 +27,12 @@ enum WeekLabel {
 /// (nessuna sovrapposizione di intervalli).
 @immutable
 class StaffPlanning {
+  static const int defaultPlanningSlotMinutes = 15;
+
   final int id;
   final int staffId;
   final StaffPlanningType type;
+  final int planningSlotMinutes;
 
   /// Data di inizio validità (inclusa).
   final DateTime validFrom;
@@ -48,6 +51,7 @@ class StaffPlanning {
     required this.id,
     required this.staffId,
     required this.type,
+    this.planningSlotMinutes = defaultPlanningSlotMinutes,
     required this.validFrom,
     this.validTo,
     required this.templates,
@@ -91,6 +95,15 @@ class StaffPlanning {
     return weekLabel == WeekLabel.a ? templateA : templateB;
   }
 
+  /// Totale ore settimanali del template attivo per questo planning.
+  double totalWeeklyHoursForTemplate(WeekLabel label) {
+    final template = label == WeekLabel.a ? templateA : templateB;
+    if (template == null) return 0;
+    return template.totalWeeklyHoursFor(
+      minutesPerSlot: planningSlotMinutes,
+    );
+  }
+
   /// Calcola la label della settimana (A/B) per una data.
   /// Per weekly ritorna sempre A.
   WeekLabel computeWeekLabel(DateTime date) {
@@ -113,6 +126,7 @@ class StaffPlanning {
     int? id,
     int? staffId,
     StaffPlanningType? type,
+    int? planningSlotMinutes,
     DateTime? validFrom,
     DateTime? Function()? validTo,
     List<StaffPlanningWeekTemplate>? templates,
@@ -123,6 +137,7 @@ class StaffPlanning {
       id: id ?? this.id,
       staffId: staffId ?? this.staffId,
       type: type ?? this.type,
+      planningSlotMinutes: planningSlotMinutes ?? this.planningSlotMinutes,
       validFrom: validFrom ?? this.validFrom,
       validTo: validTo != null ? validTo() : this.validTo,
       templates: templates ?? this.templates,
@@ -139,6 +154,8 @@ class StaffPlanning {
         (t) => t.name == json['type'],
         orElse: () => StaffPlanningType.weekly,
       ),
+      planningSlotMinutes:
+          json['planning_slot_minutes'] as int? ?? defaultPlanningSlotMinutes,
       validFrom: DateTime.parse(json['valid_from'] as String),
       validTo: json['valid_to'] != null
           ? DateTime.parse(json['valid_to'] as String)
@@ -163,6 +180,7 @@ class StaffPlanning {
       'id': id,
       'staff_id': staffId,
       'type': type.name,
+      'planning_slot_minutes': planningSlotMinutes,
       'valid_from': _dateToIso(validFrom),
       'valid_to': validTo != null ? _dateToIso(validTo!) : null,
       'templates': templates.map((t) => t.toJson()).toList(),
@@ -184,15 +202,24 @@ class StaffPlanning {
           id == other.id &&
           staffId == other.staffId &&
           type == other.type &&
+          planningSlotMinutes == other.planningSlotMinutes &&
           validFrom == other.validFrom &&
           validTo == other.validTo;
 
   @override
-  int get hashCode => Object.hash(id, staffId, type, validFrom, validTo);
+  int get hashCode => Object.hash(
+    id,
+    staffId,
+    type,
+    planningSlotMinutes,
+    validFrom,
+    validTo,
+  );
 
   @override
   String toString() =>
       'StaffPlanning(id: $id, staffId: $staffId, type: $type, '
+      'planningSlotMinutes: $planningSlotMinutes, '
       'validFrom: ${_dateToIso(validFrom)}, '
       'validTo: ${validTo != null ? _dateToIso(validTo!) : 'null'})';
 }
@@ -228,13 +255,20 @@ class StaffPlanningWeekTemplate {
   /// Ottiene gli slot per un giorno specifico.
   Set<int> getSlotsForDay(int dayOfWeek) => daySlots[dayOfWeek] ?? const {};
 
-  /// Calcola le ore totali settimanali (approssimate, basate su 15 min/slot).
+  /// Calcola le ore totali settimanali assumendo lo step planning di default.
   double get totalWeeklyHours {
+    return totalWeeklyHoursFor(
+      minutesPerSlot: StaffPlanning.defaultPlanningSlotMinutes,
+    );
+  }
+
+  /// Calcola le ore totali settimanali usando lo step planning specificato.
+  double totalWeeklyHoursFor({required int minutesPerSlot}) {
     int totalSlots = 0;
     for (final slots in daySlots.values) {
       totalSlots += slots.length;
     }
-    return totalSlots * 15 / 60; // 15 min per slot
+    return totalSlots * minutesPerSlot / 60;
   }
 
   StaffPlanningWeekTemplate copyWith({

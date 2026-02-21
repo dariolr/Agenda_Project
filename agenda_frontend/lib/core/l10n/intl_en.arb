@@ -176,6 +176,23 @@
   "summaryServices": "Selected services",
   "summaryOperator": "Staff member",
   "summaryDateTime": "Date and time",
+  "summaryCancellationPolicyTitle": "Modify/cancel policy",
+  "summaryCancellationPolicyAlways": "Always",
+  "summaryCancellationPolicyNever": "Never (not allowed after booking)",
+  "summaryCancellationPolicyHours": "Up to {hours} hours before",
+  "@summaryCancellationPolicyHours": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "summaryCancellationPolicyDays": "Up to {days} days before",
+  "@summaryCancellationPolicyDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "summaryCancellationPolicyAcceptLabel": "I accept the modify/cancel policy",
+  "summaryCancellationPolicyAcceptRequiredError": "To confirm, you must accept the modify/cancel policy.",
   "summaryDuration": "Total duration",
   "summaryPrice": "Total price",
   "summaryNotes": "Notes (optional)",

@@ -183,18 +183,20 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m71(count) => "${count} servizi abilitati";
 
-  static String m72(count) =>
-      "${Intl.plural(count, one: '1 giorno', other: '${count} giorni')}";
+  static String m72(value) => "Usa policy del business (${value})";
 
   static String m73(count) =>
-      "${Intl.plural(count, one: '1 ora', other: '${count} ore')}";
+      "${Intl.plural(count, one: '1 giorno', other: '${count} giorni')}";
 
   static String m74(count) =>
+      "${Intl.plural(count, one: '1 ora', other: '${count} ore')}";
+
+  static String m75(count) =>
       "${Intl.plural(count, one: '1 minuto', other: '${count} minuti')}";
 
-  static String m75(selected, total) => "${selected} su ${total}";
+  static String m76(selected, total) => "${selected} su ${total}";
 
-  static String m76(hours) => "${hours} ore totale";
+  static String m77(hours) => "${hours} ore totale";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -2153,12 +2155,27 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Limiti prenotazione online",
     ),
-    "teamLocationDays": m72,
+    "teamLocationCancellationHoursAlways": MessageLookupByLibrary.simpleMessage(
+      "Sempre",
+    ),
+    "teamLocationCancellationHoursHint": MessageLookupByLibrary.simpleMessage(
+      "Tempo minimo prima dell\'appuntamento entro cui il cliente può ancora modificare o cancellare",
+    ),
+    "teamLocationCancellationHoursLabel": MessageLookupByLibrary.simpleMessage(
+      "Finestra modifica/cancellazione",
+    ),
+    "teamLocationCancellationHoursNever": MessageLookupByLibrary.simpleMessage(
+      "Mai",
+    ),
+    "teamLocationCancellationHoursUseBusiness":
+        MessageLookupByLibrary.simpleMessage("Usa policy del business"),
+    "teamLocationCancellationHoursUseBusinessWithValue": m72,
+    "teamLocationDays": m73,
     "teamLocationEmailHint": MessageLookupByLibrary.simpleMessage(
       "Email per notifiche ai clienti",
     ),
     "teamLocationEmailLabel": MessageLookupByLibrary.simpleMessage("Email"),
-    "teamLocationHours": m73,
+    "teamLocationHours": m74,
     "teamLocationIsActiveHint": MessageLookupByLibrary.simpleMessage(
       "Se disattivata, la sede non sarà visibile ai clienti",
     ),
@@ -2184,7 +2201,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationMinGapLabel": MessageLookupByLibrary.simpleMessage(
       "Gap minimo accettabile",
     ),
-    "teamLocationMinutes": m74,
+    "teamLocationMinutes": m75,
     "teamLocationNameLabel": MessageLookupByLibrary.simpleMessage("Nome sede"),
     "teamLocationSlotDisplayModeAll": MessageLookupByLibrary.simpleMessage(
       "Massima disponibilità",
@@ -2203,13 +2220,13 @@ class MessageLookup extends MessageLookupByLibrary {
           "Nasconde orari che creerebbero buchi troppo piccoli",
         ),
     "teamLocationSlotIntervalHint": MessageLookupByLibrary.simpleMessage(
-      "Ogni quanti minuti mostrare un orario disponibile",
+      "Ogni quanti minuti mostrare un orario disponibile nelle prenotazioni online (non influisce sugli slot del planning staff)",
     ),
     "teamLocationSlotIntervalLabel": MessageLookupByLibrary.simpleMessage(
       "Intervallo tra gli orari",
     ),
     "teamLocationSmartSlotDescription": MessageLookupByLibrary.simpleMessage(
-      "Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online",
+      "Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online. Non modifica il planning dello staff.",
     ),
     "teamLocationSmartSlotSection": MessageLookupByLibrary.simpleMessage(
       "Fasce orarie intelligenti",
@@ -2234,7 +2251,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamSelectedServicesButton": MessageLookupByLibrary.simpleMessage(
       "Servizi selezionati",
     ),
-    "teamSelectedServicesCount": m75,
+    "teamSelectedServicesCount": m76,
     "teamServicesLabel": MessageLookupByLibrary.simpleMessage("Servizi"),
     "teamStaffBookableOnlineLabel": MessageLookupByLibrary.simpleMessage(
       "Abilitato alle prenotazioni online",
@@ -2275,6 +2292,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "weeklyScheduleTitle": MessageLookupByLibrary.simpleMessage(
       "Orario settimanale",
     ),
-    "weeklyScheduleTotalHours": m76,
+    "weeklyScheduleTotalHours": m77,
   };
 }

@@ -68,7 +68,11 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m21(total) => "Total: ${total}";
 
-  static String m22(businessName) =>
+  static String m22(days) => "Up to ${days} days before";
+
+  static String m23(hours) => "Up to ${hours} hours before";
+
+  static String m24(businessName) =>
       "To book at ${businessName}, you need to log in with an account registered here.";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -545,6 +549,25 @@ class MessageLookup extends MessageLookupByLibrary {
       "Select who you want to be served by",
     ),
     "staffTitle": MessageLookupByLibrary.simpleMessage("Choose staff member"),
+    "summaryCancellationPolicyAcceptLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "I accept the modify/cancel policy",
+        ),
+    "summaryCancellationPolicyAcceptRequiredError":
+        MessageLookupByLibrary.simpleMessage(
+          "To confirm, you must accept the modify/cancel policy.",
+        ),
+    "summaryCancellationPolicyAlways": MessageLookupByLibrary.simpleMessage(
+      "Always",
+    ),
+    "summaryCancellationPolicyDays": m22,
+    "summaryCancellationPolicyHours": m23,
+    "summaryCancellationPolicyNever": MessageLookupByLibrary.simpleMessage(
+      "Never (not allowed after booking)",
+    ),
+    "summaryCancellationPolicyTitle": MessageLookupByLibrary.simpleMessage(
+      "Modify/cancel policy",
+    ),
     "summaryDateTime": MessageLookupByLibrary.simpleMessage("Date and time"),
     "summaryDuration": MessageLookupByLibrary.simpleMessage("Total duration"),
     "summaryNotes": MessageLookupByLibrary.simpleMessage("Notes (optional)"),
@@ -580,7 +603,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "wrongBusinessAuthAction": MessageLookupByLibrary.simpleMessage(
       "Log out and sign in here",
     ),
-    "wrongBusinessAuthMessage": m22,
+    "wrongBusinessAuthMessage": m24,
     "wrongBusinessAuthTitle": MessageLookupByLibrary.simpleMessage(
       "Account linked to another business",
     ),

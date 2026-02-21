@@ -4,6 +4,7 @@ import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/availability_exception.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart' hide DateUtils;
+import 'package:agenda_backend/core/services/staff_planning_selector.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
@@ -23,8 +24,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-const int _weeklyOverviewMinutesPerSlot = 15;
-const int _weeklyOverviewTotalSlotsPerDay = (24 * 60) ~/ _weeklyOverviewMinutesPerSlot;
+const int _weeklyOverviewDefaultMinutesPerSlot = 15;
+
+int _planningSlotMinutesFromLookup(PlanningLookupResult lookup) {
+  if (lookup is PlanningFound) {
+    final minutes = lookup.planning.planningSlotMinutes;
+    if (minutes > 0) return minutes;
+  }
+  return _weeklyOverviewDefaultMinutesPerSlot;
+}
 
 // Lightweight range used only for the overview chips
 class HourRange {
@@ -314,14 +322,12 @@ final weeklyExceptionsLoadKeyProvider =
 final weeklyStaffAvailabilityFromEditorProvider =
     Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
       final staffList = ref.watch(staffForStaffSectionProvider);
-      final minutesPerSlot = _weeklyOverviewMinutesPerSlot;
-      final totalSlots = _weeklyOverviewTotalSlotsPerDay;
 
       // Ottieni la data corrente dell'agenda per calcolare la settimana mostrata
       final agendaDate = ref.watch(agendaDateProvider);
       final monday = _mondayOfWeek(agendaDate);
 
-      List<HourRange> slotsToHourRanges(Set<int> slots) {
+      List<HourRange> slotsToHourRanges(Set<int> slots, int minutesPerSlot) {
         if (slots.isEmpty) return const [];
         final sorted = slots.toList()..sort();
         final List<List<int>> clusters = [];
@@ -363,11 +369,20 @@ final weeklyStaffAvailabilityFromEditorProvider =
           // Calcola la data specifica per questo giorno della settimana
           final specificDate = monday.add(Duration(days: d - 1));
 
-          // 1️⃣ BASE: Planning per la data specifica (supporta biweekly e validità temporale)
-          final planningSlots = ref.watch(
-            planningSlotsForDateProvider((staffId: s.id, date: specificDate)),
+          final planningLookup = ref.watch(
+            planningForStaffOnDateProvider((staffId: s.id, date: specificDate)),
           );
-          Set<int> baseSlots = planningSlots ?? <int>{};
+          final minutesPerSlot = _planningSlotMinutesFromLookup(planningLookup);
+          final totalSlots = (24 * 60) ~/ minutesPerSlot;
+
+          // 1️⃣ BASE: Planning per la data specifica (supporta biweekly e validità temporale)
+          final Set<int> baseSlots = switch (planningLookup) {
+            NoPlanningFound() => <int>{},
+            PlanningFound(template: final template) => template.getSlotsForDay(
+              specificDate.weekday,
+            ),
+            MultiplePlanningsFound() => <int>{},
+          };
 
           // 2️⃣ ECCEZIONI: Applica modifiche per la data specifica
           final exceptions = ref.watch(
@@ -378,7 +393,7 @@ final weeklyStaffAvailabilityFromEditorProvider =
           );
 
           if (exceptions.isEmpty) {
-            staffWeek[d] = slotsToHourRanges(baseSlots);
+            staffWeek[d] = slotsToHourRanges(baseSlots, minutesPerSlot);
           } else {
             // Applica le eccezioni in ordine
             Set<int> finalSlots = Set<int>.from(baseSlots);
@@ -398,7 +413,7 @@ final weeklyStaffAvailabilityFromEditorProvider =
               }
             }
 
-            staffWeek[d] = slotsToHourRanges(finalSlots);
+            staffWeek[d] = slotsToHourRanges(finalSlots, minutesPerSlot);
           }
         }
 
@@ -413,11 +428,10 @@ final weeklyStaffAvailabilityFromEditorProvider =
 final weeklyStaffBaseAvailabilityProvider =
     Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
       final staffList = ref.watch(staffForStaffSectionProvider);
-      final minutesPerSlot = _weeklyOverviewMinutesPerSlot;
       final agendaDate = ref.watch(agendaDateProvider);
       final monday = _mondayOfWeek(agendaDate);
 
-      List<HourRange> slotsToHourRanges(Set<int> slots) {
+      List<HourRange> slotsToHourRanges(Set<int> slots, int minutesPerSlot) {
         if (slots.isEmpty) return const [];
         final sorted = slots.toList()..sort();
         final List<List<int>> clusters = [];
@@ -455,10 +469,18 @@ final weeklyStaffBaseAvailabilityProvider =
 
         for (int d = 1; d <= 7; d++) {
           final specificDate = monday.add(Duration(days: d - 1));
-          final planningSlots = ref.watch(
-            planningSlotsForDateProvider((staffId: s.id, date: specificDate)),
+          final planningLookup = ref.watch(
+            planningForStaffOnDateProvider((staffId: s.id, date: specificDate)),
           );
-          staffWeek[d] = slotsToHourRanges(planningSlots ?? <int>{});
+          final minutesPerSlot = _planningSlotMinutesFromLookup(planningLookup);
+          final Set<int> baseSlots = switch (planningLookup) {
+            NoPlanningFound() => <int>{},
+            PlanningFound(template: final template) => template.getSlotsForDay(
+              specificDate.weekday,
+            ),
+            MultiplePlanningsFound() => <int>{},
+          };
+          staffWeek[d] = slotsToHourRanges(baseSlots, minutesPerSlot);
         }
 
         result[s.id] = staffWeek;
@@ -966,8 +988,16 @@ class _StaffWeekOverviewScreenState
       final daySlots = staffData[weekday];
       if (daySlots == null || daySlots.isEmpty) return;
 
+      final monday = _mondayOfWeek(ref.read(agendaDateProvider));
+      final date = monday.add(Duration(days: weekday - 1));
+
+      final planningLookup = ref.read(
+        planningForStaffOnDateProvider((staffId: staffId, date: date)),
+      );
+      final minutesPerSlot = _planningSlotMinutesFromLookup(planningLookup);
+
       // Converti slots in ranges per identificare quale eliminare
-      final ranges = slotsToRanges(daySlots, _weeklyOverviewMinutesPerSlot);
+      final ranges = slotsToRanges(daySlots, minutesPerSlot);
       if (shiftIndex >= ranges.length) return;
 
       final rangeToDelete = ranges[shiftIndex];
@@ -976,10 +1006,10 @@ class _StaffWeekOverviewScreenState
       final newSlots = Set<int>.from(daySlots);
       final startSlot =
           (rangeToDelete.startHour * 60 + rangeToDelete.startMinute) ~/
-          _weeklyOverviewMinutesPerSlot;
+          minutesPerSlot;
       final endSlot =
           (rangeToDelete.endHour * 60 + rangeToDelete.endMinute) ~/
-          _weeklyOverviewMinutesPerSlot;
+          minutesPerSlot;
       for (int slot = startSlot; slot < endSlot; slot++) {
         newSlots.remove(slot);
       }
@@ -1186,6 +1216,10 @@ class _StaffWeekOverviewScreenState
         orElse: () => staffList.first,
       );
       final staffName = staff.displayName;
+      final planningLookup = ref.read(
+        planningForStaffOnDateProvider((staffId: staffId, date: date)),
+      );
+      final stepMinutes = _planningSlotMinutesFromLookup(planningLookup);
 
       // Helper per eliminare solo questo turno (crea eccezione)
       Future<void> deleteThisOnly() async {
@@ -1217,6 +1251,7 @@ class _StaffWeekOverviewScreenState
           range: range,
           dateLabel: dateLabel,
           formFactor: formFactor,
+          stepMinutes: stepMinutes,
         );
         if (result != null) {
           Future<void> addDeltaException(
@@ -1354,6 +1389,7 @@ class _StaffWeekOverviewScreenState
           range: range,
           dateLabel: dateLabel,
           formFactor: formFactor,
+          stepMinutes: stepMinutes,
         );
         if (result != null) {
           // Aggiorna l'eccezione esistente con i nuovi orari
@@ -2034,6 +2070,7 @@ Future<_EditShiftResult?> _showEditShiftDialog({
   required HourRange range,
   required String dateLabel,
   required AppFormFactor formFactor,
+  required int stepMinutes,
 }) async {
   final isMobile = formFactor == AppFormFactor.mobile;
 
@@ -2041,7 +2078,11 @@ Future<_EditShiftResult?> _showEditShiftDialog({
     return AppBottomSheet.show<_EditShiftResult>(
       context: context,
       heightFactor: null,
-      builder: (ctx) => _EditShiftContent(range: range, dateLabel: dateLabel),
+      builder: (ctx) => _EditShiftContent(
+        range: range,
+        dateLabel: dateLabel,
+        stepMinutes: stepMinutes,
+      ),
     );
   } else {
     return showDialog<_EditShiftResult>(
@@ -2052,6 +2093,7 @@ Future<_EditShiftResult?> _showEditShiftDialog({
           child: _EditShiftContent(
             range: range,
             dateLabel: dateLabel,
+            stepMinutes: stepMinutes,
             isDialog: true,
           ),
         ),
@@ -2065,11 +2107,13 @@ class _EditShiftContent extends ConsumerStatefulWidget {
   const _EditShiftContent({
     required this.range,
     required this.dateLabel,
+    required this.stepMinutes,
     this.isDialog = false,
   });
 
   final HourRange range;
   final String dateLabel;
+  final int stepMinutes;
   final bool isDialog;
 
   @override
@@ -2099,7 +2143,7 @@ class _EditShiftContentState extends ConsumerState<_EditShiftContent> {
   }
 
   Future<void> _pickTime({required bool isStart}) async {
-    final step = _weeklyOverviewMinutesPerSlot;
+    final step = widget.stepMinutes;
     final selected = await AppBottomSheet.show<TimeOfDay>(
       context: context,
       useRootNavigator: true,

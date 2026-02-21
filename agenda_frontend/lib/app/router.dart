@@ -103,9 +103,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 
         // Se autenticato e cerca di accedere a login/register, redirect a booking
         // Solo se auth è ready per evitare loop
+        final isForcedAuthRoute = state.uri.queryParameters['force'] == '1';
         if (authReady &&
             isAuthenticated &&
-            (subPath == 'login' || subPath == 'register')) {
+            (subPath == 'login' || subPath == 'register') &&
+            !isForcedAuthRoute) {
           return '/$slug/booking';
         }
       }

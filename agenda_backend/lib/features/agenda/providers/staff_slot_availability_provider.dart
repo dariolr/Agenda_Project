@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/availability_exception.dart';
+import '../../../core/services/staff_planning_selector.dart';
 import '../../business/providers/location_closures_provider.dart';
-import '../../staff/providers/availability_exceptions_provider.dart';
 import '../../staff/providers/staff_planning_provider.dart';
+import '../../staff/providers/availability_exceptions_provider.dart';
 import 'date_range_provider.dart';
 import 'layout_config_provider.dart';
 
@@ -35,18 +36,28 @@ final staffSlotAvailabilityProvider = Provider.family<Set<int>, int>((
     return const {};
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // 1️⃣ BASE: Planning da API (supporta weekly/biweekly, validità temporale)
-  // ═══════════════════════════════════════════════════════════════
-  //
   // Triggera il caricamento automatico dei planning se non già caricati
   ref.watch(ensureStaffPlanningLoadedProvider(staffId));
 
-  // Legge gli slot dal planning locale
-  final localPlanningSlots = ref.watch(staffPlanningBaseSlotsProvider(staffId));
+  // Planning valido per la data corrente (source of truth per lo step planning)
+  final planningLookup = ref.watch(
+    planningForStaffOnDateProvider((staffId: staffId, date: agendaDate)),
+  );
+  final planningSlotMinutes = switch (planningLookup) {
+    PlanningFound(planning: final planning) when planning.planningSlotMinutes > 0 =>
+      planning.planningSlotMinutes,
+    _ => 15,
+  };
+  final planningTotalSlots = (24 * 60) ~/ planningSlotMinutes;
 
-  // Usa gli slot dal planning locale se disponibili
-  Set<int> baseSlots = localPlanningSlots;
+  // 1️⃣ BASE: Planning da API (supporta weekly/biweekly, validità temporale)
+  Set<int> basePlanningSlots = switch (planningLookup) {
+    NoPlanningFound() => <int>{},
+    PlanningFound(template: final template) => template.getSlotsForDay(
+      agendaDate.weekday,
+    ),
+    MultiplePlanningsFound() => <int>{},
+  };
 
   // ═══════════════════════════════════════════════════════════════
   // 2️⃣ ECCEZIONI: Applica modifiche per la data specifica
@@ -56,29 +67,80 @@ final staffSlotAvailabilityProvider = Provider.family<Set<int>, int>((
   );
 
   if (exceptions.isEmpty) {
-    return baseSlots;
+    return _projectPlanningSlotsToLayoutSlots(
+      planningSlots: basePlanningSlots,
+      planningSlotMinutes: planningSlotMinutes,
+      layoutMinutesPerSlot: layoutConfig.minutesPerSlot,
+      layoutTotalSlots: layoutConfig.totalSlots,
+    );
   }
 
   // Applica le eccezioni in ordine
-  Set<int> finalSlots = Set<int>.from(baseSlots);
+  Set<int> finalPlanningSlots = Set<int>.from(basePlanningSlots);
 
   for (final exception in exceptions) {
     final exceptionSlots = exception.toSlotIndices(
-      minutesPerSlot: layoutConfig.minutesPerSlot,
-      totalSlotsPerDay: layoutConfig.totalSlots,
+      minutesPerSlot: planningSlotMinutes,
+      totalSlotsPerDay: planningTotalSlots,
     );
 
     if (exception.type == AvailabilityExceptionType.available) {
       // AGGIUNGE disponibilità (es. turno extra)
-      finalSlots = finalSlots.union(exceptionSlots);
+      finalPlanningSlots = finalPlanningSlots.union(exceptionSlots);
     } else {
       // RIMUOVE disponibilità (es. ferie, malattia)
-      finalSlots = finalSlots.difference(exceptionSlots);
+      finalPlanningSlots = finalPlanningSlots.difference(exceptionSlots);
     }
   }
 
-  return finalSlots;
+  // 3️⃣ PROIEZIONE: planning step -> slot UI agenda
+  return _projectPlanningSlotsToLayoutSlots(
+    planningSlots: finalPlanningSlots,
+    planningSlotMinutes: planningSlotMinutes,
+    layoutMinutesPerSlot: layoutConfig.minutesPerSlot,
+    layoutTotalSlots: layoutConfig.totalSlots,
+  );
 });
+
+Set<int> _projectPlanningSlotsToLayoutSlots({
+  required Set<int> planningSlots,
+  required int planningSlotMinutes,
+  required int layoutMinutesPerSlot,
+  required int layoutTotalSlots,
+}) {
+  if (planningSlots.isEmpty) return const {};
+
+  // Mappa minuti disponibili (0..1439) derivati dagli slot planning.
+  final availableMinutes = List<bool>.filled(24 * 60, false);
+  for (final slot in planningSlots) {
+    final start = slot * planningSlotMinutes;
+    final end = start + planningSlotMinutes;
+    if (start < 0 || start >= 24 * 60) continue;
+    final clampedEnd = end.clamp(0, 24 * 60);
+    for (int minute = start; minute < clampedEnd; minute++) {
+      availableMinutes[minute] = true;
+    }
+  }
+
+  // Uno slot UI è disponibile solo se TUTTI i minuti nel suo intervallo sono disponibili.
+  final layoutSlots = <int>{};
+  for (int slot = 0; slot < layoutTotalSlots; slot++) {
+    final start = slot * layoutMinutesPerSlot;
+    final end = (start + layoutMinutesPerSlot).clamp(0, 24 * 60);
+    var fullyAvailable = true;
+    for (int minute = start; minute < end; minute++) {
+      if (!availableMinutes[minute]) {
+        fullyAvailable = false;
+        break;
+      }
+    }
+    if (fullyAvailable) {
+      layoutSlots.add(slot);
+    }
+  }
+
+  return layoutSlots;
+}
 
 /// Provider che verifica se uno slot specifico è disponibile.
 /// Più efficiente per query puntuali.

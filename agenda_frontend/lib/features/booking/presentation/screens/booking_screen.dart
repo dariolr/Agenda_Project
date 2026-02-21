@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../auth/providers/auth_provider.dart';
+import '../../../booking/providers/business_provider.dart';
+import '../../../../core/network/network_providers.dart';
 import '../../../../core/widgets/app_loading_screen.dart';
 import '../../../../core/widgets/booking_app_bar.dart';
 import '../../providers/booking_provider.dart';
-import '../../providers/business_provider.dart';
 import '../../providers/locations_provider.dart';
 import '../widgets/booking_step_indicator.dart';
 import 'confirmation_step.dart';
@@ -16,14 +19,58 @@ import 'services_step.dart';
 import 'staff_step.dart';
 import 'summary_step.dart';
 
-class BookingScreen extends ConsumerWidget {
+class BookingScreen extends ConsumerStatefulWidget {
   const BookingScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BookingScreen> createState() => _BookingScreenState();
+}
+
+class _BookingScreenState extends ConsumerState<BookingScreen> {
+  bool _redirectingWrongBusiness = false;
+
+  Future<void> _redirectToRegisterForBusiness({
+    required int authenticatedBusinessId,
+    required String? slug,
+  }) async {
+    if (_redirectingWrongBusiness) return;
+    _redirectingWrongBusiness = true;
+
+    await ref
+        .read(authProvider.notifier)
+        .logout(businessId: authenticatedBusinessId);
+    if (!mounted || !context.mounted) return;
+    final businessSlug = slug ?? '';
+    if (businessSlug.isEmpty) return;
+    context.go('/$businessSlug/register?from=booking&force=1');
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final businessAsync = ref.watch(currentBusinessProvider);
     final config = ref.watch(bookingConfigProvider);
+    final authState = ref.watch(authProvider);
+    final businessSlug = ref.watch(businessSlugProvider);
+    final authenticatedBusinessIdAsync = ref.watch(authenticatedBusinessIdProvider);
     final l10n = context.l10n;
+
+    final currentBusinessId = businessAsync.value?.id;
+    final authenticatedBusinessId = authenticatedBusinessIdAsync.value;
+    final isWrongBusinessAuthenticated =
+        authState.isAuthenticated &&
+        currentBusinessId != null &&
+        authenticatedBusinessId != null &&
+        currentBusinessId != authenticatedBusinessId;
+
+    if (isWrongBusinessAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _redirectToRegisterForBusiness(
+          authenticatedBusinessId: authenticatedBusinessId,
+          slug: businessSlug,
+        );
+      });
+      return const AppLoadingScreen();
+    }
 
     // Se il business è in caricamento, mostra loading identico a index.html
     // per transizione seamless

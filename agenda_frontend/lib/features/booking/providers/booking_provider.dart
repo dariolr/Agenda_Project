@@ -1005,6 +1005,15 @@ class ServicesData {
   bool get isEmpty => bookableServices.isEmpty;
 }
 
+Set<int> _eligibleServiceIdsFromActiveStaff(List<Staff> staffMembers) {
+  final eligible = <int>{};
+  for (final staff in staffMembers) {
+    if (!staff.isBookableOnline || !staff.isActive) continue;
+    eligible.addAll(staff.serviceIds);
+  }
+  return eligible;
+}
+
 /// Notifier per gestire il caricamento dei servizi con controllo TOTALE sullo stato
 class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
   final Ref _ref;
@@ -1034,10 +1043,14 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
       final repository = _ref.read(bookingRepositoryProvider);
 
       final result = await repository.getCategoriesWithServices(locationId);
+      final staff = await repository.getStaff(locationId);
+      final eligibleServiceIds = _eligibleServiceIdsFromActiveStaff(staff);
 
       final sortedCategories = List<ServiceCategory>.from(result.categories)
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-      final sortedServices = List<Service>.from(result.services)
+      final sortedServices = List<Service>.from(
+            result.services.where((s) => eligibleServiceIds.contains(s.id)),
+          )
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
       state = AsyncValue.data(
@@ -1090,7 +1103,14 @@ class ServicePackagesNotifier
     try {
       final repository = _ref.read(bookingRepositoryProvider);
       final packages = await repository.getServicePackages(locationId);
-      state = AsyncValue.data(packages);
+      final staff = await repository.getStaff(locationId);
+      final eligibleServiceIds = _eligibleServiceIdsFromActiveStaff(staff);
+      final filteredPackages = packages.where((package) {
+        final serviceIds = package.orderedServiceIds;
+        if (serviceIds.isEmpty) return false;
+        return serviceIds.every(eligibleServiceIds.contains);
+      }).toList();
+      state = AsyncValue.data(filteredPackages);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

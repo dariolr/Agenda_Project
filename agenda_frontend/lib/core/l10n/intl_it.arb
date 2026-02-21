@@ -176,6 +176,23 @@
   "summaryServices": "Servizi selezionati",
   "summaryOperator": "Operatore",
   "summaryDateTime": "Data e ora",
+  "summaryCancellationPolicyTitle": "Policy modifica/cancellazione",
+  "summaryCancellationPolicyAlways": "Sempre",
+  "summaryCancellationPolicyNever": "Mai (non consentita dopo la prenotazione)",
+  "summaryCancellationPolicyHours": "Fino a {hours} ore prima",
+  "@summaryCancellationPolicyHours": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "summaryCancellationPolicyDays": "Fino a {days} giorni prima",
+  "@summaryCancellationPolicyDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "summaryCancellationPolicyAcceptLabel": "Accetto la policy di modifica/cancellazione",
+  "summaryCancellationPolicyAcceptRequiredError": "Per confermare devi accettare la policy di modifica/cancellazione.",
   "summaryDuration": "Durata totale",
   "summaryPrice": "Prezzo totale",
   "summaryNotes": "Note (opzionale)",

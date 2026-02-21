@@ -10,6 +10,7 @@ class Business {
   final String? phone;
   final String timezone;
   final String currency;
+  final int? cancellationHours;
   final int? defaultLocationId;
 
   const Business({
@@ -20,6 +21,7 @@ class Business {
     this.phone,
     this.timezone = 'Europe/Rome',
     this.currency = 'EUR',
+    this.cancellationHours,
     this.defaultLocationId,
   });
 
@@ -32,6 +34,7 @@ class Business {
       phone: json['phone'] as String?,
       timezone: json['timezone'] as String? ?? 'Europe/Rome',
       currency: json['currency'] as String? ?? 'EUR',
+      cancellationHours: json['cancellation_hours'] as int?,
       defaultLocationId: json['default_location_id'] as int?,
     );
   }
@@ -45,6 +48,7 @@ class Business {
       'phone': phone,
       'timezone': timezone,
       'currency': currency,
+      if (cancellationHours != null) 'cancellation_hours': cancellationHours,
       'default_location_id': defaultLocationId,
     };
   }

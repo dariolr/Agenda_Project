@@ -10,6 +10,7 @@ class Business {
   final DateTime createdAt;
   final String currency;
   final String defaultPhonePrefix;
+  final int? cancellationHours;
   final String? adminEmail; // Email dell'admin proprietario
   final bool isSuspended; // Business sospeso (visibile ma non operativo)
   final String? suspensionMessage; // Messaggio da mostrare quando sospeso
@@ -28,6 +29,7 @@ class Business {
     required this.createdAt,
     this.currency = 'EUR',
     this.defaultPhonePrefix = '+39',
+    this.cancellationHours,
     this.adminEmail,
     this.isSuspended = false,
     this.suspensionMessage,
@@ -47,6 +49,7 @@ class Business {
     DateTime? createdAt,
     String? currency,
     String? defaultPhonePrefix,
+    int? cancellationHours,
     String? adminEmail,
     bool? isSuspended,
     String? suspensionMessage,
@@ -67,6 +70,7 @@ class Business {
       createdAt: createdAt ?? this.createdAt,
       currency: currency ?? this.currency,
       defaultPhonePrefix: defaultPhonePrefix ?? this.defaultPhonePrefix,
+      cancellationHours: cancellationHours ?? this.cancellationHours,
       adminEmail: adminEmail ?? this.adminEmail,
       isSuspended: isSuspended ?? this.isSuspended,
       suspensionMessage: suspensionMessage ?? this.suspensionMessage,
@@ -91,6 +95,7 @@ class Business {
           : DateTime.now(),
       currency: json['currency'] as String? ?? 'EUR',
       defaultPhonePrefix: json['default_phone_prefix'] as String? ?? '+39',
+      cancellationHours: json['cancellation_hours'] as int?,
       adminEmail: json['admin_email'] as String?,
       isSuspended: json['is_suspended'] == true || json['is_suspended'] == 1,
       suspensionMessage: json['suspension_message'] as String?,
@@ -112,6 +117,7 @@ class Business {
       'created_at': createdAt.toIso8601String(),
       'currency': currency,
       'default_phone_prefix': defaultPhonePrefix,
+      if (cancellationHours != null) 'cancellation_hours': cancellationHours,
       'admin_email': adminEmail,
       'is_suspended': isSuspended,
       'suspension_message': suspensionMessage,

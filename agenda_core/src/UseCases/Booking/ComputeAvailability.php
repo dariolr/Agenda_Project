@@ -18,7 +18,15 @@ use DateInterval;
 
 final class ComputeAvailability
 {
-    private const SLOT_INTERVAL_MINUTES = 15;
+    /**
+     * Fallback for planning slot duration when a planning row has no explicit value.
+     */
+    private const PLANNING_SLOT_MINUTES = 15;
+
+    /**
+     * Fallback interval used only for online slot proposal cadence.
+     */
+    private const DEFAULT_DISPLAY_SLOT_INTERVAL_MINUTES = 15;
     private const DEFAULT_MAX_DAYS_AHEAD = 60;
     private const DEFAULT_MIN_NOTICE_HOURS = 1;
     
@@ -76,7 +84,8 @@ final class ComputeAvailability
         
         // Store slot settings for filtering
         $this->currentLocationSlotSettings = [
-            'slot_interval_minutes' => (int) ($location['slot_interval_minutes'] ?? self::SLOT_INTERVAL_MINUTES),
+            // Controls only the cadence of proposed customer slots.
+            'online_booking_slot_interval_minutes' => (int) ($location['online_booking_slot_interval_minutes'] ?? self::DEFAULT_DISPLAY_SLOT_INTERVAL_MINUTES),
             'slot_display_mode' => $location['slot_display_mode'] ?? 'all',
             'min_gap_minutes' => (int) ($location['min_gap_minutes'] ?? 30),
         ];
@@ -317,17 +326,26 @@ final class ComputeAvailability
         $dateStr = $date->format('Y-m-d');
         $slotIntervalMinutes = $this->getSlotIntervalMinutes();
         
-        // Usa StaffPlanningRepository per ottenere gli slot index disponibili
-        $slotIndices = $this->staffPlanningRepository->getSlotsForDate($staffId, $dateStr);
+        $planning = $this->staffPlanningRepository->findValidForDate($staffId, $dateStr);
 
-        // Se nessun planning valido o nessuno slot, staff non disponibile
-        if ($slotIndices === null || empty($slotIndices)) {
+        if ($planning === null) {
+            return [];
+        }
+
+        $planningSlotMinutes = (int) ($planning['planning_slot_minutes'] ?? self::PLANNING_SLOT_MINUTES);
+        if ($planningSlotMinutes <= 0) {
+            $planningSlotMinutes = self::PLANNING_SLOT_MINUTES;
+        }
+
+        $slotIndices = $this->extractSlotIndicesForPlanningDate($planning, $dateStr);
+
+        // Se nessuno slot, staff non disponibile
+        if (empty($slotIndices)) {
             return [];
         }
 
         // Converti slot index in intervalli di tempo
-        // Slot index 0 = 00:00-00:15, slot index 1 = 00:15-00:30, ecc.
-        $workingIntervals = $this->slotIndicesToIntervals($slotIndices, $date);
+        $workingIntervals = $this->slotIndicesToIntervals($slotIndices, $date, $planningSlotMinutes);
 
         if (empty($workingIntervals)) {
             return [];
@@ -559,7 +577,7 @@ final class ComputeAvailability
      * - 09:00-09:45 (slot 36,37,38)
      * - 12:00-12:30 (slot 48,49)
      */
-    private function slotIndicesToIntervals(array $slotIndices, DateTimeImmutable $date): array
+    private function slotIndicesToIntervals(array $slotIndices, DateTimeImmutable $date, int $planningSlotMinutes): array
     {
         if (empty($slotIndices)) {
             return [];
@@ -577,14 +595,14 @@ final class ComputeAvailability
                 $currentEnd = $slotIndices[$i];
             } else {
                 // Gap trovato, salva intervallo corrente e inizia nuovo
-                $intervals[] = $this->slotRangeToTimeInterval($currentStart, $currentEnd, $date);
+                $intervals[] = $this->slotRangeToTimeInterval($currentStart, $currentEnd, $date, $planningSlotMinutes);
                 $currentStart = $slotIndices[$i];
                 $currentEnd = $slotIndices[$i];
             }
         }
 
         // Aggiungi ultimo intervallo
-        $intervals[] = $this->slotRangeToTimeInterval($currentStart, $currentEnd, $date);
+        $intervals[] = $this->slotRangeToTimeInterval($currentStart, $currentEnd, $date, $planningSlotMinutes);
 
         return $intervals;
     }
@@ -592,17 +610,21 @@ final class ComputeAvailability
     /**
      * Converte un range di slot index in un intervallo di DateTimeImmutable.
      * 
-     * Lo slot index N corrisponde al range [N*15min, (N+1)*15min).
-     * Es: slot 36 = 09:00-09:15
+     * Lo slot index N corrisponde al range [N*planningSlotMinutes, (N+1)*planningSlotMinutes).
      */
-    private function slotRangeToTimeInterval(int $startSlot, int $endSlot, DateTimeImmutable $date): array
+    private function slotRangeToTimeInterval(
+        int $startSlot,
+        int $endSlot,
+        DateTimeImmutable $date,
+        int $planningSlotMinutes
+    ): array
     {
-        $startMinutes = $startSlot * self::SLOT_INTERVAL_MINUTES;
+        $startMinutes = $startSlot * $planningSlotMinutes;
         $startHour = intdiv($startMinutes, 60);
         $startMin = $startMinutes % 60;
 
         // L'end slot include lo slot stesso, quindi aggiungiamo 1 slot alla fine
-        $endMinutes = ($endSlot + 1) * self::SLOT_INTERVAL_MINUTES;
+        $endMinutes = ($endSlot + 1) * $planningSlotMinutes;
         $endHour = intdiv($endMinutes, 60);
         $endMin = $endMinutes % 60;
 
@@ -614,8 +636,55 @@ final class ComputeAvailability
 
     private function getSlotIntervalMinutes(): int
     {
-        $interval = (int) ($this->currentLocationSlotSettings['slot_interval_minutes'] ?? self::SLOT_INTERVAL_MINUTES);
-        return $interval > 0 ? $interval : self::SLOT_INTERVAL_MINUTES;
+        $interval = (int) ($this->currentLocationSlotSettings['online_booking_slot_interval_minutes'] ?? self::DEFAULT_DISPLAY_SLOT_INTERVAL_MINUTES);
+        return $interval > 0 ? $interval : self::DEFAULT_DISPLAY_SLOT_INTERVAL_MINUTES;
+    }
+
+    /**
+     * Estrae gli slot index del planning valido per la data.
+     *
+     * @param array<string, mixed> $planning
+     * @return array<int>
+     */
+    private function extractSlotIndicesForPlanningDate(array $planning, string $dateStr): array
+    {
+        $dayOfWeek = (int) (new DateTimeImmutable($dateStr))->format('N');
+        $weekLabel = 'a';
+
+        if (($planning['type'] ?? 'weekly') === 'biweekly') {
+            $weekLabel = $this->staffPlanningRepository->computeWeekLabel(
+                (string) $planning['valid_from'],
+                $dateStr
+            );
+        }
+
+        $templates = $planning['templates'] ?? [];
+        if (!is_array($templates)) {
+            return [];
+        }
+
+        foreach ($templates as $template) {
+            if (!is_array($template)) {
+                continue;
+            }
+            if (($template['week_label'] ?? null) !== $weekLabel) {
+                continue;
+            }
+
+            $daySlots = $template['day_slots'] ?? [];
+            if (!is_array($daySlots)) {
+                return [];
+            }
+
+            $slots = $daySlots[$dayOfWeek] ?? [];
+            if (!is_array($slots)) {
+                return [];
+            }
+
+            return array_map('intval', $slots);
+        }
+
+        return [];
     }
 
     private function isAlignedToSlotInterval(DateTimeImmutable $time, int $slotIntervalMinutes): bool

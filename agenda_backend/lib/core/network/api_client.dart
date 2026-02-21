@@ -1324,6 +1324,7 @@ class ApiClient {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    int? cancellationHours,
     bool? allowCustomerChooseStaff,
     bool? isActive,
   }) async {
@@ -1339,6 +1340,7 @@ class ApiClient {
           'min_booking_notice_hours': minBookingNoticeHours,
         if (maxBookingAdvanceDays != null)
           'max_booking_advance_days': maxBookingAdvanceDays,
+        if (cancellationHours != null) 'cancellation_hours': cancellationHours,
         if (allowCustomerChooseStaff != null)
           'allow_customer_choose_staff': allowCustomerChooseStaff,
         if (isActive != null) 'is_active': isActive,
@@ -1364,8 +1366,9 @@ class ApiClient {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    int? cancellationHours,
     bool? allowCustomerChooseStaff,
-    int? slotIntervalMinutes,
+    int? onlineBookingSlotIntervalMinutes,
     String? slotDisplayMode,
     int? minGapMinutes,
     bool? isActive,
@@ -1382,10 +1385,12 @@ class ApiClient {
           'min_booking_notice_hours': minBookingNoticeHours,
         if (maxBookingAdvanceDays != null)
           'max_booking_advance_days': maxBookingAdvanceDays,
+        if (cancellationHours != null) 'cancellation_hours': cancellationHours,
         if (allowCustomerChooseStaff != null)
           'allow_customer_choose_staff': allowCustomerChooseStaff,
-        if (slotIntervalMinutes != null)
-          'slot_interval_minutes': slotIntervalMinutes,
+        if (onlineBookingSlotIntervalMinutes != null)
+          'online_booking_slot_interval_minutes':
+              onlineBookingSlotIntervalMinutes,
         if (slotDisplayMode != null) 'slot_display_mode': slotDisplayMode,
         if (minGapMinutes != null) 'min_gap_minutes': minGapMinutes,
         if (isActive != null) 'is_active': isActive,
@@ -2394,6 +2399,7 @@ class ApiClient {
   Future<Map<String, dynamic>> createStaffPlanning({
     required int staffId,
     required String type,
+    int? planningSlotMinutes,
     required String validFrom,
     String? validTo,
     required List<Map<String, dynamic>> templates,
@@ -2403,6 +2409,8 @@ class ApiClient {
       ApiConfig.staffPlannings(staffId),
       data: {
         'type': type,
+        if (planningSlotMinutes != null)
+          'planning_slot_minutes': planningSlotMinutes,
         'valid_from': validFrom,
         if (validTo != null) 'valid_to': validTo,
         'templates': templates,
@@ -2417,6 +2425,7 @@ class ApiClient {
     required int staffId,
     required int planningId,
     String? type,
+    int? planningSlotMinutes,
     String? validFrom,
     String? validTo,
     bool setValidToNull = false,
@@ -2424,6 +2433,9 @@ class ApiClient {
   }) async {
     final data = <String, dynamic>{};
     if (type != null) data['type'] = type;
+    if (planningSlotMinutes != null) {
+      data['planning_slot_minutes'] = planningSlotMinutes;
+    }
     if (validFrom != null) data['valid_from'] = validFrom;
     if (validTo != null) {
       data['valid_to'] = validTo;
