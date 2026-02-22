@@ -41,7 +41,6 @@ final class ExportBusiness
             'staff_availability_exceptions' => [],
             'staff_planning' => [],
             'staff_planning_week_template' => [],
-            'staff_schedules' => [],
             'services' => [],
             'service_variants' => [],
             'clients' => [],
@@ -101,11 +100,6 @@ final class ExportBusiness
                 $stmt->execute($planningIds);
                 $export['staff_planning_week_template'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             }
-            
-            // Staff Schedules (legacy)
-            $stmt = $pdo->prepare("SELECT * FROM staff_schedules WHERE staff_id IN ($placeholders)");
-            $stmt->execute($staffIds);
-            $export['staff_schedules'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             
             // Booking Items (ex appointments)
             $stmt = $pdo->prepare("SELECT * FROM booking_items WHERE staff_id IN ($placeholders)");

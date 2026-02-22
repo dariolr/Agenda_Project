@@ -159,15 +159,6 @@ class ApiConfig {
   static String registerInvitation(String token) =>
       '/v1/invitations/$token/register';
 
-  // ========== STAFF SCHEDULES ENDPOINTS ==========
-
-  /// Lista tutti gli schedules degli staff di un business
-  static String staffSchedulesAll(int businessId) =>
-      '/v1/businesses/$businessId/staff/schedules';
-
-  /// Schedule di uno staff specifico
-  static String staffSchedule(int staffId) => '/v1/staff/$staffId/schedules';
-
   // ========== STAFF PLANNING ENDPOINTS ==========
 
   /// Lista tutti i planning di uno staff

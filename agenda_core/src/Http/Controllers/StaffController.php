@@ -8,7 +8,6 @@ use Agenda\Domain\Helpers\Unicode;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\StaffRepository;
-use Agenda\Infrastructure\Repositories\StaffScheduleRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
@@ -17,7 +16,6 @@ final class StaffController
 {
     public function __construct(
         private readonly StaffRepository $staffRepository,
-        private readonly StaffScheduleRepository $scheduleRepository,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly LocationRepository $locationRepo,
         private readonly UserRepository $userRepo,
@@ -279,163 +277,6 @@ final class StaffController
         $this->staffRepository->delete($staffId);
 
         return Response::success(['deleted' => true]);
-    }
-
-    /**
-     * GET /v1/businesses/{business_id}/staff/schedules
-     * Get schedules for all staff members of a business
-     */
-    public function indexSchedules(Request $request): Response
-    {
-        $businessId = (int) $request->getRouteParam('business_id');
-        $userId = $request->getAttribute('user_id');
-        $isSuperadmin = $this->userRepo->isSuperadmin($userId);
-
-        // Read-only access: any active operator in the business (viewer included).
-        if (!$this->businessUserRepo->hasAccess($userId, $businessId, $isSuperadmin)) {
-            return Response::error('Access denied', 'forbidden', 403, $request->traceId);
-        }
-
-        // Get all staff for business
-        $staffList = $this->staffRepository->findByBusinessId($businessId);
-        $staffIds = array_map(fn($s) => (int) $s['id'], $staffList);
-
-        // Get schedules for all staff
-        $schedules = $this->scheduleRepository->getByStaffIds($staffIds);
-
-        return Response::success([
-            'schedules' => $schedules,
-        ]);
-    }
-
-    /**
-     * GET /v1/staff/{id}/schedules
-     * Get weekly schedule for a staff member
-     */
-    public function showSchedule(Request $request): Response
-    {
-        $staffId = (int) $request->getRouteParam('id');
-        $userId = $request->getAttribute('user_id');
-        $isSuperadmin = $this->userRepo->isSuperadmin($userId);
-
-        $staff = $this->staffRepository->findById($staffId);
-        if (!$staff) {
-            return Response::notFound('Staff member not found', $request->traceId);
-        }
-
-        // Read-only access: any active operator in the business (viewer included).
-        if (!$this->businessUserRepo->hasAccess($userId, (int) $staff['business_id'], $isSuperadmin)) {
-            return Response::error('Access denied', 'forbidden', 403, $request->traceId);
-        }
-
-        $schedule = $this->scheduleRepository->getByStaffId($staffId);
-
-        return Response::success([
-            'staff_id' => $staffId,
-            'schedule' => $schedule,
-        ]);
-    }
-
-    /**
-     * PUT /v1/staff/{id}/schedules
-     * Save weekly schedule for a staff member (replaces existing)
-     * 
-     * Body format:
-     * {
-     *   "schedule": {
-     *     "1": [{"start_time": "09:00", "end_time": "13:00"}, {"start_time": "14:00", "end_time": "19:00"}],
-     *     "2": [{"start_time": "09:00", "end_time": "13:00"}, {"start_time": "14:00", "end_time": "19:00"}],
-     *     ...
-     *   }
-     * }
-     */
-    public function updateSchedule(Request $request): Response
-    {
-        $staffId = (int) $request->getRouteParam('id');
-        $userId = $request->getAttribute('user_id');
-        $isSuperadmin = $this->userRepo->isSuperadmin($userId);
-
-        $staff = $this->staffRepository->findById($staffId);
-        if (!$staff) {
-            return Response::notFound('Staff member not found', $request->traceId);
-        }
-
-        // Check user has access to business
-        if (!$this->businessUserRepo->hasPermission($userId, (int) $staff['business_id'], 'can_manage_staff', $isSuperadmin)) {
-            return Response::error('Access denied', 'forbidden', 403, $request->traceId);
-        }
-
-        $body = $request->getBody();
-        $schedule = $body['schedule'] ?? [];
-
-        // Validate schedule format
-        $weeklySchedule = [];
-        foreach ($schedule as $day => $shifts) {
-            $dayNum = (int) $day;
-            if ($dayNum < 1 || $dayNum > 7) {
-                return Response::error(
-                    "Invalid day_of_week: $day. Must be 1-7 (Mon-Sun)",
-                    'validation_error',
-                    400,
-                    $request->traceId
-                );
-            }
-
-            $weeklySchedule[$dayNum] = [];
-            if (!is_array($shifts)) {
-                continue;
-            }
-
-            foreach ($shifts as $shift) {
-                if (empty($shift['start_time']) || empty($shift['end_time'])) {
-                    continue;
-                }
-
-                // Normalize time format (HH:MM -> HH:MM:00)
-                $startTime = $this->normalizeTime($shift['start_time']);
-                $endTime = $this->normalizeTime($shift['end_time']);
-
-                if ($startTime === null || $endTime === null) {
-                    return Response::error(
-                        'Invalid time format. Use HH:MM or HH:MM:SS',
-                        'validation_error',
-                        400,
-                        $request->traceId
-                    );
-                }
-
-                $weeklySchedule[$dayNum][] = [
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
-                ];
-            }
-        }
-
-        $this->scheduleRepository->saveForStaff($staffId, $weeklySchedule);
-
-        // Return updated schedule
-        $savedSchedule = $this->scheduleRepository->getByStaffId($staffId);
-
-        return Response::success([
-            'staff_id' => $staffId,
-            'schedule' => $savedSchedule,
-        ]);
-    }
-
-    /**
-     * Normalize time string to HH:MM:SS format.
-     */
-    private function normalizeTime(string $time): ?string
-    {
-        // Handle HH:MM format
-        if (preg_match('/^(\d{1,2}):(\d{2})$/', $time, $matches)) {
-            return sprintf('%02d:%02d:00', (int) $matches[1], (int) $matches[2]);
-        }
-        // Handle HH:MM:SS format
-        if (preg_match('/^(\d{1,2}):(\d{2}):(\d{2})$/', $time, $matches)) {
-            return sprintf('%02d:%02d:%02d', (int) $matches[1], (int) $matches[2], (int) $matches[3]);
-        }
-        return null;
     }
 
     /**

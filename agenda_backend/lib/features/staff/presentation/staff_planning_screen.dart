@@ -584,8 +584,14 @@ class _PlanningCard extends StatelessWidget {
     }
 
     // Calcola ore settimanali (serve prima per determinare il tipo label)
-    final minutesA = _calculateWeeklyMinutes(planning.templateA);
-    final minutesB = _calculateWeeklyMinutes(planning.templateB);
+    final minutesA = _calculateWeeklyMinutes(
+      planning.templateA,
+      minutesPerSlot: planning.planningSlotMinutes,
+    );
+    final minutesB = _calculateWeeklyMinutes(
+      planning.templateB,
+      minutesPerSlot: planning.planningSlotMinutes,
+    );
     final totalMinutes = minutesA + minutesB;
 
     // Tipo planning: se 0 ore mostra "Non disponibile"

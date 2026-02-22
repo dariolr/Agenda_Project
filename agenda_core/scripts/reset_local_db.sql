@@ -33,7 +33,6 @@ TRUNCATE TABLE staff_services;
 TRUNCATE TABLE staff_planning_week_template;
 TRUNCATE TABLE staff_planning;
 TRUNCATE TABLE staff_availability_exceptions;
-TRUNCATE TABLE staff_schedules;
 TRUNCATE TABLE staff_locations;
 TRUNCATE TABLE staff;
 
@@ -95,7 +94,6 @@ ALTER TABLE time_blocks AUTO_INCREMENT = 1;
 ALTER TABLE staff_planning_week_template AUTO_INCREMENT = 1;
 ALTER TABLE staff_planning AUTO_INCREMENT = 1;
 ALTER TABLE staff_availability_exceptions AUTO_INCREMENT = 1;
-ALTER TABLE staff_schedules AUTO_INCREMENT = 1;
 ALTER TABLE staff AUTO_INCREMENT = 1;
 ALTER TABLE service_package_items AUTO_INCREMENT = 1;
 ALTER TABLE service_packages AUTO_INCREMENT = 1;

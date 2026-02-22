@@ -7,6 +7,17 @@ Documento canonico condiviso per `agenda_backend`, `agenda_frontend`, `agenda_co
 - `staff_planning`: `id`, `staff_id` (FK), `type` (`weekly`/`biweekly`), `valid_from` (date, required), `valid_to` (date nullable = "mai", inclusivo), `created_at`, `updated_at`
 - `staff_planning_week_template`: `id`, `staff_planning_id` (FK), `week_label` (A/B, per `weekly` solo A), `day_of_week` (1-7), `slots` JSON (riusa struttura esistente)
 
+## Stato runtime attuale
+
+- Runtime API/Core/Backend usa solo `staff_planning` + `staff_planning_week_template`.
+
+## Regola operativa backend (eccezioni disponibilita)
+
+- Il dialog eccezioni staff deve aprirsi solo con planning disponibile per lo staff.
+- Se il planning non e in cache, il backend UI forza prima il load da API.
+- Se dopo il load non esiste alcun planning, il dialog non si apre e viene mostrato feedback di errore.
+- Conversioni orario->slot e slot->orario nel dialog eccezioni devono usare `planning_slot_minutes` del planning valido per data (non `LayoutConfig.minutesPerSlot`).
+
 ## Parametri slot (separazione responsabilita)
 
 ### 1) Planning staff (source of truth disponibilita)
@@ -21,7 +32,6 @@ Documento canonico condiviso per `agenda_backend`, `agenda_frontend`, `agenda_co
 
 - Campo: `locations.online_booking_slot_interval_minutes`
 - Default: `15`
-- Nome legacy: `slot_interval_minutes` (rinominato).
 - Semantica: frequenza con cui mostrare gli orari proponibili nel frontend clienti.
 - Uso: incide sulla cadenza di proposta slot online, non ridefinisce il planning staff.
 

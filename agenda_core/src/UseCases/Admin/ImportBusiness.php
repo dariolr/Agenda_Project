@@ -140,15 +140,6 @@ final class ImportBusiness
             $stmt->execute([$businessId]);
             $stats['deleted']['staff_locations'] = $stmt->rowCount();
             
-            // Elimina staff_schedules
-            $stmt = $pdo->prepare('
-                DELETE FROM staff_schedules WHERE staff_id IN (
-                    SELECT id FROM staff WHERE business_id = ?
-                )
-            ');
-            $stmt->execute([$businessId]);
-            $stats['deleted']['staff_schedules'] = $stmt->rowCount();
-            
             // Elimina service_variants
             $stmt = $pdo->prepare('
                 DELETE FROM service_variants WHERE service_id IN (
@@ -328,12 +319,6 @@ final class ImportBusiness
                 $this->insertRow($pdo, 'staff_locations', $row);
             }
             $stats['imported']['staff_locations'] = count($exportData['staff_locations'] ?? []);
-            
-            // Staff Schedules
-            foreach ($exportData['staff_schedules'] ?? [] as $row) {
-                $this->insertRow($pdo, 'staff_schedules', $row);
-            }
-            $stats['imported']['staff_schedules'] = count($exportData['staff_schedules'] ?? []);
             
             // Staff Availability Exceptions
             foreach ($exportData['staff_availability_exceptions'] ?? [] as $row) {

@@ -1459,8 +1459,10 @@ final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
   }
 
   // Calcola gli offset per ogni servizio, arrotondando al prossimo multiplo
-  // di 15 minuti (granularità degli slot API)
-  const slotInterval = 15;
+  // del passo slot configurato sulla location.
+  final location = ref.read(effectiveLocationProvider);
+  final rawInterval = location?.onlineBookingSlotIntervalMinutes ?? 15;
+  final slotInterval = rawInterval > 0 ? rawInterval : 15;
   final offsets = <int>[];
   var running = 0;
   for (final service in services) {

@@ -48,7 +48,6 @@ use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
 use Agenda\Infrastructure\Repositories\ServicePackageRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
-use Agenda\Infrastructure\Repositories\StaffScheduleRepository;
 use Agenda\Infrastructure\Repositories\StaffAvailabilityExceptionRepository;
 use Agenda\Infrastructure\Repositories\StaffPlanningRepository;
 use Agenda\Infrastructure\Repositories\ResourceRepository;
@@ -170,11 +169,6 @@ final class Kernel
         $this->router->put('/v1/staff/{id}', StaffController::class, 'update', ['auth']);
         $this->router->delete('/v1/staff/{id}', StaffController::class, 'destroy', ['auth']);
         $this->router->post('/v1/staff/reorder', StaffController::class, 'reorder', ['auth']);
-
-        // Staff schedules (auth required)
-        $this->router->get('/v1/businesses/{business_id}/staff/schedules', StaffController::class, 'indexSchedules', ['auth']);
-        $this->router->get('/v1/staff/{id}/schedules', StaffController::class, 'showSchedule', ['auth']);
-        $this->router->put('/v1/staff/{id}/schedules', StaffController::class, 'updateSchedule', ['auth']);
 
         // Staff availability exceptions (auth required)
         $this->router->get('/v1/businesses/{business_id}/staff/availability-exceptions', StaffAvailabilityExceptionController::class, 'indexForBusiness', ['auth']);
@@ -391,7 +385,6 @@ final class Kernel
         $serviceRepo = new ServiceRepository($this->db);
         $servicePackageRepo = new ServicePackageRepository($this->db);
         $staffRepo = new StaffRepository($this->db);
-        $staffScheduleRepo = new StaffScheduleRepository($this->db);
         $staffExceptionRepo = new StaffAvailabilityExceptionRepository($this->db);
         $staffPlanningRepo = new StaffPlanningRepository($this->db);
         $resourceRepo = new ResourceRepository($this->db);
@@ -454,7 +447,7 @@ final class Kernel
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
             ServicesController::class => new ServicesController($serviceRepo, $variantResourceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo, $staffRepo),
             ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo),
-            StaffController::class => new StaffController($staffRepo, $staffScheduleRepo, $businessUserRepo, $locationRepo, $userRepo),
+            StaffController::class => new StaffController($staffRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo),
             BookingNotificationsController::class => new BookingNotificationsController($notificationRepo, $businessUserRepo, $userRepo),

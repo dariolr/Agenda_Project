@@ -791,23 +791,6 @@ CREATE TABLE `staff_planning_week_template` (
 
 -- --------------------------------------------------------
 
---
--- Struttura della tabella `staff_schedules`
---
-
-CREATE TABLE `staff_schedules` (
-  `id` int UNSIGNED NOT NULL,
-  `staff_id` int UNSIGNED NOT NULL,
-  `day_of_week` tinyint UNSIGNED NOT NULL COMMENT '1=Monday, 7=Sunday',
-  `start_time` time NOT NULL,
-  `end_time` time NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
 -- Struttura della tabella `staff_services`
 --
 
@@ -1278,15 +1261,6 @@ ALTER TABLE `staff_planning_week_template`
   ADD UNIQUE KEY `uk_planning_week_day` (`staff_planning_id`,`week_label`,`day_of_week`),
   ADD KEY `idx_week_template_planning_id` (`staff_planning_id`);
 
---
--- Indici per le tabelle `staff_schedules`
---
-ALTER TABLE `staff_schedules`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_staff_schedules_staff` (`staff_id`),
-  ADD KEY `idx_staff_schedules_day` (`staff_id`,`day_of_week`);
-
---
 -- Indici per le tabelle `staff_services`
 --
 ALTER TABLE `staff_services`
@@ -1556,13 +1530,6 @@ ALTER TABLE `staff_planning`
 ALTER TABLE `staff_planning_week_template`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT per la tabella `staff_schedules`
---
-ALTER TABLE `staff_schedules`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT per la tabella `time_blocks`
 --
 ALTER TABLE `time_blocks`
@@ -1861,13 +1828,6 @@ ALTER TABLE `staff_planning`
 ALTER TABLE `staff_planning_week_template`
   ADD CONSTRAINT `fk_staff_planning_week_template_planning` FOREIGN KEY (`staff_planning_id`) REFERENCES `staff_planning` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
---
--- Limiti per la tabella `staff_schedules`
---
-ALTER TABLE `staff_schedules`
-  ADD CONSTRAINT `fk_staff_schedules_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
 -- Limiti per la tabella `staff_services`
 --
 ALTER TABLE `staff_services`
