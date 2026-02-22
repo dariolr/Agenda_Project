@@ -165,7 +165,7 @@ void main() {
       );
     });
 
-    test('rileva overlap tra planning', () {
+    test('consente overlap lato client (autosplit server)', () {
       // Primo planning
       final planning1 = createPlanning(
         id: 1,
@@ -185,8 +185,8 @@ void main() {
       final validator = container.read(staffPlanningValidatorProvider);
       final result = validator.validateForCreate(planning2, [planning1]);
 
-      expect(result.isValid, isFalse);
-      expect(result.errors.first, contains('Sovrapposizione'));
+      expect(result.isValid, isTrue);
+      expect(result.errors, isEmpty);
     });
 
     test('valida planning weekly valido', () {

@@ -20,6 +20,7 @@ class Location {
   final int? cancellationHours;
   final bool isDefault;
   final int maxBookingAdvanceDays;
+  final int onlineBookingSlotIntervalMinutes;
 
   const Location({
     required this.id,
@@ -39,6 +40,7 @@ class Location {
     this.cancellationHours,
     this.isDefault = false,
     this.maxBookingAdvanceDays = 90,
+    this.onlineBookingSlotIntervalMinutes = 15,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) {
@@ -65,6 +67,8 @@ class Location {
       cancellationHours: json['cancellation_hours'] as int?,
       isDefault: json['is_default'] as bool? ?? false,
       maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
+      onlineBookingSlotIntervalMinutes:
+          json['online_booking_slot_interval_minutes'] as int? ?? 15,
     );
   }
 
@@ -87,6 +91,7 @@ class Location {
       if (cancellationHours != null) 'cancellation_hours': cancellationHours,
       'is_default': isDefault,
       'max_booking_advance_days': maxBookingAdvanceDays,
+      'online_booking_slot_interval_minutes': onlineBookingSlotIntervalMinutes,
     };
   }
 

@@ -8,13 +8,16 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/availability_exception.dart';
+import '../../../../core/models/staff_planning.dart' show StaffPlanning;
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
-import '../../../agenda/providers/layout_config_provider.dart';
-import '../../presentation/staff_availability_screen.dart';
+import '../../../../core/services/staff_planning_selector.dart' show PlanningFound;
 import '../../providers/availability_exceptions_provider.dart';
+import '../../providers/staff_planning_provider.dart';
+import '../../providers/staff_weekly_availability_provider.dart';
 
 /// Mostra il dialog per creare o modificare un'eccezione alla disponibilità.
 Future<void> showAddExceptionDialog(
@@ -25,6 +28,23 @@ Future<void> showAddExceptionDialog(
   TimeOfDay? time,
   required int staffId,
 }) async {
+  // Le eccezioni devono usare sempre lo stesso passo del planning staff.
+  // Se il planning non è disponibile, non apriamo il dialog.
+  var plannings = ref.read(planningsForStaffProvider(staffId));
+  if (plannings.isEmpty) {
+    await ref.read(staffPlanningsProvider.notifier).loadPlanningsForStaff(staffId);
+    if (!context.mounted) return;
+    plannings = ref.read(planningsForStaffProvider(staffId));
+  }
+  if (plannings.isEmpty) {
+    await FeedbackDialog.showError(
+      context,
+      title: context.l10n.planningListTitle,
+      message: context.l10n.planningListEmpty,
+    );
+    return;
+  }
+
   final formFactor = ref.read(formFactorProvider);
   final isDesktop = formFactor == AppFormFactor.desktop;
 
@@ -586,6 +606,24 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
     return _endDate.difference(_startDate).inDays + 1;
   }
 
+  int _planningSlotMinutesForDate(DateTime date) {
+    final allPlannings = ref.read(planningsForStaffProvider(widget.staffId));
+    if (allPlannings.isEmpty) {
+      return StaffPlanning.defaultPlanningSlotMinutes;
+    }
+    final selector = ref.read(staffPlanningSelectorProvider);
+    final lookup = selector.findPlanningForDate(
+      staffId: widget.staffId,
+      date: date,
+      allPlannings: allPlannings,
+    );
+    if (lookup is PlanningFound) {
+      final minutes = lookup.planning.planningSlotMinutes;
+      return minutes > 0 ? minutes : StaffPlanning.defaultPlanningSlotMinutes;
+    }
+    return StaffPlanning.defaultPlanningSlotMinutes;
+  }
+
   Future<void> _pickSingleDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -636,7 +674,10 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
   }
 
   Future<void> _pickTime({required bool isStart}) async {
-    final step = ref.read(layoutConfigProvider).minutesPerSlot;
+    final referenceDate = widget.initial != null || _periodMode == _PeriodMode.single
+        ? _date
+        : _startDate;
+    final step = _planningSlotMinutesForDate(referenceDate);
     final selected = await AppBottomSheet.show<TimeOfDay>(
       context: context,
       useRootNavigator: true,
@@ -715,10 +756,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       return dates;
     }
 
-    final layout = ref.read(layoutConfigProvider);
-    final minutesPerSlot = layout.minutesPerSlot;
-
-    Set<int> exceptionSlots() {
+    Set<int> exceptionSlots(int minutesPerSlot) {
       final startMinutes = _startTime.hour * 60 + _startTime.minute;
       final endMinutes = _endTime.hour * 60 + _endTime.minute;
       final startSlot = startMinutes ~/ minutesPerSlot;
@@ -727,9 +765,10 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
     }
 
     String? validateDate(DateTime date) {
+      final minutesPerSlot = _planningSlotMinutesForDate(date);
       final baseSlots =
           availabilityByStaff[widget.staffId]?[date.weekday] ?? <int>{};
-      final excSlots = exceptionSlots();
+      final excSlots = exceptionSlots(minutesPerSlot);
       if (_type == AvailabilityExceptionType.unavailable) {
         if (baseSlots.isEmpty) {
           return l10n.exceptionUnavailableNoBase;
