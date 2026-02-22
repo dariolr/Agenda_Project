@@ -7,6 +7,38 @@ Documento canonico condiviso per `agenda_backend`, `agenda_frontend`, `agenda_co
 - `staff_planning`: `id`, `staff_id` (FK), `type` (`weekly`/`biweekly`), `valid_from` (date, required), `valid_to` (date nullable = "mai", inclusivo), `created_at`, `updated_at`
 - `staff_planning_week_template`: `id`, `staff_planning_id` (FK), `week_label` (A/B, per `weekly` solo A), `day_of_week` (1-7), `slots` JSON (riusa struttura esistente)
 
+## Parametri slot (separazione responsabilita)
+
+### 1) Planning staff (source of truth disponibilita)
+
+- Campo: `staff_planning.planning_slot_minutes`
+- Default: `15`
+- Semantica: passo usato per generare/interpretare gli slot del planning staff.
+- Validazione: deve essere intero `> 0` e deve dividere `1440` senza resto.
+- Uso: logica availability e interpretazione coerente dei `slots` nei template.
+
+### 2) Prenotazione online clienti (frequenza proposte)
+
+- Campo: `locations.online_booking_slot_interval_minutes`
+- Default: `15`
+- Nome legacy: `slot_interval_minutes` (rinominato).
+- Semantica: frequenza con cui mostrare gli orari proponibili nel frontend clienti.
+- Uso: incide sulla cadenza di proposta slot online, non ridefinisce il planning staff.
+
+### 3) Agenda gestionale (solo rappresentazione UI)
+
+- Parametri UI: `LayoutConfig.minutesPerSlotConst`, `LayoutConfig.slotDurationOptions`
+- Valori attuali tipici: `minutesPerSlotConst = 15`, `slotDurationOptions = [15, 30, 60, 120]`.
+- Semantica: granularita visiva della griglia agenda e opzioni di visualizzazione.
+- Uso: non e un source of truth del planning.
+
+## Regola architetturale
+
+- Non accoppiare `online_booking_slot_interval_minutes` con `planning_slot_minutes`.
+- `planning_slot_minutes` governa la semantica del planning staff.
+- `online_booking_slot_interval_minutes` governa la frequenza di proposta al cliente.
+- La UI agenda puo usare una granularita visiva diversa senza alterare la semantica del planning.
+
 ## Regole di validazione
 
 - Obbligatori: `valid_from`, `type`, template A (e B se `biweekly`)
