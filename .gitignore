@@ -53,3 +53,4 @@ build/
 agenda_frontend/.vscode/settings.json
 scripts/reset_local_db_from_prod.sh
 agenda_core/migrations/fromfresha/migrate_fresha_production.sh
+agenda_core/.env
