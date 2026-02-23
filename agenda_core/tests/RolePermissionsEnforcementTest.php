@@ -44,11 +44,13 @@ final class RolePermissionsEnforcementTest extends TestCase
         $bookingsController = (string) file_get_contents(__DIR__ . '/../src/Http/Controllers/BookingsController.php');
         $appointmentsController = (string) file_get_contents(__DIR__ . '/../src/Http/Controllers/AppointmentsController.php');
         $clientsController = (string) file_get_contents(__DIR__ . '/../src/Http/Controllers/ClientsController.php');
+        $crmClientsController = (string) file_get_contents(__DIR__ . '/../src/Http/Controllers/CrmClientsController.php');
         $reportsController = (string) file_get_contents(__DIR__ . '/../src/Http/Controllers/ReportsController.php');
 
         $this->assertStringContainsString("'can_manage_bookings'", $bookingsController);
         $this->assertStringContainsString("'can_manage_bookings'", $appointmentsController);
         $this->assertStringContainsString("'can_manage_clients'", $clientsController);
+        $this->assertStringContainsString("'can_manage_clients'", $crmClientsController);
         $this->assertStringContainsString("'can_view_reports'", $reportsController);
     }
 

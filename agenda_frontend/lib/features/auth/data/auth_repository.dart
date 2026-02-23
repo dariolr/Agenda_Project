@@ -106,12 +106,18 @@ class AuthRepository {
     String? lastName,
     String? email,
     String? phone,
+    bool? marketingOptIn,
+    bool? profilingOptIn,
+    String? preferredChannel,
   }) async {
     final data = await _apiClient.customerUpdateProfile(
       firstName: firstName,
       lastName: lastName,
       email: email,
       phone: phone,
+      marketingOptIn: marketingOptIn,
+      profilingOptIn: profilingOptIn,
+      preferredChannel: preferredChannel,
     );
     return User.fromJson(data);
   }

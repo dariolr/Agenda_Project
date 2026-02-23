@@ -854,6 +854,91 @@ class L10n {
     return Intl.message('Profilo', name: 'profileTitle', desc: '', args: []);
   }
 
+  /// `Preferenze privacy`
+  String get profilePreferencesSection {
+    return Intl.message(
+      'Preferenze privacy',
+      name: 'profilePreferencesSection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Acconsento a comunicazioni marketing`
+  String get profileMarketingConsent {
+    return Intl.message(
+      'Acconsento a comunicazioni marketing',
+      name: 'profileMarketingConsent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Acconsento alla profilazione`
+  String get profileProfilingConsent {
+    return Intl.message(
+      'Acconsento alla profilazione',
+      name: 'profileProfilingConsent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Canale di contatto preferito`
+  String get profilePreferredChannel {
+    return Intl.message(
+      'Canale di contatto preferito',
+      name: 'profilePreferredChannel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna preferenza`
+  String get profileChannelNone {
+    return Intl.message(
+      'Nessuna preferenza',
+      name: 'profileChannelNone',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp`
+  String get profileChannelWhatsapp {
+    return Intl.message(
+      'WhatsApp',
+      name: 'profileChannelWhatsapp',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `SMS`
+  String get profileChannelSms {
+    return Intl.message('SMS', name: 'profileChannelSms', desc: '', args: []);
+  }
+
+  /// `Email`
+  String get profileChannelEmail {
+    return Intl.message(
+      'Email',
+      name: 'profileChannelEmail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Telefono`
+  String get profileChannelPhone {
+    return Intl.message(
+      'Telefono',
+      name: 'profileChannelPhone',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Prenota appuntamento`
   String get bookingTitle {
     return Intl.message(

@@ -1415,5 +1415,79 @@
         "type": "int"
       }
     }
-  }
+  },
+  "crmTitle": "CRM",
+  "crmSubtitle": "Gestione clienti avanzata, segmenti, task e privacy",
+  "crmClientsTitle": "Clienti CRM",
+  "crmClientsDescription": "Vista cliente 360 con KPI e timeline",
+  "crmSegmentsTitle": "Segmenti",
+  "crmSegmentsDescription": "Liste dinamiche clienti con filtri salvati",
+  "crmTasksTitle": "Task",
+  "crmTasksDescription": "Follow-up staff e attività in ritardo",
+  "crmTagsTitle": "Tag",
+  "crmTagsDescription": "Gestione tag centralizzata clienti",
+  "crmImportExportTitle": "Import / Export",
+  "crmImportExportDescription": "Import CSV con preview e export segmenti",
+  "crmSearchHint": "Cerca per nome, email, telefono, città...",
+  "crmFilterAll": "Tutti",
+  "crmStatusLead": "Lead",
+  "crmStatusActive": "Attivo",
+  "crmStatusInactive": "Inattivo",
+  "crmStatusLost": "Perso",
+  "crmClientsEmpty": "Nessun cliente trovato",
+  "crmLoadMore": "Carica altri",
+  "crmVisitsLabel": "{count} visite",
+  "@crmVisitsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "crmArchiveAction": "Archivia",
+  "crmCreateClientTitle": "Nuovo cliente CRM",
+  "crmClientDetailTitle": "Dettaglio cliente",
+  "crmOverviewTab": "Overview",
+  "crmTimelineTab": "Timeline",
+  "crmBookingsTab": "Prenotazioni",
+  "crmTasksTab": "Task",
+  "crmContactsTab": "Contatti",
+  "crmLoyaltyTab": "Loyalty",
+  "crmGdprTab": "GDPR",
+  "crmBookingsReuseHint": "Cronologia prenotazioni disponibile nella vista cliente esistente",
+  "crmTaskComplete": "Completa",
+  "crmTaskReopen": "Riapri",
+  "crmTasksEmpty": "Nessun task in ritardo",
+  "crmLoyaltyPoints": "Saldo punti: {points}",
+  "@crmLoyaltyPoints": {
+    "placeholders": {
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "crmKpiVisits": "Visite",
+  "crmKpiSpent": "Spesa totale",
+  "crmKpiAvgTicket": "Scontrino medio",
+  "crmKpiNoShow": "No-show",
+  "crmGdprDeleteTitle": "GDPR Delete",
+  "crmGdprDeleteConfirm": "Confermi anonimizzazione e archiviazione del cliente?",
+  "crmGdprDeleted": "Cliente anonimizzato correttamente",
+  "crmTagsEmpty": "Nessun tag",
+  "crmTagDeleted": "Tag eliminato",
+  "crmCreateTagTitle": "Nuovo tag",
+  "crmTagNameLabel": "Nome tag",
+  "crmTagColorLabel": "Colore (hex)",
+  "crmSegmentsEmpty": "Nessun segmento",
+  "crmSegmentDeleted": "Segmento eliminato",
+  "crmCreateSegmentTitle": "Nuovo segmento",
+  "crmSegmentNameLabel": "Nome segmento",
+  "crmSegmentQueryLabel": "Query ricerca (q)",
+  "crmImportCsvTitle": "Import CSV",
+  "crmImportCsvHint": "Incolla il CSV con header: first_name,last_name,email,phone,city,notes,source",
+  "crmImportPreview": "Dry-run preview",
+  "crmImportCommit": "Commit import",
+  "crmExportCsvTitle": "Export CSV",
+  "crmExportCsvButton": "Copia CSV negli appunti",
+  "crmExportCopied": "CSV copiato negli appunti"
 }

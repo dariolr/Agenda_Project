@@ -61,10 +61,16 @@ final class ClientAuthRepository
     public function findById(int $id): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, business_id, email, first_name, last_name, phone, 
-                    email_verified_at, is_archived, created_at 
-             FROM clients 
-             WHERE id = ? AND is_archived = 0'
+            'SELECT c.id, c.business_id, c.email, c.first_name, c.last_name, c.phone,
+                    c.email_verified_at, c.is_archived, c.created_at,
+                    COALESCE(cc.marketing_opt_in, 0) AS marketing_opt_in,
+                    COALESCE(cc.profiling_opt_in, 0) AS profiling_opt_in,
+                    COALESCE(cc.preferred_channel, \'none\') AS preferred_channel
+             FROM clients c
+             LEFT JOIN client_consents cc
+                ON cc.business_id = c.business_id
+               AND cc.client_id = c.id
+             WHERE c.id = ? AND c.is_archived = 0'
         );
         $stmt->execute([$id]);
         $result = $stmt->fetch();
@@ -171,6 +177,52 @@ final class ClientAuthRepository
             'UPDATE clients SET email_verified_at = NOW(), updated_at = NOW() WHERE id = ?'
         );
         $stmt->execute([$clientId]);
+    }
+
+    public function upsertConsents(
+        int $businessId,
+        int $clientId,
+        bool $marketingOptIn,
+        bool $profilingOptIn,
+        string $preferredChannel,
+        ?int $updatedByUserId = null,
+        ?string $source = 'frontend-profile'
+    ): void {
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO client_consents (
+                business_id, client_id, marketing_opt_in, profiling_opt_in,
+                preferred_channel, updated_by_user_id, source
+             ) VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                marketing_opt_in = VALUES(marketing_opt_in),
+                profiling_opt_in = VALUES(profiling_opt_in),
+                preferred_channel = VALUES(preferred_channel),
+                updated_by_user_id = VALUES(updated_by_user_id),
+                source = VALUES(source),
+                updated_at = CURRENT_TIMESTAMP'
+        );
+
+        $stmt->execute([
+            $businessId,
+            $clientId,
+            $marketingOptIn ? 1 : 0,
+            $profilingOptIn ? 1 : 0,
+            $this->sanitizePreferredChannel($preferredChannel),
+            $updatedByUserId,
+            $source,
+        ]);
+    }
+
+    private function sanitizePreferredChannel(string $channel): string
+    {
+        $allowed = ['whatsapp', 'sms', 'email', 'phone', 'none'];
+        $normalized = strtolower(trim($channel));
+
+        if (!in_array($normalized, $allowed, true)) {
+            return 'none';
+        }
+
+        return $normalized;
     }
 
     // =========================================================================

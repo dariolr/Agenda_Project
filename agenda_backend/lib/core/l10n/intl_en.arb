@@ -1415,5 +1415,79 @@
         "type": "int"
       }
     }
-  }
+  },
+  "crmTitle": "CRM",
+  "crmSubtitle": "Advanced client management, segments, tasks and privacy",
+  "crmClientsTitle": "CRM Clients",
+  "crmClientsDescription": "360 customer view with KPI and timeline",
+  "crmSegmentsTitle": "Segments",
+  "crmSegmentsDescription": "Dynamic client lists with saved filters",
+  "crmTasksTitle": "Tasks",
+  "crmTasksDescription": "Staff follow-up and overdue activities",
+  "crmTagsTitle": "Tags",
+  "crmTagsDescription": "Centralized client tags management",
+  "crmImportExportTitle": "Import / Export",
+  "crmImportExportDescription": "CSV import with preview and segment export",
+  "crmSearchHint": "Search by name, email, phone, city...",
+  "crmFilterAll": "All",
+  "crmStatusLead": "Lead",
+  "crmStatusActive": "Active",
+  "crmStatusInactive": "Inactive",
+  "crmStatusLost": "Lost",
+  "crmClientsEmpty": "No clients found",
+  "crmLoadMore": "Load more",
+  "crmVisitsLabel": "{count} visits",
+  "@crmVisitsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "crmArchiveAction": "Archive",
+  "crmCreateClientTitle": "New CRM client",
+  "crmClientDetailTitle": "Client detail",
+  "crmOverviewTab": "Overview",
+  "crmTimelineTab": "Timeline",
+  "crmBookingsTab": "Bookings",
+  "crmTasksTab": "Tasks",
+  "crmContactsTab": "Contacts",
+  "crmLoyaltyTab": "Loyalty",
+  "crmGdprTab": "GDPR",
+  "crmBookingsReuseHint": "Booking history is available in existing client view",
+  "crmTaskComplete": "Complete",
+  "crmTaskReopen": "Reopen",
+  "crmTasksEmpty": "No overdue tasks",
+  "crmLoyaltyPoints": "Points balance: {points}",
+  "@crmLoyaltyPoints": {
+    "placeholders": {
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "crmKpiVisits": "Visits",
+  "crmKpiSpent": "Total spent",
+  "crmKpiAvgTicket": "Avg ticket",
+  "crmKpiNoShow": "No-show",
+  "crmGdprDeleteTitle": "GDPR Delete",
+  "crmGdprDeleteConfirm": "Confirm anonymization and archival of this client?",
+  "crmGdprDeleted": "Client anonymized successfully",
+  "crmTagsEmpty": "No tags",
+  "crmTagDeleted": "Tag deleted",
+  "crmCreateTagTitle": "New tag",
+  "crmTagNameLabel": "Tag name",
+  "crmTagColorLabel": "Color (hex)",
+  "crmSegmentsEmpty": "No segments",
+  "crmSegmentDeleted": "Segment deleted",
+  "crmCreateSegmentTitle": "New segment",
+  "crmSegmentNameLabel": "Segment name",
+  "crmSegmentQueryLabel": "Search query (q)",
+  "crmImportCsvTitle": "CSV Import",
+  "crmImportCsvHint": "Paste CSV header: first_name,last_name,email,phone,city,notes,source",
+  "crmImportPreview": "Dry-run preview",
+  "crmImportCommit": "Commit import",
+  "crmExportCsvTitle": "CSV Export",
+  "crmExportCsvButton": "Copy CSV to clipboard",
+  "crmExportCopied": "CSV copied to clipboard"
 }

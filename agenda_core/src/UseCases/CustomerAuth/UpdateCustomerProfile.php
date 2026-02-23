@@ -21,7 +21,10 @@ final class UpdateCustomerProfile
         ?string $firstName = null,
         ?string $lastName = null,
         ?string $email = null,
-        ?string $phone = null
+        ?string $phone = null,
+        ?bool $marketingOptIn = null,
+        ?bool $profilingOptIn = null,
+        ?string $preferredChannel = null
     ): array {
         // Validate email if provided
         if ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -32,6 +35,13 @@ final class UpdateCustomerProfile
         $client = $this->clientAuthRepository->findById($clientId);
         if ($client === null) {
             throw ValidationException::create('Client not found');
+        }
+
+        if ($preferredChannel !== null) {
+            $allowedChannels = ['whatsapp', 'sms', 'email', 'phone', 'none'];
+            if (!in_array(strtolower(trim($preferredChannel)), $allowedChannels, true)) {
+                throw ValidationException::create('Invalid preferred_channel');
+            }
         }
 
         // Build update data
@@ -54,6 +64,18 @@ final class UpdateCustomerProfile
             $this->clientAuthRepository->updateProfile($clientId, $updateData);
         }
 
+        if ($marketingOptIn !== null || $profilingOptIn !== null || $preferredChannel !== null) {
+            $this->clientAuthRepository->upsertConsents(
+                (int) $client['business_id'],
+                $clientId,
+                $marketingOptIn ?? (bool) ($client['marketing_opt_in'] ?? false),
+                $profilingOptIn ?? (bool) ($client['profiling_opt_in'] ?? false),
+                $preferredChannel ?? (string) ($client['preferred_channel'] ?? 'none'),
+                null,
+                'frontend-profile'
+            );
+        }
+
         // Return updated client
         $updatedClient = $this->clientAuthRepository->findById($clientId);
         
@@ -64,6 +86,9 @@ final class UpdateCustomerProfile
             'last_name' => $updatedClient['last_name'],
             'phone' => $updatedClient['phone'],
             'business_id' => $updatedClient['business_id'],
+            'marketing_opt_in' => (bool) ($updatedClient['marketing_opt_in'] ?? false),
+            'profiling_opt_in' => (bool) ($updatedClient['profiling_opt_in'] ?? false),
+            'preferred_channel' => (string) ($updatedClient['preferred_channel'] ?? 'none'),
         ];
     }
 }

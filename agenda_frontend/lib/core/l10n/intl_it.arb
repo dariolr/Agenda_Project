@@ -98,6 +98,15 @@
   "authRedirectFromBooking": "Per prenotare un appuntamento, accedi con il tuo account o registrati se non ne hai ancora uno.",
   
   "profileTitle": "Profilo",
+  "profilePreferencesSection": "Preferenze privacy",
+  "profileMarketingConsent": "Acconsento a comunicazioni marketing",
+  "profileProfilingConsent": "Acconsento alla profilazione",
+  "profilePreferredChannel": "Canale di contatto preferito",
+  "profileChannelNone": "Nessuna preferenza",
+  "profileChannelWhatsapp": "WhatsApp",
+  "profileChannelSms": "SMS",
+  "profileChannelEmail": "Email",
+  "profileChannelPhone": "Telefono",
   
   "bookingTitle": "Prenota appuntamento",
   "bookingStepLocation": "Sede",

@@ -416,12 +416,18 @@ class ApiClient {
     String? lastName,
     String? email,
     String? phone,
+    bool? marketingOptIn,
+    bool? profilingOptIn,
+    String? preferredChannel,
   }) async {
     final data = <String, dynamic>{};
     if (firstName != null) data['first_name'] = firstName;
     if (lastName != null) data['last_name'] = lastName;
     if (email != null) data['email'] = email;
     if (phone != null) data['phone'] = phone;
+    if (marketingOptIn != null) data['marketing_opt_in'] = marketingOptIn;
+    if (profilingOptIn != null) data['profiling_opt_in'] = profilingOptIn;
+    if (preferredChannel != null) data['preferred_channel'] = preferredChannel;
 
     return put(ApiConfig.customerUpdateProfile, data: data);
   }

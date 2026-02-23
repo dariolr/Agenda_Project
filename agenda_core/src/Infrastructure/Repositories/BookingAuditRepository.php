@@ -149,7 +149,10 @@ final class BookingAuditRepository
             $correlationId,
         ]);
 
-        return (int) $this->db->getPdo()->lastInsertId();
+        $eventId = (int) $this->db->getPdo()->lastInsertId();
+        $this->writeClientEventFromBookingEvent($bookingId, $eventType, $actorId, $payload);
+
+        return $eventId;
     }
 
     /**
@@ -207,5 +210,51 @@ final class BookingAuditRepository
             $event['payload'] = Json::decodeAssoc((string) $event['payload_json']) ?? [];
         }
         return $events;
+    }
+
+    /**
+     * Mirror selected booking events into CRM timeline (client_events).
+     * Fails open to preserve booking flow even if CRM tables are not migrated yet.
+     */
+    private function writeClientEventFromBookingEvent(int $bookingId, string $eventType, ?int $actorId, array $payload): void
+    {
+        $mappedType = match ($eventType) {
+            'booking_created', 'booking_cancelled', 'booking_no_show', 'payment' => $eventType,
+            default => null,
+        };
+
+        if ($mappedType === null) {
+            return;
+        }
+
+        try {
+            $bookingStmt = $this->db->getPdo()->prepare(
+                'SELECT business_id, client_id FROM bookings WHERE id = ? LIMIT 1'
+            );
+            $bookingStmt->execute([$bookingId]);
+            $booking = $bookingStmt->fetch();
+            if (!$booking || empty($booking['client_id'])) {
+                return;
+            }
+
+            $insertStmt = $this->db->getPdo()->prepare(
+                'INSERT INTO client_events (business_id, client_id, event_type, payload, occurred_at, created_by_user_id)
+                 VALUES (?, ?, ?, ?, NOW(), ?)'
+            );
+            $insertStmt->execute([
+                (int) $booking['business_id'],
+                (int) $booking['client_id'],
+                $mappedType,
+                Json::encode([
+                    'booking_id' => $bookingId,
+                    'source' => 'booking_events',
+                    'payload' => $payload,
+                ]),
+                $actorId,
+            ]);
+        } catch (\PDOException $e) {
+            // Ignore when CRM tables are not available yet or on non-critical CRM persistence errors.
+            return;
+        }
     }
 }

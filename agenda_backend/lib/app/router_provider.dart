@@ -23,6 +23,13 @@ import '../features/business/presentation/user_business_switch_screen.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
 import '../features/class_events/presentation/class_events_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
+import '../features/crm/presentation/screens/crm_client_detail_screen.dart';
+import '../features/crm/presentation/screens/crm_clients_screen.dart';
+import '../features/crm/presentation/screens/crm_home_screen.dart';
+import '../features/crm/presentation/screens/crm_import_export_screen.dart';
+import '../features/crm/presentation/screens/crm_segments_screen.dart';
+import '../features/crm/presentation/screens/crm_tags_screen.dart';
+import '../features/crm/presentation/screens/crm_tasks_screen.dart';
 import '../features/more/presentation/more_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
@@ -178,6 +185,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isAuthenticated && !isSuperadmin) {
         final path = state.uri.path;
         if (path == '/clienti' && !canManageClients) return '/agenda';
+        if (path.startsWith('/altro/crm')) return '/agenda';
         if (path == '/servizi' && !canViewServices) return '/agenda';
         if (path == '/staff' && !canViewStaff) return '/agenda';
         if (path == '/staff-availability' && !canViewStaff) return '/agenda';
@@ -340,6 +348,54 @@ final routerProvider = Provider<GoRouter>((ref) {
                     name: 'class-events',
                     builder: (BuildContext context, GoRouterState state) =>
                         const ClassEventsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'crm',
+                    name: 'crm-home',
+                    builder: (BuildContext context, GoRouterState state) =>
+                        const CrmHomeScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'clienti',
+                        name: 'crm-clienti',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const CrmClientsScreen(),
+                      ),
+                      GoRoute(
+                        path: 'clienti/:clientId',
+                        name: 'crm-cliente-dettaglio',
+                        builder: (BuildContext context, GoRouterState state) {
+                          final clientId = int.tryParse(
+                            state.pathParameters['clientId'] ?? '',
+                          );
+                          return CrmClientDetailScreen(clientId: clientId ?? 0);
+                        },
+                      ),
+                      GoRoute(
+                        path: 'segmenti',
+                        name: 'crm-segmenti',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const CrmSegmentsScreen(),
+                      ),
+                      GoRoute(
+                        path: 'task',
+                        name: 'crm-task',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const CrmTasksScreen(),
+                      ),
+                      GoRoute(
+                        path: 'tag',
+                        name: 'crm-tag',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const CrmTagsScreen(),
+                      ),
+                      GoRoute(
+                        path: 'import-export',
+                        name: 'crm-import-export',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const CrmImportExportScreen(),
+                      ),
+                    ],
                   ),
                 ],
               ),

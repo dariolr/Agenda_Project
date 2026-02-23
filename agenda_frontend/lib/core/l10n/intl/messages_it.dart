@@ -507,6 +507,25 @@ class MessageLookup extends MessageLookupByLibrary {
     "notModifiable": MessageLookupByLibrary.simpleMessage("Non modificabile"),
     "pastBookings": MessageLookupByLibrary.simpleMessage("Passate"),
     "priceFormat": m16,
+    "profileChannelEmail": MessageLookupByLibrary.simpleMessage("Email"),
+    "profileChannelNone": MessageLookupByLibrary.simpleMessage(
+      "Nessuna preferenza",
+    ),
+    "profileChannelPhone": MessageLookupByLibrary.simpleMessage("Telefono"),
+    "profileChannelSms": MessageLookupByLibrary.simpleMessage("SMS"),
+    "profileChannelWhatsapp": MessageLookupByLibrary.simpleMessage("WhatsApp"),
+    "profileMarketingConsent": MessageLookupByLibrary.simpleMessage(
+      "Acconsento a comunicazioni marketing",
+    ),
+    "profilePreferencesSection": MessageLookupByLibrary.simpleMessage(
+      "Preferenze privacy",
+    ),
+    "profilePreferredChannel": MessageLookupByLibrary.simpleMessage(
+      "Canale di contatto preferito",
+    ),
+    "profileProfilingConsent": MessageLookupByLibrary.simpleMessage(
+      "Acconsento alla profilazione",
+    ),
     "profileTitle": MessageLookupByLibrary.simpleMessage("Profilo"),
     "rescheduleBookingTitle": MessageLookupByLibrary.simpleMessage(
       "Modifica prenotazione",

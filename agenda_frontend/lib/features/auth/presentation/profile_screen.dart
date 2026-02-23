@@ -23,6 +23,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late final TextEditingController _lastNameController;
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
+  bool _marketingOptIn = false;
+  bool _profilingOptIn = false;
+  String _preferredChannel = 'none';
 
   bool _isLoading = false;
   bool _isEditing = false;
@@ -37,6 +40,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _lastNameController = TextEditingController(text: user?.lastName ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
+    _marketingOptIn = user?.marketingOptIn ?? false;
+    _profilingOptIn = user?.profilingOptIn ?? false;
+    _preferredChannel = user?.preferredChannel ?? 'none';
   }
 
   @override
@@ -67,6 +73,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             phone: _phoneController.text.trim().isEmpty
                 ? null
                 : _phoneController.text.trim(),
+            marketingOptIn: _marketingOptIn,
+            profilingOptIn: _profilingOptIn,
+            preferredChannel: _preferredChannel,
           );
 
       if (mounted) {
@@ -96,6 +105,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _lastNameController.text = user?.lastName ?? '';
       _emailController.text = user?.email ?? '';
       _phoneController.text = user?.phone ?? '';
+      _marketingOptIn = user?.marketingOptIn ?? false;
+      _profilingOptIn = user?.profilingOptIn ?? false;
+      _preferredChannel = user?.preferredChannel ?? 'none';
       _isEditing = false;
       _error = null;
     });
@@ -299,6 +311,59 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         keyboardType: TextInputType.phone,
                       ),
+                      const SizedBox(height: 24),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          l10n.profilePreferencesSection,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        value: _marketingOptIn,
+                        onChanged: _isEditing
+                            ? (value) => setState(() => _marketingOptIn = value)
+                            : null,
+                        title: Text(l10n.profileMarketingConsent),
+                      ),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        value: _profilingOptIn,
+                        onChanged: _isEditing
+                            ? (value) => setState(() => _profilingOptIn = value)
+                            : null,
+                        title: Text(l10n.profileProfilingConsent),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _preferredChannel,
+                        decoration: InputDecoration(
+                          labelText: l10n.profilePreferredChannel,
+                          prefixIcon: const Icon(Icons.forum_outlined),
+                        ),
+                        items: const [
+                          'none',
+                          'whatsapp',
+                          'sms',
+                          'email',
+                          'phone',
+                        ].map((value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(_preferredChannelLabel(value, l10n)),
+                          );
+                        }).toList(),
+                        onChanged: _isEditing
+                            ? (value) {
+                                if (value == null) return;
+                                setState(() => _preferredChannel = value);
+                              }
+                            : null,
+                      ),
                     ],
                   ),
                 ),
@@ -360,5 +425,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       '${firstName ?? ''} ${lastName ?? ''}'.trim(),
       maxChars: 2,
     );
+  }
+
+  static String _preferredChannelLabel(String channel, dynamic l10n) {
+    switch (channel) {
+      case 'whatsapp':
+        return l10n.profileChannelWhatsapp;
+      case 'sms':
+        return l10n.profileChannelSms;
+      case 'email':
+        return l10n.profileChannelEmail;
+      case 'phone':
+        return l10n.profileChannelPhone;
+      case 'none':
+      default:
+        return l10n.profileChannelNone;
+    }
   }
 }

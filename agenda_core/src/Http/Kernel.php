@@ -12,6 +12,7 @@ use Agenda\Http\Controllers\AdminBusinessesController;
 use Agenda\Http\Controllers\BusinessUsersController;
 use Agenda\Http\Controllers\BusinessInvitationsController;
 use Agenda\Http\Controllers\ClientsController;
+use Agenda\Http\Controllers\CrmClientsController;
 use Agenda\Http\Controllers\CustomerAuthController;
 use Agenda\Http\Controllers\HealthController;
 use Agenda\Http\Controllers\LocationsController;
@@ -44,6 +45,7 @@ use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\BusinessInvitationRepository;
 use Agenda\Infrastructure\Repositories\ClientAuthRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
+use Agenda\Infrastructure\Repositories\CrmClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
 use Agenda\Infrastructure\Repositories\ServicePackageRepository;
@@ -277,6 +279,55 @@ final class Kernel
         $this->router->put('/v1/clients/{id}', ClientsController::class, 'update', ['auth']);
         $this->router->delete('/v1/clients/{id}', ClientsController::class, 'destroy', ['auth']);
 
+        // CRM clients (business scoped, non-breaking)
+        $this->router->get('/v1/businesses/{business_id}/clients', CrmClientsController::class, 'index', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients', CrmClientsController::class, 'store', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/clients/{client_id}', CrmClientsController::class, 'show', ['auth']);
+        $this->router->patch('/v1/businesses/{business_id}/clients/{client_id}', CrmClientsController::class, 'patch', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/archive', CrmClientsController::class, 'archive', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/unarchive', CrmClientsController::class, 'unarchive', ['auth']);
+
+        $this->router->get('/v1/businesses/{business_id}/client-tags', CrmClientsController::class, 'listTags', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/client-tags', CrmClientsController::class, 'createTag', ['auth']);
+        $this->router->delete('/v1/businesses/{business_id}/client-tags/{tag_id}', CrmClientsController::class, 'deleteTag', ['auth']);
+        $this->router->put('/v1/businesses/{business_id}/clients/{client_id}/tags', CrmClientsController::class, 'replaceTags', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/tags/{tag_id}', CrmClientsController::class, 'addTag', ['auth']);
+        $this->router->delete('/v1/businesses/{business_id}/clients/{client_id}/tags/{tag_id}', CrmClientsController::class, 'removeTag', ['auth']);
+
+        $this->router->get('/v1/businesses/{business_id}/clients/{client_id}/consents', CrmClientsController::class, 'getConsents', ['auth']);
+        $this->router->put('/v1/businesses/{business_id}/clients/{client_id}/consents', CrmClientsController::class, 'putConsents', ['auth']);
+
+        $this->router->get('/v1/businesses/{business_id}/clients/{client_id}/contacts', CrmClientsController::class, 'listContacts', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/contacts', CrmClientsController::class, 'createContact', ['auth']);
+        $this->router->patch('/v1/businesses/{business_id}/clients/{client_id}/contacts/{contact_id}', CrmClientsController::class, 'patchContact', ['auth']);
+        $this->router->delete('/v1/businesses/{business_id}/clients/{client_id}/contacts/{contact_id}', CrmClientsController::class, 'deleteContact', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/contacts/{contact_id}/make-primary', CrmClientsController::class, 'makePrimaryContact', ['auth']);
+
+        $this->router->get('/v1/businesses/{business_id}/clients/{client_id}/events', CrmClientsController::class, 'listEvents', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/events', CrmClientsController::class, 'createEvent', ['auth']);
+
+        $this->router->get('/v1/businesses/{business_id}/clients/{client_id}/tasks', CrmClientsController::class, 'listTasks', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/tasks', CrmClientsController::class, 'createTask', ['auth']);
+        $this->router->patch('/v1/businesses/{business_id}/clients/{client_id}/tasks/{task_id}', CrmClientsController::class, 'patchTask', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/tasks/{task_id}/complete', CrmClientsController::class, 'completeTask', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/tasks/{task_id}/reopen', CrmClientsController::class, 'reopenTask', ['auth']);
+
+        $this->router->get('/v1/businesses/{business_id}/clients/{client_id}/loyalty', CrmClientsController::class, 'getLoyalty', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/loyalty/adjust', CrmClientsController::class, 'adjustLoyalty', ['auth']);
+
+        $this->router->get('/v1/businesses/{business_id}/clients/dedup/suggestions', CrmClientsController::class, 'dedupSuggestions', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{source_client_id}/merge-into/{target_client_id}', CrmClientsController::class, 'mergeInto', ['auth']);
+
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/gdpr/export', CrmClientsController::class, 'gdprExport', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/{client_id}/gdpr/delete', CrmClientsController::class, 'gdprDelete', ['auth']);
+
+        $this->router->get('/v1/businesses/{business_id}/client-segments', CrmClientsController::class, 'listSegments', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/client-segments', CrmClientsController::class, 'createSegment', ['auth']);
+        $this->router->patch('/v1/businesses/{business_id}/client-segments/{segment_id}', CrmClientsController::class, 'updateSegment', ['auth']);
+        $this->router->delete('/v1/businesses/{business_id}/client-segments/{segment_id}', CrmClientsController::class, 'deleteSegment', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/clients/import/csv', CrmClientsController::class, 'importCsv', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/clients/export/csv', CrmClientsController::class, 'exportCsv', ['auth']);
+
         // Bookings (protected, business-scoped via path)
         $this->router->get('/v1/locations/{location_id}/bookings', BookingsController::class, 'index', ['auth', 'location_path', 'location_access']);
         $this->router->get('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'show', ['auth', 'location_path', 'location_access']);
@@ -392,6 +443,7 @@ final class Kernel
         $timeBlockRepo = new TimeBlockRepository($this->db);
         $bookingRepo = new BookingRepository($this->db);
         $clientRepo = new ClientRepository($this->db);
+        $crmClientRepo = new CrmClientRepository($this->db);
         $clientAuthRepo = new ClientAuthRepository($this->db);
         $notificationRepo = new NotificationRepository($this->db);
         $popularServiceRepo = new PopularServiceRepository($this->db);
@@ -452,6 +504,7 @@ final class Kernel
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo),
             BookingNotificationsController::class => new BookingNotificationsController($notificationRepo, $businessUserRepo, $userRepo),
             ClientsController::class => new ClientsController($clientRepo, $businessUserRepo, $userRepo, $bookingRepo),
+            CrmClientsController::class => new CrmClientsController($crmClientRepo, $businessUserRepo, $userRepo),
             AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $bookingAuditRepo, $notificationRepo, $this->db),
             AdminBusinessesController::class => new AdminBusinessesController($this->db, $businessRepo, $businessUserRepo, $userRepo),
             BusinessSyncController::class => new BusinessSyncController(

@@ -493,6 +493,23 @@ class MessageLookup extends MessageLookupByLibrary {
     "notModifiable": MessageLookupByLibrary.simpleMessage("Not modifiable"),
     "pastBookings": MessageLookupByLibrary.simpleMessage("Past"),
     "priceFormat": m16,
+    "profileChannelEmail": MessageLookupByLibrary.simpleMessage("Email"),
+    "profileChannelNone": MessageLookupByLibrary.simpleMessage("No preference"),
+    "profileChannelPhone": MessageLookupByLibrary.simpleMessage("Phone"),
+    "profileChannelSms": MessageLookupByLibrary.simpleMessage("SMS"),
+    "profileChannelWhatsapp": MessageLookupByLibrary.simpleMessage("WhatsApp"),
+    "profileMarketingConsent": MessageLookupByLibrary.simpleMessage(
+      "I agree to marketing communications",
+    ),
+    "profilePreferencesSection": MessageLookupByLibrary.simpleMessage(
+      "Privacy preferences",
+    ),
+    "profilePreferredChannel": MessageLookupByLibrary.simpleMessage(
+      "Preferred contact channel",
+    ),
+    "profileProfilingConsent": MessageLookupByLibrary.simpleMessage(
+      "I agree to profiling",
+    ),
     "profileTitle": MessageLookupByLibrary.simpleMessage("Profile"),
     "rescheduleBookingTitle": MessageLookupByLibrary.simpleMessage(
       "Modify booking",

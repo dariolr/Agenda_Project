@@ -22,6 +22,7 @@ import '../../agenda/providers/time_blocks_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../../clients/providers/clients_providers.dart';
 import '../../class_events/providers/class_events_providers.dart';
+import '../../crm/providers/crm_providers.dart';
 import '../../services/providers/service_categories_provider.dart';
 import '../../services/providers/services_provider.dart';
 import '../../staff/providers/availability_exceptions_provider.dart';
@@ -81,6 +82,10 @@ void invalidateBusinessScopedProviders(Object refObj) {
 
   // Clients
   ref.invalidate(clientsProvider);
+  ref.invalidate(crmClientsProvider);
+  ref.invalidate(clientTagsProvider);
+  ref.invalidate(crmSegmentsProvider);
+  ref.invalidate(overdueTasksProvider);
 
   // Appointments
   ref.invalidate(appointmentsProvider);

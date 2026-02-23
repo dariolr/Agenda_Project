@@ -8853,6 +8853,521 @@ class L10n {
       args: [customerId],
     );
   }
+
+  /// `CRM`
+  String get crmTitle {
+    return Intl.message('CRM', name: 'crmTitle', desc: '', args: []);
+  }
+
+  /// `Gestione clienti avanzata, segmenti, task e privacy`
+  String get crmSubtitle {
+    return Intl.message(
+      'Gestione clienti avanzata, segmenti, task e privacy',
+      name: 'crmSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clienti CRM`
+  String get crmClientsTitle {
+    return Intl.message(
+      'Clienti CRM',
+      name: 'crmClientsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Vista cliente 360 con KPI e timeline`
+  String get crmClientsDescription {
+    return Intl.message(
+      'Vista cliente 360 con KPI e timeline',
+      name: 'crmClientsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Segmenti`
+  String get crmSegmentsTitle {
+    return Intl.message(
+      'Segmenti',
+      name: 'crmSegmentsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Liste dinamiche clienti con filtri salvati`
+  String get crmSegmentsDescription {
+    return Intl.message(
+      'Liste dinamiche clienti con filtri salvati',
+      name: 'crmSegmentsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Task`
+  String get crmTasksTitle {
+    return Intl.message('Task', name: 'crmTasksTitle', desc: '', args: []);
+  }
+
+  /// `Follow-up staff e attività in ritardo`
+  String get crmTasksDescription {
+    return Intl.message(
+      'Follow-up staff e attività in ritardo',
+      name: 'crmTasksDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tag`
+  String get crmTagsTitle {
+    return Intl.message('Tag', name: 'crmTagsTitle', desc: '', args: []);
+  }
+
+  /// `Gestione tag centralizzata clienti`
+  String get crmTagsDescription {
+    return Intl.message(
+      'Gestione tag centralizzata clienti',
+      name: 'crmTagsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Import / Export`
+  String get crmImportExportTitle {
+    return Intl.message(
+      'Import / Export',
+      name: 'crmImportExportTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Import CSV con preview e export segmenti`
+  String get crmImportExportDescription {
+    return Intl.message(
+      'Import CSV con preview e export segmenti',
+      name: 'crmImportExportDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cerca per nome, email, telefono, città...`
+  String get crmSearchHint {
+    return Intl.message(
+      'Cerca per nome, email, telefono, città...',
+      name: 'crmSearchHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tutti`
+  String get crmFilterAll {
+    return Intl.message('Tutti', name: 'crmFilterAll', desc: '', args: []);
+  }
+
+  /// `Lead`
+  String get crmStatusLead {
+    return Intl.message('Lead', name: 'crmStatusLead', desc: '', args: []);
+  }
+
+  /// `Attivo`
+  String get crmStatusActive {
+    return Intl.message('Attivo', name: 'crmStatusActive', desc: '', args: []);
+  }
+
+  /// `Inattivo`
+  String get crmStatusInactive {
+    return Intl.message(
+      'Inattivo',
+      name: 'crmStatusInactive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Perso`
+  String get crmStatusLost {
+    return Intl.message('Perso', name: 'crmStatusLost', desc: '', args: []);
+  }
+
+  /// `Nessun cliente trovato`
+  String get crmClientsEmpty {
+    return Intl.message(
+      'Nessun cliente trovato',
+      name: 'crmClientsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Carica altri`
+  String get crmLoadMore {
+    return Intl.message(
+      'Carica altri',
+      name: 'crmLoadMore',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} visite`
+  String crmVisitsLabel(int count) {
+    return Intl.message(
+      '$count visite',
+      name: 'crmVisitsLabel',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Archivia`
+  String get crmArchiveAction {
+    return Intl.message(
+      'Archivia',
+      name: 'crmArchiveAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nuovo cliente CRM`
+  String get crmCreateClientTitle {
+    return Intl.message(
+      'Nuovo cliente CRM',
+      name: 'crmCreateClientTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Dettaglio cliente`
+  String get crmClientDetailTitle {
+    return Intl.message(
+      'Dettaglio cliente',
+      name: 'crmClientDetailTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Overview`
+  String get crmOverviewTab {
+    return Intl.message('Overview', name: 'crmOverviewTab', desc: '', args: []);
+  }
+
+  /// `Timeline`
+  String get crmTimelineTab {
+    return Intl.message('Timeline', name: 'crmTimelineTab', desc: '', args: []);
+  }
+
+  /// `Prenotazioni`
+  String get crmBookingsTab {
+    return Intl.message(
+      'Prenotazioni',
+      name: 'crmBookingsTab',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Task`
+  String get crmTasksTab {
+    return Intl.message('Task', name: 'crmTasksTab', desc: '', args: []);
+  }
+
+  /// `Contatti`
+  String get crmContactsTab {
+    return Intl.message('Contatti', name: 'crmContactsTab', desc: '', args: []);
+  }
+
+  /// `Loyalty`
+  String get crmLoyaltyTab {
+    return Intl.message('Loyalty', name: 'crmLoyaltyTab', desc: '', args: []);
+  }
+
+  /// `GDPR`
+  String get crmGdprTab {
+    return Intl.message('GDPR', name: 'crmGdprTab', desc: '', args: []);
+  }
+
+  /// `Cronologia prenotazioni disponibile nella vista cliente esistente`
+  String get crmBookingsReuseHint {
+    return Intl.message(
+      'Cronologia prenotazioni disponibile nella vista cliente esistente',
+      name: 'crmBookingsReuseHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Completa`
+  String get crmTaskComplete {
+    return Intl.message(
+      'Completa',
+      name: 'crmTaskComplete',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Riapri`
+  String get crmTaskReopen {
+    return Intl.message('Riapri', name: 'crmTaskReopen', desc: '', args: []);
+  }
+
+  /// `Nessun task in ritardo`
+  String get crmTasksEmpty {
+    return Intl.message(
+      'Nessun task in ritardo',
+      name: 'crmTasksEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Saldo punti: {points}`
+  String crmLoyaltyPoints(String points) {
+    return Intl.message(
+      'Saldo punti: $points',
+      name: 'crmLoyaltyPoints',
+      desc: '',
+      args: [points],
+    );
+  }
+
+  /// `Visite`
+  String get crmKpiVisits {
+    return Intl.message('Visite', name: 'crmKpiVisits', desc: '', args: []);
+  }
+
+  /// `Spesa totale`
+  String get crmKpiSpent {
+    return Intl.message(
+      'Spesa totale',
+      name: 'crmKpiSpent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Scontrino medio`
+  String get crmKpiAvgTicket {
+    return Intl.message(
+      'Scontrino medio',
+      name: 'crmKpiAvgTicket',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No-show`
+  String get crmKpiNoShow {
+    return Intl.message('No-show', name: 'crmKpiNoShow', desc: '', args: []);
+  }
+
+  /// `GDPR Delete`
+  String get crmGdprDeleteTitle {
+    return Intl.message(
+      'GDPR Delete',
+      name: 'crmGdprDeleteTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confermi anonimizzazione e archiviazione del cliente?`
+  String get crmGdprDeleteConfirm {
+    return Intl.message(
+      'Confermi anonimizzazione e archiviazione del cliente?',
+      name: 'crmGdprDeleteConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cliente anonimizzato correttamente`
+  String get crmGdprDeleted {
+    return Intl.message(
+      'Cliente anonimizzato correttamente',
+      name: 'crmGdprDeleted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun tag`
+  String get crmTagsEmpty {
+    return Intl.message('Nessun tag', name: 'crmTagsEmpty', desc: '', args: []);
+  }
+
+  /// `Tag eliminato`
+  String get crmTagDeleted {
+    return Intl.message(
+      'Tag eliminato',
+      name: 'crmTagDeleted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nuovo tag`
+  String get crmCreateTagTitle {
+    return Intl.message(
+      'Nuovo tag',
+      name: 'crmCreateTagTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nome tag`
+  String get crmTagNameLabel {
+    return Intl.message(
+      'Nome tag',
+      name: 'crmTagNameLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Colore (hex)`
+  String get crmTagColorLabel {
+    return Intl.message(
+      'Colore (hex)',
+      name: 'crmTagColorLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun segmento`
+  String get crmSegmentsEmpty {
+    return Intl.message(
+      'Nessun segmento',
+      name: 'crmSegmentsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Segmento eliminato`
+  String get crmSegmentDeleted {
+    return Intl.message(
+      'Segmento eliminato',
+      name: 'crmSegmentDeleted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nuovo segmento`
+  String get crmCreateSegmentTitle {
+    return Intl.message(
+      'Nuovo segmento',
+      name: 'crmCreateSegmentTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nome segmento`
+  String get crmSegmentNameLabel {
+    return Intl.message(
+      'Nome segmento',
+      name: 'crmSegmentNameLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Query ricerca (q)`
+  String get crmSegmentQueryLabel {
+    return Intl.message(
+      'Query ricerca (q)',
+      name: 'crmSegmentQueryLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Import CSV`
+  String get crmImportCsvTitle {
+    return Intl.message(
+      'Import CSV',
+      name: 'crmImportCsvTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Incolla il CSV con header: first_name,last_name,email,phone,city,notes,source`
+  String get crmImportCsvHint {
+    return Intl.message(
+      'Incolla il CSV con header: first_name,last_name,email,phone,city,notes,source',
+      name: 'crmImportCsvHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Dry-run preview`
+  String get crmImportPreview {
+    return Intl.message(
+      'Dry-run preview',
+      name: 'crmImportPreview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Commit import`
+  String get crmImportCommit {
+    return Intl.message(
+      'Commit import',
+      name: 'crmImportCommit',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Export CSV`
+  String get crmExportCsvTitle {
+    return Intl.message(
+      'Export CSV',
+      name: 'crmExportCsvTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copia CSV negli appunti`
+  String get crmExportCsvButton {
+    return Intl.message(
+      'Copia CSV negli appunti',
+      name: 'crmExportCsvButton',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `CSV copiato negli appunti`
+  String get crmExportCopied {
+    return Intl.message(
+      'CSV copiato negli appunti',
+      name: 'crmExportCopied',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

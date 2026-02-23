@@ -23,6 +23,11 @@ class MoreScreen extends ConsumerWidget {
     final canViewServices = ref.watch(currentUserCanViewServicesProvider);
     final canViewStaff = ref.watch(currentUserCanViewStaffProvider);
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
+    final isSuperadmin = ref.watch(currentBusinessUserContextProvider).when(
+      data: (data) => data?.isSuperadmin ?? false,
+      loading: () => false,
+      error: (_, __) => false,
+    );
     final canAccessClassEvents = canViewServices && kDebugMode;
 
     final items = [
@@ -75,6 +80,14 @@ class MoreScreen extends ConsumerWidget {
           description: 'Manage group sessions and participant waitlists',
           color: const Color(0xFF795548),
           onTap: () => context.go('/altro/classi'),
+        ),
+      if (isSuperadmin)
+        _MoreItem(
+          icon: Icons.hub_outlined,
+          title: l10n.crmTitle,
+          description: l10n.crmSubtitle,
+          color: const Color(0xFF009688),
+          onTap: () => context.go('/altro/crm'),
         ),
       _MoreItem(
         icon: Icons.notifications_outlined,

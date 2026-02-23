@@ -17,7 +17,17 @@ final class GetCustomerMe
     ) {}
 
     /**
-     * @return array{id: int, email: string|null, first_name: string|null, last_name: string|null, phone: string|null, business_id: int}
+     * @return array{
+     *     id: int,
+     *     email: string|null,
+     *     first_name: string|null,
+     *     last_name: string|null,
+     *     phone: string|null,
+     *     business_id: int,
+     *     marketing_opt_in: bool,
+     *     profiling_opt_in: bool,
+     *     preferred_channel: string
+     * }
      * @throws AuthException
      */
     public function execute(int $clientId): array
@@ -39,6 +49,9 @@ final class GetCustomerMe
             'last_name' => $client['last_name'],
             'phone' => $client['phone'] ?? null,
             'business_id' => (int) $client['business_id'],
+            'marketing_opt_in' => (bool) ($client['marketing_opt_in'] ?? false),
+            'profiling_opt_in' => (bool) ($client['profiling_opt_in'] ?? false),
+            'preferred_channel' => (string) ($client['preferred_channel'] ?? 'none'),
         ];
     }
 }

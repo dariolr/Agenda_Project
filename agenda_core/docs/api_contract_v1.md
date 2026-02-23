@@ -1734,6 +1734,180 @@ Errors:
 
 ---
 
+## CRM Pro v1 (Business Scoped, Non-Breaking)
+
+I seguenti endpoint sono aggiuntivi e non sostituiscono i legacy `/v1/clients`.
+Scope multi-tenant obbligatorio: sempre dentro `/v1/businesses/{business_id}`.
+
+### Customer self profile (frontend booking)
+
+- `GET /v1/customer/me`
+- `PUT /v1/customer/me`
+
+Campi estesi (retrocompatibili) in response/update:
+- `marketing_opt_in` (bool)
+- `profiling_opt_in` (bool)
+- `preferred_channel` (`whatsapp|sms|email|phone|none`)
+
+### Client master
+
+- `GET /v1/businesses/{business_id}/clients`
+- `POST /v1/businesses/{business_id}/clients`
+- `GET /v1/businesses/{business_id}/clients/{client_id}`
+- `PATCH /v1/businesses/{business_id}/clients/{client_id}`
+- `POST /v1/businesses/{business_id}/clients/{client_id}/archive`
+- `POST /v1/businesses/{business_id}/clients/{client_id}/unarchive`
+
+Query params supportati in list:
+- `q`, `status`, `is_archived`
+- `tag_ids`, `tag_names`
+- `last_visit_from`, `last_visit_to`
+- `spent_from`, `spent_to`
+- `visits_from`, `visits_to`
+- `birthday_month`
+- `marketing_opt_in`, `profiling_opt_in`
+- `sort` (`last_visit_desc`, `name_asc`, `name_desc`, `spent_desc`, `spent_asc`, `created_desc`, `created_asc`)
+- `page`, `page_size`
+
+Response list (200):
+```json
+{
+  "success": true,
+  "data": {
+    "clients": [
+      {
+        "id": 12,
+        "business_id": 1,
+        "first_name": "Mario",
+        "last_name": "Rossi",
+        "email": "mario@example.com",
+        "phone": "+39333111222",
+        "status": "active",
+        "is_archived": false,
+        "tags": ["vip", "ritorno"],
+        "kpi": {
+          "visits_count": 8,
+          "total_spent": 412.5,
+          "avg_ticket": 51.56,
+          "last_visit": "2026-02-12 17:30:00",
+          "no_show_count": 1
+        }
+      }
+    ],
+    "page": 1,
+    "page_size": 20,
+    "total": 42,
+    "has_more": true
+  }
+}
+```
+
+### Tags
+
+- `GET /v1/businesses/{business_id}/client-tags`
+- `POST /v1/businesses/{business_id}/client-tags`
+- `DELETE /v1/businesses/{business_id}/client-tags/{tag_id}?force=true|false`
+- `PUT /v1/businesses/{business_id}/clients/{client_id}/tags` (replace)
+- `POST /v1/businesses/{business_id}/clients/{client_id}/tags/{tag_id}` (add)
+- `DELETE /v1/businesses/{business_id}/clients/{client_id}/tags/{tag_id}` (remove)
+
+### Contacts
+
+- `GET /v1/businesses/{business_id}/clients/{client_id}/contacts`
+- `POST /v1/businesses/{business_id}/clients/{client_id}/contacts`
+- `PATCH /v1/businesses/{business_id}/clients/{client_id}/contacts/{contact_id}`
+- `DELETE /v1/businesses/{business_id}/clients/{client_id}/contacts/{contact_id}`
+- `POST /v1/businesses/{business_id}/clients/{client_id}/contacts/{contact_id}/make-primary`
+
+### Consents
+
+- `GET /v1/businesses/{business_id}/clients/{client_id}/consents`
+- `PUT /v1/businesses/{business_id}/clients/{client_id}/consents`
+
+### Timeline / Events
+
+- `GET /v1/businesses/{business_id}/clients/{client_id}/events?page=1&page_size=20`
+- `POST /v1/businesses/{business_id}/clients/{client_id}/events` (solo `event_type = note|message`)
+
+### Tasks
+
+- `GET /v1/businesses/{business_id}/clients/{client_id}/tasks`
+- `POST /v1/businesses/{business_id}/clients/{client_id}/tasks`
+- `PATCH /v1/businesses/{business_id}/clients/{client_id}/tasks/{task_id}`
+- `POST /v1/businesses/{business_id}/clients/{client_id}/tasks/{task_id}/complete`
+- `POST /v1/businesses/{business_id}/clients/{client_id}/tasks/{task_id}/reopen`
+
+### Loyalty
+
+- `GET /v1/businesses/{business_id}/clients/{client_id}/loyalty`
+- `POST /v1/businesses/{business_id}/clients/{client_id}/loyalty/adjust`
+
+Body adjust esempio:
+```json
+{
+  "delta": 25,
+  "reason": "manual"
+}
+```
+
+### Merge / Dedup
+
+- `GET /v1/businesses/{business_id}/clients/dedup/suggestions?q=...`
+- `POST /v1/businesses/{business_id}/clients/{source_client_id}/merge-into/{target_client_id}`
+
+Response dedup esempio:
+```json
+{
+  "success": true,
+  "data": {
+    "suggestions": [
+      {
+        "candidate_client_id": 42,
+        "match_reasons": ["email_exact", "name_similarity"],
+        "score": 95,
+        "preview": {
+          "first_name": "Mario",
+          "last_name": "Rossi",
+          "email": "mario@example.com",
+          "phone": "+393331234567",
+          "last_visit": "2026-02-15 11:00:00"
+        }
+      }
+    ]
+  }
+}
+```
+
+### GDPR
+
+- `POST /v1/businesses/{business_id}/clients/{client_id}/gdpr/export`
+- `POST /v1/businesses/{business_id}/clients/{client_id}/gdpr/delete`
+
+`gdpr/delete` esegue soft-delete + anonimizzazione PII.
+
+### Segments
+
+- `GET /v1/businesses/{business_id}/client-segments`
+- `POST /v1/businesses/{business_id}/client-segments`
+- `PATCH /v1/businesses/{business_id}/client-segments/{segment_id}`
+- `DELETE /v1/businesses/{business_id}/client-segments/{segment_id}`
+
+### Import / Export CSV
+
+- `POST /v1/businesses/{business_id}/clients/import/csv`
+  - body: `{ csv: "...", mapping: { first_name: "Nome", ... }, dry_run: true|false }`
+  - `dry_run=true`: preview prime 20 righe + report errori
+  - `dry_run=false`: inserisce clienti e ritorna `created_ids`
+- `GET /v1/businesses/{business_id}/clients/export/csv?segment_id={id}`
+  - ritorna payload con stringa CSV esportata
+
+### Retrocompatibilità `Client.tags`
+
+`clients.tags` (JSON legacy) resta supportato in output client e viene sincronizzato
+dal nuovo pivot `client_tags` + `client_tag_links`.
+
+---
+
 ## Business Context Derivation
 
 | Endpoint Type | location_id Source | business_id |

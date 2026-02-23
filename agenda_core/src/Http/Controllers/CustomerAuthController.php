@@ -348,12 +348,17 @@ final class CustomerAuthController
         $body = $request->getBody();
 
         try {
+            $marketingOptIn = $this->nullableBoolFromBody($body, 'marketing_opt_in');
+            $profilingOptIn = $this->nullableBoolFromBody($body, 'profiling_opt_in');
             $client = $this->updateCustomerProfile->execute(
                 (int) $clientId,
                 $body['first_name'] ?? null,
                 $body['last_name'] ?? null,
                 $body['email'] ?? null,
-                $body['phone'] ?? null
+                $body['phone'] ?? null,
+                $marketingOptIn,
+                $profilingOptIn,
+                isset($body['preferred_channel']) ? (string) $body['preferred_channel'] : null
             );
             return Response::success($client, 200);
         } catch (ValidationException $e) {
@@ -394,5 +399,19 @@ final class CustomerAuthController
         } catch (AuthException $e) {
             return Response::error($e->getMessage(), $e->getErrorCode(), $e->getHttpStatus());
         }
+    }
+
+    private function nullableBoolFromBody(array $body, string $key): ?bool
+    {
+        if (!array_key_exists($key, $body)) {
+            return null;
+        }
+
+        $value = filter_var($body[$key], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($value === null) {
+            throw ValidationException::create("Invalid {$key}");
+        }
+
+        return $value;
     }
 }

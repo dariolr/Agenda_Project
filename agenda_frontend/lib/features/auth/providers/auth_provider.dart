@@ -241,12 +241,18 @@ class AuthNotifier extends Notifier<AuthState> {
     String? lastName,
     String? email,
     String? phone,
+    bool? marketingOptIn,
+    bool? profilingOptIn,
+    String? preferredChannel,
   }) async {
     final updatedUser = await _repository.updateProfile(
       firstName: firstName,
       lastName: lastName,
       email: email,
       phone: phone,
+      marketingOptIn: marketingOptIn,
+      profilingOptIn: profilingOptIn,
+      preferredChannel: preferredChannel,
     );
     state = AuthState.authenticated(updatedUser);
   }

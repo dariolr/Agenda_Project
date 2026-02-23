@@ -98,6 +98,15 @@
   "authRedirectFromBooking": "To book an appointment, log in with your account or register if you don't have one yet.",
   
   "profileTitle": "Profile",
+  "profilePreferencesSection": "Privacy preferences",
+  "profileMarketingConsent": "I agree to marketing communications",
+  "profileProfilingConsent": "I agree to profiling",
+  "profilePreferredChannel": "Preferred contact channel",
+  "profileChannelNone": "No preference",
+  "profileChannelWhatsapp": "WhatsApp",
+  "profileChannelSms": "SMS",
+  "profileChannelEmail": "Email",
+  "profileChannelPhone": "Phone",
   
   "bookingTitle": "Book appointment",
   "bookingStepLocation": "Location",
