@@ -16,16 +16,14 @@ Documento canonico condiviso per `agenda_backend`, `agenda_frontend`, `agenda_co
 - Il dialog eccezioni staff deve aprirsi solo con planning disponibile per lo staff.
 - Se il planning non e in cache, il backend UI forza prima il load da API.
 - Se dopo il load non esiste alcun planning, il dialog non si apre e viene mostrato feedback di errore.
-- Conversioni orario->slot e slot->orario nel dialog eccezioni devono usare `planning_slot_minutes` del planning valido per data (non `LayoutConfig.minutesPerSlot`).
+- Conversioni orario->slot e slot->orario nel dialog eccezioni devono usare lo step planning fisso a 5 minuti (non `LayoutConfig.minutesPerSlot`).
 
 ## Parametri slot (separazione responsabilita)
 
 ### 1) Planning staff (source of truth disponibilita)
 
-- Campo: `staff_planning.planning_slot_minutes`
-- Default: `15`
+- Step planning: fisso a `5` minuti (nessun campo per-record).
 - Semantica: passo usato per generare/interpretare gli slot del planning staff.
-- Validazione: deve essere intero `> 0` e deve dividere `1440` senza resto.
 - Uso: logica availability e interpretazione coerente dei `slots` nei template.
 
 ### 2) Prenotazione online clienti (frequenza proposte)
@@ -44,8 +42,8 @@ Documento canonico condiviso per `agenda_backend`, `agenda_frontend`, `agenda_co
 
 ## Regola architetturale
 
-- Non accoppiare `online_booking_slot_interval_minutes` con `planning_slot_minutes`.
-- `planning_slot_minutes` governa la semantica del planning staff.
+- Non accoppiare `online_booking_slot_interval_minutes` con lo step planning fisso.
+- Lo step planning fisso (5 minuti) governa la semantica del planning staff.
 - `online_booking_slot_interval_minutes` governa la frequenza di proposta al cliente.
 - La UI agenda puo usare una granularita visiva diversa senza alterare la semantica del planning.
 

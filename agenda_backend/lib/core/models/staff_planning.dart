@@ -27,12 +27,12 @@ enum WeekLabel {
 /// (nessuna sovrapposizione di intervalli).
 @immutable
 class StaffPlanning {
-  static const int defaultPlanningSlotMinutes = 15;
+  static const int planningStepMinutes = 5;
+  static const int defaultPlanningSlotMinutes = planningStepMinutes;
 
   final int id;
   final int staffId;
   final StaffPlanningType type;
-  final int planningSlotMinutes;
 
   /// Data di inizio validità (inclusa).
   final DateTime validFrom;
@@ -47,11 +47,12 @@ class StaffPlanning {
   final DateTime createdAt;
   final DateTime? updatedAt;
 
+  int get planningSlotMinutes => planningStepMinutes;
+
   const StaffPlanning({
     required this.id,
     required this.staffId,
     required this.type,
-    this.planningSlotMinutes = defaultPlanningSlotMinutes,
     required this.validFrom,
     this.validTo,
     required this.templates,
@@ -100,7 +101,7 @@ class StaffPlanning {
     final template = label == WeekLabel.a ? templateA : templateB;
     if (template == null) return 0;
     return template.totalWeeklyHoursFor(
-      minutesPerSlot: planningSlotMinutes,
+      minutesPerSlot: planningStepMinutes,
     );
   }
 
@@ -126,7 +127,6 @@ class StaffPlanning {
     int? id,
     int? staffId,
     StaffPlanningType? type,
-    int? planningSlotMinutes,
     DateTime? validFrom,
     DateTime? Function()? validTo,
     List<StaffPlanningWeekTemplate>? templates,
@@ -137,7 +137,6 @@ class StaffPlanning {
       id: id ?? this.id,
       staffId: staffId ?? this.staffId,
       type: type ?? this.type,
-      planningSlotMinutes: planningSlotMinutes ?? this.planningSlotMinutes,
       validFrom: validFrom ?? this.validFrom,
       validTo: validTo != null ? validTo() : this.validTo,
       templates: templates ?? this.templates,
@@ -154,8 +153,6 @@ class StaffPlanning {
         (t) => t.name == json['type'],
         orElse: () => StaffPlanningType.weekly,
       ),
-      planningSlotMinutes:
-          json['planning_slot_minutes'] as int? ?? defaultPlanningSlotMinutes,
       validFrom: DateTime.parse(json['valid_from'] as String),
       validTo: json['valid_to'] != null
           ? DateTime.parse(json['valid_to'] as String)
@@ -180,7 +177,6 @@ class StaffPlanning {
       'id': id,
       'staff_id': staffId,
       'type': type.name,
-      'planning_slot_minutes': planningSlotMinutes,
       'valid_from': _dateToIso(validFrom),
       'valid_to': validTo != null ? _dateToIso(validTo!) : null,
       'templates': templates.map((t) => t.toJson()).toList(),
@@ -202,7 +198,6 @@ class StaffPlanning {
           id == other.id &&
           staffId == other.staffId &&
           type == other.type &&
-          planningSlotMinutes == other.planningSlotMinutes &&
           validFrom == other.validFrom &&
           validTo == other.validTo;
 
@@ -211,7 +206,6 @@ class StaffPlanning {
     id,
     staffId,
     type,
-    planningSlotMinutes,
     validFrom,
     validTo,
   );
@@ -219,7 +213,6 @@ class StaffPlanning {
   @override
   String toString() =>
       'StaffPlanning(id: $id, staffId: $staffId, type: $type, '
-      'planningSlotMinutes: $planningSlotMinutes, '
       'validFrom: ${_dateToIso(validFrom)}, '
       'validTo: ${validTo != null ? _dateToIso(validTo!) : 'null'})';
 }
@@ -227,7 +220,7 @@ class StaffPlanning {
 /// Template di una settimana con gli slot per ogni giorno.
 ///
 /// Per ogni giorno della settimana (1-7, Mon-Sun) contiene gli slot disponibili
-/// come `Set<int>` dove ogni int è l'indice dello slot (es. 36 = 09:00 con slot da 15 min).
+/// come `Set<int>` dove ogni int è l'indice dello slot (es. 108 = 09:00 con step planning da 5 min).
 @immutable
 class StaffPlanningWeekTemplate {
   final int id;
@@ -258,7 +251,7 @@ class StaffPlanningWeekTemplate {
   /// Calcola le ore totali settimanali assumendo lo step planning di default.
   double get totalWeeklyHours {
     return totalWeeklyHoursFor(
-      minutesPerSlot: StaffPlanning.defaultPlanningSlotMinutes,
+      minutesPerSlot: StaffPlanning.planningStepMinutes,
     );
   }
 

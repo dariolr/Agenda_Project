@@ -117,14 +117,6 @@ class StaffPlanningValidator {
     List<String> errors,
     List<String> warnings,
   ) {
-    if (planning.planningSlotMinutes <= 0) {
-      errors.add('planning_slot_minutes deve essere > 0');
-    } else if ((24 * 60) % planning.planningSlotMinutes != 0) {
-      errors.add(
-        'planning_slot_minutes deve dividere 24h senza resto',
-      );
-    }
-
     // valid_to ≥ valid_from quando presente
     if (planning.validTo != null) {
       final from = DateUtils.dateOnly(planning.validFrom);
@@ -151,21 +143,13 @@ class StaffPlanningValidator {
 
     // Validazione formato slot in ogni template
     for (final template in planning.templates) {
-      _validateTemplateSlots(
-        template,
-        planning.planningSlotMinutes,
-        errors,
-      );
+      _validateTemplateSlots(template, errors);
     }
   }
 
   /// Validazione slot di un template.
-  void _validateTemplateSlots(
-    StaffPlanningWeekTemplate template,
-    int planningSlotMinutes,
-    List<String> errors,
-  ) {
-    final maxSlotIndex = ((24 * 60) ~/ planningSlotMinutes) - 1;
+  void _validateTemplateSlots(StaffPlanningWeekTemplate template, List<String> errors) {
+    final maxSlotIndex = ((24 * 60) ~/ StaffPlanning.planningStepMinutes) - 1;
 
     for (final entry in template.daySlots.entries) {
       final day = entry.key;
@@ -181,7 +165,7 @@ class StaffPlanningValidator {
         if (slot < 0 || slot > maxSlotIndex) {
           errors.add(
             'Slot index invalido: $slot nel giorno $day '
-            '(deve essere 0-$maxSlotIndex per slot da $planningSlotMinutes minuti)',
+            '(deve essere 0-$maxSlotIndex per slot da ${StaffPlanning.planningStepMinutes} minuti)',
           );
         }
       }

@@ -14,12 +14,12 @@ use DateTimeZone;
  */
 final class BookingTest extends TestCase
 {
-    public function testPlanningSlotIs15Minutes(): void
+    public function testPlanningSlotIs5Minutes(): void
     {
         $class = new \ReflectionClass(ComputeAvailability::class);
         $constant = $class->getReflectionConstant('PLANNING_SLOT_MINUTES');
 
-        $this->assertEquals(15, $constant->getValue());
+        $this->assertEquals(5, $constant->getValue());
     }
 
     public function testDefaultDisplaySlotIntervalIs15Minutes(): void

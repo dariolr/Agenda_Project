@@ -174,7 +174,8 @@ class AvailabilityException {
   }
 
   /// Converte l'eccezione in un set di slot index.
-  /// [minutesPerSlot] è tipicamente 15.
+  /// [minutesPerSlot] dipende dal contesto:
+  /// planning staff = 5, griglia agenda = variabile (es. 15/30/60).
   /// Per eccezioni "all day", copre tutti gli slot della giornata.
   Set<int> toSlotIndices({
     required int minutesPerSlot,

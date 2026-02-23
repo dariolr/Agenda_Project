@@ -84,13 +84,15 @@ class _PlanningEditorContent extends ConsumerStatefulWidget {
 class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
     with SingleTickerProviderStateMixin {
   late StaffPlanningType _type;
-  late int _planningSlotMinutes;
   late DateTime _validFrom;
   DateTime? _validTo;
   bool _isOpenEnded = true;
   bool _isSaving = false;
   bool _isDeleting = false;
   String? _error;
+
+  /// Passo di visualizzazione per il picker orari (solo UI, non persiste).
+  int _displayStepMinutes = 15;
 
   // Orari per template A e B
   late Map<int, Set<int>> _slotsA;
@@ -108,7 +110,6 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
     if (widget.planning != null) {
       final p = widget.planning!;
       _type = p.type;
-      _planningSlotMinutes = p.planningSlotMinutes;
       _validFrom = p.validFrom;
       _validTo = p.validTo;
       _isOpenEnded = p.validTo == null;
@@ -118,7 +119,6 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
       _slotsB = _loadSlotsFromTemplate(p.templateB);
     } else {
       _type = StaffPlanningType.weekly;
-      _planningSlotMinutes = StaffPlanning.defaultPlanningSlotMinutes;
       // Data inizio = data fine planning attivo + 1 giorno, altrimenti oggi
       _validFrom = _calculateDefaultStartDate();
       _validTo = null;
@@ -254,7 +254,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
 
     try {
       final notifier = ref.read(staffPlanningsProvider.notifier);
-      final minutesPerSlot = _planningSlotMinutes;
+      final minutesPerSlot = StaffPlanning.planningStepMinutes;
 
       // Unifica slot contigui
       final mergedSlotsA = _mergeSlots(_slotsA, minutesPerSlot);
@@ -286,7 +286,6 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
         id: widget.planning?.id ?? 0,
         staffId: widget.staffId,
         type: _type,
-        planningSlotMinutes: _planningSlotMinutes,
         validFrom: _validFrom,
         validTo: _isOpenEnded ? null : _validTo,
         templates: templates,
@@ -652,15 +651,18 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
                 WeeklyScheduleEditor(
                   initialSchedule: WeeklySchedule.fromSlots(
                     currentSlots,
-                    minutesPerSlot: _planningSlotMinutes,
+                    minutesPerSlot: StaffPlanning.planningStepMinutes,
                   ),
                   onChanged: (schedule) {
                     final newSlots = schedule.toSlots(
-                      minutesPerSlot: _planningSlotMinutes,
+                      minutesPerSlot: StaffPlanning.planningStepMinutes,
                     );
                     _onSlotsChanged(newSlots);
                   },
                   showHeader: true,
+                  displayStepMinutes: _displayStepMinutes,
+                  onDisplayStepChanged: (step) =>
+                      setState(() => _displayStepMinutes = step),
                 ),
 
                 const SizedBox(height: 16),

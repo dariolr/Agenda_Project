@@ -95,7 +95,6 @@ class StaffPlanningsNotifier extends Notifier<StaffPlanningsState> {
       final payload = {
         'staffId': planning.staffId,
         'type': planning.type.name,
-        'planningSlotMinutes': planning.planningSlotMinutes,
         'validFrom': _dateToIso(planning.validFrom),
         'validTo': planning.validTo != null
             ? _dateToIso(planning.validTo!)
@@ -108,7 +107,6 @@ class StaffPlanningsNotifier extends Notifier<StaffPlanningsState> {
       final response = await api.createStaffPlanning(
         staffId: planning.staffId,
         type: planning.type.name,
-        planningSlotMinutes: planning.planningSlotMinutes,
         validFrom: _dateToIso(planning.validFrom),
         validTo: planning.validTo != null
             ? _dateToIso(planning.validTo!)
@@ -159,7 +157,6 @@ class StaffPlanningsNotifier extends Notifier<StaffPlanningsState> {
         staffId: planning.staffId,
         planningId: planning.id,
         type: planning.type.name,
-        planningSlotMinutes: planning.planningSlotMinutes,
         validFrom: _dateToIso(planning.validFrom),
         validTo: planning.validTo != null
             ? _dateToIso(planning.validTo!)

@@ -21,8 +21,6 @@ use Agenda\Infrastructure\Repositories\UserRepository;
  */
 final class StaffPlanningController
 {
-    private const DEFAULT_PLANNING_SLOT_MINUTES = 15;
-
     public function __construct(
         private readonly StaffPlanningRepository $planningRepo,
         private readonly StaffRepository $staffRepo,
@@ -235,7 +233,6 @@ final class StaffPlanningController
         $planningId = $this->planningRepo->create([
             'staff_id' => $staffId,
             'type' => $data['type'],
-            'planning_slot_minutes' => (int) ($data['planning_slot_minutes'] ?? self::DEFAULT_PLANNING_SLOT_MINUTES),
             'valid_from' => $validFrom,
             'valid_to' => $validTo,
         ]);
@@ -502,17 +499,6 @@ final class StaffPlanningController
                 $errors[] = 'valid_to deve essere in formato YYYY-MM-DD';
             } elseif (isset($data['valid_from']) && $data['valid_to'] < $data['valid_from']) {
                 $errors[] = 'valid_to deve essere >= valid_from';
-            }
-        }
-
-        if (isset($data['planning_slot_minutes'])) {
-            $value = filter_var($data['planning_slot_minutes'], FILTER_VALIDATE_INT);
-            if ($value === false) {
-                $errors[] = 'planning_slot_minutes deve essere un intero';
-            } elseif ($value <= 0) {
-                $errors[] = 'planning_slot_minutes deve essere > 0';
-            } elseif ((24 * 60) % $value !== 0) {
-                $errors[] = 'planning_slot_minutes deve dividere 1440 (minuti in un giorno)';
             }
         }
 
