@@ -14,7 +14,6 @@ void main() {
     int id = 1,
     int staffId = 10,
     StaffPlanningType type = StaffPlanningType.weekly,
-    int planningSlotMinutes = StaffPlanning.defaultPlanningSlotMinutes,
     required DateTime validFrom,
     DateTime? validTo,
     bool withTemplateA = true,
@@ -55,7 +54,6 @@ void main() {
       id: id,
       staffId: staffId,
       type: type,
-      planningSlotMinutes: planningSlotMinutes,
       validFrom: validFrom,
       validTo: validTo,
       templates: templates,
@@ -102,35 +100,6 @@ void main() {
         expect(result.isValid, isTrue);
       });
 
-      test('planning_slot_minutes <= 0 → errore', () {
-        final planning = createPlanning(
-          validFrom: DateTime(2026, 6, 1),
-          planningSlotMinutes: 0,
-        );
-
-        final result = validator.validateForCreate(planning, []);
-
-        expect(result.isValid, isFalse);
-        expect(
-          result.errors,
-          contains('planning_slot_minutes deve essere > 0'),
-        );
-      });
-
-      test('planning_slot_minutes che non divide 24h → errore', () {
-        final planning = createPlanning(
-          validFrom: DateTime(2026, 6, 1),
-          planningSlotMinutes: 7,
-        );
-
-        final result = validator.validateForCreate(planning, []);
-
-        expect(result.isValid, isFalse);
-        expect(
-          result.errors,
-          contains('planning_slot_minutes deve dividere 24h senza resto'),
-        );
-      });
     });
 
     group('Validazione template', () {
@@ -189,12 +158,11 @@ void main() {
         expect(result.isValid, isTrue);
       });
 
-      test('slot index fuori range con step 30 minuti → errore', () {
+      test('slot index fuori range con step planning fisso → errore', () {
         final planning = StaffPlanning(
           id: 1,
           staffId: 10,
           type: StaffPlanningType.weekly,
-          planningSlotMinutes: 30, // max index = 47
           validFrom: DateTime(2026, 1, 1),
           templates: [
             StaffPlanningWeekTemplate(
@@ -202,7 +170,7 @@ void main() {
               staffPlanningId: 1,
               weekLabel: WeekLabel.a,
               daySlots: {
-                1: {48}, // invalido
+                1: {288}, // invalido (max con step 5 = 287)
               },
             ),
           ],
@@ -214,7 +182,7 @@ void main() {
         expect(result.isValid, isFalse);
         expect(
           result.errors.first,
-          contains('deve essere 0-47 per slot da 30 minuti'),
+          contains('deve essere 0-287 per slot da 5 minuti'),
         );
       });
     });

@@ -2292,7 +2292,6 @@ class ApiClient {
   Future<Map<String, dynamic>> createStaffPlanning({
     required int staffId,
     required String type,
-    int? planningSlotMinutes,
     required String validFrom,
     String? validTo,
     required List<Map<String, dynamic>> templates,
@@ -2302,8 +2301,6 @@ class ApiClient {
       ApiConfig.staffPlannings(staffId),
       data: {
         'type': type,
-        if (planningSlotMinutes != null)
-          'planning_slot_minutes': planningSlotMinutes,
         'valid_from': validFrom,
         if (validTo != null) 'valid_to': validTo,
         'templates': templates,
@@ -2318,7 +2315,6 @@ class ApiClient {
     required int staffId,
     required int planningId,
     String? type,
-    int? planningSlotMinutes,
     String? validFrom,
     String? validTo,
     bool setValidToNull = false,
@@ -2326,9 +2322,6 @@ class ApiClient {
   }) async {
     final data = <String, dynamic>{};
     if (type != null) data['type'] = type;
-    if (planningSlotMinutes != null) {
-      data['planning_slot_minutes'] = planningSlotMinutes;
-    }
     if (validFrom != null) data['valid_from'] = validFrom;
     if (validTo != null) {
       data['valid_to'] = validTo;

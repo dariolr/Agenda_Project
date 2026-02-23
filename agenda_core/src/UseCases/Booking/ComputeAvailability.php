@@ -21,7 +21,7 @@ final class ComputeAvailability
     /**
      * Fallback for planning slot duration when a planning row has no explicit value.
      */
-    private const PLANNING_SLOT_MINUTES = 15;
+    private const PLANNING_SLOT_MINUTES = 5;
 
     /**
      * Fallback interval used only for online slot proposal cadence.
@@ -332,10 +332,7 @@ final class ComputeAvailability
             return [];
         }
 
-        $planningSlotMinutes = (int) ($planning['planning_slot_minutes'] ?? self::PLANNING_SLOT_MINUTES);
-        if ($planningSlotMinutes <= 0) {
-            $planningSlotMinutes = self::PLANNING_SLOT_MINUTES;
-        }
+        $planningSlotMinutes = self::PLANNING_SLOT_MINUTES;
 
         $slotIndices = $this->extractSlotIndicesForPlanningDate($planning, $dateStr);
 

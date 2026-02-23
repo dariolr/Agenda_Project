@@ -207,8 +207,8 @@ void main() {
         },
       );
 
-      // 20 slot * 15 min / 60 = 5 ore
-      expect(template.totalWeeklyHours, 5.0);
+      // 20 slot * 5 min / 60 = 1h40m
+      expect(template.totalWeeklyHours, closeTo(1.6667, 0.0001));
     });
 
     group('fromJson formati diversi', () {

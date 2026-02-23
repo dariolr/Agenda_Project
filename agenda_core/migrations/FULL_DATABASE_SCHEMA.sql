@@ -768,7 +768,6 @@ CREATE TABLE `staff_planning` (
   `id` int UNSIGNED NOT NULL,
   `staff_id` int UNSIGNED NOT NULL,
   `type` enum('weekly','biweekly') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'weekly',
-  `planning_slot_minutes` tinyint UNSIGNED NOT NULL DEFAULT '15' COMMENT 'Passo (in minuti) usato per generare il planning',
   `valid_from` date NOT NULL,
   `valid_to` date DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,

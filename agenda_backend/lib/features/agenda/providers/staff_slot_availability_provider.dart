@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/availability_exception.dart';
+import '../../../core/models/staff_planning.dart';
 import '../../../core/services/staff_planning_selector.dart';
 import '../../business/providers/location_closures_provider.dart';
 import '../../staff/providers/staff_planning_provider.dart';
@@ -43,11 +44,7 @@ final staffSlotAvailabilityProvider = Provider.family<Set<int>, int>((
   final planningLookup = ref.watch(
     planningForStaffOnDateProvider((staffId: staffId, date: agendaDate)),
   );
-  final planningSlotMinutes = switch (planningLookup) {
-    PlanningFound(planning: final planning) when planning.planningSlotMinutes > 0 =>
-      planning.planningSlotMinutes,
-    _ => 15,
-  };
+  const planningSlotMinutes = StaffPlanning.planningStepMinutes;
   final planningTotalSlots = (24 * 60) ~/ planningSlotMinutes;
 
   // 1️⃣ BASE: Planning da API (supporta weekly/biweekly, validità temporale)

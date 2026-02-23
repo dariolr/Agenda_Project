@@ -16,8 +16,6 @@ use Agenda\Infrastructure\Support\Json;
  */
 final class StaffPlanningRepository
 {
-    private const DEFAULT_PLANNING_SLOT_MINUTES = 15;
-
     public function __construct(
         private readonly Connection $db,
     ) {}
@@ -28,7 +26,7 @@ final class StaffPlanningRepository
     public function findByStaffId(int $staffId): array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, staff_id, type, planning_slot_minutes, valid_from, valid_to, created_at, updated_at
+            'SELECT id, staff_id, type, valid_from, valid_to, created_at, updated_at
              FROM staff_planning
              WHERE staff_id = ?
              ORDER BY valid_from ASC'
@@ -49,7 +47,7 @@ final class StaffPlanningRepository
     public function findById(int $planningId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, staff_id, type, planning_slot_minutes, valid_from, valid_to, created_at, updated_at
+            'SELECT id, staff_id, type, valid_from, valid_to, created_at, updated_at
              FROM staff_planning
              WHERE id = ?'
         );
@@ -77,7 +75,7 @@ final class StaffPlanningRepository
     public function findValidForDate(int $staffId, string $date): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, staff_id, type, planning_slot_minutes, valid_from, valid_to, created_at, updated_at
+            'SELECT id, staff_id, type, valid_from, valid_to, created_at, updated_at
              FROM staff_planning
              WHERE staff_id = ?
                AND valid_from <= ?
@@ -110,7 +108,7 @@ final class StaffPlanningRepository
     public function findValidForRange(int $staffId, string $startDate, string $endDate): array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, staff_id, type, planning_slot_minutes, valid_from, valid_to, created_at, updated_at
+            'SELECT id, staff_id, type, valid_from, valid_to, created_at, updated_at
              FROM staff_planning
              WHERE staff_id = ?
                AND valid_from <= ?
@@ -230,13 +228,12 @@ final class StaffPlanningRepository
         $pdo = $this->db->getPdo();
         
         $stmt = $pdo->prepare(
-            'INSERT INTO staff_planning (staff_id, type, planning_slot_minutes, valid_from, valid_to, created_at)
-             VALUES (?, ?, ?, ?, ?, NOW())'
+            'INSERT INTO staff_planning (staff_id, type, valid_from, valid_to, created_at)
+             VALUES (?, ?, ?, ?, NOW())'
         );
         $stmt->execute([
             $data['staff_id'],
             $data['type'],
-            (int) ($data['planning_slot_minutes'] ?? self::DEFAULT_PLANNING_SLOT_MINUTES),
             $data['valid_from'],
             $data['valid_to'] ?? null,
         ]);
@@ -264,11 +261,6 @@ final class StaffPlanningRepository
             $fields[] = 'valid_to = ?';
             $values[] = $data['valid_to'];
         }
-        if (isset($data['planning_slot_minutes'])) {
-            $fields[] = 'planning_slot_minutes = ?';
-            $values[] = (int) $data['planning_slot_minutes'];
-        }
-
         if (empty($fields)) {
             return false;
         }
@@ -369,7 +361,7 @@ final class StaffPlanningRepository
         ?string $validTo,
         ?int $excludePlanningId = null
     ): array {
-        $sql = 'SELECT id, staff_id, type, planning_slot_minutes, valid_from, valid_to, created_at, updated_at
+        $sql = 'SELECT id, staff_id, type, valid_from, valid_to, created_at, updated_at
                 FROM staff_planning WHERE staff_id = ?';
         $params = [$staffId];
 
@@ -423,7 +415,6 @@ final class StaffPlanningRepository
         $newId = $this->create([
             'staff_id' => $original['staff_id'],
             'type' => $original['type'],
-            'planning_slot_minutes' => (int) ($original['planning_slot_minutes'] ?? self::DEFAULT_PLANNING_SLOT_MINUTES),
             'valid_from' => $newValidFrom,
             'valid_to' => $newValidTo,
         ]);

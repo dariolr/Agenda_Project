@@ -178,7 +178,8 @@ class WeeklySchedule {
   }
 
   /// Converte da formato slot a WeeklySchedule.
-  /// [minutesPerSlot] è tipicamente 15.
+  /// [minutesPerSlot] dipende dalla sorgente:
+  /// per i planning staff usare `StaffPlanning.planningStepMinutes` (5).
   factory WeeklySchedule.fromSlots(
     Map<int, Set<int>> slots, {
     int minutesPerSlot = 15,
@@ -276,12 +277,22 @@ class WeeklyScheduleEditor extends StatefulWidget {
   final bool showHeader;
   final bool readOnly;
 
+  /// Passo di visualizzazione orari nel picker (es. 5, 10, 15, 30, 60).
+  /// Non influenza il salvataggio (sempre a 5 min), solo le opzioni visibili.
+  final int displayStepMinutes;
+
+  /// Callback invocato quando l'utente cambia il passo tramite lo stepper.
+  /// Se null lo stepper non viene mostrato.
+  final ValueChanged<int>? onDisplayStepChanged;
+
   const WeeklyScheduleEditor({
     super.key,
     required this.initialSchedule,
     this.onChanged,
     this.showHeader = true,
     this.readOnly = false,
+    this.displayStepMinutes = LayoutConfig.minutesPerSlotConst,
+    this.onDisplayStepChanged,
   });
 
   @override
@@ -423,6 +434,15 @@ class _WeeklyScheduleEditorState extends State<WeeklyScheduleEditor> {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (widget.onDisplayStepChanged != null) ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: _StepSelector(
+                      value: widget.displayStepMinutes,
+                      onChanged: widget.onDisplayStepChanged!,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -446,6 +466,7 @@ class _WeeklyScheduleEditorState extends State<WeeklyScheduleEditor> {
               onAddShift: () => _addShift(day),
               onRemoveShift: (shiftIndex) => _removeShift(day, shiftIndex),
               isFirst: index == 0,
+              displayStepMinutes: widget.displayStepMinutes,
             );
           }),
         ),
@@ -467,6 +488,7 @@ class _DayRow extends ConsumerWidget {
   final VoidCallback onAddShift;
   final void Function(int shiftIndex) onRemoveShift;
   final bool isFirst;
+  final int displayStepMinutes;
 
   const _DayRow({
     required this.day,
@@ -478,6 +500,7 @@ class _DayRow extends ConsumerWidget {
     required this.onAddShift,
     required this.onRemoveShift,
     this.isFirst = false,
+    this.displayStepMinutes = LayoutConfig.minutesPerSlotConst,
   });
 
   /// Calcola la larghezza massima tra tutti i nomi dei giorni
@@ -613,6 +636,7 @@ class _DayRow extends ConsumerWidget {
                               previousShiftEndTime: i > 0
                                   ? schedule.shifts[i - 1].endTime
                                   : null,
+                              displayStepMinutes: displayStepMinutes,
                             ),
                           ),
                       ],
@@ -719,6 +743,7 @@ class _DayRow extends ConsumerWidget {
                               previousShiftEndTime: i > 0
                                   ? schedule.shifts[i - 1].endTime
                                   : null,
+                              displayStepMinutes: displayStepMinutes,
                             ),
                           ),
                       ],
@@ -749,12 +774,14 @@ class _ShiftRowMobile extends StatelessWidget {
   /// Orario di fine della fascia precedente (se esiste).
   /// Usato per impostare il minimo dell'orario di inizio.
   final TimeOfDay? previousShiftEndTime;
+  final int displayStepMinutes;
 
   const _ShiftRowMobile({
     required this.shift,
     required this.onChanged,
     required this.onRemove,
     this.previousShiftEndTime,
+    this.displayStepMinutes = LayoutConfig.minutesPerSlotConst,
   });
 
   @override
@@ -771,6 +798,7 @@ class _ShiftRowMobile extends StatelessWidget {
           value: shift.startTime,
           minTime: previousShiftEndTime,
           onChanged: (time) => onChanged(shift.copyWith(startTime: time)),
+          displayStepMinutes: displayStepMinutes,
         ),
         const SizedBox(width: 8),
 
@@ -788,6 +816,7 @@ class _ShiftRowMobile extends StatelessWidget {
           value: shift.endTime,
           minTime: shift.startTime,
           onChanged: (time) => onChanged(shift.copyWith(endTime: time)),
+          displayStepMinutes: displayStepMinutes,
         ),
         const SizedBox(width: 8),
 
@@ -821,6 +850,7 @@ class _ShiftRow extends StatelessWidget {
   /// Orario di fine della fascia precedente (se esiste).
   /// Usato per impostare il minimo dell'orario di inizio.
   final TimeOfDay? previousShiftEndTime;
+  final int displayStepMinutes;
 
   const _ShiftRow({
     required this.shift,
@@ -829,6 +859,7 @@ class _ShiftRow extends StatelessWidget {
     required this.onRemove,
     this.showAddButton = false,
     this.previousShiftEndTime,
+    this.displayStepMinutes = LayoutConfig.minutesPerSlotConst,
   });
 
   @override
@@ -846,6 +877,7 @@ class _ShiftRow extends StatelessWidget {
             value: shift.startTime,
             minTime: previousShiftEndTime,
             onChanged: (time) => onChanged(shift.copyWith(startTime: time)),
+            displayStepMinutes: displayStepMinutes,
           ),
         ),
         const SizedBox(width: 8),
@@ -865,6 +897,7 @@ class _ShiftRow extends StatelessWidget {
             value: shift.endTime,
             minTime: shift.startTime,
             onChanged: (time) => onChanged(shift.copyWith(endTime: time)),
+            displayStepMinutes: displayStepMinutes,
           ),
         ),
         const SizedBox(width: 4),
@@ -923,6 +956,9 @@ class _TimeDropdown extends StatelessWidget {
   /// Orario minimo selezionabile (incluso). Se null, parte da 00:00.
   final TimeOfDay? minTime;
 
+  /// Passo in minuti per generare le opzioni del picker.
+  final int displayStepMinutes;
+
   /// Larghezza del dropdown (formato HH:MM + padding + icona)
   static const double dropdownWidth = 100.0;
 
@@ -930,22 +966,30 @@ class _TimeDropdown extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.minTime,
+    this.displayStepMinutes = LayoutConfig.minutesPerSlotConst,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Genera opzioni con incremento pari a minutesPerSlotConst
+    // Genera opzioni con incremento pari a displayStepMinutes
     final allOptions = <TimeOfDay>[];
     for (int hour = 0; hour < 24; hour++) {
-      for (
-        int minute = 0;
-        minute < 60;
-        minute += LayoutConfig.minutesPerSlotConst
-      ) {
+      for (int minute = 0; minute < 60; minute += displayStepMinutes) {
         allOptions.add(TimeOfDay(hour: hour, minute: minute));
       }
+    }
+
+    // Preserva il valore corrente anche se fuori passo (es. 09:30 con step 60)
+    final valueMinutes = value.hour * 60 + value.minute;
+    final alreadyPresent = allOptions.any(
+      (t) => t.hour * 60 + t.minute == valueMinutes,
+    );
+    if (!alreadyPresent) {
+      allOptions.add(value);
+      allOptions.sort((a, b) =>
+          (a.hour * 60 + a.minute).compareTo(b.hour * 60 + b.minute));
     }
 
     // Filtra le opzioni in base a minTime
@@ -1119,6 +1163,88 @@ class _TimeOptionsListState extends State<_TimeOptionsList> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Stepper per il passo di visualizzazione orari (solo UI, non persiste).
+/// Valori disponibili: 5, 10, 15, 20, 30, 60 minuti.
+class _StepSelector extends StatelessWidget {
+  static const _steps = [5, 10, 15, 20, 30, 60];
+
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  const _StepSelector({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final idx = _steps.indexOf(value).clamp(0, _steps.length - 1);
+    final canDecrease = idx > 0;
+    final canIncrease = idx < _steps.length - 1;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Intervallo:',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: canDecrease ? () => onChanged(_steps[idx - 1]) : null,
+          icon: const Icon(Icons.remove),
+          iconSize: 18,
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          style: ButtonStyle(
+            backgroundColor: WidgetStateProperty.all(Colors.transparent),
+            shape: WidgetStateProperty.all(const CircleBorder()),
+            side: WidgetStateProperty.resolveWith((states) {
+              final alpha =
+                  states.contains(WidgetState.disabled) ? 0.2 : 0.4;
+              return BorderSide(
+                color: theme.colorScheme.outline.withValues(alpha: alpha),
+                width: 1,
+              );
+            }),
+          ),
+        ),
+        SizedBox(
+          width: 52,
+          child: Text(
+            '${value}min',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: canIncrease ? () => onChanged(_steps[idx + 1]) : null,
+          icon: const Icon(Icons.add),
+          iconSize: 18,
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          style: ButtonStyle(
+            backgroundColor: WidgetStateProperty.all(Colors.transparent),
+            shape: WidgetStateProperty.all(const CircleBorder()),
+            side: WidgetStateProperty.resolveWith((states) {
+              final alpha =
+                  states.contains(WidgetState.disabled) ? 0.2 : 0.4;
+              return BorderSide(
+                color: theme.colorScheme.outline.withValues(alpha: alpha),
+                width: 1,
+              );
+            }),
+          ),
+        ),
+      ],
     );
   }
 }
