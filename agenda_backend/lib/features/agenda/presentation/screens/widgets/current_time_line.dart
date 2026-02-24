@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/tenant_time_provider.dart';
 
 /// 🔹 Linea rossa che indica l'orario corrente.
 /// - visibile solo sulla data odierna
@@ -57,7 +58,7 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   }
 
   void _scheduleMinuteSync() {
-    final now = DateTime.now();
+    final now = ref.read(tenantNowProvider);
     final msToNextMinute = 60000 - (now.second * 1000 + now.millisecond);
     _minuteTimer = Timer(Duration(milliseconds: msToNextMinute), () {
       _updateLine();
@@ -69,7 +70,7 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   }
 
   void _updateLine({LayoutConfig? configOverride}) {
-    final now = DateTime.now();
+    final now = ref.read(tenantNowProvider);
     final minutesSinceMidnight = now.hour * 60 + now.minute;
     final LayoutConfig config =
         configOverride ?? ref.read(layoutConfigProvider);
@@ -96,7 +97,7 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   @override
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(agendaDateProvider);
-    final today = DateUtils.dateOnly(DateTime.now());
+    final today = ref.watch(tenantTodayProvider);
     final isToday = DateUtils.isSameDay(selectedDate, today);
     if (!isToday) {
       return const SizedBox.shrink();

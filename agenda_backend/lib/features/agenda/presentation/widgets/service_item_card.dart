@@ -14,6 +14,7 @@ import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../domain/config/layout_config.dart';
 import '../../domain/service_item_data.dart';
+import '../../providers/tenant_time_provider.dart';
 import 'service_picker_field.dart';
 
 String _formatExtraDuration(int minutes) {
@@ -648,6 +649,11 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
 
   void _showStartTimePicker(BuildContext context) async {
     final l10n = context.l10n;
+    final tenantNow = ref.read(tenantNowProvider);
+    final nowOverride = TimeOfDay(
+      hour: tenantNow.hour,
+      minute: tenantNow.minute,
+    );
 
     if (formFactor != AppFormFactor.desktop) {
       final picked = await AppBottomSheet.show<TimeOfDay>(
@@ -659,6 +665,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
           includeTime: suggestedStartTime,
           stepMinutes: _startTimeStepMinutes,
           title: l10n.blockStartTime,
+          nowOverride: nowOverride,
         ),
       );
 
@@ -683,6 +690,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
                 stepMinutes: _startTimeStepMinutes,
                 title: l10n.blockStartTime,
                 useSafeArea: false,
+                nowOverride: nowOverride,
               ),
             ),
           ),
@@ -703,9 +711,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
     final maxMinutesAvailable = (24 * 60) - startMinutes;
 
     // Durate selezionabili da 5 minuti a 6 ore con step fisso di 5 minuti.
-    final allDurations = <int>[
-      for (int m = 5; m <= 360; m += 5) m,
-    ];
+    final allDurations = <int>[for (int m = 5; m <= 360; m += 5) m];
     final durations = allDurations
         .where((d) => d <= maxMinutesAvailable)
         .toList();
@@ -1047,9 +1053,7 @@ class _ExtraTimeCardState extends State<ExtraTimeCard> {
     final maxMinutesAvailable = (24 * 60) - startMinutes;
 
     // Durate selezionabili da 5 minuti a 6 ore con step fisso di 5 minuti.
-    final allDurations = <int>[
-      for (int m = 5; m <= 360; m += 5) m,
-    ];
+    final allDurations = <int>[for (int m = 5; m <= 360; m += 5) m];
     final durations = allDurations
         .where((d) => d <= maxMinutesAvailable)
         .toList();
@@ -1198,6 +1202,7 @@ class _TimeGridPicker extends StatefulWidget {
     this.includeTime,
     required this.stepMinutes,
     required this.title,
+    this.nowOverride,
     this.useSafeArea = true,
   });
 
@@ -1205,6 +1210,7 @@ class _TimeGridPicker extends StatefulWidget {
   final TimeOfDay? includeTime;
   final int stepMinutes;
   final String title;
+  final TimeOfDay? nowOverride;
   final bool useSafeArea;
 
   @override
@@ -1256,7 +1262,7 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
     }
 
     // Altrimenti usa l'orario attuale arrotondato al prossimo step
-    final now = TimeOfDay.now();
+    final now = widget.nowOverride ?? TimeOfDay.now();
     final totalMinutes = now.hour * 60 + now.minute;
     final roundedMinutes =
         ((totalMinutes + widget.stepMinutes - 1) ~/ widget.stepMinutes) *

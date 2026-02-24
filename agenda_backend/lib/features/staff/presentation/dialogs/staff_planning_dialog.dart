@@ -6,6 +6,7 @@ import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
 import 'package:agenda_backend/core/widgets/labeled_form_field.dart';
+import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -86,7 +87,7 @@ class _StaffPlanningDialogState extends ConsumerState<_StaffPlanningDialog> {
       _isOpenEnded = widget.initial!.validTo == null;
     } else {
       _type = StaffPlanningType.weekly;
-      _validFrom = DateTime.now();
+      _validFrom = ref.read(tenantTodayProvider);
       _validTo = null;
       _isOpenEnded = true;
     }
@@ -155,7 +156,7 @@ class _StaffPlanningDialogState extends ConsumerState<_StaffPlanningDialog> {
         validFrom: _validFrom,
         validTo: _isOpenEnded ? null : _validTo,
         templates: templates,
-        createdAt: widget.initial?.createdAt ?? DateTime.now(),
+        createdAt: widget.initial?.createdAt ?? ref.read(tenantNowProvider),
       );
 
       if (widget.isEditing) {

@@ -6,7 +6,9 @@ import 'package:uuid/uuid.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/booking_item.dart';
 import '/core/network/network_providers.dart';
+import '/core/services/tenant_time_service.dart';
 import '/core/widgets/feedback_dialog.dart';
+import '../../providers/locations_provider.dart';
 import '../../providers/my_bookings_provider.dart';
 
 /// Dialog per riprogrammare una prenotazione esistente
@@ -29,17 +31,6 @@ class _RescheduleBookingDialogState
   bool _isSubmitting = false;
   String? _error;
   final _notesController = TextEditingController();
-
-  /// Parse una stringa ISO8601 estraendo solo l'orario,
-  /// ignorando il timezone offset. Mostra l'orario della location,
-  /// non convertito al timezone dell'utente.
-  static DateTime _parseAsLocationTime(String isoString) {
-    // Rimuovi offset timezone: "2026-01-10T10:00:00+01:00" -> "2026-01-10T10:00:00"
-    final withoutOffset = isoString.replaceAll(RegExp(r'[+-]\d{2}:\d{2}$'), '');
-    // Rimuovi anche eventuale 'Z' per UTC
-    final cleaned = withoutOffset.replaceAll('Z', '');
-    return DateTime.parse(cleaned);
-  }
 
   @override
   void initState() {
@@ -106,14 +97,15 @@ class _RescheduleBookingDialogState
           date.year == original.year &&
           date.month == original.month &&
           date.day == original.day;
-      final originalTimeSlot =
-          isSameDayAsOriginal ? DateFormat('HH:mm').format(original) : null;
+      final originalTimeSlot = isSameDayAsOriginal
+          ? DateFormat('HH:mm').format(original)
+          : null;
       setState(() {
         _availableSlots = slots
             .map((slot) {
               final startTime = slot['start_time'] as String;
               // Estrai orario ignorando timezone (orario della location, non locale utente)
-              final dt = _parseAsLocationTime(startTime);
+              final dt = TenantTimeService.parseAsLocationTime(startTime);
               return DateFormat('HH:mm').format(dt);
             })
             // Non mostrare lo stesso identico orario (data+ora) della prenotazione originale
@@ -133,7 +125,7 @@ class _RescheduleBookingDialogState
   }
 
   Future<void> _selectDate() async {
-    final now = DateTime.now();
+    final now = ref.read(locationNowProvider);
     final firstDate = now;
     final lastDate = now.add(const Duration(days: 90));
 
@@ -208,12 +200,11 @@ class _RescheduleBookingDialogState
       } else {
         final bookingsState = ref.read(myBookingsProvider);
         // Messaggio specifico per conflitto slot (spec C6)
-        final errorMessage =
-            bookingsState.errorCode == 'slot_conflict'
-                ? context.l10n.slotNoLongerAvailable
-                : bookingsState.errorCode == 'not_modifiable'
-                    ? context.l10n.bookingErrorNotModifiable
-                    : (bookingsState.error ?? context.l10n.errorGeneric);
+        final errorMessage = bookingsState.errorCode == 'slot_conflict'
+            ? context.l10n.slotNoLongerAvailable
+            : bookingsState.errorCode == 'not_modifiable'
+            ? context.l10n.bookingErrorNotModifiable
+            : (bookingsState.error ?? context.l10n.errorGeneric);
         await FeedbackDialog.showError(
           context,
           title: context.l10n.errorTitle,
@@ -315,8 +306,9 @@ class _RescheduleBookingDialogState
       ),
       actions: [
         TextButton(
-          onPressed:
-              _isSubmitting ? null : () => Navigator.of(context).pop(false),
+          onPressed: _isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(false),
           child: Text(context.l10n.actionCancel),
         ),
         FilledButton(

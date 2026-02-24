@@ -1,6 +1,7 @@
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart';
 import 'package:agenda_backend/features/staff/presentation/dialogs/staff_planning_dialog.dart';
+import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +33,7 @@ class StaffPlanningSelector extends ConsumerWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final dateFormat = DateFormat.yMd(Intl.getCurrentLocale());
+    final tenantNow = ref.watch(tenantNowProvider);
 
     // Trova il planning selezionato
     final selectedPlanning = selectedPlanningId != null
@@ -40,9 +42,8 @@ class StaffPlanningSelector extends ConsumerWidget {
 
     // Determina lo stato del planning (attivo, futuro, passato)
     String getPlanningStatus(StaffPlanning p) {
-      final today = DateTime.now();
-      if (p.isValidForDate(today)) return l10n.planningActive;
-      if (p.validFrom.isAfter(today)) return l10n.planningFuture;
+      if (p.isValidForDate(tenantNow)) return l10n.planningActive;
+      if (p.validFrom.isAfter(tenantNow)) return l10n.planningFuture;
       return l10n.planningPast;
     }
 
@@ -118,7 +119,7 @@ class StaffPlanningSelector extends ConsumerWidget {
                             Text(
                               getPlanningStatus(p),
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: p.isValidForDate(DateTime.now())
+                                color: p.isValidForDate(tenantNow)
                                     ? theme.colorScheme.primary
                                     : theme.colorScheme.outline,
                               ),
@@ -224,24 +225,24 @@ class StaffPlanningSelector extends ConsumerWidget {
 }
 
 /// Toggle per selezionare settimana A o B in un planning biweekly
-class _WeekLabelToggle extends StatefulWidget {
+class _WeekLabelToggle extends ConsumerStatefulWidget {
   const _WeekLabelToggle({required this.planning, required this.onChanged});
 
   final StaffPlanning planning;
   final ValueChanged<WeekLabel> onChanged;
 
   @override
-  State<_WeekLabelToggle> createState() => _WeekLabelToggleState();
+  ConsumerState<_WeekLabelToggle> createState() => _WeekLabelToggleState();
 }
 
-class _WeekLabelToggleState extends State<_WeekLabelToggle> {
+class _WeekLabelToggleState extends ConsumerState<_WeekLabelToggle> {
   late WeekLabel _currentLabel;
 
   @override
   void initState() {
     super.initState();
     // Calcola la settimana corrente
-    _currentLabel = widget.planning.computeWeekLabel(DateTime.now());
+    _currentLabel = widget.planning.computeWeekLabel(ref.read(tenantNowProvider));
   }
 
   @override

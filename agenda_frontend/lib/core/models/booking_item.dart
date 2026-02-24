@@ -17,6 +17,7 @@ class BookingItem {
   final String? notes;
   final bool canModify;
   final DateTime? canModifyUntil;
+
   /// Raw API string for `can_modify_until` (ISO8601). Useful to display the
   /// location time without device timezone conversion.
   final String? canModifyUntilRaw;
@@ -112,8 +113,8 @@ class BookingItem {
   /// Stringa formattata dei servizi
   String get servicesDisplay => serviceNames.join(' + ');
 
-  bool get isPast => endTime.isBefore(DateTime.now());
-  bool get isUpcoming => !isPast;
+  bool isPastAt(DateTime referenceNow) => endTime.isBefore(referenceNow);
+  bool isUpcomingAt(DateTime referenceNow) => !isPastAt(referenceNow);
   bool get isCancelled => status == 'cancelled';
 
   bool get isModifiableStatus =>

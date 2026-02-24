@@ -19,6 +19,7 @@ import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/weekly_schedule_editor.dart';
+import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -134,7 +135,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
   /// - Se esiste un planning attivo con validTo → validTo + 1 giorno
   /// - Altrimenti → data attuale
   DateTime _calculateDefaultStartDate() {
-    final today = DateTime.now();
+    final today = ref.read(tenantTodayProvider);
 
     // Cerca il planning attivo (che include oggi) con validTo definita
     for (final p in widget.existingPlannings) {
@@ -203,7 +204,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
   }
 
   Future<void> _pickDate({required bool isStart}) async {
-    final initial = isStart ? _validFrom : (_validTo ?? DateTime.now());
+    final initial = isStart ? _validFrom : (_validTo ?? ref.read(tenantTodayProvider));
     final first = isStart ? DateTime(2020) : _validFrom;
     final last = DateTime(2030);
 
@@ -289,7 +290,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
         validFrom: _validFrom,
         validTo: _isOpenEnded ? null : _validTo,
         templates: templates,
-        createdAt: widget.planning?.createdAt ?? DateTime.now(),
+        createdAt: widget.planning?.createdAt ?? ref.read(tenantNowProvider),
       );
 
       if (widget.isEditing) {

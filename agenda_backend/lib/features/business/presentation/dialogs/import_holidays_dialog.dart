@@ -6,6 +6,7 @@ import '/core/l10n/l10_extension.dart';
 import '/core/models/location.dart';
 import '/core/models/location_closure.dart';
 import '/core/widgets/app_buttons.dart';
+import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/business/domain/public_holidays.dart';
 import '/features/business/providers/location_closures_provider.dart';
 
@@ -51,7 +52,7 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedYear = DateTime.now().year;
+    _selectedYear = ref.read(tenantTodayProvider).year;
 
     // Seleziona tutte le location di default
     _selectedLocationIds.addAll(widget.locations.map((l) => l.id));
@@ -145,6 +146,7 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final currentYear = ref.watch(tenantTodayProvider).year;
 
     if (_holidaysProvider == null) {
       return AlertDialog(
@@ -177,12 +179,12 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
                 const SizedBox(width: 16),
                 // Chip per anno corrente
                 ChoiceChip(
-                  label: Text('${DateTime.now().year}'),
-                  selected: _selectedYear == DateTime.now().year,
+                  label: Text('$currentYear'),
+                  selected: _selectedYear == currentYear,
                   onSelected: (selected) {
                     if (selected) {
                       setState(() {
-                        _selectedYear = DateTime.now().year;
+                        _selectedYear = currentYear;
                         _loadHolidays();
                       });
                     }
@@ -191,12 +193,12 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
                 const SizedBox(width: 8),
                 // Chip per anno successivo
                 ChoiceChip(
-                  label: Text('${DateTime.now().year + 1}'),
-                  selected: _selectedYear == DateTime.now().year + 1,
+                  label: Text('${currentYear + 1}'),
+                  selected: _selectedYear == currentYear + 1,
                   onSelected: (selected) {
                     if (selected) {
                       setState(() {
-                        _selectedYear = DateTime.now().year + 1;
+                        _selectedYear = currentYear + 1;
                         _loadHolidays();
                       });
                     }
@@ -205,12 +207,12 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
                 const SizedBox(width: 8),
                 // Chip per anno +2
                 ChoiceChip(
-                  label: Text('${DateTime.now().year + 2}'),
-                  selected: _selectedYear == DateTime.now().year + 2,
+                  label: Text('${currentYear + 2}'),
+                  selected: _selectedYear == currentYear + 2,
                   onSelected: (selected) {
                     if (selected) {
                       setState(() {
-                        _selectedYear = DateTime.now().year + 2;
+                        _selectedYear = currentYear + 2;
                         _loadHolidays();
                       });
                     }

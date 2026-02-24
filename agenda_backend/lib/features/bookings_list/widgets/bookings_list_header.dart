@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '/app/providers/form_factor_provider.dart';
 import '/app/widgets/agenda_control_components.dart';
 import '/core/l10n/l10_extension.dart';
+import '/features/agenda/providers/tenant_time_provider.dart';
 import '../providers/bookings_list_filter_provider.dart';
 
 /// Header widget for BookingsList screen with period controls only (title and refresh are in AppBar).
@@ -55,7 +56,7 @@ class BookingsListHeader extends ConsumerWidget {
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: ref.read(tenantNowProvider).add(const Duration(days: 365)),
       initialDateRange: DateTimeRange(
         start: filterState.startDate,
         end: filterState.endDate,

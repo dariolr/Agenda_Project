@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../agenda/providers/tenant_time_provider.dart';
 
 /// State class for bookings list filter (date range and preset).
 class BookingsListFilterState {
@@ -43,7 +44,7 @@ class BookingsListFilterState {
 class BookingsListFilterNotifier extends Notifier<BookingsListFilterState> {
   @override
   BookingsListFilterState build() {
-    final today = DateUtils.dateOnly(DateTime.now());
+    final today = ref.watch(tenantTodayProvider);
     return BookingsListFilterState(
       startDate: today,
       endDate: today,
@@ -64,8 +65,8 @@ class BookingsListFilterNotifier extends Notifier<BookingsListFilterState> {
   }
 
   void applyPreset(String preset) {
-    final now = DateTime.now();
-    final today = DateUtils.dateOnly(now);
+    final now = ref.read(tenantNowProvider);
+    final today = ref.read(tenantTodayProvider);
 
     DateTime startDate;
     DateTime endDate;

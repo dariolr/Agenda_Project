@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/staff.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/tenant_time_provider.dart';
 
 class AgendaDayController {
   _AgendaDayState? _state;
@@ -224,7 +225,7 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
   }
 
   double _timelineOffsetForToday(LayoutConfig layoutConfig) {
-    final now = DateTime.now();
+    final now = ref.read(tenantNowProvider);
     final minutes = now.hour * 60 + now.minute;
     return (minutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
   }

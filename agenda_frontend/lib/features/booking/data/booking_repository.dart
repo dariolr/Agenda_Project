@@ -189,16 +189,21 @@ class BookingRepository {
     required int locationId,
     required List<int> serviceIds,
     int? staffId,
+    DateTime? now,
   }) async {
+    final effectiveNow = now ?? DateTime.now();
     if (serviceIds.isEmpty) {
-      return DateTime.now().add(const Duration(days: 1));
+      return effectiveNow.add(const Duration(days: 1));
     }
 
-    final now = DateTime.now();
-    var checkDate = DateTime(now.year, now.month, now.day);
+    var checkDate = DateTime(
+      effectiveNow.year,
+      effectiveNow.month,
+      effectiveNow.day,
+    );
 
     // Se oggi è già tardi, inizia da domani
-    if (now.hour >= 18) {
+    if (effectiveNow.hour >= 18) {
       checkDate = checkDate.add(const Duration(days: 1));
     }
 
@@ -222,7 +227,11 @@ class BookingRepository {
     }
 
     // Fallback: domani
-    return DateTime(now.year, now.month, now.day + 1);
+    return DateTime(
+      effectiveNow.year,
+      effectiveNow.month,
+      effectiveNow.day + 1,
+    );
   }
 
   /// POST /v1/locations/{location_id}/bookings
@@ -258,5 +267,4 @@ class BookingRepository {
 
   /// Genera un nuovo idempotency key (UUID v4)
   String generateIdempotencyKey() => _uuid.v4();
-
 }

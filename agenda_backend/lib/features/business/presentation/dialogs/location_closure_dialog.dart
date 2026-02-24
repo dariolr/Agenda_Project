@@ -7,6 +7,7 @@ import '/core/models/location_closure.dart';
 import '/core/widgets/app_buttons.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/location_providers.dart';
+import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/business/providers/location_closures_provider.dart';
 
 /// Dialog per creare o modificare una chiusura (multi-location)
@@ -41,11 +42,9 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _startDate =
-        widget.closure?.startDate ?? DateTime(now.year, now.month, now.day);
-    _endDate =
-        widget.closure?.endDate ?? DateTime(now.year, now.month, now.day);
+    final today = ref.read(tenantTodayProvider);
+    _startDate = widget.closure?.startDate ?? today;
+    _endDate = widget.closure?.endDate ?? today;
     _reasonController = TextEditingController(
       text: widget.closure?.reason ?? '',
     );
@@ -64,8 +63,8 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
   Future<void> _selectStartDate() async {
     final picked = await _showAutoCloseDatePicker(
       initialDate: _startDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
+      firstDate: ref.read(tenantNowProvider).subtract(const Duration(days: 365)),
+      lastDate: ref.read(tenantNowProvider).add(const Duration(days: 365 * 3)),
     );
     if (picked != null && mounted) {
       setState(() {
@@ -82,7 +81,7 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
     final picked = await _showAutoCloseDatePicker(
       initialDate: _endDate.isBefore(_startDate) ? _startDate : _endDate,
       firstDate: _startDate,
-      lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
+      lastDate: ref.read(tenantNowProvider).add(const Duration(days: 365 * 3)),
     );
     if (picked != null && mounted) {
       setState(() {

@@ -1,3 +1,5 @@
+import '../services/tenant_time_service.dart';
+
 /// Slot temporale disponibile per la prenotazione
 class TimeSlot {
   final DateTime startTime;
@@ -34,22 +36,10 @@ class TimeSlot {
     final endStr = json['end_time'] as String;
 
     return TimeSlot(
-      startTime: _parseAsLocalTime(startStr),
-      endTime: _parseAsLocalTime(endStr),
+      startTime: TenantTimeService.parseAsLocationTime(startStr),
+      endTime: TenantTimeService.parseAsLocationTime(endStr),
       staffId: json['staff_id'] as int?,
     );
-  }
-
-  /// Parse una stringa ISO8601 estraendo solo l'orario locale,
-  /// ignorando il timezone offset. Questo mantiene l'orario
-  /// come visualizzato nel business.
-  static DateTime _parseAsLocalTime(String isoString) {
-    // Rimuovi l'offset timezone dalla stringa
-    // Es: "2026-01-10T10:00:00+07:00" -> "2026-01-10T10:00:00"
-    final withoutOffset = isoString.replaceAll(RegExp(r'[+-]\d{2}:\d{2}$'), '');
-    // Rimuovi anche eventuale 'Z' per UTC
-    final cleaned = withoutOffset.replaceAll('Z', '');
-    return DateTime.parse(cleaned);
   }
 
   Map<String, dynamic> toJson() => {

@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../agenda/providers/tenant_time_provider.dart';
 
 /// State for Closures screen filters
 class ClosuresFilterState {
@@ -29,7 +30,7 @@ class ClosuresFilterState {
 class ClosuresFilterNotifier extends Notifier<ClosuresFilterState> {
   @override
   ClosuresFilterState build() {
-    final today = DateUtils.dateOnly(DateTime.now());
+    final today = ref.watch(tenantTodayProvider);
     // Default: "A partire da oggi" - from today to far future
     return ClosuresFilterState(
       startDate: today,
@@ -47,8 +48,8 @@ class ClosuresFilterNotifier extends Notifier<ClosuresFilterState> {
   }
 
   void applyPreset(String preset) {
-    final now = DateTime.now();
-    final today = DateUtils.dateOnly(now);
+    final now = ref.read(tenantNowProvider);
+    final today = ref.read(tenantTodayProvider);
 
     DateTime startDate;
     DateTime endDate;

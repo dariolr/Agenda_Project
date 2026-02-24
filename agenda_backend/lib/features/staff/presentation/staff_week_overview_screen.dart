@@ -20,6 +20,7 @@ import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:agenda_backend/features/staff/providers/staff_weekly_availability_provider.dart';
 import 'package:agenda_backend/features/staff/widgets/staff_top_controls.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -673,7 +674,7 @@ class _StaffWeekOverviewScreenState
 
     final weekLabel = buildWeekRangeLabel();
     final weekEnd = weekStart.add(const Duration(days: 6));
-    final todayDate = DateUtils.dateOnly(DateTime.now());
+    final todayDate = ref.read(tenantTodayProvider);
     //final isTodayInWeek =
     !todayDate.isBefore(weekStart) && !todayDate.isAfter(weekEnd);
     //final effectivePickerDate = isTodayInWeek ? todayDate : weekEnd;

@@ -7,8 +7,10 @@ import 'package:intl/intl.dart';
 import '/app/providers/form_factor_provider.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/booking_notification_item.dart';
+import '/core/services/tenant_time_service.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/location_providers.dart';
+import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/booking_notifications/providers/booking_notifications_provider.dart';
 
 class BookingNotificationsScreen extends ConsumerStatefulWidget {
@@ -47,7 +49,11 @@ class _BookingNotificationsScreenState
   String _formatDateTime(BuildContext context, DateTime? dateTime) {
     if (dateTime == null) return context.l10n.bookingNotificationsNotAvailable;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    return DateFormat('dd/MM/yyyy HH:mm', locale).format(dateTime.toLocal());
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final tenantDateTime = dateTime.isUtc
+        ? TenantTimeService.fromUtcToTenant(dateTime, timezone)
+        : TenantTimeService.assumeTenantLocal(dateTime, timezone);
+    return DateFormat('dd/MM/yyyy HH:mm', locale).format(tenantDateTime);
   }
 
   void _onScroll() {
@@ -278,7 +284,11 @@ class _BookingNotificationsScreenState
     return DataRow(
       cells: [
         DataCell(Text(_formatDateTime(context, item.createdAt))),
-        DataCell(Text(item.sentAt != null ? _formatDateTime(context, item.sentAt) : '')),
+        DataCell(
+          Text(
+            item.sentAt != null ? _formatDateTime(context, item.sentAt) : '',
+          ),
+        ),
         DataCell(
           SizedBox(
             width: 180,
@@ -515,19 +525,27 @@ class _FiltersBar extends StatelessWidget {
   }
 }
 
-class _NotificationCard extends StatelessWidget {
+class _NotificationCard extends ConsumerWidget {
   const _NotificationCard({required this.notification});
 
   final BookingNotificationItem notification;
 
-  String _formatDateTime(BuildContext context, DateTime? dateTime) {
+  String _formatDateTime(
+    WidgetRef ref,
+    BuildContext context,
+    DateTime? dateTime,
+  ) {
     if (dateTime == null) return context.l10n.bookingNotificationsNotAvailable;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    return DateFormat('dd/MM/yyyy HH:mm', locale).format(dateTime.toLocal());
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final tenantDateTime = dateTime.isUtc
+        ? TenantTimeService.fromUtcToTenant(dateTime, timezone)
+        : TenantTimeService.assumeTenantLocal(dateTime, timezone);
+    return DateFormat('dd/MM/yyyy HH:mm', locale).format(tenantDateTime);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
 
@@ -570,7 +588,7 @@ class _NotificationCard extends StatelessWidget {
               ),
             if (notification.firstStartTime != null)
               Text(
-                '${l10n.bookingNotificationsFieldAppointment}: ${_formatDateTime(context, notification.firstStartTime)}',
+                '${l10n.bookingNotificationsFieldAppointment}: ${_formatDateTime(ref, context, notification.firstStartTime)}',
                 style: theme.textTheme.bodyMedium,
               ),
             Text(
@@ -578,12 +596,12 @@ class _NotificationCard extends StatelessWidget {
               style: theme.textTheme.bodyMedium,
             ),
             Text(
-              '${l10n.bookingNotificationsFieldCreatedAt}: ${_formatDateTime(context, notification.createdAt)}',
+              '${l10n.bookingNotificationsFieldCreatedAt}: ${_formatDateTime(ref, context, notification.createdAt)}',
               style: theme.textTheme.bodySmall,
             ),
             if (notification.sentAt != null)
               Text(
-                '${l10n.bookingNotificationsFieldSentAt}: ${_formatDateTime(context, notification.sentAt)}',
+                '${l10n.bookingNotificationsFieldSentAt}: ${_formatDateTime(ref, context, notification.sentAt)}',
                 style: theme.textTheme.bodySmall,
               ),
             if ((notification.errorMessage ?? '').isNotEmpty)

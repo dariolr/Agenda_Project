@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'tenant_time_provider.dart';
+
 class AgendaDateNotifier extends Notifier<DateTime> {
   @override
   DateTime build() {
-    final initial = DateUtils.dateOnly(DateTime.now());
-    return initial;
+    return ref.watch(tenantTodayProvider);
   }
 
   void set(DateTime date) {
@@ -53,8 +54,7 @@ class AgendaDateNotifier extends Notifier<DateTime> {
   }
 
   void setToday() {
-    final today = DateUtils.dateOnly(DateTime.now());
-    state = today;
+    state = ref.read(tenantTodayProvider);
   }
 }
 

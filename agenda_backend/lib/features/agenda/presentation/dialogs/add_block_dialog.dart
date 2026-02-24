@@ -19,6 +19,7 @@ import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../auth/providers/current_business_user_provider.dart';
 import '../../domain/config/layout_config.dart';
 import '../../providers/date_range_provider.dart';
+import '../../providers/tenant_time_provider.dart';
 import '../../providers/time_blocks_provider.dart';
 import '../widgets/recurrence_picker.dart';
 
@@ -512,11 +513,12 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
   }
 
   Future<void> _pickDate() async {
+    final now = ref.read(tenantNowProvider);
     final picked = await showDatePicker(
       context: context,
       initialDate: _date,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now.add(const Duration(days: 365 * 2)),
     );
     if (picked != null) {
       setState(() => _date = DateUtils.dateOnly(picked));

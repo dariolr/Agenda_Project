@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../agenda/providers/tenant_time_provider.dart';
 
 /// State for Reports screen filters - shared between shell AppBar and ReportsScreen
 class ReportsFilterState {
@@ -33,7 +34,7 @@ class ReportsFilterState {
 class ReportsFilterNotifier extends Notifier<ReportsFilterState> {
   @override
   ReportsFilterState build() {
-    final today = DateUtils.dateOnly(DateTime.now());
+    final today = ref.watch(tenantTodayProvider);
     return ReportsFilterState(
       startDate: today,
       endDate: today,
@@ -59,8 +60,8 @@ class ReportsFilterNotifier extends Notifier<ReportsFilterState> {
   }
 
   void applyPreset(String preset) {
-    final now = DateTime.now();
-    final today = DateUtils.dateOnly(now);
+    final now = ref.read(tenantNowProvider);
+    final today = ref.read(tenantTodayProvider);
     final useFullPeriod = state.useFullPeriod;
 
     DateTime startDate;

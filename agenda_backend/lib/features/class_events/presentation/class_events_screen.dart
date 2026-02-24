@@ -10,11 +10,13 @@ import '/core/models/class_type.dart';
 import '/core/models/location.dart';
 import '/core/models/staff.dart';
 import '/core/network/api_client.dart';
+import '/core/services/tenant_time_service.dart';
 import '/core/widgets/app_bottom_sheet.dart';
 import '/core/widgets/app_buttons.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/date_range_provider.dart';
 import '/features/agenda/providers/location_providers.dart';
+import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/agenda/presentation/widgets/recurrence_picker.dart';
 import '/features/agenda/presentation/widgets/recurrence_preview.dart';
 import '/features/agenda/presentation/dialogs/recurrence_summary_dialog.dart';
@@ -177,10 +179,9 @@ class _ClassTypeCard extends ConsumerWidget {
     );
     final colorScheme = Theme.of(context).colorScheme;
     final locations = ref.watch(locationsProvider);
-    final businessContext = ref.watch(currentBusinessUserContextProvider).maybeWhen(
-          data: (ctx) => ctx,
-          orElse: () => null,
-        );
+    final businessContext = ref
+        .watch(currentBusinessUserContextProvider)
+        .maybeWhen(data: (ctx) => ctx, orElse: () => null);
     final locationNameById = {
       for (final location in locations) location.id: location.name,
     };
@@ -255,22 +256,28 @@ class _ClassTypeCard extends ConsumerWidget {
                     onPressed: isLoading
                         ? null
                         : () => showCreateClassEventDialog(
-                              context,
-                              ref,
-                              initialClassTypeId: classType.id,
-                            ),
+                            context,
+                            ref,
+                            initialClassTypeId: classType.id,
+                          ),
                     icon: const Icon(Icons.event_available_outlined),
                     label: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(l10n.classTypesActionScheduleClass),
                         switch ((upcomingCountAsync, allSchedulesAsync)) {
-                          (AsyncData<int> futureData, AsyncData<List<ClassEvent>> allData) =>
+                          (
+                            AsyncData<int> futureData,
+                            AsyncData<List<ClassEvent>> allData,
+                          ) =>
                             Builder(
                               builder: (_) {
                                 final futureCount = futureData.value;
                                 final expiredCount =
-                                    (allData.value.length - futureCount).clamp(0, 1 << 30);
+                                    (allData.value.length - futureCount).clamp(
+                                      0,
+                                      1 << 30,
+                                    );
                                 if (futureCount == 0 && expiredCount == 0) {
                                   return const SizedBox.shrink();
                                 }
@@ -284,14 +291,16 @@ class _ClassTypeCard extends ConsumerWidget {
                                           label: l10n.classEventsFutureBadge,
                                           count: futureCount,
                                           textColor: colorScheme.onPrimary,
-                                          backgroundColor: colorScheme.onPrimary.withOpacity(0.14),
+                                          backgroundColor: colorScheme.onPrimary
+                                              .withOpacity(0.14),
                                         ),
                                       if (expiredCount > 0)
                                         _ScheduleCountPill(
                                           label: l10n.classEventsExpiredBadge,
                                           count: expiredCount,
                                           textColor: colorScheme.onPrimary,
-                                          backgroundColor: colorScheme.onPrimary.withOpacity(0.22),
+                                          backgroundColor: colorScheme.onPrimary
+                                              .withOpacity(0.22),
                                         ),
                                     ],
                                   ),
@@ -308,10 +317,10 @@ class _ClassTypeCard extends ConsumerWidget {
                     onPressed: isLoading
                         ? null
                         : () => showCreateClassTypeDialog(
-                              context,
-                              ref,
-                              initial: classType,
-                            ),
+                            context,
+                            ref,
+                            initial: classType,
+                          ),
                     icon: const Icon(Icons.edit_outlined),
                     label: Text(l10n.actionEdit),
                   ),
@@ -358,12 +367,14 @@ class _ClassTypeCard extends ConsumerWidget {
         counter++;
       }
 
-      await ref.read(classTypeMutationControllerProvider.notifier).create(
-        name: candidateName,
-        description: source.description,
-        isActive: source.isActive,
-        locationIds: source.locationIds,
-      );
+      await ref
+          .read(classTypeMutationControllerProvider.notifier)
+          .create(
+            name: candidateName,
+            description: source.description,
+            isActive: source.isActive,
+            locationIds: source.locationIds,
+          );
       if (!context.mounted) return;
       await FeedbackDialog.showSuccess(
         context,
@@ -407,9 +418,9 @@ class _ClassTypeCard extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
 
     try {
-      await ref.read(classTypeMutationControllerProvider.notifier).deleteType(
-        classTypeId: classType.id,
-      );
+      await ref
+          .read(classTypeMutationControllerProvider.notifier)
+          .deleteType(classTypeId: classType.id);
       if (!context.mounted) return;
       await FeedbackDialog.showSuccess(
         context,
@@ -441,7 +452,9 @@ class _ClassTypeStatusChip extends StatelessWidget {
     final bg = isActive
         ? colorScheme.primaryContainer
         : colorScheme.surfaceContainerHighest;
-    final fg = isActive ? colorScheme.onPrimaryContainer : colorScheme.onSurface;
+    final fg = isActive
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -495,7 +508,8 @@ class _ClassTypeFormDialog extends ConsumerStatefulWidget {
   final ClassType? initial;
 
   @override
-  ConsumerState<_ClassTypeFormDialog> createState() => _ClassTypeFormDialogState();
+  ConsumerState<_ClassTypeFormDialog> createState() =>
+      _ClassTypeFormDialogState();
 }
 
 class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
@@ -533,10 +547,9 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final mutationState = ref.watch(classTypeMutationControllerProvider);
     final isLoading = mutationState.isLoading;
     final locations = ref.watch(locationsProvider);
-    final businessContext = ref.watch(currentBusinessUserContextProvider).maybeWhen(
-          data: (ctx) => ctx,
-          orElse: () => null,
-        );
+    final businessContext = ref
+        .watch(currentBusinessUserContextProvider)
+        .maybeWhen(data: (ctx) => ctx, orElse: () => null);
     final isLocationScopedOperator =
         businessContext != null &&
         !businessContext.isSuperadmin &&
@@ -546,13 +559,19 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
         : null;
     final visibleLocations = allowedLocationIds == null
         ? locations
-        : locations.where((location) => allowedLocationIds.contains(location.id)).toList();
-    final visibleLocationIds = visibleLocations.map((location) => location.id).toSet();
+        : locations
+              .where((location) => allowedLocationIds.contains(location.id))
+              .toList();
+    final visibleLocationIds = visibleLocations
+        .map((location) => location.id)
+        .toSet();
     final hasSingleVisibleLocation = visibleLocations.length == 1;
     final effectiveSelectedLocationIds = _selectedLocationIds
         .where(visibleLocationIds.contains)
         .toSet();
-    final allLocationsEnabled = isLocationScopedOperator ? false : _allLocations;
+    final allLocationsEnabled = isLocationScopedOperator
+        ? false
+        : _allLocations;
     final shouldShowLocationsSelector =
         !allLocationsEnabled && !hasSingleVisibleLocation;
 
@@ -640,7 +659,9 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   AppOutlinedActionButton(
-                    onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+                    onPressed: isLoading
+                        ? null
+                        : () => Navigator.of(context).pop(),
                     child: Text(l10n.actionCancel),
                   ),
                   const SizedBox(width: 8),
@@ -660,10 +681,9 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
 
   Future<void> _submit() async {
     final l10n = context.l10n;
-    final businessContext = ref.read(currentBusinessUserContextProvider).maybeWhen(
-          data: (ctx) => ctx,
-          orElse: () => null,
-        );
+    final businessContext = ref
+        .read(currentBusinessUserContextProvider)
+        .maybeWhen(data: (ctx) => ctx, orElse: () => null);
     final isLocationScopedOperator =
         businessContext != null &&
         !businessContext.isSuperadmin &&
@@ -674,15 +694,21 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final locations = ref.read(locationsProvider);
     final visibleLocations = allowedLocationIds == null
         ? locations
-        : locations.where((location) => allowedLocationIds.contains(location.id)).toList();
+        : locations
+              .where((location) => allowedLocationIds.contains(location.id))
+              .toList();
     final hasSingleVisibleLocation = visibleLocations.length == 1;
     final singleVisibleLocationId = hasSingleVisibleLocation
         ? visibleLocations.first.id
         : null;
     final effectiveSelectedLocationIds = _selectedLocationIds
-        .where((id) => allowedLocationIds == null || allowedLocationIds.contains(id))
+        .where(
+          (id) => allowedLocationIds == null || allowedLocationIds.contains(id),
+        )
         .toSet();
-    final allLocationsEnabled = isLocationScopedOperator ? false : _allLocations;
+    final allLocationsEnabled = isLocationScopedOperator
+        ? false
+        : _allLocations;
     final locationIdsForSubmit = allLocationsEnabled
         ? <int>[]
         : hasSingleVisibleLocation && singleVisibleLocationId != null
@@ -700,20 +726,24 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     }
     try {
       if (_isEdit) {
-        await ref.read(classTypeMutationControllerProvider.notifier).updateType(
-          classTypeId: widget.initial!.id,
-          name: _nameController.text,
-          description: _descriptionController.text,
-          isActive: _isActive,
-          locationIds: locationIdsForSubmit,
-        );
+        await ref
+            .read(classTypeMutationControllerProvider.notifier)
+            .updateType(
+              classTypeId: widget.initial!.id,
+              name: _nameController.text,
+              description: _descriptionController.text,
+              isActive: _isActive,
+              locationIds: locationIdsForSubmit,
+            );
       } else {
-        await ref.read(classTypeMutationControllerProvider.notifier).create(
-          name: _nameController.text,
-          description: _descriptionController.text,
-          isActive: _isActive,
-          locationIds: locationIdsForSubmit,
-        );
+        await ref
+            .read(classTypeMutationControllerProvider.notifier)
+            .create(
+              name: _nameController.text,
+              description: _descriptionController.text,
+              isActive: _isActive,
+              locationIds: locationIdsForSubmit,
+            );
       }
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -909,7 +939,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       classTypes: classTypes,
       selectedClassTypeId: _classTypeId,
     );
-    final staff = _staffForSelectedLocation(staffAsync.value ?? const <Staff>[]);
+    final staff = _staffForSelectedLocation(
+      staffAsync.value ?? const <Staff>[],
+    );
 
     if (classTypes.isNotEmpty && _classTypeId == null) {
       _classTypeId = classTypes.first.id;
@@ -925,8 +957,12 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final schedulesAsync = _classTypeId == null
         ? const AsyncValue<List<ClassEvent>>.data(<ClassEvent>[])
         : ref.watch(allClassEventsByTypeProvider(_classTypeId!));
-    final locationNameById = {for (final location in locations) location.id: location.name};
-    final staffNameById = {for (final member in allStaff) member.id: member.displayName};
+    final locationNameById = {
+      for (final location in locations) location.id: location.name,
+    };
+    final staffNameById = {
+      for (final member in allStaff) member.id: member.displayName,
+    };
     final dateFormat = DateFormat('dd/MM/yyyy');
     final timeFormat = DateFormat('HH:mm');
 
@@ -973,7 +1009,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
                     l10n.errorTitle,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ),
               Expanded(
@@ -989,7 +1027,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
-                      if (isFormMode && !isEditMode && filteredLocations.length > 1) ...[
+                      if (isFormMode &&
+                          !isEditMode &&
+                          filteredLocations.length > 1) ...[
                         const SizedBox(height: 12),
                         DropdownButtonFormField<int>(
                           value: _locationId,
@@ -1059,61 +1099,61 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                         ),
                       if (isFormMode)
                         Row(
-                        children: [
-                          Expanded(
-                            child: _PickerField(
-                              label: l10n.classEventsFieldDate,
-                              value: _formatDate(_date),
-                              icon: Icons.calendar_today_outlined,
-                              onTap: isLoading ? null : _pickDate,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _capacityController,
-                              keyboardType: TextInputType.number,
-                              enabled: !isLoading,
-                              decoration: InputDecoration(
-                                labelText: l10n.classEventsFieldCapacity,
-                                border: const OutlineInputBorder(),
+                          children: [
+                            Expanded(
+                              child: _PickerField(
+                                label: l10n.classEventsFieldDate,
+                                value: _formatDate(_date),
+                                icon: Icons.calendar_today_outlined,
+                                onTap: isLoading ? null : _pickDate,
                               ),
-                              validator: (value) {
-                                final parsed = int.tryParse(value ?? '');
-                                if (parsed == null || parsed <= 0) {
-                                  return l10n.classEventsValidationRequired;
-                                }
-                                return null;
-                              },
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _capacityController,
+                                keyboardType: TextInputType.number,
+                                enabled: !isLoading,
+                                decoration: InputDecoration(
+                                  labelText: l10n.classEventsFieldCapacity,
+                                  border: const OutlineInputBorder(),
+                                ),
+                                validator: (value) {
+                                  final parsed = int.tryParse(value ?? '');
+                                  if (parsed == null || parsed <= 0) {
+                                    return l10n.classEventsValidationRequired;
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                       if (isFormMode) const SizedBox(height: 12),
                       if (isFormMode)
                         Row(
-                        children: [
-                          Expanded(
-                            child: _ScheduleTimeField(
-                              label: l10n.classEventsFieldStartTime,
-                              time: _startTime,
-                              onTap: isLoading
-                                  ? null
-                                  : () => _pickTime(isStart: true),
+                          children: [
+                            Expanded(
+                              child: _ScheduleTimeField(
+                                label: l10n.classEventsFieldStartTime,
+                                time: _startTime,
+                                onTap: isLoading
+                                    ? null
+                                    : () => _pickTime(isStart: true),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _ScheduleTimeField(
-                              label: l10n.classEventsFieldEndTime,
-                              time: _endTime,
-                              onTap: isLoading
-                                  ? null
-                                  : () => _pickTime(isStart: false),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _ScheduleTimeField(
+                                label: l10n.classEventsFieldEndTime,
+                                time: _endTime,
+                                onTap: isLoading
+                                    ? null
+                                    : () => _pickTime(isStart: false),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                       if (isFormMode && !isEditMode) ...[
                         const SizedBox(height: 12),
                         RecurrencePicker(
@@ -1127,8 +1167,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                           title: l10n.classEventsRepeatSchedule,
                           conflictSkipDescription:
                               l10n.classEventsRecurrenceConflictSkipDescription,
-                          conflictForceDescription:
-                              l10n.classEventsRecurrenceConflictForceDescription,
+                          conflictForceDescription: l10n
+                              .classEventsRecurrenceConflictForceDescription,
                           initialConfig: _recurrenceConfig,
                           onChanged: (config) {
                             setState(() => _recurrenceConfig = config);
@@ -1156,15 +1196,22 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                         ),
                         const SizedBox(height: 8),
                         schedulesAsync.when(
-                          loading: () => const LinearProgressIndicator(minHeight: 2),
+                          loading: () =>
+                              const LinearProgressIndicator(minHeight: 2),
                           error: (_, __) => Text(
                             l10n.errorTitle,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
                                   color: Theme.of(context).colorScheme.error,
                                 ),
                           ),
                           data: (schedules) {
-                            final nowUtc = DateTime.now().toUtc();
+                            final timezone = ref.watch(
+                              effectiveTenantTimezoneProvider,
+                            );
+                            final nowUtc = TenantTimeService.nowInTimezone(
+                              timezone,
+                            ).toUtc();
                             final hasFuture = schedules.any(
                               (event) => event.endsAtUtc.isAfter(nowUtc),
                             );
@@ -1172,9 +1219,13 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                               (event) => !event.endsAtUtc.isAfter(nowUtc),
                             );
                             final shouldShowToggle = hasFuture && hasExpired;
-                            final displayedSchedules = shouldShowToggle && !_showExpiredSchedules
+                            final displayedSchedules =
+                                shouldShowToggle && !_showExpiredSchedules
                                 ? schedules
-                                      .where((event) => event.endsAtUtc.isAfter(nowUtc))
+                                      .where(
+                                        (event) =>
+                                            event.endsAtUtc.isAfter(nowUtc),
+                                      )
                                       .toList()
                                 : schedules;
 
@@ -1197,16 +1248,24 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                                     contentPadding: EdgeInsets.zero,
                                     title: Text(
                                       l10n.classEventsShowExpiredSchedules,
-                                      style: Theme.of(context).textTheme.bodySmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
                                     ),
                                     value: _showExpiredSchedules,
                                     onChanged: (value) {
-                                      setState(() => _showExpiredSchedules = value);
+                                      setState(
+                                        () => _showExpiredSchedules = value,
+                                      );
                                     },
                                   ),
                                 Container(
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: Theme.of(context).colorScheme.outline),
+                                    border: Border.all(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.outline,
+                                    ),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: SizedBox(
@@ -1214,105 +1273,149 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                                     child: ListView.separated(
                                       primary: false,
                                       itemCount: displayedSchedules.length,
-                                      separatorBuilder: (_, __) => const Divider(height: 1),
+                                      separatorBuilder: (_, __) =>
+                                          const Divider(height: 1),
                                       itemBuilder: (context, index) {
-                                        final schedule = displayedSchedules[index];
-                                    final startsAtLocal =
-                                        schedule.startsAtLocal ??
-                                        schedule.startsAtUtc.toLocal();
-                                    final endsAtLocal =
-                                        schedule.endsAtLocal ??
-                                        schedule.endsAtUtc.toLocal();
-                                    final locationName =
-                                        locationNameById[schedule.locationId] ?? '#${schedule.locationId}';
-                                    final staffName =
-                                        staffNameById[schedule.staffId] ?? '#${schedule.staffId}';
+                                        final schedule =
+                                            displayedSchedules[index];
+                                        final startsAtLocal =
+                                            schedule.startsAtLocal ??
+                                            TenantTimeService.fromUtcToTenant(
+                                              schedule.startsAtUtc,
+                                              timezone,
+                                            );
+                                        final endsAtLocal =
+                                            schedule.endsAtLocal ??
+                                            TenantTimeService.fromUtcToTenant(
+                                              schedule.endsAtUtc,
+                                              timezone,
+                                            );
+                                        final locationName =
+                                            locationNameById[schedule
+                                                .locationId] ??
+                                            '#${schedule.locationId}';
+                                        final staffName =
+                                            staffNameById[schedule.staffId] ??
+                                            '#${schedule.staffId}';
                                         return ListTile(
-                                      dense: true,
-                                      visualDensity: VisualDensity.compact,
-                                      onTap: () {
-                                        _preEditDraft ??= _captureCurrentDraft();
-                                        setState(() {
-                                          _showSchedulingForm = true;
-                                          _editingEvent = schedule;
-                                          _applyEventToForm(schedule);
-                                        });
-                                      },
-                                      leading: const Icon(Icons.event_note_outlined, size: 20),
-                                      title: Text(
-                                        '${dateFormat.format(startsAtLocal)} • '
-                                        '${timeFormat.format(startsAtLocal)} - ${timeFormat.format(endsAtLocal)}',
-                                      ),
-                                      subtitle: Text('$locationName • $staffName'),
-                                      trailing: IconButton(
-                                        tooltip: l10n.actionDelete,
-                                        icon: const Icon(Icons.delete_outline),
-                                        onPressed: () async {
-                                          final confirmed = await showDialog<bool>(
-                                            context: context,
-                                            builder: (ctx) => AlertDialog(
-                                              title: Text(
-                                                l10n.classEventsSchedulesDeleteConfirmTitle,
-                                              ),
-                                              content: Text(
-                                                l10n.classEventsSchedulesDeleteConfirmMessage,
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(ctx).pop(false),
-                                                  child: Text(l10n.actionCancel),
-                                                ),
-                                                FilledButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(ctx).pop(true),
-                                                  child: Text(l10n.actionDelete),
-                                                ),
-                                              ],
+                                          dense: true,
+                                          visualDensity: VisualDensity.compact,
+                                          onTap: () {
+                                            _preEditDraft ??=
+                                                _captureCurrentDraft();
+                                            setState(() {
+                                              _showSchedulingForm = true;
+                                              _editingEvent = schedule;
+                                              _applyEventToForm(schedule);
+                                            });
+                                          },
+                                          leading: const Icon(
+                                            Icons.event_note_outlined,
+                                            size: 20,
+                                          ),
+                                          title: Text(
+                                            '${dateFormat.format(startsAtLocal)} • '
+                                            '${timeFormat.format(startsAtLocal)} - ${timeFormat.format(endsAtLocal)}',
+                                          ),
+                                          subtitle: Text(
+                                            '$locationName • $staffName',
+                                          ),
+                                          trailing: IconButton(
+                                            tooltip: l10n.actionDelete,
+                                            icon: const Icon(
+                                              Icons.delete_outline,
                                             ),
-                                          );
-                                          if (confirmed != true || !context.mounted) return;
+                                            onPressed: () async {
+                                              final confirmed = await showDialog<bool>(
+                                                context: context,
+                                                builder: (ctx) => AlertDialog(
+                                                  title: Text(
+                                                    l10n.classEventsSchedulesDeleteConfirmTitle,
+                                                  ),
+                                                  content: Text(
+                                                    l10n.classEventsSchedulesDeleteConfirmMessage,
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.of(
+                                                            ctx,
+                                                          ).pop(false),
+                                                      child: Text(
+                                                        l10n.actionCancel,
+                                                      ),
+                                                    ),
+                                                    FilledButton(
+                                                      onPressed: () =>
+                                                          Navigator.of(
+                                                            ctx,
+                                                          ).pop(true),
+                                                      child: Text(
+                                                        l10n.actionDelete,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                              if (confirmed != true ||
+                                                  !context.mounted) {
+                                                return;
+                                              }
 
-                                          try {
-                                            final businessId = ref.read(currentBusinessIdProvider);
-                                            final repo = ref.read(classEventsRepositoryProvider);
-                                            await repo.deleteEvent(
-                                              businessId: businessId,
-                                              classEventId: schedule.id,
-                                            );
-                                            ref.invalidate(classEventsProvider);
-                                            if (_classTypeId != null) {
-                                              ref.invalidate(
-                                                allClassEventsByTypeProvider(_classTypeId!),
-                                              );
-                                              ref.invalidate(
-                                                upcomingClassEventsByTypeProvider(_classTypeId!),
-                                              );
-                                              ref.invalidate(
-                                                upcomingClassEventsCountByTypeProvider(_classTypeId!),
-                                              );
-                                            }
-                                            if (!context.mounted) return;
-                                            await FeedbackDialog.showSuccess(
-                                              context,
-                                              title: l10n.classEventsSchedulesDeleteSuccessTitle,
-                                              message:
-                                                  l10n.classEventsSchedulesDeleteSuccessMessage,
-                                            );
-                                          } catch (error) {
-                                            if (!context.mounted) return;
-                                            final message = error is ApiException
-                                                ? error.message
-                                                : l10n.classEventsCreateErrorMessage;
-                                            await FeedbackDialog.showError(
-                                              context,
-                                              title: l10n.errorTitle,
-                                              message: message,
-                                            );
-                                          }
-                                        },
-                                      ),
-                                    );
+                                              try {
+                                                final businessId = ref.read(
+                                                  currentBusinessIdProvider,
+                                                );
+                                                final repo = ref.read(
+                                                  classEventsRepositoryProvider,
+                                                );
+                                                await repo.deleteEvent(
+                                                  businessId: businessId,
+                                                  classEventId: schedule.id,
+                                                );
+                                                ref.invalidate(
+                                                  classEventsProvider,
+                                                );
+                                                if (_classTypeId != null) {
+                                                  ref.invalidate(
+                                                    allClassEventsByTypeProvider(
+                                                      _classTypeId!,
+                                                    ),
+                                                  );
+                                                  ref.invalidate(
+                                                    upcomingClassEventsByTypeProvider(
+                                                      _classTypeId!,
+                                                    ),
+                                                  );
+                                                  ref.invalidate(
+                                                    upcomingClassEventsCountByTypeProvider(
+                                                      _classTypeId!,
+                                                    ),
+                                                  );
+                                                }
+                                                if (!context.mounted) return;
+                                                await FeedbackDialog.showSuccess(
+                                                  context,
+                                                  title: l10n
+                                                      .classEventsSchedulesDeleteSuccessTitle,
+                                                  message: l10n
+                                                      .classEventsSchedulesDeleteSuccessMessage,
+                                                );
+                                              } catch (error) {
+                                                if (!context.mounted) return;
+                                                final message =
+                                                    error is ApiException
+                                                    ? error.message
+                                                    : l10n.classEventsCreateErrorMessage;
+                                                await FeedbackDialog.showError(
+                                                  context,
+                                                  title: l10n.errorTitle,
+                                                  message: message,
+                                                );
+                                              }
+                                            },
+                                          ),
+                                        );
                                       },
                                     ),
                                   ),
@@ -1337,7 +1440,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                             if (isEditMode) {
                               final upcomingCount = _readUpcomingCountSync();
                               setState(() {
-                                if (upcomingCount != 1 && _preEditDraft != null) {
+                                if (upcomingCount != 1 &&
+                                    _preEditDraft != null) {
                                   _restoreDraft(_preEditDraft!);
                                 }
                                 _editingEvent = null;
@@ -1352,13 +1456,16 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                             }
                             Navigator.of(context).pop();
                           },
-                    child: Text(isFormMode ? l10n.actionCancel : l10n.actionClose),
+                    child: Text(
+                      isFormMode ? l10n.actionCancel : l10n.actionClose,
+                    ),
                   ),
                   if (isFormMode) ...[
                     const SizedBox(width: 8),
                     AppAsyncFilledButton(
                       isLoading: isLoading,
-                      onPressed: _canSubmit(classTypes: classTypes, staff: staff)
+                      onPressed:
+                          _canSubmit(classTypes: classTypes, staff: staff)
                           ? _submit
                           : null,
                       child: Text(l10n.actionSave),
@@ -1388,7 +1495,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     return staff
         .where(
           (member) =>
-              member.locationIds.isEmpty || member.locationIds.contains(locationId),
+              member.locationIds.isEmpty ||
+              member.locationIds.contains(locationId),
         )
         .toList()
       ..sort((a, b) => a.displayName.compareTo(b.displayName));
@@ -1420,15 +1528,18 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       return locations;
     }
     final allowed = locationIds.toSet();
-    return locations.where((location) => allowed.contains(location.id)).toList();
+    return locations
+        .where((location) => allowed.contains(location.id))
+        .toList();
   }
 
   Future<void> _pickDate() async {
+    final now = ref.read(tenantNowProvider);
     final picked = await showDatePicker(
       context: context,
       initialDate: _date,
-      firstDate: DateTime.now().subtract(const Duration(days: 3650)),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      firstDate: now.subtract(const Duration(days: 3650)),
+      lastDate: now.add(const Duration(days: 3650)),
     );
     if (picked == null || !mounted) return;
     setState(() {
@@ -1441,7 +1552,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final l10n = context.l10n;
     final picked = await _showTimeSelection(
       initial: initial,
-      title: isStart ? l10n.classEventsFieldStartTime : l10n.classEventsFieldEndTime,
+      title: isStart
+          ? l10n.classEventsFieldStartTime
+          : l10n.classEventsFieldEndTime,
     );
     if (picked == null || !mounted) return;
     setState(() {
@@ -1543,7 +1656,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
             'capacity_total': capacity,
           },
         );
-        final refreshedDayEvents = await ref.refresh(classEventsProvider.future);
+        final refreshedDayEvents = await ref.refresh(
+          classEventsProvider.future,
+        );
         final refreshedUpcoming = await ref.refresh(
           upcomingClassEventsByTypeProvider(classTypeIdForRefresh).future,
         );
@@ -1554,9 +1669,13 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           upcomingClassEventsCountByTypeProvider(classTypeIdForRefresh).future,
         );
         if (refreshedCount != refreshedUpcoming.length ||
-            refreshedDayEvents.any((event) => event.classTypeId == classTypeIdForRefresh) ==
+            refreshedDayEvents.any(
+                  (event) => event.classTypeId == classTypeIdForRefresh,
+                ) ==
                 false) {
-          ref.invalidate(upcomingClassEventsCountByTypeProvider(classTypeIdForRefresh));
+          ref.invalidate(
+            upcomingClassEventsCountByTypeProvider(classTypeIdForRefresh),
+          );
         }
         if (!mounted) return;
         setState(() {
@@ -1574,14 +1693,16 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         );
         return;
       } else if (_recurrenceConfig == null) {
-        await ref.read(classEventCreateControllerProvider.notifier).create(
-          classTypeId: _classTypeId!,
-          startsAtIsoUtc: _toApiLocalDateTime(startLocal),
-          endsAtIsoUtc: _toApiLocalDateTime(endLocal),
-          locationId: _locationId!,
-          staffId: _staffId!,
-          capacityTotal: capacity,
-        );
+        await ref
+            .read(classEventCreateControllerProvider.notifier)
+            .create(
+              classTypeId: _classTypeId!,
+              startsAtIsoUtc: _toApiLocalDateTime(startLocal),
+              endsAtIsoUtc: _toApiLocalDateTime(endLocal),
+              locationId: _locationId!,
+              staffId: _staffId!,
+              capacityTotal: capacity,
+            );
         ref.invalidate(upcomingClassEventsByTypeProvider(_classTypeId!));
         ref.invalidate(allClassEventsByTypeProvider(_classTypeId!));
         ref.invalidate(upcomingClassEventsCountByTypeProvider(_classTypeId!));
@@ -1617,9 +1738,10 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   plannedIntervals: plannedIntervals,
                 );
                 if (!hasConflict) {
-                  plannedIntervals.add(
-                    (start: occurrenceStart, end: occurrenceEnd),
-                  );
+                  plannedIntervals.add((
+                    start: occurrenceStart,
+                    end: occurrenceEnd,
+                  ));
                 }
                 conflictByRecurrenceIndex[i + 1] = hasConflict;
                 return hasConflict;
@@ -1733,8 +1855,13 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   }
 
   void _applyEventToForm(ClassEvent event) {
-    final startsAtLocal = event.startsAtLocal ?? event.startsAtUtc.toLocal();
-    final endsAtLocal = event.endsAtLocal ?? event.endsAtUtc.toLocal();
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final startsAtLocal =
+        event.startsAtLocal ??
+        TenantTimeService.fromUtcToTenant(event.startsAtUtc, timezone);
+    final endsAtLocal =
+        event.endsAtLocal ??
+        TenantTimeService.fromUtcToTenant(event.endsAtUtc, timezone);
     _classTypeId = event.classTypeId;
     _locationId = event.locationId;
     _staffId = event.staffId;
@@ -1744,7 +1871,10 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       startsAtLocal.month,
       startsAtLocal.day,
     );
-    _startTime = TimeOfDay(hour: startsAtLocal.hour, minute: startsAtLocal.minute);
+    _startTime = TimeOfDay(
+      hour: startsAtLocal.hour,
+      minute: startsAtLocal.minute,
+    );
     _endTime = TimeOfDay(hour: endsAtLocal.hour, minute: endsAtLocal.minute);
     _recurrenceConfig = null;
   }
@@ -1807,11 +1937,14 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     }
 
     final fromLocal = recurrenceDates.first.subtract(const Duration(days: 1));
-    final toLocal = recurrenceDates.last.add(duration).add(const Duration(days: 1));
+    final toLocal = recurrenceDates.last
+        .add(duration)
+        .add(const Duration(days: 1));
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
     final events = await repo.listEvents(
       businessId: businessId,
-      fromUtc: fromLocal.toUtc(),
-      toUtc: toLocal.toUtc(),
+      fromUtc: TenantTimeService.tenantLocalToUtc(fromLocal, timezone),
+      toUtc: TenantTimeService.tenantLocalToUtc(toLocal, timezone),
     );
 
     return events.where((event) {
@@ -1826,8 +1959,15 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     required List<ClassEvent> existingEvents,
     required List<({DateTime start, DateTime end})> plannedIntervals,
   }) {
-    final occurrenceStartUtc = occurrenceStart.toUtc();
-    final occurrenceEndUtc = occurrenceEnd.toUtc();
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final occurrenceStartUtc = TenantTimeService.tenantLocalToUtc(
+      occurrenceStart,
+      timezone,
+    );
+    final occurrenceEndUtc = TenantTimeService.tenantLocalToUtc(
+      occurrenceEnd,
+      timezone,
+    );
 
     final conflictsExisting = existingEvents.any((event) {
       final eventStart = event.startsAtUtc.toUtc();
@@ -1838,13 +1978,18 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     if (conflictsExisting) return true;
 
     return plannedIntervals.any((interval) {
-      final intervalStartUtc = interval.start.toUtc();
-      final intervalEndUtc = interval.end.toUtc();
+      final intervalStartUtc = TenantTimeService.tenantLocalToUtc(
+        interval.start,
+        timezone,
+      );
+      final intervalEndUtc = TenantTimeService.tenantLocalToUtc(
+        interval.end,
+        timezone,
+      );
       return occurrenceStartUtc.isBefore(intervalEndUtc) &&
           intervalStartUtc.isBefore(occurrenceEndUtc);
     });
   }
-
 }
 
 class _CreateClassDraft {
@@ -1928,7 +2073,8 @@ class _ScheduleTimeGridPicker extends StatefulWidget {
   final bool useSafeArea;
 
   @override
-  State<_ScheduleTimeGridPicker> createState() => _ScheduleTimeGridPickerState();
+  State<_ScheduleTimeGridPicker> createState() =>
+      _ScheduleTimeGridPickerState();
 }
 
 class _ScheduleTimeGridPickerState extends State<_ScheduleTimeGridPicker> {
@@ -1946,7 +2092,8 @@ class _ScheduleTimeGridPickerState extends State<_ScheduleTimeGridPicker> {
     ];
     _selectedIndex = _entries.indexWhere(
       (time) =>
-          time.hour == widget.initial.hour && time.minute == widget.initial.minute,
+          time.hour == widget.initial.hour &&
+          time.minute == widget.initial.minute,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
   }
@@ -1961,7 +2108,8 @@ class _ScheduleTimeGridPickerState extends State<_ScheduleTimeGridPicker> {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final availableWidth = screenWidth - padding * 2;
-    final itemWidth = (availableWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
+    final itemWidth =
+        (availableWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
     final itemHeight = itemWidth / childAspectRatio;
     final rowHeight = itemHeight + mainAxisSpacing;
     final targetRow = _selectedIndex ~/ crossAxisCount;
@@ -1969,7 +2117,10 @@ class _ScheduleTimeGridPickerState extends State<_ScheduleTimeGridPicker> {
     final viewportHeight = _scrollController.position.viewportDimension;
     const headerOffset = 40.0;
     final targetOffset =
-        (targetRow * rowHeight) - (viewportHeight / 2) + (rowHeight / 2) + headerOffset;
+        (targetRow * rowHeight) -
+        (viewportHeight / 2) +
+        (rowHeight / 2) +
+        headerOffset;
     final maxScroll = _scrollController.position.maxScrollExtent;
     final clampedOffset = targetOffset.clamp(0.0, maxScroll);
 

@@ -7,6 +7,7 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/models/time_slot.dart';
 import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/locations_provider.dart';
 
 class DateTimeStep extends ConsumerStatefulWidget {
   const DateTimeStep({super.key});
@@ -19,6 +20,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
   bool _hasInitialized = false;
   List<int>? _lastServiceIds;
   int? _lastStaffId;
+  int? _lastLocationId;
 
   @override
   void initState() {
@@ -32,6 +34,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
         .map((s) => s.id)
         .toList();
     final currentStaffId = bookingState.request.singleStaffId;
+    final currentLocationId = ref.read(effectiveLocationIdProvider);
 
     bool selectionChanged = false;
     if (_lastServiceIds != null &&
@@ -39,6 +42,9 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
       selectionChanged = true;
     }
     if (_lastStaffId != currentStaffId) {
+      selectionChanged = true;
+    }
+    if (_lastLocationId != currentLocationId) {
       selectionChanged = true;
     }
 
@@ -53,6 +59,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
 
     _lastServiceIds = currentServiceIds;
     _lastStaffId = currentStaffId;
+    _lastLocationId = currentLocationId;
 
     if (_hasInitialized) return;
 
@@ -326,8 +333,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
     required bool isLoading,
     required L10n l10n,
   }) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = ref.watch(locationTodayProvider);
 
     // Usa maxBookingAdvanceDays dalla location
     final daysToShow = ref.watch(maxBookingAdvanceDaysProvider);
@@ -423,7 +429,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
     String formattedDate = '';
     if (selectedDate != null) {
       final locale = Localizations.localeOf(context).toString();
-      final now = DateTime.now();
+      final now = ref.watch(locationNowProvider);
       // Se l'anno è diverso dall'attuale, mostralo
       if (selectedDate.year != now.year) {
         formattedDate = DateFormat(

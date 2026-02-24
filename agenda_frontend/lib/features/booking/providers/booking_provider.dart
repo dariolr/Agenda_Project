@@ -420,7 +420,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     // Note: availableDatesProvider si resetta automaticamente via listeners
     // quando cambiano services/staff. Resettiamo solo focusedMonth e selectedDate.
     if (shouldResetAvailability) {
-      ref.read(focusedMonthProvider.notifier).state = DateTime.now();
+      ref.read(focusedMonthProvider.notifier).state = ref.read(
+        locationNowProvider,
+      );
     }
 
     if (shouldClearSelectedDate) {
@@ -452,7 +454,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       // Note: availableDatesProvider si resetta automaticamente via listeners
       // quando cambiano services/staff. Resettiamo solo focusedMonth e selectedDate.
       if (shouldResetAvailability) {
-        ref.read(focusedMonthProvider.notifier).state = DateTime.now();
+        ref.read(focusedMonthProvider.notifier).state = ref.read(
+          locationNowProvider,
+        );
       }
 
       if (shouldClearSelectedDate) {
@@ -1049,9 +1053,8 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
       final sortedCategories = List<ServiceCategory>.from(result.categories)
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       final sortedServices = List<Service>.from(
-            result.services.where((s) => eligibleServiceIds.contains(s.id)),
-          )
-        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+        result.services.where((s) => eligibleServiceIds.contains(s.id)),
+      )..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
       state = AsyncValue.data(
         ServicesData(categories: sortedCategories, services: sortedServices),
@@ -1198,7 +1201,9 @@ final staffProvider =
 final selectedDateProvider = StateProvider<DateTime?>((ref) => null);
 
 /// Provider per il mese attualmente focalizzato nel calendario
-final focusedMonthProvider = StateProvider<DateTime>((ref) => DateTime.now());
+final focusedMonthProvider = StateProvider<DateTime>(
+  (ref) => ref.watch(locationNowProvider),
+);
 
 /// Notifier per le date disponibili (con slot reali)
 /// Carica le date disponibili in blocchi di 15 giorni per performance
@@ -1327,8 +1332,7 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
 
     try {
       final repository = _ref.read(bookingRepositoryProvider);
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
+      final today = _ref.read(locationTodayProvider);
 
       // Calcola il range di giorni da caricare
       final startDay = _loadedDays;
@@ -1508,13 +1512,14 @@ final firstAvailableDateProvider = FutureProvider<DateTime>((ref) async {
   final bookingState = ref.watch(bookingFlowProvider);
 
   if (locationId <= 0) {
-    return DateTime.now().add(const Duration(days: 1));
+    return ref.read(locationTodayProvider).add(const Duration(days: 1));
   }
 
   return repository.getFirstAvailableDate(
     locationId: locationId,
     serviceIds: bookingState.request.services.map((s) => s.id).toList(),
     staffId: bookingState.request.singleStaffId,
+    now: ref.read(locationNowProvider),
   );
 });
 

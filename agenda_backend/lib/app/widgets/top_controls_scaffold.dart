@@ -8,6 +8,7 @@ import 'package:agenda_backend/features/agenda/domain/config/layout_config.dart'
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -72,6 +73,7 @@ class TopControlsData {
     required this.currentLocation,
     required this.dateController,
     required this.locationController,
+    required this.tenantToday,
   });
 
   final L10n l10n;
@@ -83,8 +85,9 @@ class TopControlsData {
   final Location currentLocation;
   final AgendaDateNotifier dateController;
   final CurrentLocationId locationController;
+  final DateTime tenantToday;
 
-  bool get isToday => DateUtils.isSameDay(agendaDate, DateTime.now());
+  bool get isToday => DateUtils.isSameDay(agendaDate, tenantToday);
 }
 
 /// Widget wrapper riutilizzabile per i controlli superiori dell'agenda/staff.
@@ -133,6 +136,7 @@ class TopControlsScaffold extends ConsumerWidget {
       currentLocation: currentLocation,
       dateController: ref.read(agendaDateProvider.notifier),
       locationController: ref.read(currentLocationIdProvider.notifier),
+      tenantToday: ref.watch(tenantTodayProvider),
     );
 
     final leftInset = applyLayoutInset

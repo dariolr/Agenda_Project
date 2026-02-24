@@ -124,7 +124,11 @@ class MyBookings extends _$MyBookings {
       await _refreshBookingsAfterChange();
       return true;
     } on ApiException catch (e) {
-      state = state.copyWith(isLoading: false, error: e.message, errorCode: e.code);
+      state = state.copyWith(
+        isLoading: false,
+        error: e.message,
+        errorCode: e.code,
+      );
       return false;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -181,7 +185,11 @@ class MyBookings extends _$MyBookings {
         isLoading: false,
       );
     } on ApiException catch (e) {
-      state = state.copyWith(isLoading: false, error: e.message, errorCode: e.code);
+      state = state.copyWith(
+        isLoading: false,
+        error: e.message,
+        errorCode: e.code,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -222,8 +230,9 @@ class MyBookings extends _$MyBookings {
           .where((b) => b.id != bookingId)
           .toList();
       final nextPast = state.past.where((b) => b.id != bookingId).toList();
+      final locationNow = ref.read(locationNowProvider);
 
-      if (updatedBooking.isUpcoming) {
+      if (updatedBooking.isUpcomingAt(locationNow)) {
         nextUpcoming.insert(0, updatedBooking);
       } else {
         nextPast.insert(0, updatedBooking);
@@ -331,7 +340,7 @@ BookingItem _fromCustomerBooking(
       lastItem['end_time'] ?? firstItem['end_time'] ?? json['end_time'];
   final startTime = startTimeValue is String
       ? DateTime.parse(startTimeValue)
-      : DateTime.now();
+      : DateTime(1970, 1, 1);
   final endTime = endTimeValue is String
       ? DateTime.parse(endTimeValue)
       : startTime;

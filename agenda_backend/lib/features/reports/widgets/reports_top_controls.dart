@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../agenda/providers/tenant_time_provider.dart';
 import '../providers/reports_filter_provider.dart';
 
 /// Top controls for Reports screen, using shared provider state.
@@ -56,7 +57,7 @@ class ReportsTopControls extends ConsumerWidget {
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: ref.read(tenantNowProvider).add(const Duration(days: 365)),
       initialDateRange: DateTimeRange(
         start: filterState.startDate,
         end: filterState.endDate,

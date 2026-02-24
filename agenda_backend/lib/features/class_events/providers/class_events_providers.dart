@@ -4,18 +4,26 @@ import '/core/models/class_booking.dart';
 import '/core/models/class_event.dart';
 import '/core/models/class_type.dart';
 import '/core/network/network_providers.dart';
+import '/core/services/tenant_time_service.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/date_range_provider.dart';
 import '../../agenda/providers/location_providers.dart';
+import '../../agenda/providers/tenant_time_provider.dart';
 import '../data/class_events_repository.dart';
 
 final classEventsRepositoryProvider = Provider<ClassEventsRepository>((ref) {
   return ClassEventsRepository(ref.watch(apiClientProvider));
 });
 
-final classEventsRangeProvider = Provider<({DateTime from, DateTime to})>((ref) {
+final classEventsRangeProvider = Provider<({DateTime from, DateTime to})>((
+  ref,
+) {
   final date = ref.watch(agendaDateProvider);
-  final from = DateTime(date.year, date.month, date.day);
+  final timezone = ref.watch(effectiveTenantTimezoneProvider);
+  final from = TenantTimeService.assumeTenantLocal(
+    DateTime(date.year, date.month, date.day),
+    timezone,
+  );
   final to = from.add(const Duration(days: 1));
   return (from: from.toUtc(), to: to.toUtc());
 });
@@ -45,7 +53,9 @@ final classTypesProvider = FutureProvider<List<ClassType>>((ref) async {
   return repo.listClassTypes(businessId: businessId);
 });
 
-final classTypesWithInactiveProvider = FutureProvider<List<ClassType>>((ref) async {
+final classTypesWithInactiveProvider = FutureProvider<List<ClassType>>((
+  ref,
+) async {
   final businessId = ref.watch(currentBusinessIdProvider);
   if (businessId <= 0) return const [];
   final repo = ref.watch(classEventsRepositoryProvider);
@@ -74,7 +84,8 @@ final upcomingClassEventsByTypeProvider =
       if (businessId <= 0 || classTypeId <= 0) return const [];
 
       final repo = ref.watch(classEventsRepositoryProvider);
-      final nowUtc = DateTime.now().toUtc();
+      final timezone = ref.watch(effectiveTenantTimezoneProvider);
+      final nowUtc = TenantTimeService.nowInTimezone(timezone).toUtc();
       final fromUtc = nowUtc.subtract(const Duration(days: 1));
       final toUtc = nowUtc.add(const Duration(days: 3650));
 
@@ -85,14 +96,15 @@ final upcomingClassEventsByTypeProvider =
         classTypeId: classTypeId,
       );
 
-      final upcoming = events
-          .where(
-            (event) =>
-                event.endsAtUtc.isAfter(nowUtc) &&
-                event.status.toUpperCase() != 'CANCELLED',
-          )
-          .toList()
-        ..sort((a, b) => a.startsAtUtc.compareTo(b.startsAtUtc));
+      final upcoming =
+          events
+              .where(
+                (event) =>
+                    event.endsAtUtc.isAfter(nowUtc) &&
+                    event.status.toUpperCase() != 'CANCELLED',
+              )
+              .toList()
+            ..sort((a, b) => a.startsAtUtc.compareTo(b.startsAtUtc));
 
       return upcoming;
     });
@@ -103,7 +115,8 @@ final allClassEventsByTypeProvider =
       if (businessId <= 0 || classTypeId <= 0) return const [];
 
       final repo = ref.watch(classEventsRepositoryProvider);
-      final nowUtc = DateTime.now().toUtc();
+      final timezone = ref.watch(effectiveTenantTimezoneProvider);
+      final nowUtc = TenantTimeService.nowInTimezone(timezone).toUtc();
       final fromUtc = nowUtc.subtract(const Duration(days: 3650));
       final toUtc = nowUtc.add(const Duration(days: 3650));
 
@@ -114,21 +127,24 @@ final allClassEventsByTypeProvider =
         classTypeId: classTypeId,
       );
 
-      final all = events
-          .where((event) => event.status.toUpperCase() != 'CANCELLED')
-          .toList()
-        ..sort((a, b) => b.startsAtUtc.compareTo(a.startsAtUtc));
+      final all =
+          events
+              .where((event) => event.status.toUpperCase() != 'CANCELLED')
+              .toList()
+            ..sort((a, b) => b.startsAtUtc.compareTo(a.startsAtUtc));
 
       return all;
     });
 
-final upcomingClassEventsCountByTypeProvider =
-    FutureProvider.family<int, int>((ref, classTypeId) async {
-      final upcoming = await ref.watch(
-        upcomingClassEventsByTypeProvider(classTypeId).future,
-      );
-      return upcoming.length;
-    });
+final upcomingClassEventsCountByTypeProvider = FutureProvider.family<int, int>((
+  ref,
+  classTypeId,
+) async {
+  final upcoming = await ref.watch(
+    upcomingClassEventsByTypeProvider(classTypeId).future,
+  );
+  return upcoming.length;
+});
 
 final classEventDetailProvider = FutureProvider.family<ClassEvent, int>((
   ref,
@@ -143,7 +159,10 @@ final classEventParticipantsProvider =
     FutureProvider.family<List<ClassBooking>, int>((ref, classEventId) async {
       final businessId = ref.watch(currentBusinessIdProvider);
       final repo = ref.watch(classEventsRepositoryProvider);
-      return repo.participants(businessId: businessId, classEventId: classEventId);
+      return repo.participants(
+        businessId: businessId,
+        classEventId: classEventId,
+      );
     });
 
 class ClassEventBookingController extends AsyncNotifier<void> {

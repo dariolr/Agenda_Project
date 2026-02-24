@@ -45,6 +45,7 @@ import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
 import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
+import '../../providers/tenant_time_provider.dart';
 import '../dialogs/recurrence_summary_dialog.dart';
 import 'recurrence_picker.dart';
 import 'recurrence_preview.dart';
@@ -242,11 +243,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   String _nextItemKey() => 'item_${_itemKeyCounter++}';
 
   List<String> _availableStatusOptions() {
-    return const <String>[
-      'confirmed',
-      'completed',
-      'no_show',
-    ];
+    return const <String>['confirmed', 'completed', 'no_show'];
   }
 
   String _statusLabel(BuildContext context, String status) {
@@ -435,9 +432,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
-                      hint: Text(
-                        _statusLabel(context, _currentBookingStatus),
-                      ),
+                      hint: Text(_statusLabel(context, _currentBookingStatus)),
                       items: [
                         for (final status in statusOptions)
                           DropdownMenuItem<String>(
@@ -1285,7 +1280,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
             businessId: ref.read(currentBusinessProvider).id,
             firstName: nameParts.firstName,
             lastName: nameParts.lastName,
-            createdAt: DateTime.now(),
+            createdAt: ref.read(tenantNowProvider),
           );
         }
         final newClient = await showClientEditDialog(
@@ -1759,14 +1754,15 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   }
 
   Future<void> _pickDate() async {
+    final now = ref.read(tenantNowProvider);
     final picked = await showDialog<DateTime>(
       context: context,
       builder: (context) {
         return Dialog(
           child: CalendarDatePicker(
             initialDate: _date,
-            firstDate: DateTime.now().subtract(const Duration(days: 365)),
-            lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+            firstDate: now.subtract(const Duration(days: 365)),
+            lastDate: now.add(const Duration(days: 365 * 2)),
             onDateChanged: (value) => Navigator.of(context).pop(value),
           ),
         );

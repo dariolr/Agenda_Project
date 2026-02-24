@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy(); // Usa URL path-based (senza #)
+  tz_data.initializeTimeZones();
 
   // Avvia il controllo periodico della versione (solo web).
   // Se rileva una nuova versione, forza il reload automatico.

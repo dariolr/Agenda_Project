@@ -13,6 +13,7 @@ import 'bookings_repository_provider.dart';
 import 'business_providers.dart';
 import 'date_range_provider.dart';
 import 'location_providers.dart';
+import 'tenant_time_provider.dart';
 
 /// Arrotonda un DateTime ai 5 minuti più vicini.
 /// Es: 10:12 → 10:10, 10:13 → 10:15
@@ -214,7 +215,10 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
 
       final optimistic = [
         for (final appt in currentList)
-          if (updates.containsKey(appt.id)) updates[appt.id]!.appointment else appt,
+          if (updates.containsKey(appt.id))
+            updates[appt.id]!.appointment
+          else
+            appt,
       ];
       state = AsyncData(optimistic);
     }
@@ -634,7 +638,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     final staffId = eligibleStaff.first;
 
     // Orario: prossimo quarto d'ora oggi alle max 18:00
-    final now = DateTime.now();
+    final now = ref.read(tenantNowProvider);
     final dayStart = DateUtils.dateOnly(agendaDate);
     DateTime base = now.isBefore(dayStart) ? dayStart : now;
     // clamp to today end

@@ -42,6 +42,7 @@ import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
+import '../../../providers/tenant_time_provider.dart';
 import '../../../providers/time_blocks_provider.dart';
 import '../../widgets/booking_dialog.dart';
 import '../helper/drag_drop_helper.dart';
@@ -228,7 +229,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             baseDate = DateTime(start.year, start.month, start.day);
           } else {
             duration = const Duration(minutes: 30);
-            final now = DateTime.now();
+            final now = ref.read(tenantNowProvider);
             baseDate = DateTime(now.year, now.month, now.day);
           }
         }
@@ -962,13 +963,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }
 
     final anchorId = rescheduleSession.anchorAppointmentId;
-    final targetStart = DateTime(
-      dt.year,
-      dt.month,
-      dt.day,
-      dt.hour,
-      dt.minute,
-    );
+    final targetStart = DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute);
 
     final l10n = context.l10n;
     final targetDateStr = DtFmt.longDate(context, targetStart);
