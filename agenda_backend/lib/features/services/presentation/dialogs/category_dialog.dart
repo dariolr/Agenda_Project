@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service_category.dart';
-import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
@@ -76,7 +75,7 @@ Future<void> showCategoryDialog(
       return false;
     }
 
-    final formattedName = StringUtils.toTitleCase(rawName);
+    final formattedName = rawName.toUpperCase();
 
     if (ServiceValidators.isDuplicateCategoryName(
       allCategories,
