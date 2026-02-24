@@ -20,6 +20,7 @@ class ServicePackagesRepository {
     double? overridePrice,
     int? overrideDurationMinutes,
     bool isActive = true,
+    bool isBookableOnline = true,
   }) => _api.createPackage(
     locationId: locationId,
     name: name,
@@ -29,6 +30,7 @@ class ServicePackagesRepository {
     overridePrice: overridePrice,
     overrideDurationMinutes: overrideDurationMinutes,
     isActive: isActive,
+    isBookableOnline: isBookableOnline,
   );
 
   Future<ServicePackage> updatePackage({
@@ -42,6 +44,7 @@ class ServicePackagesRepository {
     bool setOverridePriceNull = false,
     bool setOverrideDurationNull = false,
     bool? isActive,
+    bool? isBookableOnline,
     List<int>? serviceIds,
   }) => _api.updatePackage(
     locationId: locationId,
@@ -54,6 +57,7 @@ class ServicePackagesRepository {
     setOverridePriceNull: setOverridePriceNull,
     setOverrideDurationNull: setOverrideDurationNull,
     isActive: isActive,
+    isBookableOnline: isBookableOnline,
     serviceIds: serviceIds,
   );
 

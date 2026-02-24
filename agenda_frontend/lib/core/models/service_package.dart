@@ -42,6 +42,7 @@ class ServicePackage {
   final double? overridePrice;
   final int? overrideDurationMinutes;
   final bool isActive;
+  final bool isBookableOnline;
   final bool isBroken;
   final double effectivePrice;
   final int effectiveDurationMinutes;
@@ -59,6 +60,7 @@ class ServicePackage {
     this.overridePrice,
     this.overrideDurationMinutes,
     this.isActive = true,
+    this.isBookableOnline = true,
     this.isBroken = false,
     required this.effectivePrice,
     required this.effectiveDurationMinutes,
@@ -84,6 +86,7 @@ class ServicePackage {
       overridePrice: (json['override_price'] as num?)?.toDouble(),
       overrideDurationMinutes: json['override_duration_minutes'] as int?,
       isActive: json['is_active'] as bool? ?? true,
+      isBookableOnline: json['is_bookable_online'] as bool? ?? true,
       isBroken: json['is_broken'] as bool? ?? false,
       effectivePrice: (json['effective_price'] as num?)?.toDouble() ?? 0,
       effectiveDurationMinutes:

@@ -76,6 +76,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
   late final TextEditingController _overrideDurationController;
 
   bool _isActive = true;
+  bool _isBookableOnline = true;
   bool _isSaving = false;
   int? _selectedCategoryId;
   String? _servicesError;
@@ -98,6 +99,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
       text: pkg?.overrideDurationMinutes?.toString() ?? '',
     );
     _isActive = pkg?.isActive ?? true;
+    _isBookableOnline = pkg?.isBookableOnline ?? true;
     _selectedCategoryId =
         pkg?.categoryId ?? widget.preselectedCategoryId;
     if (_selectedCategoryId == null && widget.categories.length == 1) {
@@ -254,6 +256,12 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
                 value: _isActive,
                 onChanged: (value) => setState(() => _isActive = value),
                 title: Text(l10n.servicePackageActiveLabel),
+              ),
+              SwitchListTile(
+                value: _isBookableOnline,
+                onChanged: (value) =>
+                    setState(() => _isBookableOnline = value),
+                title: Text(l10n.bookableOnlineSwitch),
               ),
               const SizedBox(height: 12),
               Text(
@@ -469,6 +477,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
           overridePrice: overridePrice,
           overrideDurationMinutes: overrideDuration,
           isActive: _isActive,
+          isBookableOnline: _isBookableOnline,
         );
         if (mounted) {
           setState(() => _isSaving = false);
@@ -492,6 +501,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
           setOverridePriceNull: overridePriceText.isEmpty,
           setOverrideDurationNull: overrideDurationText.isEmpty,
           isActive: _isActive,
+          isBookableOnline: _isBookableOnline,
         );
         if (mounted) {
           setState(() => _isSaving = false);

@@ -88,8 +88,8 @@ final class ServicePackageRepository
             );
             $stmt = $pdo->prepare(
                 'INSERT INTO service_packages
-                    (business_id, location_id, category_id, sort_order, name, description, override_price, override_duration_minutes, is_active, is_broken)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                    (business_id, location_id, category_id, sort_order, name, description, override_price, override_duration_minutes, is_active, is_bookable_online, is_broken)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
                 $data['business_id'],
@@ -101,6 +101,7 @@ final class ServicePackageRepository
                 $data['override_price'],
                 $data['override_duration_minutes'],
                 $data['is_active'],
+                $data['is_bookable_online'] ?? 1,
                 $data['is_broken'],
             ]);
 
@@ -420,6 +421,7 @@ final class ServicePackageRepository
                 ? (int) $package['override_duration_minutes']
                 : null,
             'is_active' => (bool) $package['is_active'],
+            'is_bookable_online' => (bool) ($package['is_bookable_online'] ?? true),
             'is_broken' => $package['is_broken'] || $totals['missing_count'] > 0,
             'effective_price' => $effectivePrice,
             'effective_duration_minutes' => $effectiveDuration,

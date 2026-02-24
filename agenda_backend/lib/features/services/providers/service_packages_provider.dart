@@ -51,6 +51,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
     double? overridePrice,
     int? overrideDurationMinutes,
     bool isActive = true,
+    bool isBookableOnline = true,
   }) async {
     final location = ref.read(currentLocationProvider);
     if (location.id <= 0) return null;
@@ -66,6 +67,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
         overridePrice: overridePrice,
         overrideDurationMinutes: overrideDurationMinutes,
         isActive: isActive,
+        isBookableOnline: isBookableOnline,
       );
       if (created.categoryId == 0 && categoryId > 0) {
         created = created.copyWith(categoryId: categoryId);
@@ -90,6 +92,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
     bool setOverridePriceNull = false,
     bool setOverrideDurationNull = false,
     bool? isActive,
+    bool? isBookableOnline,
     List<int>? serviceIds,
   }) async {
     final location = ref.read(currentLocationProvider);
@@ -108,6 +111,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
         setOverridePriceNull: setOverridePriceNull,
         setOverrideDurationNull: setOverrideDurationNull,
         isActive: isActive,
+        isBookableOnline: isBookableOnline,
         serviceIds: serviceIds,
       );
       if (updated.categoryId == 0 && categoryId != null && categoryId > 0) {

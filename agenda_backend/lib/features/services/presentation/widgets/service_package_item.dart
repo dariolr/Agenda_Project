@@ -136,6 +136,18 @@ class ServicePackageListItem extends ConsumerWidget {
                               ],
                             ),
                           ),
+                        if (!package.isBookableOnline)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              context.l10n.notBookableOnline,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Colors.red[600],
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                            ),
+                          ),
                       ],
                     ),
                     trailing: UnconstrainedBox(

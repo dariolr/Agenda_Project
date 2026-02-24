@@ -128,6 +128,7 @@ final class ServicePackagesController
                 ? $body['override_duration_minutes']
                 : null,
             'is_active' => isset($body['is_active']) ? (int) (bool) $body['is_active'] : 1,
+            'is_bookable_online' => isset($body['is_bookable_online']) ? (int) (bool) $body['is_bookable_online'] : 1,
             'is_broken' => 0,
         ], $serviceIds);
 
@@ -197,6 +198,10 @@ final class ServicePackagesController
 
         if (array_key_exists('is_active', $body)) {
             $updateData['is_active'] = (int) (bool) $body['is_active'];
+        }
+
+        if (array_key_exists('is_bookable_online', $body)) {
+            $updateData['is_bookable_online'] = (int) (bool) $body['is_bookable_online'];
         }
 
         $serviceIds = null;
