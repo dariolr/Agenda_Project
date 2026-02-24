@@ -8,6 +8,7 @@ import '/core/models/location.dart';
 import '/core/models/location_closure.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/location_providers.dart';
+import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/business/domain/public_holidays.dart';
 import '/features/business/presentation/dialogs/import_holidays_dialog.dart';
 import '../providers/closures_filter_provider.dart';
@@ -145,15 +146,15 @@ class ClosuresHeader extends ConsumerWidget {
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+      lastDate: ref.read(tenantNowProvider).add(const Duration(days: 365 * 10)),
       initialDateRange: DateTimeRange(
         start: filterState.startDate,
         end:
             filterState.endDate.isBefore(
-              DateTime.now().add(const Duration(days: 365)),
+              ref.read(tenantNowProvider).add(const Duration(days: 365)),
             )
             ? filterState.endDate
-            : DateTime.now().add(const Duration(days: 365)),
+            : ref.read(tenantNowProvider).add(const Duration(days: 365)),
       ),
       saveText: l10n.actionApply,
       builder: (context, child) {

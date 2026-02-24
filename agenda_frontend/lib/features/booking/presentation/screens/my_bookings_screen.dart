@@ -7,6 +7,7 @@ import '/app/providers/form_factor_provider.dart';
 import '/app/providers/route_slug_provider.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/booking_item.dart';
+import '/core/services/tenant_time_service.dart';
 import '/core/widgets/booking_app_bar.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/auth/domain/auth_state.dart';
@@ -63,11 +64,12 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     }
 
     final bookingsState = ref.watch(myBookingsProvider);
-    final cancelledBookings = [
-      ...bookingsState.upcoming,
-      ...bookingsState.past,
-    ].where((b) => b.isCancelled && b.status != 'replaced').toList()
-      ..sort((a, b) => b.startTime.compareTo(a.startTime));
+    final cancelledBookings =
+        [
+            ...bookingsState.upcoming,
+            ...bookingsState.past,
+          ].where((b) => b.isCancelled && b.status != 'replaced').toList()
+          ..sort((a, b) => b.startTime.compareTo(a.startTime));
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
@@ -202,18 +204,17 @@ class _BookingsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleBookings = bookings
-        .where((b) => b.status != 'replaced')
-        .where((b) {
-          switch (tabType) {
-            case _BookingsTabType.upcoming:
-            case _BookingsTabType.past:
-              return !b.isCancelled;
-            case _BookingsTabType.cancelled:
-              return b.isCancelled;
-          }
-        })
-        .toList();
+    final visibleBookings = bookings.where((b) => b.status != 'replaced').where(
+      (b) {
+        switch (tabType) {
+          case _BookingsTabType.upcoming:
+          case _BookingsTabType.past:
+            return !b.isCancelled;
+          case _BookingsTabType.cancelled:
+            return b.isCancelled;
+        }
+      },
+    ).toList();
     if (visibleBookings.isEmpty) {
       final emptyIcon = switch (tabType) {
         _BookingsTabType.upcoming => Icons.event_busy,
@@ -229,16 +230,9 @@ class _BookingsList extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              emptyIcon,
-              size: 64,
-              color: Colors.grey,
-            ),
+            Icon(emptyIcon, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
-            Text(
-              emptyText,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text(emptyText, style: Theme.of(context).textTheme.titleMedium),
           ],
         ),
       );
@@ -610,28 +604,21 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     required BookingItem booking,
     required String locale,
   }) {
-    final deadline = _parseAsLocationTime(booking);
+    final deadline = _modifiableDeadline(booking);
     final formatted = DateFormat.yMd(locale).add_jm().format(deadline);
     return context.l10n.modifiableUntilDateTime(formatted);
   }
 
-  static DateTime _parseAsLocationTime(BookingItem booking) {
+  static DateTime _modifiableDeadline(BookingItem booking) {
     final raw = booking.canModifyUntilRaw;
     if (raw != null && raw.isNotEmpty) {
       try {
-        return _parseAsLocalTime(raw);
+        return TenantTimeService.parseAsLocationTime(raw);
       } catch (_) {
         // Fallback to parsed DateTime if raw parsing fails.
       }
     }
     return booking.canModifyUntil!;
-  }
-
-  static DateTime _parseAsLocalTime(String isoString) {
-    final withoutOffset =
-        isoString.replaceAll(RegExp(r'[+-]\d{2}:\d{2}$'), '');
-    final cleaned = withoutOffset.replaceAll('Z', '');
-    return DateTime.parse(cleaned);
   }
 
   static String _localeForLocation(BuildContext context, String? country) {

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../core/models/location.dart';
+import '../../../core/services/tenant_time_service.dart';
 import 'booking_provider.dart';
 import 'business_provider.dart';
 
@@ -148,4 +149,28 @@ final effectiveLocationProvider = Provider<Location?>((ref) {
     },
     orElse: () => null,
   );
+});
+
+/// Timezone effettivo del flow booking:
+/// 1) timezone della location effettiva
+/// 2) fallback timezone del business
+/// 3) fallback Europe/Rome
+final locationTimezoneProvider = Provider<String>((ref) {
+  final location = ref.watch(effectiveLocationProvider);
+  if (location != null) {
+    return TenantTimeService.normalizeTimezone(location.timezone);
+  }
+
+  final businessAsync = ref.watch(currentBusinessProvider);
+  return TenantTimeService.normalizeTimezone(businessAsync.value?.timezone);
+});
+
+final locationNowProvider = Provider<DateTime>((ref) {
+  final timezone = ref.watch(locationTimezoneProvider);
+  return TenantTimeService.nowInTimezone(timezone);
+});
+
+final locationTodayProvider = Provider<DateTime>((ref) {
+  final timezone = ref.watch(locationTimezoneProvider);
+  return TenantTimeService.todayInTimezone(timezone);
 });

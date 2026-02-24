@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/booking_list_item.dart';
 import '/core/network/network_providers.dart';
+import '../../agenda/providers/tenant_time_provider.dart';
 
 /// Stato per i filtri della lista prenotazioni
 class BookingsListFilters {
@@ -80,9 +81,8 @@ class BookingsListFilters {
   }
 
   /// Resetta tutti i filtri ai valori default
-  factory BookingsListFilters.defaultFilters() {
+  factory BookingsListFilters.defaultFilters({required DateTime today}) {
     // Default: ultimi 3 giorni fino a domani
-    final today = DateTime.now();
     final threeDaysAgo = today.subtract(const Duration(days: 3));
     final tomorrow = today.add(const Duration(days: 1));
 
@@ -123,7 +123,10 @@ final bookingsListFiltersProvider =
 
 class BookingsListFiltersNotifier extends Notifier<BookingsListFilters> {
   @override
-  BookingsListFilters build() => BookingsListFilters.defaultFilters();
+  BookingsListFilters build() {
+    final today = ref.watch(tenantTodayProvider);
+    return BookingsListFilters.defaultFilters(today: today);
+  }
 
   void updateFilters(BookingsListFilters filters) {
     state = filters;
@@ -214,7 +217,8 @@ class BookingsListFiltersNotifier extends Notifier<BookingsListFilters> {
   }
 
   void reset() {
-    state = BookingsListFilters.defaultFilters();
+    final today = ref.read(tenantTodayProvider);
+    state = BookingsListFilters.defaultFilters(today: today);
   }
 }
 

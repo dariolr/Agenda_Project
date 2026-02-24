@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 
 import 'app/app.dart';
 import 'core/services/version_checker.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  tz_data.initializeTimeZones();
 
   // Usa path URL strategy invece di hash (#) per URL puliti
   // Es: /vamps/booking invece di /#/vamps/booking

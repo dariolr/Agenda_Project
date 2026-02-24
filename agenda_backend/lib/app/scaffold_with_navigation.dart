@@ -27,6 +27,7 @@ import '../features/agenda/providers/business_providers.dart';
 import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/agenda/providers/location_providers.dart';
+import '../features/agenda/providers/tenant_time_provider.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/business/presentation/dialogs/invite_operator_dialog.dart';
 import '../features/business/presentation/dialogs/location_closure_dialog.dart';
@@ -95,7 +96,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final currentPath = GoRouterState.of(context).uri.path;
     final isClassEvents = currentPath == '/altro/classi';
     final agendaDate = ref.watch(agendaDateProvider);
-    final today = DateUtils.dateOnly(DateTime.now());
+    final today = ref.watch(tenantTodayProvider);
     final isToday = DateUtils.isSameDay(agendaDate, today);
     final isPast = agendaDate.isBefore(today);
     final user = ref.watch(authProvider).user;
@@ -397,7 +398,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
     if (index == 0 && navigationShell.currentIndex == 0) {
       final selectedDate = ref.read(agendaDateProvider);
-      final today = DateUtils.dateOnly(DateTime.now());
+      final today = ref.read(tenantTodayProvider);
       if (!DateUtils.isSameDay(selectedDate, today)) {
         ref.read(agendaDateProvider.notifier).setToday();
       }
@@ -753,7 +754,9 @@ class _AgendaFilterActions extends ConsumerWidget {
               message: l10n.agendaSelectLocation,
               child: SizedBox(
                 height: _actionButtonHeight,
-                width: showLabelEffective ? _locationComboWidth : _iconOnlyWidth,
+                width: showLabelEffective
+                    ? _locationComboWidth
+                    : _iconOnlyWidth,
                 child: AppOutlinedActionButton(
                   onPressed: () => _showLocationSheet(
                     context,
@@ -878,10 +881,7 @@ class _ToolbarLocationSelectorAction extends ConsumerWidget {
             borderRadius: BorderRadius.circular(8),
             borderColor: scheme.primary,
             foregroundColor: scheme.primary,
-            child: buildActionLabel(
-              Icons.place_outlined,
-              buttonLabel,
-            ),
+            child: buildActionLabel(Icons.place_outlined, buttonLabel),
           ),
         ),
       ),

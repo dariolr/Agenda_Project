@@ -356,7 +356,7 @@ class TopControls extends ConsumerWidget {
     final pickerInitialDate = DateUtils.dateOnly(
       agendaDate.subtract(Duration(days: deltaToMonday)),
     );
-    final todayDate = DateUtils.dateOnly(DateTime.now());
+    final todayDate = data.tenantToday;
     final weekStart = pickerInitialDate;
     final weekEnd = weekStart.add(const Duration(days: 6));
     final defaultLabel = buildWeekRangeLabel(weekStart, weekEnd, locale);

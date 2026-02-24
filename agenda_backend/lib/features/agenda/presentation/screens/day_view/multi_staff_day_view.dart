@@ -15,6 +15,7 @@ import '../../../providers/date_range_provider.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/tenant_time_provider.dart';
 import '../helper/responsive_layout.dart';
 import '../widgets/current_time_line.dart';
 import 'agenda_staff_body.dart';
@@ -77,7 +78,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   AgendaScrollKey get _scrollKey => AgendaScrollKey(
     identity: _scrollIdentity,
     staff: widget.staffList,
-    date: DateTime.now(),
+    date: ref.read(agendaDateProvider),
     initialOffset: widget.initialScrollOffset,
   );
 
@@ -457,7 +458,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         final selectedDate = ref.watch(agendaDateProvider);
         final isToday = DateUtils.isSameDay(
           selectedDate,
-          DateUtils.dateOnly(DateTime.now()),
+          ref.watch(tenantTodayProvider),
         );
 
         final isResizing = ref.watch(isResizingProvider);

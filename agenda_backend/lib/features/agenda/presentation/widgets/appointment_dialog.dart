@@ -38,6 +38,7 @@ import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
 import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
+import '../../providers/tenant_time_provider.dart';
 import '../dialogs/booking_history_dialog.dart';
 import '../dialogs/recurring_action_dialog.dart';
 import 'service_item_card.dart';
@@ -244,11 +245,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   }
 
   List<String> _availableStatusOptions() {
-    return const <String>[
-      'confirmed',
-      'completed',
-      'no_show',
-    ];
+    return const <String>['confirmed', 'completed', 'no_show'];
   }
 
   String _statusLabel(BuildContext context, String status) {
@@ -620,9 +617,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
-                    hint: Text(
-                      _statusLabel(context, _currentBookingStatus),
-                    ),
+                    hint: Text(_statusLabel(context, _currentBookingStatus)),
                     items: [
                       for (final status in statusOptions)
                         DropdownMenuItem<String>(
@@ -656,7 +651,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       child: Text(l10n.actionCancel),
     );
     final rescheduleAction = AppOutlinedActionButton(
-      onPressed: _isSaving || !canManageBookings ? null : _startBookingReschedule,
+      onPressed: _isSaving || !canManageBookings
+          ? null
+          : _startBookingReschedule,
       padding: AppButtonStyles.dialogButtonPadding,
       child: Text(l10n.actionReschedule),
     );
@@ -831,14 +828,15 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   }
 
   Future<void> _pickDate() async {
+    final now = ref.read(tenantNowProvider);
     final picked = await showDialog<DateTime>(
       context: context,
       builder: (context) {
         return Dialog(
           child: CalendarDatePicker(
             initialDate: _date,
-            firstDate: DateTime.now().subtract(const Duration(days: 365)),
-            lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+            firstDate: now.subtract(const Duration(days: 365)),
+            lastDate: now.add(const Duration(days: 365 * 2)),
             onDateChanged: (value) => Navigator.of(context).pop(value),
           ),
         );
@@ -2237,7 +2235,7 @@ class _ClientSelectionField extends ConsumerWidget {
               businessId: 0,
               firstName: nameParts.firstName,
               lastName: nameParts.lastName,
-              createdAt: DateTime.now(),
+              createdAt: ref.read(tenantNowProvider),
             );
           }
           final newClient = await showClientEditDialog(

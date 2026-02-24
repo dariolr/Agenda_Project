@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/availability_exception.dart';
 import '../../../../core/models/staff_planning.dart' show StaffPlanning;
+import '../../../agenda/providers/tenant_time_provider.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
@@ -134,7 +135,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       _type = exc.type;
       _reasonController.text = exc.reason ?? '';
     } else {
-      _date = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
+      _date = widget.initialDate ?? ref.read(tenantTodayProvider);
       _startDate = _date;
       _endDate = _date.add(const Duration(days: 6)); // Default 1 settimana
       _startTime = widget.initialTime ?? const TimeOfDay(hour: 9, minute: 0);
@@ -628,8 +629,8 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _date,
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      firstDate: ref.read(tenantNowProvider).subtract(const Duration(days: 30)),
+      lastDate: ref.read(tenantNowProvider).add(const Duration(days: 365 * 2)),
     );
     if (picked != null) {
       setState(() {
@@ -643,8 +644,8 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _startDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      firstDate: ref.read(tenantNowProvider).subtract(const Duration(days: 30)),
+      lastDate: ref.read(tenantNowProvider).add(const Duration(days: 365 * 2)),
     );
     if (picked != null) {
       setState(() {
@@ -663,7 +664,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
       context: context,
       initialDate: _endDate.isBefore(_startDate) ? _startDate : _endDate,
       firstDate: _startDate,
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      lastDate: ref.read(tenantNowProvider).add(const Duration(days: 365 * 2)),
     );
     if (picked != null) {
       setState(() {

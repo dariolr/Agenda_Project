@@ -4,6 +4,7 @@ import '/core/models/location_closure.dart';
 import '/core/network/network_providers.dart';
 import '/features/agenda/providers/business_providers.dart';
 import '/features/agenda/providers/location_providers.dart';
+import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/auth/providers/current_business_user_provider.dart';
 
 /// Provider per gestire le chiusure di un business (multi-location)
@@ -110,8 +111,7 @@ class LocationClosuresNotifier extends AsyncNotifier<List<LocationClosure>> {
 final futureLocationClosuresProvider =
     Provider<AsyncValue<List<LocationClosure>>>((ref) {
       final closuresAsync = ref.watch(locationClosuresProvider);
-      final today = DateTime.now();
-      final todayOnly = DateTime(today.year, today.month, today.day);
+      final todayOnly = ref.watch(tenantTodayProvider);
 
       return closuresAsync.whenData((closures) {
         return closures.where((c) {
@@ -125,8 +125,7 @@ final futureLocationClosuresProvider =
 final pastLocationClosuresProvider =
     Provider<AsyncValue<List<LocationClosure>>>((ref) {
       final closuresAsync = ref.watch(locationClosuresProvider);
-      final today = DateTime.now();
-      final todayOnly = DateTime(today.year, today.month, today.day);
+      final todayOnly = ref.watch(tenantTodayProvider);
 
       return closuresAsync.whenData((closures) {
         return closures.where((c) {

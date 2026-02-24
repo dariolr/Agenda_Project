@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/appointment.dart';
 import '../../../core/network/network_providers.dart';
 import '../../agenda/providers/business_providers.dart';
+import '../../agenda/providers/tenant_time_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../data/clients_api.dart';
@@ -384,10 +385,9 @@ const _kInactiveDays = 90;
 const _kNewDays = 45;
 const _kFrequentThreshold = 10; // placeholder (in futuro basato su bookings)
 
-DateTime _now() => DateTime.now();
-
 final inactiveClientsProvider = Provider<List<Client>>((ref) {
-  final limit = _now().subtract(const Duration(days: _kInactiveDays));
+  final today = ref.watch(tenantTodayProvider);
+  final limit = today.subtract(const Duration(days: _kInactiveDays));
   final allClients = ref.watch(clientsListProvider);
   return allClients
       .where(
@@ -399,7 +399,8 @@ final inactiveClientsProvider = Provider<List<Client>>((ref) {
 });
 
 final newClientsProvider = Provider<List<Client>>((ref) {
-  final limit = _now().subtract(const Duration(days: _kNewDays));
+  final today = ref.watch(tenantTodayProvider);
+  final limit = today.subtract(const Duration(days: _kNewDays));
   final allClients = ref.watch(clientsListProvider);
   return allClients
       .where((c) => !c.isArchived && c.createdAt.isAfter(limit))

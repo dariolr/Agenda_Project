@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/availability_exception.dart';
 import '../../providers/availability_exceptions_provider.dart';
+import '../../../agenda/providers/tenant_time_provider.dart';
 import '../dialogs/add_exception_dialog.dart';
 
 /// Widget per visualizzare e gestire le eccezioni alla disponibilità
@@ -46,7 +47,7 @@ class _ExceptionCalendarViewState extends ConsumerState<ExceptionCalendarView> {
   @override
   void initState() {
     super.initState();
-    _currentMonth = DateTime.now();
+    _currentMonth = ref.read(tenantNowProvider);
     _loadExceptions();
   }
 
@@ -317,7 +318,7 @@ class _CalendarGrid extends ConsumerWidget {
     final totalCells = ((firstWeekday - 1) + daysInMonth);
     final rows = (totalCells / 7).ceil();
 
-    final today = DateTime.now();
+    final today = ref.watch(tenantTodayProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -20,6 +20,7 @@ import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
 import 'package:agenda_backend/core/widgets/staff_picker_sheet.dart';
 import 'package:agenda_backend/features/staff/presentation/dialogs/planning_editor_dialog.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,7 +126,7 @@ class _StaffPlanningScreenState extends ConsumerState<StaffPlanningScreen> {
         : <StaffPlanning>[];
 
     // Calcola anni coperti dai planning
-    final currentYear = DateTime.now().year;
+    final currentYear = ref.read(tenantNowProvider).year;
     final yearsSet = <int>{currentYear}; // Includi sempre anno corrente
     for (final p in allPlannings) {
       yearsSet.add(p.validFrom.year);
@@ -532,7 +533,7 @@ class _PlanningListState extends ConsumerState<_PlanningList> {
 // ──────────────────────────────────────────────
 // Planning Card Widget
 // ──────────────────────────────────────────────
-class _PlanningCard extends StatelessWidget {
+class _PlanningCard extends ConsumerWidget {
   const _PlanningCard({required this.planning, required this.onTap});
 
   final StaffPlanning planning;
@@ -559,10 +560,10 @@ class _PlanningCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    final today = DateTime.now();
+    final today = ref.watch(tenantTodayProvider);
     final isActive = planning.isValidForDate(today);
     final isExpired =
         planning.validTo != null && planning.validTo!.isBefore(today);

@@ -6,6 +6,7 @@ import '/core/l10n/l10_extension.dart';
 import '/core/models/location_closure.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/location_providers.dart';
+import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/business/providers/closures_filter_provider.dart';
 import '/features/business/providers/location_closures_provider.dart';
 import '/features/business/widgets/closures_header.dart';
@@ -164,8 +165,7 @@ class _LocationClosuresScreenState
   ) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final today = DateTime.now();
-    final todayOnly = DateTime(today.year, today.month, today.day);
+    final todayOnly = ref.read(tenantTodayProvider);
 
     // Separa chiusure future e passate
     final futureClosures = closures
