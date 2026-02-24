@@ -54,21 +54,29 @@ class CategoriesList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Pre-fetch all entries to compute the collapsible threshold.
+    final entriesPerCategory = {
+      for (final cat in categories)
+        cat.id: ref.watch(sortedCategoryEntriesProvider(cat.id)),
+    };
+    final totalEntries = entriesPerCategory.values.fold<int>(
+      0,
+      (sum, e) => sum + e.length,
+    );
+    final isCollapsible = totalEntries > 30 && categories.length >= 3;
+
     return ListView.builder(
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
       itemCount: categories.length,
       itemBuilder: (context, index) {
         final category = categories[index];
-        final entries = ref.watch(sortedCategoryEntriesProvider(category.id));
+        final entries = entriesPerCategory[category.id]!;
         final hasPrev = index > 0;
-        final prevIsNonEmpty = hasPrev
-            ? ref
-                  .watch(
-                    sortedCategoryEntriesProvider(categories[index - 1].id),
-                  )
-                  .isNotEmpty
-            : false;
+        final prevIsNonEmpty =
+            hasPrev
+                ? entriesPerCategory[categories[index - 1].id]!.isNotEmpty
+                : false;
         final isFirstEmptyAfterNonEmpty =
             entries.isEmpty && (!hasPrev || prevIsNonEmpty);
 
@@ -116,6 +124,7 @@ class CategoriesList extends ConsumerWidget {
               onPackageDelete: onPackageDelete,
               addTopSpacing: isFirstEmptyAfterNonEmpty,
               readOnly: readOnly,
+              isCollapsible: isCollapsible,
             ),
           ),
         );

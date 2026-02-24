@@ -227,6 +227,10 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     final allCategories = [...categories, ...extraCategories]
       ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
+    // Prima passata: costruisci le entries per categoria.
+    final categoryDataList =
+        <({ServiceCategory category, List<_CategoryEntry> entries})>[];
+
     for (final category in allCategories) {
       final categoryServices =
           services
@@ -266,14 +270,25 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
           });
 
       if (categoryEntries.isEmpty) continue;
+      categoryDataList.add((category: category, entries: categoryEntries));
+    }
 
+    // Seconda passata: determina se mostrare categorie collassabili.
+    final totalEntries = categoryDataList.fold<int>(
+      0,
+      (sum, d) => sum + d.entries.length,
+    );
+    final isCollapsible = totalEntries > 30 && categoryDataList.length >= 3;
+
+    for (final data in categoryDataList) {
       widgets.add(
         _CategorySection(
-          category: category,
-          entries: categoryEntries,
+          category: data.category,
+          entries: data.entries,
           selectedServiceIds: selectedServiceIds,
           selectedPackageIds: selectedPackageIds,
           selectedServices: selectedServices,
+          isCollapsible: isCollapsible,
           onServiceTap: (service) {
             ref.read(bookingFlowProvider.notifier).toggleService(service);
           },
@@ -360,7 +375,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
   }
 }
 
-class _CategorySection extends StatelessWidget {
+class _CategorySection extends StatefulWidget {
   final ServiceCategory category;
   final List<_CategoryEntry> entries;
   final Set<int> selectedServiceIds;
@@ -368,6 +383,7 @@ class _CategorySection extends StatelessWidget {
   final List<Service> selectedServices;
   final void Function(Service) onServiceTap;
   final void Function(ServicePackage) onPackageTap;
+  final bool isCollapsible;
 
   const _CategorySection({
     required this.category,
@@ -377,42 +393,184 @@ class _CategorySection extends StatelessWidget {
     required this.selectedServices,
     required this.onServiceTap,
     required this.onPackageTap,
+    this.isCollapsible = false,
   });
+
+  @override
+  State<_CategorySection> createState() => _CategorySectionState();
+}
+
+class _CategorySectionState extends State<_CategorySection> {
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = !widget.isCollapsible;
+  }
+
+  @override
+  void didUpdateWidget(_CategorySection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isCollapsible != widget.isCollapsible) {
+      _isExpanded = !widget.isCollapsible;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final borderColor = theme.colorScheme.outlineVariant.withOpacity(0.18);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Text(
-            category.name,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+    final selectedCount = widget.entries.where((e) {
+      if (e.isPackage) return widget.selectedPackageIds.contains(e.package!.id);
+      return widget.selectedServiceIds.contains(e.service!.id);
+    }).length;
+
+    final header = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.isCollapsible
+          ? () => setState(() => _isExpanded = !_isExpanded)
+          : null,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          widget.isCollapsible ? 14 : 0,
+          12,
+          widget.isCollapsible ? 8 : 0,
+          12,
         ),
-        for (final entry in entries)
-          if (entry.isPackage)
-            _PackageTile(
-              package: entry.package!,
-              isSelected: selectedPackageIds.contains(entry.package!.id),
-              isDisabled: !entry.package!.isActive || entry.package!.isBroken,
-              onTap: (!entry.package!.isActive || entry.package!.isBroken)
-                  ? null
-                  : () => onPackageTap(entry.package!),
-            )
-          else
-            _ServiceTile(
-              service: entry.service!,
-              isSelected: selectedServiceIds.contains(entry.service!.id),
-              onTap: () => onServiceTap(entry.service!),
+        child: Row(
+          children: [
+            // Sinistra: nome + chip totale
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      widget.category.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (widget.isCollapsible) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${widget.entries.length}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.45),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-        const SizedBox(height: 8),
-      ],
+            // Destra: chip selezionati + freccia
+            if (selectedCount > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$selectedCount',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+            if (widget.isCollapsible) ...[
+              const SizedBox(width: 4),
+              AnimatedRotation(
+                turns: _isExpanded ? 0.25 : 0,
+                duration: const Duration(milliseconds: 250),
+                child: const Icon(Icons.chevron_right),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    final body = AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      alignment: Alignment.topCenter,
+      child: _isExpanded
+          ? Padding(
+              padding: widget.isCollapsible
+                  ? const EdgeInsets.fromLTRB(10, 0, 10, 10)
+                  : EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (final entry in widget.entries)
+                    if (entry.isPackage)
+                      _PackageTile(
+                        package: entry.package!,
+                        isSelected: widget.selectedPackageIds.contains(
+                          entry.package!.id,
+                        ),
+                        isDisabled:
+                            !entry.package!.isActive ||
+                            entry.package!.isBroken,
+                        onTap:
+                            (!entry.package!.isActive ||
+                                entry.package!.isBroken)
+                            ? null
+                            : () => widget.onPackageTap(entry.package!),
+                      )
+                    else
+                      _ServiceTile(
+                        service: entry.service!,
+                        isSelected: widget.selectedServiceIds.contains(
+                          entry.service!.id,
+                        ),
+                        onTap: () => widget.onServiceTap(entry.service!),
+                      ),
+                  if (!widget.isCollapsible) const SizedBox(height: 8),
+                ],
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
+
+    if (!widget.isCollapsible) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [header, body],
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [header, body],
+        ),
+      ),
     );
   }
 }
