@@ -167,15 +167,16 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
   ) {
     final widgets = <Widget>[];
     final packages = packagesAsync.value ?? [];
-    final visibleServiceIds = services.map((s) => s.id).toSet();
+    // Per i pacchetti usiamo tutti i servizi con staff eligible (non solo quelli
+    // prenotabili online singolarmente): un pacchetto deve essere visibile anche
+    // se i suoi servizi componenti non sono prenotabili online individualmente.
+    final allServiceIds = allServices.map((s) => s.id).toSet();
     final visiblePackages = packages.where((package) {
       if (!package.isActive || package.isBroken) return false;
       final packageServiceIds = package.orderedServiceIds;
       if (packageServiceIds.isEmpty) return false;
       return packageServiceIds.every(
-        (serviceId) =>
-            visibleServiceIds.contains(serviceId) &&
-            serviceIdsWithEligibleStaff.contains(serviceId),
+        (serviceId) => allServiceIds.contains(serviceId),
       );
     }).toList();
     final serviceById = {for (final s in allServices) s.id: s};
@@ -231,9 +232,6 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
               .toList()
             ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-      // Regola UX: non mostrare categorie senza servizi prenotabili visibili.
-      if (categoryServices.isEmpty) continue;
-
       final categoryPackages =
           visiblePackages.where((p) {
             final effectiveCategoryId = p.categoryId != 0
@@ -248,6 +246,9 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
                 ? so
                 : a.name.toLowerCase().compareTo(b.name.toLowerCase());
           });
+
+      // Non mostrare categorie senza servizi prenotabili né pacchetti visibili.
+      if (categoryServices.isEmpty && categoryPackages.isEmpty) continue;
 
       final categoryEntries =
           <_CategoryEntry>[
