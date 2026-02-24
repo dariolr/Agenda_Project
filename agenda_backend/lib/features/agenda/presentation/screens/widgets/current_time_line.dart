@@ -41,6 +41,8 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   static const double _lineHeight = 1.0;
   // 🔹 Definiamo il margine/gap che conterrà la linea
   static const double _lineMargin = CurrentTimeLine.horizontalMargin;
+  // Altezza esplicita del box orario.
+  static const double _timeBoxHeight = 22.0;
 
   @override
   void initState() {
@@ -105,67 +107,96 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
 
     final layout = ref.read(layoutConfigProvider);
 
-    // 🔹 Calcoliamo la posizione Y del CENTRO della linea
+    // Posizione del centro timeline nel contenitore padre.
     final lineCenterY = _offset - widget.verticalOffset + layout.headerHeight;
-    // 🔹 Calcoliamo il 'top' per il Positioned
-    final lineTopY = lineCenterY - (_lineHeight / 2);
+    final timelineTop = lineCenterY - (_timeBoxHeight / 2);
+    final clipTop = (layout.headerHeight - timelineTop).clamp(
+      0.0,
+      _timeBoxHeight,
+    );
 
     return Positioned(
-      top: lineTopY,
+      top: timelineTop,
       left: widget.horizontalOffset,
       right: 0,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // --- Linea rossa orizzontale (l'elemento di riferimento) ---
-          Row(
+      child: ClipRect(
+        clipper: _TopCutClipper(clipTop),
+        child: SizedBox(
+          height: _timeBoxHeight,
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              // Spazio per la colonna oraria
-              SizedBox(width: widget.hourColumnWidth - _lineMargin),
-              // Linea dalla fine del box fino al bordo destro
-              Container(
-                width: _lineMargin,
-                height: _lineHeight,
-                color: Colors.redAccent,
-              ),
-              Expanded(
-                child: Container(height: _lineHeight, color: Colors.redAccent),
-              ),
-            ],
-          ),
-          // --- Box dell'orario (centrato verticalmente sulla linea) ---
-          Positioned(
-            left: -_lineMargin - 1,
-            width: widget.hourColumnWidth,
-            top: 0,
-            child: FractionalTranslation(
-              // Sposta il box del 50% della sua altezza verso l'alto
-              // così il suo centro si allinea con la linea
-              translation: const Offset(0, -0.5),
-              child: Align(
+              // --- Linea rossa orizzontale (centrata verticalmente) ---
+              Align(
                 alignment: Alignment.center,
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Text(
-                    _label,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                child: Row(
+                  children: [
+                    SizedBox(width: widget.hourColumnWidth - _lineMargin),
+                    Container(
+                      width: _lineMargin,
+                      height: _lineHeight,
+                      color: Colors.redAccent,
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: _lineHeight,
+                        color: Colors.redAccent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // --- Box dell'orario ---
+              Positioned(
+                left: -_lineMargin - 1,
+                width: widget.hourColumnWidth,
+                top: 0,
+                bottom: 0,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: double.infinity,
+                    height: _timeBoxHeight,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        height: 1.0,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+}
+
+class _TopCutClipper extends CustomClipper<Rect> {
+  const _TopCutClipper(this.topCut);
+
+  final double topCut;
+
+  @override
+  Rect getClip(Size size) {
+    final cut = topCut.clamp(0.0, size.height);
+    // Clip solo verticale: mantieni l'overflow orizzontale del box orario
+    // (che è posizionato con left negativo per allinearsi alla colonna ore).
+    return Rect.fromLTRB(-10000, cut, size.width + 10000, size.height);
+  }
+
+  @override
+  bool shouldReclip(covariant _TopCutClipper oldClipper) =>
+      oldClipper.topCut != topCut;
 }

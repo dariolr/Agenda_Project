@@ -102,7 +102,6 @@ class AgendaStaffBody extends StatelessWidget {
                 ),
               ],
             ),
-            //CurrentTimeLine(hourColumnWidth: hourColumnWidth),
           ],
         ),
       ),
