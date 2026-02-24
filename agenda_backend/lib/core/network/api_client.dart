@@ -511,6 +511,7 @@ class ApiClient {
     double? overridePrice,
     int? overrideDurationMinutes,
     bool isActive = true,
+    bool isBookableOnline = true,
   }) async {
     return post(
       ApiConfig.servicePackages(locationId),
@@ -523,6 +524,7 @@ class ApiClient {
         if (overrideDurationMinutes != null)
           'override_duration_minutes': overrideDurationMinutes,
         'is_active': isActive,
+        'is_bookable_online': isBookableOnline,
       },
     );
   }
@@ -539,6 +541,7 @@ class ApiClient {
     bool setOverridePriceNull = false,
     bool setOverrideDurationNull = false,
     bool? isActive,
+    bool? isBookableOnline,
     List<int>? serviceIds,
   }) async {
     final data = <String, dynamic>{};
@@ -552,6 +555,7 @@ class ApiClient {
       data['override_duration_minutes'] = overrideDurationMinutes;
     }
     if (isActive != null) data['is_active'] = isActive;
+    if (isBookableOnline != null) data['is_bookable_online'] = isBookableOnline;
     if (serviceIds != null) data['service_ids'] = serviceIds;
 
     return put(ApiConfig.servicePackage(locationId, packageId), data: data);

@@ -172,7 +172,9 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     // se i suoi servizi componenti non sono prenotabili online individualmente.
     final allServiceIds = allServices.map((s) => s.id).toSet();
     final visiblePackages = packages.where((package) {
-      if (!package.isActive || package.isBroken) return false;
+      if (!package.isActive || !package.isBookableOnline || package.isBroken) {
+        return false;
+      }
       final packageServiceIds = package.orderedServiceIds;
       if (packageServiceIds.isEmpty) return false;
       return packageServiceIds.every(

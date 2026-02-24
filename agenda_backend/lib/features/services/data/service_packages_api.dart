@@ -23,6 +23,7 @@ class ServicePackagesApi {
     double? overridePrice,
     int? overrideDurationMinutes,
     bool isActive = true,
+    bool isBookableOnline = true,
   }) async {
     final data = await _apiClient.createServicePackage(
       locationId: locationId,
@@ -33,6 +34,7 @@ class ServicePackagesApi {
       overridePrice: overridePrice,
       overrideDurationMinutes: overrideDurationMinutes,
       isActive: isActive,
+      isBookableOnline: isBookableOnline,
     );
     return ServicePackage.fromJson(data['package'] as Map<String, dynamic>);
   }
@@ -48,6 +50,7 @@ class ServicePackagesApi {
     bool setOverridePriceNull = false,
     bool setOverrideDurationNull = false,
     bool? isActive,
+    bool? isBookableOnline,
     List<int>? serviceIds,
   }) async {
     final data = await _apiClient.updateServicePackage(
@@ -61,6 +64,7 @@ class ServicePackagesApi {
       setOverridePriceNull: setOverridePriceNull,
       setOverrideDurationNull: setOverrideDurationNull,
       isActive: isActive,
+      isBookableOnline: isBookableOnline,
       serviceIds: serviceIds,
     );
     return ServicePackage.fromJson(data['package'] as Map<String, dynamic>);

@@ -652,6 +652,7 @@ CREATE TABLE `service_packages` (
   `override_price` decimal(10,2) DEFAULT NULL,
   `override_duration_minutes` int UNSIGNED DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT '1',
+  `is_bookable_online` tinyint(1) NOT NULL DEFAULT '1',
   `is_broken` tinyint(1) DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
