@@ -44,11 +44,13 @@ class LocationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isEmptyLocation = staff.isEmpty;
+    final locationBorderColor = colorScheme.outlineVariant.withOpacity(0.16);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: colorScheme.surface,
+        border: Border.all(color: locationBorderColor),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -64,7 +66,10 @@ class LocationItem extends StatelessWidget {
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
+              color: colorScheme.surface,
+              border: Border(
+                bottom: BorderSide(color: locationBorderColor),
+              ),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(16),
               ),
@@ -85,8 +90,7 @@ class LocationItem extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: colorScheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.w500,
                                   ),
                             ),
                           ),
@@ -97,16 +101,14 @@ class LocationItem extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: colorScheme.onPrimaryContainer.withOpacity(
-                                0.15,
-                              ),
+                              color: colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'ID: ${location.id}',
                               style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(
-                                    color: colorScheme.onPrimaryContainer,
+                                    color: colorScheme.onSurfaceVariant,
                                     fontFamily: 'monospace',
                                   ),
                             ),
@@ -123,8 +125,7 @@ class LocationItem extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                                  color: colorScheme.onPrimaryContainer
-                                      .withOpacity(0.8),
+                                  color: Colors.black54,
                                 ),
                           ),
                         ),
@@ -138,34 +139,24 @@ class LocationItem extends StatelessWidget {
                     if (showDefaultActions && !readOnly) ...[
                       IconButton(
                         tooltip: context.l10n.teamAddStaff,
-                        icon: Icon(
-                          Icons.person_add_alt_1,
-                          color: colorScheme.onPrimaryContainer,
-                        ),
+                        icon: const Icon(Icons.person_add_alt_1),
                         onPressed: onAddStaff,
                       ),
                       if (onManageResources != null)
                         IconButton(
                           tooltip: context.l10n.resourcesTitle,
-                          icon: Icon(
-                            Icons.inventory_2_outlined,
-                            color: colorScheme.onPrimaryContainer,
-                          ),
+                          icon: const Icon(Icons.inventory_2_outlined),
                           onPressed: onManageResources,
                         ),
                       IconButton(
                         tooltip: context.l10n.actionEdit,
-                        icon: Icon(
-                          Icons.edit_outlined,
-                          color: colorScheme.onPrimaryContainer,
-                        ),
+                        icon: const Icon(Icons.edit_outlined),
                         onPressed: onEditLocation,
                       ),
                       if (isEmptyLocation)
                         IconButton(
                           tooltip: context.l10n.actionDelete,
-                          icon: const Icon(Icons.delete_outline),
-                          color: colorScheme.onPrimaryContainer,
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
                           onPressed: onDeleteLocation,
                         ),
                     ],
