@@ -174,6 +174,21 @@ Vedere [agenda_core/docs/api_contract_v1.md](../agenda_core/docs/api_contract_v1
 - Locations indipendenti
 - Timezone e currency per location
 
+### 6. Gestione Date/Timezone (Location-first)
+- Tutta la logica data/ora del gestionale deve usare il timezone della `location` corrente.
+- Se la `location.timezone` è assente/vuota, fallback automatico su `business.timezone`.
+- Se anche il timezone business è invalido o mancante, fallback su `Europe/Rome`.
+- Le impostazioni locale/timezone del browser **non** sono la source of truth per la logica operativa.
+
+Provider e servizi da usare:
+- `effectiveTenantTimezoneProvider` — risolve timezone effettivo (location -> business -> default)
+- `tenantNowProvider` — orario corrente nel timezone effettivo
+- `tenantTodayProvider` — data odierna nel timezone effettivo
+- `TenantTimeService` — conversioni UTC/local tenant
+
+Riferimento dettagliato:
+- [TIMEZONE_LOCATION_POLICY.md](TIMEZONE_LOCATION_POLICY.md)
+
 ---
 
 ## 🎨 UI/UX Guidelines
@@ -243,6 +258,7 @@ Lo storico integrazione API e disponibile nella cronologia Git del repository.
 | File | Descrizione |
 |------|-------------|
 | [AGENTS.md](AGENTS.md) | Istruzioni per AI agents |
+| [TIMEZONE_LOCATION_POLICY.md](TIMEZONE_LOCATION_POLICY.md) | Policy ufficiale gestione date/timezone (location-first) |
 
 **Documentazione backend:**
 - [agenda_core/docs/decisions.md](../agenda_core/docs/decisions.md) — Decisioni architetturali
