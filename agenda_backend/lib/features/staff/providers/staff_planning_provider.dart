@@ -5,6 +5,7 @@ import '../../../core/network/network_providers.dart';
 import '../../../core/services/staff_planning_selector.dart';
 import '../../../core/validation/staff_planning_validator.dart';
 import '../../agenda/providers/date_range_provider.dart';
+import '../../agenda/providers/location_providers.dart';
 
 /// Risultato di una operazione di add/update planning con planning incluso.
 class StaffPlanningResult {
@@ -49,6 +50,9 @@ typedef StaffPlanningsState = Map<int, List<StaffPlanning>>;
 class StaffPlanningsNotifier extends Notifier<StaffPlanningsState> {
   @override
   StaffPlanningsState build() {
+    // Resetta la cache dei planning quando cambia il business attivo,
+    // così dati di un business non vengono usati per un altro.
+    ref.watch(businessIdForLocationsProvider);
     return {};
   }
 
@@ -353,7 +357,10 @@ final ensureStaffPlanningLoadedProvider = FutureProvider.family<void, int>((
   ref,
   staffId,
 ) async {
-  final plannings = ref.watch(staffPlanningsProvider);
+  // Usa ref.read (non watch) per evitare che il completamento del planning
+  // di uno staff invalidi tutti gli altri FutureProvider in cascata,
+  // causando caricamento sequenziale invece che parallelo.
+  final plannings = ref.read(staffPlanningsProvider);
 
   // Se i planning per questo staff sono già caricati, non fare nulla
   if (plannings.containsKey(staffId)) {

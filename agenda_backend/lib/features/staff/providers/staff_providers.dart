@@ -289,7 +289,12 @@ final staffForCurrentLocationProvider = Provider<List<Staff>>((ref) {
 
 class StaffSectionLocationNotifier extends Notifier<int?> {
   @override
-  int? build() => null; // Default: tutte le sedi
+  int? build() {
+    // Resetta automaticamente quando cambia il business attivo,
+    // così la selezione del business precedente non inquina il nuovo.
+    ref.watch(businessIdForLocationsProvider);
+    return null;
+  }
 
   void set(int? locationId) => state = locationId;
 
