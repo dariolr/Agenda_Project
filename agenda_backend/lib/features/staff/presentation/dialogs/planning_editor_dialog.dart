@@ -118,6 +118,10 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
       // Carica slot dai template
       _slotsA = _loadSlotsFromTemplate(p.templateA);
       _slotsB = _loadSlotsFromTemplate(p.templateB);
+
+      // In modalità modifica, deriva l'intervallo di visualizzazione ottimale
+      // dagli orari già presenti nel planning (massimo valore possibile).
+      _displayStepMinutes = _computeOptimalDisplayStep();
     } else {
       _type = StaffPlanningType.weekly;
       // Data inizio = data fine planning attivo + 1 giorno, altrimenti oggi
@@ -187,6 +191,49 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
     return {
       for (int d = 1; d <= 7; d++) d: Set<int>.from(template.daySlots[d] ?? {}),
     };
+  }
+
+  /// Calcola il passo di visualizzazione ottimale dagli orari del planning
+  /// corrente: il valore più alto tra [5, 10, 15, 20, 30, 60] che divide
+  /// esattamente tutti gli orari di inizio e fine turno presenti.
+  ///
+  /// Esempi: tutti 09:00-19:00 → 60; almeno un :30 → 30; almeno un :15 → 15.
+  int _computeOptimalDisplayStep() {
+    const steps = [60, 30, 20, 15, 10, 5];
+
+    // Raccoglie tutti i minuti-da-mezzanotte di inizio e fine di ogni turno.
+    final times = <int>{};
+
+    void collectFromSlots(Map<int, Set<int>> slots) {
+      for (final daySlots in slots.values) {
+        if (daySlots.isEmpty) continue;
+        final sorted = daySlots.toList()..sort();
+        var runStart = sorted.first;
+        var prev = sorted.first;
+        for (int i = 1; i < sorted.length; i++) {
+          if (sorted[i] != prev + 1) {
+            times.add(runStart * 5); // inizio turno in minuti
+            times.add((prev + 1) * 5); // fine turno in minuti
+            runStart = sorted[i];
+          }
+          prev = sorted[i];
+        }
+        times.add(runStart * 5);
+        times.add((prev + 1) * 5);
+      }
+    }
+
+    collectFromSlots(_slotsA);
+    if (_type == StaffPlanningType.biweekly) {
+      collectFromSlots(_slotsB);
+    }
+
+    if (times.isEmpty) return 15;
+
+    for (final step in steps) {
+      if (times.every((t) => t % step == 0)) return step;
+    }
+    return 5;
   }
 
   @override
