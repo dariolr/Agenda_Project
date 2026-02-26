@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/services/tenant_time_service.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/layout_config_provider.dart';
@@ -59,8 +60,15 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
     _scheduleMinuteSync();
   }
 
+  DateTime _tenantNow() {
+    // Provider<DateTime> è cachato da Riverpod: leggiamo direttamente dal service
+    // per ottenere sempre TZDateTime.now() aggiornato al minuto corrente.
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    return TenantTimeService.nowInTimezone(timezone);
+  }
+
   void _scheduleMinuteSync() {
-    final now = ref.read(tenantNowProvider);
+    final now = _tenantNow();
     final msToNextMinute = 60000 - (now.second * 1000 + now.millisecond);
     _minuteTimer = Timer(Duration(milliseconds: msToNextMinute), () {
       _updateLine();
@@ -72,7 +80,7 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   }
 
   void _updateLine({LayoutConfig? configOverride}) {
-    final now = ref.read(tenantNowProvider);
+    final now = _tenantNow();
     final minutesSinceMidnight = now.hour * 60 + now.minute;
     final LayoutConfig config =
         configOverride ?? ref.read(layoutConfigProvider);
@@ -99,7 +107,10 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   @override
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(agendaDateProvider);
-    final today = ref.watch(tenantTodayProvider);
+    // Calcoliamo "oggi" direttamente dal service: tenantTodayProvider è cachato
+    // e non si aggiornerebbe a mezzanotte senza un'invalidazione esplicita.
+    final timezone = ref.watch(effectiveTenantTimezoneProvider);
+    final today = TenantTimeService.dateOnlyTodayInTimezone(timezone);
     final isToday = DateUtils.isSameDay(selectedDate, today);
     if (!isToday) {
       return const SizedBox.shrink();
