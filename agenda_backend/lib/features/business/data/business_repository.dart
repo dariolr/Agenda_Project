@@ -26,7 +26,7 @@ class BusinessRepository {
     String? email,
     String? phone,
     String? onlineBookingsNotificationEmail,
-    String serviceColorPalette = 'legacy',
+    String serviceColorPalette = 'enhanced',
     String timezone = 'Europe/Rome',
     String currency = 'EUR',
     String? adminFirstName,

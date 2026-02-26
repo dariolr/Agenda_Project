@@ -791,7 +791,7 @@ class _AppointmentCardInteractiveState
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.black87,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                           ),
                         )
                       : RichText(
@@ -804,14 +804,14 @@ class _AppointmentCardInteractiveState
                                 text: '$start - $end  ',
                                 style: const TextStyle(
                                   color: Colors.black87,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                               TextSpan(
                                 text: client,
                                 style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
@@ -830,8 +830,8 @@ class _AppointmentCardInteractiveState
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w700,
                   height: 1.1,
                 ),
               ),

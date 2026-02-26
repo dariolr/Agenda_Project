@@ -29,7 +29,7 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
   bool _isLoading = false;
   String? _error;
   bool _autoGenerateSlug = true;
-  String _selectedServiceColorPalette = 'legacy';
+  String _selectedServiceColorPalette = 'enhanced';
 
   @override
   void initState() {
