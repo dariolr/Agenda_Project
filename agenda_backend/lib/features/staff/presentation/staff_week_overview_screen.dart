@@ -11,6 +11,7 @@ import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/domain/config/agenda_theme.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
+import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/staff/presentation/dialogs/add_exception_dialog.dart';
 import 'package:agenda_backend/features/staff/presentation/staff_planning_screen.dart';
@@ -575,25 +576,32 @@ class _StaffWeekOverviewScreenState
   final ScrollController _bodyHController = ScrollController();
   final ScrollController _vScrollController = ScrollController();
 
+  /// Tenta di auto-selezionare la location corrente nella sezione staff.
+  /// Viene chiamato sia al primo frame (locations già cached) sia quando le
+  /// locations terminano il caricamento asincrono.
+  /// Non sovrascrive una selezione esplicita dell'utente (locationId != null).
+  void _tryAutoSelectLocation(List<Location> locations) {
+    if (!mounted) return;
+    if (locations.isEmpty) return;
+
+    final selectedLocation = ref.read(staffSectionLocationIdProvider);
+    if (selectedLocation != null) return; // l'utente ha già scelto una location specifica
+
+    final currentLocationId = ref.read(currentLocationIdProvider);
+    if (currentLocationId <= 0) return;
+
+    final exists = locations.any((l) => l.id == currentLocationId);
+    if (!exists) return; // la location corrente non è disponibile → resta su "Tutte le sedi"
+
+    ref.read(staffSectionLocationIdProvider.notifier).set(currentLocationId);
+  }
+
   @override
   void initState() {
     super.initState();
+    // Caso immediato: locations già caricate in cache al primo frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final selectedStaffSectionLocation = ref.read(
-        staffSectionLocationIdProvider,
-      );
-      // Se l'utente ha già una selezione (incluso "Tutte le sedi"), non forzare.
-      if (selectedStaffSectionLocation != null) return;
-
-      final currentLocationId = ref.read(currentLocationIdProvider);
-      if (currentLocationId <= 0) return;
-
-      final locations = ref.read(locationsProvider);
-      final exists = locations.any((location) => location.id == currentLocationId);
-      if (!exists) return; // fallback implicito: "Tutte le sedi" (null)
-
-      ref.read(staffSectionLocationIdProvider.notifier).set(currentLocationId);
+      _tryAutoSelectLocation(ref.read(locationsProvider));
     });
 
     // Sync header position from body only (unidirectional) per evitare conflitti di inerzia.
@@ -619,6 +627,15 @@ class _StaffWeekOverviewScreenState
 
   @override
   Widget build(BuildContext context) {
+    // Caso asincrono: auto-seleziona location quando finisce di caricare.
+    // Gestisce il caso in cui le locations non erano ancora pronte al primo frame.
+    // Si attiva solo quando le locations passano da vuote a non-vuote.
+    ref.listen<List<Location>>(locationsProvider, (prev, next) {
+      if ((prev == null || prev.isEmpty) && next.isNotEmpty) {
+        _tryAutoSelectLocation(next);
+      }
+    });
+
     // Data sources
     final selectedDate = ref.watch(agendaDateProvider);
     final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
