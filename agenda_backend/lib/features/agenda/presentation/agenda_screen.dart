@@ -305,6 +305,43 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       ],
     );
 
+    final agendaContent = Stack(
+      children: [
+        Positioned.fill(child: mainRow),
+        if (!hasStaff)
+          Positioned.fill(
+            child: ColoredBox(
+              color: Theme.of(context).colorScheme.surface.withOpacity(0.94),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      staffFilterMode == StaffFilterMode.onDutyTeam
+                          ? context.l10n.agendaNoOnDutyTeamTitle
+                          : context.l10n.agendaNoSelectedTeamTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    if (staffFilterMode != StaffFilterMode.allTeam) ...[
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          ref
+                              .read(staffFilterModeProvider.notifier)
+                              .set(StaffFilterMode.allTeam);
+                        },
+                        child: Text(context.l10n.agendaShowAllTeamButton),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+
     return Stack(
       children: [
         Positioned.fill(
@@ -358,31 +395,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
                           textAlign: TextAlign.center,
                         ),
                       )
-                    : hasStaff
-                    ? mainRow
-                    : Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              staffFilterMode == StaffFilterMode.onDutyTeam
-                                  ? context.l10n.agendaNoOnDutyTeamTitle
-                                  : context.l10n.agendaNoSelectedTeamTitle,
-                              style: Theme.of(context).textTheme.titleMedium,
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () {
-                                ref
-                                    .read(staffFilterModeProvider.notifier)
-                                    .set(StaffFilterMode.allTeam);
-                              },
-                              child: Text(context.l10n.agendaShowAllTeamButton),
-                            ),
-                          ],
-                        ),
-                      ),
+                    : agendaContent,
               ),
             ],
           ),
