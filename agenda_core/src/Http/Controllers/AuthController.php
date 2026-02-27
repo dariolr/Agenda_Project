@@ -18,6 +18,7 @@ use Agenda\UseCases\Auth\ChangePassword;
 use Agenda\UseCases\Auth\UpdateProfile;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Security\PasswordHasher;
 use Agenda\Domain\Exceptions\AuthException;
 use Agenda\Domain\Exceptions\ValidationException;
 
@@ -36,6 +37,7 @@ final class AuthController
         private readonly UpdateProfile $updateProfile,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
+        private readonly PasswordHasher $passwordHasher,
     ) {}
 
     /**
@@ -355,6 +357,79 @@ final class AuthController
         } catch (ValidationException $e) {
             return Response::error($e->getMessage(), 'validation_error', 422, $e->getErrors());
         }
+    }
+
+    /**
+     * PATCH /v1/admin/users/{userId}
+     * Superadmin only: aggiorna il profilo di un altro utente.
+     */
+    public function updateUserAdmin(Request $request): Response
+    {
+        $executorId = $request->getAttribute('user_id');
+        if ($executorId === null) {
+            return Response::error('Unauthorized', 'unauthorized', 401);
+        }
+
+        $executor = $this->userRepo->findById((int) $executorId);
+        if (!$executor || empty($executor['is_superadmin'])) {
+            return Response::error('Forbidden', 'forbidden', 403);
+        }
+
+        $targetUserId = (int) $request->getRouteParam('userId');
+        if ($targetUserId <= 0) {
+            return Response::error('Invalid user ID', 'validation_error', 400);
+        }
+
+        $body = $request->getBody();
+
+        try {
+            $user = $this->updateProfile->execute($targetUserId, $body);
+            return Response::success($user, 200);
+        } catch (ValidationException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 422, $e->getErrors());
+        }
+    }
+
+    /**
+     * POST /v1/admin/users/{userId}/set-password
+     * Superadmin only: imposta direttamente la password di un utente (senza la password attuale).
+     */
+    public function setPasswordAdmin(Request $request): Response
+    {
+        $executorId = $request->getAttribute('user_id');
+        if ($executorId === null) {
+            return Response::error('Unauthorized', 'unauthorized', 401);
+        }
+
+        $executor = $this->userRepo->findById((int) $executorId);
+        if (!$executor || empty($executor['is_superadmin'])) {
+            return Response::error('Forbidden', 'forbidden', 403);
+        }
+
+        $targetUserId = (int) $request->getRouteParam('userId');
+        if ($targetUserId <= 0) {
+            return Response::error('Invalid user ID', 'validation_error', 400);
+        }
+
+        $body = $request->getBody();
+        $newPassword = (string) ($body['password'] ?? '');
+
+        if (strlen($newPassword) < 8) {
+            return Response::error('Password must be at least 8 characters', 'validation_error', 422);
+        }
+        if (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[a-z]/', $newPassword) || !preg_match('/[0-9]/', $newPassword)) {
+            return Response::error('Password must contain uppercase, lowercase and numbers', 'validation_error', 422);
+        }
+
+        $target = $this->userRepo->findById($targetUserId);
+        if ($target === null) {
+            return Response::error('User not found', 'not_found', 404);
+        }
+
+        $passwordHash = $this->passwordHasher->hash($newPassword);
+        $this->userRepo->updatePassword($targetUserId, $passwordHash);
+
+        return Response::success(['message' => 'Password updated successfully'], 200);
     }
 
     /**

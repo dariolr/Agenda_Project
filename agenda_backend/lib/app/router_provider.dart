@@ -411,7 +411,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'change-password',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) =>
-            const ChangePasswordScreen(),
+            ChangePasswordScreen(targetUserId: state.extra as int?),
       ),
 
       // Route operatori business

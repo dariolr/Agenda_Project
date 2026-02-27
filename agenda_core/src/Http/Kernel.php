@@ -139,7 +139,9 @@ final class Kernel
         $this->router->put('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'update', ['auth']);
         $this->router->delete('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'destroy', ['auth']);
         $this->router->post('/v1/admin/businesses/{id}/resend-invite', AdminBusinessesController::class, 'resendInvite', ['auth']);
-        
+        $this->router->patch('/v1/admin/users/{userId}', AuthController::class, 'updateUserAdmin', ['auth']);
+        $this->router->post('/v1/admin/users/{userId}/set-password', AuthController::class, 'setPasswordAdmin', ['auth']);
+
         // Business Sync (sincronizzazione tra ambienti)
         $this->router->get('/v1/admin/businesses/{id}/export', BusinessSyncController::class, 'export', ['auth']);
         $this->router->get('/v1/admin/businesses/by-slug/{slug}/export', BusinessSyncController::class, 'exportBySlug', ['auth']);
@@ -441,7 +443,7 @@ final class Kernel
         // Controllers
         $this->controllers = [
             HealthController::class => new HealthController(),
-            AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $verifyResetToken, $changePassword, $updateProfile, $businessUserRepo, $userRepo),
+            AuthController::class => new AuthController($loginUser, $refreshToken, $logoutUser, $getMe, $registerUser, $requestPasswordReset, $resetPassword, $verifyResetToken, $changePassword, $updateProfile, $businessUserRepo, $userRepo, $passwordHasher),
             CustomerAuthController::class => new CustomerAuthController($loginCustomer, $refreshCustomerToken, $logoutCustomer, $getCustomerMe, $registerCustomer, $requestCustomerPasswordReset, $resetCustomerPassword, $updateCustomerProfile, $changeCustomerPassword, $businessRepo),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo, $businessUserRepo, $userRepo),
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),

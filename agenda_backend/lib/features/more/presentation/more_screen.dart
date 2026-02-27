@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/form_factor_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 
 /// Schermata "Altro" con cards per le sezioni secondarie
@@ -24,6 +25,11 @@ class MoreScreen extends ConsumerWidget {
     final canViewStaff = ref.watch(currentUserCanViewStaffProvider);
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
     final canAccessClassEvents = canViewServices && kDebugMode;
+    final isSuperadmin = ref.watch(
+      authProvider.select((s) => s.user?.isSuperadmin ?? false),
+    );
+    final businessOwner = isSuperadmin ? ref.watch(businessOwnerProvider) : null;
+    final showProfile = !isSuperadmin || businessOwner != null;
 
     final items = [
       // Servizi - visibile solo a chi può gestire impostazioni
@@ -92,13 +98,14 @@ class MoreScreen extends ConsumerWidget {
           color: const Color(0xFFE91E63), // Pink
           onTap: () => context.go('/chiusure'),
         ),
-      _MoreItem(
-        icon: Icons.account_circle_outlined,
-        title: l10n.profileTitle,
-        description: l10n.moreProfileDescription,
-        color: const Color(0xFF607D8B), // Blue Grey
-        onTap: () => context.go('/profilo'),
-      ),
+      if (showProfile)
+        _MoreItem(
+          icon: Icons.account_circle_outlined,
+          title: l10n.profileTitle,
+          description: l10n.moreProfileDescription,
+          color: const Color(0xFF607D8B), // Blue Grey
+          onTap: () => context.go('/profilo'),
+        ),
     ];
 
     return Scaffold(
