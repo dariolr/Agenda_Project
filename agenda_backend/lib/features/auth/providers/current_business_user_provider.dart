@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/models/business_user.dart';
 import '../../../core/network/network_providers.dart';
 import '../../agenda/providers/business_providers.dart';
+import '../../business/providers/business_users_provider.dart';
 import '../../business/providers/superadmin_selected_business_provider.dart';
 import 'auth_provider.dart';
 
@@ -410,4 +412,27 @@ final currentUserCanViewReportsProvider = Provider<bool>((ref) {
     loading: () => false,
     error: (_, __) => false,
   );
+});
+
+/// Ritorna il BusinessUser con ruolo 'owner' (o 'admin' come fallback)
+/// del business corrente, solo se l'utente loggato è superadmin.
+/// Ritorna null se: non è superadmin, nessun business selezionato,
+/// o nessun owner/admin attivo nel business.
+final businessOwnerProvider = Provider<BusinessUser?>((ref) {
+  final authState = ref.watch(authProvider);
+  if (!(authState.user?.isSuperadmin ?? false)) return null;
+
+  final businessId = ref.watch(currentBusinessIdProvider);
+  if (businessId <= 0) return null;
+
+  final usersState = ref.watch(businessUsersProvider(businessId));
+  final active = usersState.users.where((u) => u.status == 'active');
+
+  final owners = active.where((u) => u.role == 'owner');
+  if (owners.isNotEmpty) return owners.first;
+
+  final admins = active.where((u) => u.role == 'admin');
+  if (admins.isNotEmpty) return admins.first;
+
+  return null;
 });

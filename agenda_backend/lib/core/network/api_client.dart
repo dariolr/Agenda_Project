@@ -471,6 +471,35 @@ class ApiClient {
     return put(ApiConfig.authMe, data: data);
   }
 
+  /// POST /v1/admin/users/{userId}/set-password
+  /// Superadmin only: imposta direttamente la password di un utente.
+  Future<void> setAdminUserPassword({
+    required int userId,
+    required String newPassword,
+  }) async {
+    await post(
+      '/v1/admin/users/$userId/set-password',
+      data: {'password': newPassword},
+    );
+  }
+
+  /// PATCH /v1/admin/users/{userId}
+  /// Superadmin only: aggiorna il profilo di un utente.
+  Future<Map<String, dynamic>> updateAdminUserProfile({
+    required int userId,
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+  }) async {
+    final data = <String, dynamic>{};
+    if (firstName != null) data['first_name'] = firstName;
+    if (lastName != null) data['last_name'] = lastName;
+    if (email != null) data['email'] = email;
+    if (phone != null) data['phone'] = phone;
+    return patch('/v1/admin/users/$userId', data: data);
+  }
+
   // ========== PUBLIC BROWSE ENDPOINTS ==========
 
   /// GET /v1/services?location_id=X
