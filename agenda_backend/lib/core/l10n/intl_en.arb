@@ -1074,7 +1074,7 @@
   "reportsColUtilization": "Occupancy",
   "reportsColStaff": "Staff",
   "reportsColAppointments": "Appointments",
-  "reportsColRevenue": "Revenue",
+  "reportsColRevenue": "Amount",
   "reportsColHours": "Hours",
   "reportsColAvgRevenue": "Average",
   "reportsColPercentage": "%",

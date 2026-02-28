@@ -1074,7 +1074,7 @@
   "reportsColUtilization": "Occupazione",
   "reportsColStaff": "Operatore",
   "reportsColAppointments": "Appuntamenti",
-  "reportsColRevenue": "Incasso",
+  "reportsColRevenue": "Importo",
   "reportsColHours": "Ore",
   "reportsColAvgRevenue": "Media",
   "reportsColPercentage": "%",

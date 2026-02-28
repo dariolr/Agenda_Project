@@ -6375,10 +6375,10 @@ class L10n {
     );
   }
 
-  /// `Incasso`
+  /// `Importo`
   String get reportsColRevenue {
     return Intl.message(
-      'Incasso',
+      'Importo',
       name: 'reportsColRevenue',
       desc: '',
       args: [],
