@@ -155,6 +155,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       List<Widget> buildActions() {
         final List<Widget> actions = [];
         if (isAgenda) {
+          // Icona report agenda temporaneamente disabilitata.
           if (canCreateAgendaItems) {
             actions.add(const _AgendaAddAction());
           }
@@ -273,6 +274,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
             const _AgendaFilterActions(padding: EdgeInsets.only(left: 8)),
           );
         }
+        // Icona report agenda temporaneamente disabilitata.
         if (canCreateAgendaItems) {
           actions.add(const _AgendaAddAction(compact: true));
         }

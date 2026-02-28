@@ -516,7 +516,16 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
                     onChanged(item.copyWithPriceCleared());
                   },
                 )
-              : null,
+              : IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  tooltip: l10n.actionEdit,
+                  onPressed: () => _showPriceEditor(
+                    context,
+                    l10n,
+                    currentPrice,
+                    defaultPrice,
+                  ),
+                ),
         ),
         child: Text(
           currentPrice == 0
@@ -924,6 +933,9 @@ class _TimeField extends StatelessWidget {
           ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
           isDense: true,
+          suffixIcon: isDisabled
+              ? const Icon(Icons.lock_outline, size: 18)
+              : const Icon(Icons.arrow_drop_down, size: 24),
           enabled: !isDisabled,
         ),
         child: Text(
@@ -1181,6 +1193,9 @@ class _DurationField extends StatelessWidget {
           ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
           isDense: true,
+          suffixIcon: isDisabled
+              ? const Icon(Icons.lock_outline, size: 18)
+              : const Icon(Icons.arrow_drop_down, size: 24),
           enabled: !isDisabled,
         ),
         child: Text(

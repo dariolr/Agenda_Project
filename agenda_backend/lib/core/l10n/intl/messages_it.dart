@@ -1520,21 +1520,24 @@ class MessageLookup extends MessageLookupByLibrary {
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operatori"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("Tu"),
     "paymentDialogTitle": MessageLookupByLibrary.simpleMessage("Pagamento"),
+    "paymentCashAndCardTotal": MessageLookupByLibrary.simpleMessage("Totale contanti e carte"),
     "paymentEntered": MessageLookupByLibrary.simpleMessage("Totale inserito"),
-    "paymentCustomerCredit": MessageLookupByLibrary.simpleMessage(
-      "Credito cliente",
-    ),
+    "paymentOutstanding": MessageLookupByLibrary.simpleMessage("Residuo da incassare"),
+    "paymentRequired": MessageLookupByLibrary.simpleMessage("Totale appuntamenti"),
     "paymentMethodCard": MessageLookupByLibrary.simpleMessage(
       "Bancomat/Carta di credito",
     ),
     "paymentMethodCash": MessageLookupByLibrary.simpleMessage("Contanti"),
     "paymentMethodDiscount": MessageLookupByLibrary.simpleMessage("Sconto"),
     "paymentMethodOther": MessageLookupByLibrary.simpleMessage("Altro"),
-    "paymentMethodPreviousCredit": MessageLookupByLibrary.simpleMessage(
-      "Credito precedente",
-    ),
     "paymentMethodPending": MessageLookupByLibrary.simpleMessage(
       "Ancora da pagare",
+    ),
+    "paymentNotesLabel": MessageLookupByLibrary.simpleMessage(
+      "Note pagamento",
+    ),
+    "paymentNotesPlaceholder": MessageLookupByLibrary.simpleMessage(
+      "Note sul pagamento...",
     ),
     "paymentMethodVoucher": MessageLookupByLibrary.simpleMessage("Buono"),
     "paymentRemaining": MessageLookupByLibrary.simpleMessage("Rimanente"),
@@ -1820,6 +1823,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Appuntamenti",
     ),
     "reportsTotalHours": MessageLookupByLibrary.simpleMessage("Ore lavorate"),
+    "reportsAppointmentsAmount": MessageLookupByLibrary.simpleMessage("Totale appuntamenti"),
     "reportsTotalRevenue": MessageLookupByLibrary.simpleMessage("Incasso"),
     "reportsUniqueClients": MessageLookupByLibrary.simpleMessage(
       "Clienti unici",

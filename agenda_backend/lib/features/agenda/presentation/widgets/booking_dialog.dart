@@ -14,6 +14,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/booking.dart';
+import '../../../../core/models/booking_payment.dart';
 import '../../../../core/models/recurrence_rule.dart';
 import '../../../../core/models/service_package.dart';
 import '../../../../core/models/service_variant.dart';
@@ -38,6 +39,7 @@ import '../../data/bookings_api.dart';
 import '../../domain/service_item_data.dart';
 import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/appointment_providers.dart';
+import '../../providers/booking_payment_providers.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/bookings_repository_provider.dart';
 import '../../providers/business_providers.dart';
@@ -118,6 +120,8 @@ class _BookingDialog extends ConsumerStatefulWidget {
 }
 
 class _BookingDialogState extends ConsumerState<_BookingDialog> {
+  BookingPayment? _pendingPayment;
+
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -501,13 +505,21 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         onPressed: totalPrice > 0
             ? () async {
                 final navigator = Navigator.of(context);
-                final didSave = await showPaymentDialog(
+                final payment = await showPaymentDialog(
                   context,
                   ref,
                   totalPrice: totalPrice,
                   currencyCode: PriceFormatter.effectiveCurrency(ref),
+                  bookingId: widget.existing?.id,
+                  initialPayment: widget.existing == null ? _pendingPayment : null,
                 );
-                if (!didSave || !mounted) return;
+                if (!mounted || payment == null) return;
+                if (widget.existing == null) {
+                  setState(() {
+                    _pendingPayment = _isEmptyPaymentDraft(payment) ? null : payment;
+                  });
+                  return;
+                }
                 navigator.pop();
               }
             : null,
@@ -1986,6 +1998,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           );
     }
 
+    await _persistPendingPaymentIfNeeded(bookingResponse);
+
     // Refresh appointments per caricare i nuovi
     ref.invalidate(appointmentsProvider);
     await ref.read(appointmentsProvider.future);
@@ -1999,6 +2013,47 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     if (scrollTarget != null) {
       ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
     }
+  }
+
+  Future<void> _persistPendingPaymentIfNeeded(dynamic bookingResponse) async {
+    final pendingPayment = _pendingPayment;
+    if (pendingPayment == null) return;
+
+    final paymentToSave = BookingPayment(
+      bookingId: bookingResponse.id as int,
+      clientId: bookingResponse.clientId as int?,
+      isActive: true,
+      currency: pendingPayment.currency,
+      totalDueCents: pendingPayment.totalDueCents,
+      note: pendingPayment.note,
+      lines: pendingPayment.lines,
+      computed: pendingPayment.computed,
+    );
+
+    try {
+      final controller = ref.read(
+        bookingPaymentControllerProvider(bookingResponse.id as int),
+      );
+      await controller.save(paymentToSave);
+      ref.invalidate(bookingPaymentProvider(bookingResponse.id as int));
+      if (mounted) {
+        setState(() => _pendingPayment = null);
+      } else {
+        _pendingPayment = null;
+      }
+    } catch (error) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.actionPayment,
+        message: error is ApiException ? error.message : error.toString(),
+      );
+    }
+  }
+
+  bool _isEmptyPaymentDraft(BookingPayment payment) {
+    final note = payment.note?.trim() ?? '';
+    return payment.totalDueCents <= 0 && payment.lines.isEmpty && note.isEmpty;
   }
 
   Future<void> _createRecurringBooking({

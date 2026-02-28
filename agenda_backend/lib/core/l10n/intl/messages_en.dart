@@ -1452,22 +1452,23 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operators"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("You"),
-    "paymentCustomerCredit": MessageLookupByLibrary.simpleMessage(
-      "Customer credit",
-    ),
     "paymentDialogTitle": MessageLookupByLibrary.simpleMessage("Payment"),
+    "paymentCashAndCardTotal": MessageLookupByLibrary.simpleMessage("Total cash and cards"),
     "paymentEntered": MessageLookupByLibrary.simpleMessage("Total entered"),
+    "paymentOutstanding": MessageLookupByLibrary.simpleMessage("Outstanding to collect"),
+    "paymentRequired": MessageLookupByLibrary.simpleMessage("Total appointments"),
     "paymentMethodCard": MessageLookupByLibrary.simpleMessage(
       "Debit/Credit Card",
     ),
     "paymentMethodCash": MessageLookupByLibrary.simpleMessage("Cash"),
     "paymentMethodDiscount": MessageLookupByLibrary.simpleMessage("Discount"),
     "paymentMethodOther": MessageLookupByLibrary.simpleMessage("Other"),
-    "paymentMethodPreviousCredit": MessageLookupByLibrary.simpleMessage(
-      "Previous credit",
-    ),
     "paymentMethodPending": MessageLookupByLibrary.simpleMessage(
       "Still to pay",
+    ),
+    "paymentNotesLabel": MessageLookupByLibrary.simpleMessage("Payment notes"),
+    "paymentNotesPlaceholder": MessageLookupByLibrary.simpleMessage(
+      "Notes about the payment...",
     ),
     "paymentMethodVoucher": MessageLookupByLibrary.simpleMessage("Voucher"),
     "paymentRemaining": MessageLookupByLibrary.simpleMessage("Remaining"),
@@ -1729,6 +1730,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Appointments",
     ),
     "reportsTotalHours": MessageLookupByLibrary.simpleMessage("Hours worked"),
+    "reportsAppointmentsAmount": MessageLookupByLibrary.simpleMessage("Total appointments"),
     "reportsTotalRevenue": MessageLookupByLibrary.simpleMessage("Revenue"),
     "reportsUniqueClients": MessageLookupByLibrary.simpleMessage(
       "Unique clients",
