@@ -1046,6 +1046,7 @@
   "actionApply": "Applica",
   "reportsTotalAppointments": "Appuntamenti",
   "reportsTotalRevenue": "Incasso",
+  "reportsAppointmentsAmount": "Totale appuntamenti",
   "reportsTotalHours": "Ore lavorate",
   "reportsOccupancyPercentage": "Occupazione",
   "reportsUniqueClients": "Clienti unici",
@@ -1422,11 +1423,14 @@
   "paymentMethodCard": "Bancomat/Carta di credito",
   "paymentMethodDiscount": "Sconto",
   "paymentMethodVoucher": "Buono",
-  "paymentMethodPreviousCredit": "Credito precedente",
   "paymentMethodOther": "Altro",
   "paymentMethodPending": "Ancora da pagare",
   "paymentTotalCost": "Costo prenotazione",
+  "paymentRequired": "Totale appuntamenti",
   "paymentEntered": "Totale inserito",
+  "paymentCashAndCardTotal": "Totale contanti e carte",
+  "paymentOutstanding": "Residuo da incassare",
   "paymentRemaining": "Rimanente",
-  "paymentCustomerCredit": "Credito cliente"
+  "paymentNotesLabel": "Note pagamento",
+  "paymentNotesPlaceholder": "Note sul pagamento..."
 }

@@ -87,6 +87,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyAgendaLaunchPresetIfAny();
       _fetchReport();
     });
   }
@@ -109,6 +110,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     } else {
       _fetchWorkHoursReport();
     }
+  }
+
+  void _applyAgendaLaunchPresetIfAny() {
+    final launchRequest = ref.read(agendaReportLaunchProvider);
+    if (launchRequest == null) {
+      return;
+    }
+
+    final targetDate = DateUtils.dateOnly(launchRequest.date);
+    ref.read(reportsFilterProvider.notifier).setDateRange(targetDate, targetDate);
+    _selectedLocationIds
+      ..clear()
+      ..add(launchRequest.locationId);
+    ref.read(agendaReportLaunchProvider.notifier).clear();
   }
 
   void _fetchReport() {
@@ -622,6 +637,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         children: [
           // Summary cards
           _buildSummaryCards(context, report.summary),
+          const SizedBox(height: 16),
+          _buildPaymentsSummary(context, report.summary),
           const SizedBox(height: 24),
 
           // Breakdown sections
@@ -720,7 +737,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       ),
       _SummaryCardData(
         icon: Icons.euro,
-        label: l10n.reportsTotalRevenue,
+        label: l10n.reportsAppointmentsAmount,
         value: currencyFormat.format(summary.totalRevenue),
         color: Colors.green,
       ),
@@ -762,6 +779,128 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           },
         );
       },
+    );
+  }
+
+  Widget _buildPaymentsSummary(BuildContext context, ReportSummary summary) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final locale = Localizations.localeOf(context).toString();
+    final currencyFormat = NumberFormat.currency(
+      locale: locale,
+      symbol: '€',
+      decimalDigits: 2,
+    );
+
+    String cents(int value) => currencyFormat.format(value / 100);
+    final cashAndCardCents = summary.cashCents + summary.cardCents;
+    final outstandingCents = (summary.dueCents -
+            summary.paidCents -
+            summary.discountCents)
+        .clamp(0, 1 << 31);
+
+    double? percentageOfDue(int value, {bool hideWhenFull = false}) {
+      if (summary.dueCents <= 0) {
+        return null;
+      }
+      final percentage = (value / summary.dueCents) * 100;
+      if (hideWhenFull && (percentage - 100).abs() < 0.01) {
+        return null;
+      }
+      return percentage;
+    }
+
+    final rows = <({String label, int valueCents, double? percentage})>[
+      (
+        label: l10n.paymentRequired,
+        valueCents: summary.dueCents,
+        percentage: percentageOfDue(summary.dueCents, hideWhenFull: true),
+      ),
+      (
+        label: l10n.paymentEntered,
+        valueCents: summary.paidCents,
+        percentage: percentageOfDue(summary.paidCents),
+      ),
+      (
+        label: l10n.paymentCashAndCardTotal,
+        valueCents: cashAndCardCents,
+        percentage: percentageOfDue(cashAndCardCents),
+      ),
+      (
+        label: l10n.paymentMethodCash,
+        valueCents: summary.cashCents,
+        percentage: percentageOfDue(summary.cashCents),
+      ),
+      (
+        label: l10n.paymentMethodCard,
+        valueCents: summary.cardCents,
+        percentage: percentageOfDue(summary.cardCents),
+      ),
+      (
+        label: l10n.paymentMethodVoucher,
+        valueCents: summary.voucherCents,
+        percentage: percentageOfDue(summary.voucherCents),
+      ),
+      (
+        label: l10n.paymentMethodOther,
+        valueCents: summary.otherCents,
+        percentage: percentageOfDue(summary.otherCents),
+      ),
+      (
+        label: l10n.paymentMethodDiscount,
+        valueCents: summary.discountCents,
+        percentage: percentageOfDue(summary.discountCents),
+      ),
+      (
+        label: l10n.paymentOutstanding,
+        valueCents: outstandingCents,
+        percentage: percentageOfDue(outstandingCents),
+      ),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.actionPayment,
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            for (final row in rows) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: Text(row.label)),
+                  SizedBox(
+                    width: 96,
+                    child: Text(
+                      cents(row.valueCents),
+                      textAlign: TextAlign.right,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 112,
+                    child: row.percentage == null
+                        ? const SizedBox.shrink()
+                        : Align(
+                            alignment: Alignment.centerRight,
+                            child: _buildPercentageBar(context, row.percentage!),
+                          ),
+                  ),
+                ],
+              ),
+              if (row != rows.last) const SizedBox(height: 8),
+            ],
+          ],
+        ),
+      ),
     );
   }
 

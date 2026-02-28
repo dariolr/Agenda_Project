@@ -78,12 +78,20 @@ final class ReportsController
                     'cancelled_count' => 0,
                     'online_count' => 0,
                     'manual_count' => 0,
+                    'cash_cents' => 0,
+                    'card_cents' => 0,
+                    'voucher_cents' => 0,
+                    'other_cents' => 0,
+                    'discount_cents' => 0,
+                    'paid_cents' => 0,
+                    'due_cents' => 0,
                 ],
                 'by_staff' => [],
                 'by_location' => [],
                 'by_service' => [],
                 'by_day_of_week' => [],
-                'by_period' => [],
+                'by_period' => ['granularity' => 'day', 'data' => []],
+                'by_hour' => [],
                 'filters' => [
                     'business_id' => $businessId,
                     'start_date' => $startDate,
@@ -283,6 +291,9 @@ final class ReportsController
         $stmt->execute($params);
         $byHour = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        $paymentSummary = $this->buildPaymentSummary($pdo, $whereClause, $params);
+        $paymentByLocation = $this->buildPaymentByLocation($pdo, $whereClause, $params);
+
         $summary['total_appointments'] = (int) $summary['total_appointments'];
         $summary['total_bookings'] = (int) $summary['total_bookings'];
         $summary['total_revenue'] = (float) $summary['total_revenue'];
@@ -298,6 +309,7 @@ final class ReportsController
         $summary['occupancy_percentage'] = $availableMinutes > 0 
             ? round(($summary['total_duration_minutes'] / $availableMinutes) * 100, 1) 
             : 0;
+        $summary = array_merge($summary, $paymentSummary);
 
         foreach ($byStaff as &$row) {
             $row['staff_id'] = (int) $row['staff_id'];
@@ -310,6 +322,8 @@ final class ReportsController
             $row['appointments'] = (int) $row['appointments'];
             $row['revenue'] = (float) $row['revenue'];
             $row['duration_minutes'] = (int) $row['duration_minutes'];
+            $locationPayments = $paymentByLocation[$row['location_id']] ?? $this->emptyPaymentAggregates();
+            $row = array_merge($row, $locationPayments);
         }
         foreach ($byService as &$row) {
             $row['service_id'] = (int) $row['service_id'];
@@ -349,6 +363,127 @@ final class ReportsController
                 'service_ids' => array_map('intval', $serviceIds),
                 'statuses' => $statuses,
             ],
+        ];
+    }
+
+    private function buildPaymentSummary(PDO $pdo, string $whereClause, array $params): array
+    {
+        $sql = "SELECT
+                COALESCE(SUM(COALESCE(pay.cash_cents, 0)), 0) AS cash_cents,
+                COALESCE(SUM(COALESCE(pay.card_cents, 0)), 0) AS card_cents,
+                COALESCE(SUM(COALESCE(pay.voucher_cents, 0)), 0) AS voucher_cents,
+                COALESCE(SUM(COALESCE(pay.other_cents, 0)), 0) AS other_cents,
+                COALESCE(SUM(COALESCE(pay.discount_cents, 0)), 0) AS discount_cents,
+                COALESCE(SUM(COALESCE(pay.paid_cents, 0)), 0) AS paid_cents,
+                COALESCE(SUM(COALESCE(bp.total_due_cents, fb.fallback_due_cents)), 0) AS due_cents
+            FROM (
+                SELECT b.id AS booking_id,
+                       b.location_id AS location_id,
+                       CAST(ROUND(COALESCE(SUM(bi.price), 0) * 100, 0) AS UNSIGNED) AS fallback_due_cents
+                FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.id
+                WHERE $whereClause
+                GROUP BY b.id, b.location_id
+            ) fb
+            LEFT JOIN booking_payments bp ON bp.booking_id = fb.booking_id AND bp.is_active = 1
+            LEFT JOIN (
+                SELECT
+                    bp.booking_id,
+                    SUM(CASE WHEN bpl.type = 'cash' THEN bpl.amount_cents ELSE 0 END) AS cash_cents,
+                    SUM(CASE WHEN bpl.type = 'card' THEN bpl.amount_cents ELSE 0 END) AS card_cents,
+                    SUM(CASE WHEN bpl.type = 'voucher' THEN bpl.amount_cents ELSE 0 END) AS voucher_cents,
+                    SUM(CASE WHEN bpl.type = 'other' THEN bpl.amount_cents ELSE 0 END) AS other_cents,
+                    SUM(CASE WHEN bpl.type = 'discount' THEN bpl.amount_cents ELSE 0 END) AS discount_cents,
+                    SUM(CASE WHEN bpl.type IN ('cash', 'card', 'voucher', 'other') THEN bpl.amount_cents ELSE 0 END) AS paid_cents
+                FROM booking_payments bp
+                LEFT JOIN booking_payment_lines bpl ON bpl.booking_payment_id = bp.id
+                WHERE bp.is_active = 1
+                GROUP BY bp.booking_id
+            ) pay ON pay.booking_id = fb.booking_id";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        return [
+            'cash_cents' => (int) ($row['cash_cents'] ?? 0),
+            'card_cents' => (int) ($row['card_cents'] ?? 0),
+            'voucher_cents' => (int) ($row['voucher_cents'] ?? 0),
+            'other_cents' => (int) ($row['other_cents'] ?? 0),
+            'discount_cents' => (int) ($row['discount_cents'] ?? 0),
+            'paid_cents' => (int) ($row['paid_cents'] ?? 0),
+            'due_cents' => (int) ($row['due_cents'] ?? 0),
+        ];
+    }
+
+    private function buildPaymentByLocation(PDO $pdo, string $whereClause, array $params): array
+    {
+        $sql = "SELECT
+                fb.location_id,
+                COALESCE(SUM(COALESCE(pay.cash_cents, 0)), 0) AS cash_cents,
+                COALESCE(SUM(COALESCE(pay.card_cents, 0)), 0) AS card_cents,
+                COALESCE(SUM(COALESCE(pay.voucher_cents, 0)), 0) AS voucher_cents,
+                COALESCE(SUM(COALESCE(pay.other_cents, 0)), 0) AS other_cents,
+                COALESCE(SUM(COALESCE(pay.discount_cents, 0)), 0) AS discount_cents,
+                COALESCE(SUM(COALESCE(pay.paid_cents, 0)), 0) AS paid_cents,
+                COALESCE(SUM(COALESCE(bp.total_due_cents, fb.fallback_due_cents)), 0) AS due_cents
+            FROM (
+                SELECT b.id AS booking_id,
+                       b.location_id AS location_id,
+                       CAST(ROUND(COALESCE(SUM(bi.price), 0) * 100, 0) AS UNSIGNED) AS fallback_due_cents
+                FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.id
+                WHERE $whereClause
+                GROUP BY b.id, b.location_id
+            ) fb
+            LEFT JOIN booking_payments bp ON bp.booking_id = fb.booking_id AND bp.is_active = 1
+            LEFT JOIN (
+                SELECT
+                    bp.booking_id,
+                    SUM(CASE WHEN bpl.type = 'cash' THEN bpl.amount_cents ELSE 0 END) AS cash_cents,
+                    SUM(CASE WHEN bpl.type = 'card' THEN bpl.amount_cents ELSE 0 END) AS card_cents,
+                    SUM(CASE WHEN bpl.type = 'voucher' THEN bpl.amount_cents ELSE 0 END) AS voucher_cents,
+                    SUM(CASE WHEN bpl.type = 'other' THEN bpl.amount_cents ELSE 0 END) AS other_cents,
+                    SUM(CASE WHEN bpl.type = 'discount' THEN bpl.amount_cents ELSE 0 END) AS discount_cents,
+                    SUM(CASE WHEN bpl.type IN ('cash', 'card', 'voucher', 'other') THEN bpl.amount_cents ELSE 0 END) AS paid_cents
+                FROM booking_payments bp
+                LEFT JOIN booking_payment_lines bpl ON bpl.booking_payment_id = bp.id
+                WHERE bp.is_active = 1
+                GROUP BY bp.booking_id
+            ) pay ON pay.booking_id = fb.booking_id
+            GROUP BY fb.location_id";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $locationId = (int) $row['location_id'];
+            $result[$locationId] = [
+                'cash_cents' => (int) ($row['cash_cents'] ?? 0),
+                'card_cents' => (int) ($row['card_cents'] ?? 0),
+                'voucher_cents' => (int) ($row['voucher_cents'] ?? 0),
+                'other_cents' => (int) ($row['other_cents'] ?? 0),
+                'discount_cents' => (int) ($row['discount_cents'] ?? 0),
+                'paid_cents' => (int) ($row['paid_cents'] ?? 0),
+                'due_cents' => (int) ($row['due_cents'] ?? 0),
+            ];
+        }
+
+        return $result;
+    }
+
+    private function emptyPaymentAggregates(): array
+    {
+        return [
+            'cash_cents' => 0,
+            'card_cents' => 0,
+            'voucher_cents' => 0,
+            'other_cents' => 0,
+            'discount_cents' => 0,
+            'paid_cents' => 0,
+            'due_cents' => 0,
         ];
     }
 

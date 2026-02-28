@@ -801,6 +801,13 @@ class ApiClient {
     return get(ApiConfig.bookingHistory(bookingId));
   }
 
+  /// GET /v1/bookings/{booking_id}/payment
+  Future<Map<String, dynamic>> getBookingPayment({
+    required int bookingId,
+  }) async {
+    return get(ApiConfig.bookingPayment(bookingId));
+  }
+
   /// POST /v1/locations/{location_id}/bookings
   Future<Map<String, dynamic>> createBooking({
     required int locationId,
@@ -887,6 +894,14 @@ class ApiClient {
     required int bookingId,
   }) async {
     await delete(ApiConfig.booking(locationId, bookingId));
+  }
+
+  /// PUT /v1/bookings/{booking_id}/payment
+  Future<Map<String, dynamic>> upsertBookingPayment({
+    required int bookingId,
+    required Map<String, dynamic> payload,
+  }) async {
+    return put(ApiConfig.bookingPayment(bookingId), data: payload);
   }
 
   /// GET /v1/businesses/{business_id}/bookings/list

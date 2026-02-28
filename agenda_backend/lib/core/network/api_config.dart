@@ -70,6 +70,10 @@ class ApiConfig {
   static String bookingHistory(int bookingId) =>
       '/v1/bookings/$bookingId/history';
 
+  /// Pagamento booking endpoint
+  static String bookingPayment(int bookingId) =>
+      '/v1/bookings/$bookingId/payment';
+
   /// Lista bookings filtrata per business (gestionale)
   static String bookingsList(int businessId) =>
       '/v1/businesses/$businessId/bookings/list';

@@ -6100,6 +6100,16 @@ class L10n {
     );
   }
 
+  /// `Totale appuntamenti`
+  String get reportsAppointmentsAmount {
+    return Intl.message(
+      'Totale appuntamenti',
+      name: 'reportsAppointmentsAmount',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Ore lavorate`
   String get reportsTotalHours {
     return Intl.message(
@@ -8909,16 +8919,6 @@ class L10n {
     );
   }
 
-  /// `Credito precedente`
-  String get paymentMethodPreviousCredit {
-    return Intl.message(
-      'Credito precedente',
-      name: 'paymentMethodPreviousCredit',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Altro`
   String get paymentMethodOther {
     return Intl.message(
@@ -8959,6 +8959,36 @@ class L10n {
     );
   }
 
+  /// `Totale contanti e carte`
+  String get paymentCashAndCardTotal {
+    return Intl.message(
+      'Totale contanti e carte',
+      name: 'paymentCashAndCardTotal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Totale appuntamenti`
+  String get paymentRequired {
+    return Intl.message(
+      'Totale appuntamenti',
+      name: 'paymentRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Residuo da incassare`
+  String get paymentOutstanding {
+    return Intl.message(
+      'Residuo da incassare',
+      name: 'paymentOutstanding',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Rimanente`
   String get paymentRemaining {
     return Intl.message(
@@ -8969,11 +8999,21 @@ class L10n {
     );
   }
 
-  /// `Credito cliente`
-  String get paymentCustomerCredit {
+  /// `Note pagamento`
+  String get paymentNotesLabel {
     return Intl.message(
-      'Credito cliente',
-      name: 'paymentCustomerCredit',
+      'Note pagamento',
+      name: 'paymentNotesLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Note sul pagamento...`
+  String get paymentNotesPlaceholder {
+    return Intl.message(
+      'Note sul pagamento...',
+      name: 'paymentNotesPlaceholder',
       desc: '',
       args: [],
     );

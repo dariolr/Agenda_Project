@@ -685,20 +685,27 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       onPressed: totalPrice > 0
           ? () async {
               final navigator = Navigator.of(context);
-              final didSave = await showPaymentDialog(
+              final payment = await showPaymentDialog(
                 context,
                 ref,
                 totalPrice: totalPrice,
                 currencyCode: PriceFormatter.effectiveCurrency(ref),
+                bookingId: widget.initial.bookingId,
               );
-              if (!didSave || !mounted) return;
+              if (payment == null || !mounted) return;
               navigator.pop();
             }
           : null,
       padding: AppButtonStyles.dialogButtonPadding,
       child: Text(l10n.actionPayment),
     );
-    final actions = [deleteAction, cancelAction, rescheduleAction, saveAction, paymentAction];
+    final actions = [
+      deleteAction,
+      cancelAction,
+      rescheduleAction,
+      paymentAction,
+      saveAction,
+    ];
 
     if (isDialog) {
       return PopScope(

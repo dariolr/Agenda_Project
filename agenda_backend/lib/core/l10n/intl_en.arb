@@ -1046,6 +1046,7 @@
   "actionApply": "Apply",
   "reportsTotalAppointments": "Appointments",
   "reportsTotalRevenue": "Revenue",
+  "reportsAppointmentsAmount": "Total appointments",
   "reportsTotalHours": "Hours worked",
   "reportsOccupancyPercentage": "Occupancy",
   "reportsUniqueClients": "Unique clients",
@@ -1422,11 +1423,14 @@
   "paymentMethodCard": "Debit/Credit Card",
   "paymentMethodDiscount": "Discount",
   "paymentMethodVoucher": "Voucher",
-  "paymentMethodPreviousCredit": "Previous credit",
   "paymentMethodOther": "Other",
   "paymentMethodPending": "Still to pay",
   "paymentTotalCost": "Booking cost",
+  "paymentRequired": "Total appointments",
   "paymentEntered": "Total entered",
+  "paymentCashAndCardTotal": "Total cash and cards",
+  "paymentOutstanding": "Outstanding to collect",
   "paymentRemaining": "Remaining",
-  "paymentCustomerCredit": "Customer credit"
+  "paymentNotesLabel": "Payment notes",
+  "paymentNotesPlaceholder": "Notes about the payment..."
 }

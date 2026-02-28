@@ -17,6 +17,13 @@ class ReportSummary {
     required this.manualCount,
     required this.availableMinutes,
     required this.occupancyPercentage,
+    required this.cashCents,
+    required this.cardCents,
+    required this.voucherCents,
+    required this.otherCents,
+    required this.discountCents,
+    required this.paidCents,
+    required this.dueCents,
   });
 
   final int totalAppointments;
@@ -29,6 +36,13 @@ class ReportSummary {
   final int manualCount;
   final int availableMinutes;
   final double occupancyPercentage;
+  final int cashCents;
+  final int cardCents;
+  final int voucherCents;
+  final int otherCents;
+  final int discountCents;
+  final int paidCents;
+  final int dueCents;
 
   factory ReportSummary.fromJson(Map<String, dynamic> json) {
     return ReportSummary(
@@ -43,6 +57,13 @@ class ReportSummary {
       availableMinutes: json['available_minutes'] as int? ?? 0,
       occupancyPercentage:
           (json['occupancy_percentage'] as num?)?.toDouble() ?? 0.0,
+      cashCents: json['cash_cents'] as int? ?? 0,
+      cardCents: json['card_cents'] as int? ?? 0,
+      voucherCents: json['voucher_cents'] as int? ?? 0,
+      otherCents: json['other_cents'] as int? ?? 0,
+      discountCents: json['discount_cents'] as int? ?? 0,
+      paidCents: json['paid_cents'] as int? ?? 0,
+      dueCents: json['due_cents'] as int? ?? 0,
     );
   }
 
@@ -100,6 +121,13 @@ class LocationReportRow {
     required this.appointments,
     required this.revenue,
     required this.durationMinutes,
+    required this.cashCents,
+    required this.cardCents,
+    required this.voucherCents,
+    required this.otherCents,
+    required this.discountCents,
+    required this.paidCents,
+    required this.dueCents,
   });
 
   final int locationId;
@@ -107,6 +135,13 @@ class LocationReportRow {
   final int appointments;
   final double revenue;
   final int durationMinutes;
+  final int cashCents;
+  final int cardCents;
+  final int voucherCents;
+  final int otherCents;
+  final int discountCents;
+  final int paidCents;
+  final int dueCents;
 
   factory LocationReportRow.fromJson(Map<String, dynamic> json) {
     return LocationReportRow(
@@ -115,6 +150,13 @@ class LocationReportRow {
       appointments: json['appointments'] as int? ?? 0,
       revenue: (json['revenue'] as num?)?.toDouble() ?? 0.0,
       durationMinutes: json['duration_minutes'] as int? ?? 0,
+      cashCents: json['cash_cents'] as int? ?? 0,
+      cardCents: json['card_cents'] as int? ?? 0,
+      voucherCents: json['voucher_cents'] as int? ?? 0,
+      otherCents: json['other_cents'] as int? ?? 0,
+      discountCents: json['discount_cents'] as int? ?? 0,
+      paidCents: json['paid_cents'] as int? ?? 0,
+      dueCents: json['due_cents'] as int? ?? 0,
     );
   }
 

@@ -64,6 +64,22 @@ class PriceFormatter {
     }
   }
 
+  /// Restituisce il numero di decimali previsto dalla valuta.
+  static int decimalDigitsForCurrency(
+    String currencyCode, {
+    String? forcedLocale,
+  }) {
+    try {
+      final formatter = NumberFormat.simpleCurrency(
+        name: currencyCode,
+        locale: forcedLocale,
+      );
+      return formatter.decimalDigits ?? 2;
+    } catch (_) {
+      return 2;
+    }
+  }
+
   /// Converte una stringa di input (es. “€ 45,90”, “45.00”, “CHF 120”) in `double`.
   ///
   /// Rimuove simboli e caratteri non numerici, normalizzando la virgola in punto.

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../agenda/providers/tenant_time_provider.dart';
@@ -129,4 +130,38 @@ class ReportsFilterNotifier extends Notifier<ReportsFilterState> {
 final reportsFilterProvider =
     NotifierProvider<ReportsFilterNotifier, ReportsFilterState>(
       ReportsFilterNotifier.new,
+    );
+
+class AgendaReportLaunchRequest {
+  const AgendaReportLaunchRequest({
+    required this.date,
+    required this.locationId,
+  });
+
+  final DateTime date;
+  final int locationId;
+}
+
+class AgendaReportLaunchNotifier extends Notifier<AgendaReportLaunchRequest?> {
+  @override
+  AgendaReportLaunchRequest? build() => null;
+
+  void request({
+    required DateTime date,
+    required int locationId,
+  }) {
+    state = AgendaReportLaunchRequest(
+      date: DateUtils.dateOnly(date),
+      locationId: locationId,
+    );
+  }
+
+  void clear() {
+    state = null;
+  }
+}
+
+final agendaReportLaunchProvider =
+    NotifierProvider<AgendaReportLaunchNotifier, AgendaReportLaunchRequest?>(
+      AgendaReportLaunchNotifier.new,
     );
