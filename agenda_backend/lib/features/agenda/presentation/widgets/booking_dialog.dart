@@ -46,6 +46,7 @@ import '../../providers/layout_config_provider.dart';
 import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
 import '../../providers/tenant_time_provider.dart';
+import '../dialogs/payment_dialog.dart';
 import '../dialogs/recurrence_summary_dialog.dart';
 import 'recurrence_picker.dart';
 import 'recurrence_preview.dart';
@@ -242,6 +243,21 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
   String _nextItemKey() => 'item_${_itemKeyCounter++}';
 
+  double _calculateTotalPrice(List<ServiceVariant> variants) {
+    double total = 0;
+    for (final item in _serviceItems) {
+      if (item.serviceId == null) continue;
+      final variant = variants.cast<ServiceVariant?>().firstWhere(
+        (v) => v?.serviceId == item.serviceId,
+        orElse: () => null,
+      );
+      if (variant != null) {
+        total += item.price ?? variant.price;
+      }
+    }
+    return total;
+  }
+
   List<String> _availableStatusOptions() {
     return const <String>['confirmed', 'completed', 'no_show'];
   }
@@ -274,6 +290,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final services = ref.watch(servicesProvider).value ?? [];
     final serviceCategories = ref.watch(serviceCategoriesProvider);
     final variants = ref.watch(serviceVariantsProvider).value ?? [];
+    final totalPrice = _calculateTotalPrice(variants);
     final clients = ref.watch(clientsListProvider);
     final clientsById = ref.watch(clientsByIdProvider);
     final allStaff = ref.watch(staffForCurrentLocationProvider);
@@ -480,6 +497,23 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         padding: AppButtonStyles.dialogButtonPadding,
         child: Text(l10n.actionCancel),
       ),
+      AppOutlinedActionButton(
+        onPressed: totalPrice > 0
+            ? () async {
+                final navigator = Navigator.of(context);
+                final didSave = await showPaymentDialog(
+                  context,
+                  ref,
+                  totalPrice: totalPrice,
+                  currencyCode: PriceFormatter.effectiveCurrency(ref),
+                );
+                if (!didSave || !mounted) return;
+                navigator.pop();
+              }
+            : null,
+        padding: AppButtonStyles.dialogButtonPadding,
+        child: Text(l10n.actionPayment),
+      ),
       AppAsyncFilledButton(
         onPressed: _isSaving || !canManageBookings ? null : _onSave,
         padding: AppButtonStyles.dialogButtonPadding,
@@ -600,18 +634,20 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                   horizontalPadding,
                   0,
                 ),
-                child: Row(
-                  mainAxisAlignment: actions.length == 3
-                      ? MainAxisAlignment.center
-                      : MainAxisAlignment.end,
+                child: Column(
                   children: [
-                    for (int i = 0; i < actions.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 8),
-                      SizedBox(
-                        width: AppButtonStyles.dialogButtonWidth,
-                        child: actions[i],
-                      ),
-                    ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        for (int i = 0; i < actions.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 8),
+                          SizedBox(
+                            width: AppButtonStyles.dialogButtonWidth,
+                            child: actions[i],
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),

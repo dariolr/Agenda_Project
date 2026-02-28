@@ -1415,5 +1415,18 @@
         "type": "int"
       }
     }
-  }
+  },
+  "paymentDialogTitle": "Payment",
+  "actionPayment": "Payment",
+  "paymentMethodCash": "Cash",
+  "paymentMethodCard": "Debit/Credit Card",
+  "paymentMethodDiscount": "Discount",
+  "paymentMethodVoucher": "Voucher",
+  "paymentMethodPreviousCredit": "Previous credit",
+  "paymentMethodOther": "Other",
+  "paymentMethodPending": "Still to pay",
+  "paymentTotalCost": "Booking cost",
+  "paymentEntered": "Total entered",
+  "paymentRemaining": "Remaining",
+  "paymentCustomerCredit": "Customer credit"
 }

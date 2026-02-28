@@ -8853,6 +8853,131 @@ class L10n {
       args: [customerId],
     );
   }
+
+  /// `Pagamento`
+  String get paymentDialogTitle {
+    return Intl.message(
+      'Pagamento',
+      name: 'paymentDialogTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pagamento`
+  String get actionPayment {
+    return Intl.message('Pagamento', name: 'actionPayment', desc: '', args: []);
+  }
+
+  /// `Contanti`
+  String get paymentMethodCash {
+    return Intl.message(
+      'Contanti',
+      name: 'paymentMethodCash',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Bancomat/Carta di credito`
+  String get paymentMethodCard {
+    return Intl.message(
+      'Bancomat/Carta di credito',
+      name: 'paymentMethodCard',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sconto`
+  String get paymentMethodDiscount {
+    return Intl.message(
+      'Sconto',
+      name: 'paymentMethodDiscount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Buono`
+  String get paymentMethodVoucher {
+    return Intl.message(
+      'Buono',
+      name: 'paymentMethodVoucher',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Credito precedente`
+  String get paymentMethodPreviousCredit {
+    return Intl.message(
+      'Credito precedente',
+      name: 'paymentMethodPreviousCredit',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Altro`
+  String get paymentMethodOther {
+    return Intl.message(
+      'Altro',
+      name: 'paymentMethodOther',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ancora da pagare`
+  String get paymentMethodPending {
+    return Intl.message(
+      'Ancora da pagare',
+      name: 'paymentMethodPending',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Costo prenotazione`
+  String get paymentTotalCost {
+    return Intl.message(
+      'Costo prenotazione',
+      name: 'paymentTotalCost',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Totale inserito`
+  String get paymentEntered {
+    return Intl.message(
+      'Totale inserito',
+      name: 'paymentEntered',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rimanente`
+  String get paymentRemaining {
+    return Intl.message(
+      'Rimanente',
+      name: 'paymentRemaining',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Credito cliente`
+  String get paymentCustomerCredit {
+    return Intl.message(
+      'Credito cliente',
+      name: 'paymentCustomerCredit',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {
