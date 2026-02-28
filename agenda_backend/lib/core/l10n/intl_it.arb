@@ -1415,5 +1415,18 @@
         "type": "int"
       }
     }
-  }
+  },
+  "paymentDialogTitle": "Pagamento",
+  "actionPayment": "Pagamento",
+  "paymentMethodCash": "Contanti",
+  "paymentMethodCard": "Bancomat/Carta di credito",
+  "paymentMethodDiscount": "Sconto",
+  "paymentMethodVoucher": "Buono",
+  "paymentMethodPreviousCredit": "Credito precedente",
+  "paymentMethodOther": "Altro",
+  "paymentMethodPending": "Ancora da pagare",
+  "paymentTotalCost": "Costo prenotazione",
+  "paymentEntered": "Totale inserito",
+  "paymentRemaining": "Rimanente",
+  "paymentCustomerCredit": "Credito cliente"
 }

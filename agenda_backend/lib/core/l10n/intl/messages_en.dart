@@ -211,6 +211,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionDiscard": MessageLookupByLibrary.simpleMessage("Cancel"),
     "actionEdit": MessageLookupByLibrary.simpleMessage("Edit"),
     "actionKeepEditing": MessageLookupByLibrary.simpleMessage("Keep editing"),
+    "actionPayment": MessageLookupByLibrary.simpleMessage("Payment"),
     "actionRefresh": MessageLookupByLibrary.simpleMessage("Refresh"),
     "actionReschedule": MessageLookupByLibrary.simpleMessage("Reschedule"),
     "actionRetry": MessageLookupByLibrary.simpleMessage("Retry"),
@@ -1451,6 +1452,26 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operators"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("You"),
+    "paymentCustomerCredit": MessageLookupByLibrary.simpleMessage(
+      "Customer credit",
+    ),
+    "paymentDialogTitle": MessageLookupByLibrary.simpleMessage("Payment"),
+    "paymentEntered": MessageLookupByLibrary.simpleMessage("Total entered"),
+    "paymentMethodCard": MessageLookupByLibrary.simpleMessage(
+      "Debit/Credit Card",
+    ),
+    "paymentMethodCash": MessageLookupByLibrary.simpleMessage("Cash"),
+    "paymentMethodDiscount": MessageLookupByLibrary.simpleMessage("Discount"),
+    "paymentMethodOther": MessageLookupByLibrary.simpleMessage("Other"),
+    "paymentMethodPreviousCredit": MessageLookupByLibrary.simpleMessage(
+      "Previous credit",
+    ),
+    "paymentMethodPending": MessageLookupByLibrary.simpleMessage(
+      "Still to pay",
+    ),
+    "paymentMethodVoucher": MessageLookupByLibrary.simpleMessage("Voucher"),
+    "paymentRemaining": MessageLookupByLibrary.simpleMessage("Remaining"),
+    "paymentTotalCost": MessageLookupByLibrary.simpleMessage("Booking cost"),
     "permissionsDescription": MessageLookupByLibrary.simpleMessage(
       "Manage operator access and roles",
     ),

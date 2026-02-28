@@ -216,6 +216,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionKeepEditing": MessageLookupByLibrary.simpleMessage(
       "Continua a modificare",
     ),
+    "actionPayment": MessageLookupByLibrary.simpleMessage("Pagamento"),
     "actionRefresh": MessageLookupByLibrary.simpleMessage("Aggiorna"),
     "actionReschedule": MessageLookupByLibrary.simpleMessage("Riprogramma"),
     "actionRetry": MessageLookupByLibrary.simpleMessage("Riprova"),
@@ -1518,6 +1519,28 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operatori"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("Tu"),
+    "paymentDialogTitle": MessageLookupByLibrary.simpleMessage("Pagamento"),
+    "paymentEntered": MessageLookupByLibrary.simpleMessage("Totale inserito"),
+    "paymentCustomerCredit": MessageLookupByLibrary.simpleMessage(
+      "Credito cliente",
+    ),
+    "paymentMethodCard": MessageLookupByLibrary.simpleMessage(
+      "Bancomat/Carta di credito",
+    ),
+    "paymentMethodCash": MessageLookupByLibrary.simpleMessage("Contanti"),
+    "paymentMethodDiscount": MessageLookupByLibrary.simpleMessage("Sconto"),
+    "paymentMethodOther": MessageLookupByLibrary.simpleMessage("Altro"),
+    "paymentMethodPreviousCredit": MessageLookupByLibrary.simpleMessage(
+      "Credito precedente",
+    ),
+    "paymentMethodPending": MessageLookupByLibrary.simpleMessage(
+      "Ancora da pagare",
+    ),
+    "paymentMethodVoucher": MessageLookupByLibrary.simpleMessage("Buono"),
+    "paymentRemaining": MessageLookupByLibrary.simpleMessage("Rimanente"),
+    "paymentTotalCost": MessageLookupByLibrary.simpleMessage(
+      "Costo prenotazione",
+    ),
     "permissionsDescription": MessageLookupByLibrary.simpleMessage(
       "Gestisci accessi e ruoli degli operatori",
     ),

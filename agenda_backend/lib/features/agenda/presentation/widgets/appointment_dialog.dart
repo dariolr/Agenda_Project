@@ -40,6 +40,7 @@ import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
 import '../../providers/tenant_time_provider.dart';
 import '../dialogs/booking_history_dialog.dart';
+import '../dialogs/payment_dialog.dart';
 import '../dialogs/recurring_action_dialog.dart';
 import 'service_item_card.dart';
 import 'service_package_picker_dialog.dart';
@@ -234,6 +235,21 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   }
 
   String _nextItemKey() => 'item_${_itemKeyCounter++}';
+
+  double _calculateTotalPrice(List<ServiceVariant> variants) {
+    double total = 0;
+    for (final item in _serviceItems) {
+      if (item.serviceId == null) continue;
+      final variant = variants.cast<ServiceVariant?>().firstWhere(
+        (v) => v?.serviceId == item.serviceId,
+        orElse: () => null,
+      );
+      if (variant != null) {
+        total += item.price ?? variant.price;
+      }
+    }
+    return total;
+  }
 
   int _baseDurationFromAppointment(Appointment appointment) {
     final totalMinutes = appointment.endTime
@@ -477,6 +493,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final services = ref.watch(servicesProvider).value ?? [];
     final serviceCategories = ref.watch(serviceCategoriesProvider);
     final variants = ref.watch(serviceVariantsProvider).value ?? [];
+    final totalPrice = _calculateTotalPrice(variants);
     final clients = ref.watch(clientsListProvider);
     final staff = ref.watch(staffForCurrentLocationProvider);
     final hasPackages =
@@ -664,7 +681,24 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       showSpinner: false,
       child: Text(l10n.actionSave),
     );
-    final actions = [deleteAction, cancelAction, rescheduleAction, saveAction];
+    final paymentAction = AppOutlinedActionButton(
+      onPressed: totalPrice > 0
+          ? () async {
+              final navigator = Navigator.of(context);
+              final didSave = await showPaymentDialog(
+                context,
+                ref,
+                totalPrice: totalPrice,
+                currencyCode: PriceFormatter.effectiveCurrency(ref),
+              );
+              if (!didSave || !mounted) return;
+              navigator.pop();
+            }
+          : null,
+      padding: AppButtonStyles.dialogButtonPadding,
+      child: Text(l10n.actionPayment),
+    );
+    final actions = [deleteAction, cancelAction, rescheduleAction, saveAction, paymentAction];
 
     if (isDialog) {
       return PopScope(
@@ -814,6 +848,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                           const SizedBox(width: 8),
                           Expanded(child: saveAction),
                         ],
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: paymentAction,
                       ),
                     ],
                   ),

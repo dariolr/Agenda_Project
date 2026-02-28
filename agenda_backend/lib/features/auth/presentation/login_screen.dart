@@ -83,19 +83,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final globalLoadingNotifier = ref.read(globalLoadingProvider.notifier);
+    final authNotifier = ref.read(authProvider.notifier);
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-    ref.read(globalLoadingProvider.notifier).show();
+    globalLoadingNotifier.show();
 
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     try {
-      final success = await ref
-          .read(authProvider.notifier)
-          .login(email: email, password: password);
+      final success = await authNotifier.login(email: email, password: password);
 
       if (!mounted) return;
 
@@ -133,7 +134,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      ref.read(globalLoadingProvider.notifier).hide();
+      globalLoadingNotifier.hide();
     }
   }
 
