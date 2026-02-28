@@ -784,7 +784,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
   Widget _buildPaymentsSummary(BuildContext context, ReportSummary summary) {
     final l10n = context.l10n;
-    final theme = Theme.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
     final locale = Localizations.localeOf(context).toString();
     final currencyFormat = NumberFormat.currency(
       locale: locale,
@@ -858,48 +858,58 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       ),
     ];
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.actionPayment,
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            for (final row in rows) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: Text(row.label)),
-                  SizedBox(
-                    width: 96,
-                    child: Text(
-                      cents(row.valueCents),
-                      textAlign: TextAlign.right,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+    return _buildBreakdownSection(
+      context,
+      title: l10n.actionPayment,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: Theme(
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: colorScheme.outline.withOpacity(0.2)),
+                child: DataTable(
+                  dividerThickness: 0.2,
+                  horizontalMargin: 16,
+                  columns: [
+                    const DataColumn(label: SizedBox.shrink()),
+                    DataColumn(
+                      label: Text(l10n.reportsColRevenue),
+                      numeric: true,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 112,
-                    child: row.percentage == null
-                        ? const SizedBox.shrink()
-                        : Align(
-                            alignment: Alignment.centerRight,
-                            child: _buildPercentageBar(context, row.percentage!),
+                    DataColumn(
+                      label: Text(l10n.reportsColPercentage),
+                      numeric: true,
+                    ),
+                  ],
+                  rows: rows.map((row) {
+                    return DataRow(
+                      cells: [
+                        DataCell(Text(row.label)),
+                        DataCell(
+                          Text(
+                            cents(row.valueCents),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
-                  ),
-                ],
+                        ),
+                        DataCell(
+                          row.percentage == null
+                              ? const SizedBox.shrink()
+                              : _buildPercentageBar(context, row.percentage!),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
               ),
-              if (row != rows.last) const SizedBox(height: 8),
-            ],
-          ],
-        ),
+            ),
+          );
+        },
       ),
     );
   }

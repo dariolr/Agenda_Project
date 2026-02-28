@@ -1763,7 +1763,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "reportsColOffHours": MessageLookupByLibrary.simpleMessage("Ferie/Assenze"),
     "reportsColPercentage": MessageLookupByLibrary.simpleMessage("%"),
     "reportsColPeriod": MessageLookupByLibrary.simpleMessage("Periodo"),
-    "reportsColRevenue": MessageLookupByLibrary.simpleMessage("Incasso"),
+    "reportsColRevenue": MessageLookupByLibrary.simpleMessage("Importo"),
     "reportsColScheduledHours": MessageLookupByLibrary.simpleMessage(
       "Programmate",
     ),
