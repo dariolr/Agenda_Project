@@ -1237,6 +1237,7 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
   late final List<TimeOfDay?> _entries;
   late int _scrollToIndex;
   int? _selectedIndex; // Index dell'orario da evidenziare (null se nessuno)
+  double? _gridWidth; // Larghezza effettiva della griglia (rilevata da LayoutBuilder)
 
   @override
   void initState() {
@@ -1264,9 +1265,6 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
       _ensureTimeInEntries(widget.includeTime!);
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToSelected();
-    });
   }
 
   /// Determina l'orario verso cui scrollare
@@ -1316,16 +1314,17 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
 
   void _scrollToSelected() {
     if (!_scrollController.hasClients) return;
+    if (_gridWidth == null) return;
 
     const crossAxisCount = 4;
     const mainAxisSpacing = 6.0;
     const childAspectRatio = 2.7;
-    const padding = 12.0;
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final availableWidth = screenWidth - padding * 2;
+    // Usa la larghezza reale della griglia (rilevata da LayoutBuilder)
+    // invece di MediaQuery.size.width, che sarebbe errato su desktop
+    // dove la dialog ha una larghezza vincolata.
     final itemWidth =
-        (availableWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
+        (_gridWidth! - (crossAxisCount - 1) * 6) / crossAxisCount;
     final itemHeight = itemWidth / childAspectRatio;
     final rowHeight = itemHeight + mainAxisSpacing;
 
@@ -1375,7 +1374,16 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
           ),
           const SizedBox(height: 10),
           Expanded(
-            child: GridView.builder(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final w = constraints.maxWidth;
+                if (_gridWidth != w) {
+                  _gridWidth = w;
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => _scrollToSelected(),
+                  );
+                }
+                return GridView.builder(
               controller: _scrollController,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
@@ -1406,6 +1414,8 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
                   onPressed: () => Navigator.pop(context, t),
                   child: Text(DtFmt.hm(context, t.hour, t.minute)),
                 );
+              },
+            );
               },
             ),
           ),

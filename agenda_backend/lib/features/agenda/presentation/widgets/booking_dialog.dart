@@ -538,6 +538,12 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     if (isDialog) {
       return CallbackShortcuts(
         bindings: {
+          // Enter per salvare (solo se c'è almeno un servizio)
+          const SingleActivator(LogicalKeyboardKey.enter): () {
+            if (!_isSaving && canManageBookings && _serviceItems.isNotEmpty) {
+              _onSave();
+            }
+          },
           // Ctrl+Enter o Cmd+Enter per salvare
           const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
             if (!_isSaving && canManageBookings) _onSave();

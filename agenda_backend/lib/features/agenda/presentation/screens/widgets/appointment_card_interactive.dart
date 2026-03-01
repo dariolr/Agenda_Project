@@ -543,6 +543,9 @@ class _AppointmentCardInteractiveState
     }
     final info = pieces.join(' – ');
     final borderWidth = showThickBorder ? 2.5 : 1.0;
+    final borderColor = showThickBorder
+        ? Color.alphaBlend(Colors.black.withOpacity(0.05), widget.color)
+        : widget.color;
     final statusVisual = _statusVisual(context);
     final cardHeight = _lastSize?.height ?? 0;
     final showCompactStatusBar =
@@ -570,7 +573,7 @@ class _AppointmentCardInteractiveState
           decoration: BoxDecoration(
             color: Color.alphaBlend(baseColor, Colors.white),
             borderRadius: r,
-            border: Border.all(color: widget.color, width: borderWidth),
+            border: Border.all(color: borderColor, width: borderWidth),
             boxShadow: [
               BoxShadow(
                 color: widget.color.withOpacity(showThickBorder ? 0.25 : 0.1),
@@ -1164,7 +1167,7 @@ class _ExtraMinutesBand extends StatelessWidget {
           widthFactor: 1,
           child: Container(
             decoration: BoxDecoration(
-              color: color.withOpacity(0.18),
+              color: color.withOpacity(0.25),
               borderRadius: const BorderRadius.vertical(
                 bottom: Radius.circular(6),
               ),
