@@ -1519,11 +1519,11 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operatori"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("Tu"),
+    "paymentCashAndCardTotal": MessageLookupByLibrary.simpleMessage(
+      "Totale contanti e carte",
+    ),
     "paymentDialogTitle": MessageLookupByLibrary.simpleMessage("Pagamento"),
-    "paymentCashAndCardTotal": MessageLookupByLibrary.simpleMessage("Totale contanti e carte"),
     "paymentEntered": MessageLookupByLibrary.simpleMessage("Totale inserito"),
-    "paymentOutstanding": MessageLookupByLibrary.simpleMessage("Residuo da incassare"),
-    "paymentRequired": MessageLookupByLibrary.simpleMessage("Totale appuntamenti"),
     "paymentMethodCard": MessageLookupByLibrary.simpleMessage(
       "Bancomat/Carta di credito",
     ),
@@ -1533,14 +1533,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "paymentMethodPending": MessageLookupByLibrary.simpleMessage(
       "Ancora da pagare",
     ),
-    "paymentNotesLabel": MessageLookupByLibrary.simpleMessage(
-      "Note pagamento",
-    ),
+    "paymentMethodVoucher": MessageLookupByLibrary.simpleMessage("Buono"),
+    "paymentNotesLabel": MessageLookupByLibrary.simpleMessage("Note pagamento"),
     "paymentNotesPlaceholder": MessageLookupByLibrary.simpleMessage(
       "Note sul pagamento...",
     ),
-    "paymentMethodVoucher": MessageLookupByLibrary.simpleMessage("Buono"),
+    "paymentOutstanding": MessageLookupByLibrary.simpleMessage(
+      "Residuo da incassare",
+    ),
     "paymentRemaining": MessageLookupByLibrary.simpleMessage("Rimanente"),
+    "paymentRequired": MessageLookupByLibrary.simpleMessage(
+      "Totale appuntamenti",
+    ),
     "paymentTotalCost": MessageLookupByLibrary.simpleMessage(
       "Costo prenotazione",
     ),
@@ -1736,6 +1740,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "reorderTitle": MessageLookupByLibrary.simpleMessage(
       "Modifica ordinamento",
     ),
+    "reportsAppointmentsAmount": MessageLookupByLibrary.simpleMessage(
+      "Totale appuntamenti",
+    ),
     "reportsByDayOfWeek": MessageLookupByLibrary.simpleMessage(
       "Per giorno della settimana",
     ),
@@ -1823,7 +1830,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Appuntamenti",
     ),
     "reportsTotalHours": MessageLookupByLibrary.simpleMessage("Ore lavorate"),
-    "reportsAppointmentsAmount": MessageLookupByLibrary.simpleMessage("Totale appuntamenti"),
     "reportsTotalRevenue": MessageLookupByLibrary.simpleMessage("Incasso"),
     "reportsUniqueClients": MessageLookupByLibrary.simpleMessage(
       "Clienti unici",

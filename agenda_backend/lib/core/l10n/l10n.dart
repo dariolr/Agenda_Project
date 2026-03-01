@@ -8949,6 +8949,16 @@ class L10n {
     );
   }
 
+  /// `Totale appuntamenti`
+  String get paymentRequired {
+    return Intl.message(
+      'Totale appuntamenti',
+      name: 'paymentRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Totale inserito`
   String get paymentEntered {
     return Intl.message(
@@ -8964,16 +8974,6 @@ class L10n {
     return Intl.message(
       'Totale contanti e carte',
       name: 'paymentCashAndCardTotal',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Totale appuntamenti`
-  String get paymentRequired {
-    return Intl.message(
-      'Totale appuntamenti',
-      name: 'paymentRequired',
       desc: '',
       args: [],
     );
