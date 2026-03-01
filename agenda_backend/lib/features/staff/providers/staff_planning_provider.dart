@@ -357,6 +357,10 @@ final ensureStaffPlanningLoadedProvider = FutureProvider.family<void, int>((
   ref,
   staffId,
 ) async {
+  // Watch su businessIdForLocationsProvider: quando il business cambia questo
+  // provider viene auto-invalidato e ricarica i planning del nuovo business.
+  ref.watch(businessIdForLocationsProvider);
+
   // Usa ref.read (non watch) per evitare che il completamento del planning
   // di uno staff invalidi tutti gli altri FutureProvider in cascata,
   // causando caricamento sequenziale invece che parallelo.

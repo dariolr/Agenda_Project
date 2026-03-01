@@ -80,6 +80,8 @@ class BookingItemResponse {
   final int durationMinutes;
   final String? serviceName;
   final String? staffDisplayName;
+  final int extraBlockedMinutes;
+  final int extraProcessingMinutes;
 
   const BookingItemResponse({
     required this.id,
@@ -93,6 +95,8 @@ class BookingItemResponse {
     required this.durationMinutes,
     this.serviceName,
     this.staffDisplayName,
+    this.extraBlockedMinutes = 0,
+    this.extraProcessingMinutes = 0,
   });
 
   factory BookingItemResponse.fromJson(Map<String, dynamic> json) {
@@ -109,6 +113,8 @@ class BookingItemResponse {
       serviceName: json['service_name'] as String?,
       staffDisplayName:
           (json['staff_display_name'] ?? json['staff_name']) as String?,
+      extraBlockedMinutes: json['extra_blocked_minutes'] as int? ?? 0,
+      extraProcessingMinutes: json['extra_processing_minutes'] as int? ?? 0,
     );
   }
 

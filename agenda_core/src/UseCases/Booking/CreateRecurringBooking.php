@@ -141,10 +141,12 @@ final class CreateRecurringBooking
             throw BookingException::invalidClient("Client with ID {$clientId} not found");
         }
 
-        // Calculate total duration
+        // Calculate total duration (including processing_time and blocked_time, as in CreateBooking)
         $totalDuration = 0;
         foreach ($services as $service) {
-            $totalDuration += (int) ($service['duration_minutes'] ?? $service['default_duration'] ?? 30);
+            $totalDuration += (int) ($service['duration_minutes'] ?? $service['default_duration'] ?? 30)
+                + (int) ($service['processing_time'] ?? 0)
+                + (int) ($service['blocked_time'] ?? 0);
         }
 
         // Build RecurrenceRule
@@ -254,8 +256,14 @@ final class CreateRecurringBooking
                 // Create booking items
                 $currentStart = $occurrenceStart;
                 foreach ($services as $service) {
-                    $serviceDuration = (int) ($service['duration_minutes'] ?? $service['default_duration'] ?? 30);
-                    $serviceEnd = $currentStart->modify("+{$serviceDuration} minutes");
+                    $serviceDuration    = (int) ($service['duration_minutes'] ?? $service['default_duration'] ?? 30);
+                    $processingMinutes  = (int) ($service['processing_time'] ?? 0);
+                    $blockedMinutes     = (int) ($service['blocked_time'] ?? 0);
+
+                    // end_time = durata visibile del servizio (senza extra), come in CreateBooking
+                    $serviceEnd  = $currentStart->modify("+{$serviceDuration} minutes");
+                    // Il prossimo servizio inizia dopo tutto il tempo bloccato
+                    $blockedEnd  = $currentStart->modify("+" . ($serviceDuration + $processingMinutes + $blockedMinutes) . " minutes");
 
                     $this->bookingRepository->addBookingItem($bookingId, [
                         'location_id' => $locationId,
@@ -265,13 +273,13 @@ final class CreateRecurringBooking
                         'start_time' => $currentStart->format('Y-m-d H:i:s'),
                         'end_time' => $serviceEnd->format('Y-m-d H:i:s'),
                         'price' => $service['price'] ?? 0,
-                        'extra_blocked_minutes' => 0,
-                        'extra_processing_minutes' => 0,
+                        'extra_blocked_minutes' => $blockedMinutes,
+                        'extra_processing_minutes' => $processingMinutes,
                         'service_name_snapshot' => $service['name'],
                         'client_name_snapshot' => trim(($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? '')),
                     ]);
 
-                    $currentStart = $serviceEnd;
+                    $currentStart = $blockedEnd;
                 }
 
                 $createdBookings[] = [
