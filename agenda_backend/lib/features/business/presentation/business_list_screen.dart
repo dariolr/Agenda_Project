@@ -5,10 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../../app/widgets/user_menu_button.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
+import '../../../core/models/location.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/initials_utils.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
+import '../../agenda/providers/location_providers.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../providers/business_providers.dart';
 import '../providers/superadmin_selected_business_provider.dart';
 import 'dialogs/create_business_dialog.dart';
@@ -81,13 +84,37 @@ class BusinessListScreen extends ConsumerWidget {
     );
   }
 
-  void _selectBusiness(BuildContext context, WidgetRef ref, Business business) {
-    // Imposta il business corrente
+  Future<void> _selectBusiness(
+    BuildContext context,
+    WidgetRef ref,
+    Business business,
+  ) async {
+    // 1) Imposta il business corrente
     ref.read(currentBusinessIdProvider.notifier).selectByUser(business.id);
-    // Segna che il superadmin ha selezionato un business
+    // 2) Segna che il superadmin ha selezionato un business
     ref.read(superadminSelectedBusinessProvider.notifier).select(business.id);
-    // Naviga all'agenda
-    context.go('/agenda');
+    // 3) Invalida tutti i provider scoped al business precedente
+    invalidateBusinessScopedProviders(ref);
+    ref.invalidate(currentBusinessUserContextProvider);
+    // 4) Attendi le locations del nuovo business per evitare fetch con location stale
+    List<Location> locations = const [];
+    try {
+      locations = await ref.read(locationsAsyncProvider.future);
+    } catch (_) {
+      locations = const [];
+    }
+    // 5) Aggiorna la location selection se quella corrente non è valida per il nuovo business
+    if (locations.isNotEmpty) {
+      final currentLocationId = ref.read(currentLocationIdProvider);
+      final hasCurrent = locations.any((l) => l.id == currentLocationId);
+      if (!hasCurrent) {
+        ref.read(currentLocationIdProvider.notifier).set(locations.first.id);
+      }
+    }
+    // 6) Naviga all'agenda
+    if (context.mounted) {
+      context.go('/agenda');
+    }
   }
 
   Future<void> _showCreateBusinessDialog(

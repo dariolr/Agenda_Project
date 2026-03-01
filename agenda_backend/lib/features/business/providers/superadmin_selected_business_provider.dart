@@ -96,6 +96,7 @@ void invalidateBusinessScopedProviders(Object refObj) {
 
   // Availability Exceptions
   ref.invalidate(availabilityExceptionsProvider);
+  ref.invalidate(availabilityExceptionsRepositoryProvider);
 
   // Location Closures
   ref.invalidate(locationClosuresProvider);

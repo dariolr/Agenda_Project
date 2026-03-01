@@ -341,6 +341,10 @@ class BookingsRepository {
       price: item.price,
       bookingSource: booking.source,
       bookingStatus: booking.status,
+      extraBlockedMinutes: item.extraBlockedMinutes,
+      extraProcessingMinutes: item.extraProcessingMinutes,
+      extraMinutes: item.extraBlockedMinutes > 0 ? item.extraBlockedMinutes : null,
+      extraMinutesType: item.extraBlockedMinutes > 0 ? ExtraMinutesType.blocked : null,
     );
   }
 }
