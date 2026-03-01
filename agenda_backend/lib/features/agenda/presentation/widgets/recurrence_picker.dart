@@ -224,7 +224,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             Text(l10n.recurrenceEvery, style: theme.textTheme.bodyMedium),
             const SizedBox(width: 8),
             SizedBox(
-              width: 70,
+              width: 90,
               child: DropdownButtonFormField<int>(
                 value: _intervalValue,
                 isExpanded: true,
@@ -361,7 +361,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
               Text(l10n.recurrenceAfter),
               const SizedBox(width: 8),
               SizedBox(
-                width: 70,
+                width: 90,
                 child: DropdownButtonFormField<int>(
                   value: selectedOccurrenceCount,
                   isExpanded: true,

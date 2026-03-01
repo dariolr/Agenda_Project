@@ -6,6 +6,7 @@ import 'package:agenda_backend/core/models/popular_service.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
@@ -708,13 +709,25 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     ];
 
     if (isDialog) {
-      return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) async {
-          if (didPop) return;
-          await _handleClose();
+      return CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.enter): () {
+            if (!_isSaving && canManageBookings) _onSave();
+          },
+          const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
+            if (!_isSaving && canManageBookings) _onSave();
+          },
+          const SingleActivator(LogicalKeyboardKey.enter, meta: true): () {
+            if (!_isSaving && canManageBookings) _onSave();
+          },
         },
-        child: Dialog(
+        child: PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) async {
+            if (didPop) return;
+            await _handleClose();
+          },
+          child: Dialog(
           insetPadding: const EdgeInsets.symmetric(
             horizontal: 32,
             vertical: 24,
@@ -776,7 +789,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             ),
           ),
         ),
-      );
+      ),
+    );
     }
     const horizontalPadding = 20.0;
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;

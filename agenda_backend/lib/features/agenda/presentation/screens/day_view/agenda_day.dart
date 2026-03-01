@@ -118,9 +118,15 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
       // Marca lo scroll iniziale come completato (dopo il build)
       ref.read(initialScrollDoneProvider.notifier).markDone();
 
-      // Centra la timeline al centro della viewport visibile
+      // Centra la timeline nella viewport, poi corregge allo slot di ora intera
+      // più vicino al bordo superiore visibile (= bordo inferiore dell'header staff)
       final viewportHeight = controller.position.viewportDimension;
-      final target = (initialOffset - viewportHeight / 2)
+      final pixelsPerHour =
+          (60.0 / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
+      final centered = initialOffset - viewportHeight / 2;
+      final corrected =
+          (centered / pixelsPerHour).floorToDouble() * pixelsPerHour;
+      final target = corrected
           .clamp(
             controller.position.minScrollExtent,
             controller.position.maxScrollExtent,

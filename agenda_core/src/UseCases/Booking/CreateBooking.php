@@ -1142,10 +1142,10 @@ final class CreateBooking
                 'locale' => $locale,
             ];
 
-            $confirmationUseCase = new QueueBookingConfirmation($this->db, $this->notificationRepo);
-            $confirmResult = $confirmationUseCase->execute($notificationData);
-            
-            file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " queueNotificationsForClient: confirmation result=$confirmResult\n", FILE_APPEND);
+            // [TEMP] Email di conferma disabilitata temporaneamente
+            // $confirmationUseCase = new QueueBookingConfirmation($this->db, $this->notificationRepo);
+            // $confirmResult = $confirmationUseCase->execute($notificationData);
+            // file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " queueNotificationsForClient: confirmation result=$confirmResult\n", FILE_APPEND);
 
             $reminderUseCase = new QueueBookingReminder($this->db, $this->notificationRepo);
             $reminderResult = $reminderUseCase->execute($notificationData);
