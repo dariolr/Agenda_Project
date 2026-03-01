@@ -682,10 +682,12 @@ class _AppointmentCardInteractiveState
             screenWidth > 0)
         ? (screenWidth / effectiveColumnWidth).round()
         : 0;
-    // Only on smartphone (AppFormFactor.mobile) and only when the agenda is
-    // effectively shown with 3 columns (narrow cards).
+    // Stack client name below time when cards are narrow:
+    // - on smartphone with 3+ visible columns
+    // - on any form factor when the card is narrower than 130px (overlapping)
     final stackClientUnderTime =
-        formFactor == AppFormFactor.mobile && approxVisibleColumns >= 3;
+        (formFactor == AppFormFactor.mobile && approxVisibleColumns >= 3) ||
+        (effectiveColumnWidth != null && effectiveColumnWidth < 130);
 
     final trailingIcons = <Widget>[];
     final effectiveCardHeight = _lastSize?.height ?? 0;
