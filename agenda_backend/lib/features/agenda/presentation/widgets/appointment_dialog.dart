@@ -721,13 +721,15 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             if (!_isSaving && canManageBookings) _onSave();
           },
         },
-        child: PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (didPop, _) async {
-            if (didPop) return;
-            await _handleClose();
-          },
-          child: Dialog(
+        child: Focus(
+          autofocus: true,
+          child: PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, _) async {
+              if (didPop) return;
+              await _handleClose();
+            },
+            child: Dialog(
           insetPadding: const EdgeInsets.symmetric(
             horizontal: 32,
             vertical: 24,
@@ -790,7 +792,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           ),
         ),
       ),
-    );
+    ),
+  );
     }
     const horizontalPadding = 20.0;
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;

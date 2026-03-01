@@ -133,6 +133,14 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
     if (role == 'staff' && staffId != null && staffId > 0) {
       _selectedStaffIds = {staffId};
     }
+
+    // Auto-preseleziona se c'è un solo staff disponibile
+    if (_selectedStaffIds.isEmpty) {
+      final allStaff = ref.read(staffForCurrentLocationProvider);
+      if (allStaff.length == 1) {
+        _selectedStaffIds = {allStaff.first.id};
+      }
+    }
   }
 
   @override
@@ -705,6 +713,7 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
   late final ScrollController _scrollController;
   late final List<TimeOfDay?> _entries;
   late final int _scrollToIndex;
+  double? _gridWidth;
 
   @override
   void initState() {
@@ -748,26 +757,19 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
       // L'indice dell'orario selezionato è la posizione nella nuova riga
       _scrollToIndex = insertIndex + targetColumn;
     }
-
-    // Scroll all'orario dopo il primo frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToSelected();
-    });
   }
 
   void _scrollToSelected() {
     if (!_scrollController.hasClients) return;
+    if (_gridWidth == null) return;
 
     const crossAxisCount = 4;
     const mainAxisSpacing = 6.0;
     const childAspectRatio = 2.7;
-    const padding = 12.0;
 
-    // Usa la larghezza effettiva del context
-    final screenWidth = MediaQuery.of(context).size.width;
-    final availableWidth = screenWidth - padding * 2;
+    // Usa la larghezza reale della griglia rilevata dal LayoutBuilder
     final itemWidth =
-        (availableWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
+        (_gridWidth! - (crossAxisCount - 1) * 6) / crossAxisCount;
     final itemHeight = itemWidth / childAspectRatio;
     final rowHeight = itemHeight + mainAxisSpacing;
 
@@ -822,39 +824,51 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
             ),
             const SizedBox(height: 10),
             Expanded(
-              child: GridView.builder(
-                controller: _scrollController,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  mainAxisSpacing: 6,
-                  crossAxisSpacing: 6,
-                  childAspectRatio: 2.7,
-                ),
-                itemCount: _entries.length,
-                itemBuilder: (context, index) {
-                  final t = _entries[index];
-                  // Se la cella è vuota, mostra uno spazio vuoto
-                  if (t == null) {
-                    return const SizedBox.shrink();
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final w = constraints.maxWidth;
+                  if (_gridWidth != w) {
+                    _gridWidth = w;
+                    WidgetsBinding.instance.addPostFrameCallback(
+                      (_) => _scrollToSelected(),
+                    );
                   }
-                  // Evidenzia l'orario selezionato
-                  final isSelected = index == _scrollToIndex;
-                  return OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: isSelected
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primary.withOpacity(0.1)
-                          : null,
-                      side: BorderSide(
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).dividerColor,
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                    onPressed: () => Navigator.pop(context, t),
-                    child: Text(_format(context, t)),
+                  return GridView.builder(
+                    controller: _scrollController,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 6,
+                          crossAxisSpacing: 6,
+                          childAspectRatio: 2.7,
+                        ),
+                    itemCount: _entries.length,
+                    itemBuilder: (context, index) {
+                      final t = _entries[index];
+                      // Se la cella è vuota, mostra uno spazio vuoto
+                      if (t == null) {
+                        return const SizedBox.shrink();
+                      }
+                      // Evidenzia l'orario selezionato
+                      final isSelected = index == _scrollToIndex;
+                      return OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: isSelected
+                              ? Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.1)
+                              : null,
+                          side: BorderSide(
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).dividerColor,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        onPressed: () => Navigator.pop(context, t),
+                        child: Text(_format(context, t)),
+                      );
+                    },
                   );
                 },
               ),
