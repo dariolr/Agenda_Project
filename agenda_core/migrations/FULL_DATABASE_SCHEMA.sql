@@ -159,6 +159,7 @@ CREATE TABLE `businesses` (
   `phone` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `online_bookings_notification_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `service_color_palette` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'legacy',
+  `primary_color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Brand color in hex format (e.g. #3B82F6). Used as primary seed color in the booking frontend.',
   `timezone` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Europe/Rome',
   `currency` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EUR',
   `cancellation_hours` int UNSIGNED NOT NULL DEFAULT '24' COMMENT 'Default hours before appointment when cancellation/modification is allowed',

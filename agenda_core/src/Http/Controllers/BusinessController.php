@@ -129,6 +129,7 @@ final class BusinessController
             'currency' => $row['currency'],
             'cancellation_hours' => isset($row['cancellation_hours']) ? (int) $row['cancellation_hours'] : null,
             'service_color_palette' => $row['service_color_palette'] ?? 'legacy',
+            'primary_color' => $row['primary_color'] ?? null,
             'default_location_id' => $defaultLocationId,
         ];
     }

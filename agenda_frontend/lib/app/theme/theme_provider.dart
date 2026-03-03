@@ -8,7 +8,7 @@ import 'theme_config.dart';
 class ThemeNotifier extends Notifier<AppThemeConfig> {
   @override
   AppThemeConfig build() => const AppThemeConfig(
-        seedColor: colorPrimary,
+        seedColor: colorAccent,
         brightness: Brightness.light,
       );
 

@@ -254,6 +254,7 @@ final class BusinessRepository
                     cancellation_hours,
                     online_bookings_notification_email,
                     service_color_palette,
+                    primary_color,
                     is_active, is_suspended, suspension_message, created_at, updated_at
              FROM businesses
              WHERE slug = ?'

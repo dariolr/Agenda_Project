@@ -87,20 +87,24 @@ class _LoadingSpinnerState extends State<_LoadingSpinner>
           shape: BoxShape.circle,
           border: Border.all(color: const Color(0xFFE0E0E0), width: 4),
         ),
-        child: const CustomPaint(painter: _SpinnerPainter()),
+        child: CustomPaint(
+          painter: _SpinnerPainter(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
       ),
     );
   }
 }
 
 class _SpinnerPainter extends CustomPainter {
-  const _SpinnerPainter();
+  const _SpinnerPainter({required this.color});
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color =
-          const Color(0xFF2196F3) // Blu accent
+      ..color = color
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
