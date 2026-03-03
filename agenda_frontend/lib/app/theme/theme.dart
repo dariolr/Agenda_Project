@@ -42,15 +42,16 @@ TextTheme _withEmojiFallback(TextTheme textTheme) {
 /// Crea il tema dell'app
 ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
   final isDark = brightness == Brightness.dark;
+  final accent = config.seedColor;
 
   final background = isDark ? colorPrimary : colorBackground;
   final onBackground = isDark ? colorBackground : colorPrimary;
 
   final colorScheme = ColorScheme(
     brightness: brightness,
-    primary: colorAccent,
+    primary: accent,
     onPrimary: Colors.white,
-    secondary: colorAccent,
+    secondary: accent,
     onSecondary: Colors.white,
     error: Colors.red,
     onError: Colors.white,
@@ -82,7 +83,7 @@ ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: colorAccent,
+        backgroundColor: accent,
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -99,7 +100,7 @@ ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: colorAccent,
+        foregroundColor: accent,
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -115,7 +116,7 @@ ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: colorAccent, width: 2),
+        borderSide: BorderSide(color: accent, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -124,15 +125,15 @@ ThemeData buildTheme(AppThemeConfig config, Brightness brightness) {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: colorAccent.withOpacity(0.1),
-      selectedColor: colorAccent,
+      backgroundColor: accent.withOpacity(0.1),
+      selectedColor: accent,
       labelStyle: TextStyle(color: onBackground),
       secondaryLabelStyle: const TextStyle(color: Colors.white),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
     dividerColor: onBackground.withOpacity(0.1),
-    progressIndicatorTheme: const ProgressIndicatorThemeData(
-      color: colorAccent,
+    progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: accent,
     ),
   );
 

@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 /// Modello Business
 @immutable
@@ -12,6 +12,7 @@ class Business {
   final String currency;
   final int? cancellationHours;
   final int? defaultLocationId;
+  final Color? primaryColor;
 
   const Business({
     required this.id,
@@ -23,6 +24,7 @@ class Business {
     this.currency = 'EUR',
     this.cancellationHours,
     this.defaultLocationId,
+    this.primaryColor,
   });
 
   factory Business.fromJson(Map<String, dynamic> json) {
@@ -36,7 +38,16 @@ class Business {
       currency: json['currency'] as String? ?? 'EUR',
       cancellationHours: json['cancellation_hours'] as int?,
       defaultLocationId: json['default_location_id'] as int?,
+      primaryColor: _parseColor(json['primary_color'] as String?),
     );
+  }
+
+  static Color? _parseColor(String? hex) {
+    if (hex == null || hex.isEmpty) return null;
+    final cleaned = hex.startsWith('#') ? hex.substring(1) : hex;
+    final value = int.tryParse(cleaned, radix: 16);
+    if (value == null) return null;
+    return Color(0xFF000000 | value);
   }
 
   Map<String, dynamic> toJson() {

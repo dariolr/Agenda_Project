@@ -155,7 +155,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final from = state.uri.queryParameters['from'];
           final slug = state.pathParameters['slug'] ?? '';
-          if (kIsWeb) {
+          if (kIsWeb && !kDebugMode) {
             return WebLoginRedirectScreen(slug: slug, from: from);
           }
           return LoginScreen(redirectFrom: from);

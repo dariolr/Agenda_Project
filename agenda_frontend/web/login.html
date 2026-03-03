@@ -10,6 +10,8 @@
       --page: #ffffff;
       --primary: #2196f3;
       --primary-soft: rgba(33, 150, 243, 0.12);
+      --primary-border: rgba(33, 150, 243, 0.3);
+      --primary-ring: rgba(33, 150, 243, 0.16);
       --text: #1f1f1f;
       --muted: #5f6368;
       --danger: #d32f2f;
@@ -64,7 +66,7 @@
       display: grid;
       place-items: center;
       color: var(--primary);
-      background: rgba(33, 150, 243, 0.1);
+      background: var(--primary-soft);
       border-radius: 50%;
     }
 
@@ -82,7 +84,7 @@
       display: none;
       padding: 16px;
       background: var(--primary-soft);
-      border: 1px solid rgba(33, 150, 243, 0.3);
+      border: 1px solid var(--primary-border);
       border-radius: 12px;
       margin-bottom: 24px;
       color: #1f1f1f;
@@ -118,7 +120,7 @@
     .input:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.16);
+      box-shadow: 0 0 0 2px var(--primary-ring);
     }
 
     .toggle-password {
@@ -173,6 +175,10 @@
       align-items: center;
       gap: 8px;
       font-size: 14px;
+    }
+
+    .remember input[type="checkbox"] {
+      accent-color: var(--primary);
     }
 
     .link-btn {
@@ -355,6 +361,19 @@
       let cachedBusinessId = null;
       let isSubmitting = false;
 
+      function applyPrimaryColor(hex) {
+        if (!hex) return;
+        const cleaned = hex.startsWith('#') ? hex.slice(1) : hex;
+        const val = parseInt(cleaned, 16);
+        if (isNaN(val)) return;
+        const r = (val >> 16) & 255, g = (val >> 8) & 255, b = val & 255;
+        const root = document.documentElement;
+        root.style.setProperty('--primary', hex);
+        root.style.setProperty('--primary-soft', `rgba(${r},${g},${b},0.12)`);
+        root.style.setProperty('--primary-border', `rgba(${r},${g},${b},0.3)`);
+        root.style.setProperty('--primary-ring', `rgba(${r},${g},${b},0.16)`);
+      }
+
       function showInfo(text) {
         if (!text) {
           infoBox.style.display = "none";
@@ -450,6 +469,13 @@
           throw new Error("Business non trovato");
         }
         cachedBusinessId = payload.data.id;
+        const primaryColor = payload.data.primary_color;
+        applyPrimaryColor(primaryColor);
+        // Salva in localStorage con la stessa chiave usata da Flutter
+        // così al ritorno dalla login Flutter non ha il flash
+        if (primaryColor && slug) {
+          try { localStorage.setItem(`agenda_primary_color_${slug}`, primaryColor); } catch (_) {}
+        }
         return cachedBusinessId;
       }
 
@@ -557,12 +583,14 @@
           return;
         }
         forgotBtn.disabled = true;
+        forgotBtn.textContent = "Invio in corso...";
         try {
           await requestPasswordReset(enteredEmail);
         } catch (error) {
           showError(error && error.message ? error.message : "Errore durante l'invio. Riprova.");
         } finally {
           forgotBtn.disabled = false;
+          forgotBtn.textContent = "Password dimenticata?";
         }
       });
 
@@ -615,9 +643,17 @@
       }
 
       restoreSavedCredentials();
-      // Best-effort: if a refresh cookie is present, restore session without asking credentials.
-      // If cookies are blocked by the environment (some in-app browsers/webviews), this will be a no-op.
-      tryAutoRefreshSession();
+
+      // Apply business color first, then start auto-refresh session.
+      // This ensures setLoading(true) inside tryAutoRefreshSession runs AFTER
+      // the color is applied, so the button never flashes with the default blue.
+      if (slug) {
+        getBusinessId()
+          .catch(() => {})
+          .finally(() => tryAutoRefreshSession());
+      } else {
+        tryAutoRefreshSession();
+      }
     })();
   </script>
 </body>
