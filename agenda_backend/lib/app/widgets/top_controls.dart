@@ -55,7 +55,6 @@ class TopControls extends ConsumerWidget {
   ) {
     // Su mobile per agenda, il date picker è in basso (come tablet)
     // In agenda mobile i filtri (staff/location) sono in AppBar actions.
-    // Qui non mostriamo la combo location a sinistra per evitare duplicati.
     if (mode == TopControlsMode.agenda) {
       return const SizedBox.shrink();
     }
@@ -112,77 +111,86 @@ class TopControls extends ConsumerWidget {
     TopControlsData data,
     WidgetRef ref,
   ) {
-    _StaffWeekMeta? weekMeta;
-    String label;
-    DateTime selectedDate;
-    if (mode == TopControlsMode.agenda) {
-      label = _formatSingleDate(data);
-      selectedDate = data.agendaDate;
-    } else {
-      weekMeta = _resolveWeekMeta(data);
-      label = weekMeta.label;
-      selectedDate = weekMeta.effectivePickerDate;
-    }
-    final showTopDateSwitcher =
-        mode != TopControlsMode.agenda &&
-        !(mode == TopControlsMode.staff &&
-            data.formFactor == AppFormFactor.mobile);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _StaffWeekMeta? weekMeta;
+        String label;
+        DateTime selectedDate;
+        if (mode == TopControlsMode.agenda) {
+          label = _formatSingleDate(data);
+          selectedDate = data.agendaDate;
+        } else {
+          weekMeta = _resolveWeekMeta(data);
+          label = weekMeta.label;
+          selectedDate = weekMeta.effectivePickerDate;
+        }
+        final showTopDateSwitcher =
+            mode != TopControlsMode.agenda &&
+            !(mode == TopControlsMode.staff &&
+                data.formFactor == AppFormFactor.mobile);
 
-    final layoutConfig = ref.watch(layoutConfigProvider);
+        final layoutConfig = ref.watch(layoutConfigProvider);
 
-    return Row(
-      mainAxisSize: MainAxisSize.max,
-      children: [
-        if (showTopDateSwitcher) ...[
-          Flexible(
-            child: AgendaDateSwitcher(
-              label: label,
-              selectedDate: selectedDate,
-              onPreviousWeek: mode == TopControlsMode.staff
-                  ? data.dateController.previousWeek
-                  : null,
-              onNextWeek: mode == TopControlsMode.staff
-                  ? data.dateController.nextWeek
-                  : null,
-              onSelectDate: (date) {
-                data.dateController.set(DateUtils.dateOnly(date));
-              },
-              useWeekRangePicker: mode == TopControlsMode.staff,
-              isCompact: compact,
-            ),
-          ),
-        ],
-        if (mode == TopControlsMode.agenda)
-          SizedBox(width: layoutConfig.hourColumnWidth),
-        // Il selettore staff è mostrato solo se l'utente può vedere tutti gli appuntamenti
-        // e se ci sono più membri staff nella location
-        if (mode == TopControlsMode.agenda &&
-            ref.watch(canViewAllAppointmentsProvider) &&
-            ref.watch(staffForCurrentLocationProvider).length > 1) ...[
-          const Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: AgendaStaffFilterSelector(isCompact: false),
-          ),
-        ],
-        if (data.locations.length > 1) ...[
-          const SizedBox(width: 16),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: AgendaLocationSelector(
-              locations: data.locations,
-              current: data.currentLocation,
-              onSelected: (locationId) {
-                data.locationController.set(locationId);
-                if (mode == TopControlsMode.staff) {
-                  ref
-                      .read(staffSectionLocationIdProvider.notifier)
-                      .set(locationId);
-                }
-              },
-            ),
-          ),
-        ],
-      ],
+        return Row(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            if (showTopDateSwitcher) ...[
+              Flexible(
+                child: AgendaDateSwitcher(
+                  label: label,
+                  selectedDate: selectedDate,
+                  onPreviousWeek: mode == TopControlsMode.staff
+                      ? data.dateController.previousWeek
+                      : null,
+                  onNextWeek: mode == TopControlsMode.staff
+                      ? data.dateController.nextWeek
+                      : null,
+                  onSelectDate: (date) {
+                    data.dateController.set(DateUtils.dateOnly(date));
+                  },
+                  useWeekRangePicker: mode == TopControlsMode.staff,
+                  isCompact: compact,
+                ),
+              ),
+            ],
+            if (mode == TopControlsMode.agenda)
+              SizedBox(width: layoutConfig.hourColumnWidth),
+            if (mode == TopControlsMode.agenda &&
+                ref.watch(canViewAllAppointmentsProvider) &&
+                ref.watch(staffForCurrentLocationProvider).length > 1) ...[
+              const Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AgendaStaffFilterSelector(isCompact: false),
+              ),
+            ],
+            if (data.locations.length > 1) ...[
+              const SizedBox(width: 16),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AgendaLocationSelector(
+                  locations: data.locations,
+                  current: data.currentLocation,
+                  onSelected: (locationId) {
+                    data.locationController.set(locationId);
+                    if (mode == TopControlsMode.staff) {
+                      ref
+                          .read(staffSectionLocationIdProvider.notifier)
+                          .set(locationId);
+                    }
+                  },
+                ),
+              ),
+            ],
+            if (mode == TopControlsMode.agenda) ...[
+              const SizedBox(width: 12),
+              const Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AgendaViewModeButton(iconOnly: true),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -208,7 +216,10 @@ class TopControls extends ConsumerWidget {
         ref.watch(staffForCurrentLocationProvider).length > 1;
     final showLocationSelector = data.locations.length > 1;
 
-    List<Widget> buildChildren({required bool allowFlex}) {
+    List<Widget> buildChildren({
+      required bool allowFlex,
+      required bool compactViewModeSelector,
+    }) {
       return [
         if (allowFlex)
           Flexible(
@@ -301,11 +312,22 @@ class TopControls extends ConsumerWidget {
               ),
             ),
         ],
+        if (mode == TopControlsMode.agenda) ...[
+          const SizedBox(width: 12),
+          const Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AgendaViewModeButton(iconOnly: true),
+          ),
+        ],
       ];
     }
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final compactViewModeSelector =
+            mode == TopControlsMode.agenda &&
+            constraints.hasBoundedWidth &&
+            constraints.maxWidth < 860;
         final useScrollFallback =
             constraints.hasBoundedWidth && constraints.maxWidth < 420;
         if (useScrollFallback) {
@@ -315,12 +337,20 @@ class TopControls extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: buildChildren(allowFlex: false),
+                children: buildChildren(
+                  allowFlex: false,
+                  compactViewModeSelector: compactViewModeSelector,
+                ),
               ),
             ),
           );
         }
-        return Row(children: buildChildren(allowFlex: true));
+        return Row(
+          children: buildChildren(
+            allowFlex: true,
+            compactViewModeSelector: compactViewModeSelector,
+          ),
+        );
       },
     );
   }

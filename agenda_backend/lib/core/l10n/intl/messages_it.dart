@@ -271,6 +271,10 @@ class MessageLookup extends MessageLookupByLibrary {
       "Visualizza tutto il team",
     ),
     "agendaToday": MessageLookupByLibrary.simpleMessage("Oggi"),
+    "agendaViewMode": MessageLookupByLibrary.simpleMessage("Visualizzazione"),
+    "agendaWeeklyLoadError": MessageLookupByLibrary.simpleMessage(
+      "Impossibile caricare gli appuntamenti della settimana.",
+    ),
     "allLocations": MessageLookupByLibrary.simpleMessage("Tutte le sedi"),
     "appTitle": MessageLookupByLibrary.simpleMessage("Agenda Platform"),
     "applyClientToAllAppointmentsMessage": MessageLookupByLibrary.simpleMessage(
@@ -1533,7 +1537,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "paymentMethodPending": MessageLookupByLibrary.simpleMessage(
       "Ancora da pagare",
     ),
-    "paymentMethodVoucher": MessageLookupByLibrary.simpleMessage("Buono"),
+    "paymentMethodVoucher": MessageLookupByLibrary.simpleMessage(
+      "Buono/Pacchetto",
+    ),
     "paymentNotesLabel": MessageLookupByLibrary.simpleMessage("Note pagamento"),
     "paymentNotesPlaceholder": MessageLookupByLibrary.simpleMessage(
       "Note sul pagamento...",
@@ -1820,6 +1826,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Questa settimana",
     ),
     "reportsPresetYear": MessageLookupByLibrary.simpleMessage("Anno corrente"),
+    "reportsPresetYesterday": MessageLookupByLibrary.simpleMessage("Ieri"),
     "reportsPresets": MessageLookupByLibrary.simpleMessage("Preset periodo"),
     "reportsTabAppointments": MessageLookupByLibrary.simpleMessage(
       "Appuntamenti",

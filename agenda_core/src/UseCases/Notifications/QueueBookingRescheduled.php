@@ -85,10 +85,11 @@ final class QueueBookingRescheduled
         $clientName = $this->extractFirstName($clientName);
 
         // Prepare template variables
-        $oldStartTime = isset($booking['old_start_time']) 
-            ? new DateTimeImmutable($booking['old_start_time']) 
+        $locationTz = new DateTimeZone($booking['location_timezone'] ?? 'Europe/Rome');
+        $oldStartTime = isset($booking['old_start_time'])
+            ? new DateTimeImmutable($booking['old_start_time'], $locationTz)
             : null;
-        $newStartTime = new DateTimeImmutable($booking['new_start_time'] ?? $booking['start_time']);
+        $newStartTime = new DateTimeImmutable($booking['new_start_time'] ?? $booking['start_time'], $locationTz);
         
         $locationName = $booking['location_name'] ?? '';
         $locationAddress = $booking['location_address'] ?? '';

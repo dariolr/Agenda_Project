@@ -211,6 +211,10 @@ class _PresetDropdown extends StatelessWidget {
               child: Text(l10n.reportsPresetToday),
             ),
             DropdownMenuItem(
+              value: 'yesterday',
+              child: Text(l10n.reportsPresetYesterday),
+            ),
+            DropdownMenuItem(
               value: 'month',
               child: Text(l10n.reportsPresetMonth),
             ),

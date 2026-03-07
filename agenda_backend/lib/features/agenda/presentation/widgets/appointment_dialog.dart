@@ -685,7 +685,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final paymentAction = AppOutlinedActionButton(
       onPressed: totalPrice > 0
           ? () async {
-              final navigator = Navigator.of(context);
               final payment = await showPaymentDialog(
                 context,
                 ref,
@@ -694,7 +693,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                 bookingId: widget.initial.bookingId,
               );
               if (payment == null || !mounted) return;
-              navigator.pop();
+              await _onSave();
             }
           : null,
       padding: AppButtonStyles.dialogButtonPadding,
@@ -858,9 +857,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   ),
                   child: Column(
                     children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: cancelAction,
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          Expanded(child: cancelAction),
+                          Expanded(child: paymentAction),
                           const SizedBox(width: 8),
                           Expanded(child: rescheduleAction),
                         ],
@@ -872,11 +876,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                           const SizedBox(width: 8),
                           Expanded(child: saveAction),
                         ],
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: paymentAction,
                       ),
                     ],
                   ),

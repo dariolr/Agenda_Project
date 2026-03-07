@@ -238,6 +238,10 @@ final class ReplaceBooking
     {
         $items = [];
         $requireBookableOnline = $actorType === 'customer';
+        $locationTimezone = null;
+        if ($actorType === 'customer') {
+            $locationTimezone = $this->resolveLocationTimezone($locationId);
+        }
 
         if (isset($newBookingData['items']) && is_array($newBookingData['items'])) {
             foreach ($newBookingData['items'] as $item) {
@@ -256,7 +260,9 @@ final class ReplaceBooking
                     throw BookingException::invalidStaff($staffId);
                 }
 
-                $startTime = new DateTimeImmutable($startTimeStr, new DateTimeZone('UTC'));
+                $startTime = $locationTimezone !== null
+                    ? (new DateTimeImmutable($startTimeStr, $locationTimezone))->setTimezone($locationTimezone)
+                    : new DateTimeImmutable($startTimeStr, new DateTimeZone('UTC'));
                 $durationMinutes = $item['duration_minutes'] ?? (int) $service['duration_minutes'];
                 $endTime = $startTime->modify("+{$durationMinutes} minutes");
 
@@ -277,7 +283,9 @@ final class ReplaceBooking
             $staffId = isset($newBookingData['staff_id']) ? (int) $newBookingData['staff_id'] : null;
             $startTimeStr = $newBookingData['start_time'];
             
-            $startTime = new DateTimeImmutable($startTimeStr, new DateTimeZone('UTC'));
+            $startTime = $locationTimezone !== null
+                ? (new DateTimeImmutable($startTimeStr, $locationTimezone))->setTimezone($locationTimezone)
+                : new DateTimeImmutable($startTimeStr, new DateTimeZone('UTC'));
 
             // Get services
             $services = $this->serviceRepository->findByIds($serviceIds, $locationId, $businessId);
@@ -340,6 +348,12 @@ final class ReplaceBooking
         }
 
         return $items;
+    }
+
+    private function resolveLocationTimezone(int $locationId): DateTimeZone
+    {
+        $timezone = $this->locationRepository->getTimezone($locationId);
+        return new DateTimeZone(is_string($timezone) && $timezone !== '' ? $timezone : 'Europe/Rome');
     }
 
     private function checkAvailability(array $items, int $locationId, int $businessId, int $excludeBookingId): void

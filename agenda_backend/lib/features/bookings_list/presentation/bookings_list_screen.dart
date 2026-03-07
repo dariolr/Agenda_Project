@@ -249,10 +249,22 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   }
 
   void _viewBookingDetails(BookingListItem booking) {
-    if (booking.firstStartTime != null) {
-      ref.read(agendaDateProvider.notifier).set(booking.firstStartTime!);
-      context.go('/agenda');
+    final startTime = booking.firstStartTime;
+    if (startTime == null) return;
+
+    ref.read(agendaDateProvider.notifier).set(startTime);
+
+    final currentLocationId = ref.read(currentLocationIdProvider);
+    final targetLocationId = booking.locationId;
+    if (targetLocationId > 0 && targetLocationId != currentLocationId) {
+      final locations = ref.read(locationsProvider);
+      final locationExists = locations.any((l) => l.id == targetLocationId);
+      if (locationExists) {
+        ref.read(currentLocationIdProvider.notifier).set(targetLocationId);
+      }
     }
+
+    context.go('/agenda');
   }
 
   Future<void> _viewBookingHistory(BookingListItem booking) async {

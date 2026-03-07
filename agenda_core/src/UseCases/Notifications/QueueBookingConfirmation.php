@@ -124,7 +124,8 @@ final class QueueBookingConfirmation
 
     private function prepareVariables(array $booking, string $locale): array
     {
-        $startTime = new DateTimeImmutable($booking['start_time']);
+        $locationTz = new DateTimeZone($booking['location_timezone'] ?? 'Europe/Rome');
+        $startTime = new DateTimeImmutable($booking['start_time'], $locationTz);
         $cancelDeadline = isset($booking['cancellation_hours']) 
             ? $startTime->modify("-{$booking['cancellation_hours']} hours")
             : $startTime->modify('-24 hours');

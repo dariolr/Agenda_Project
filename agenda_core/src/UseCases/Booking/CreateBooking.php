@@ -678,7 +678,9 @@ final class CreateBooking
 
         // Parse start time in location timezone (frontend sends naive ISO local time)
         try {
-            $startTimeLocal = new DateTimeImmutable($startTimeString, $locationTimezone);
+            // Normalize to location timezone even if input contains Z/+offset.
+            $startTimeLocal = (new DateTimeImmutable($startTimeString, $locationTimezone))
+                ->setTimezone($locationTimezone);
         } catch (\Exception $e) {
             throw BookingException::invalidTime('Invalid ISO8601 format');
         }
@@ -941,7 +943,9 @@ final class CreateBooking
         $nowLocal = new DateTimeImmutable('now', $locationTimezone);
         foreach ($items as $item) {
             // Parse start_time as local time (frontend sends naive ISO without timezone)
-            $itemStartTimeLocal = new DateTimeImmutable($item['start_time'], $locationTimezone);
+            // Normalize to location timezone even if input contains Z/+offset.
+            $itemStartTimeLocal = (new DateTimeImmutable($item['start_time'], $locationTimezone))
+                ->setTimezone($locationTimezone);
             
             // DEBUG LOG
             file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " executeForCustomerWithItems: now_local={$nowLocal->format('Y-m-d H:i:s')} start_time_raw={$item['start_time']} start_time_local={$itemStartTimeLocal->format('Y-m-d H:i:s')} tz={$location['timezone']}\n", FILE_APPEND);
@@ -970,7 +974,8 @@ final class CreateBooking
                 $staffId = (int) $item['staff_id'];
                 // Frontend sends local time (naive ISO), parse in location timezone
                 // Database stores location time, not UTC
-                $startTime = new DateTimeImmutable($item['start_time'], $locationTimezone);
+                $startTime = (new DateTimeImmutable($item['start_time'], $locationTimezone))
+                    ->setTimezone($locationTimezone);
 
                 // Validate staff belongs to location
                 if (!$this->staffRepository->belongsToLocation($staffId, $locationId, true)) {

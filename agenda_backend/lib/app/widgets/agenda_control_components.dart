@@ -2,6 +2,10 @@ import 'package:agenda_backend/app/theme/extensions.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
+import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
+import 'package:agenda_backend/core/widgets/app_buttons.dart';
+import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_provider.dart';
+import 'package:agenda_backend/features/auth/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -453,8 +457,12 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
               (trailingInternalDividers * dividerWidth);
           final isCompact =
               compactByBreakpoint ||
-              (maxWidth.isFinite && maxWidth > 0 && maxWidth < nonCompactMinWidth);
-          horizontalPadding = isCompact ? 12.0 : kAgendaControlHorizontalPadding;
+              (maxWidth.isFinite &&
+                  maxWidth > 0 &&
+                  maxWidth < nonCompactMinWidth);
+          horizontalPadding = isCompact
+              ? 12.0
+              : kAgendaControlHorizontalPadding;
 
           final labelRegion = buildLabelRegion();
           final children = <Widget>[
@@ -1038,7 +1046,9 @@ class _AgendaLocationSelectorState
                       height: kAgendaControlHeight,
                       decoration: BoxDecoration(
                         borderRadius: kAgendaPillRadius,
-                        border: Border.all(color: Colors.grey.withOpacity(0.35)),
+                        border: Border.all(
+                          color: Colors.grey.withOpacity(0.35),
+                        ),
                         color: backgroundColor,
                       ),
                       child: Padding(
@@ -1068,6 +1078,306 @@ class _AgendaLocationSelectorState
         ),
       ),
     );
+  }
+}
+
+class AgendaCalendarViewModeSelector extends ConsumerStatefulWidget {
+  const AgendaCalendarViewModeSelector({super.key, this.iconOnly = false});
+
+  final bool iconOnly;
+
+  @override
+  ConsumerState<AgendaCalendarViewModeSelector> createState() =>
+      _AgendaCalendarViewModeSelectorState();
+}
+
+class _AgendaCalendarViewModeSelectorState
+    extends ConsumerState<AgendaCalendarViewModeSelector> {
+  static const double _fixedWidth = 200;
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isSuperadmin = ref.watch(
+      authProvider.select((state) => state.user?.isSuperadmin ?? false),
+    );
+    if (!isSuperadmin) {
+      return const SizedBox.shrink();
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final interactions = Theme.of(context).extension<AppInteractionColors>();
+    final hoverFill =
+        interactions?.hoverFill ?? colorScheme.primary.withOpacity(0.06);
+    final backgroundColor = _isHovered
+        ? Color.alphaBlend(hoverFill, colorScheme.surface)
+        : colorScheme.surface;
+    final selectedMode = ref.watch(calendarViewModeProvider);
+    final dayLabel = _displayLabel(context.l10n.recurrenceDay);
+    final weekLabel = _displayLabel(context.l10n.recurrenceWeek);
+    final selectedLabel = selectedMode == CalendarViewMode.day
+        ? dayLabel
+        : weekLabel;
+
+    return AdaptiveDropdown<CalendarViewMode>(
+      items: [
+        AdaptiveDropdownItem<CalendarViewMode>(
+          value: CalendarViewMode.day,
+          child: _buildMenuItem(
+            context,
+            icon: Icons.view_day_outlined,
+            label: dayLabel,
+          ),
+        ),
+        AdaptiveDropdownItem<CalendarViewMode>(
+          value: CalendarViewMode.week,
+          child: _buildMenuItem(
+            context,
+            icon: Icons.view_week_outlined,
+            label: weekLabel,
+          ),
+        ),
+      ],
+      selectedValue: selectedMode,
+      onSelected: ref.read(calendarViewModeProvider.notifier).setMode,
+      modalTitle: context.l10n.agendaViewMode,
+      popupWidth: 180,
+      useRootNavigator: true,
+      onOpened: () => setState(() => _isHovered = true),
+      onClosed: () => setState(() => _isHovered = false),
+      child: MouseRegion(
+        onEnter: (_) {
+          if (!_isHovered) setState(() => _isHovered = true);
+        },
+        onExit: (_) {
+          if (_isHovered) setState(() => _isHovered = false);
+        },
+        child: Semantics(
+          button: true,
+          label: selectedLabel,
+          child: widget.iconOnly
+              ? Tooltip(
+                  message: selectedLabel,
+                  child: Container(
+                    height: kAgendaControlHeight,
+                    width: kAgendaControlHeight,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(
+                        kAgendaControlHeight / 2,
+                      ),
+                      color: backgroundColor,
+                    ),
+                    child: Icon(
+                      _iconForMode(selectedMode),
+                      size: 30,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              : ClipRRect(
+                  borderRadius: kAgendaPillRadius,
+                  child: SizedBox(
+                    width: _fixedWidth,
+                    child: Container(
+                      height: kAgendaControlHeight,
+                      decoration: BoxDecoration(
+                        borderRadius: kAgendaPillRadius,
+                        border: Border.all(
+                          color: Colors.grey.withOpacity(0.35),
+                        ),
+                        color: backgroundColor,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: kAgendaControlHorizontalPadding,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                selectedMode.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+  }) {
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 10),
+        Expanded(child: Text(label, overflow: TextOverflow.ellipsis)),
+      ],
+    );
+  }
+
+  IconData _iconForMode(CalendarViewMode mode) {
+    return mode == CalendarViewMode.day
+        ? Icons.view_day_outlined
+        : Icons.view_week_outlined;
+  }
+
+  String _displayLabel(String raw) {
+    if (raw.isEmpty) return raw;
+    return raw[0].toUpperCase() + raw.substring(1);
+  }
+}
+
+/// Bottone giorno/settimana con lo stesso stile del mobile (Tooltip + OutlinedButton + bottom sheet).
+/// Usato in mobile, tablet e desktop.
+class AgendaViewModeButton extends ConsumerWidget {
+  const AgendaViewModeButton({
+    super.key,
+    this.iconOnly = false,
+    this.height = kAgendaControlHeight,
+  });
+
+  final bool iconOnly;
+  final double height;
+
+  static const double _labelWidth = 200;
+  static const double _iconOnlyWidth = 46;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isSuperadmin = ref.watch(
+      authProvider.select((state) => state.user?.isSuperadmin ?? false),
+    );
+    if (!isSuperadmin) return const SizedBox.shrink();
+
+    final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    final currentMode = ref.watch(calendarViewModeProvider);
+
+    final icon = currentMode == CalendarViewMode.day
+        ? Icons.view_day_outlined
+        : Icons.view_week_outlined;
+
+    final child = iconOnly
+        ? Icon(icon, size: 22)
+        : Row(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Icon(icon, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.agendaViewMode,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          );
+
+    return Tooltip(
+      message: l10n.agendaViewMode,
+      child: SizedBox(
+        height: height,
+        width: iconOnly ? _iconOnlyWidth : _labelWidth,
+        child: AppOutlinedActionButton(
+          onPressed: () => _showSheet(context, ref, currentMode),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          borderRadius: BorderRadius.circular(8),
+          borderColor: scheme.primary,
+          foregroundColor: scheme.primary,
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showSheet(
+    BuildContext context,
+    WidgetRef ref,
+    CalendarViewMode currentMode,
+  ) async {
+    final l10n = context.l10n;
+    final items = [
+      (value: CalendarViewMode.day, label: l10n.recurrenceDay, icon: Icons.view_day_outlined),
+      (value: CalendarViewMode.week, label: l10n.recurrenceWeek, icon: Icons.view_week_outlined),
+    ];
+
+    final result = await AppBottomSheet.show<CalendarViewMode>(
+      context: context,
+      useRootNavigator: true,
+      padding: EdgeInsets.zero,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final colorScheme = theme.colorScheme;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Text(
+                l10n.agendaViewMode,
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            const Divider(height: 1),
+            for (final item in items)
+              InkWell(
+                onTap: () => Navigator.of(ctx).pop(item.value),
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  color: item.value == currentMode
+                      ? colorScheme.primary.withOpacity(0.08)
+                      : Colors.transparent,
+                  child: Row(
+                    children: [
+                      Icon(item.icon, size: 20, color: colorScheme.onSurface),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          item.label,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
+                            fontWeight: item.value == currentMode
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      if (item.value == currentMode)
+                        Icon(Icons.check, size: 20, color: colorScheme.primary),
+                    ],
+                  ),
+                ),
+              ),
+            SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      ref.read(calendarViewModeProvider.notifier).setMode(result);
+    }
   }
 }
 

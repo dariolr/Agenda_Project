@@ -128,6 +128,7 @@ class _ReportsTopControlsContent extends StatelessWidget {
   bool get _supportsFullPeriod =>
       selectedPreset != 'custom' &&
       selectedPreset != 'today' &&
+      selectedPreset != 'yesterday' &&
       selectedPreset != 'last_month' &&
       selectedPreset != 'last_3_months' &&
       selectedPreset != 'last_6_months' &&
@@ -248,6 +249,10 @@ class _PresetDropdown extends StatelessWidget {
             DropdownMenuItem(
               value: 'today',
               child: Text(l10n.reportsPresetToday),
+            ),
+            DropdownMenuItem(
+              value: 'yesterday',
+              child: Text(l10n.reportsPresetYesterday),
             ),
             DropdownMenuItem(
               value: 'month',
