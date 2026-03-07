@@ -7,6 +7,7 @@ namespace Agenda\Infrastructure\Repositories;
 use Agenda\Domain\Helpers\Unicode;
 use Agenda\Infrastructure\Database\Connection;
 use DateTimeImmutable;
+use DateTimeZone;
 
 /**
  * Repository for bookings and booking_items.
@@ -352,7 +353,8 @@ final class BookingRepository
     public function rescheduleBooking(
         int $bookingId,
         DateTimeImmutable $newStartTime,
-        ?string $notes = null
+        ?string $notes = null,
+        ?DateTimeZone $locationTimezone = null
     ): bool {
         // Get current booking items
         $items = $this->getBookingItems($bookingId);
@@ -360,10 +362,13 @@ final class BookingRepository
             return false;
         }
 
+        $locationTimezone ??= $this->resolveLocationTimezoneForBooking($bookingId);
+
         // Calculate time offset from first item
         $firstItem = $items[0];
-        $oldStartTime = new DateTimeImmutable($firstItem['start_time']);
-        $offsetSeconds = $newStartTime->getTimestamp() - $oldStartTime->getTimestamp();
+        $oldStartTime = new DateTimeImmutable($firstItem['start_time'], $locationTimezone);
+        $newStartInLocationTz = $newStartTime->setTimezone($locationTimezone);
+        $offsetSeconds = $newStartInLocationTz->getTimestamp() - $oldStartTime->getTimestamp();
 
         // Update each booking_item with new times
         $stmt = $this->db->getPdo()->prepare(
@@ -373,8 +378,8 @@ final class BookingRepository
         );
 
         foreach ($items as $item) {
-            $oldStart = new DateTimeImmutable($item['start_time']);
-            $oldEnd = new DateTimeImmutable($item['end_time']);
+            $oldStart = new DateTimeImmutable($item['start_time'], $locationTimezone);
+            $oldEnd = new DateTimeImmutable($item['end_time'], $locationTimezone);
 
             $newStart = $oldStart->modify("+{$offsetSeconds} seconds");
             $newEnd = $oldEnd->modify("+{$offsetSeconds} seconds");
@@ -392,6 +397,21 @@ final class BookingRepository
         }
 
         return true;
+    }
+
+    private function resolveLocationTimezoneForBooking(int $bookingId): DateTimeZone
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT l.timezone
+             FROM bookings b
+             JOIN locations l ON l.id = b.location_id
+             WHERE b.id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$bookingId]);
+        $timezone = $stmt->fetchColumn();
+
+        return new DateTimeZone(is_string($timezone) && $timezone !== '' ? $timezone : 'Europe/Rome');
     }
 
     /**

@@ -78,6 +78,11 @@ class BookingsListFilterNotifier extends Notifier<BookingsListFilterState> {
         startDate = today;
         endDate = today;
         break;
+      case 'yesterday':
+        final yesterday = today.subtract(const Duration(days: 1));
+        startDate = yesterday;
+        endDate = yesterday;
+        break;
       case 'month':
         startDate = DateTime(now.year, now.month, 1);
         endDate = DateTime(now.year, now.month + 1, 0); // Fine mese

@@ -6,14 +6,19 @@ import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/agenda_day.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/components/hour_column.dart';
+import 'package:agenda_backend/features/agenda/presentation/screens/week_view/weekly_appointments_view.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/booking_reschedule_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/is_resizing_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
+import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -136,6 +141,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       // Ricarica solo gli appuntamenti (dati che cambiano più frequentemente)
       _isPolling = true;
       ref.invalidate(appointmentsProvider);
+      _invalidateCurrentWeekAppointments();
     });
 
     _scrollRequestSub = ref.listenManual<AgendaScrollRequest?>(
@@ -156,16 +162,16 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       },
     );
 
-    _locationSub = ref.listenManual<int>(
-      currentLocationIdProvider,
-      (prev, next) {
-        if (prev == null || prev == next) return;
-        final session = ref.read(bookingRescheduleSessionProvider);
-        if (session == null) return;
-        ref.read(agendaDateProvider.notifier).set(session.originDate);
-        ref.read(bookingRescheduleSessionProvider.notifier).clear();
-      },
-    );
+    _locationSub = ref.listenManual<int>(currentLocationIdProvider, (
+      prev,
+      next,
+    ) {
+      if (prev == null || prev == next) return;
+      final session = ref.read(bookingRescheduleSessionProvider);
+      if (session == null) return;
+      ref.read(agendaDateProvider.notifier).set(session.originDate);
+      ref.read(bookingRescheduleSessionProvider.notifier).clear();
+    });
   }
 
   @override
@@ -216,6 +222,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
     final staffList = ref.watch(filteredStaffProvider);
     final staffFilterMode = ref.watch(staffFilterModeProvider);
+    final calendarViewMode = ref.watch(calendarViewModeProvider);
     final hasStaff = staffList.isNotEmpty;
     final isResizing = ref.watch(isResizingProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
@@ -305,7 +312,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       ],
     );
 
-    final agendaContent = Stack(
+    final dayAgendaContent = Stack(
       children: [
         Positioned.fill(child: mainRow),
         if (!hasStaff)
@@ -341,6 +348,13 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
           ),
       ],
     );
+
+    final agendaContent = calendarViewMode == CalendarViewMode.day
+        ? dayAgendaContent
+        : WeeklyAppointmentsView(
+            staffList: staffList,
+            staffFilterMode: staffFilterMode,
+          );
 
     return Stack(
       children: [
@@ -401,6 +415,25 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  void _invalidateCurrentWeekAppointments() {
+    final location = ref.read(currentLocationProvider);
+    final business = ref.read(currentBusinessProvider);
+    if (location.id <= 0 || business.id <= 0) return;
+
+    final anchorDate = ref.read(agendaDateProvider);
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final weekRange = computeWeekRange(anchorDate, timezone);
+    ref.invalidate(
+      weeklyAppointmentsProvider(
+        WeeklyAppointmentsRequest(
+          weekStart: weekRange.start,
+          locationId: location.id,
+          businessId: business.id,
+        ),
+      ),
     );
   }
 }

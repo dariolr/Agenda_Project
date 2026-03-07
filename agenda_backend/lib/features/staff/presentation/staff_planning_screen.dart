@@ -96,8 +96,9 @@ class _StaffPlanningScreenState extends ConsumerState<StaffPlanningScreen> {
     );
 
     if (result == true) {
-      // Ricarica la lista
-      _loadPlannings(planning.staffId);
+      // Ricarica la lista e resetta il filtro anno per mostrare le date aggiornate
+      _selectedYear = null;
+      await _loadPlannings(planning.staffId);
     }
   }
 

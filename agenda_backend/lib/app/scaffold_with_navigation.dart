@@ -5,8 +5,8 @@ import 'package:agenda_backend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_backend/app/widgets/top_controls.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
-import 'package:agenda_backend/features/bookings_list/providers/bookings_list_provider.dart';
 import 'package:agenda_backend/features/booking_notifications/providers/booking_notifications_provider.dart';
+import 'package:agenda_backend/features/bookings_list/providers/bookings_list_provider.dart';
 import 'package:agenda_backend/features/class_events/presentation/class_events_screen.dart';
 import 'package:agenda_backend/features/reports/providers/reports_provider.dart';
 import 'package:flutter/material.dart';
@@ -694,8 +694,12 @@ class _AgendaFilterActions extends ConsumerWidget {
     final canViewAll = ref.watch(canViewAllAppointmentsProvider);
     final showStaffSelector = canViewAll && staffCount > 1;
     final showLocationSelector = locations.length > 1;
+    final isSuperadmin = ref.watch(
+      authProvider.select((state) => state.user?.isSuperadmin ?? false),
+    );
+    final showViewModeSelector = isSuperadmin;
 
-    if (!showStaffSelector && !showLocationSelector) {
+    if (!showStaffSelector && !showLocationSelector && !showViewModeSelector) {
       return const SizedBox.shrink();
     }
 
@@ -781,6 +785,14 @@ class _AgendaFilterActions extends ConsumerWidget {
                 ),
               ),
             ),
+          if ((showStaffSelector || showLocationSelector) &&
+              showViewModeSelector)
+            const SizedBox(width: _spacing),
+          if (showViewModeSelector)
+            AgendaViewModeButton(
+              iconOnly: !showLabelEffective,
+              height: _actionButtonHeight,
+            ),
         ],
       ),
     );
@@ -809,6 +821,7 @@ class _AgendaFilterActions extends ConsumerWidget {
       ref.read(currentLocationIdProvider.notifier).set(result);
     }
   }
+
 }
 
 class _ToolbarLocationSelectorAction extends ConsumerWidget {

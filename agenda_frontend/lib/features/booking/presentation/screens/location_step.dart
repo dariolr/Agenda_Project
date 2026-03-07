@@ -94,7 +94,8 @@ class LocationStep extends ConsumerWidget {
                   }
 
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     itemCount: locations.length,
                     itemBuilder: (context, index) {
                       final location = locations[index];
@@ -145,16 +146,20 @@ class LocationStep extends ConsumerWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(top: BorderSide(color: theme.dividerColor)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: selectedLocation != null
-                ? () => ref.read(bookingFlowProvider.notifier).nextStep()
-                : null,
-            child: Text(l10n.actionNext),
-          ),
+        child: ElevatedButton(
+          onPressed: selectedLocation != null
+              ? () => ref.read(bookingFlowProvider.notifier).nextStep()
+              : null,
+          child: Text(l10n.actionNext),
         ),
       ),
     );

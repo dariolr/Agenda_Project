@@ -283,6 +283,16 @@ class L10n {
     return Intl.message('Oggi', name: 'agendaToday', desc: '', args: []);
   }
 
+  /// `Visualizzazione`
+  String get agendaViewMode {
+    return Intl.message(
+      'Visualizzazione',
+      name: 'agendaViewMode',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Giorno precedente`
   String get agendaPrevDay {
     return Intl.message(
@@ -348,6 +358,16 @@ class L10n {
     return Intl.message(
       'Nessuna sede disponibile',
       name: 'agendaNoLocations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile caricare gli appuntamenti della settimana.`
+  String get agendaWeeklyLoadError {
+    return Intl.message(
+      'Impossibile caricare gli appuntamenti della settimana.',
+      name: 'agendaWeeklyLoadError',
       desc: '',
       args: [],
     );
@@ -5885,6 +5905,16 @@ class L10n {
     return Intl.message('Oggi', name: 'reportsPresetToday', desc: '', args: []);
   }
 
+  /// `Ieri`
+  String get reportsPresetYesterday {
+    return Intl.message(
+      'Ieri',
+      name: 'reportsPresetYesterday',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Questa settimana`
   String get reportsPresetWeek {
     return Intl.message(
@@ -8909,10 +8939,10 @@ class L10n {
     );
   }
 
-  /// `Buono`
+  /// `Buono/Pacchetto`
   String get paymentMethodVoucher {
     return Intl.message(
-      'Buono',
+      'Buono/Pacchetto',
       name: 'paymentMethodVoucher',
       desc: '',
       args: [],

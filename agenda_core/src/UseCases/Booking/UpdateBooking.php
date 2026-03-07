@@ -13,6 +13,7 @@ use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\UseCases\Notifications\QueueBookingRescheduled;
 use DateTimeImmutable;
+use DateTimeZone;
 
 /**
  * Use Case: Update Booking
@@ -85,8 +86,17 @@ final class UpdateBooking
 
         // Se reschedule (start_time presente)
         if (isset($data['start_time'])) {
+            $locationTimezone = null;
             try {
-                $newStartTime = new DateTimeImmutable($data['start_time']);
+                if ($isCustomer) {
+                    $locationTimezone = $this->resolveLocationTimezone((int) ($booking['location_id'] ?? 0));
+                    // For customer updates, always normalize to location timezone
+                    // even if input contains Z/+offset.
+                    $newStartTime = (new DateTimeImmutable($data['start_time'], $locationTimezone))
+                        ->setTimezone($locationTimezone);
+                } else {
+                    $newStartTime = new DateTimeImmutable($data['start_time']);
+                }
             } catch (\Exception $e) {
                 throw BookingException::validationError('Invalid start_time format. Use ISO8601.');
             }
@@ -103,14 +113,15 @@ final class UpdateBooking
             try {
                 // Verifica availability con FOR UPDATE (skip per operatori)
                 if (!$isOperator) {
-                    $this->validateAvailabilityForReschedule($booking, $newStartTime);
+                    $this->validateAvailabilityForReschedule($booking, $newStartTime, $locationTimezone);
                 }
 
                 // Esegui reschedule
                 $updated = $this->bookingRepo->rescheduleBooking(
                     $bookingId,
                     $newStartTime,
-                    $data['notes'] ?? null
+                    $data['notes'] ?? null,
+                    $locationTimezone
                 );
 
                 if (!$updated) {
@@ -255,7 +266,11 @@ final class UpdateBooking
      * @param DateTimeImmutable $newStartTime Nuovo orario di inizio
      * @throws BookingException Se ci sono conflitti
      */
-    private function validateAvailabilityForReschedule(array $booking, DateTimeImmutable $newStartTime): void
+    private function validateAvailabilityForReschedule(
+        array $booking,
+        DateTimeImmutable $newStartTime,
+        ?DateTimeZone $locationTimezone = null
+    ): void
     {
         // Recupera tutti i booking_items per calcolare offset
         $items = $booking['items'] ?? [];
@@ -266,13 +281,19 @@ final class UpdateBooking
 
         // Calcola offset temporale
         $firstItem = $items[0];
-        $oldStartTime = new DateTimeImmutable($firstItem['start_time']);
+        $oldStartTime = $locationTimezone !== null
+            ? new DateTimeImmutable($firstItem['start_time'], $locationTimezone)
+            : new DateTimeImmutable($firstItem['start_time']);
         $offsetSeconds = $newStartTime->getTimestamp() - $oldStartTime->getTimestamp();
 
         // Verifica conflitti per ogni booking_item
         foreach ($items as $item) {
-            $oldItemStart = new DateTimeImmutable($item['start_time']);
-            $oldItemEnd = new DateTimeImmutable($item['end_time']);
+            $oldItemStart = $locationTimezone !== null
+                ? new DateTimeImmutable($item['start_time'], $locationTimezone)
+                : new DateTimeImmutable($item['start_time']);
+            $oldItemEnd = $locationTimezone !== null
+                ? new DateTimeImmutable($item['end_time'], $locationTimezone)
+                : new DateTimeImmutable($item['end_time']);
 
             $newItemStart = $oldItemStart->modify("+{$offsetSeconds} seconds");
             $newItemEnd = $oldItemEnd->modify("+{$offsetSeconds} seconds");
@@ -418,6 +439,21 @@ final class UpdateBooking
         );
         $stmt->execute([$locationId]);
         return $stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
+    }
+
+    private function resolveLocationTimezone(int $locationId): DateTimeZone
+    {
+        if ($locationId <= 0) {
+            return new DateTimeZone('Europe/Rome');
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT timezone FROM locations WHERE id = ? LIMIT 1'
+        );
+        $stmt->execute([$locationId]);
+        $timezone = $stmt->fetchColumn();
+
+        return new DateTimeZone(is_string($timezone) && $timezone !== '' ? $timezone : 'Europe/Rome');
     }
 
     /**

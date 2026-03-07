@@ -420,6 +420,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               final supportsFullPeriod =
                   filterState.selectedPreset != 'custom' &&
                   filterState.selectedPreset != 'today' &&
+                  filterState.selectedPreset != 'yesterday' &&
                   filterState.selectedPreset != 'last_month' &&
                   filterState.selectedPreset != 'last_3_months' &&
                   filterState.selectedPreset != 'last_6_months' &&

@@ -73,6 +73,11 @@ class ReportsFilterNotifier extends Notifier<ReportsFilterState> {
         startDate = today;
         endDate = today;
         break;
+      case 'yesterday':
+        final yesterday = today.subtract(const Duration(days: 1));
+        startDate = yesterday;
+        endDate = yesterday;
+        break;
       case 'month':
         startDate = DateTime(now.year, now.month, 1);
         endDate = useFullPeriod ? DateTime(now.year, now.month + 1, 0) : today;

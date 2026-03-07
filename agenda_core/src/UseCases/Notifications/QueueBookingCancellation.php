@@ -78,7 +78,8 @@ final class QueueBookingCancellation
 
         // Prepare template variables
         $locale = $this->resolveLocale($booking);
-        $startTime = new DateTimeImmutable($booking['start_time']);
+        $locationTz = new DateTimeZone($booking['location_timezone'] ?? 'Europe/Rome');
+        $startTime = new DateTimeImmutable($booking['start_time'], $locationTz);
         
         // Location block for multi-location businesses
         $locationName = $booking['location_name'] ?? '';

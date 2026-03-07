@@ -19,6 +19,7 @@ import '../../agenda/providers/selected_appointment_provider.dart';
 import '../../agenda/providers/staff_filter_providers.dart';
 import '../../agenda/providers/temp_drag_time_provider.dart';
 import '../../agenda/providers/time_blocks_provider.dart';
+import '../../agenda/providers/weekly_appointments_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../../clients/providers/clients_providers.dart';
 import '../../class_events/providers/class_events_providers.dart';
@@ -84,6 +85,7 @@ void invalidateBusinessScopedProviders(Object refObj) {
 
   // Appointments
   ref.invalidate(appointmentsProvider);
+  ref.invalidate(weeklyAppointmentsProvider);
 
   // Bookings (prenotazioni con note/clientName)
   ref.invalidate(bookingsProvider);

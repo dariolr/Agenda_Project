@@ -161,14 +161,14 @@ class MoreScreen extends ConsumerWidget {
   Widget _buildDesktopGrid(List<_MoreItem> items, BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount = screenWidth > 1200 ? 4 : (screenWidth > 800 ? 3 : 2);
-    final childAspectRatio = crossAxisCount >= 4 ? 1.12 : 1.0;
+    const mainAxisExtent = 180.0;
 
     return SliverGrid(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: childAspectRatio,
+        mainAxisExtent: mainAxisExtent,
       ),
       delegate: SliverChildBuilderDelegate(
         (context, index) => _MoreCardDesktop(item: items[index]),
@@ -207,7 +207,7 @@ class _MoreItem {
   });
 }
 
-/// Card per desktop (layout verticale con aspect ratio fisso)
+/// Card per desktop (layout verticale compatto)
 class _MoreCardDesktop extends StatefulWidget {
   final _MoreItem item;
 
@@ -249,54 +249,56 @@ class _MoreCardDesktopState extends State<_MoreCardDesktop> {
             onTap: item.onTap,
             borderRadius: BorderRadius.circular(16),
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Icona con sfondo colorato
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: item.color.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(item.icon, size: 26, color: item.color),
+                  Row(
+                    children: [
+                      // Icona
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: item.color.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(item.icon, size: 26, color: item.color),
+                      ),
+                      const Spacer(),
+                      // Freccia di navigazione
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 20,
+                        color: _isHovered
+                            ? item.color
+                            : colorScheme.outline.withOpacity(0.5),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  // Titolo
-                  Text(
-                    item.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  // Descrizione (troncata se troppo lunga)
-                  Text(
-                    item.description,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      height: 1.4,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 12),
-                  // Freccia di navigazione
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 20,
-                      color: _isHovered
-                          ? item.color
-                          : colorScheme.outline.withOpacity(0.5),
-                    ),
-                  ),
+                  const SizedBox(height: 14),
+                      // Titolo
+                      Text(
+                        item.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      // Descrizione
+                      Text(
+                        item.description,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.4,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                 ],
               ),
             ),
