@@ -44,7 +44,6 @@ import '../dialogs/booking_history_dialog.dart';
 import '../dialogs/payment_dialog.dart';
 import '../dialogs/recurring_action_dialog.dart';
 import 'service_item_card.dart';
-import 'service_package_picker_dialog.dart';
 
 /// Show the Appointment dialog for editing an existing appointment.
 /// For creating new appointments, use [showBookingDialog] instead.
@@ -947,26 +946,18 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         .where((s) => s.serviceId != null)
         .length;
 
-    // Calcola i serviceIds dello staff del primo appuntamento (se presente)
-    // Questo permette di filtrare i servizi mostrando prima quelli dello staff corrente
-    List<int>? preselectedStaffServiceIds;
-    final firstItemStaffId = _serviceItems.isNotEmpty
-        ? _serviceItems.first.staffId
-        : null;
-    if (firstItemStaffId != null) {
-      final selectedStaff = allStaff.cast<dynamic>().firstWhere(
-        (s) => s.id == firstItemStaffId,
-        orElse: () => null,
-      );
-      if (selectedStaff != null) {
-        preselectedStaffServiceIds = (selectedStaff.serviceIds as List<int>);
-      }
-    }
-
     for (int i = 0; i < _serviceItems.length; i++) {
       final item = forcedStaffId != null
           ? _serviceItems[i].copyWith(staffId: forcedStaffId)
           : _serviceItems[i];
+      final selectedStaff = item.staffId != null
+          ? allStaff.cast<dynamic>().firstWhere(
+              (s) => s.id == item.staffId,
+              orElse: () => null,
+            )
+          : null;
+      final preselectedStaffServiceIds =
+          selectedStaff != null ? (selectedStaff.serviceIds as List<int>) : null;
       final TimeOfDay? suggestedStartTime = i > 0
           ? _resolveServiceEndTime(_serviceItems[i - 1], variants.cast())
           : null;
@@ -1103,24 +1094,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                         children: [
                           const Icon(Icons.add, size: 18),
                           const SizedBox(width: 8),
-                          Text(context.l10n.addService),
+                          Text(
+                            hasPackages
+                                ? context.l10n.addServiceOrPackage
+                                : context.l10n.addService,
+                          ),
                         ],
                       ),
                     ),
-                    if (hasPackages) ...[
-                      const SizedBox(width: 8),
-                      AppOutlinedActionButton(
-                        onPressed: _isAddingPackage ? null : _addPackage,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.widgets_outlined, size: 18),
-                            const SizedBox(width: 8),
-                            Text(context.l10n.addPackage),
-                          ],
-                        ),
-                      ),
-                    ],
                   ],
                 )
               else
@@ -1232,24 +1213,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                         children: [
                           const Icon(Icons.add, size: 18),
                           const SizedBox(width: 8),
-                          Text(context.l10n.addService),
+                          Text(
+                            hasPackages
+                                ? context.l10n.addServiceOrPackage
+                                : context.l10n.addService,
+                          ),
                         ],
                       ),
                     ),
-                    if (hasPackages) ...[
-                      const SizedBox(width: 8),
-                      AppOutlinedActionButton(
-                        onPressed: _isAddingPackage ? null : _addPackage,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.widgets_outlined, size: 18),
-                            const SizedBox(width: 8),
-                            Text(context.l10n.addPackage),
-                          ],
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -1547,63 +1518,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       );
       _autoOpenServicePickerIndex = newIndex;
     });
-  }
-
-  Future<void> _addPackage() async {
-    if (_isAddingPackage) return;
-
-    final l10n = context.l10n;
-    final packages = ref.read(servicePackagesProvider).value ?? [];
-    if (packages.isEmpty) {
-      if (!context.mounted) return;
-      await FeedbackDialog.showError(
-        context,
-        title: l10n.errorTitle,
-        message: l10n.servicePackagesEmptyState,
-      );
-      return;
-    }
-
-    setState(() => _isAddingPackage = true);
-    final selected = await showServicePackagePickerDialog(
-      context,
-      packages: packages,
-    );
-    if (!context.mounted) return;
-    if (selected == null) {
-      setState(() => _isAddingPackage = false);
-      return;
-    }
-
-    try {
-      final locationId = ref.read(currentLocationProvider).id;
-      final repository = ref.read(servicePackagesRepositoryProvider);
-      final expansion = await repository.expandPackage(
-        locationId: locationId,
-        packageId: selected.id,
-      );
-      if (expansion.serviceIds.isEmpty) {
-        if (!mounted) return;
-        await FeedbackDialog.showError(
-          context,
-          title: l10n.errorTitle,
-          message: l10n.servicePackageExpandError,
-        );
-      } else {
-        _appendServicesFromPackage(expansion.serviceIds);
-      }
-    } catch (_) {
-      if (!mounted) return;
-      await FeedbackDialog.showError(
-        context,
-        title: l10n.errorTitle,
-        message: l10n.servicePackageExpandError,
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isAddingPackage = false);
-      }
-    }
   }
 
   /// Called when a package is selected from the service picker.

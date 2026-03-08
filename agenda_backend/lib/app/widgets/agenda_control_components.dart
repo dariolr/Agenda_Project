@@ -1297,7 +1297,7 @@ class AgendaViewModeButton extends ConsumerWidget {
         height: height,
         width: iconOnly ? _iconOnlyWidth : _labelWidth,
         child: AppOutlinedActionButton(
-          onPressed: () => _showSheet(context, ref, currentMode),
+          onPressed: () => _onPressed(context, ref, currentMode),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           borderRadius: BorderRadius.circular(8),
           borderColor: scheme.primary,
@@ -1308,16 +1308,42 @@ class AgendaViewModeButton extends ConsumerWidget {
     );
   }
 
-  Future<void> _showSheet(
+  List<({CalendarViewMode value, String label, IconData icon})> _buildItems(
+    BuildContext context,
+  ) {
+    final l10n = context.l10n;
+    return [
+      (value: CalendarViewMode.day, label: l10n.recurrenceDay, icon: Icons.view_day_outlined),
+      (value: CalendarViewMode.week, label: l10n.recurrenceWeek, icon: Icons.view_week_outlined),
+    ];
+  }
+
+  Future<void> _onPressed(
     BuildContext context,
     WidgetRef ref,
     CalendarViewMode currentMode,
   ) async {
+    final items = _buildItems(context);
+
+    if (items.length < 3) {
+      final currentIndex = items.indexWhere((item) => item.value == currentMode);
+      if (currentIndex == -1 || items.length <= 1) return;
+
+      final nextMode = items[(currentIndex + 1) % items.length].value;
+      ref.read(calendarViewModeProvider.notifier).setMode(nextMode);
+      return;
+    }
+
+    await _showSheet(context, ref, currentMode, items);
+  }
+
+  Future<void> _showSheet(
+    BuildContext context,
+    WidgetRef ref,
+    CalendarViewMode currentMode,
+    List<({CalendarViewMode value, String label, IconData icon})> items,
+  ) async {
     final l10n = context.l10n;
-    final items = [
-      (value: CalendarViewMode.day, label: l10n.recurrenceDay, icon: Icons.view_day_outlined),
-      (value: CalendarViewMode.week, label: l10n.recurrenceWeek, icon: Icons.view_week_outlined),
-    ];
 
     final result = await AppBottomSheet.show<CalendarViewMode>(
       context: context,

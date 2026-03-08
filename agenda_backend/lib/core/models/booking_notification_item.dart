@@ -19,6 +19,7 @@ class BookingNotificationItem {
   final int maxAttempts;
   final DateTime? createdAt;
   final DateTime? scheduledAt;
+  final DateTime? lastAttemptAt;
   final DateTime? sentAt;
   final DateTime? failedAt;
   final DateTime? firstStartTime;
@@ -41,6 +42,7 @@ class BookingNotificationItem {
     this.maxAttempts = 0,
     this.createdAt,
     this.scheduledAt,
+    this.lastAttemptAt,
     this.sentAt,
     this.failedAt,
     this.firstStartTime,
@@ -119,6 +121,7 @@ class BookingNotificationItem {
       maxAttempts: json['max_attempts'] as int? ?? 0,
       createdAt: parseDate(json['created_at']),
       scheduledAt: parseDate(json['scheduled_at']),
+      lastAttemptAt: parseDate(json['last_attempt_at']),
       sentAt: parseDate(json['sent_at']),
       failedAt: parseDate(json['failed_at']),
       firstStartTime: parseDate(json['first_start_time']),

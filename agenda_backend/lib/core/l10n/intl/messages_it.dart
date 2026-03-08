@@ -227,6 +227,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "addPackage": MessageLookupByLibrary.simpleMessage("Aggiungi pacchetto"),
     "addService": MessageLookupByLibrary.simpleMessage("Aggiungi un servizio"),
+    "addServiceOrPackage": MessageLookupByLibrary.simpleMessage(
+      "Aggiungi un servizio/pacchetto",
+    ),
     "addServiceTooltip": MessageLookupByLibrary.simpleMessage(
       "Aggiungi servizio",
     ),
@@ -479,6 +482,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsFieldError": MessageLookupByLibrary.simpleMessage(
       "Errore",
     ),
+    "bookingNotificationsFieldLastAttemptAt":
+        MessageLookupByLibrary.simpleMessage("Ultimo tentativo"),
     "bookingNotificationsFieldLocation": MessageLookupByLibrary.simpleMessage(
       "Sede",
     ),

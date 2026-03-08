@@ -300,7 +300,7 @@ final class NotificationRepository
             SELECT nq.id, nq.type, nq.channel, nq.recipient_type, nq.recipient_id,
                    nq.recipient_email, nq.recipient_name, nq.subject,
                    nq.status, nq.priority, nq.attempts, nq.max_attempts,
-                   nq.scheduled_at, nq.sent_at, nq.failed_at, nq.error_message,
+                   nq.scheduled_at, nq.last_attempt_at, nq.sent_at, nq.failed_at, nq.error_message,
                    nq.business_id, nq.booking_id, nq.created_at, nq.updated_at,
                    b.location_id, l.name AS location_name,
                    b.client_name AS booking_client_name,
@@ -383,6 +383,8 @@ final class NotificationRepository
         $orderByColumn = match ($sortBy) {
             'scheduled' => 'nq.scheduled_at',
             'sent' => 'nq.sent_at',
+            'last_attempt' => 'nq.last_attempt_at',
+            'appointment' => 'bi_range.first_start_time',
             default => 'nq.created_at',
         };
         $orderBy = " ORDER BY $orderByColumn $sortOrder, nq.id DESC";

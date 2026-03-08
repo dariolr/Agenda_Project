@@ -2996,6 +2996,16 @@ class L10n {
     );
   }
 
+  /// `Aggiungi un servizio/pacchetto`
+  String get addServiceOrPackage {
+    return Intl.message(
+      'Aggiungi un servizio/pacchetto',
+      name: 'addServiceOrPackage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Seleziona un servizio`
   String get selectService {
     return Intl.message(
@@ -7545,6 +7555,16 @@ class L10n {
     return Intl.message(
       'Creata il',
       name: 'bookingNotificationsFieldCreatedAt',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ultimo tentativo`
+  String get bookingNotificationsFieldLastAttemptAt {
+    return Intl.message(
+      'Ultimo tentativo',
+      name: 'bookingNotificationsFieldLastAttemptAt',
       desc: '',
       args: [],
     );

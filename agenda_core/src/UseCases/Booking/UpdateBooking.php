@@ -366,10 +366,12 @@ final class UpdateBooking
             }
 
             // Determine sender
-            $senderEmail = $locationData['location_email'] ?? $locationData['business_email'] ?? null;
-            $senderName = $locationData['location_email'] 
-                ? $locationData['location_name'] 
-                : ($locationData['business_email'] ? $locationData['business_name'] : null);
+            $locationEmail = trim((string) ($locationData['location_email'] ?? ''));
+            $businessEmail = trim((string) ($locationData['business_email'] ?? ''));
+            $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
+            $senderName = $locationEmail !== ''
+                ? ($locationData['location_name'] ?? null)
+                : ($businessEmail !== '' ? ($locationData['business_name'] ?? null) : null);
 
             // Get new start time from booking items
             $newStartTime = $booking['items'][0]['start_time'] ?? null;

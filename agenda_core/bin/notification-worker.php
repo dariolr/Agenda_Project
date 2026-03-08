@@ -100,7 +100,7 @@ foreach ($notifications as $notification) {
     $id = (int) $notification['id'];
     $type = $notification['type'];
     $channel = $notification['channel'];  // booking_confirmed, booking_reminder, etc.
-    $recipient = $notification['recipient_email'];
+    $recipient = (string) ($notification['recipient_email'] ?? '');
     $bookingId = $notification['booking_id'] ?? null;
     
     if ($verbose) {
@@ -147,8 +147,8 @@ foreach ($notifications as $notification) {
             continue;
         }
         
-        // Sender: ALWAYS use the verified sender from .env
-        // The business email is used as reply-to only
+        // Sender: use verified sender from .env.
+        // Business/location email is used as reply-to when valid.
         $variables = $payload['variables'] ?? $payload;
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
             $fallbackName = $notification['recipient_name'] ?? 'Cliente';
@@ -156,7 +156,7 @@ foreach ($notifications as $notification) {
         }
         
         // From: use channel-specific verified sender (fallback to default)
-        $fromEmail = match ($channel) {
+        $fromEmail = normalizeEmail(match ($channel) {
             'booking_reminder' =>
                 $_ENV['MAIL_FROM_ADDRESS_BOOKING_REMINDER']
                     ?? $_ENV['MAIL_FROM_ADDRESS']
@@ -173,14 +173,29 @@ foreach ($notifications as $notification) {
                 $_ENV['MAIL_FROM_ADDRESS_BOOKING_CONFIRMED']
                     ?? $_ENV['MAIL_FROM_ADDRESS']
                     ?? null,
-        };
+        });
+        $defaultFromEmail = normalizeEmail($_ENV['MAIL_FROM_ADDRESS'] ?? null);
         $fromName = $variables['business_name'] ?? null; // Show business name as sender name
         
         // Reply-To: use business/location email so replies go to the business
-        $replyTo = $variables['sender_email'] 
+        $replyTo = normalizeEmail(
+            $variables['sender_email'] 
             ?? $variables['location_email'] 
             ?? $variables['business_email'] 
-            ?? null;
+            ?? null
+        );
+        if ($replyTo !== null && !isValidEmail($replyTo)) {
+            if ($verbose) {
+                echo "WARN invalid reply-to ({$replyTo}), ignoring... ";
+            }
+            $replyTo = null;
+        }
+        if (!isValidEmail($recipient)) {
+            throw new \RuntimeException("Invalid recipient email: {$recipient}");
+        }
+        if ($fromEmail === null || !isValidEmail($fromEmail)) {
+            $fromEmail = $defaultFromEmail;
+        }
         
         // Render template placeholders in subject and body
         $subject = EmailTemplateRenderer::render($templateData['subject'], $variables);
@@ -199,6 +214,26 @@ foreach ($notifications as $notification) {
             fromName: $fromName,    // Dynamic: location > business > .env
             replyTo: $replyTo       // Reply to location/business email
         );
+        if (
+            !$success
+            && $defaultFromEmail !== null
+            && $fromEmail !== null
+            && strcasecmp($fromEmail, $defaultFromEmail) !== 0
+        ) {
+            if ($verbose) {
+                echo "RETRY with default sender... ";
+            }
+            $success = $emailService->send(
+                to: $recipient,
+                subject: $subject,
+                htmlBody: $htmlBody,
+                textBody: $textBody,
+                attachments: $attachments,
+                fromEmail: $defaultFromEmail,
+                fromName: $fromName,
+                replyTo: $replyTo
+            );
+        }
         
         if ($success) {
             $notificationRepo->markSent($id);
@@ -207,7 +242,10 @@ foreach ($notifications as $notification) {
                 echo "OK\n";
             }
         } else {
-            throw new \RuntimeException('Email service returned false');
+            $provider = $emailService->getName();
+            throw new \RuntimeException(
+                "Email service returned false (provider={$provider}, channel={$channel}, recipient={$recipient}, from={$fromEmail})"
+            );
         }
         
     } catch (\Throwable $e) {
@@ -284,4 +322,18 @@ function renderTemplate(string $channel, array $payload): array
         'html' => EmailTemplateRenderer::render($template['html'], $variables),
         'text' => EmailTemplateRenderer::render($template['text'], $variables),
     ];
+}
+
+function normalizeEmail(?string $email): ?string
+{
+    if ($email === null) {
+        return null;
+    }
+    $trimmed = trim($email);
+    return $trimmed === '' ? null : $trimmed;
+}
+
+function isValidEmail(string $email): bool
+{
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
 }
