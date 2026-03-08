@@ -1179,7 +1179,7 @@ class ApiClient {
     List<String>? channels,
     String? startDate,
     String? endDate,
-    String sortBy = 'created', // 'created' | 'scheduled' | 'sent'
+    String sortBy = 'created', // 'created' | 'scheduled' | 'sent' | 'last_attempt' | 'appointment'
     String sortOrder = 'desc', // 'asc' | 'desc'
     int limit = 50,
     int offset = 0,

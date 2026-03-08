@@ -27,6 +27,54 @@ echo "Dry run: " . ($DRY_RUN ? 'Sì' : 'No') . "\n";
 echo "Pulisci dati esistenti: " . ($CLEAR_EXISTING ? 'Sì' : 'No') . "\n";
 echo "===================================\n\n";
 
+// Normalizza testo per matching deduplica
+function normalizeTextForMatch(?string $value): string
+{
+    if (empty($value)) {
+        return '';
+    }
+    $value = trim($value);
+    $value = preg_replace('/\s+/', ' ', $value) ?? $value;
+    if (function_exists('mb_strtolower')) {
+        return mb_strtolower($value, 'UTF-8');
+    }
+    return strtolower($value);
+}
+
+// Normalizza telefono per matching deduplica:
+// - solo cifre
+// - 00 prefisso internazionale -> rimosso (equivalente a +)
+function normalizePhoneForMatch(?string $phone): string
+{
+    if (empty($phone)) {
+        return '';
+    }
+    $digits = preg_replace('/\D+/', '', $phone) ?? '';
+    if (str_starts_with($digits, '00')) {
+        $digits = substr($digits, 2);
+    }
+    return $digits;
+}
+
+function buildNameKey(?string $firstName, ?string $lastName): string
+{
+    $first = normalizeTextForMatch($firstName);
+    $last = normalizeTextForMatch($lastName);
+    if ($first === '' && $last === '') {
+        return '';
+    }
+    return $first . '|' . $last;
+}
+
+function buildNameBirthKey(?string $firstName, ?string $lastName, ?string $birthDate): string
+{
+    $nameKey = buildNameKey($firstName, $lastName);
+    if ($nameKey === '' || empty($birthDate)) {
+        return '';
+    }
+    return $nameKey . '|' . $birthDate;
+}
+
 try {
     // Connessione DB
     $dsn = sprintf(
@@ -40,6 +88,11 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
     echo "Connessione DB OK\n\n";
+
+    // Dry-run blindato: qualsiasi eventuale write rimane dentro transazione e viene rollbackata.
+    if ($DRY_RUN) {
+        $pdo->beginTransaction();
+    }
     
     // Pulisci dati esistenti se richiesto
     if ($CLEAR_EXISTING && !$DRY_RUN) {
@@ -187,14 +240,40 @@ try {
     }
     echo "\n";
     
-    // Verifica duplicati email nel DB esistente
+    // Verifica duplicati nel DB esistente
     $existingEmails = [];
-    $stmt = $pdo->prepare("SELECT email FROM clients WHERE business_id = ? AND email IS NOT NULL");
+    $existingPhones = [];
+    $existingNameBirthKeys = [];
+    $existingNameOnlyKeys = [];
+    $stmt = $pdo->prepare("
+        SELECT first_name, last_name, email, phone, birth_date
+        FROM clients
+        WHERE business_id = ?
+    ");
     $stmt->execute([$BUSINESS_ID]);
     while ($row = $stmt->fetch()) {
-        $existingEmails[strtolower($row['email'])] = true;
+        $email = normalizeTextForMatch($row['email'] ?? null);
+        if ($email !== '') {
+            $existingEmails[$email] = true;
+        }
+        $phoneKey = normalizePhoneForMatch($row['phone'] ?? null);
+        if ($phoneKey !== '') {
+            $existingPhones[$phoneKey] = true;
+        }
+        $birthDate = !empty($row['birth_date']) ? (string) $row['birth_date'] : null;
+        $nameBirthKey = buildNameBirthKey($row['first_name'] ?? null, $row['last_name'] ?? null, $birthDate);
+        if ($nameBirthKey !== '') {
+            $existingNameBirthKeys[$nameBirthKey] = true;
+        }
+        $nameOnlyKey = buildNameKey($row['first_name'] ?? null, $row['last_name'] ?? null);
+        if ($nameOnlyKey !== '') {
+            $existingNameOnlyKeys[$nameOnlyKey] = true;
+        }
     }
-    echo "Email già presenti nel DB: " . count($existingEmails) . "\n\n";
+    echo "Email già presenti nel DB: " . count($existingEmails) . "\n";
+    echo "Telefoni già presenti nel DB: " . count($existingPhones) . "\n";
+    echo "Chiavi nome+cognome+data nascita già presenti: " . count($existingNameBirthKeys) . "\n";
+    echo "Chiavi nome+cognome già presenti: " . count($existingNameOnlyKeys) . "\n\n";
     
     // Inserimento clienti
     $insertStmt = $pdo->prepare("
@@ -204,43 +283,112 @@ try {
     
     $inserted = 0;
     $skippedDuplicate = 0;
+    $skippedDuplicateEmail = 0;
+    $skippedDuplicatePhone = 0;
+    $skippedDuplicateNameBirth = 0;
+    $skippedDuplicateNameOnly = 0;
     
     foreach ($clientsToImport as $client) {
-        // Salta se email già esistente
-        if (!empty($client['email']) && isset($existingEmails[strtolower($client['email'])])) {
+        $emailKey = normalizeTextForMatch($client['email'] ?? null);
+        $phoneKey = normalizePhoneForMatch($client['phone'] ?? null);
+        $nameBirthKey = buildNameBirthKey(
+            $client['first_name'] ?? null,
+            $client['last_name'] ?? null,
+            $client['birth_date'] ?? null
+        );
+        $nameOnlyKey = buildNameKey(
+            $client['first_name'] ?? null,
+            $client['last_name'] ?? null
+        );
+
+        // Deduplica per email
+        if ($emailKey !== '' && isset($existingEmails[$emailKey])) {
             $skippedDuplicate++;
+            $skippedDuplicateEmail++;
+            continue;
+        }
+
+        // Deduplica per telefono normalizzato (utile quando email manca)
+        if ($phoneKey !== '' && isset($existingPhones[$phoneKey])) {
+            $skippedDuplicate++;
+            $skippedDuplicatePhone++;
+            continue;
+        }
+
+        // Deduplica per nome+cognome+data nascita (fallback robusto)
+        if ($nameBirthKey !== '' && isset($existingNameBirthKeys[$nameBirthKey])) {
+            $skippedDuplicate++;
+            $skippedDuplicateNameBirth++;
+            continue;
+        }
+
+        // Ultimo fallback: nome+cognome se non abbiamo né email né telefono né data nascita
+        if (
+            $emailKey === '' &&
+            $phoneKey === '' &&
+            $nameBirthKey === '' &&
+            $nameOnlyKey !== '' &&
+            isset($existingNameOnlyKeys[$nameOnlyKey])
+        ) {
+            $skippedDuplicate++;
+            $skippedDuplicateNameOnly++;
             continue;
         }
         
-        $insertStmt->execute([
-            $BUSINESS_ID,
-            $client['first_name'],
-            $client['last_name'],
-            $client['email'],
-            $client['phone'],
-            $client['gender'],
-            $client['birth_date'],
-            $client['city'],
-            $client['notes'],
-            $client['is_archived'],
-            $client['created_at'] ?? date('Y-m-d H:i:s'),
-        ]);
+        if (!$DRY_RUN) {
+            $insertStmt->execute([
+                $BUSINESS_ID,
+                $client['first_name'],
+                $client['last_name'],
+                $client['email'],
+                $client['phone'],
+                $client['gender'],
+                $client['birth_date'],
+                $client['city'],
+                $client['notes'],
+                $client['is_archived'],
+                $client['created_at'] ?? date('Y-m-d H:i:s'),
+            ]);
+        }
         
         $inserted++;
         
-        // Aggiungi email alla lista per evitare duplicati interni al CSV
-        if (!empty($client['email'])) {
-            $existingEmails[strtolower($client['email'])] = true;
+        // Aggiungi chiavi alla lista per evitare duplicati interni al CSV
+        if ($emailKey !== '') {
+            $existingEmails[$emailKey] = true;
+        }
+        if ($phoneKey !== '') {
+            $existingPhones[$phoneKey] = true;
+        }
+        if ($nameBirthKey !== '') {
+            $existingNameBirthKeys[$nameBirthKey] = true;
+        }
+        if ($nameOnlyKey !== '') {
+            $existingNameOnlyKeys[$nameOnlyKey] = true;
         }
     }
     
     echo "\n=== REPORT FINALE ===\n";
-    echo "Clienti inseriti: $inserted\n";
-    echo "Duplicati email saltati: $skippedDuplicate\n";
+    if ($DRY_RUN) {
+        echo "Clienti che verrebbero inseriti (dry run): $inserted\n";
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+    } else {
+        echo "Clienti inseriti: $inserted\n";
+    }
+    echo "Duplicati totali saltati: $skippedDuplicate\n";
+    echo " - per email: $skippedDuplicateEmail\n";
+    echo " - per telefono: $skippedDuplicatePhone\n";
+    echo " - per nome+cognome+data nascita: $skippedDuplicateNameBirth\n";
+    echo " - per nome+cognome (fallback): $skippedDuplicateNameOnly\n";
     echo "Business ID: " . $BUSINESS_ID . "\n";
     echo "=====================\n";
     
 } catch (Exception $e) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     echo "ERRORE: " . $e->getMessage() . "\n";
     exit(1);
 }

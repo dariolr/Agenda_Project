@@ -95,6 +95,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final isLoggingIn = state.matchedLocation == '/login';
       final isOnBusinessList = state.matchedLocation == '/businesses';
+      final isOnSuperadminBookingNotifications =
+          state.matchedLocation == '/businesses/notifiche-prenotazioni';
       final isOnUserBusinessSwitch = state.matchedLocation == '/my-businesses';
       final invitationPath = state.uri.path;
       final isInvitationPage =
@@ -144,6 +146,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isAuthenticated && !isSuperadmin && isOnBusinessList) {
         return '/my-businesses';
       }
+      if (isAuthenticated &&
+          !isSuperadmin &&
+          isOnSuperadminBookingNotifications) {
+        return '/agenda';
+      }
 
       // Se superadmin va alla schermata switch user, riporta alla lista admin.
       if (isAuthenticated && isSuperadmin && isOnUserBusinessSwitch) {
@@ -169,6 +176,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           superadminSelectedBusiness == null &&
           !isInvitationPage &&
           !isOnBusinessList &&
+          !isOnSuperadminBookingNotifications &&
           !isOnUserBusinessSwitch &&
           !isLoggingIn) {
         return '/businesses';
@@ -236,6 +244,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/businesses',
         name: 'businesses',
         builder: (context, state) => const BusinessListScreen(),
+      ),
+      GoRoute(
+        path: '/businesses/notifiche-prenotazioni',
+        name: 'superadmin-booking-notifications',
+        builder: (context, state) => const BookingNotificationsScreen(
+          enableBusinessSelectorForSuperadmin: true,
+          showStandaloneAppBar: true,
+        ),
       ),
 
       // Route selezione business per utenti non superadmin

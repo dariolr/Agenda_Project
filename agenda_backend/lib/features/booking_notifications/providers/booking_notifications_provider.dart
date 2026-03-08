@@ -80,6 +80,10 @@ class BookingNotificationsFiltersNotifier
     );
   }
 
+  void setSortOrder(String sortOrder) {
+    state = state.copyWith(sortOrder: sortOrder == 'asc' ? 'asc' : 'desc');
+  }
+
   void reset() {
     state = const BookingNotificationsFilters();
   }
@@ -139,23 +143,20 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
   BookingNotificationsState build() => const BookingNotificationsState();
 
   Future<void> loadNotifications(int businessId) async {
+    await loadNotificationsForBusinesses([businessId]);
+  }
+
+  Future<void> loadNotificationsForBusinesses(List<int> businessIds) async {
     final filters = ref.read(bookingNotificationsFiltersProvider);
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.getBookingNotifications(
-        businessId: businessId,
-        search: filters.search,
-        status: filters.status,
-        channels: filters.channels,
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder,
-        limit: state.limit,
+      final result = await _fetchCombinedResult(
+        businessIds: businessIds,
+        filters: filters,
         offset: 0,
+        pageSize: state.limit,
       );
-
-      final result = BookingNotificationsResult.fromJson(response);
       state = state.copyWith(
         notifications: result.notifications,
         total: result.total,
@@ -168,28 +169,25 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
   }
 
   Future<void> loadMore(int businessId) async {
+    await loadMoreForBusinesses([businessId]);
+  }
+
+  Future<void> loadMoreForBusinesses(List<int> businessIds) async {
     if (state.isLoadingMore || !state.hasMore) return;
 
     final filters = ref.read(bookingNotificationsFiltersProvider);
     state = state.copyWith(isLoadingMore: true);
 
     try {
-      final apiClient = ref.read(apiClientProvider);
       final newOffset = state.offset + state.limit;
-      final response = await apiClient.getBookingNotifications(
-        businessId: businessId,
-        search: filters.search,
-        status: filters.status,
-        channels: filters.channels,
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder,
-        limit: state.limit,
+      final result = await _fetchCombinedResult(
+        businessIds: businessIds,
+        filters: filters,
         offset: newOffset,
+        pageSize: state.limit,
       );
-
-      final result = BookingNotificationsResult.fromJson(response);
       state = state.copyWith(
-        notifications: [...state.notifications, ...result.notifications],
+        notifications: result.notifications,
         total: result.total,
         offset: newOffset,
         isLoadingMore: false,
@@ -197,5 +195,112 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
     } catch (e) {
       state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
+  }
+
+  Future<BookingNotificationsResult> _fetchCombinedResult({
+    required List<int> businessIds,
+    required BookingNotificationsFilters filters,
+    required int offset,
+    required int pageSize,
+  }) async {
+    final ids = businessIds.toSet().where((id) => id > 0).toList();
+    if (ids.isEmpty) {
+      return const BookingNotificationsResult(
+        notifications: [],
+        total: 0,
+        limit: 50,
+        offset: 0,
+      );
+    }
+
+    final apiClient = ref.read(apiClientProvider);
+
+    if (ids.length == 1) {
+      final response = await apiClient.getBookingNotifications(
+        businessId: ids.first,
+        search: filters.search,
+        status: filters.status,
+        channels: filters.channels,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
+        limit: pageSize,
+        offset: offset,
+      );
+      return BookingNotificationsResult.fromJson(response);
+    }
+
+    final perBusinessLimit = offset + pageSize;
+    final responses = await Future.wait(
+      ids.map(
+        (id) => apiClient.getBookingNotifications(
+          businessId: id,
+          search: filters.search,
+          status: filters.status,
+          channels: filters.channels,
+          sortBy: filters.sortBy,
+          sortOrder: filters.sortOrder,
+          limit: perBusinessLimit,
+          offset: 0,
+        ),
+      ),
+    );
+
+    var total = 0;
+    final merged = <BookingNotificationItem>[];
+    for (final response in responses) {
+      final result = BookingNotificationsResult.fromJson(response);
+      total += result.total;
+      merged.addAll(result.notifications);
+    }
+
+    merged.sort((a, b) => _compareBySort(a, b, filters.sortBy, filters.sortOrder));
+    final visibleCount = perBusinessLimit < merged.length
+        ? perBusinessLimit
+        : merged.length;
+    final visible = merged.take(visibleCount).toList(growable: false);
+
+    return BookingNotificationsResult(
+      notifications: visible,
+      total: total,
+      limit: pageSize,
+      offset: offset,
+    );
+  }
+
+  int _compareBySort(
+    BookingNotificationItem a,
+    BookingNotificationItem b,
+    String sortBy,
+    String sortOrder,
+  ) {
+    DateTime aDate;
+    DateTime bDate;
+    switch (sortBy) {
+      case 'sent':
+        aDate = a.sentAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        bDate = b.sentAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        break;
+      case 'scheduled':
+        aDate = a.scheduledAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        bDate = b.scheduledAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        break;
+      case 'last_attempt':
+        aDate = a.lastAttemptAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        bDate = b.lastAttemptAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        break;
+      case 'appointment':
+        aDate = a.firstStartTime ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        bDate = b.firstStartTime ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        break;
+      default:
+        aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        break;
+    }
+    final cmp = aDate.compareTo(bDate);
+    if (cmp == 0) {
+      return a.id.compareTo(b.id);
+    }
+    return sortOrder == 'asc' ? cmp : -cmp;
   }
 }

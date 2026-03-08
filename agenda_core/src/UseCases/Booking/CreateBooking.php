@@ -1113,8 +1113,12 @@ final class CreateBooking
                 ($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? '')
             );
 
-            $senderEmail = $location['email'] ?? $location['business_email'] ?? null;
-            $senderName = $location['email'] ? $location['name'] : ($location['business_email'] ? $location['business_name'] : null);
+            $locationEmail = trim((string) ($location['email'] ?? ''));
+            $businessEmail = trim((string) ($location['business_email'] ?? ''));
+            $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
+            $senderName = $locationEmail !== ''
+                ? ($location['name'] ?? null)
+                : ($businessEmail !== '' ? ($location['business_name'] ?? null) : null);
             $locale = EmailTemplateRenderer::resolvePreferredLocale(
                 $requestedLocale,
                 $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,

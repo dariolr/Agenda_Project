@@ -147,14 +147,17 @@ final class QueueBookingReminder
 
         $calendar = $this->buildCalendarData($booking, $locale);
 
+        $resolvedSenderEmail = $this->resolveSenderEmail($booking);
+        $resolvedSenderName = $this->resolveSenderName($booking, $resolvedSenderEmail);
+
         $variables = [
             'client_name' => $clientName,
             'business_name' => $booking['business_name'] ?? '',
             'business_email' => $booking['business_email'] ?? '',
             'location_name' => $locationName,
             'location_email' => $booking['location_email'] ?? '',
-            'sender_email' => $booking['sender_email'] ?? '',
-            'sender_name' => $booking['sender_name'] ?? '',
+            'sender_email' => $resolvedSenderEmail ?? '',
+            'sender_name' => $resolvedSenderName ?? '',
             'location_address' => $locationAddress,
             'location_phone' => $booking['location_phone'] ?? '',
             'date' => EmailTemplateRenderer::formatLongDate($startTime, $locale),
@@ -256,6 +259,11 @@ final class QueueBookingReminder
             if (!empty($booking['client_first_name'])) {
                 $booking['client_name'] = $booking['client_first_name'];
             }
+            $booking['sender_email'] = $this->resolveSenderEmail($booking) ?? '';
+            $booking['sender_name'] = $this->resolveSenderName(
+                $booking,
+                $booking['sender_email']
+            ) ?? '';
             // Build manage_url from business slug
             $slug = $booking['business_slug'] ?? '';
             $booking['manage_url'] = $frontendUrl . '/' . $slug . '/my-bookings';
@@ -391,7 +399,35 @@ final class QueueBookingReminder
         // Build manage_url from business slug
         $slug = $booking['business_slug'] ?? '';
         $booking['manage_url'] = $frontendUrl . '/' . $slug . '/my-bookings';
+        $booking['sender_email'] = $this->resolveSenderEmail($booking) ?? '';
+        $booking['sender_name'] = $this->resolveSenderName(
+            $booking,
+            $booking['sender_email']
+        ) ?? '';
         
         return $booking;
+    }
+
+    private function resolveSenderEmail(array $booking): ?string
+    {
+        $locationEmail = trim((string) ($booking['location_email'] ?? ''));
+        if ($locationEmail !== '') {
+            return $locationEmail;
+        }
+
+        $businessEmail = trim((string) ($booking['business_email'] ?? ''));
+        return $businessEmail !== '' ? $businessEmail : null;
+    }
+
+    private function resolveSenderName(array $booking, ?string $resolvedSenderEmail): ?string
+    {
+        $locationEmail = trim((string) ($booking['location_email'] ?? ''));
+        if ($resolvedSenderEmail !== null && $locationEmail !== '' && $resolvedSenderEmail === $locationEmail) {
+            $locationName = trim((string) ($booking['location_name'] ?? ''));
+            return $locationName !== '' ? $locationName : null;
+        }
+
+        $businessName = trim((string) ($booking['business_name'] ?? ''));
+        return $businessName !== '' ? $businessName : null;
     }
 }

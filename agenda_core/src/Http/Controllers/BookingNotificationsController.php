@@ -137,6 +137,7 @@ final class BookingNotificationsController
             'max_attempts' => (int) ($item['max_attempts'] ?? 0),
             'created_at' => $item['created_at'] ?? null,
             'scheduled_at' => $item['scheduled_at'] ?? null,
+            'last_attempt_at' => $item['last_attempt_at'] ?? null,
             'sent_at' => $item['sent_at'] ?? null,
             'failed_at' => $item['failed_at'] ?? null,
             'first_start_time' => $item['first_start_time'] ?? null,

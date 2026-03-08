@@ -33,6 +33,11 @@ class BusinessListScreen extends ConsumerWidget {
         title: const Text('Seleziona Business'),
         centerTitle: true,
         actions: [
+          IconButton(
+            tooltip: context.l10n.bookingNotificationsTitle,
+            onPressed: () => context.go('/businesses/notifiche-prenotazioni'),
+            icon: const Icon(Icons.notifications_active_outlined),
+          ),
           // Menu utente (profilo, cambia password, logout)
           const UserMenuButton(),
           const SizedBox(width: 8),

@@ -2,19 +2,30 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '/app/providers/form_factor_provider.dart';
 import '/core/l10n/l10_extension.dart';
+import '/core/models/business.dart';
 import '/core/models/booking_notification_item.dart';
 import '/core/services/tenant_time_service.dart';
 import '/core/widgets/feedback_dialog.dart';
+import '/features/agenda/providers/business_providers.dart';
 import '/features/agenda/providers/location_providers.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
+import '/features/auth/providers/auth_provider.dart';
 import '/features/booking_notifications/providers/booking_notifications_provider.dart';
 
 class BookingNotificationsScreen extends ConsumerStatefulWidget {
-  const BookingNotificationsScreen({super.key});
+  const BookingNotificationsScreen({
+    super.key,
+    this.enableBusinessSelectorForSuperadmin = false,
+    this.showStandaloneAppBar = false,
+  });
+
+  final bool enableBusinessSelectorForSuperadmin;
+  final bool showStandaloneAppBar;
 
   @override
   ConsumerState<BookingNotificationsScreen> createState() =>
@@ -28,11 +39,18 @@ class _BookingNotificationsScreenState
   Timer? _searchDebounce;
   String? _selectedStatus;
   String? _selectedChannel;
+  int? _selectedBusinessId;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    if (_canSelectBusiness) {
+      _selectedStatus = 'failed';
+      ref.read(bookingNotificationsFiltersProvider.notifier).setStatus(
+        const ['failed'],
+      );
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadInitialData());
   }
 
@@ -44,7 +62,30 @@ class _BookingNotificationsScreenState
     super.dispose();
   }
 
-  int get _businessId => ref.read(currentLocationProvider).businessId;
+  bool get _isSuperadmin =>
+      ref.read(authProvider).user?.isSuperadmin ?? false;
+
+  bool get _canSelectBusiness =>
+      widget.enableBusinessSelectorForSuperadmin && _isSuperadmin;
+
+  int get _fallbackBusinessId => ref.read(currentLocationProvider).businessId;
+
+  List<int> _activeBusinessIds(List<Business> businesses) {
+    if (_canSelectBusiness) {
+      if (_selectedBusinessId == null) {
+        return businesses.map((b) => b.id).toList();
+      }
+      return [_selectedBusinessId!];
+    }
+    return [_fallbackBusinessId];
+  }
+
+  List<Business> _readBusinesses() {
+    return ref.read(businessesProvider).maybeWhen(
+      data: (businesses) => businesses,
+      orElse: () => const <Business>[],
+    );
+  }
 
   String _formatDateTime(BuildContext context, DateTime? dateTime) {
     if (dateTime == null) return context.l10n.bookingNotificationsNotAvailable;
@@ -59,14 +100,24 @@ class _BookingNotificationsScreenState
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      ref.read(bookingNotificationsProvider.notifier).loadMore(_businessId);
+      _loadMore();
     }
   }
 
-  Future<void> _loadInitialData() async {
+  Future<void> _loadMore() async {
+    final businesses = _readBusinesses();
+    final ids = _activeBusinessIds(businesses);
     await ref
         .read(bookingNotificationsProvider.notifier)
-        .loadNotifications(_businessId);
+        .loadMoreForBusinesses(ids);
+  }
+
+  Future<void> _loadInitialData() async {
+    final businesses = _readBusinesses();
+    final ids = _activeBusinessIds(businesses);
+    await ref
+        .read(bookingNotificationsProvider.notifier)
+        .loadNotificationsForBusinesses(ids);
   }
 
   void _onSearchChanged(String value) {
@@ -75,7 +126,7 @@ class _BookingNotificationsScreenState
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
       ref
           .read(bookingNotificationsProvider.notifier)
-          .loadNotifications(_businessId);
+          .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
     });
   }
 
@@ -86,7 +137,7 @@ class _BookingNotificationsScreenState
         .setStatus(value == null ? null : [value]);
     ref
         .read(bookingNotificationsProvider.notifier)
-        .loadNotifications(_businessId);
+        .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
   }
 
   void _onChannelChanged(String? value) {
@@ -96,7 +147,14 @@ class _BookingNotificationsScreenState
         .setChannels(value == null ? null : [value]);
     ref
         .read(bookingNotificationsProvider.notifier)
-        .loadNotifications(_businessId);
+        .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
+  }
+
+  void _onBusinessChanged(int? value) {
+    setState(() => _selectedBusinessId = value);
+    ref
+        .read(bookingNotificationsProvider.notifier)
+        .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
   }
 
   @override
@@ -105,6 +163,10 @@ class _BookingNotificationsScreenState
     final state = ref.watch(bookingNotificationsProvider);
     final formFactor = ref.watch(formFactorProvider);
     final isDesktop = formFactor == AppFormFactor.desktop;
+    final businesses = ref.watch(businessesProvider).maybeWhen(
+      data: (businesses) => businesses,
+      orElse: () => const <Business>[],
+    );
 
     ref.listen<BookingNotificationsState>(bookingNotificationsProvider, (
       prev,
@@ -120,15 +182,28 @@ class _BookingNotificationsScreenState
     });
 
     return Scaffold(
+      appBar: widget.showStandaloneAppBar
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.go('/businesses'),
+              ),
+              title: Text(l10n.bookingNotificationsTitle),
+            )
+          : null,
       body: Column(
         children: [
           _FiltersBar(
             searchController: _searchController,
             selectedStatus: _selectedStatus,
             selectedChannel: _selectedChannel,
+            showBusinessFilter: _canSelectBusiness,
+            selectedBusinessId: _selectedBusinessId,
+            businesses: businesses,
             onSearchChanged: _onSearchChanged,
             onStatusChanged: _onStatusChanged,
             onChannelChanged: _onChannelChanged,
+            onBusinessChanged: _onBusinessChanged,
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -209,6 +284,17 @@ class _BookingNotificationsScreenState
   Widget _buildDataTable(BookingNotificationsState state) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
+    final showLastAttemptColumn = _canSelectBusiness;
+    final filters = ref.watch(bookingNotificationsFiltersProvider);
+    final sortBy = filters.sortBy;
+    final sortAscending = filters.sortOrder == 'asc';
+    final sortColumnIndex = switch (sortBy) {
+      'created' => 0,
+      'last_attempt' => showLastAttemptColumn ? 1 : null,
+      'sent' => showLastAttemptColumn ? 2 : 1,
+      'appointment' => showLastAttemptColumn ? 6 : 5,
+      _ => null,
+    };
 
     return RefreshIndicator(
       onRefresh: _loadInitialData,
@@ -225,15 +311,27 @@ class _BookingNotificationsScreenState
                 child: DataTable(
                   dividerThickness: 0.2,
                   horizontalMargin: 16,
+                  sortColumnIndex: sortColumnIndex,
+                  sortAscending: sortAscending,
                   headingRowColor: WidgetStateProperty.all(
                     colorScheme.surfaceContainerHighest,
                   ),
                   columns: [
                     DataColumn(
                       label: Text(l10n.bookingNotificationsFieldCreatedAt),
+                      onSort: (_, ascending) =>
+                          _onSortChanged('created', ascending),
                     ),
+                    if (showLastAttemptColumn)
+                      DataColumn(
+                        label: Text(l10n.bookingNotificationsFieldLastAttemptAt),
+                        onSort: (_, ascending) =>
+                            _onSortChanged('last_attempt', ascending),
+                      ),
                     DataColumn(
                       label: Text(l10n.bookingNotificationsFieldSentAt),
+                      onSort: (_, ascending) =>
+                          _onSortChanged('sent', ascending),
                     ),
                     DataColumn(
                       label: Text(l10n.bookingNotificationsFieldClient),
@@ -247,6 +345,8 @@ class _BookingNotificationsScreenState
                     ),
                     DataColumn(
                       label: Text(l10n.bookingNotificationsFieldAppointment),
+                      onSort: (_, ascending) =>
+                          _onSortChanged('appointment', ascending),
                     ),
                     DataColumn(
                       label: Text(l10n.bookingNotificationsFieldLocation),
@@ -270,7 +370,7 @@ class _BookingNotificationsScreenState
                 child: OutlinedButton(
                   onPressed: () => ref
                       .read(bookingNotificationsProvider.notifier)
-                      .loadMore(_businessId),
+                      .loadMoreForBusinesses(_activeBusinessIds(_readBusinesses())),
                   child: Text(l10n.bookingNotificationsLoadMore),
                 ),
               ),
@@ -281,9 +381,18 @@ class _BookingNotificationsScreenState
   }
 
   DataRow _buildDataRow(BookingNotificationItem item) {
+    final showLastAttemptColumn = _canSelectBusiness;
     return DataRow(
       cells: [
         DataCell(Text(_formatDateTime(context, item.createdAt))),
+        if (showLastAttemptColumn)
+          DataCell(
+            Text(
+              item.lastAttemptAt != null
+                  ? _formatDateTime(context, item.lastAttemptAt)
+                  : '',
+            ),
+          ),
         DataCell(
           Text(
             item.sentAt != null ? _formatDateTime(context, item.sentAt) : '',
@@ -345,6 +454,16 @@ class _BookingNotificationsScreenState
     );
   }
 
+  void _onSortChanged(String sortBy, bool ascending) {
+    ref.read(bookingNotificationsFiltersProvider.notifier).setSortBy(sortBy);
+    ref
+        .read(bookingNotificationsFiltersProvider.notifier)
+        .setSortOrder(ascending ? 'asc' : 'desc');
+    ref
+        .read(bookingNotificationsProvider.notifier)
+        .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
+  }
+
   Widget _buildCardList(BookingNotificationsState state) {
     return RefreshIndicator(
       onRefresh: _loadInitialData,
@@ -373,17 +492,25 @@ class _FiltersBar extends StatelessWidget {
     required this.searchController,
     required this.selectedStatus,
     required this.selectedChannel,
+    required this.showBusinessFilter,
+    required this.selectedBusinessId,
+    required this.businesses,
     required this.onSearchChanged,
     required this.onStatusChanged,
     required this.onChannelChanged,
+    required this.onBusinessChanged,
   });
 
   final TextEditingController searchController;
   final String? selectedStatus;
   final String? selectedChannel;
+  final bool showBusinessFilter;
+  final int? selectedBusinessId;
+  final List<Business> businesses;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String?> onStatusChanged;
   final ValueChanged<String?> onChannelChanged;
+  final ValueChanged<int?> onBusinessChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -395,6 +522,7 @@ class _FiltersBar extends StatelessWidget {
         builder: (context, constraints) {
           final availableWidth = constraints.maxWidth;
           final searchWidth = availableWidth < 340 ? availableWidth : 320.0;
+          final businessWidth = availableWidth < 280 ? availableWidth : 260.0;
           final statusWidth = availableWidth < 240 ? availableWidth : 220.0;
           final typeWidth = availableWidth < 270 ? availableWidth : 250.0;
 
@@ -417,6 +545,38 @@ class _FiltersBar extends StatelessWidget {
                   ),
                 ),
               ),
+              if (showBusinessFilter)
+                SizedBox(
+                  width: businessWidth,
+                  child: DropdownButtonFormField<int?>(
+                    value: selectedBusinessId,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.profileSwitchBusiness,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: [
+                      DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text(
+                          l10n.filterAll,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      ...businesses.map(
+                        (business) => DropdownMenuItem<int?>(
+                          value: business.id,
+                          child: Text(
+                            business.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                    onChanged: onBusinessChanged,
+                  ),
+                ),
               SizedBox(
                 width: statusWidth,
                 child: DropdownButtonFormField<String?>(

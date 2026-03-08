@@ -442,6 +442,7 @@
     }
   },
   "addService": "Add service",
+  "addServiceOrPackage": "Add service/package",
   "selectService": "Select service",
   "noServicesAdded": "No services added",
   "atLeastOneServiceRequired": "Add at least one service",
@@ -1221,6 +1222,7 @@
   "bookingNotificationsFieldAppointment": "Appointment",
   "bookingNotificationsFieldRecipient": "Recipient",
   "bookingNotificationsFieldCreatedAt": "Created at",
+  "bookingNotificationsFieldLastAttemptAt": "Last attempt",
   "bookingNotificationsFieldSentAt": "Sent at",
   "bookingNotificationsFieldError": "Error",
   "bookingNotificationsNoSubject": "No subject",
