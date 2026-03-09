@@ -64,8 +64,6 @@ class WeeklyAppointmentsView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _WeeklyHeader(weekRange: weekRange),
-        const SizedBox(height: 12),
         Expanded(
           child: weeklyAppointmentsAsync.when(
             data: (result) => _WeeklyAppointmentsBody(
@@ -77,43 +75,6 @@ class WeeklyAppointmentsView extends ConsumerWidget {
             loading: () => const _WeeklyAppointmentsLoading(),
             error: (_, __) => _WeeklyAppointmentsError(request: request),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _WeeklyHeader extends ConsumerWidget {
-  const _WeeklyHeader({required this.weekRange});
-
-  final WeekRange weekRange;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      runSpacing: 8,
-      spacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Text(weekRange.label, style: Theme.of(context).textTheme.titleMedium),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            AppOutlinedActionButton(
-              onPressed: ref.read(agendaDateProvider.notifier).previousWeek,
-              child: const Icon(Icons.chevron_left),
-            ),
-            AppOutlinedActionButton(
-              onPressed: ref.read(agendaDateProvider.notifier).setToday,
-              child: Text(context.l10n.agendaToday),
-            ),
-            AppOutlinedActionButton(
-              onPressed: ref.read(agendaDateProvider.notifier).nextWeek,
-              child: const Icon(Icons.chevron_right),
-            ),
-          ],
         ),
       ],
     );
@@ -177,43 +138,46 @@ class _WeeklyAppointmentsBody extends ConsumerWidget {
       weekRange: weekRange,
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final useHorizontalCards = constraints.maxWidth < 1040;
-        if (useHorizontalCards) {
-          return ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: weekRange.days.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final day = weekRange.days[index];
-              return SizedBox(
-                width: 280,
-                child: _WeeklyDayColumn(
-                  day: day,
-                  appointments: appointmentsByDay[day] ?? const [],
-                ),
-              );
-            },
-          );
-        }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final useHorizontalCards = constraints.maxWidth < 1040;
+          if (useHorizontalCards) {
+            return ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: weekRange.days.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final day = weekRange.days[index];
+                return SizedBox(
+                  width: 280,
+                  child: _WeeklyDayColumn(
+                    day: day,
+                    appointments: appointmentsByDay[day] ?? const [],
+                  ),
+                );
+              },
+            );
+          }
 
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < weekRange.days.length; i++) ...[
-              if (i > 0) const SizedBox(width: 12),
-              Expanded(
-                child: _WeeklyDayColumn(
-                  day: weekRange.days[i],
-                  appointments:
-                      appointmentsByDay[weekRange.days[i]] ?? const [],
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < weekRange.days.length; i++) ...[
+                if (i > 0) const SizedBox(width: 12),
+                Expanded(
+                  child: _WeeklyDayColumn(
+                    day: weekRange.days[i],
+                    appointments:
+                        appointmentsByDay[weekRange.days[i]] ?? const [],
+                  ),
                 ),
-              ),
+              ],
             ],
-          ],
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

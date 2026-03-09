@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/services/tenant_time_service.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/date_range_provider.dart';
+import '../../../providers/initial_scroll_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/tenant_time_provider.dart';
 
@@ -106,6 +107,11 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
 
   @override
   Widget build(BuildContext context) {
+    final initialScrollDone = ref.watch(initialScrollDoneProvider);
+    if (!initialScrollDone) {
+      return const SizedBox.shrink();
+    }
+
     final selectedDate = ref.watch(agendaDateProvider);
     // Calcoliamo "oggi" direttamente dal service: tenantTodayProvider è cachato
     // e non si aggiornerebbe a mezzanotte senza un'invalidazione esplicita.

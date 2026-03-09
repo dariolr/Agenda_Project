@@ -98,44 +98,33 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
 
     // 🔹 Scroll all'orario corrente SOLO alla prima apertura dell'app
     final initialScrollDone = ref.read(initialScrollDoneProvider);
-
-    if (initialScrollDone) {
-      // Non è la prima apertura: sincronizza solo la HourColumn con l'offset corrente
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !controller.hasClients) return;
-        // Notifica l'offset corrente per sincronizzare la HourColumn
-        widget.onVerticalOffsetChanged?.call(_getCurrentScrollOffset());
-      });
-      return;
-    }
-
     final layoutConfig = ref.read(layoutConfigProvider);
-    final initialOffset = _timelineOffsetForToday(layoutConfig);
+
+    final savedOffset = ref.read(agendaVerticalOffsetProvider);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !controller.hasClients) return;
 
-      // Marca lo scroll iniziale come completato (dopo il build)
-      ref.read(initialScrollDoneProvider.notifier).markDone();
-
-      // Centra la timeline nella viewport, poi corregge allo slot di ora intera
-      // più vicino al bordo superiore visibile (= bordo inferiore dell'header staff)
-      final viewportHeight = controller.position.viewportDimension;
-      final pixelsPerHour =
-          (60.0 / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
-      final centered = initialOffset - viewportHeight / 2;
-      final corrected =
-          (centered / pixelsPerHour).floorToDouble() * pixelsPerHour;
-      final target = corrected
-          .clamp(
-            controller.position.minScrollExtent,
-            controller.position.maxScrollExtent,
-          )
-          .toDouble();
+      final target =
+          savedOffset ??
+          _snappedTopHourOffset(
+            controller: controller,
+            layoutConfig: layoutConfig,
+          );
       controller.jumpTo(target);
+
       // Salva nel provider
       ref.read(agendaVerticalOffsetProvider.notifier).set(target);
       widget.onVerticalOffsetChanged?.call(target);
+
+      if (!initialScrollDone) {
+        // Marca completato solo DOPO avere applicato lo scroll iniziale,
+        // così la CurrentTimeLine non appare in posizione transitoria.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref.read(initialScrollDoneProvider.notifier).markDone();
+        });
+      }
     });
   }
 
@@ -234,6 +223,23 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
     final now = ref.read(tenantNowProvider);
     final minutes = now.hour * 60 + now.minute;
     return (minutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
+  }
+
+  double _snappedTopHourOffset({
+    required ScrollController controller,
+    required LayoutConfig layoutConfig,
+  }) {
+    final now = ref.read(tenantNowProvider);
+    final snappedHour = (now.hour - 1).clamp(0, 23);
+    final snappedMinutes = snappedHour * 60;
+    final snappedOffset =
+        (snappedMinutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
+    return snappedOffset
+        .clamp(
+          controller.position.minScrollExtent,
+          controller.position.maxScrollExtent,
+        )
+        .toDouble();
   }
 }
 

@@ -264,6 +264,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "agendaToday": MessageLookupByLibrary.simpleMessage("Today"),
     "agendaViewMode": MessageLookupByLibrary.simpleMessage("View"),
+    "agendaViewModeSwitchToDay": MessageLookupByLibrary.simpleMessage(
+      "Switch to day by day",
+    ),
+    "agendaViewModeSwitchToWeek": MessageLookupByLibrary.simpleMessage(
+      "Switch to week by week",
+    ),
     "agendaWeeklyLoadError": MessageLookupByLibrary.simpleMessage(
       "Unable to load this week\'s appointments.",
     ),
@@ -1326,6 +1332,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "navProfile": MessageLookupByLibrary.simpleMessage("Profile"),
     "navServices": MessageLookupByLibrary.simpleMessage("Services"),
     "navStaff": MessageLookupByLibrary.simpleMessage("Team"),
+    "networkConnectionError": MessageLookupByLibrary.simpleMessage(
+      "Could not connect to the server. Check your internet connection.",
+    ),
+    "networkRequestCancelled": MessageLookupByLibrary.simpleMessage(
+      "The request was cancelled before it could complete. Please try again.",
+    ),
+    "networkTimeoutError": MessageLookupByLibrary.simpleMessage(
+      "Connection timed out. Please try again.",
+    ),
+    "networkUnknownError": MessageLookupByLibrary.simpleMessage(
+      "Network error. Please try again.",
+    ),
     "newCategoryTitle": MessageLookupByLibrary.simpleMessage("New category"),
     "newServiceTitle": MessageLookupByLibrary.simpleMessage("New service"),
     "noClientForAppointment": MessageLookupByLibrary.simpleMessage(
@@ -1825,6 +1843,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "selectClientTitle": MessageLookupByLibrary.simpleMessage("Select client"),
     "selectService": MessageLookupByLibrary.simpleMessage("Select service"),
     "selectStaffTitle": MessageLookupByLibrary.simpleMessage("Select team"),
+    "serverError500": MessageLookupByLibrary.simpleMessage(
+      "Internal server error. Please try again later.",
+    ),
+    "serverError502": MessageLookupByLibrary.simpleMessage(
+      "Service temporarily unavailable (bad gateway). Please try again.",
+    ),
+    "serverError503": MessageLookupByLibrary.simpleMessage(
+      "Service temporarily unavailable. Please try again shortly.",
+    ),
+    "serverError504": MessageLookupByLibrary.simpleMessage(
+      "Server response timeout. Please try again.",
+    ),
     "serviceColorLabel": MessageLookupByLibrary.simpleMessage("Service color"),
     "serviceDuplicateCopyWord": MessageLookupByLibrary.simpleMessage("Copy"),
     "serviceDuplicateError": MessageLookupByLibrary.simpleMessage(

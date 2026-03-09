@@ -19,6 +19,8 @@ import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
+import 'package:agenda_backend/features/services/providers/services_provider.dart';
+import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -58,6 +60,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
   // 🔹 Flag per distinguere polling automatico da altre operazioni
   bool _isPolling = false;
+  bool _agendaViewportReady = false;
 
   @override
   void dispose() {
@@ -74,6 +77,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     if (mounted) {
       setState(() {
         _verticalOffset = offset;
+        _agendaViewportReady = true;
       });
     }
 
@@ -167,6 +171,11 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       next,
     ) {
       if (prev == null || prev == next) return;
+      if (mounted && _agendaViewportReady) {
+        setState(() {
+          _agendaViewportReady = false;
+        });
+      }
       final session = ref.read(bookingRescheduleSessionProvider);
       if (session == null) return;
       ref.read(agendaDateProvider.notifier).set(session.originDate);
@@ -194,6 +203,11 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     ref.listen(agendaDateProvider, (prev, next) {
       if (prev != null && !DateUtils.isSameDay(prev, next)) {
         _isPolling = false;
+        if (_agendaViewportReady) {
+          setState(() {
+            _agendaViewportReady = false;
+          });
+        }
       }
     });
 
@@ -202,30 +216,59 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       _isPolling = false;
     }
 
-    // Mostra loading se:
-    // 1. Business ID non ancora disponibile
-    // 2. Staff in caricamento iniziale (senza dati)
-    // 3. Locations non ancora caricate (locationsLoaded = false)
-    // 4. Location corrente non ancora selezionata (dopo che ci sono locations)
-    // 5. Appuntamenti in caricamento E non è polling automatico
+    // Stato "waiting" base (prerequisiti pagina)
     final hasLocations = locations.isNotEmpty;
     final isWaitingForBusiness = currentBusinessId <= 0;
     final isWaitingForLocations = !locationsLoaded;
     final isWaitingForLocationSelection =
         locationsLoaded && hasLocations && currentLocationId == 0;
-    final isLoading =
+    final isWaitingBaseData =
         isWaitingForBusiness ||
         (staffAsync.isLoading && !staffAsync.hasValue) ||
         isWaitingForLocations ||
         isWaitingForLocationSelection ||
         (appointmentsAsync.isLoading && !_isPolling && !staffAsync.hasValue);
 
+    // Dati usati dalle condizioni di bootstrap iniziale
+    final staffData = staffAsync.asData?.value;
+    final appointmentsData = appointmentsAsync.asData?.value;
     final staffList = ref.watch(filteredStaffProvider);
+    final staffInCurrentLocation = ref.watch(staffForCurrentLocationProvider);
+    final staffPlannings = ref.watch(staffPlanningsProvider);
     final staffFilterMode = ref.watch(staffFilterModeProvider);
     final calendarViewMode = ref.watch(calendarViewModeProvider);
-    final hasStaff = staffList.isNotEmpty;
-    final isResizing = ref.watch(isResizingProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
+    final hasStaff = staffList.isNotEmpty;
+    final serviceVariantsAsync = ref.watch(serviceVariantsProvider);
+
+    // Bootstrap iniziale: evita empty-state falsi durante i primi caricamenti
+    final isInitialStaffLoad =
+        staffAsync.isLoading && (staffData?.isEmpty ?? true);
+    final isInitialAppointmentsLoad =
+        appointmentsAsync.isLoading &&
+        !_isPolling &&
+        (appointmentsData?.isEmpty ?? true);
+    final isPlanningBootstrapLoading =
+        staffFilterMode == StaffFilterMode.onDutyTeam &&
+        staffInCurrentLocation.isNotEmpty &&
+        staffInCurrentLocation.any(
+          (staff) =>
+              !staffPlannings.containsKey(staff.id) &&
+              ref.watch(ensureStaffPlanningLoadedProvider(staff.id)).isLoading,
+        );
+    final isServiceVariantsBootstrapLoading =
+        layoutConfig.useServiceColorsForAppointments &&
+        serviceVariantsAsync.isLoading &&
+        !serviceVariantsAsync.hasValue;
+    final isBootstrapLoading =
+        isWaitingBaseData ||
+        isInitialStaffLoad ||
+        isInitialAppointmentsLoad ||
+        isPlanningBootstrapLoading ||
+        isServiceVariantsBootstrapLoading;
+    final shouldShowNoStaffState = !hasStaff && !isBootstrapLoading;
+    final shouldDeferAgendaPaint = hasStaff && !_agendaViewportReady;
+    final isResizing = ref.watch(isResizingProvider);
 
     final hourColumnWidth = layoutConfig.hourColumnWidth;
     final totalHeight = layoutConfig.totalHeight;
@@ -314,8 +357,14 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
     final dayAgendaContent = Stack(
       children: [
-        Positioned.fill(child: mainRow),
-        if (!hasStaff)
+        Positioned.fill(
+          child: Offstage(offstage: shouldDeferAgendaPaint, child: mainRow),
+        ),
+        if (shouldDeferAgendaPaint)
+          Positioned.fill(
+            child: ColoredBox(color: Theme.of(context).colorScheme.surface),
+          ),
+        if (shouldShowNoStaffState)
           Positioned.fill(
             child: ColoredBox(
               color: Theme.of(context).colorScheme.surface.withOpacity(0.94),
@@ -396,7 +445,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
                   ),
                 ),
               Expanded(
-                child: isLoading
+                child: isBootstrapLoading
                     // Mostra loading indicator durante il caricamento
                     ? isGlobalLoading
                           ? const SizedBox.shrink()
