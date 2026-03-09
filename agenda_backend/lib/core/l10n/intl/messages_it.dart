@@ -275,6 +275,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "agendaToday": MessageLookupByLibrary.simpleMessage("Oggi"),
     "agendaViewMode": MessageLookupByLibrary.simpleMessage("Visualizzazione"),
+    "agendaViewModeSwitchToDay": MessageLookupByLibrary.simpleMessage(
+      "Cambia in giorno per giorno",
+    ),
+    "agendaViewModeSwitchToWeek": MessageLookupByLibrary.simpleMessage(
+      "Cambia in settimana per settimana",
+    ),
     "agendaWeeklyLoadError": MessageLookupByLibrary.simpleMessage(
       "Impossibile caricare gli appuntamenti della settimana.",
     ),
@@ -1387,6 +1393,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "navProfile": MessageLookupByLibrary.simpleMessage("Profilo"),
     "navServices": MessageLookupByLibrary.simpleMessage("Servizi"),
     "navStaff": MessageLookupByLibrary.simpleMessage("Team"),
+    "networkConnectionError": MessageLookupByLibrary.simpleMessage(
+      "Impossibile raggiungere il server. Controlla la connessione internet.",
+    ),
+    "networkRequestCancelled": MessageLookupByLibrary.simpleMessage(
+      "La richiesta è stata annullata prima di completarsi. Riprova.",
+    ),
+    "networkTimeoutError": MessageLookupByLibrary.simpleMessage(
+      "La connessione ha impiegato troppo tempo. Riprova.",
+    ),
+    "networkUnknownError": MessageLookupByLibrary.simpleMessage(
+      "Errore di rete. Riprova.",
+    ),
     "newCategoryTitle": MessageLookupByLibrary.simpleMessage("Nuova categoria"),
     "newServiceTitle": MessageLookupByLibrary.simpleMessage("Nuovo servizio"),
     "noClientForAppointment": MessageLookupByLibrary.simpleMessage(
@@ -1922,6 +1940,18 @@ class MessageLookup extends MessageLookupByLibrary {
       "Seleziona un servizio",
     ),
     "selectStaffTitle": MessageLookupByLibrary.simpleMessage("Seleziona team"),
+    "serverError500": MessageLookupByLibrary.simpleMessage(
+      "Errore interno del server. Riprova più tardi.",
+    ),
+    "serverError502": MessageLookupByLibrary.simpleMessage(
+      "Servizio temporaneamente non disponibile (gateway). Riprova.",
+    ),
+    "serverError503": MessageLookupByLibrary.simpleMessage(
+      "Servizio temporaneamente non disponibile. Riprova tra poco.",
+    ),
+    "serverError504": MessageLookupByLibrary.simpleMessage(
+      "Il server ha impiegato troppo tempo a rispondere. Riprova.",
+    ),
     "serviceColorLabel": MessageLookupByLibrary.simpleMessage(
       "Colore servizio",
     ),

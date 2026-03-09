@@ -293,6 +293,26 @@ class L10n {
     );
   }
 
+  /// `Cambia in giorno per giorno`
+  String get agendaViewModeSwitchToDay {
+    return Intl.message(
+      'Cambia in giorno per giorno',
+      name: 'agendaViewModeSwitchToDay',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cambia in settimana per settimana`
+  String get agendaViewModeSwitchToWeek {
+    return Intl.message(
+      'Cambia in settimana per settimana',
+      name: 'agendaViewModeSwitchToWeek',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Giorno precedente`
   String get agendaPrevDay {
     return Intl.message(
@@ -4676,6 +4696,86 @@ class L10n {
     return Intl.message(
       'Connessione al server non riuscita. Controlla la tua connessione internet.',
       name: 'authNetworkError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La connessione ha impiegato troppo tempo. Riprova.`
+  String get networkTimeoutError {
+    return Intl.message(
+      'La connessione ha impiegato troppo tempo. Riprova.',
+      name: 'networkTimeoutError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile raggiungere il server. Controlla la connessione internet.`
+  String get networkConnectionError {
+    return Intl.message(
+      'Impossibile raggiungere il server. Controlla la connessione internet.',
+      name: 'networkConnectionError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La richiesta è stata annullata prima di completarsi. Riprova.`
+  String get networkRequestCancelled {
+    return Intl.message(
+      'La richiesta è stata annullata prima di completarsi. Riprova.',
+      name: 'networkRequestCancelled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Errore di rete. Riprova.`
+  String get networkUnknownError {
+    return Intl.message(
+      'Errore di rete. Riprova.',
+      name: 'networkUnknownError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Errore interno del server. Riprova più tardi.`
+  String get serverError500 {
+    return Intl.message(
+      'Errore interno del server. Riprova più tardi.',
+      name: 'serverError500',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizio temporaneamente non disponibile (gateway). Riprova.`
+  String get serverError502 {
+    return Intl.message(
+      'Servizio temporaneamente non disponibile (gateway). Riprova.',
+      name: 'serverError502',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Servizio temporaneamente non disponibile. Riprova tra poco.`
+  String get serverError503 {
+    return Intl.message(
+      'Servizio temporaneamente non disponibile. Riprova tra poco.',
+      name: 'serverError503',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il server ha impiegato troppo tempo a rispondere. Riprova.`
+  String get serverError504 {
+    return Intl.message(
+      'Il server ha impiegato troppo tempo a rispondere. Riprova.',
+      name: 'serverError504',
       desc: '',
       args: [],
     );

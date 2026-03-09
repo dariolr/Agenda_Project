@@ -8,6 +8,7 @@ import '../../../app/providers/global_loading_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/services/credentials_provider.dart';
 import '../../../core/utils/app_version.dart';
+import '../../../core/widgets/app_buttons.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../../core/widgets/global_loading_overlay.dart';
 import '../providers/auth_provider.dart';
@@ -317,11 +318,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ],
 
                       // Bottone Login
-                      FilledButton(
+                      AppFilledButton(
                         onPressed: _isLoading ? null : _handleLogin,
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
+                        expand: true,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         child: Text(l10n.authLogin),
                       ),
                       const SizedBox(height: 32),

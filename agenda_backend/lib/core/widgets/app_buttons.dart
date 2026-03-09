@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../constants/ui_sizes.dart';
+
 /// Centralizes button styling so we can reuse consistent widgets across the app.
 class AppButtonStyles {
+  static const double _outlinedBorderWidthMobile = 1.4;
+  static const double _outlinedBorderWidthWide = 1.0;
+
   static const BorderRadiusGeometry defaultBorderRadius = BorderRadius.all(
     Radius.circular(10),
   );
@@ -32,6 +37,7 @@ class AppButtonStyles {
       backgroundColor: backgroundColor ?? colorScheme.primary,
       foregroundColor: foregroundColor ?? colorScheme.onPrimary,
       padding: padding ?? defaultPadding,
+      fixedSize: const Size.fromHeight(kSharedAgendaControlHeight),
       shape: RoundedRectangleBorder(
         borderRadius: borderRadius ?? defaultBorderRadius,
       ),
@@ -48,10 +54,15 @@ class AppButtonStyles {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     final resolvedBorderColor = borderColor ?? colorScheme.primary;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final borderWidth = screenWidth >= 600
+        ? _outlinedBorderWidthWide
+        : _outlinedBorderWidthMobile;
     return OutlinedButton.styleFrom(
       foregroundColor: foregroundColor ?? resolvedBorderColor,
-      side: BorderSide(color: resolvedBorderColor, width: 1.4),
+      side: BorderSide(color: resolvedBorderColor, width: borderWidth),
       padding: padding ?? defaultPadding,
+      fixedSize: const Size.fromHeight(kSharedAgendaControlHeight),
       shape: RoundedRectangleBorder(
         borderRadius: borderRadius ?? defaultBorderRadius,
       ),

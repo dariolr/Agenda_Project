@@ -1,4 +1,6 @@
 import 'package:agenda_backend/app/theme/extensions.dart';
+import 'package:agenda_backend/app/providers/form_factor_provider.dart';
+import 'package:agenda_backend/core/constants/ui_sizes.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
@@ -10,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-const double kAgendaControlHeight = 40;
+const double kAgendaControlHeight = kSharedAgendaControlHeight;
 const double kAgendaControlHorizontalPadding = 20;
 const double kAgendaMinDateLabelWidth = 120;
 const BorderRadius kAgendaPillRadius = BorderRadius.all(Radius.circular(999));
@@ -766,7 +768,7 @@ class _WeekPickerContentState extends State<_WeekPickerContent> {
                                               8,
                                             ),
                                           ),
-                                          height: 40,
+                                          height: kAgendaControlHeight,
                                           alignment: Alignment.center,
                                           child: Text(
                                             '${day.day}',
@@ -1247,17 +1249,9 @@ class _AgendaCalendarViewModeSelectorState
 /// Bottone giorno/settimana con lo stesso stile del mobile (Tooltip + OutlinedButton + bottom sheet).
 /// Usato in mobile, tablet e desktop.
 class AgendaViewModeButton extends ConsumerWidget {
-  const AgendaViewModeButton({
-    super.key,
-    this.iconOnly = false,
-    this.height = kAgendaControlHeight,
-  });
+  const AgendaViewModeButton({super.key, this.height = kAgendaControlHeight});
 
-  final bool iconOnly;
   final double height;
-
-  static const double _labelWidth = 200;
-  static const double _iconOnlyWidth = 46;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1268,41 +1262,38 @@ class AgendaViewModeButton extends ConsumerWidget {
 
     final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
+    final formFactor = ref.watch(formFactorProvider);
+    final isDesktopOrTablet =
+        formFactor == AppFormFactor.desktop ||
+        formFactor == AppFormFactor.tablet;
     final currentMode = ref.watch(calendarViewModeProvider);
+    final items = _buildItems(context);
+    final tooltipMessage = _resolveTooltipMessage(
+      l10n: l10n,
+      items: items,
+      currentMode: currentMode,
+    );
 
     final icon = currentMode == CalendarViewMode.day
         ? Icons.view_day_outlined
         : Icons.view_week_outlined;
 
-    final child = iconOnly
-        ? Icon(icon, size: 22)
-        : Row(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Icon(icon, size: 22),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.agendaViewMode,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          );
-
     return Tooltip(
-      message: l10n.agendaViewMode,
+      message: tooltipMessage,
       child: SizedBox(
         height: height,
-        width: iconOnly ? _iconOnlyWidth : _labelWidth,
+        width: 46,
         child: AppOutlinedActionButton(
           onPressed: () => _onPressed(context, ref, currentMode),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          borderRadius: BorderRadius.circular(8),
-          borderColor: scheme.primary,
-          foregroundColor: scheme.primary,
-          child: child,
+          borderRadius: isDesktopOrTablet
+              ? kAgendaPillRadius
+              : BorderRadius.circular(8),
+          borderColor: isDesktopOrTablet
+              ? Colors.grey.withOpacity(0.35)
+              : scheme.primary,
+          foregroundColor: scheme.onSurface,
+          child: Icon(icon, size: 22),
         ),
       ),
     );
@@ -1313,9 +1304,38 @@ class AgendaViewModeButton extends ConsumerWidget {
   ) {
     final l10n = context.l10n;
     return [
-      (value: CalendarViewMode.day, label: l10n.recurrenceDay, icon: Icons.view_day_outlined),
-      (value: CalendarViewMode.week, label: l10n.recurrenceWeek, icon: Icons.view_week_outlined),
+      (
+        value: CalendarViewMode.day,
+        label: l10n.recurrenceDay,
+        icon: Icons.view_day_outlined,
+      ),
+      (
+        value: CalendarViewMode.week,
+        label: l10n.recurrenceWeek,
+        icon: Icons.view_week_outlined,
+      ),
     ];
+  }
+
+  String _resolveTooltipMessage({
+    required dynamic l10n,
+    required List<({CalendarViewMode value, String label, IconData icon})>
+    items,
+    required CalendarViewMode currentMode,
+  }) {
+    if (items.length >= 3) {
+      return l10n.agendaViewMode;
+    }
+
+    final currentIndex = items.indexWhere((item) => item.value == currentMode);
+    if (currentIndex == -1 || items.length <= 1) {
+      return l10n.agendaViewMode;
+    }
+
+    final nextMode = items[(currentIndex + 1) % items.length].value;
+    return nextMode == CalendarViewMode.day
+        ? l10n.agendaViewModeSwitchToDay
+        : l10n.agendaViewModeSwitchToWeek;
   }
 
   Future<void> _onPressed(
@@ -1326,7 +1346,9 @@ class AgendaViewModeButton extends ConsumerWidget {
     final items = _buildItems(context);
 
     if (items.length < 3) {
-      final currentIndex = items.indexWhere((item) => item.value == currentMode);
+      final currentIndex = items.indexWhere(
+        (item) => item.value == currentMode,
+      );
       if (currentIndex == -1 || items.length <= 1) return;
 
       final nextMode = items[(currentIndex + 1) % items.length].value;
@@ -1360,7 +1382,9 @@ class AgendaViewModeButton extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
               child: Text(
                 l10n.agendaViewMode,
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const Divider(height: 1),
@@ -1370,7 +1394,10 @@ class AgendaViewModeButton extends ConsumerWidget {
                 splashColor: Colors.transparent,
                 highlightColor: Colors.transparent,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 16,
+                  ),
                   color: item.value == currentMode
                       ? colorScheme.primary.withOpacity(0.08)
                       : Colors.transparent,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '/core/l10n/l10n.dart';
 import '/core/models/class_booking.dart';
 import '/core/models/class_event.dart';
 import '/core/models/class_type.dart';
@@ -350,22 +351,86 @@ class ApiClient {
   ApiException _handleError(DioException error) {
     final response = error.response;
     if (response != null) {
+      final statusCode = response.statusCode ?? 500;
       final body = response.data;
       if (body is Map<String, dynamic>) {
+        final backendCode = body['error']?['code'] ?? 'api_error';
+        final backendMessage = body['error']?['message'] ?? error.message ?? 'API Error';
         return ApiException(
-          code: body['error']?['code'] ?? 'api_error',
-          message: body['error']?['message'] ?? error.message ?? 'API Error',
-          statusCode: response.statusCode ?? 500,
+          code: backendCode,
+          message: _localizedHttpErrorMessage(
+            statusCode: statusCode,
+            fallbackMessage: backendMessage,
+          ),
+          statusCode: statusCode,
           details: body['error']?['details'],
         );
       }
+      return ApiException(
+        code: 'http_error',
+        message: _localizedHttpErrorMessage(
+          statusCode: statusCode,
+          fallbackMessage: error.message ?? 'HTTP Error',
+        ),
+        statusCode: statusCode,
+        details: {'uri': error.requestOptions.uri.toString()},
+      );
     }
     return ApiException(
       code: 'network_error',
-      message: error.message ?? 'Network error',
+      message: _localizedNetworkErrorMessage(error),
       statusCode: error.response?.statusCode ?? 0,
       details: {'type': error.type.name, 'uri': error.requestOptions.uri.toString()},
     );
+  }
+
+  String _localizedNetworkErrorMessage(DioException error) {
+    L10n? l10n;
+    try {
+      l10n = L10n.current;
+    } catch (_) {
+      l10n = null;
+    }
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout =>
+        l10n?.networkTimeoutError ??
+            'Connection timed out. Please try again.',
+      DioExceptionType.connectionError =>
+        l10n?.networkConnectionError ??
+            'Could not connect to the server. Check your internet connection.',
+      DioExceptionType.cancel =>
+        l10n?.networkRequestCancelled ??
+            'Request cancelled.',
+      _ =>
+        l10n?.networkUnknownError ??
+            'Network error. Please try again.',
+    };
+  }
+
+  String _localizedHttpErrorMessage({
+    required int statusCode,
+    required String fallbackMessage,
+  }) {
+    L10n? l10n;
+    try {
+      l10n = L10n.current;
+    } catch (_) {
+      l10n = null;
+    }
+
+    return switch (statusCode) {
+      500 => l10n?.serverError500 ??
+          'Internal server error. Please try again later.',
+      502 => l10n?.serverError502 ??
+          'Service temporarily unavailable (bad gateway). Please try again.',
+      503 => l10n?.serverError503 ??
+          'Service temporarily unavailable. Please try again shortly.',
+      504 => l10n?.serverError504 ??
+          'Server response timeout. Please try again.',
+      _ => fallbackMessage,
+    };
   }
 
   // ========== AUTH ENDPOINTS ==========

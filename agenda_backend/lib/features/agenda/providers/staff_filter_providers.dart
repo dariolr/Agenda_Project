@@ -131,6 +131,10 @@ final onDutyStaffIdsProvider = Provider<Set<int>>((ref) {
   return onDutyIds;
 });
 
+/// Provider che indica quando il calcolo "team di turno" è pronto.
+///
+/// Finché i planning non sono ancora caricati per tutti gli staff della
+/// location corrente, la UI deve mostrare loading e non l'empty-state.
 /// Provider che restituisce lo staff filtrato in base alla modalità selezionata.
 /// Se l'utente è ruolo staff, vede solo se stesso.
 final filteredStaffProvider = Provider<List<Staff>>((ref) {

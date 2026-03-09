@@ -789,10 +789,7 @@ class _AgendaFilterActions extends ConsumerWidget {
               showViewModeSelector)
             const SizedBox(width: _spacing),
           if (showViewModeSelector)
-            AgendaViewModeButton(
-              iconOnly: !showLabelEffective,
-              height: _actionButtonHeight,
-            ),
+            AgendaViewModeButton(height: _actionButtonHeight),
         ],
       ),
     );
@@ -821,7 +818,6 @@ class _AgendaFilterActions extends ConsumerWidget {
       ref.read(currentLocationIdProvider.notifier).set(result);
     }
   }
-
 }
 
 class _ToolbarLocationSelectorAction extends ConsumerWidget {

@@ -111,6 +111,8 @@ class TopControls extends ConsumerWidget {
     TopControlsData data,
     WidgetRef ref,
   ) {
+    final canViewAllAppointments = ref.watch(canViewAllAppointmentsProvider);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         _StaffWeekMeta? weekMeta;
@@ -128,6 +130,8 @@ class TopControls extends ConsumerWidget {
             mode != TopControlsMode.agenda &&
             !(mode == TopControlsMode.staff &&
                 data.formFactor == AppFormFactor.mobile);
+        final showStaffSelector =
+            mode == TopControlsMode.agenda && canViewAllAppointments;
 
         final layoutConfig = ref.watch(layoutConfigProvider);
 
@@ -155,14 +159,11 @@ class TopControls extends ConsumerWidget {
             ],
             if (mode == TopControlsMode.agenda)
               SizedBox(width: layoutConfig.hourColumnWidth),
-            if (mode == TopControlsMode.agenda &&
-                ref.watch(canViewAllAppointmentsProvider) &&
-                ref.watch(staffForCurrentLocationProvider).length > 1) ...[
-              const Align(
+            if (showStaffSelector)
+              Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: AgendaStaffFilterSelector(isCompact: false),
+                child: const AgendaStaffFilterSelector(isCompact: false),
               ),
-            ],
             if (data.locations.length > 1) ...[
               const SizedBox(width: 16),
               Align(
@@ -185,7 +186,7 @@ class TopControls extends ConsumerWidget {
               const SizedBox(width: 12),
               const Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: AgendaViewModeButton(iconOnly: true),
+                child: AgendaViewModeButton(),
               ),
             ],
           ],
@@ -210,10 +211,9 @@ class TopControls extends ConsumerWidget {
       label = weekMeta.label;
       selectedDate = weekMeta.effectivePickerDate;
     }
+    final canViewAllAppointments = ref.watch(canViewAllAppointmentsProvider);
     final showStaffSelector =
-        mode == TopControlsMode.agenda &&
-        ref.watch(canViewAllAppointmentsProvider) &&
-        ref.watch(staffForCurrentLocationProvider).length > 1;
+        mode == TopControlsMode.agenda && canViewAllAppointments;
     final showLocationSelector = data.locations.length > 1;
 
     List<Widget> buildChildren({
@@ -285,9 +285,9 @@ class TopControls extends ConsumerWidget {
           ),
         if (showStaffSelector) const SizedBox(width: 16),
         if (showStaffSelector)
-          const Align(
+          Align(
             alignment: AlignmentDirectional.centerStart,
-            child: AgendaStaffFilterSelector(isCompact: false),
+            child: const AgendaStaffFilterSelector(isCompact: false),
           ),
         if (showLocationSelector) ...[
           const SizedBox(width: 16),
@@ -313,10 +313,10 @@ class TopControls extends ConsumerWidget {
             ),
         ],
         if (mode == TopControlsMode.agenda) ...[
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           const Align(
             alignment: AlignmentDirectional.centerStart,
-            child: AgendaViewModeButton(iconOnly: true),
+            child: AgendaViewModeButton(),
           ),
         ],
       ];
