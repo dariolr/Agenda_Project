@@ -2079,10 +2079,10 @@ class L10n {
     );
   }
 
-  /// `Non prenotabile online`
+  /// `Non abilitato a prenotare online`
   String get notBookableOnline {
     return Intl.message(
-      'Non prenotabile online',
+      'Non abilitato a prenotare online',
       name: 'notBookableOnline',
       desc: '',
       args: [],
@@ -2289,10 +2289,10 @@ class L10n {
     );
   }
 
-  /// `Prenotabile online`
+  /// `Abilitato a prenotare online`
   String get bookableOnlineSwitch {
     return Intl.message(
-      'Prenotabile online',
+      'Abilitato a prenotare online',
       name: 'bookableOnlineSwitch',
       desc: '',
       args: [],
