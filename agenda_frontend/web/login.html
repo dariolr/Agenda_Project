@@ -491,7 +491,18 @@
         const payload = await response.json().catch(() => null);
         if (!response.ok || !payload || payload.success !== true) {
           const code = payload && payload.error && payload.error.code;
+          const rawMessage = payload && payload.error && payload.error.message;
+          const normalizedMessage = String(rawMessage || "").toLowerCase();
           if (code === "invalid_credentials") throw new Error("Credenziali non valide");
+          if (
+            code === "account_disabled" ||
+            (code === "unauthorized" &&
+              (normalizedMessage.includes("account is disabled") ||
+                normalizedMessage.includes("account disabled") ||
+                normalizedMessage.includes("blocked")))
+          ) {
+            throw new Error("Per qualsiasi esigenza sugli appuntamenti ti invitiamo a contattarci. Grazie");
+          }
           throw new Error("Accesso non riuscito. Riprova.");
         }
       }
@@ -514,6 +525,18 @@
 
           const payload = await response.json().catch(() => null);
           if (!response.ok || !payload || payload.success !== true) {
+            const code = payload && payload.error && payload.error.code;
+            const rawMessage = payload && payload.error && payload.error.message;
+            const normalizedMessage = String(rawMessage || "").toLowerCase();
+            if (
+              code === "account_disabled" ||
+              (code === "unauthorized" &&
+                (normalizedMessage.includes("account is disabled") ||
+                  normalizedMessage.includes("account disabled") ||
+                  normalizedMessage.includes("blocked")))
+            ) {
+              showError("Per qualsiasi esigenza sugli appuntamenti ti invitiamo a contattarci. Grazie");
+            }
             return false;
           }
 
