@@ -28,7 +28,7 @@ final class ClientAuthRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, email, password_hash, first_name, last_name, phone, 
-                    email_verified_at, is_archived, created_at 
+                    email_verified_at, is_archived, blocked, created_at 
              FROM clients 
              WHERE email = ? AND business_id = ? AND password_hash IS NOT NULL AND is_archived = 0'
         );
@@ -45,7 +45,7 @@ final class ClientAuthRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, email, password_hash, first_name, last_name, phone, 
-                    email_verified_at, is_archived, created_at 
+                    email_verified_at, is_archived, blocked, created_at 
              FROM clients 
              WHERE email = ? AND business_id = ? AND is_archived = 0'
         );
@@ -62,7 +62,7 @@ final class ClientAuthRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, email, first_name, last_name, phone, 
-                    email_verified_at, is_archived, created_at 
+                    email_verified_at, is_archived, blocked, created_at 
              FROM clients 
              WHERE id = ? AND is_archived = 0'
         );

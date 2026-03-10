@@ -31,6 +31,9 @@ final class GetCustomerMe
         if (!empty($client['is_archived'])) {
             throw AuthException::accountDisabled();
         }
+        if (!empty($client['blocked'])) {
+            throw AuthException::accountDisabled();
+        }
 
         return [
             'id' => (int) $client['id'],

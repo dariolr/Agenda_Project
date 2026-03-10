@@ -385,7 +385,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "L\'ora di fine deve essere successiva all\'ora di inizio",
     ),
     "bookableOnlineSwitch": MessageLookupByLibrary.simpleMessage(
-      "Prenotabile online",
+      "Abilitato a prenotare online",
     ),
     "bookingDetails": MessageLookupByLibrary.simpleMessage(
       "Dettagli prenotazione",
@@ -1423,7 +1423,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Nessun team disponibile",
     ),
     "notBookableOnline": MessageLookupByLibrary.simpleMessage(
-      "Non prenotabile online",
+      "Non abilitato a prenotare online",
     ),
     "notesPlaceholder": MessageLookupByLibrary.simpleMessage(
       "Note sull\'appuntamento...",

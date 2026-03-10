@@ -69,6 +69,7 @@
   "authEmailAlreadyRegistered": "Questa email è già registrata. Prova ad accedere.",
   "authErrorInvalidCredentials": "Email o password non valide",
   "authErrorAccountDisabled": "Il tuo account è disabilitato",
+  "blockedCustomerContactMessage": "Per qualsiasi esigenza sugli appuntamenti ti invitiamo a contattarci. Grazie",
   "authErrorTokenExpired": "Sessione scaduta. Effettua di nuovo il login.",
   "authErrorTokenInvalid": "Sessione non valida. Effettua di nuovo il login.",
   "authErrorSessionRevoked": "Sessione revocata. Effettua di nuovo il login.",

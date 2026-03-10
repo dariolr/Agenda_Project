@@ -36,6 +36,7 @@ class ClientFormState extends ConsumerState<ClientForm> {
   late final TextEditingController _notes = TextEditingController(
     text: widget.initial?.notes ?? '',
   );
+  late bool _isBookableOnline = !(widget.initial?.blocked ?? false);
 
   @override
   void dispose() {
@@ -70,6 +71,7 @@ class ClientFormState extends ConsumerState<ClientForm> {
       loyaltyPoints: base?.loyaltyPoints,
       tags: base?.tags,
       isArchived: base?.isArchived ?? false,
+      blocked: !_isBookableOnline,
     );
   }
 
@@ -186,6 +188,17 @@ class ClientFormState extends ConsumerState<ClientForm> {
       ),
     );
 
+    final onlineBookingField = SwitchListTile.adaptive(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      title: Text(l10n.bookableOnlineSwitch),
+      value: _isBookableOnline,
+      onChanged: (value) {
+        setState(() => _isBookableOnline = value);
+        widget.onChanged?.call();
+      },
+    );
+
     return Form(
       key: _formKey,
       child: Column(
@@ -200,6 +213,8 @@ class ClientFormState extends ConsumerState<ClientForm> {
             emailField,
             const SizedBox(height: AppSpacing.formRowSpacing),
             phoneField,
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            onlineBookingField,
             const SizedBox(height: AppSpacing.formRowSpacing),
             notesField,
           ] else ...[
@@ -225,7 +240,11 @@ class ClientFormState extends ConsumerState<ClientForm> {
             ),
             const SizedBox(height: AppSpacing.formRowSpacing),
 
-            // Riga 3: Note (sempre full width)
+            // Riga 3: Prenotabile online (full width)
+            onlineBookingField,
+            const SizedBox(height: AppSpacing.formRowSpacing),
+
+            // Riga 4: Note (sempre full width)
             notesField,
           ],
         ],

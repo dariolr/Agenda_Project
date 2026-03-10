@@ -558,6 +558,17 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     BookingFlowState state,
   ) {
     final l10n = context.l10n;
+    final normalizedMessage = (state.errorMessage ?? '').toLowerCase();
+    final isBlockedCustomer = state.errorCode == 'account_disabled' ||
+        (state.errorCode == 'unauthorized' &&
+            (normalizedMessage.contains('account is disabled') ||
+                normalizedMessage.contains('account disabled') ||
+                normalizedMessage.contains('blocked')));
+
+    if (isBlockedCustomer) {
+      return l10n.blockedCustomerContactMessage;
+    }
+
     switch (state.errorCode) {
       case 'slot_conflict':
         return l10n.bookingErrorSlotConflict;

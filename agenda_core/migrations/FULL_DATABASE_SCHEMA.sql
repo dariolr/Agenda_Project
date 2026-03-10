@@ -173,6 +173,22 @@ CREATE TABLE `businesses` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `business_application_settings`
+--
+
+CREATE TABLE `business_application_settings` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `setting_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Unique parameter key within the business scope',
+  `setting_value` json NOT NULL COMMENT 'Parameter value, supports scalar and structured data',
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Business-scoped application behavior parameters';
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `business_invitations`
 --
 
@@ -362,6 +378,7 @@ CREATE TABLE `clients` (
   `loyalty_points` int NOT NULL DEFAULT '0',
   `last_visit` timestamp NULL DEFAULT NULL,
   `is_archived` tinyint(1) NOT NULL DEFAULT '0',
+  `blocked` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'If 1, client cannot use online self-service booking',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -965,6 +982,14 @@ ALTER TABLE `businesses`
   ADD KEY `idx_businesses_active` (`is_active`);
 
 --
+-- Indici per le tabelle `business_application_settings`
+--
+ALTER TABLE `business_application_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_business_setting_key` (`business_id`,`setting_key`),
+  ADD KEY `idx_business_setting_key` (`setting_key`);
+
+--
 -- Indici per le tabelle `business_invitations`
 --
 ALTER TABLE `business_invitations`
@@ -1064,6 +1089,7 @@ ALTER TABLE `clients`
   ADD KEY `idx_clients_business_email` (`business_id`,`email`),
   ADD KEY `idx_clients_business_phone` (`business_id`,`phone`),
   ADD KEY `idx_clients_business_archived` (`business_id`,`is_archived`),
+  ADD KEY `idx_clients_business_blocked` (`business_id`,`blocked`),
   ADD KEY `idx_clients_user` (`user_id`),
   ADD KEY `idx_clients_email_auth` (`email`,`password_hash`);
 
@@ -1358,6 +1384,12 @@ ALTER TABLE `businesses`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `business_application_settings`
+--
+ALTER TABLE `business_application_settings`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `business_invitations`
 --
 ALTER TABLE `business_invitations`
@@ -1604,6 +1636,12 @@ ALTER TABLE `booking_recurrence_rules`
 ALTER TABLE `booking_replacements`
   ADD CONSTRAINT `fk_booking_replacements_new` FOREIGN KEY (`new_booking_id`) REFERENCES `bookings` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_booking_replacements_original` FOREIGN KEY (`original_booking_id`) REFERENCES `bookings` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--
+-- Limiti per la tabella `business_application_settings`
+--
+ALTER TABLE `business_application_settings`
+  ADD CONSTRAINT `fk_business_application_settings_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Limiti per la tabella `business_invitations`

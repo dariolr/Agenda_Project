@@ -49,6 +49,9 @@ final class RegisterCustomer
         $existingClient = $this->clientRepository->findByEmail($email, $businessId);
 
         if ($existingClient !== null) {
+            if (!empty($existingClient['blocked']) || !empty($existingClient['is_archived'])) {
+                throw AuthException::accountDisabled();
+            }
             // Check if already has password (already registered)
             if (!empty($existingClient['password_hash'])) {
                 throw AuthException::emailAlreadyExists();

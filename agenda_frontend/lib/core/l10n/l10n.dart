@@ -579,6 +579,16 @@ class L10n {
     );
   }
 
+  /// `Per qualsiasi esigenza sugli appuntamenti ti invitiamo a contattarci. Grazie`
+  String get blockedCustomerContactMessage {
+    return Intl.message(
+      'Per qualsiasi esigenza sugli appuntamenti ti invitiamo a contattarci. Grazie',
+      name: 'blockedCustomerContactMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Sessione scaduta. Effettua di nuovo il login.`
   String get authErrorTokenExpired {
     return Intl.message(

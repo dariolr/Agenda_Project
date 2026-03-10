@@ -69,6 +69,7 @@
   "authEmailAlreadyRegistered": "This email is already registered. Try logging in.",
   "authErrorInvalidCredentials": "Invalid email or password",
   "authErrorAccountDisabled": "Your account is disabled",
+  "blockedCustomerContactMessage": "For any appointment needs, please contact us. Thank you.",
   "authErrorTokenExpired": "Your session has expired. Please log in again.",
   "authErrorTokenInvalid": "Your session is not valid. Please log in again.",
   "authErrorSessionRevoked": "Your session has been revoked. Please log in again.",

@@ -78,7 +78,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       case 'invalid_credentials':
         return l10n.authErrorInvalidCredentials;
       case 'account_disabled':
-        return l10n.authErrorAccountDisabled;
+        return l10n.blockedCustomerContactMessage;
       case 'token_expired':
         return l10n.authErrorTokenExpired;
       case 'token_invalid':

@@ -21,7 +21,7 @@ final class ClientRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
-                    notes, is_archived, created_at, updated_at
+                    notes, is_archived, blocked, created_at, updated_at
              FROM clients
              WHERE id = ? AND is_archived = 0'
         );
@@ -39,7 +39,7 @@ final class ClientRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
-                    notes, is_archived, created_at, updated_at
+                    notes, is_archived, blocked, created_at, updated_at
              FROM clients
              WHERE id = ?'
         );
@@ -53,7 +53,7 @@ final class ClientRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
-                    notes, is_archived, created_at, updated_at
+                    notes, is_archived, blocked, created_at, updated_at
              FROM clients
              WHERE user_id = ? AND business_id = ? AND is_archived = 0'
         );
@@ -121,7 +121,7 @@ final class ClientRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
-                    password_hash, notes, is_archived, created_at, updated_at
+                    password_hash, notes, is_archived, blocked, created_at, updated_at
              FROM clients
              WHERE business_id = ? AND email = ? AND is_archived = 0
              LIMIT 1'
@@ -142,7 +142,7 @@ final class ClientRepository
         if (!empty($email)) {
             $stmt = $this->db->getPdo()->prepare(
                 'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
-                        notes, is_archived, created_at, updated_at
+                        notes, is_archived, blocked, created_at, updated_at
                  FROM clients
                  WHERE business_id = ? AND email = ? AND user_id IS NULL AND is_archived = 0
                  LIMIT 1'
@@ -161,7 +161,7 @@ final class ClientRepository
             
             $stmt = $this->db->getPdo()->prepare(
                 'SELECT id, business_id, user_id, first_name, last_name, email, phone, 
-                        notes, is_archived, created_at, updated_at
+                        notes, is_archived, blocked, created_at, updated_at
                  FROM clients
                  WHERE business_id = ? AND REPLACE(REPLACE(phone, " ", ""), "-", "") = ? 
                    AND user_id IS NULL AND is_archived = 0
@@ -208,7 +208,7 @@ final class ClientRepository
         $orderBy = $this->getOrderByClause($sort);
         
         $sql = "SELECT id, business_id, user_id, first_name, last_name, email, phone, 
-                    notes, is_archived, created_at, updated_at
+                    notes, is_archived, blocked, created_at, updated_at
              FROM clients
              WHERE business_id = ? AND is_archived = 0
              $orderBy";
@@ -243,7 +243,7 @@ final class ClientRepository
         if (count($tokens) >= 2) {
             $phraseLike = '%' . $normalizedQuery . '%';
             $sql = "SELECT id, business_id, user_id, first_name, last_name, email, phone, 
-                        notes, is_archived, created_at, updated_at
+                        notes, is_archived, blocked, created_at, updated_at
                  FROM clients
                  WHERE business_id = ? AND is_archived = 0
                    AND (
@@ -265,7 +265,7 @@ final class ClientRepository
             }
 
             $sql = "SELECT id, business_id, user_id, first_name, last_name, email, phone, 
-                        notes, is_archived, created_at, updated_at
+                        notes, is_archived, blocked, created_at, updated_at
                  FROM clients
                  WHERE business_id = ? AND is_archived = 0
                    AND (" . implode(' AND ', $tokenClauses) . ")
@@ -289,10 +289,14 @@ final class ClientRepository
         $fields = [];
         $values = [];
 
-        foreach (['first_name', 'last_name', 'email', 'phone', 'notes'] as $field) {
+        foreach (['first_name', 'last_name', 'email', 'phone', 'notes', 'blocked'] as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "{$field} = ?";
-                $values[] = $data[$field];
+                if ($field === 'blocked') {
+                    $values[] = (int) ((bool) $data[$field]);
+                } else {
+                    $values[] = $data[$field];
+                }
             }
         }
 

@@ -14,6 +14,13 @@ import '../dialogs/client_appointments_dialog.dart';
 class ClientCard extends ConsumerWidget {
   const ClientCard({super.key, required this.client, this.onTap});
 
+  static const double _actionIconBoxSize = 32;
+  static const double _blockedIndicatorBoxSize = 16;
+  static const double _blockedIndicatorHitBoxSize = 32;
+  static const double _actionIconGap = 8;
+  static const double _actionColumnWidth =
+      _actionIconBoxSize + _actionIconGap + _blockedIndicatorHitBoxSize;
+
   final Client client;
   final VoidCallback? onTap;
 
@@ -93,16 +100,16 @@ class ClientCard extends ConsumerWidget {
                 ],
               ),
             ),
-            // Colonna destra: icone allineate verticalmente
-            // Il delete button deve restare sempre allineato in alto a destra
-            IntrinsicWidth(
+            // Colonna destra: icone azione
+            SizedBox(
+              width: _actionColumnWidth,
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   _DeleteButton(client: client),
                   const SizedBox(height: 8),
-                  _AppointmentsButton(client: client),
+                  _AppointmentsButton(client: client, onCardTap: onTap),
                 ],
               ),
             ),
@@ -184,28 +191,70 @@ Future<void> _openPhone(String phone) async {
 /// Non carica i dati in anticipo per evitare troppe chiamate API simultanee.
 /// I dati vengono caricati solo all'apertura del dialog.
 class _AppointmentsButton extends StatelessWidget {
-  const _AppointmentsButton({required this.client});
+  const _AppointmentsButton({required this.client, this.onCardTap});
 
   final Client client;
+  final VoidCallback? onCardTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final blockedIconColor = theme.colorScheme.error.withOpacity(0.75);
 
-    return SizedBox(
-      height: 32,
-      child: Consumer(
-        builder: (context, ref, _) => InkWell(
-          onTap: () =>
-              showClientAppointmentsDialog(context, ref, client: client),
-          borderRadius: BorderRadius.circular(8),
-          child: Center(
-            child: Icon(
-              Icons.calendar_month_outlined,
-              size: 18,
-              color: theme.colorScheme.primary.withOpacity(0.7),
+    return Consumer(
+      builder: (context, ref, _) => SizedBox(
+        width: ClientCard._actionColumnWidth,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (client.blocked) ...[
+              SizedBox(
+                width: ClientCard._blockedIndicatorHitBoxSize,
+                height: ClientCard._actionIconBoxSize,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Tooltip(
+                    message: context.l10n.notBookableOnline,
+                    child: SizedBox(
+                      width: ClientCard._actionIconBoxSize,
+                      height: ClientCard._actionIconBoxSize,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        iconSize: ClientCard._blockedIndicatorBoxSize,
+                        onPressed: onCardTap,
+                        icon: Icon(
+                          Icons.cloud_off_outlined,
+                          size: ClientCard._blockedIndicatorBoxSize,
+                          color: blockedIconColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: ClientCard._actionIconGap),
+            ],
+            SizedBox(
+              height: ClientCard._actionIconBoxSize,
+              width: ClientCard._actionIconBoxSize,
+              child: Tooltip(
+                message: context.l10n.clientAppointmentsTitle(client.name),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  iconSize: 18,
+                  onPressed: () =>
+                      showClientAppointmentsDialog(context, ref, client: client),
+                  icon: Icon(
+                    Icons.calendar_month_outlined,
+                    size: 18,
+                    color: theme.colorScheme.primary.withOpacity(0.7),
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -223,17 +272,21 @@ class _DeleteButton extends ConsumerWidget {
     final canManageClients = ref.watch(currentUserCanManageClientsProvider);
 
     if (!canManageClients) {
-      return const SizedBox(width: 32, height: 32);
+      return const SizedBox(
+        width: ClientCard._actionIconBoxSize,
+        height: ClientCard._actionIconBoxSize,
+      );
     }
 
     return SizedBox(
-      width: 32,
-      height: 32,
+      width: ClientCard._actionIconBoxSize,
+      height: ClientCard._actionIconBoxSize,
       child: Align(
         alignment: Alignment.centerRight,
         child: IconButton(
           padding: EdgeInsets.zero,
           iconSize: 18,
+          tooltip: context.l10n.actionDelete,
           icon: Icon(
             Icons.delete_outline,
             color: theme.colorScheme.error.withOpacity(0.7),

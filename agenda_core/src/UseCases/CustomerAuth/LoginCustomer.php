@@ -43,6 +43,9 @@ final class LoginCustomer
         if (!empty($client['is_archived'])) {
             throw AuthException::accountDisabled();
         }
+        if (!empty($client['blocked'])) {
+            throw AuthException::accountDisabled();
+        }
 
         // Generate access token with type=customer and client_id
         $accessToken = $this->jwtService->generateCustomerAccessToken(

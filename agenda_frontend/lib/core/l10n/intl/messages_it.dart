@@ -231,6 +231,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Recupera password",
     ),
     "authWelcome": MessageLookupByLibrary.simpleMessage("Benvenuto"),
+    "blockedCustomerContactMessage": MessageLookupByLibrary.simpleMessage(
+      "Per qualsiasi esigenza sugli appuntamenti ti invitiamo a contattarci. Grazie",
+    ),
     "bookingCancelFailed": MessageLookupByLibrary.simpleMessage(
       "Errore durante l\'annullamento della prenotazione. Riprova.",
     ),
