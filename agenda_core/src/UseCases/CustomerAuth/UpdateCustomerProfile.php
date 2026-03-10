@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Agenda\UseCases\CustomerAuth;
 
 use Agenda\Infrastructure\Repositories\ClientAuthRepository;
+use Agenda\Domain\Exceptions\AuthException;
 use Agenda\Domain\Exceptions\ValidationException;
 
 final class UpdateCustomerProfile
@@ -32,6 +33,9 @@ final class UpdateCustomerProfile
         $client = $this->clientAuthRepository->findById($clientId);
         if ($client === null) {
             throw ValidationException::create('Client not found');
+        }
+        if (!empty($client['is_archived']) || !empty($client['blocked'])) {
+            throw AuthException::accountDisabled();
         }
 
         // Build update data

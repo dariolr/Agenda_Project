@@ -123,12 +123,14 @@ class ClientsApi {
           ? List<String>.from(json['tags'] as List)
           : null,
       isArchived: json['is_archived'] as bool? ?? false,
+      blocked: _parseBlocked(json),
     );
   }
 
   /// Converte Client in JSON snake_case
   /// I campi nullable vengono sempre inviati per permettere la rimozione del valore
   Map<String, dynamic> _clientToJson(Client client) {
+    final isBookableOnline = !client.blocked;
     return {
       'business_id': client.businessId,
       'first_name': client.firstName,
@@ -141,7 +143,33 @@ class ClientsApi {
       'notes': client.notes,
       'tags': client.tags,
       'is_archived': client.isArchived,
+      'blocked': client.blocked,
+      // Compatibilità con eventuali backend che usano il naming legacy.
+      'is_bookable_online': isBookableOnline,
     };
+  }
+
+  bool _parseBlocked(Map<String, dynamic> json) {
+    final blocked = json['blocked'];
+    if (blocked != null) {
+      return _asBool(blocked, defaultValue: false);
+    }
+    final isBookableOnline = json['is_bookable_online'];
+    if (isBookableOnline != null) {
+      return !_asBool(isBookableOnline, defaultValue: true);
+    }
+    return false;
+  }
+
+  bool _asBool(dynamic value, {required bool defaultValue}) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return defaultValue;
   }
 
   /// Converte JSON snake_case in Appointment (per cronologia cliente)

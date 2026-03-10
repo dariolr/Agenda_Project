@@ -14,6 +14,7 @@ class Client {
   final int? loyaltyPoints;
   final List<String>? tags;
   final bool isArchived;
+  final bool blocked;
 
   const Client({
     required this.id,
@@ -31,6 +32,7 @@ class Client {
     this.loyaltyPoints,
     this.tags,
     this.isArchived = false,
+    this.blocked = false,
   });
 
   /// Nome completo (firstName + lastName)
@@ -109,6 +111,7 @@ class Client {
     int? loyaltyPoints,
     List<String>? tags,
     bool? isArchived,
+    bool? blocked,
   }) {
     return Client(
       id: id ?? this.id,
@@ -126,6 +129,7 @@ class Client {
       loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
       tags: tags ?? this.tags,
       isArchived: isArchived ?? this.isArchived,
+      blocked: blocked ?? this.blocked,
     );
   }
 }

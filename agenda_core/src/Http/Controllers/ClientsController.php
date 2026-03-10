@@ -125,9 +125,10 @@ final class ClientsController
 
         // Create client
         $stmt = $this->clientRepo->db()->getPdo()->prepare(
-            'INSERT INTO clients (business_id, first_name, last_name, email, phone, notes, is_archived)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO clients (business_id, first_name, last_name, email, phone, notes, is_archived, blocked)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
+        $blocked = $this->resolveBlocked($body, null);
         $stmt->execute([
             $businessId,
             $body['first_name'] ?? null,
@@ -135,7 +136,8 @@ final class ClientsController
             $body['email'] ?? null,
             $body['phone'] ?? null,
             $body['notes'] ?? null,
-            $body['is_archived'] ?? false,
+            (int) ((bool) ($body['is_archived'] ?? false)),
+            $blocked === null ? 0 : (int) $blocked,
         ]);
 
         $clientId = (int) $this->clientRepo->db()->getPdo()->lastInsertId();
@@ -170,6 +172,10 @@ final class ClientsController
                 $data[$field] = $body[$field];
             }
         }
+        $blocked = $this->resolveBlocked($body, null);
+        if ($blocked !== null) {
+            $data['blocked'] = $blocked;
+        }
 
         if (!empty($data)) {
             $this->clientRepo->update($clientId, $data);
@@ -180,7 +186,7 @@ final class ClientsController
             $stmt = $this->clientRepo->db()->getPdo()->prepare(
                 'UPDATE clients SET is_archived = ?, updated_at = NOW() WHERE id = ?'
             );
-            $stmt->execute([(bool) $body['is_archived'], $clientId]);
+            $stmt->execute([(int) ((bool) $body['is_archived']), $clientId]);
         }
 
         // Use findByIdUnfiltered to return client even if just archived
@@ -310,6 +316,8 @@ final class ClientsController
             'phone' => $client['phone'],
             'notes' => $client['notes'],
             'is_archived' => (bool) ($client['is_archived'] ?? false),
+            'blocked' => (bool) ($client['blocked'] ?? false),
+            'is_bookable_online' => !(bool) ($client['blocked'] ?? false),
             'created_at' => $client['created_at'],
             'updated_at' => $client['updated_at'],
         ];
@@ -332,8 +340,21 @@ final class ClientsController
             'phone_masked' => DataMasker::maskPhone($client['phone']),
             'notes' => null, // Hidden in masked mode
             'is_archived' => (bool) ($client['is_archived'] ?? false),
+            'blocked' => (bool) ($client['blocked'] ?? false),
+            'is_bookable_online' => !(bool) ($client['blocked'] ?? false),
             'created_at' => $client['created_at'],
             'updated_at' => $client['updated_at'],
         ];
+    }
+
+    private function resolveBlocked(array $body, ?bool $fallback): ?bool
+    {
+        if (array_key_exists('blocked', $body)) {
+            return (bool) $body['blocked'];
+        }
+        if (array_key_exists('is_bookable_online', $body)) {
+            return !(bool) $body['is_bookable_online'];
+        }
+        return $fallback;
     }
 }

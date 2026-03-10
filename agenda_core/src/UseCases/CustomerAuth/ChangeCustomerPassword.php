@@ -29,6 +29,9 @@ final class ChangeCustomerPassword
         if ($client === null) {
             throw AuthException::invalidCredentials();
         }
+        if (!empty($client['is_archived']) || !empty($client['blocked'])) {
+            throw AuthException::accountDisabled();
+        }
 
         // Get full client data including password_hash
         $clientWithPassword = $this->clientAuthRepository->findByEmailForAuth(

@@ -47,6 +47,9 @@ final class RefreshCustomerToken
         if (!empty($client['is_archived'])) {
             throw AuthException::accountDisabled();
         }
+        if (!empty($client['blocked'])) {
+            throw AuthException::accountDisabled();
+        }
 
         // Revoke old session (token rotation)
         $this->clientAuthRepository->revokeSession((int) $session['id']);

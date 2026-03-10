@@ -1314,6 +1314,13 @@ final class BookingsController
             return Response::error('Customer authentication required', 'unauthorized', 401);
         }
 
+        if ($this->clientRepo !== null) {
+            $client = $this->clientRepo->findByIdUnfiltered((int) $clientId);
+            if ($client === null || !empty($client['is_archived']) || !empty($client['blocked'])) {
+                return Response::error('Customer account is disabled', 'unauthorized', 401);
+            }
+        }
+
         // Verify business matches
         if ($customerBusinessId !== $routeBusinessId) {
             return Response::error('Invalid token for this business', 'unauthorized', 401);

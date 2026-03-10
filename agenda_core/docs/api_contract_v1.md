@@ -1298,6 +1298,8 @@ Response (200):
         "phone": "+39123456789",
         "notes": null,
         "is_archived": false,
+        "blocked": false,
+        "is_bookable_online": true,
         "created_at": "2025-01-01T10:00:00+01:00",
         "updated_at": "2025-01-01T10:00:00+01:00"
       }
@@ -1322,7 +1324,8 @@ Request:
   "last_name": "Rossi",
   "email": "mario@example.com",
   "phone": "+39123456789",
-  "notes": "Cliente VIP"
+  "notes": "Cliente VIP",
+  "blocked": false
 }
 ```
 
@@ -1355,7 +1358,8 @@ Request:
   "email": "newemail@example.com",
   "phone": "+39987654321",
   "notes": "Updated notes",
-  "is_archived": false
+  "is_archived": false,
+  "blocked": false
 }
 ```
 
