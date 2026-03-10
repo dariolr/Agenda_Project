@@ -13,6 +13,8 @@ class AppointmentCard extends ConsumerWidget {
   final double? columnOffset;
   final double? dragTargetWidth;
   final bool expandToLeft;
+  final bool showExtraMinutesBand;
+  final BorderRadius borderRadius;
 
   const AppointmentCard({
     super.key,
@@ -22,6 +24,8 @@ class AppointmentCard extends ConsumerWidget {
     this.columnOffset,
     this.dragTargetWidth,
     this.expandToLeft = false,
+    this.showExtraMinutesBand = true,
+    this.borderRadius = const BorderRadius.all(Radius.circular(6)),
   });
 
   @override
@@ -33,6 +37,8 @@ class AppointmentCard extends ConsumerWidget {
       columnOffset: columnOffset,
       dragTargetWidth: dragTargetWidth,
       expandToLeft: expandToLeft,
+      showExtraMinutesBand: showExtraMinutesBand,
+      borderRadius: borderRadius,
     );
   }
 }

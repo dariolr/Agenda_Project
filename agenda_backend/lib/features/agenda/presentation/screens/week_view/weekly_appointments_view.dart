@@ -1,8 +1,13 @@
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
+import 'package:agenda_backend/core/models/availability_exception.dart';
 import 'package:agenda_backend/core/models/appointment.dart';
 import 'package:agenda_backend/core/models/staff.dart';
+import 'package:agenda_backend/core/models/staff_planning.dart'
+    show StaffPlanning;
 import 'package:agenda_backend/core/utils/color_utils.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
+import 'package:agenda_backend/app/providers/form_factor_provider.dart';
+import 'package:agenda_backend/features/business/providers/location_closures_provider.dart';
 import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:agenda_backend/features/agenda/mappers/appointments_by_day.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
@@ -17,6 +22,8 @@ import 'package:agenda_backend/features/agenda/presentation/screens/widgets/appo
 import 'package:agenda_backend/features/agenda/presentation/widgets/appointment_dialog.dart';
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
+import 'package:agenda_backend/features/staff/providers/availability_exceptions_provider.dart';
+import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,10 +34,14 @@ class WeeklyAppointmentsView extends ConsumerWidget {
     super.key,
     required this.staffList,
     required this.staffFilterMode,
+    required this.autoScrollRequestId,
+    required this.autoScrollTargetDate,
   });
 
   final List<Staff> staffList;
   final StaffFilterMode staffFilterMode;
+  final int autoScrollRequestId;
+  final DateTime? autoScrollTargetDate;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,6 +71,10 @@ class WeeklyAppointmentsView extends ConsumerWidget {
     final weeklyAppointmentsAsync = ref.watch(
       weeklyAppointmentsProvider(request),
     );
+    final previousResult = weeklyAppointmentsAsync.maybeWhen(
+      data: (result) => result,
+      orElse: () => null,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -71,8 +86,20 @@ class WeeklyAppointmentsView extends ConsumerWidget {
               appointments: result.appointments,
               staffList: staffList,
               staffFilterMode: staffFilterMode,
+              autoScrollRequestId: autoScrollRequestId,
+              autoScrollTargetDate: autoScrollTargetDate,
             ),
-            loading: () => const _WeeklyAppointmentsLoading(),
+            loading: () =>
+                previousResult != null
+                    ? _WeeklyAppointmentsBody(
+                        weekRange: weekRange,
+                        appointments: previousResult.appointments,
+                        staffList: staffList,
+                        staffFilterMode: staffFilterMode,
+                        autoScrollRequestId: autoScrollRequestId,
+                        autoScrollTargetDate: autoScrollTargetDate,
+                      )
+                    : const Center(child: CircularProgressIndicator()),
             error: (_, __) => _WeeklyAppointmentsError(request: request),
           ),
         ),
@@ -81,28 +108,118 @@ class WeeklyAppointmentsView extends ConsumerWidget {
   }
 }
 
-class _WeeklyAppointmentsBody extends ConsumerWidget {
+class _WeeklyAppointmentsBody extends ConsumerStatefulWidget {
   const _WeeklyAppointmentsBody({
     required this.weekRange,
     required this.appointments,
     required this.staffList,
     required this.staffFilterMode,
+    required this.autoScrollRequestId,
+    required this.autoScrollTargetDate,
   });
 
   final WeekRange weekRange;
   final List<Appointment> appointments;
   final List<Staff> staffList;
   final StaffFilterMode staffFilterMode;
+  final int autoScrollRequestId;
+  final DateTime? autoScrollTargetDate;
+  static const double _daySpacing = 12;
+  static const double _defaultDayColumnWidth = 280;
+  static const double _emptyDayColumnWidth = 104;
+  static const int _planningSlotMinutes = StaffPlanning.planningStepMinutes;
+  static const int _planningTotalSlots = (24 * 60) ~/ _planningSlotMinutes;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final allowedStaffIds = staffList.map((staff) => staff.id).toSet();
+  ConsumerState<_WeeklyAppointmentsBody> createState() =>
+      _WeeklyAppointmentsBodyState();
+
+  List<Staff> resolveEffectiveStaffList(WidgetRef ref) {
+    if (staffFilterMode != StaffFilterMode.onDutyTeam || staffList.isNotEmpty) {
+      return staffList;
+    }
+
+    final allStaff = ref.watch(staffForCurrentLocationProvider);
+    return [
+      for (final staff in allStaff)
+        if (_hasAnyAvailabilityInWeek(ref, staff.id)) staff,
+    ];
+  }
+
+  bool _hasAnyAvailabilityInWeek(WidgetRef ref, int staffId) {
+    for (final day in weekRange.days) {
+      if (_hasAvailabilityForDay(ref, staffId: staffId, day: day)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _hasAvailabilityForDay(
+    WidgetRef ref, {
+    required int staffId,
+    required DateTime day,
+  }) {
+    if (ref.watch(isDateClosedProvider(day))) {
+      return false;
+    }
+
+    ref.watch(ensureStaffPlanningLoadedProvider(staffId));
+
+    final baseSlots = ref.watch(
+      planningSlotsForDateProvider((staffId: staffId, date: day)),
+    );
+    if (baseSlots == null) {
+      return false;
+    }
+
+    var finalSlots = Set<int>.from(baseSlots);
+    final exceptions = ref.watch(
+      exceptionsForStaffOnDateProvider((staffId: staffId, date: day)),
+    );
+
+    for (final exception in exceptions) {
+      final exceptionSlots = exception.toSlotIndices(
+        minutesPerSlot: _planningSlotMinutes,
+        totalSlotsPerDay: _planningTotalSlots,
+      );
+      if (exception.type == AvailabilityExceptionType.available) {
+        finalSlots = finalSlots.union(exceptionSlots);
+      } else {
+        finalSlots = finalSlots.difference(exceptionSlots);
+      }
+    }
+
+    return finalSlots.isNotEmpty;
+  }
+}
+
+class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody> {
+  late final ScrollController _weekColumnsController;
+  int _lastHandledAutoScrollRequestId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _weekColumnsController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _weekColumnsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveStaffList = widget.resolveEffectiveStaffList(ref);
+    final allowedStaffIds = effectiveStaffList.map((staff) => staff.id).toSet();
     final filteredAppointments = [
-      for (final appointment in appointments)
+      for (final appointment in widget.appointments)
         if (allowedStaffIds.contains(appointment.staffId)) appointment,
     ];
 
-    if (staffList.isEmpty) {
+    if (effectiveStaffList.isEmpty) {
       return ColoredBox(
         color: Theme.of(context).colorScheme.surface.withOpacity(0.94),
         child: Center(
@@ -110,13 +227,13 @@ class _WeeklyAppointmentsBody extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                staffFilterMode == StaffFilterMode.onDutyTeam
+                widget.staffFilterMode == StaffFilterMode.onDutyTeam
                     ? context.l10n.agendaNoOnDutyTeamTitle
                     : context.l10n.agendaNoSelectedTeamTitle,
                 style: Theme.of(context).textTheme.titleMedium,
                 textAlign: TextAlign.center,
               ),
-              if (staffFilterMode != StaffFilterMode.allTeam) ...[
+              if (widget.staffFilterMode != StaffFilterMode.allTeam) ...[
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () {
@@ -135,42 +252,112 @@ class _WeeklyAppointmentsBody extends ConsumerWidget {
 
     final appointmentsByDay = mapAppointmentsByDay(
       filteredAppointments,
-      weekRange: weekRange,
+      weekRange: widget.weekRange,
     );
+    final showStaffNameFooter = effectiveStaffList.length > 1;
+    final dayColumns = [
+      for (final day in widget.weekRange.days)
+        (day: day, appointments: appointmentsByDay[day] ?? const <Appointment>[]),
+    ];
+    final visibleDayColumns = dayColumns;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(2, 0, 2, 12),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final useHorizontalCards = constraints.maxWidth < 1040;
+          final formFactor = ref.watch(formFactorProvider);
+          final useHorizontalCards =
+              formFactor == AppFormFactor.desktop ||
+              constraints.maxWidth < 1040;
           if (useHorizontalCards) {
+            final isMobile = formFactor == AppFormFactor.mobile;
+            final mobileDayColumnWidth = isMobile
+                ? ((constraints.maxWidth - (_WeeklyAppointmentsBody._daySpacing * 3)) / 2)
+                      .clamp(120.0, double.infinity)
+                      .toDouble()
+                : null;
+            _maybeAutoScrollToTargetDay(
+              targetDate: widget.autoScrollTargetDate,
+              visibleDayColumns: visibleDayColumns,
+              isMobile: isMobile,
+              mobileDayColumnWidth: mobileDayColumnWidth,
+            );
             return ListView.separated(
+              controller: _weekColumnsController,
               scrollDirection: Axis.horizontal,
-              itemCount: weekRange.days.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              padding: isMobile
+                  ? const EdgeInsets.symmetric(
+                      horizontal: _WeeklyAppointmentsBody._daySpacing,
+                    )
+                  : EdgeInsets.zero,
+              itemCount: visibleDayColumns.length,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(width: _WeeklyAppointmentsBody._daySpacing),
               itemBuilder: (context, index) {
-                final day = weekRange.days[index];
+                final column = visibleDayColumns[index];
                 return SizedBox(
-                  width: 280,
+                  width:
+                      mobileDayColumnWidth ??
+                      (column.appointments.isEmpty
+                          ? _WeeklyAppointmentsBody._emptyDayColumnWidth
+                          : _WeeklyAppointmentsBody._defaultDayColumnWidth),
                   child: _WeeklyDayColumn(
-                    day: day,
-                    appointments: appointmentsByDay[day] ?? const [],
+                    day: column.day,
+                    appointments: column.appointments,
+                    showStaffNameFooter: showStaffNameFooter,
                   ),
                 );
               },
             );
           }
 
+          final emptyDaysCount = visibleDayColumns
+              .where((entry) => entry.appointments.isEmpty)
+              .length;
+          final nonEmptyDaysCount = visibleDayColumns.length - emptyDaysCount;
+          final totalSpacing =
+              _WeeklyAppointmentsBody._daySpacing *
+              (visibleDayColumns.isNotEmpty ? visibleDayColumns.length - 1 : 0);
+          final fixedEmptyWidth =
+              _WeeklyAppointmentsBody._emptyDayColumnWidth * emptyDaysCount;
+          final remainingWidth =
+              constraints.maxWidth - totalSpacing - fixedEmptyWidth;
+
+          if (nonEmptyDaysCount <= 0 || remainingWidth <= 0) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < visibleDayColumns.length; i++) ...[
+                  if (i > 0)
+                    const SizedBox(width: _WeeklyAppointmentsBody._daySpacing),
+                  Expanded(
+                    child: _WeeklyDayColumn(
+                      day: visibleDayColumns[i].day,
+                      appointments: visibleDayColumns[i].appointments,
+                      showStaffNameFooter: showStaffNameFooter,
+                    ),
+                  ),
+                ],
+              ],
+            );
+          }
+
+          final nonEmptyDayWidth = remainingWidth / nonEmptyDaysCount;
+
           return Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (var i = 0; i < weekRange.days.length; i++) ...[
-                if (i > 0) const SizedBox(width: 12),
-                Expanded(
+              for (var i = 0; i < visibleDayColumns.length; i++) ...[
+                if (i > 0)
+                  const SizedBox(width: _WeeklyAppointmentsBody._daySpacing),
+                SizedBox(
+                  width: visibleDayColumns[i].appointments.isEmpty
+                      ? _WeeklyAppointmentsBody._emptyDayColumnWidth
+                      : nonEmptyDayWidth,
                   child: _WeeklyDayColumn(
-                    day: weekRange.days[i],
-                    appointments:
-                        appointmentsByDay[weekRange.days[i]] ?? const [],
+                    day: visibleDayColumns[i].day,
+                    appointments: visibleDayColumns[i].appointments,
+                    showStaffNameFooter: showStaffNameFooter,
                   ),
                 ),
               ],
@@ -180,25 +367,100 @@ class _WeeklyAppointmentsBody extends ConsumerWidget {
       ),
     );
   }
+
+  void _maybeAutoScrollToTargetDay({
+    required DateTime? targetDate,
+    required List<({DateTime day, List<Appointment> appointments})>
+    visibleDayColumns,
+    required bool isMobile,
+    required double? mobileDayColumnWidth,
+  }) {
+    final requestId = widget.autoScrollRequestId;
+    if (requestId <= 0 ||
+        requestId == _lastHandledAutoScrollRequestId ||
+        targetDate == null) {
+      return;
+    }
+
+    final targetIndex = visibleDayColumns.indexWhere(
+      (entry) => DateUtils.isSameDay(entry.day, targetDate),
+    );
+    if (targetIndex < 0) {
+      return;
+    }
+    _lastHandledAutoScrollRequestId = requestId;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_weekColumnsController.hasClients) {
+        return;
+      }
+
+      final horizontalPadding =
+          isMobile ? _WeeklyAppointmentsBody._daySpacing : 0.0;
+      final previousWidth = List<double>.generate(targetIndex, (index) {
+        if (mobileDayColumnWidth != null) {
+          return mobileDayColumnWidth;
+        }
+        return visibleDayColumns[index].appointments.isEmpty
+            ? _WeeklyAppointmentsBody._emptyDayColumnWidth
+            : _WeeklyAppointmentsBody._defaultDayColumnWidth;
+      }).fold<double>(0.0, (sum, width) => sum + width);
+      final spacingBefore =
+          _WeeklyAppointmentsBody._daySpacing * targetIndex;
+      final rawOffset = horizontalPadding + previousWidth + spacingBefore;
+      final offsetWithLeftMargin = rawOffset - _WeeklyAppointmentsBody._daySpacing;
+      final position = _weekColumnsController.position;
+      final clampedOffset = offsetWithLeftMargin.clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+      _weekColumnsController.jumpTo(clampedOffset);
+    });
+  }
 }
 
-class _WeeklyDayColumn extends ConsumerWidget {
-  const _WeeklyDayColumn({required this.day, required this.appointments});
+class _WeeklyDayColumn extends ConsumerStatefulWidget {
+  const _WeeklyDayColumn({
+    required this.day,
+    required this.appointments,
+    required this.showStaffNameFooter,
+  });
 
   final DateTime day;
   final List<Appointment> appointments;
+  final bool showStaffNameFooter;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_WeeklyDayColumn> createState() => _WeeklyDayColumnState();
+}
+
+class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final localeTag = Localizations.localeOf(context).toLanguageTag();
-    final label = DateFormat('EEE d', localeTag).format(day);
+    final label = DateFormat('EEE d MMM', localeTag).format(widget.day);
+    final borderColor = theme.dividerColor.withOpacity(0.24);
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.24)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -212,9 +474,9 @@ class _WeeklyDayColumn extends ConsumerWidget {
               ),
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 0.5, thickness: 0.5, color: borderColor),
           Expanded(
-            child: appointments.isEmpty
+            child: widget.appointments.isEmpty
                 ? Center(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
@@ -226,14 +488,16 @@ class _WeeklyDayColumn extends ConsumerWidget {
                     ),
                   )
                 : ListView.separated(
+                    controller: _scrollController,
                     padding: const EdgeInsets.all(12),
-                    itemCount: appointments.length,
+                    itemCount: widget.appointments.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
-                      final appointment = appointments[index];
+                      final appointment = widget.appointments[index];
                       return _WeeklyAppointmentTile(
-                        day: day,
+                        day: widget.day,
                         appointment: appointment,
+                        showStaffNameFooter: widget.showStaffNameFooter,
                       );
                     },
                   ),
@@ -245,58 +509,89 @@ class _WeeklyDayColumn extends ConsumerWidget {
 }
 
 class _WeeklyAppointmentTile extends ConsumerWidget {
-  const _WeeklyAppointmentTile({required this.day, required this.appointment});
+  const _WeeklyAppointmentTile({
+    required this.day,
+    required this.appointment,
+    required this.showStaffNameFooter,
+  });
 
-  static const _tileHeight = 74.0;
+  static const _tileHeight = 62.0;
+  static const _staffFooterHeight = 18.0;
 
   final DateTime day;
   final Appointment appointment;
+  final bool showStaffNameFooter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final color = _resolveAppointmentColor(context, ref, appointment);
-    final dayEndExclusive = DateUtils.dateOnly(
-      day,
-    ).add(const Duration(days: 1));
-    final spansNextDay = appointment.endTime.isAfter(dayEndExclusive);
+    final staffName = _resolveStaffDisplayName(ref, appointment.staffId);
+    final theme = Theme.of(context);
+    final footerHeight = showStaffNameFooter ? _staffFooterHeight : 0.0;
+    final cardBorderRadius = showStaffNameFooter
+        ? const BorderRadius.only(
+            topLeft: Radius.circular(6),
+            topRight: Radius.circular(6),
+          )
+        : const BorderRadius.all(Radius.circular(8));
 
     return SizedBox(
       height: _tileHeight,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AppointmentCard(appointment: appointment, color: color),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _handleTap(context, ref),
+        child: Column(
+          children: [
+            SizedBox(
+              height: _tileHeight - footerHeight,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: AppointmentCard(
+                        appointment: appointment,
+                        color: color,
+                        showExtraMinutesBand: false,
+                        borderRadius: cardBorderRadius,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _handleTap(context, ref),
-            ),
-          ),
-          if (spansNextDay)
-            Positioned(
-              top: 6,
-              right: 6,
-              child: DecoratedBox(
+            if (showStaffNameFooter)
+              Container(
+                height: _staffFooterHeight,
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: Theme.of(context).dividerColor.withOpacity(0.2),
+                  color: color,
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(8),
+                  ),
+                  border: Border(
+                    left: BorderSide(color: color),
+                    right: BorderSide(color: color),
+                    bottom: BorderSide(color: color),
                   ),
                 ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  child: Text(
-                    '+1g',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                child: Text(
+                  staffName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color:
+                        ThemeData.estimateBrightnessForColor(color) ==
+                            Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -337,6 +632,14 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
     return serviceColorMap[currentAppointment.serviceId] ?? fallbackColor;
   }
 
+  String _resolveStaffDisplayName(WidgetRef ref, int staffId) {
+    final staff = ref
+        .watch(staffForCurrentLocationProvider)
+        .cast<Staff?>()
+        .firstWhere((entry) => entry?.id == staffId, orElse: () => null);
+    return staff?.displayName ?? '-';
+  }
+
   Future<void> _handleTap(BuildContext context, WidgetRef ref) async {
     await showAppointmentDialog(context, ref, initial: appointment);
     if (!context.mounted) return;
@@ -358,52 +661,6 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
           businessId: business.id,
         ),
       ),
-    );
-  }
-}
-
-class _WeeklyAppointmentsLoading extends StatelessWidget {
-  const _WeeklyAppointmentsLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final useHorizontalCards = constraints.maxWidth < 1040;
-        final cards = List<Widget>.generate(
-          7,
-          (_) => DecoratedBox(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Theme.of(context).dividerColor.withOpacity(0.16),
-              ),
-            ),
-            child: const SizedBox.expand(),
-          ),
-        );
-
-        if (useHorizontalCards) {
-          return ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: cards.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, index) =>
-                SizedBox(width: 280, child: cards[index]),
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < cards.length; i++) ...[
-              if (i > 0) const SizedBox(width: 12),
-              Expanded(child: cards[i]),
-            ],
-          ],
-        );
-      },
     );
   }
 }

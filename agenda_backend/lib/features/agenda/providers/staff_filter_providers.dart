@@ -67,6 +67,15 @@ class SelectedStaffIdsNotifier extends Notifier<Set<int>> {
     // Filtra solo gli ID che esistono ancora
     final validSavedIds = saved.where((id) => validIds.contains(id)).toSet();
 
+    // UX fallback: se arrivo da una location con selezioni salvate ma nella
+    // location corrente esiste un solo staff, selezionalo automaticamente
+    // invece di lasciare il filtro custom vuoto.
+    if (saved.isNotEmpty && validSavedIds.isEmpty && allStaff.length == 1) {
+      final singleton = {allStaff.first.id};
+      _saveAsync(businessId, singleton);
+      return singleton;
+    }
+
     // Se c'erano ID salvati ma ora sono tutti invalidi, pulisci le preferenze
     if (saved.isNotEmpty && validSavedIds.isEmpty) {
       _saveAsync(businessId, {});

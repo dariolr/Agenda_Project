@@ -44,16 +44,19 @@ class _AgendaStaffFilterSelectorState
 
   @override
   void dispose() {
-    _removeOverlay();
+    _removeOverlay(updateUi: false);
     super.dispose();
   }
 
-  void _removeOverlay() {
+  void _removeOverlay({bool updateUi = true}) {
     _overlayEntry?.remove();
     _overlayEntry = null;
     if (_isOpen) {
       _isOpen = false;
-      setState(() => _isHovered = false);
+      _isHovered = false;
+      if (updateUi && mounted) {
+        setState(() {});
+      }
     }
   }
 
@@ -102,6 +105,7 @@ class _AgendaStaffFilterSelectorState
       useRootNavigator: true,
       builder: (_) => const _StaffFilterSheet(),
     );
+    if (!mounted) return;
     setState(() => _isHovered = false);
   }
 

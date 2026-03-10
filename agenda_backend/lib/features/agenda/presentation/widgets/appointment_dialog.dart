@@ -35,11 +35,14 @@ import '../../providers/appointment_providers.dart';
 import '../../providers/booking_reschedule_provider.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/bookings_repository_provider.dart';
+import '../../providers/business_providers.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
 import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
 import '../../providers/tenant_time_provider.dart';
+import '../../providers/weekly_appointments_provider.dart';
+import '../../utils/week_range.dart';
 import '../dialogs/booking_history_dialog.dart';
 import '../dialogs/payment_dialog.dart';
 import '../dialogs/recurring_action_dialog.dart';
@@ -2073,6 +2076,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       if (scrollTarget != null) {
         ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
       }
+      _invalidateWeeklyAppointmentsCaches(
+        changedDate: _date,
+        previousDate: widget.initial.startTime,
+      );
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -2087,6 +2094,38 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _invalidateWeeklyAppointmentsCaches({
+    required DateTime changedDate,
+    DateTime? previousDate,
+  }) {
+    final location = ref.read(currentLocationProvider);
+    final business = ref.read(currentBusinessProvider);
+    if (location.id <= 0 || business.id <= 0) return;
+
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final anchorDate = ref.read(agendaDateProvider);
+    final datesToInvalidate = <DateTime>[
+      anchorDate,
+      changedDate,
+      if (previousDate != null) previousDate,
+    ];
+    final invalidatedWeekStarts = <DateTime>{};
+
+    for (final date in datesToInvalidate) {
+      final weekStart = computeWeekRange(date, timezone).start;
+      if (!invalidatedWeekStarts.add(weekStart)) continue;
+      ref.invalidate(
+        weeklyAppointmentsProvider(
+          WeeklyAppointmentsRequest(
+            weekStart: weekStart,
+            locationId: location.id,
+            businessId: business.id,
+          ),
+        ),
+      );
     }
   }
 }

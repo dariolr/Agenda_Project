@@ -9099,6 +9099,26 @@ class L10n {
     );
   }
 
+  /// `Importo prenotazione`
+  String get paymentBookingAmount {
+    return Intl.message(
+      'Importo prenotazione',
+      name: 'paymentBookingAmount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Importo da pagare`
+  String get paymentAmountDue {
+    return Intl.message(
+      'Importo da pagare',
+      name: 'paymentAmountDue',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Totale appuntamenti`
   String get paymentRequired {
     return Intl.message(
@@ -9114,6 +9134,16 @@ class L10n {
     return Intl.message(
       'Totale inserito',
       name: 'paymentEntered',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Importo pagato`
+  String get paymentTotalPaid {
+    return Intl.message(
+      'Importo pagato',
+      name: 'paymentTotalPaid',
       desc: '',
       args: [],
     );

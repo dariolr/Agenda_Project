@@ -429,7 +429,11 @@ final class ServiceVariantResourceRepository
 
     /**
      * Get resource requirements for specific service variant IDs.
-     * Returns aggregated requirements (resource_id => total quantity needed).
+     * Returns aggregated requirements (resource_id => peak quantity needed).
+     *
+     * For sequential multi-service bookings we must not sum requirements of the
+     * same resource across services, otherwise a shared resource would be
+     * over-counted as concurrent usage.
      * 
      * @param array $variantIds
      * @return array Keyed by resource_id => quantity needed
@@ -442,7 +446,7 @@ final class ServiceVariantResourceRepository
 
         $placeholders = implode(',', array_fill(0, count($variantIds), '?'));
         $stmt = $this->db->getPdo()->prepare("
-            SELECT resource_id, SUM(quantity) AS total_quantity
+            SELECT resource_id, MAX(quantity) AS total_quantity
             FROM service_variant_resource_requirements
             WHERE service_variant_id IN ({$placeholders})
             GROUP BY resource_id
