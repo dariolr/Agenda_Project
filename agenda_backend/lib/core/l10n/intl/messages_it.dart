@@ -1546,6 +1546,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operatori"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("Tu"),
+    "paymentAmountDue": MessageLookupByLibrary.simpleMessage(
+      "Importo da pagare",
+    ),
+    "paymentBookingAmount": MessageLookupByLibrary.simpleMessage(
+      "Importo prenotazione",
+    ),
     "paymentCashAndCardTotal": MessageLookupByLibrary.simpleMessage(
       "Totale contanti e carte",
     ),
@@ -1577,6 +1583,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "paymentTotalCost": MessageLookupByLibrary.simpleMessage(
       "Costo prenotazione",
     ),
+    "paymentTotalPaid": MessageLookupByLibrary.simpleMessage("Importo pagato"),
     "permissionsDescription": MessageLookupByLibrary.simpleMessage(
       "Gestisci accessi e ruoli degli operatori",
     ),

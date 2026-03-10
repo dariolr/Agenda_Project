@@ -20,6 +20,7 @@ import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.da
 import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
+import 'package:agenda_backend/features/staff/providers/availability_exceptions_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/foundation.dart';
@@ -61,6 +62,61 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   // 🔹 Flag per distinguere polling automatico da altre operazioni
   bool _isPolling = false;
   bool _agendaViewportReady = false;
+  int _weekAutoScrollRequestId = 0;
+  DateTime? _weekAutoScrollTargetDate;
+  String? _exceptionsLoadKey;
+
+  void _ensureExceptionsLoadedForVisibleRange({
+    required int businessId,
+    required DateTime selectedDate,
+    required CalendarViewMode calendarViewMode,
+    required List<int> staffIds,
+  }) {
+    if (businessId <= 0 || staffIds.isEmpty) return;
+
+    final targetDate = DateUtils.dateOnly(selectedDate);
+    final rangeStart = calendarViewMode == CalendarViewMode.week
+        ? targetDate.subtract(Duration(days: targetDate.weekday - DateTime.monday))
+        : targetDate;
+    final rangeEnd = calendarViewMode == CalendarViewMode.week
+        ? rangeStart.add(const Duration(days: 6))
+        : rangeStart;
+
+    final sortedStaffIds = [...staffIds]..sort();
+    final key =
+        '$businessId|${rangeStart.toIso8601String()}|${rangeEnd.toIso8601String()}|${sortedStaffIds.join(",")}';
+    if (_exceptionsLoadKey == key) return;
+    _exceptionsLoadKey = key;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        _loadExceptionsForRange(
+          sortedStaffIds,
+          fromDate: rangeStart,
+          toDate: rangeEnd,
+        ),
+      );
+    });
+  }
+
+  Future<void> _loadExceptionsForRange(
+    List<int> staffIds, {
+    required DateTime fromDate,
+    required DateTime toDate,
+  }) async {
+    final notifier = ref.read(availabilityExceptionsProvider.notifier);
+    for (final staffId in staffIds) {
+      try {
+        await notifier.loadExceptionsForStaff(
+          staffId,
+          fromDate: fromDate,
+          toDate: toDate,
+        );
+      } catch (_) {
+        // Ignora errori puntuali: la UI continua a funzionare sui dati disponibili.
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -208,6 +264,22 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
             _agendaViewportReady = false;
           });
         }
+
+        final calendarMode = ref.read(calendarViewModeProvider);
+        if (calendarMode == CalendarViewMode.week) {
+          final prevMonday = DateUtils.dateOnly(
+            prev.subtract(Duration(days: prev.weekday - DateTime.monday)),
+          );
+          final nextMonday = DateUtils.dateOnly(
+            next.subtract(Duration(days: next.weekday - DateTime.monday)),
+          );
+          if (!DateUtils.isSameDay(prevMonday, nextMonday)) {
+            setState(() {
+              _weekAutoScrollRequestId++;
+              _weekAutoScrollTargetDate = nextMonday;
+            });
+          }
+        }
       }
     });
 
@@ -240,6 +312,24 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final hasStaff = staffList.isNotEmpty;
     final serviceVariantsAsync = ref.watch(serviceVariantsProvider);
+
+    _ensureExceptionsLoadedForVisibleRange(
+      businessId: currentBusinessId,
+      selectedDate: ref.watch(agendaDateProvider),
+      calendarViewMode: calendarViewMode,
+      staffIds: staffInCurrentLocation.map((s) => s.id).toList(),
+    );
+
+    ref.listen<CalendarViewMode>(calendarViewModeProvider, (prev, next) {
+      if (prev == CalendarViewMode.day && next == CalendarViewMode.week) {
+        final selectedDay = DateUtils.dateOnly(ref.read(agendaDateProvider));
+        if (!mounted) return;
+        setState(() {
+          _weekAutoScrollRequestId++;
+          _weekAutoScrollTargetDate = selectedDay;
+        });
+      }
+    });
 
     // Bootstrap iniziale: evita empty-state falsi durante i primi caricamenti
     final isInitialStaffLoad =
@@ -403,6 +493,8 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
         : WeeklyAppointmentsView(
             staffList: staffList,
             staffFilterMode: staffFilterMode,
+            autoScrollRequestId: _weekAutoScrollRequestId,
+            autoScrollTargetDate: _weekAutoScrollTargetDate,
           );
 
     return Stack(

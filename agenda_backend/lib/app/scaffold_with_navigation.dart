@@ -24,6 +24,7 @@ import '../features/agenda/presentation/dialogs/add_block_dialog.dart';
 import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
 import '../features/agenda/presentation/widgets/booking_dialog.dart';
 import '../features/agenda/providers/business_providers.dart';
+import '../features/agenda/providers/calendar_view_mode_provider.dart';
 import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/agenda/providers/location_providers.dart';
@@ -1297,24 +1298,46 @@ class _MobileAgendaDateSwitcher extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final agendaDate = ref.watch(agendaDateProvider);
+    final tenantToday = ref.watch(tenantTodayProvider);
+    final calendarViewMode = ref.watch(calendarViewModeProvider);
+    final isWeekMode = calendarViewMode == CalendarViewMode.week;
     final dateController = ref.read(agendaDateProvider.notifier);
     final localeTag = Localizations.localeOf(context).toLanguageTag();
-    final label = DateFormat('EEE d MMM', localeTag).format(agendaDate);
+    var selectedDate = agendaDate;
+    late final String label;
+
+    if (isWeekMode) {
+      final deltaToMonday = (agendaDate.weekday - DateTime.monday) % 7;
+      final weekStart = DateUtils.dateOnly(
+        agendaDate.subtract(Duration(days: deltaToMonday)),
+      );
+      final weekEnd = weekStart.add(const Duration(days: 6));
+      final startLabel = DateFormat('EEE d MMM', localeTag).format(weekStart);
+      final endLabel = DateFormat('EEE d MMM', localeTag).format(weekEnd);
+      label = '$startLabel - $endLabel';
+
+      final isTodayInWeek =
+          !tenantToday.isBefore(weekStart) && !tenantToday.isAfter(weekEnd);
+      selectedDate = isTodayInWeek ? tenantToday : weekEnd;
+    } else {
+      label = DateFormat('EEE d MMM', localeTag).format(agendaDate);
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: AgendaDateSwitcher(
         label: label,
-        selectedDate: agendaDate,
-        onPrevious: dateController.previousDay,
-        onNext: dateController.nextDay,
+        selectedDate: selectedDate,
+        onPrevious: isWeekMode ? null : dateController.previousDay,
+        onNext: isWeekMode ? null : dateController.nextDay,
         onPreviousWeek: dateController.previousWeek,
         onNextWeek: dateController.nextWeek,
-        onPreviousMonth: dateController.previousMonth,
-        onNextMonth: dateController.nextMonth,
+        onPreviousMonth: isWeekMode ? null : dateController.previousMonth,
+        onNextMonth: isWeekMode ? null : dateController.nextMonth,
         onSelectDate: (date) {
           dateController.set(DateUtils.dateOnly(date));
         },
+        useWeekRangePicker: isWeekMode,
         isCompact: true,
       ),
     );

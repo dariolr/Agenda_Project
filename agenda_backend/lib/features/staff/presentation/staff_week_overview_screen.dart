@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
@@ -10,6 +12,7 @@ import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/domain/config/agenda_theme.dart';
+import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
@@ -309,18 +312,6 @@ int _countSegmentsForDay(
 /// 1. Base: template settimanale (es. Lun-Ven 09:00-18:00)
 /// 2. + Eccezioni "available": aggiungono slot disponibili
 /// 3. - Eccezioni "unavailable": rimuovono slot disponibili
-class WeeklyExceptionsLoadKeyNotifier extends Notifier<String?> {
-  @override
-  String? build() => null;
-
-  void setKey(String? value) => state = value;
-}
-
-final weeklyExceptionsLoadKeyProvider =
-    NotifierProvider<WeeklyExceptionsLoadKeyNotifier, String?>(
-      WeeklyExceptionsLoadKeyNotifier.new,
-    );
-
 final weeklyStaffAvailabilityFromEditorProvider =
     Provider<Map<int, Map<int, List<HourRange>>>>((ref) {
       final staffList = ref.watch(staffForStaffSectionProvider);
@@ -575,6 +566,7 @@ class _StaffWeekOverviewScreenState
   final ScrollController _headerHController = ScrollController();
   final ScrollController _bodyHController = ScrollController();
   final ScrollController _vScrollController = ScrollController();
+  String? _exceptionsLoadKey;
 
   /// Tenta di auto-selezionare la location corrente nella sezione staff.
   /// Viene chiamato sia al primo frame (locations già cached) sia quando le
@@ -623,7 +615,48 @@ class _StaffWeekOverviewScreenState
     super.dispose();
   }
 
-  // Caricamento eccezioni gestito dai provider
+  // Carica le eccezioni della settimana corrente una sola volta per chiave
+  // (business + range + staff ids) evitando loop di rebuild.
+  void _ensureExceptionsLoadedForWeekWithKey({
+    required int businessId,
+    required DateTime weekStart,
+    required DateTime weekEnd,
+    required List<int> staffIds,
+  }) {
+    if (staffIds.isEmpty) return;
+
+    final ids = [...staffIds]..sort();
+    final from = DateTime(weekStart.year, weekStart.month, weekStart.day);
+    final to = DateTime(weekEnd.year, weekEnd.month, weekEnd.day);
+    final key =
+        '$businessId|${from.toIso8601String()}|${to.toIso8601String()}|${ids.join(",")}';
+    if (_exceptionsLoadKey == key) return;
+    _exceptionsLoadKey = key;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_loadExceptionsForWeek(ids, from, to));
+    });
+  }
+
+  Future<void> _loadExceptionsForWeek(
+    List<int> staffIds,
+    DateTime from,
+    DateTime to,
+  ) async {
+    final notifier = ref.read(availabilityExceptionsProvider.notifier);
+    for (final staffId in staffIds) {
+      try {
+        await notifier.loadExceptionsForStaff(
+          staffId,
+          fromDate: from,
+          toDate: to,
+        );
+      } catch (_) {
+        // Non bloccare la UI se il caricamento di uno staff fallisce.
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -647,6 +680,7 @@ class _StaffWeekOverviewScreenState
         (currentUserRole == 'staff' &&
             currentUserStaffId != null &&
             currentUserStaffId > 0);
+    final business = ref.watch(currentBusinessProvider);
     // Current location could influence future filtering (kept for clarity)
     // final location = ref.watch(currentLocationProvider); // not used yet
     final staffList = ref.watch(staffForStaffSectionProvider);
@@ -655,9 +689,6 @@ class _StaffWeekOverviewScreenState
     // Track which staff/day combinations have exceptions applied
     final exceptionDays = ref.watch(weeklyExceptionDaysProvider);
     final formFactor = ref.watch(formFactorProvider);
-    // ⚠️ RIMOSSO: Il caricamento delle eccezioni causa loop infinito
-    // Le eccezioni vengono caricate on-demand in ExceptionCalendarView
-    // _ensureExceptionsLoadedForWeekWithKey(...)
 
     // Week days (Mon..Sun)
     final weekStart = _mondayOfWeek(selectedDate);
@@ -691,6 +722,12 @@ class _StaffWeekOverviewScreenState
 
     final weekLabel = buildWeekRangeLabel();
     final weekEnd = weekStart.add(const Duration(days: 6));
+    _ensureExceptionsLoadedForWeekWithKey(
+      businessId: business.id,
+      weekStart: weekStart,
+      weekEnd: weekEnd,
+      staffIds: staffList.map((s) => s.id).toList(),
+    );
     final todayDate = ref.read(tenantTodayProvider);
     //final isTodayInWeek =
     !todayDate.isBefore(weekStart) && !todayDate.isAfter(weekEnd);

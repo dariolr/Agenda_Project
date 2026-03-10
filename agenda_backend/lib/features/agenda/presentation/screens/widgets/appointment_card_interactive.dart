@@ -39,6 +39,8 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
   final double? columnOffset;
   final double? dragTargetWidth;
   final bool expandToLeft;
+  final bool showExtraMinutesBand;
+  final BorderRadius borderRadius;
 
   const AppointmentCardInteractive({
     super.key,
@@ -48,6 +50,8 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
     this.columnOffset,
     this.dragTargetWidth,
     this.expandToLeft = false,
+    this.showExtraMinutesBand = true,
+    this.borderRadius = const BorderRadius.all(Radius.circular(6)),
   });
 
   @override
@@ -525,7 +529,7 @@ class _AppointmentCardInteractiveState
     final hasNotes = hasBookingNotes || hasClientNotes;
 
     final baseColor = widget.color.withOpacity(0.55);
-    const r = BorderRadius.all(Radius.circular(6));
+    final r = widget.borderRadius;
 
     final startTime = overrideStart ?? widget.appointment.startTime;
     final endTime =
@@ -601,10 +605,11 @@ class _AppointmentCardInteractiveState
                     ),
                   ),
                 ),
-              _ExtraMinutesBand(
-                ratio: _extraMinutesRatio(startTime, endTime),
-                color: widget.color,
-              ),
+              if (widget.showExtraMinutesBand)
+                _ExtraMinutesBand(
+                  ratio: _extraMinutesRatio(startTime, endTime),
+                  color: widget.color,
+                ),
 
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),

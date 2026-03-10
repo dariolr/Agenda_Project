@@ -48,6 +48,8 @@ import '../../providers/layout_config_provider.dart';
 import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
 import '../../providers/tenant_time_provider.dart';
+import '../../providers/weekly_appointments_provider.dart';
+import '../../utils/week_range.dart';
 import '../dialogs/payment_dialog.dart';
 import '../dialogs/recurrence_summary_dialog.dart';
 import 'recurrence_picker.dart';
@@ -1926,6 +1928,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
     // Refresh appointments per caricare i nuovi
     ref.invalidate(appointmentsProvider);
+    _invalidateWeeklyAppointmentsCaches(changedDate: _date);
     await ref.read(appointmentsProvider.future);
 
     // Trova il primo appointment creato per lo scroll
@@ -1958,7 +1961,24 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       final controller = ref.read(
         bookingPaymentControllerProvider(bookingResponse.id as int),
       );
-      await controller.save(paymentToSave);
+      final saved = await controller.save(paymentToSave);
+      if (saved.computed.balanceCents <= 0) {
+        final location = ref.read(currentLocationProvider);
+        final repository = ref.read(bookingsRepositoryProvider);
+        final bookingId = bookingResponse.id as int;
+        await repository.updateBooking(
+          locationId: location.id,
+          bookingId: bookingId,
+          status: 'completed',
+        );
+        ref.read(bookingsProvider.notifier).setStatus(bookingId, 'completed');
+        ref
+            .read(appointmentsProvider.notifier)
+            .setBookingStatusForBooking(
+              bookingId: bookingId,
+              status: 'completed',
+            );
+      }
       ref.invalidate(bookingPaymentProvider(bookingResponse.id as int));
       if (mounted) {
         setState(() => _pendingPayment = null);
@@ -2075,11 +2095,37 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
       // Refresh appointments (il pop viene fatto da _saveBooking)
       ref.invalidate(appointmentsProvider);
+      _invalidateWeeklyAppointmentsCaches(changedDate: _date);
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
       }
       rethrow;
+    }
+  }
+
+  void _invalidateWeeklyAppointmentsCaches({required DateTime changedDate}) {
+    final location = ref.read(currentLocationProvider);
+    final business = ref.read(currentBusinessProvider);
+    if (location.id <= 0 || business.id <= 0) return;
+
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final anchorDate = ref.read(agendaDateProvider);
+    final datesToInvalidate = <DateTime>[anchorDate, changedDate];
+    final invalidatedWeekStarts = <DateTime>{};
+
+    for (final date in datesToInvalidate) {
+      final weekStart = computeWeekRange(date, timezone).start;
+      if (!invalidatedWeekStarts.add(weekStart)) continue;
+      ref.invalidate(
+        weeklyAppointmentsProvider(
+          WeeklyAppointmentsRequest(
+            weekStart: weekStart,
+            locationId: location.id,
+            businessId: business.id,
+          ),
+        ),
+      );
     }
   }
 }

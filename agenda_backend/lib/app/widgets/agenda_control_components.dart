@@ -7,7 +7,6 @@ import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_provider.dart';
-import 'package:agenda_backend/features/auth/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -1100,13 +1099,6 @@ class _AgendaCalendarViewModeSelectorState
 
   @override
   Widget build(BuildContext context) {
-    final isSuperadmin = ref.watch(
-      authProvider.select((state) => state.user?.isSuperadmin ?? false),
-    );
-    if (!isSuperadmin) {
-      return const SizedBox.shrink();
-    }
-
     final colorScheme = Theme.of(context).colorScheme;
     final interactions = Theme.of(context).extension<AppInteractionColors>();
     final hoverFill =
@@ -1255,11 +1247,6 @@ class AgendaViewModeButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isSuperadmin = ref.watch(
-      authProvider.select((state) => state.user?.isSuperadmin ?? false),
-    );
-    if (!isSuperadmin) return const SizedBox.shrink();
-
     final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
     final formFactor = ref.watch(formFactorProvider);

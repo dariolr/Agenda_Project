@@ -6,6 +6,8 @@ import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
+import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/agenda_bootstrap_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
@@ -111,14 +113,28 @@ class TopControls extends ConsumerWidget {
     TopControlsData data,
     WidgetRef ref,
   ) {
+    final isAgendaBootstrapLoading =
+        mode == TopControlsMode.agenda &&
+        ref.watch(agendaBootstrapLoadingProvider);
+    final isAgendaBootstrapUnlocked =
+        mode != TopControlsMode.agenda ||
+        ref.watch(agendaBootstrapUnlockedProvider);
+    if (isAgendaBootstrapLoading && !isAgendaBootstrapUnlocked) {
+      return const SizedBox(height: kAgendaControlHeight);
+    }
+
     final canViewAllAppointments = ref.watch(canViewAllAppointmentsProvider);
+    final calendarViewMode = ref.watch(calendarViewModeProvider);
+    final isAgendaWeekMode =
+        mode == TopControlsMode.agenda &&
+        calendarViewMode == CalendarViewMode.week;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         _StaffWeekMeta? weekMeta;
         String label;
         DateTime selectedDate;
-        if (mode == TopControlsMode.agenda) {
+        if (mode == TopControlsMode.agenda && !isAgendaWeekMode) {
           label = _formatSingleDate(data);
           selectedDate = data.agendaDate;
         } else {
@@ -143,16 +159,19 @@ class TopControls extends ConsumerWidget {
                 child: AgendaDateSwitcher(
                   label: label,
                   selectedDate: selectedDate,
-                  onPreviousWeek: mode == TopControlsMode.staff
+                  onPreviousWeek:
+                      mode == TopControlsMode.staff || isAgendaWeekMode
                       ? data.dateController.previousWeek
                       : null,
-                  onNextWeek: mode == TopControlsMode.staff
+                  onNextWeek:
+                      mode == TopControlsMode.staff || isAgendaWeekMode
                       ? data.dateController.nextWeek
                       : null,
                   onSelectDate: (date) {
                     data.dateController.set(DateUtils.dateOnly(date));
                   },
-                  useWeekRangePicker: mode == TopControlsMode.staff,
+                  useWeekRangePicker:
+                      mode == TopControlsMode.staff || isAgendaWeekMode,
                   isCompact: compact,
                 ),
               ),
@@ -200,10 +219,25 @@ class TopControls extends ConsumerWidget {
     TopControlsData data,
     WidgetRef ref,
   ) {
+    final isAgendaBootstrapLoading =
+        mode == TopControlsMode.agenda &&
+        ref.watch(agendaBootstrapLoadingProvider);
+    final isAgendaBootstrapUnlocked =
+        mode != TopControlsMode.agenda ||
+        ref.watch(agendaBootstrapUnlockedProvider);
+    if (isAgendaBootstrapLoading && !isAgendaBootstrapUnlocked) {
+      return const SizedBox(height: kAgendaControlHeight);
+    }
+
+    final calendarViewMode = ref.watch(calendarViewModeProvider);
+    final isAgendaWeekMode =
+        mode == TopControlsMode.agenda &&
+        calendarViewMode == CalendarViewMode.week;
+
     _StaffWeekMeta? weekMeta;
     String label;
     DateTime selectedDate;
-    if (mode == TopControlsMode.agenda) {
+    if (mode == TopControlsMode.agenda && !isAgendaWeekMode) {
       label = _formatSingleDate(data);
       selectedDate = data.agendaDate;
     } else {
@@ -226,10 +260,10 @@ class TopControls extends ConsumerWidget {
             child: AgendaDateSwitcher(
               label: label,
               selectedDate: selectedDate,
-              onPrevious: mode == TopControlsMode.agenda
+              onPrevious: mode == TopControlsMode.agenda && !isAgendaWeekMode
                   ? data.dateController.previousDay
                   : null,
-              onNext: mode == TopControlsMode.agenda
+              onNext: mode == TopControlsMode.agenda && !isAgendaWeekMode
                   ? data.dateController.nextDay
                   : null,
               onPreviousWeek:
@@ -242,26 +276,27 @@ class TopControls extends ConsumerWidget {
                       mode == TopControlsMode.staff
                   ? data.dateController.nextWeek
                   : null,
-              onPreviousMonth: mode == TopControlsMode.agenda
+              onPreviousMonth: mode == TopControlsMode.agenda && !isAgendaWeekMode
                   ? data.dateController.previousMonth
                   : null,
-              onNextMonth: mode == TopControlsMode.agenda
+              onNextMonth: mode == TopControlsMode.agenda && !isAgendaWeekMode
                   ? data.dateController.nextMonth
                   : null,
               onSelectDate: (date) {
                 data.dateController.set(DateUtils.dateOnly(date));
               },
-              useWeekRangePicker: mode == TopControlsMode.staff,
+              useWeekRangePicker:
+                  mode == TopControlsMode.staff || isAgendaWeekMode,
             ),
           )
         else
           AgendaDateSwitcher(
             label: label,
             selectedDate: selectedDate,
-            onPrevious: mode == TopControlsMode.agenda
+            onPrevious: mode == TopControlsMode.agenda && !isAgendaWeekMode
                 ? data.dateController.previousDay
                 : null,
-            onNext: mode == TopControlsMode.agenda
+            onNext: mode == TopControlsMode.agenda && !isAgendaWeekMode
                 ? data.dateController.nextDay
                 : null,
             onPreviousWeek:
@@ -272,16 +307,17 @@ class TopControls extends ConsumerWidget {
                 mode == TopControlsMode.agenda || mode == TopControlsMode.staff
                 ? data.dateController.nextWeek
                 : null,
-            onPreviousMonth: mode == TopControlsMode.agenda
+            onPreviousMonth: mode == TopControlsMode.agenda && !isAgendaWeekMode
                 ? data.dateController.previousMonth
                 : null,
-            onNextMonth: mode == TopControlsMode.agenda
+            onNextMonth: mode == TopControlsMode.agenda && !isAgendaWeekMode
                 ? data.dateController.nextMonth
                 : null,
             onSelectDate: (date) {
               data.dateController.set(DateUtils.dateOnly(date));
             },
-            useWeekRangePicker: mode == TopControlsMode.staff,
+            useWeekRangePicker:
+                mode == TopControlsMode.staff || isAgendaWeekMode,
           ),
         if (showStaffSelector) const SizedBox(width: 16),
         if (showStaffSelector)
@@ -362,25 +398,7 @@ class TopControls extends ConsumerWidget {
 
   _StaffWeekMeta _resolveWeekMeta(TopControlsData data) {
     final agendaDate = data.agendaDate;
-    final locale = Intl.canonicalizedLocale(data.locale.toString());
-
-    String buildWeekRangeLabel(DateTime start, DateTime end, String localeTag) {
-      final sameYear = start.year == end.year;
-      final sameMonth = sameYear && start.month == end.month;
-      if (sameMonth) {
-        final d1 = DateFormat('d', localeTag).format(start);
-        final d2m = DateFormat('d MMM', localeTag).format(end);
-        return '$d1–$d2m';
-      }
-      if (sameYear) {
-        final s = DateFormat('d MMM', localeTag).format(start);
-        final e = DateFormat('d MMM', localeTag).format(end);
-        return '$s – $e';
-      }
-      final s = DateFormat('d MMM y', localeTag).format(start);
-      final e = DateFormat('d MMM y', localeTag).format(end);
-      return '$s – $e';
-    }
+    final localeTag = data.locale.toLanguageTag();
 
     final deltaToMonday = (agendaDate.weekday - DateTime.monday) % 7;
     final pickerInitialDate = DateUtils.dateOnly(
@@ -389,7 +407,11 @@ class TopControls extends ConsumerWidget {
     final todayDate = data.tenantToday;
     final weekStart = pickerInitialDate;
     final weekEnd = weekStart.add(const Duration(days: 6));
-    final defaultLabel = buildWeekRangeLabel(weekStart, weekEnd, locale);
+    final defaultLabel = _formatExtendedWeekRange(
+      start: weekStart,
+      end: weekEnd,
+      localeTag: localeTag,
+    );
     final formattedDate = labelOverride ?? defaultLabel;
     final isTodayInWeek =
         !todayDate.isBefore(weekStart) && !todayDate.isAfter(weekEnd);
@@ -399,6 +421,16 @@ class TopControls extends ConsumerWidget {
       label: formattedDate,
       effectivePickerDate: effectivePickerDate,
     );
+  }
+
+  String _formatExtendedWeekRange({
+    required DateTime start,
+    required DateTime end,
+    required String localeTag,
+  }) {
+    final startLabel = DateFormat('EEE d MMM', localeTag).format(start);
+    final endLabel = DateFormat('EEE d MMM', localeTag).format(end);
+    return '$startLabel - $endLabel';
   }
 }
 

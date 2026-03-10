@@ -12,7 +12,11 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
+import '../../providers/appointment_providers.dart';
 import '../../providers/booking_payment_providers.dart';
+import '../../providers/bookings_provider.dart';
+import '../../providers/bookings_repository_provider.dart';
+import '../../providers/location_providers.dart';
 
 /// Mostra il dialog di pagamento per distribuire il totale di una prenotazione
 /// tra diversi metodi di pagamento.
@@ -74,7 +78,6 @@ class _PaymentDialog extends ConsumerStatefulWidget {
 }
 
 class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
-  static const String _paymentAmountLabel = 'Importo prenotazione';
   static const List<_PaymentMethod> _paymentPriorityOrder = _PaymentMethod.values;
 
   static const List<double> _quickPercentages = <double>[
@@ -161,6 +164,27 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       total += value;
     }
     return total;
+  }
+
+  double get _totalPaidEntered {
+    return (_amountForMethod(_PaymentMethod.cash) ?? 0) +
+        (_amountForMethod(_PaymentMethod.card) ?? 0);
+  }
+
+  double get _totalDueReductions {
+    return (_amountForMethod(_PaymentMethod.discount) ?? 0) +
+        (_amountForMethod(_PaymentMethod.voucher) ?? 0) +
+        (_amountForMethod(_PaymentMethod.other) ?? 0);
+  }
+
+  double get _effectiveAmountDue {
+    final due = _currentTotalPrice - _totalDueReductions;
+    return due > 0 ? due : 0;
+  }
+
+  double get _remainingToPay {
+    final remaining = _effectiveAmountDue - _totalPaidEntered;
+    return remaining > 0 ? remaining : 0;
   }
 
   bool get _isValid => true;
@@ -400,6 +424,9 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     try {
       final controller = ref.read(bookingPaymentControllerProvider(bookingId));
       final saved = await controller.save(draftPayment);
+      if (saved.computed.balanceCents <= 0) {
+        await _setBookingCompleted(bookingId);
+      }
       ref.invalidate(bookingPaymentProvider(bookingId));
       if (!mounted) return;
       _applyBookingPayment(saved);
@@ -416,6 +443,20 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
         setState(() => _isPersisting = false);
       }
     }
+  }
+
+  Future<void> _setBookingCompleted(int bookingId) async {
+    final location = ref.read(currentLocationProvider);
+    final repository = ref.read(bookingsRepositoryProvider);
+    await repository.updateBooking(
+      locationId: location.id,
+      bookingId: bookingId,
+      status: 'completed',
+    );
+    ref.read(bookingsProvider.notifier).setStatus(bookingId, 'completed');
+    ref
+        .read(appointmentsProvider.notifier)
+        .setBookingStatusForBooking(bookingId: bookingId, status: 'completed');
   }
 
   void _normalizeNonNegativeAmount(
@@ -679,6 +720,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     TextStyle? titleStyle,
     Color accentColor,
   ) {
+    final l10n = context.l10n;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: SizedBox(
@@ -690,7 +732,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  _paymentAmountLabel,
+                  l10n.paymentBookingAmount,
                   style: titleStyle?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -752,12 +794,11 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   Widget _buildSummary(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final totalPrice = _currentTotalPrice;
-    final totalEntered = _manualEnteredTotal;
-    final remaining = totalPrice - totalEntered;
+    final amountDue = _effectiveAmountDue;
+    final totalPaid = _totalPaidEntered;
+    final remaining = _remainingToPay;
     final isValid = _isValid;
     final settlementColor = _settlementColor(context, remaining);
-    final payableRemaining = remaining > 0 ? remaining : 0.0;
 
     String formatAmount(double amount) => PriceFormatter.format(
       context: context,
@@ -785,13 +826,13 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _paymentAmountLabel,
+                l10n.paymentAmountDue,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               Text(
-                formatAmount(totalPrice),
+                formatAmount(amountDue),
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onSurfaceVariant,
@@ -804,13 +845,13 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                l10n.paymentEntered,
+                l10n.paymentTotalPaid,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               Text(
-                formatAmount(totalEntered),
+                formatAmount(totalPaid),
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onSurfaceVariant,
@@ -833,7 +874,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                 ),
               ),
               Text(
-                formatAmount(payableRemaining),
+                formatAmount(remaining),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: settlementColor,
@@ -944,7 +985,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
           title: _buildHeaderRow(
             context,
             theme.textTheme.titleLarge,
-            _settlementColor(context, _currentTotalPrice - _manualEnteredTotal),
+            _settlementColor(context, _remainingToPay),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -971,7 +1012,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
             child: _buildHeaderRow(
               context,
               theme.textTheme.titleMedium,
-              _settlementColor(context, _currentTotalPrice - _manualEnteredTotal),
+              _settlementColor(context, _remainingToPay),
             ),
           ),
           const SizedBox(height: 12),

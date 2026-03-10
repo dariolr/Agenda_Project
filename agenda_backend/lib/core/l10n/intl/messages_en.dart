@@ -1479,6 +1479,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operators"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("You"),
+    "paymentAmountDue": MessageLookupByLibrary.simpleMessage("Amount due"),
+    "paymentBookingAmount": MessageLookupByLibrary.simpleMessage(
+      "Booking amount",
+    ),
     "paymentCashAndCardTotal": MessageLookupByLibrary.simpleMessage(
       "Total cash and cards",
     ),
@@ -1508,6 +1512,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Total appointments",
     ),
     "paymentTotalCost": MessageLookupByLibrary.simpleMessage("Booking cost"),
+    "paymentTotalPaid": MessageLookupByLibrary.simpleMessage("Paid amount"),
     "permissionsDescription": MessageLookupByLibrary.simpleMessage(
       "Manage operator access and roles",
     ),
