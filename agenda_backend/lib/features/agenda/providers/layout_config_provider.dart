@@ -31,30 +31,31 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
     final initialHeaderHeight = logicalSize.width > 0
         ? LayoutConfig.headerHeightForWidth(logicalSize.width)
         : LayoutConfig.defaultHeaderHeight;
-    final initialSlotHeight = logicalSize.height > 0
-        ? _deriveSlotHeight(logicalSize.height)
-        : LayoutConfig.defaultSlotHeight;
     final initialHourWidth = _initialHourColumnWidth();
 
     return LayoutConfig.initial.copyWith(
       headerHeight: initialHeaderHeight,
-      slotHeight: initialSlotHeight,
+      slotHeight: LayoutConfig.slotHeightForMinutesPerSlot(
+        LayoutConfig.minutesPerSlotConst,
+      ),
       hourColumnWidth: initialHourWidth,
     );
   }
 
-  /// Aggiorna dinamicamente l’altezza degli slot e dell’header
-  /// in base alle dimensioni della finestra.
+  /// Aggiorna header e colonna oraria in base alla finestra.
+  ///
+  /// La scala verticale agenda non dipende dalla viewport.
   void updateFromContext(BuildContext context) {
     _resizeDebounce?.cancel();
 
     final size = MediaQuery.of(context).size;
     final screenWidth = size.width;
-    final screenHeight = size.height;
 
     _resizeDebounce = Timer(const Duration(milliseconds: 100), () {
       final next = state.copyWith(
-        slotHeight: _deriveSlotHeight(screenHeight),
+        slotHeight: LayoutConfig.slotHeightForMinutesPerSlot(
+          state.minutesPerSlot,
+        ),
         headerHeight: _deriveHeaderHeight(screenWidth),
         hourColumnWidth: _deriveHourColumnWidth(context),
       );
@@ -63,16 +64,6 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
         state = next;
       }
     });
-  }
-
-  double _deriveSlotHeight(double screenHeight) {
-    if (screenHeight < 700) {
-      return LayoutConfig.defaultSlotHeight * 0.8;
-    }
-    if (screenHeight > 1200) {
-      return LayoutConfig.defaultSlotHeight * 1.2;
-    }
-    return LayoutConfig.defaultSlotHeight;
   }
 
   double _deriveHeaderHeight(double screenWidth) =>
@@ -117,7 +108,10 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
       return;
     }
 
-    state = state.copyWith(minutesPerSlot: minutes);
+    state = state.copyWith(
+      minutesPerSlot: minutes,
+      slotHeight: LayoutConfig.slotHeightForMinutesPerSlot(minutes),
+    );
   }
 
   /// Permette di scegliere se usare la larghezza uniforme sul picco di overlap.

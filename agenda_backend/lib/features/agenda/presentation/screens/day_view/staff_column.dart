@@ -196,11 +196,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         // ─────────────────────────────────────────
         // ⏱ Calcolo orario proposto
         // ─────────────────────────────────────────
-        final slotHeight = layoutConfig.slotHeight;
-
         // minuti dall'inizio giornata (00:00)
-        final minutesFromTop =
-            (effectiveY / slotHeight) * layoutConfig.minutesPerSlot;
+        final minutesFromTop = layoutConfig.minutesFromHeight(effectiveY);
 
         // arrotondiamo a step di 5 minuti
         double roundedMinutes = (minutesFromTop / 5).round() * 5;
@@ -398,7 +395,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     );
     if (unavailableRanges.isNotEmpty) {
       final colorScheme = Theme.of(context).colorScheme;
-      final totalHeight = totalSlots * slotHeight;
+      final totalHeight = layoutConfig.totalHeight;
       stackChildren.add(
         IgnorePointer(
           child: SizedBox(
@@ -408,7 +405,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               children: [
                 for (final range in unavailableRanges)
                   Positioned(
-                    top: range.startIndex * slotHeight,
+                    top: layoutConfig.heightForMinutes(
+                      range.startIndex * layoutConfig.minutesPerSlot,
+                    ),
                     left: 0,
                     right: 0,
                     child: UnavailableSlotRange(
@@ -693,11 +692,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         final endMinutes = layoutAppt.endTime.difference(dayStart).inMinutes;
 
-        final double top =
-            (startMinutes / layoutConfig.minutesPerSlot) * slotHeight;
-        double height =
-            ((endMinutes - startMinutes) / layoutConfig.minutesPerSlot) *
-            slotHeight;
+        final double top = layoutConfig.offsetForMinuteOfDay(startMinutes);
+        double height = layoutConfig.heightForMinutes(
+          endMinutes - startMinutes,
+        );
 
         final entry = ref.watch(resizingEntryProvider(originalAppt.id));
         if (entry != null) {
@@ -804,11 +802,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             .inMinutes;
         final endMinutes = pendingDrop.newEnd.difference(dayStart).inMinutes;
 
-        final double top =
-            (startMinutes / layoutConfig.minutesPerSlot) * slotHeight;
-        final double height =
-            ((endMinutes - startMinutes) / layoutConfig.minutesPerSlot) *
-            slotHeight;
+        final double top = layoutConfig.offsetForMinuteOfDay(startMinutes);
+        final double height = layoutConfig.heightForMinutes(
+          endMinutes - startMinutes,
+        );
 
         final padding = LayoutConfig.columnInnerPadding;
         final cardWidth = math.max(widget.columnWidth - padding * 2, 0.0);
@@ -907,12 +904,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
       if (clampedEndMinutes <= clampedStartMinutes) continue;
 
-      final double top =
-          (clampedStartMinutes / layoutConfig.minutesPerSlot) * slotHeight;
-      final double height =
-          ((clampedEndMinutes - clampedStartMinutes) /
-              layoutConfig.minutesPerSlot) *
-          slotHeight;
+      final double top = layoutConfig.offsetForMinuteOfDay(clampedStartMinutes);
+      final double height = layoutConfig.heightForMinutes(
+        clampedEndMinutes - clampedStartMinutes,
+      );
 
       positionedBlocks.add(
         Positioned(
