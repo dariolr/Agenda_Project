@@ -222,7 +222,7 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
   double _timelineOffsetForToday(LayoutConfig layoutConfig) {
     final now = ref.read(tenantNowProvider);
     final minutes = now.hour * 60 + now.minute;
-    return (minutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
+    return layoutConfig.offsetForMinuteOfDay(minutes);
   }
 
   double _snappedTopHourOffset({
@@ -232,8 +232,7 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
     final now = ref.read(tenantNowProvider);
     final snappedHour = (now.hour - 1).clamp(0, 23);
     final snappedMinutes = snappedHour * 60;
-    final snappedOffset =
-        (snappedMinutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
+    final snappedOffset = layoutConfig.offsetForMinuteOfDay(snappedMinutes);
     return snappedOffset
         .clamp(
           controller.position.minScrollExtent,

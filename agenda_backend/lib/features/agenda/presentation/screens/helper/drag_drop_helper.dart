@@ -24,10 +24,7 @@ class DropComputationParams {
 }
 
 class DropComputationResult {
-  const DropComputationResult({
-    required this.newStart,
-    required this.newEnd,
-  });
+  const DropComputationResult({required this.newStart, required this.newEnd});
 
   final DateTime newStart;
   final DateTime newEnd;
@@ -35,17 +32,17 @@ class DropComputationResult {
 
 DropComputationResult computeDropResult(DropComputationParams params) {
   final layoutConfig = params.layoutConfig;
-  final slotHeight = layoutConfig.slotHeight;
-  final minutesPerSlot = layoutConfig.minutesPerSlot;
 
-  final maxYStartPx =
-      (params.columnHeight - params.draggedCardHeightPx)
-          .clamp(0, params.columnHeight)
-          .toDouble();
-  final clampedLocalDy =
-      params.localPointer.dy.clamp(0.0, params.columnHeight.toDouble());
-  final effectiveDy =
-      (clampedLocalDy - params.dragOffsetY).clamp(0.0, maxYStartPx).toDouble();
+  final maxYStartPx = (params.columnHeight - params.draggedCardHeightPx)
+      .clamp(0, params.columnHeight)
+      .toDouble();
+  final clampedLocalDy = params.localPointer.dy.clamp(
+    0.0,
+    params.columnHeight.toDouble(),
+  );
+  final effectiveDy = (clampedLocalDy - params.dragOffsetY)
+      .clamp(0.0, maxYStartPx)
+      .toDouble();
 
   final rawTop = params.localPointer.dy - params.dragOffsetY;
   final rawBottom = rawTop + params.draggedCardHeightPx;
@@ -70,13 +67,14 @@ DropComputationResult computeDropResult(DropComputationParams params) {
     newStart = previewTimes.$1;
     newEnd = previewTimes.$2;
   } else {
-    final minutesFromTop =
-        (effectiveDy / slotHeight) * minutesPerSlot;
+    final minutesFromTop = layoutConfig.minutesFromHeight(effectiveDy);
     double roundedMinutes = (minutesFromTop / 5).round() * 5;
 
     const totalMinutes = LayoutConfig.hoursInDay * 60; // 1440
-    final maxStartMinutesNum =
-        (totalMinutes - durationMinutes).clamp(0, totalMinutes);
+    final maxStartMinutesNum = (totalMinutes - durationMinutes).clamp(
+      0,
+      totalMinutes,
+    );
 
     int startMinutes = roundedMinutes.toInt();
     final maxStartMinutes = maxStartMinutesNum.toInt();
@@ -84,8 +82,9 @@ DropComputationResult computeDropResult(DropComputationParams params) {
     if (startMinutes > maxStartMinutes) startMinutes = maxStartMinutes;
     if (startMinutes < 0) startMinutes = 0;
 
-    final endMinutes =
-        (startMinutes + durationMinutes).clamp(0, totalMinutes).toInt();
+    final endMinutes = (startMinutes + durationMinutes)
+        .clamp(0, totalMinutes)
+        .toInt();
 
     newStart = baseDate.add(Duration(minutes: startMinutes));
 
@@ -96,8 +95,7 @@ DropComputationResult computeDropResult(DropComputationParams params) {
 
   if (isAboveBounds) {
     newStart = baseDate;
-    final cappedEnd =
-        baseDate.add(Duration(minutes: durationMinutes));
+    final cappedEnd = baseDate.add(Duration(minutes: durationMinutes));
     final dayEnd = baseDate.add(const Duration(days: 1));
     newEnd = cappedEnd.isBefore(dayEnd) ? cappedEnd : dayEnd;
   }
@@ -105,15 +103,9 @@ DropComputationResult computeDropResult(DropComputationParams params) {
   if (isBelowBounds) {
     final dayEnd = baseDate.add(const Duration(days: 1));
     newEnd = dayEnd;
-    final candidateStart =
-        dayEnd.subtract(Duration(minutes: durationMinutes));
-    newStart = candidateStart.isAfter(baseDate)
-        ? candidateStart
-        : baseDate;
+    final candidateStart = dayEnd.subtract(Duration(minutes: durationMinutes));
+    newStart = candidateStart.isAfter(baseDate) ? candidateStart : baseDate;
   }
 
-  return DropComputationResult(
-    newStart: newStart,
-    newEnd: newEnd,
-  );
+  return DropComputationResult(newStart: newStart, newEnd: newEnd);
 }

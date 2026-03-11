@@ -190,15 +190,12 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
     final startMinutes =
         appointment.startTime.hour * 60 + appointment.startTime.minute;
-    final startOffset =
-        (startMinutes / layoutConfig.minutesPerSlot) * layoutConfig.slotHeight;
+    final startOffset = layoutConfig.offsetForMinuteOfDay(startMinutes);
     final durationMinutes = appointment.endTime
         .difference(appointment.startTime)
         .inMinutes
         .clamp(layoutConfig.minutesPerSlot, 1440);
-    final cardHeight =
-        (durationMinutes / layoutConfig.minutesPerSlot) *
-        layoutConfig.slotHeight;
+    final cardHeight = layoutConfig.heightForMinutes(durationMinutes);
 
     final targetY =
         startOffset -

@@ -86,8 +86,7 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
     final LayoutConfig config =
         configOverride ?? ref.read(layoutConfigProvider);
 
-    final slotHeight = config.slotHeight;
-    final offset = (minutesSinceMidnight / config.minutesPerSlot) * slotHeight;
+    final offset = config.offsetForMinuteOfDay(minutesSinceMidnight);
     final label =
         "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
 

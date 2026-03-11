@@ -1,6 +1,8 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:flutter/material.dart';
 
+import 'agenda_timeline_metrics.dart';
+
 /// Immutable snapshot of the current layout dimensions used by the agenda.
 class LayoutConfig {
   // ──────────────────────────────────────────────
@@ -26,7 +28,8 @@ class LayoutConfig {
 
   static const double defaultHourColumnWidth = 60;
   static const double defaultHeaderHeight = 50;
-  static const double defaultSlotHeight = 30;
+  static const double defaultSlotHeight =
+      AgendaTimelineMetrics.pixelsPerMinute * minutesPerSlotConst;
 
   static const LayoutConfig initial = LayoutConfig(
     slotHeight: defaultSlotHeight,
@@ -123,10 +126,25 @@ class LayoutConfig {
 
   int get totalSlots => (hoursInDay * 60 ~/ minutesPerSlot);
 
-  double get totalHeight => totalSlots * slotHeight;
+  double get totalHeight =>
+      AgendaTimelineMetrics.timelineHeightForMinutes(hoursInDay * 60);
+
+  double get pixelsPerMinute => AgendaTimelineMetrics.pixelsPerMinute;
+
+  double heightForMinutes(num minutes) =>
+      AgendaTimelineMetrics.heightForMinutes(minutes.toDouble());
+
+  double offsetForMinuteOfDay(num minuteOfDay) =>
+      AgendaTimelineMetrics.topOffsetForMinuteOfDay(minuteOfDay.toDouble());
+
+  double minutesFromHeight(double height) =>
+      AgendaTimelineMetrics.minutesForHeight(height);
 
   static bool isValidSlotDuration(int minutes) =>
       slotDurationOptions.contains(minutes);
+
+  static double slotHeightForMinutesPerSlot(int minutesPerSlot) =>
+      AgendaTimelineMetrics.slotHeightFor(minutesPerSlot);
 
   /// Calcola quanti staff possono essere mostrati in base alla larghezza schermo.
   int computeMaxVisibleStaff(

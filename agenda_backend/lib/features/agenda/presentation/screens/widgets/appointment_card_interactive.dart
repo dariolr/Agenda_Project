@@ -437,8 +437,9 @@ class _AppointmentCardInteractiveState
     final cardHeight = cardBox.size.height;
     final distanceFromBottom = cardHeight - localPos.dy;
 
-    final minHeightForBlocking =
-        _layoutConfig.slotHeight * _minSlotsForDragBlock;
+    final minHeightForBlocking = _layoutConfig.heightForMinutes(
+      _layoutConfig.minutesPerSlot * _minSlotsForDragBlock,
+    );
 
     final shouldBlock =
         distanceFromBottom >= 0 &&
@@ -931,9 +932,6 @@ class _AppointmentCardInteractiveState
     final deltaY = currentGlobal.dy - _lastPointerGlobalPosition!.dy;
     _lastPointerGlobalPosition = currentGlobal;
 
-    final minutesPerPixel =
-        _layoutConfig.minutesPerSlot / _layoutConfig.slotHeight;
-    final pixelsPerMinute = 1 / minutesPerPixel;
     final dayEnd = DateTime(
       widget.appointment.startTime.year,
       widget.appointment.startTime.month,
@@ -945,7 +943,7 @@ class _AppointmentCardInteractiveState
         .updateDuringResize(
           appointmentId: widget.appointment.id,
           deltaDy: deltaY,
-          pixelsPerMinute: pixelsPerMinute,
+          pixelsPerMinute: _layoutConfig.pixelsPerMinute,
           dayEnd: dayEnd,
           minDurationMinutes: 5,
           snapMinutes: 5,
