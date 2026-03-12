@@ -592,6 +592,8 @@ class _AppointmentCardInteractiveState
         cardHeight > 0 &&
         cardHeight < 34;
     final showStatusIcon = statusVisual != null && !forFeedback;
+    final durationMinutes = endTime.difference(startTime).inMinutes;
+    final isShortCard = durationMinutes <= 15;
 
     final animationDuration = _isDraggingResize || forFeedback
         ? Duration.zero
@@ -646,7 +648,12 @@ class _AppointmentCardInteractiveState
                 ),
 
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                padding: EdgeInsets.fromLTRB(
+                  6,
+                  isShortCard ? 2 : 4,
+                  6,
+                  4,
+                ),
                 child: SizedBox.expand(
                   child: _buildContent(
                     start,
@@ -717,6 +724,29 @@ class _AppointmentCardInteractiveState
   }) {
     final formFactor = ref.watch(formFactorProvider);
     final effectiveColumnWidth = widget.columnWidth ?? _lastSize?.width;
+    final appointmentDurationMinutes = widget.appointment.endTime
+        .difference(widget.appointment.startTime)
+        .inMinutes;
+    final isShortCard = appointmentDurationMinutes <= 15;
+    final trailingIconSize = isShortCard ? 11.0 : 14.0;
+    final trailingIconLeftPadding = isShortCard ? 2.0 : 4.0;
+    final statusDotSize = isShortCard ? 10.0 : 12.0;
+    final timeTextStyle = TextStyle(
+      color: Colors.black87,
+      fontWeight: FontWeight.w500,
+      fontSize: isShortCard ? 9 : null,
+    );
+    final clientTextStyle = TextStyle(
+      color: Colors.black87,
+      fontWeight: FontWeight.w700,
+      fontSize: isShortCard ? 9 : null,
+    );
+    final stackedClientTextStyle = TextStyle(
+      color: Colors.black87,
+      fontWeight: FontWeight.w700,
+      fontSize: isShortCard ? 9 : null,
+      height: 1.1,
+    );
     final screenWidth = MediaQuery.of(context).size.width;
     final approxVisibleColumns =
         (effectiveColumnWidth != null &&
@@ -732,22 +762,19 @@ class _AppointmentCardInteractiveState
         (effectiveColumnWidth != null && effectiveColumnWidth < 130);
 
     final trailingIcons = <Widget>[];
-    final effectiveCardHeight = _lastSize?.height ?? 0;
     final isCompactIconsLayout =
-        (effectiveColumnWidth != null && effectiveColumnWidth < 120) ||
-        (effectiveCardHeight > 0 && effectiveCardHeight < 52);
-    final maxIcons = isCompactIconsLayout ? 2 : 4;
+        (effectiveColumnWidth != null && effectiveColumnWidth < 120);
 
     // Priorità: stato > note > online > ricorrenza
     if (showStatusIcon && statusVisual != null) {
       trailingIcons.add(
         Padding(
-          padding: const EdgeInsets.only(left: 4),
+          padding: EdgeInsets.only(left: trailingIconLeftPadding),
           child: Tooltip(
             message: statusVisual.label,
             child: Container(
-              width: 12,
-              height: 12,
+              width: statusDotSize,
+              height: statusDotSize,
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   center: const Alignment(-0.25, -0.25),
@@ -769,17 +796,17 @@ class _AppointmentCardInteractiveState
     if (showNotes) {
       trailingIcons.add(
         Padding(
-          padding: const EdgeInsets.only(left: 4),
+          padding: EdgeInsets.only(left: trailingIconLeftPadding),
           child: Tooltip(
             message: context.l10n.appointmentNotesTitle,
             child: InkWell(
               onTap: onNotesTap,
               borderRadius: BorderRadius.circular(6),
-              child: const Padding(
-                padding: EdgeInsets.all(2),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
                 child: Icon(
                   Icons.sticky_note_2_outlined,
-                  size: 14,
+                  size: trailingIconSize,
                   color: Colors.black54,
                 ),
               ),
@@ -795,10 +822,10 @@ class _AppointmentCardInteractiveState
       final isOnlineStaff = bookingSource == 'onlinestaff';
       trailingIcons.add(
         Padding(
-          padding: const EdgeInsets.only(left: 4),
+          padding: EdgeInsets.only(left: trailingIconLeftPadding),
           child: Icon(
             Icons.cloud_outlined,
-            size: 14,
+            size: trailingIconSize,
             color: isOnlineStaff ? Colors.red : Colors.black54,
           ),
         ),
@@ -811,139 +838,140 @@ class _AppointmentCardInteractiveState
           : context.l10n.recurrenceSeriesIcon;
       trailingIcons.add(
         Padding(
-          padding: const EdgeInsets.only(left: 4),
+          padding: EdgeInsets.only(left: trailingIconLeftPadding),
           child: Tooltip(
             message: tooltipText,
-            child: const Icon(Icons.repeat, size: 14, color: Colors.black54),
+            child: Icon(
+              Icons.repeat,
+              size: trailingIconSize,
+              color: Colors.black54,
+            ),
           ),
         ),
       );
     }
 
-    final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
-    return ClipRect(
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(
-              bottom:
-                  appointmentPrice != null || bookingTotal != null ? 14 : 0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: stackClientUnderTime
-                          ? Text(
-                              '$start - $end',
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            )
-                          : RichText(
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: '$start - $end  ',
-                                    style: const TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: client,
-                                    style: const TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                    ),
-                    if (visibleTrailingIcons.isNotEmpty) ...visibleTrailingIcons,
-                  ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxIcons = isCompactIconsLayout ? 2 : 4;
+        final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
+
+        return ClipRect(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom:
+                      appointmentPrice != null || bookingTotal != null ? 14 : 0,
                 ),
-                if (stackClientUnderTime && client.isNotEmpty)
-                  Text(
-                    client,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w700,
-                      height: 1.1,
-                    ),
-                  ),
-                if (info.isNotEmpty)
-                  Text(
-                    info,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.black54,
-                      height: 1.1,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          if (appointmentPrice != null || bookingTotal != null)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Row(
-                children: [
-                  if (bookingTotal != null)
-                    Expanded(
-                      child: Text(
-                        bookingTotal,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.left,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.black54,
-                          height: 1.1,
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: stackClientUnderTime
+                                ? Text(
+                                    '$start - $end',
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: timeTextStyle,
+                                  )
+                                : RichText(
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.ellipsis,
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: '$start - $end  ',
+                                          style: timeTextStyle,
+                                        ),
+                                        TextSpan(
+                                          text: client,
+                                          style: clientTextStyle,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                          ),
+                          if (visibleTrailingIcons.isNotEmpty)
+                            ...visibleTrailingIcons,
+                        ],
+                      ),
+                      if (stackClientUnderTime && client.isNotEmpty)
+                        Text(
+                          client,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: stackedClientTextStyle,
                         ),
-                      ),
-                    )
-                  else
-                    const Spacer(),
-                  if (appointmentPrice != null)
-                    Text(
-                      appointmentPrice,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.black87,
-                        height: 1.1,
-                      ),
-                    ),
-                ],
+                      if (info.isNotEmpty)
+                        Text(
+                          info,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.black54,
+                            height: 1.1,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-        ],
-      ),
+              if (appointmentPrice != null || bookingTotal != null)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Row(
+                    children: [
+                      if (bookingTotal != null)
+                        Expanded(
+                          child: Text(
+                            bookingTotal,
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.left,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.black54,
+                              height: 1.1,
+                            ),
+                          ),
+                        )
+                      else
+                        const Spacer(),
+                      if (appointmentPrice != null)
+                        Text(
+                          appointmentPrice,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.black87,
+                            height: 1.1,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

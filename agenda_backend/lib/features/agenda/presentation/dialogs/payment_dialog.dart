@@ -99,6 +99,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   late final TextEditingController _noteController;
   bool _isPersisting = false;
   bool _isLoadingPersisted = false;
+  int _loadedAutoDiscountCents = 0;
 
   @override
   void initState() {
@@ -129,10 +130,10 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
         }
       });
     }
-    if (widget.bookingId != null) {
-      _loadPersistedPayment();
-    } else if (widget.initialPayment != null) {
+    if (widget.initialPayment != null) {
       _applyBookingPayment(widget.initialPayment!);
+    } else if (widget.bookingId != null) {
+      _loadPersistedPayment();
     }
   }
 
@@ -327,18 +328,29 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   }
 
   void _applyBookingPayment(BookingPayment payment) {
+    _loadedAutoDiscountCents = payment.lines
+        .where(
+          (line) =>
+              line.type == BookingPaymentLineType.discount &&
+              line.meta?['source'] == 'appointment_amount_adjustment',
+        )
+        .fold<int>(0, (sum, line) => sum + line.amountCents);
     _setControllerValue(
       _totalPriceController,
       _formatAmountValue(_amountFromCents(payment.totalDueCents)),
     );
-    for (final entry in _controllers.entries) {
-      _setControllerValue(entry.value, _formatAmountValue(0));
-    }
+    final totalsByMethod = <_PaymentMethod, int>{
+      for (final method in _PaymentMethod.values) method: 0,
+    };
     for (final line in payment.lines) {
       final method = _methodForLineType(line.type);
+      totalsByMethod[method] = (totalsByMethod[method] ?? 0) + line.amountCents;
+    }
+    for (final entry in _controllers.entries) {
+      final amountCents = totalsByMethod[entry.key] ?? 0;
       _setControllerValue(
-        _controllers[method]!,
-        _formatAmountValue(_amountFromCents(line.amountCents)),
+        entry.value,
+        _formatAmountValue(_amountFromCents(amountCents)),
       );
     }
     _setControllerValue(_noteController, payment.note ?? '');
@@ -353,6 +365,31 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       final amount = PriceFormatter.parse(entry.value.text) ?? 0;
       final amountCents = _centsFromAmount(amount);
       if (amountCents <= 0) {
+        continue;
+      }
+      if (entry.key == _PaymentMethod.discount) {
+        final autoDiscountCents = amountCents < _loadedAutoDiscountCents
+            ? amountCents
+            : _loadedAutoDiscountCents;
+        final manualDiscountCents = amountCents - autoDiscountCents;
+        if (autoDiscountCents > 0) {
+          lines.add(
+            BookingPaymentLine(
+              type: BookingPaymentLineType.discount,
+              amountCents: autoDiscountCents,
+              meta: const {'source': 'appointment_amount_adjustment'},
+            ),
+          );
+        }
+        if (manualDiscountCents > 0) {
+          lines.add(
+            BookingPaymentLine(
+              type: BookingPaymentLineType.discount,
+              amountCents: manualDiscountCents,
+              meta: const {'source': 'manual'},
+            ),
+          );
+        }
         continue;
       }
       lines.add(

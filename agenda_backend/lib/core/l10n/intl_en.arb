@@ -759,6 +759,8 @@
   "authLastName": "Last Name",
   "authPhone": "Phone",
   "switchBusiness": "Switch",
+  "superadminRailStartTopLabel": "Rail starts at top",
+  "superadminRailStartTopHelp": "If enabled, on desktop the navigation rail starts from the top edge without toolbar.",
   "profileTitle": "Profile",
   "profileUpdateSuccess": "Profile updated successfully",
   "profileEmailChangeWarning": "Warning: changing email will update your login credentials",
@@ -1236,6 +1238,10 @@
   "bookingNotificationsFieldLastAttemptAt": "Last attempt",
   "bookingNotificationsFieldSentAt": "Sent at",
   "bookingNotificationsFieldError": "Error",
+  "bookingNotificationsFieldBody": "Body",
+  "bookingNotificationsActionViewBody": "View body",
+  "bookingNotificationsBodyDialogTitle": "Notification body",
+  "bookingNotificationsBodyUnavailable": "Notification body not available",
   "bookingNotificationsNoSubject": "No subject",
   "bookingNotificationsNotAvailable": "N/A",
 
@@ -1451,5 +1457,13 @@
   "paymentOutstanding": "Outstanding to collect",
   "paymentRemaining": "Remaining",
   "paymentNotesLabel": "Payment notes",
-  "paymentNotesPlaceholder": "Notes about the payment..."
+  "paymentNotesPlaceholder": "Notes about the payment...",
+  "moreSectionBusinessConfig": "Business Configuration",
+  "moreSectionDataAnalysis": "Data Analysis",
+  "moreSectionProfileManage": "Manage your profile",
+  "moreClassEventsDescription": "Manage classes and group schedules",
+  "agendaDailyReportAction": "Daily report",
+  "agendaWeeklyReportAction": "Weekly report",
+  "agendaReportDisplayedDateAction": "Report displayed date",
+  "agendaReportDisplayedWeekAction": "Report displayed week"
 }

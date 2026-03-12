@@ -7,6 +7,7 @@ import 'package:agenda_backend/core/widgets/reorder_toggle_button.dart';
 import 'package:agenda_backend/core/widgets/reorder_toggle_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../agenda/providers/location_providers.dart';
 import '../../auth/providers/current_business_user_provider.dart';
@@ -15,7 +16,6 @@ import '../providers/staff_reorder_provider.dart';
 import '../providers/staff_sorted_providers.dart';
 import 'dialogs/location_dialog.dart';
 import 'dialogs/staff_dialog.dart';
-import 'screens/resources_screen.dart';
 import 'widgets/location_item.dart';
 
 class TeamScreen extends ConsumerStatefulWidget {
@@ -323,6 +323,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
     List<Location> locations,
     bool isWide,
   ) {
+    final formFactor = ref.watch(formFactorProvider);
+    final topPadding = formFactor == AppFormFactor.desktop ? 0.0 : 16.0;
     final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
     final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
     final currentUserRole = ref.watch(currentUserRoleProvider);
@@ -341,7 +343,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, topPadding, 16, 24),
       itemCount: visibleLocations.length,
       itemBuilder: (context, index) {
         final loc = visibleLocations[index];
@@ -360,11 +362,10 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
               ? () => showStaffDialog(context, ref, initialLocationId: loc.id)
               : () {},
           onManageResources: canManageSettings
-              ? () => Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute(
-                    builder: (_) => ResourcesScreen(location: loc),
-                  ),
-                )
+              ? () {
+                  ref.read(currentLocationIdProvider.notifier).set(loc.id);
+                  context.go('/altro/risorse?from_altro=1');
+                }
               : null,
           onEditLocation: canManageSettings
               ? () => showLocationDialog(context, ref, initial: loc)

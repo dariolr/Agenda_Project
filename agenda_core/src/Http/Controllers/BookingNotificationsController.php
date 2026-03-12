@@ -6,9 +6,11 @@ namespace Agenda\Http\Controllers;
 
 use Agenda\Http\Request;
 use Agenda\Http\Response;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Support\Json;
 
 final class BookingNotificationsController
 {
@@ -120,6 +122,8 @@ final class BookingNotificationsController
             $clientName = $full !== '' ? $full : null;
         }
 
+        $htmlBody = $this->buildNotificationHtmlBody($item);
+
         return [
             'id' => (int) $item['id'],
             'booking_id' => $item['booking_id'] !== null ? (int) $item['booking_id'] : null,
@@ -132,6 +136,8 @@ final class BookingNotificationsController
             'recipient_email' => $item['recipient_email'] ?? null,
             'recipient_name' => $item['recipient_name'] ?? null,
             'subject' => $item['subject'] ?? null,
+            'html_body' => $htmlBody,
+            'body' => $htmlBody,
             'error_message' => $item['error_message'] ?? null,
             'attempts' => (int) ($item['attempts'] ?? 0),
             'max_attempts' => (int) ($item['max_attempts'] ?? 0),
@@ -143,5 +149,59 @@ final class BookingNotificationsController
             'first_start_time' => $item['first_start_time'] ?? null,
             'last_end_time' => $item['last_end_time'] ?? null,
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $item
+     */
+    private function buildNotificationHtmlBody(array $item): ?string
+    {
+        $payloadRaw = $item['payload'] ?? null;
+        if (!is_string($payloadRaw) || trim($payloadRaw) === '') {
+            return null;
+        }
+
+        $payload = Json::decodeAssoc($payloadRaw);
+        if ($payload === null) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $variables */
+        $variables = isset($payload['variables']) && is_array($payload['variables'])
+            ? $payload['variables']
+            : $payload;
+
+        if (!isset($variables['year'])) {
+            $variables['year'] = date('Y');
+        }
+        if (
+            !isset($variables['client_name'])
+            || trim((string) $variables['client_name']) === ''
+        ) {
+            $variables['client_name'] = (string) ($item['recipient_name'] ?? 'Cliente');
+        }
+
+        $channel = (string) ($item['channel'] ?? '');
+        $locale = EmailTemplateRenderer::normalizeLocale((string) ($variables['locale'] ?? 'it'));
+
+        $template = match ($channel) {
+            'booking_confirmed' => EmailTemplateRenderer::bookingConfirmed($locale),
+            'booking_cancelled' => EmailTemplateRenderer::bookingCancelled($locale),
+            'booking_reminder' => EmailTemplateRenderer::bookingReminder($locale),
+            'booking_rescheduled' => EmailTemplateRenderer::bookingRescheduled($locale),
+            default => null,
+        };
+
+        if ($template !== null) {
+            return EmailTemplateRenderer::render((string) ($template['html'] ?? ''), $variables);
+        }
+
+        $fallback = (string) (
+            $variables['html_body']
+            ?? $variables['body']
+            ?? ''
+        );
+
+        return trim($fallback) !== '' ? $fallback : null;
     }
 }

@@ -137,4 +137,5 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
     }
     state = state.copyWith(showTopbarAddLabel: enabled);
   }
+
 }

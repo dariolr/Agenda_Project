@@ -93,28 +93,6 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         invitations: results[1] as List<BusinessInvitation>,
         isLoading: false,
       );
-      final owner = state.users.firstWhere(
-        (u) => u.role == 'owner',
-        orElse: () => const BusinessUser(
-          id: 0,
-          userId: 0,
-          businessId: 0,
-          role: '',
-          email: '',
-          firstName: '',
-          lastName: '',
-          status: 'active',
-        ),
-      );
-      if (owner.userId != 0) {
-        debugPrint(
-          'BusinessUsersNotifier owner: userId=${owner.userId}, '
-          'email=${owner.email}, '
-          'firstName=${owner.firstName}, '
-          'lastName=${owner.lastName}, '
-          'businessId=$businessId',
-        );
-      }
     } catch (e) {
       debugPrint('BusinessUsersNotifier._loadData error: $e');
       if (!ref.mounted) return;

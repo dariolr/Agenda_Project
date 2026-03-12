@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/form_factor_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
@@ -20,8 +21,11 @@ class MoreLocationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locations = ref.watch(sortedLocationsProvider);
     final staffAsync = ref.watch(allStaffProvider);
-    final isWide = ref.watch(formFactorProvider) != AppFormFactor.mobile;
+    final formFactor = ref.watch(formFactorProvider);
+    final isWide = formFactor != AppFormFactor.mobile;
+    final topPadding = formFactor == AppFormFactor.desktop ? 0.0 : 16.0;
     final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
+    final canViewStaff = ref.watch(currentUserCanViewStaffProvider);
 
     if (staffAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -39,7 +43,7 @@ class MoreLocationsScreen extends ConsumerWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, topPadding, 16, 24),
       itemCount: locations.length,
       itemBuilder: (context, index) {
         final location = locations[index];
@@ -54,12 +58,12 @@ class MoreLocationsScreen extends ConsumerWidget {
           onTap: canManageSettings
               ? () => showLocationDialog(context, ref, initial: location)
               : null,
-          headerTrailing: canManageSettings
-              ? _LocationActions(
-                  location: location,
-                  hasStaff: staffInLocation.isNotEmpty,
-                )
-              : null,
+          headerTrailing: _LocationActions(
+            location: location,
+            hasStaff: staffInLocation.isNotEmpty,
+            canManageSettings: canManageSettings,
+            canViewStaff: canViewStaff,
+          ),
           onAddStaff: () {},
           onEditLocation: () {},
           onDeleteLocation: () {},
@@ -68,41 +72,6 @@ class MoreLocationsScreen extends ConsumerWidget {
           onDeleteStaff: (_) {},
         );
       },
-    );
-  }
-}
-
-class MoreLocationResourcesScreen extends ConsumerWidget {
-  const MoreLocationResourcesScreen({super.key, required this.locationId});
-
-  final int locationId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final locations = ref.watch(sortedLocationsProvider);
-    Location? location;
-    for (final item in locations) {
-      if (item.id == locationId) {
-        location = item;
-        break;
-      }
-    }
-
-    if (location == null) {
-      return Center(
-        child: Text(
-          context.l10n.errorNotFound('/altro/sedi/risorse/$locationId'),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
-    }
-
-    return ResourcesScreen(
-      location: location,
-      showAppBar: false,
-      enableLocationSelectionInForm: true,
     );
   }
 }
@@ -142,22 +111,47 @@ class MoreResourcesScreen extends ConsumerWidget {
 }
 
 class _LocationActions extends ConsumerWidget {
-  const _LocationActions({required this.location, required this.hasStaff});
+  const _LocationActions({
+    required this.location,
+    required this.hasStaff,
+    required this.canManageSettings,
+    required this.canViewStaff,
+  });
 
   final Location location;
   final bool hasStaff;
+  final bool canManageSettings;
+  final bool canViewStaff;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (canViewStaff)
+          IconButton(
+            tooltip: context.l10n.navStaff,
+            icon: const Icon(Icons.badge_outlined),
+            onPressed: () {
+              ref.read(staffSectionLocationIdProvider.notifier).set(location.id);
+              context.go('/staff?from_altro=1');
+            },
+          ),
         IconButton(
-          tooltip: context.l10n.actionEdit,
-          icon: const Icon(Icons.edit_outlined),
-          onPressed: () => showLocationDialog(context, ref, initial: location),
+          tooltip: context.l10n.resourcesTitle,
+          icon: const Icon(Icons.inventory_2_outlined),
+          onPressed: () {
+            ref.read(currentLocationIdProvider.notifier).set(location.id);
+            context.go('/altro/risorse?from_altro=1');
+          },
         ),
-        if (!hasStaff)
+        if (canManageSettings)
+          IconButton(
+            tooltip: context.l10n.actionEdit,
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => showLocationDialog(context, ref, initial: location),
+          ),
+        if (canManageSettings && !hasStaff)
           IconButton(
             tooltip: context.l10n.actionDelete,
             icon: const Icon(Icons.delete_outline, color: Colors.red),

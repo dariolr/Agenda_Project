@@ -12,6 +12,8 @@ import '../../auth/providers/current_business_user_provider.dart';
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
 
+  static String _withFromAltro(String path) => '$path?from_altro=1';
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
@@ -21,6 +23,7 @@ class MoreScreen extends ConsumerWidget {
     final isDesktop = formFactor == AppFormFactor.desktop;
     final canManageOperators = ref.watch(canManageOperatorsProvider);
     final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
     final canViewServices = ref.watch(currentUserCanViewServicesProvider);
     final canViewStaff = ref.watch(currentUserCanViewStaffProvider);
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
@@ -31,14 +34,14 @@ class MoreScreen extends ConsumerWidget {
     final businessOwner = isSuperadmin ? ref.watch(businessOwnerProvider) : null;
     final showProfile = !isSuperadmin || businessOwner != null;
 
-    final items = [
+    final configurationItems = [
       if (canManageSettings)
         _MoreItem(
           icon: Icons.location_on_outlined,
           title: l10n.teamLocationsLabel,
           description: l10n.moreLocationsDescription,
           color: const Color(0xFF009688),
-          onTap: () => context.go('/altro/sedi'),
+          onTap: () => context.go(_withFromAltro('/altro/sedi')),
         ),
       // Team - visibile solo a chi può gestire impostazioni
       if (canViewStaff)
@@ -47,7 +50,7 @@ class MoreScreen extends ConsumerWidget {
           title: l10n.navStaff,
           description: l10n.moreTeamDescription,
           color: const Color(0xFF2196F3), // Blue
-          onTap: () => context.go('/staff'),
+          onTap: () => context.go(_withFromAltro('/staff')),
         ),
       // Servizi - visibile solo a chi può gestire impostazioni
       if (canViewServices)
@@ -56,7 +59,15 @@ class MoreScreen extends ConsumerWidget {
           title: l10n.navServices,
           description: l10n.moreServicesDescription,
           color: const Color(0xFF4CAF50), // Green
-          onTap: () => context.go('/servizi'),
+          onTap: () => context.go(_withFromAltro('/servizi')),
+        ),
+      if (canAccessClassEvents)
+        _MoreItem(
+          icon: Icons.groups_outlined,
+          title: l10n.classEventsTitle,
+          description: l10n.moreClassEventsDescription,
+          color: const Color(0xFF795548),
+          onTap: () => context.go(_withFromAltro('/altro/classi')),
         ),
       if (canManageSettings)
         _MoreItem(
@@ -64,7 +75,7 @@ class MoreScreen extends ConsumerWidget {
           title: l10n.resourcesTitle,
           description: l10n.resourcesEmptyHint,
           color: const Color(0xFF8BC34A),
-          onTap: () => context.go('/altro/risorse'),
+          onTap: () => context.go(_withFromAltro('/altro/risorse')),
         ),
       // Permessi - visibile solo a chi può gestire operatori
       if (canManageOperators)
@@ -73,55 +84,65 @@ class MoreScreen extends ConsumerWidget {
           title: l10n.permissionsTitle,
           description: l10n.permissionsDescription,
           color: const Color(0xFF00BCD4), // Cyan
-          onTap: () => context.go('/permessi'),
+          onTap: () => context.go(_withFromAltro('/permessi')),
         ),
-      if (canViewReports)
-        _MoreItem(
-          icon: Icons.bar_chart,
-          title: l10n.reportsTitle,
-          description: l10n.moreReportsDescription,
-          color: const Color(0xFFFF9800), // Orange
-          onTap: () => context.go('/report'),
-        ),
-      _MoreItem(
-        icon: Icons.list_alt,
-        title: l10n.bookingsListTitle,
-        description: l10n.moreBookingsDescription,
-        color: const Color(0xFF9C27B0), // Purple
-        onTap: () => context.go('/prenotazioni'),
-      ),
-      if (canAccessClassEvents)
-        _MoreItem(
-          icon: Icons.groups_outlined,
-          title: 'Class events',
-          description: 'Manage group sessions and participant waitlists',
-          color: const Color(0xFF795548),
-          onTap: () => context.go('/altro/classi'),
-        ),
-      _MoreItem(
-        icon: Icons.notifications_outlined,
-        title: l10n.bookingNotificationsTitle,
-        description: l10n.moreBookingNotificationsDescription,
-        color: const Color(0xFF3F51B5), // Indigo
-        onTap: () => context.go('/notifiche-prenotazioni'),
-      ),
-      // Chiusure - visibile solo a chi può gestire impostazioni
       if (canManageSettings)
         _MoreItem(
           icon: Icons.event_busy,
           title: l10n.closuresTitle,
           description: l10n.closuresEmptyHint,
           color: const Color(0xFFE91E63), // Pink
-          onTap: () => context.go('/chiusure'),
+          onTap: () => context.go(_withFromAltro('/chiusure')),
         ),
+    ];
+
+    final analyticsItems = [
+      if (canViewReports)
+        _MoreItem(
+          icon: Icons.bar_chart,
+          title: l10n.reportsTitle,
+          description: l10n.moreReportsDescription,
+          color: const Color(0xFFFF9800), // Orange
+          onTap: () => context.go(_withFromAltro('/report')),
+        ),
+      if (canManageBookings)
+        _MoreItem(
+          icon: Icons.list_alt,
+          title: l10n.bookingsListTitle,
+          description: l10n.moreBookingsDescription,
+          color: const Color(0xFF9C27B0), // Purple
+          onTap: () => context.go(_withFromAltro('/prenotazioni')),
+        ),
+      if (canManageBookings)
+        _MoreItem(
+          icon: Icons.notifications_outlined,
+          title: l10n.bookingNotificationsTitle,
+          description: l10n.moreBookingNotificationsDescription,
+          color: const Color(0xFF3F51B5), // Indigo
+          onTap: () => context.go(_withFromAltro('/notifiche-prenotazioni')),
+        ),
+    ];
+
+    final profileItems = [
       if (showProfile)
         _MoreItem(
           icon: Icons.account_circle_outlined,
           title: l10n.profileTitle,
           description: l10n.moreProfileDescription,
           color: const Color(0xFF607D8B), // Blue Grey
-          onTap: () => context.go('/profilo'),
+          onTap: () => context.go(_withFromAltro('/profilo')),
         ),
+    ];
+    final sections = [
+      if (configurationItems.isNotEmpty)
+        _MoreSection(
+          title: l10n.moreSectionBusinessConfig,
+          items: configurationItems,
+        ),
+      if (analyticsItems.isNotEmpty)
+        _MoreSection(title: l10n.moreSectionDataAnalysis, items: analyticsItems),
+      if (profileItems.isNotEmpty)
+        _MoreSection(title: l10n.moreSectionProfileManage, items: profileItems),
     ];
 
     return Scaffold(
@@ -157,18 +178,42 @@ class MoreScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            // Lista di cards (layout adattivo)
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                isDesktop ? 32 : 16,
-                0,
-                isDesktop ? 32 : 16,
-                0,
+            for (int i = 0; i < sections.length; i++) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    isDesktop ? 32 : 20,
+                    sections[i].title == null ? 12 : 8,
+                    isDesktop ? 32 : 20,
+                    sections[i].title == null ? 4 : 10,
+                  ),
+                  child: sections[i].title == null
+                      ? const SizedBox.shrink()
+                      : Text(
+                          sections[i].title!,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                ),
               ),
-              sliver: isDesktop
-                  ? _buildDesktopGrid(items, context)
-                  : _buildMobileList(items),
-            ),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  isDesktop ? 32 : 16,
+                  0,
+                  isDesktop ? 32 : 16,
+                  0,
+                ),
+                sliver: isDesktop
+                    ? _buildDesktopGrid(sections[i].items, context)
+                    : _buildMobileList(sections[i].items),
+              ),
+              if (i < sections.length - 1)
+                SliverToBoxAdapter(
+                  child: SizedBox(height: isDesktop ? 32 : 24),
+                ),
+            ],
             // Padding in fondo
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],
@@ -209,6 +254,13 @@ class MoreScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _MoreSection {
+  final String? title;
+  final List<_MoreItem> items;
+
+  const _MoreSection({this.title, required this.items});
 }
 
 class _MoreItem {

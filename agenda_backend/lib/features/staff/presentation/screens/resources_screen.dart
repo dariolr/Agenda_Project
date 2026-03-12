@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
@@ -7,11 +8,15 @@ import '../../../../core/models/location.dart';
 import '../../../../core/models/resource.dart';
 import '../../../../core/network/network_providers.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../agenda/providers/layout_config_provider.dart';
-import '../../../agenda/providers/location_providers.dart';
 import '../../../agenda/providers/resource_providers.dart';
+import '../../../auth/providers/current_business_user_provider.dart';
+import '../../providers/staff_providers.dart';
+import '../../providers/staff_sorted_providers.dart';
 import '../dialogs/resource_dialog.dart';
+import '../widgets/location_item.dart';
 
 /// Provider che carica il conteggio servizi per ogni risorsa della location
 final resourceServiceCountsProvider = FutureProvider.family<Map<int, int>, int>(
@@ -49,7 +54,7 @@ class ResourcesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final selectableLocations = enableLocationSelectionInForm
-        ? ref.watch(locationsProvider)
+        ? ref.watch(sortedLocationsProvider)
         : const <Location>[];
     final resources = ref.watch(locationResourcesProvider(location.id));
     final serviceCountsAsync = ref.watch(
@@ -57,7 +62,7 @@ class ResourcesScreen extends ConsumerWidget {
     );
     final serviceCounts = serviceCountsAsync.value ?? {};
 
-    final body = resources.isEmpty
+    final listBody = resources.isEmpty
         ? const _EmptyState()
         : ListView.separated(
             padding: const EdgeInsets.all(16),
@@ -80,6 +85,13 @@ class ResourcesScreen extends ConsumerWidget {
               );
             },
           );
+
+    final body = enableLocationSelectionInForm
+        ? _ResourcesByLocationList(
+            locations: selectableLocations,
+            selectableLocations: selectableLocations,
+          )
+        : listBody;
 
     if (!showAppBar) return body;
 
@@ -117,6 +129,241 @@ class ResourcesScreen extends ConsumerWidget {
       onConfirm: () async {
         await ref.read(resourcesProvider.notifier).deleteResource(resource.id);
       },
+    );
+  }
+}
+
+class _ResourcesByLocationList extends ConsumerWidget {
+  const _ResourcesByLocationList({
+    required this.locations,
+    required this.selectableLocations,
+  });
+
+  final List<Location> locations;
+  final List<Location> selectableLocations;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (locations.isEmpty) {
+      return const _EmptyState();
+    }
+
+    final formFactor = ref.watch(formFactorProvider);
+    final topPadding = formFactor == AppFormFactor.desktop ? 0.0 : 16.0;
+    final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
+    final canViewStaff = ref.watch(currentUserCanViewStaffProvider);
+
+    return ListView.builder(
+      padding: EdgeInsets.fromLTRB(16, topPadding, 16, 24),
+      itemCount: locations.length,
+      itemBuilder: (context, index) {
+        final location = locations[index];
+        final resources = ref.watch(locationResourcesProvider(location.id));
+        final serviceCountsAsync = ref.watch(
+          resourceServiceCountsProvider(location.id),
+        );
+        final serviceCounts = serviceCountsAsync.value ?? {};
+
+        return LocationItem(
+          location: location,
+          staff: const [],
+          isWide: MediaQuery.sizeOf(context).width >= 720,
+          showDefaultActions: false,
+          readOnly: !canManageSettings,
+          headerTrailing: _LocationResourcesActions(
+            location: location,
+            selectableLocations: selectableLocations,
+            canViewStaff: canViewStaff,
+            canManageSettings: canManageSettings,
+          ),
+          onAddStaff: () {},
+          onEditLocation: () {},
+          onDeleteLocation: () {},
+          onEditStaff: (_) {},
+          onDuplicateStaff: (_) {},
+          onDeleteStaff: (_) {},
+          staffListOverride: _LocationResourcesBody(
+            locationId: location.id,
+            resources: resources,
+            serviceCounts: serviceCounts,
+            selectableLocations: selectableLocations,
+            readOnly: !canManageSettings,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LocationResourcesActions extends ConsumerWidget {
+  const _LocationResourcesActions({
+    required this.location,
+    required this.selectableLocations,
+    required this.canViewStaff,
+    required this.canManageSettings,
+  });
+
+  final Location location;
+  final List<Location> selectableLocations;
+  final bool canViewStaff;
+  final bool canManageSettings;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (canViewStaff)
+          IconButton(
+            tooltip: context.l10n.navStaff,
+            icon: const Icon(Icons.badge_outlined),
+            onPressed: () {
+              ref.read(staffSectionLocationIdProvider.notifier).set(location.id);
+              context.go('/staff?from_altro=1');
+            },
+          ),
+        if (canManageSettings)
+          IconButton(
+            tooltip: context.l10n.agendaAdd,
+            icon: const Icon(Icons.add_outlined),
+            onPressed: () => showResourceDialog(
+              context,
+              ref,
+              locationId: location.id,
+              selectableLocations: selectableLocations,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _LocationResourcesBody extends ConsumerWidget {
+  const _LocationResourcesBody({
+    required this.locationId,
+    required this.resources,
+    required this.serviceCounts,
+    required this.selectableLocations,
+    required this.readOnly,
+  });
+
+  final int locationId;
+  final List<Resource> resources;
+  final Map<int, int> serviceCounts;
+  final List<Location> selectableLocations;
+  final bool readOnly;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (resources.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          context.l10n.resourcesEmpty,
+          style: textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        for (int i = 0; i < resources.length; i++) ...[
+          Material(
+            color: i.isEven
+                ? colorScheme.surface
+                : colorScheme.surfaceContainerLowest,
+            child: InkWell(
+              onTap: () => showResourceDialog(
+                context,
+                ref,
+                locationId: locationId,
+                resource: resources[i],
+                selectableLocations: selectableLocations,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            resources[i].name,
+                            style: textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${context.l10n.resourceQuantityLabel}: ${resources[i].quantity}',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          if ((resources[i].type ?? '').isNotEmpty)
+                            Text(
+                              resources[i].type!,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          if ((resources[i].note ?? '').isNotEmpty)
+                            Text(
+                              resources[i].note!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '${serviceCounts[resources[i].id] ?? 0}',
+                      style: textTheme.titleSmall?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (!readOnly) ...[
+                      const SizedBox(width: 8),
+                      IconButton(
+                        tooltip: context.l10n.actionDelete,
+                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: () async {
+                          final l10n = context.l10n;
+                          await showAppConfirmDialog(
+                            context,
+                            title: Text(l10n.resourceDeleteConfirm),
+                            content: Text(l10n.resourceDeleteWarning),
+                            confirmLabel: l10n.actionDelete,
+                            cancelLabel: l10n.actionCancel,
+                            danger: true,
+                            onConfirm: () async {
+                              await ref
+                                  .read(resourcesProvider.notifier)
+                                  .deleteResource(resources[i].id);
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (i < resources.length - 1) const AppDivider(),
+        ],
+      ],
     );
   }
 }

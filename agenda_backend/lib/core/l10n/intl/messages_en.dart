@@ -241,6 +241,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "agendaAddBlock": MessageLookupByLibrary.simpleMessage("New block"),
     "agendaAddTitle": MessageLookupByLibrary.simpleMessage("Add a..."),
+    "agendaDailyReportAction": MessageLookupByLibrary.simpleMessage(
+      "Daily report",
+    ),
     "agendaNextDay": MessageLookupByLibrary.simpleMessage("Next day"),
     "agendaNextMonth": MessageLookupByLibrary.simpleMessage("Next month"),
     "agendaNextWeek": MessageLookupByLibrary.simpleMessage("Next Week"),
@@ -256,6 +259,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "agendaPrevDay": MessageLookupByLibrary.simpleMessage("Previous day"),
     "agendaPrevMonth": MessageLookupByLibrary.simpleMessage("Previous month"),
     "agendaPrevWeek": MessageLookupByLibrary.simpleMessage("Previous Week"),
+    "agendaReportDisplayedDateAction": MessageLookupByLibrary.simpleMessage(
+      "Report displayed date",
+    ),
+    "agendaReportDisplayedWeekAction": MessageLookupByLibrary.simpleMessage(
+      "Report displayed week",
+    ),
     "agendaSelectLocation": MessageLookupByLibrary.simpleMessage(
       "Select location",
     ),
@@ -272,6 +281,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "agendaWeeklyLoadError": MessageLookupByLibrary.simpleMessage(
       "Unable to load this week\'s appointments.",
+    ),
+    "agendaWeeklyReportAction": MessageLookupByLibrary.simpleMessage(
+      "Weekly report",
     ),
     "allLocations": MessageLookupByLibrary.simpleMessage("All locations"),
     "appTitle": MessageLookupByLibrary.simpleMessage("Agenda Platform"),
@@ -439,6 +451,15 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingItems": MessageLookupByLibrary.simpleMessage("Services"),
     "bookingNotes": MessageLookupByLibrary.simpleMessage("Booking notes"),
+    "bookingNotificationsActionViewBody": MessageLookupByLibrary.simpleMessage(
+      "View body",
+    ),
+    "bookingNotificationsBodyDialogTitle": MessageLookupByLibrary.simpleMessage(
+      "Notification body",
+    ),
+    "bookingNotificationsBodyUnavailable": MessageLookupByLibrary.simpleMessage(
+      "Notification body not available",
+    ),
     "bookingNotificationsChannelCancelled":
         MessageLookupByLibrary.simpleMessage("Booking cancelled"),
     "bookingNotificationsChannelConfirmed":
@@ -456,6 +477,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingNotificationsFieldAppointment":
         MessageLookupByLibrary.simpleMessage("Appointment"),
+    "bookingNotificationsFieldBody": MessageLookupByLibrary.simpleMessage(
+      "Body",
+    ),
     "bookingNotificationsFieldClient": MessageLookupByLibrary.simpleMessage(
       "Client",
     ),
@@ -1304,6 +1328,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "moreBookingsDescription": MessageLookupByLibrary.simpleMessage(
       "Browse booking history",
     ),
+    "moreClassEventsDescription": MessageLookupByLibrary.simpleMessage(
+      "Manage classes and group schedules",
+    ),
     "moreLocationsDescription": MessageLookupByLibrary.simpleMessage(
       "Manage business locations",
     ),
@@ -1312,6 +1339,15 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "moreReportsDescription": MessageLookupByLibrary.simpleMessage(
       "View statistics and business performance",
+    ),
+    "moreSectionBusinessConfig": MessageLookupByLibrary.simpleMessage(
+      "Business Configuration",
+    ),
+    "moreSectionDataAnalysis": MessageLookupByLibrary.simpleMessage(
+      "Data Analysis",
+    ),
+    "moreSectionProfileManage": MessageLookupByLibrary.simpleMessage(
+      "Manage your profile",
     ),
     "moreServicesDescription": MessageLookupByLibrary.simpleMessage(
       "Manage services, categories and pricing",
@@ -2085,6 +2121,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "statusCancelled": MessageLookupByLibrary.simpleMessage("Cancelled"),
     "statusCompleted": MessageLookupByLibrary.simpleMessage("Completed"),
     "statusConfirmed": MessageLookupByLibrary.simpleMessage("Confirmed"),
+    "superadminRailStartTopHelp": MessageLookupByLibrary.simpleMessage(
+      "If enabled, on desktop the navigation rail starts from the top edge without toolbar.",
+    ),
+    "superadminRailStartTopLabel": MessageLookupByLibrary.simpleMessage(
+      "Rail starts at top",
+    ),
     "switchBusiness": MessageLookupByLibrary.simpleMessage("Switch"),
     "teamAddStaff": MessageLookupByLibrary.simpleMessage("Add team member"),
     "teamChooseLocationSingleButton": MessageLookupByLibrary.simpleMessage(

@@ -4,9 +4,16 @@ import '../constants/ui_sizes.dart';
 
 /// Centralizes button styling so we can reuse consistent widgets across the app.
 class AppBackButton extends StatelessWidget {
-  const AppBackButton({super.key, required this.onPressed});
+  const AppBackButton({
+    super.key,
+    required this.onPressed,
+    this.showClose = false,
+    this.leftPadding = 16,
+  });
 
   final VoidCallback onPressed;
+  final bool showClose;
+  final double leftPadding;
   static const double _actionButtonHeight = 40;
   static const double _iconOnlyWidth = _actionButtonHeight;
 
@@ -16,9 +23,11 @@ class AppBackButton extends StatelessWidget {
     final onContainer = scheme.onSecondaryContainer;
 
     return Tooltip(
-      message: MaterialLocalizations.of(context).backButtonTooltip,
+      message: showClose
+          ? MaterialLocalizations.of(context).closeButtonTooltip
+          : MaterialLocalizations.of(context).backButtonTooltip,
       child: Padding(
-        padding: const EdgeInsets.only(left: 16),
+        padding: EdgeInsets.only(left: leftPadding),
         child: Center(
           child: SizedBox(
             width: _iconOnlyWidth,
@@ -32,7 +41,11 @@ class AppBackButton extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               child: InkWell(
                 onTap: onPressed,
-                child: Icon(Icons.arrow_back, size: 22, color: onContainer),
+                child: Icon(
+                  showClose ? Icons.close : Icons.arrow_back,
+                  size: 22,
+                  color: onContainer,
+                ),
               ),
             ),
           ),

@@ -8,8 +8,12 @@ import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
+import 'package:agenda_backend/features/reports/providers/reports_filter_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 const double kAgendaControlHeight = kSharedAgendaControlHeight;
@@ -1419,6 +1423,81 @@ class AgendaViewModeButton extends ConsumerWidget {
     if (result != null) {
       ref.read(calendarViewModeProvider.notifier).setMode(result);
     }
+  }
+}
+
+class AgendaLaunchReportButton extends ConsumerWidget {
+  const AgendaLaunchReportButton({
+    super.key,
+    this.height = kAgendaControlHeight,
+    this.iconOnly = true,
+  });
+
+  final double height;
+  final bool iconOnly;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final formFactor = ref.watch(formFactorProvider);
+    final isDesktopOrTablet =
+        formFactor == AppFormFactor.desktop ||
+        formFactor == AppFormFactor.tablet;
+    final viewMode = ref.watch(calendarViewModeProvider);
+    final l10n = context.l10n;
+    final label = viewMode == CalendarViewMode.week
+        ? l10n.agendaReportDisplayedWeekAction
+        : l10n.agendaReportDisplayedDateAction;
+
+    return Tooltip(
+      message: label,
+      child: SizedBox(
+        height: height,
+        width: iconOnly ? 46 : null,
+        child: AppOutlinedActionButton(
+          onPressed: () => _onPressed(context, ref, viewMode),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          borderRadius: isDesktopOrTablet
+              ? kAgendaPillRadius
+              : BorderRadius.circular(8),
+          borderColor: isDesktopOrTablet
+              ? Colors.grey.withOpacity(0.35)
+              : scheme.primary,
+          foregroundColor: scheme.onSurface,
+          child: iconOnly
+              ? const Icon(Icons.bar_chart_outlined, size: 22)
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.bar_chart_outlined, size: 22),
+                    const SizedBox(width: 8),
+                    Text(label),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  void _onPressed(
+    BuildContext context,
+    WidgetRef ref,
+    CalendarViewMode viewMode,
+  ) {
+    final selectedDate = ref.read(agendaDateProvider);
+    final targetDate = DateUtils.dateOnly(selectedDate);
+    final targetLocation = ref.read(currentLocationProvider);
+    final weekStart = DateUtils.dateOnly(
+      targetDate.subtract(Duration(days: targetDate.weekday - DateTime.monday)),
+    );
+    final weekEnd = weekStart.add(const Duration(days: 6));
+
+    ref.read(agendaReportLaunchProvider.notifier).request(
+      startDate: viewMode == CalendarViewMode.week ? weekStart : targetDate,
+      endDate: viewMode == CalendarViewMode.week ? weekEnd : targetDate,
+      locationId: targetLocation.id,
+    );
+    context.go('/report');
   }
 }
 

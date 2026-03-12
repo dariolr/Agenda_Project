@@ -8,6 +8,7 @@ import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/widgets/staff_circle_avatar.dart';
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/location.dart';
 import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
@@ -214,6 +215,24 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     setState(() {});
   }
 
+  void _ensureSingleLocationSelected(List<Location> locations) {
+    if (locations.length != 1) return;
+    final onlyLocationId = locations.first.id;
+    if (_selectedLocationIds.length == 1 &&
+        _selectedLocationIds.contains(onlyLocationId)) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _selectedLocationIds
+          ..clear()
+          ..add(onlyLocationId);
+        _locationsError = null;
+      });
+    });
+  }
+
   String _buildInitials() {
     final name = _nameController.text.trim();
     final surname = _surnameController.text.trim();
@@ -252,6 +271,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final canEditServices = canManageStaff || canEditScopedProfile;
     final isSingleColumn = formFactor != AppFormFactor.desktop;
     final locations = ref.watch(locationsProvider);
+    _ensureSingleLocationSelected(locations);
     // Carica servizi solo per le location selezionate
     final locationIdsKey = locationIdsToKey(_selectedLocationIds);
     final servicesForLocationsAsync = ref.watch(
@@ -279,8 +299,11 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       _didFilterServiceIds = true;
     }
     final totalLocationsCount = locations.length;
+    final hideLocationSelector = totalLocationsCount == 1;
     final selectedLocationName =
-        !kAllowStaffMultiLocationSelection && _selectedLocationIds.isNotEmpty
+        !kAllowStaffMultiLocationSelection &&
+            _selectedLocationIds.isNotEmpty &&
+            locations.isNotEmpty
         ? locations
               .firstWhere(
                 (loc) => loc.id == _selectedLocationIds.first,
@@ -464,69 +487,73 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
             ),
           ),
           const SizedBox(height: AppSpacing.formRowSpacing),
-          if (!kAllowStaffMultiLocationSelection) ...[
-            Text(
-              l10n.teamLocationLabel,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-          ],
-          SizedBox(
-            height: 48,
-            child: AppOutlinedActionButton(
-              onPressed: canEditLocationAndServices
-                  ? _openLocationsSelector
-                  : null,
-              expand: true,
-              padding: AppButtonStyles.defaultPadding,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        kAllowStaffMultiLocationSelection
-                            ? l10n.teamChooseLocationsButton
-                            : (selectedLocationName ??
-                                  l10n.teamChooseLocationSingleButton),
-                      ),
-                    ),
-                  ),
-                  if (kAllowStaffMultiLocationSelection)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${_selectedLocationIds.length}/$totalLocationsCount',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+          if (!hideLocationSelector) ...[
+            if (!kAllowStaffMultiLocationSelection) ...[
+              Text(
+                l10n.teamLocationLabel,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+            ],
+            SizedBox(
+              height: 48,
+              child: AppOutlinedActionButton(
+                onPressed: canEditLocationAndServices
+                    ? _openLocationsSelector
+                    : null,
+                expand: true,
+                padding: AppButtonStyles.defaultPadding,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          kAllowStaffMultiLocationSelection
+                              ? l10n.teamChooseLocationsButton
+                              : (selectedLocationName ??
+                                    l10n.teamChooseLocationSingleButton),
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
-          ),
-          if (_locationsError != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                _locationsError!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
+                    if (kAllowStaffMultiLocationSelection)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${_selectedLocationIds.length}/$totalLocationsCount',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
-          const SizedBox(height: AppSpacing.formRowSpacing),
+            if (_locationsError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  _locationsError!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ),
+            const SizedBox(height: AppSpacing.formRowSpacing),
+          ],
           Text(
             l10n.teamServicesLabel,
             style: Theme.of(context).textTheme.titleSmall,

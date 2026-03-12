@@ -298,7 +298,7 @@ final class NotificationRepository
     ): array {
         $baseSelect = '
             SELECT nq.id, nq.type, nq.channel, nq.recipient_type, nq.recipient_id,
-                   nq.recipient_email, nq.recipient_name, nq.subject,
+                   nq.recipient_email, nq.recipient_name, nq.subject, nq.payload,
                    nq.status, nq.priority, nq.attempts, nq.max_attempts,
                    nq.scheduled_at, nq.last_attempt_at, nq.sent_at, nq.failed_at, nq.error_message,
                    nq.business_id, nq.booking_id, nq.created_at, nq.updated_at,
