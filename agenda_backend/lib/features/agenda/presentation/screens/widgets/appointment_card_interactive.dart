@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/appointment.dart';
+import '/core/utils/price_utils.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
 import '../../../../../../core/l10n/l10_extension.dart';
 import '../../../../../../core/widgets/app_dialogs.dart';
+import '../../../providers/business_providers.dart';
 import '../../../../auth/providers/current_business_user_provider.dart';
 import '../../../../clients/providers/clients_providers.dart';
 import '../../../domain/config/agenda_theme.dart';
@@ -541,6 +543,37 @@ class _AppointmentCardInteractiveState
     final start = _formatTime(startTime);
     final formattedEndTime = _formatTime(endTime);
     final client = widget.appointment.clientName;
+    final business = ref.watch(currentBusinessProvider);
+    final bookingSummary = ref.watch(
+      bookingSummaryProvider(widget.appointment.bookingId),
+    );
+    final lastAppointmentIdForBooking = ref.watch(
+      lastAppointmentIdForBookingProvider(widget.appointment.bookingId),
+    );
+    final showAppointmentPrice =
+        business.showAppointmentPriceInCard &&
+        widget.appointment.price != null &&
+        widget.appointment.price! > 0;
+    final appointmentPrice = showAppointmentPrice
+        ? PriceFormatter.format(
+            context: context,
+            amount: widget.appointment.price!,
+            currencyCode: PriceFormatter.effectiveCurrency(ref),
+          )
+        : null;
+    final showBookingTotal =
+        business.showAppointmentPriceInCard &&
+        bookingSummary != null &&
+        bookingSummary.itemsCount > 1 &&
+        bookingSummary.totalPrice > 0 &&
+        lastAppointmentIdForBooking == widget.appointment.id;
+    final bookingTotal = showBookingTotal
+        ? PriceFormatter.format(
+            context: context,
+            amount: bookingSummary.totalPrice,
+            currencyCode: PriceFormatter.effectiveCurrency(ref),
+          )
+        : null;
 
     final pieces = <String>[];
     if (widget.appointment.serviceName.isNotEmpty) {
@@ -614,8 +647,7 @@ class _AppointmentCardInteractiveState
 
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                child: Align(
-                  alignment: Alignment.topLeft,
+                child: SizedBox.expand(
                   child: _buildContent(
                     start,
                     formattedEndTime,
@@ -625,6 +657,8 @@ class _AppointmentCardInteractiveState
                     bookingSource: forFeedback
                         ? ''
                         : (widget.appointment.bookingSource ?? ''),
+                    appointmentPrice: appointmentPrice,
+                    bookingTotal: bookingTotal,
                     statusVisual: statusVisual,
                     showStatusIcon: showStatusIcon && !showCompactStatusBar,
                     isRecurring: widget.appointment.isRecurring,
@@ -672,6 +706,8 @@ class _AppointmentCardInteractiveState
     String info, {
     required bool showNotes,
     required String bookingSource,
+    required String? appointmentPrice,
+    required String? bookingTotal,
     required _CardStatusVisual? statusVisual,
     required bool showStatusIcon,
     bool isRecurring = false,
@@ -786,79 +822,124 @@ class _AppointmentCardInteractiveState
 
     final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
     return ClipRect(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Flexible(
-            child: Row(
+          Padding(
+            padding: EdgeInsets.only(
+              bottom:
+                  appointmentPrice != null || bookingTotal != null ? 14 : 0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: stackClientUnderTime
-                      ? Text(
-                          '$start - $end',
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        )
-                      : RichText(
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: '$start - $end  ',
-                                style: const TextStyle(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: stackClientUnderTime
+                          ? Text(
+                              '$start - $end',
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
                               ),
-                              TextSpan(
-                                text: client,
-                                style: const TextStyle(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            )
+                          : RichText(
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: '$start - $end  ',
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: client,
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
+                    ),
+                    if (visibleTrailingIcons.isNotEmpty) ...visibleTrailingIcons,
+                  ],
                 ),
-                if (visibleTrailingIcons.isNotEmpty) ...visibleTrailingIcons,
+                if (stackClientUnderTime && client.isNotEmpty)
+                  Text(
+                    client,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w700,
+                      height: 1.1,
+                    ),
+                  ),
+                if (info.isNotEmpty)
+                  Text(
+                    info,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.black54,
+                      height: 1.1,
+                    ),
+                  ),
               ],
             ),
           ),
-          if (stackClientUnderTime && client.isNotEmpty)
-            Flexible(
-              child: Text(
-                client,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.w700,
-                  height: 1.1,
-                ),
-              ),
-            ),
-          if (info.isNotEmpty)
-            Flexible(
-              child: Text(
-                info,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.black54,
-                  height: 1.1,
-                ),
+          if (appointmentPrice != null || bookingTotal != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Row(
+                children: [
+                  if (bookingTotal != null)
+                    Expanded(
+                      child: Text(
+                        bookingTotal,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.left,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black54,
+                          height: 1.1,
+                        ),
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  if (appointmentPrice != null)
+                    Text(
+                      appointmentPrice,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.black87,
+                        height: 1.1,
+                      ),
+                    ),
+                ],
               ),
             ),
         ],

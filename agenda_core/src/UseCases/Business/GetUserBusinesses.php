@@ -46,6 +46,7 @@ final class GetUserBusinesses
             'phone' => $b['phone'],
             'timezone' => $b['timezone'],
             'currency' => $b['currency'],
+            'show_appointment_price_in_card' => (bool) ($b['show_appointment_price_in_card'] ?? false),
             'created_at' => $b['created_at'],
             'role' => $b['role'],
             'permissions' => [

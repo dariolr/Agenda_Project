@@ -178,6 +178,7 @@ final class CreateBusiness
                 'service_color_palette' => $business['service_color_palette'] ?? 'legacy',
                 'timezone' => $business['timezone'],
                 'currency' => $business['currency'],
+                'show_appointment_price_in_card' => (bool) ($business['show_appointment_price_in_card'] ?? false),
             ];
 
             if ($adminUserId !== null) {
