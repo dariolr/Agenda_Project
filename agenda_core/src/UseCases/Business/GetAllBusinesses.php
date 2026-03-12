@@ -54,6 +54,7 @@ final class GetAllBusinesses
                 'timezone' => $b['timezone'],
                 'currency' => $b['currency'],
                 'cancellation_hours' => isset($b['cancellation_hours']) ? (int) $b['cancellation_hours'] : null,
+                'show_appointment_price_in_card' => (bool) ($b['show_appointment_price_in_card'] ?? false),
                 'is_active' => (bool) $b['is_active'],
                 'is_suspended' => (bool) ($b['is_suspended'] ?? false),
                 'suspension_message' => $b['suspension_message'] ?? null,

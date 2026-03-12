@@ -123,6 +123,7 @@ final class UpdateBusiness
                 'service_color_palette' => $updated['service_color_palette'] ?? 'legacy',
                 'timezone' => $updated['timezone'],
                 'currency' => $updated['currency'],
+                'show_appointment_price_in_card' => (bool) ($updated['show_appointment_price_in_card'] ?? false),
                 'is_active' => (bool) $updated['is_active'],
                 'created_at' => $updated['created_at'],
             ],

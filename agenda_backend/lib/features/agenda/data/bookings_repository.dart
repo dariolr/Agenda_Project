@@ -305,7 +305,7 @@ class BookingsRepository {
       serviceName: json['service_name'] as String? ?? 'Servizio',
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
-      price: null, // Non sempre presente
+      price: (json['price'] as num?)?.toDouble(),
       bookingSource: json['source'] as String?,
       bookingStatus: json['booking_status'] as String?,
       extraMinutes: json['extra_blocked_minutes'] as int?,

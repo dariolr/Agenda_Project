@@ -162,3 +162,28 @@ final bookingSummaryProvider = Provider.family<BookingSummary?, int>((ref, id) {
     end: appts.map((a) => a.endTime).reduce((a, b) => a.isAfter(b) ? a : b),
   );
 });
+
+/// ID dell'ultima card temporale del booking:
+/// priorita a endTime, poi startTime, poi id.
+final lastAppointmentIdForBookingProvider = Provider.family<int?, int>((ref, id) {
+  final appts = (ref.watch(appointmentsProvider).value ?? [])
+      .where((a) => a.bookingId == id)
+      .toList();
+  if (appts.isEmpty) return null;
+
+  final last = appts.reduce((current, next) {
+    final byEnd = current.endTime.compareTo(next.endTime);
+    if (byEnd != 0) {
+      return byEnd >= 0 ? current : next;
+    }
+
+    final byStart = current.startTime.compareTo(next.startTime);
+    if (byStart != 0) {
+      return byStart >= 0 ? current : next;
+    }
+
+    return current.id >= next.id ? current : next;
+  });
+
+  return last.id;
+});

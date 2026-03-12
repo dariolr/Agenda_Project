@@ -25,6 +25,7 @@ final class BusinessUserRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT 
                 b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency,
+                b.show_appointment_price_in_card,
                 b.created_at, b.updated_at,
                 bu.role,
                 bu.can_manage_bookings, bu.can_manage_clients,

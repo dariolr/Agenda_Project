@@ -163,6 +163,7 @@ CREATE TABLE `businesses` (
   `timezone` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Europe/Rome',
   `currency` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EUR',
   `cancellation_hours` int UNSIGNED NOT NULL DEFAULT '24' COMMENT 'Default hours before appointment when cancellation/modification is allowed',
+  `show_appointment_price_in_card` tinyint(1) NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `is_suspended` tinyint(1) NOT NULL DEFAULT '0',
   `suspension_message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
