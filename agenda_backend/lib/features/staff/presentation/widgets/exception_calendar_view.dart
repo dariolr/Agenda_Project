@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -466,7 +467,7 @@ class _ExceptionsList extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(),
+        const AppDivider(),
         ...exceptions.map(
           (e) => _ExceptionTile(
             exception: e,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
@@ -151,7 +152,7 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
                 ),
                 if (locations.length > 1) ...[
                   const SizedBox(height: 24),
-                  const Divider(),
+                  const AppDivider(),
                   const SizedBox(height: 16),
                   if (_selectedRole != 'staff') ...[
                     _ScopeTypeSelector(
@@ -461,7 +462,7 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
                   ),
                   if (locations.length > 1) ...[
                     const SizedBox(height: 24),
-                    const Divider(),
+                    const AppDivider(),
                     const SizedBox(height: 16),
                     if (_selectedRole != 'staff') ...[
                       _ScopeTypeSelector(
@@ -1045,7 +1046,7 @@ class _LocationsMultiSelect extends StatelessWidget {
             child: ListView.separated(
               primary: false,
               itemCount: locations.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, __) => const AppDivider(height: 1),
               itemBuilder: (context, index) {
                 final location = locations[index];
                 if (singleSelection) {

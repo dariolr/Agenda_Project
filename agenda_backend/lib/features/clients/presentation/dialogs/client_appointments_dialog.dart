@@ -1,4 +1,5 @@
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -141,7 +142,7 @@ class _AppointmentList extends ConsumerWidget {
 
     return ListView.separated(
       itemCount: appointments.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, __) => const AppDivider(height: 1),
       itemBuilder: (context, index) {
         final appointment = appointments[index];
         return _AppointmentTile(appointment: appointment);

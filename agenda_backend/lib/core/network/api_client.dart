@@ -2258,6 +2258,7 @@ class ApiClient {
   /// PUT /v1/resources/{resourceId}
   Future<Map<String, dynamic>> updateResource({
     required int resourceId,
+    int? locationId,
     String? name,
     String? type,
     int? quantity,
@@ -2265,6 +2266,7 @@ class ApiClient {
     int? sortOrder,
   }) async {
     final data = <String, dynamic>{};
+    if (locationId != null) data['location_id'] = locationId;
     if (name != null) data['name'] = name;
     if (type != null) data['type'] = type;
     if (quantity != null) data['quantity'] = quantity;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -1975,7 +1976,7 @@ class _LocationFilterDialogState extends State<_LocationFilterDialog> {
                 ),
               ],
             ),
-            const Divider(),
+            const AppDivider(),
             Expanded(
               child: ListView.builder(
                 itemCount: widget.locations.length,
@@ -2099,7 +2100,7 @@ class _StaffFilterDialogState extends State<_StaffFilterDialog> {
                 ),
               ],
             ),
-            const Divider(),
+            const AppDivider(),
             Expanded(
               child: ListView.builder(
                 itemCount: widget.staff.length,
@@ -2251,7 +2252,7 @@ class _ServiceFilterDialogState extends State<_ServiceFilterDialog> {
                 ),
               ],
             ),
-            const Divider(),
+            const AppDivider(),
             Expanded(
               child: ListView.builder(
                 itemCount: displayItems.length,
@@ -2477,7 +2478,7 @@ class _MultiSelectDialogState<T> extends State<_MultiSelectDialog<T>> {
                 ),
               ],
             ),
-            const Divider(),
+            const AppDivider(),
             Expanded(
               child: ListView(
                 children: widget.items.entries.map((entry) {

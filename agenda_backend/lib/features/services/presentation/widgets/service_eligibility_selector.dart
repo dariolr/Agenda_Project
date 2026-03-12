@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 
 import '../../../../app/theme/extensions.dart';
 import '../../../../core/l10n/l10_extension.dart';
@@ -76,7 +77,7 @@ class ServiceEligibilitySelector extends StatelessWidget {
               }
             },
           ),
-        if (showSelectAll) const Divider(height: 1),
+        if (showSelectAll) const AppDivider(height: 1),
         for (final category in sortedCategories)
           if ((servicesByCategory[category.id] ?? const <Service>[]).isNotEmpty)
             ...[

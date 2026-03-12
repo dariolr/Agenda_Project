@@ -1,36 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/location.dart';
 import '../../../../core/models/resource.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/network/network_providers.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../agenda/providers/resource_providers.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/services_provider.dart';
 import '../widgets/resource_service_picker.dart';
 
-Future<void> showResourceDialog(
+Future<bool?> showResourceDialog(
   BuildContext context,
   WidgetRef ref, {
   required int locationId,
   Resource? resource,
+  List<Location> selectableLocations = const [],
 }) async {
   final formFactor = ref.read(formFactorProvider);
   final isDesktop = formFactor == AppFormFactor.desktop;
 
-  final dialog = _ResourceDialog(locationId: locationId, resource: resource);
+  final dialog = _ResourceDialog(
+    locationId: locationId,
+    resource: resource,
+    selectableLocations: selectableLocations,
+  );
 
   if (isDesktop) {
-    await showDialog(context: context, builder: (_) => dialog);
+    return showAppFormDialog<bool>(context, builder: (_) => dialog);
   } else {
-    await AppBottomSheet.show(
+    return AppBottomSheet.show<bool>(
       context: context,
       builder: (_) => dialog,
       useRootNavigator: true,
@@ -41,10 +49,15 @@ Future<void> showResourceDialog(
 }
 
 class _ResourceDialog extends ConsumerStatefulWidget {
-  const _ResourceDialog({required this.locationId, this.resource});
+  const _ResourceDialog({
+    required this.locationId,
+    this.resource,
+    required this.selectableLocations,
+  });
 
   final int locationId;
   final Resource? resource;
+  final List<Location> selectableLocations;
 
   bool get isEditing => resource != null;
 
@@ -58,6 +71,7 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
   final _typeController = TextEditingController();
   final _noteController = TextEditingController();
   int _quantity = 1;
+  int? _selectedLocationId;
   bool _isSaving = false;
 
   // Servizi associati
@@ -68,6 +82,7 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
   @override
   void initState() {
     super.initState();
+    _selectedLocationId = widget.resource?.locationId ?? widget.locationId;
     if (widget.resource != null) {
       _nameController.text = widget.resource!.name;
       _typeController.text = widget.resource!.type ?? '';
@@ -124,6 +139,7 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
         resourceId = widget.resource!.id;
         await notifier.updateResource(
           resourceId: resourceId,
+          locationId: _selectedLocationId,
           name: _nameController.text.trim(),
           type: _typeController.text.trim().isEmpty
               ? null
@@ -135,7 +151,7 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
         );
       } else {
         final newResource = await notifier.addResource(
-          locationId: widget.locationId,
+          locationId: _selectedLocationId ?? widget.locationId,
           name: _nameController.text.trim(),
           type: _typeController.text.trim().isEmpty
               ? null
@@ -166,7 +182,7 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
       }
 
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
+        Navigator.of(context, rootNavigator: true).pop(!widget.isEditing);
       }
     } finally {
       if (mounted) {
@@ -191,6 +207,11 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
     final servicesAsync = ref.watch(servicesProvider);
     final services = servicesAsync.value ?? [];
     final categories = ref.watch(serviceCategoriesProvider);
+    final showLocationSelector = widget.selectableLocations.length > 1;
+    if (showLocationSelector &&
+        !widget.selectableLocations.any((l) => l.id == _selectedLocationId)) {
+      _selectedLocationId = widget.selectableLocations.first.id;
+    }
 
     final title = widget.isEditing ? l10n.resourceEdit : l10n.resourceNew;
 
@@ -201,6 +222,30 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (showLocationSelector) ...[
+              LabeledFormField(
+                label: l10n.agendaSelectLocation,
+                child: DropdownButtonFormField<int>(
+                  value: _selectedLocationId,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  items: [
+                    for (final location in widget.selectableLocations)
+                      DropdownMenuItem<int>(
+                        value: location.id,
+                        child: Text(location.name),
+                      ),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _selectedLocationId = value),
+                  validator: (value) =>
+                      value == null ? l10n.validationRequired : null,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.formRowSpacing),
+            ],
             LabeledFormField(
               label: l10n.resourceNameLabel,
               child: TextFormField(
@@ -259,7 +304,7 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
             // Sezione servizi associati
             if (services.isNotEmpty && categories.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.large),
-              const Divider(height: 1),
+              const AppDivider(height: 1),
               const SizedBox(height: AppSpacing.medium),
               _buildServicesSection(context, services, categories, formFactor),
             ],
@@ -295,28 +340,13 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
     );
 
     if (isDesktop) {
-      return Dialog(
-        child: ConstrainedBox(
+      return AppFormDialog(
+        title: Text(title),
+        content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480, maxHeight: 600),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              Flexible(child: body),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-                child: actions,
-              ),
-            ],
-          ),
+          child: body,
         ),
+        actions: [actions],
       );
     }
 

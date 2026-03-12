@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/location.dart';
 import '../../../../core/models/resource.dart';
 import '../../../../core/network/network_providers.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../agenda/providers/layout_config_provider.dart';
+import '../../../agenda/providers/location_providers.dart';
 import '../../../agenda/providers/resource_providers.dart';
 import '../dialogs/resource_dialog.dart';
 
@@ -31,57 +34,69 @@ final resourceServiceCountsProvider = FutureProvider.family<Map<int, int>, int>(
 );
 
 class ResourcesScreen extends ConsumerWidget {
-  const ResourcesScreen({super.key, required this.location});
+  const ResourcesScreen({
+    super.key,
+    required this.location,
+    this.showAppBar = true,
+    this.enableLocationSelectionInForm = false,
+  });
 
   final Location location;
+  final bool showAppBar;
+  final bool enableLocationSelectionInForm;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final selectableLocations = enableLocationSelectionInForm
+        ? ref.watch(locationsProvider)
+        : const <Location>[];
     final resources = ref.watch(locationResourcesProvider(location.id));
     final serviceCountsAsync = ref.watch(
       resourceServiceCountsProvider(location.id),
     );
     final serviceCounts = serviceCountsAsync.value ?? {};
 
+    final body = resources.isEmpty
+        ? const _EmptyState()
+        : ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: resources.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final resource = resources[index];
+              final serviceCount = serviceCounts[resource.id] ?? 0;
+              return _ResourceCard(
+                resource: resource,
+                serviceCount: serviceCount,
+                onEdit: () => showResourceDialog(
+                  context,
+                  ref,
+                  locationId: location.id,
+                  resource: resource,
+                  selectableLocations: selectableLocations,
+                ),
+                onDelete: () => _confirmDelete(context, ref, resource),
+              );
+            },
+          );
+
+    if (!showAppBar) return body;
+
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: AppBackButton(onPressed: () => Navigator.of(context).pop()),
         title: Text(l10n.resourcesTitle),
         centerTitle: false,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: FilledButton.icon(
-              onPressed: () =>
-                  showResourceDialog(context, ref, locationId: location.id),
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(l10n.agendaAdd),
-            ),
+          _StandaloneResourcesAddAction(
+            locationId: location.id,
+            selectableLocations: selectableLocations,
           ),
         ],
       ),
-      body: resources.isEmpty
-          ? _EmptyState(locationId: location.id)
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: resources.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final resource = resources[index];
-                final serviceCount = serviceCounts[resource.id] ?? 0;
-                return _ResourceCard(
-                  resource: resource,
-                  serviceCount: serviceCount,
-                  onEdit: () => showResourceDialog(
-                    context,
-                    ref,
-                    locationId: location.id,
-                    resource: resource,
-                  ),
-                  onDelete: () => _confirmDelete(context, ref, resource),
-                );
-              },
-            ),
+      body: body,
     );
   }
 
@@ -106,10 +121,104 @@ class ResourcesScreen extends ConsumerWidget {
   }
 }
 
-class _EmptyState extends ConsumerWidget {
-  const _EmptyState({required this.locationId});
+class _StandaloneResourcesAddAction extends ConsumerWidget {
+  const _StandaloneResourcesAddAction({
+    required this.locationId,
+    required this.selectableLocations,
+  });
 
   final int locationId;
+  final List<Location> selectableLocations;
+  static const double _actionButtonHeight = 40;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final compact = formFactor != AppFormFactor.desktop;
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: GestureDetector(
+        onTap: () => showResourceDialog(
+          context,
+          ref,
+          locationId: locationId,
+          selectableLocations: selectableLocations,
+        ),
+        child: Builder(
+          builder: (buttonContext) {
+            final scheme = Theme.of(buttonContext).colorScheme;
+            final onContainer = scheme.onSecondaryContainer;
+            return Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: Padding(
+                  padding: compact
+                      ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                      : const EdgeInsets.fromLTRB(12, 8, 28, 8),
+                  child: compact
+                      ? showLabelEffective
+                            ? Text(
+                                l10n.agendaAdd,
+                                style: TextStyle(
+                                  color: onContainer,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            : Icon(
+                                Icons.add_outlined,
+                                size: 22,
+                                color: onContainer,
+                              )
+                      : !showLabelEffective
+                      ? Icon(
+                          Icons.add_outlined,
+                          size: 22,
+                          color: onContainer,
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add_outlined,
+                              size: 22,
+                              color: onContainer,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.agendaAdd,
+                              style: TextStyle(
+                                color: onContainer,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends ConsumerWidget {
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -142,12 +251,6 @@ class _EmptyState extends ConsumerWidget {
                 context,
               ).textTheme.bodyMedium?.copyWith(color: colorScheme.outline),
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            AppFilledButton(
-              onPressed: () =>
-                  showResourceDialog(context, ref, locationId: locationId),
-              child: Text(l10n.agendaAdd),
             ),
           ],
         ),

@@ -1304,6 +1304,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "moreBookingsDescription": MessageLookupByLibrary.simpleMessage(
       "Browse booking history",
     ),
+    "moreLocationsDescription": MessageLookupByLibrary.simpleMessage(
+      "Manage business locations",
+    ),
     "moreProfileDescription": MessageLookupByLibrary.simpleMessage(
       "Manage your personal data and credentials",
     ),

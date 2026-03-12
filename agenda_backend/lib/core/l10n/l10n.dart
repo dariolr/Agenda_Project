@@ -7350,6 +7350,16 @@ class L10n {
     );
   }
 
+  /// `Gestisci le sedi del business`
+  String get moreLocationsDescription {
+    return Intl.message(
+      'Gestisci le sedi del business',
+      name: 'moreLocationsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Gestisci operatori, sedi e orari di lavoro`
   String get moreTeamDescription {
     return Intl.message(

@@ -12,6 +12,7 @@ Dialog COMPLETO per creare/modificare un planning:
 */
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart';
@@ -804,7 +805,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
                 ],
               ),
             ),
-            const Divider(height: 1),
+            const AppDivider(height: 1),
             Expanded(child: content),
           ],
         ),

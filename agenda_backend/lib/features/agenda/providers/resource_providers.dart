@@ -94,6 +94,7 @@ class ResourcesNotifier extends AsyncNotifier<List<Resource>> {
 
   Future<Resource> updateResource({
     required int resourceId,
+    int? locationId,
     String? name,
     String? type,
     int? quantity,
@@ -102,6 +103,7 @@ class ResourcesNotifier extends AsyncNotifier<List<Resource>> {
     final apiClient = ref.read(apiClientProvider);
     final data = await apiClient.updateResource(
       resourceId: resourceId,
+      locationId: locationId,
       name: name,
       type: type,
       quantity: quantity,

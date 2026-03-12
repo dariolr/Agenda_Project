@@ -1,4 +1,5 @@
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -752,7 +753,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
                     ),
                   ),
                 ),
-                const Divider(height: 1),
+                const AppDivider(height: 1),
                 ...durations.map(
                   (d) => ListTile(
                     title: Text(_formatExtraDuration(d)),
@@ -852,7 +853,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
                     ),
                   ),
                 ),
-                const Divider(height: 1),
+                const AppDivider(height: 1),
                 _StaffPickerContent(
                   staff: availableStaff,
                   selectedId: item.staffId,
@@ -1096,7 +1097,7 @@ class _ExtraTimeCardState extends State<ExtraTimeCard> {
                     ),
                   ),
                 ),
-                const Divider(height: 1),
+                const AppDivider(height: 1),
                 ...durations.map(
                   (d) => ListTile(
                     title: Text(_formatExtraDuration(d)),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service_package.dart';
@@ -30,7 +31,7 @@ class _ServicePackagePickerDialog extends StatelessWidget {
             : ListView.separated(
                 shrinkWrap: true,
                 itemCount: packages.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
+                separatorBuilder: (_, __) => const AppDivider(height: 1),
                 itemBuilder: (context, index) {
                   final pkg = packages[index];
                   final disabled = !pkg.isActive || pkg.isBroken;
