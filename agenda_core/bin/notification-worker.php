@@ -21,6 +21,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Agenda\Infrastructure\Notifications\EmailService;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Notifications\CalendarICSGenerator;
 use Agenda\Infrastructure\Database\Connection;
 use Dotenv\Dotenv;
 
@@ -133,6 +134,24 @@ foreach ($notifications as $notification) {
         $payload = json_decode($notification['payload'], true);
         if (!$payload) {
             throw new \RuntimeException('Invalid payload JSON');
+        }
+
+        // Safety net: refresh reminder ICS at send-time so already queued payloads
+        // are aligned with location timezone and not with stale/ambiguous content.
+        if ($channel === 'booking_reminder' && $bookingId !== null) {
+            $variables = $payload['variables'] ?? $payload;
+            $locale = (string) ($variables['locale'] ?? 'it');
+            $attachment = buildReminderIcsAttachment(
+                $db->getPdo(),
+                (int) $bookingId,
+                $locale
+            );
+            if ($attachment === null) {
+                throw new \RuntimeException(
+                    "Unable to rebuild reminder ICS for booking {$bookingId}"
+                );
+            }
+            $payload['attachments'] = [$attachment];
         }
         
         // Render email template based on channel (not type)
@@ -336,4 +355,50 @@ function normalizeEmail(?string $email): ?string
 function isValidEmail(string $email): bool
 {
     return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+}
+
+/**
+ * Build a fresh ICS attachment for reminder emails from current booking data.
+ *
+ * @return array{filename: string, content: string, content_type: string, encoding: string}|null
+ */
+function buildReminderIcsAttachment(\PDO $pdo, int $bookingId, string $locale = 'it'): ?array
+{
+    $stmt = $pdo->prepare(
+        'SELECT
+            b.id AS booking_id,
+            b.status,
+            l.timezone AS location_timezone,
+            bus.name AS business_name,
+            l.name AS location_name,
+            l.address AS location_address,
+            l.city AS location_city,
+            MIN(bi.start_time) AS start_time,
+            MAX(bi.end_time) AS end_time,
+            GROUP_CONCAT(DISTINCT s.name ORDER BY s.name SEPARATOR ", ") AS services
+         FROM bookings b
+         JOIN locations l ON b.location_id = l.id
+         JOIN businesses bus ON l.business_id = bus.id
+         LEFT JOIN booking_items bi ON b.id = bi.booking_id
+         LEFT JOIN service_variants sv ON bi.service_variant_id = sv.id
+         LEFT JOIN services s ON sv.service_id = s.id
+         WHERE b.id = :booking_id
+           AND b.status IN ("pending", "confirmed")
+         GROUP BY b.id'
+    );
+    $stmt->execute(['booking_id' => $bookingId]);
+    $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+    if (!$booking || empty($booking['start_time']) || empty($booking['end_time'])) {
+        return null;
+    }
+
+    $eventData = CalendarICSGenerator::prepareEventFromBooking(
+        $booking,
+        (string) ($booking['business_name'] ?? ''),
+        $locale
+    );
+    $icsContent = CalendarICSGenerator::generateIcsContent($eventData);
+
+    return CalendarICSGenerator::createIcsAttachment($icsContent);
 }

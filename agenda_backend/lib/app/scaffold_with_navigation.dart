@@ -1,6 +1,6 @@
 // Cleaned duplicate header
+import 'package:agenda_backend/app/providers/desktop_rail_preference_provider.dart';
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
-import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_backend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_backend/app/widgets/top_controls.dart';
@@ -46,10 +46,9 @@ import '../features/services/providers/services_reorder_provider.dart';
 import '../features/staff/presentation/dialogs/location_dialog.dart';
 import '../features/staff/presentation/dialogs/resource_dialog.dart';
 import '../features/staff/presentation/dialogs/staff_dialog.dart';
-import '../features/staff/presentation/screens/resources_screen.dart';
-import '../features/staff/providers/staff_sorted_providers.dart';
 import '../features/staff/providers/staff_providers.dart';
 import '../features/staff/providers/staff_reorder_provider.dart';
+import '../features/staff/providers/staff_sorted_providers.dart';
 
 Widget _buildAddButtonContent({
   required bool showLabelEffective,
@@ -101,11 +100,14 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isProfile = navigationShell.currentIndex == 8;
     final isPermessi = navigationShell.currentIndex == 9;
     final currentPath = GoRouterState.of(context).uri.path;
+    final fromAltroEntry =
+        GoRouterState.of(context).uri.queryParameters['from_altro'] == '1';
     final isAltroRoot = currentPath == '/altro';
+    final hideAltroSubsectionTitle =
+        currentPath.startsWith('/altro/') && !isAltroRoot;
     final isClassEvents = currentPath == '/altro/classi';
     final isMoreResources = currentPath == '/altro/risorse';
     final isMoreLocations = currentPath == '/altro/sedi';
-    final isMoreLocationResources = currentPath.startsWith('/altro/sedi/risorse/');
     final hasAltroBack =
         !isAltroRoot &&
         ((isMore && currentPath.startsWith('/altro/')) ||
@@ -119,11 +121,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
             isPermessi ||
             isClassEvents ||
             isMoreResources ||
-            isMoreLocations ||
-            isMoreLocationResources);
-    final altroBackTarget = isMoreLocationResources
-        ? '/altro/sedi'
-        : '/altro';
+            isMoreLocations);
+    const altroBackTarget = '/altro';
     final agendaDate = ref.watch(agendaDateProvider);
     final today = ref.watch(tenantTodayProvider);
     final isToday = DateUtils.isSameDay(agendaDate, today);
@@ -171,6 +170,19 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     if (formFactor == AppFormFactor.desktop) {
       final layoutConfig = ref.watch(layoutConfigProvider);
       final dividerColor = Theme.of(context).dividerColor;
+      final railTheme = NavigationRailTheme.of(context);
+      final railWidth = railTheme.minWidth ?? 72.0;
+      const agendaToolbarHeight = 76.0;
+      final railIconSize =
+          railTheme.unselectedIconTheme?.size ??
+          railTheme.selectedIconTheme?.size ??
+          36.0;
+      final showDesktopToolbar = !ref.watch(desktopRailStartsAtTopProvider);
+      final shouldPadAltroBack = !showDesktopToolbar && hasAltroBack;
+      final altroBackLeftPadding = shouldPadAltroBack ? 16.0 : 0.0;
+      final agendaControlsLeftInset = hasAltroBack ? 0.0 : railWidth;
+      final showDesktopAppBar = showDesktopToolbar && !isAltroRoot;
+      final showDesktopInlineTopBar = !showDesktopAppBar && !isAltroRoot;
       const dividerThickness = 1.0;
       // Desktop usa le stesse destinazioni del mobile (con "Altro")
       final railDestinations =
@@ -178,13 +190,10 @@ class ScaffoldWithNavigation extends ConsumerWidget {
             resolvedMobileDestinations,
           );
 
-      final isTablet = formFactor == AppFormFactor.tablet;
-
       // Azioni specifiche per tab (menu utente è nella rail)
       List<Widget> buildActions() {
         final List<Widget> actions = [];
         if (isAgenda) {
-          // Icona report agenda temporaneamente disabilitata.
           if (canCreateAgendaItems) {
             actions.add(const _AgendaAddAction());
           }
@@ -208,8 +217,6 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           actions.add(const _ResourcesAddAction());
         } else if (isMoreLocations && canManageClosures) {
           actions.add(const _LocationsAddAction());
-        } else if (isMoreLocationResources && canManageClosures) {
-          actions.add(const _ResourcesAddAction());
         } else if (isBookingNotifications) {
           actions.add(_BookingNotificationsRefreshAction(ref: ref));
         } else if (isClosures && canManageClosures) {
@@ -234,19 +241,26 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
       return GlobalLoadingOverlay(
         child: Scaffold(
-          appBar: isMore && !hasAltroBack
-              ? null
-              : AppBar(
+          appBar: showDesktopAppBar
+              ? AppBar(
+                  leadingWidth: hasAltroBack ? railWidth : null,
                   leading: hasAltroBack
                       ? AppBackButton(
                           onPressed: () => context.go(altroBackTarget),
+                          showClose: fromAltroEntry,
+                          leftPadding: altroBackLeftPadding,
                         )
                       : null,
-                  titleSpacing: isTablet && isAgenda
-                      ? 4
-                      : NavigationToolbar.kMiddleSpacing,
-                  title: isAgenda
-                      ? const AgendaTopControls()
+                  titleSpacing: isAgenda ? 0 : NavigationToolbar.kMiddleSpacing,
+                  title: hideAltroSubsectionTitle
+                      ? const SizedBox.shrink()
+                      : isAgenda
+                      ? Padding(
+                          padding: EdgeInsetsDirectional.only(
+                            start: agendaControlsLeftInset,
+                          ),
+                          child: const AgendaTopControls(),
+                        )
                       : isMore
                       ? Text(context.l10n.navMore)
                       : isReport
@@ -259,8 +273,6 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                       ? Text(context.l10n.resourcesTitle)
                       : isMoreLocations
                       ? Text(context.l10n.teamLocationsLabel)
-                      : isMoreLocationResources
-                      ? Text(context.l10n.resourcesTitle)
                       : isBookingNotifications
                       ? Text(context.l10n.bookingNotificationsTitle)
                       : isClosures
@@ -272,7 +284,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                   toolbarHeight: 76,
                   actionsPadding: const EdgeInsets.only(right: 6),
                   actions: buildActions(),
-                ),
+                )
+              : null,
           body: Row(
             children: [
               Theme(
@@ -289,6 +302,25 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                     ref,
                     includeClients: showClientsNav,
                   ),
+                  // Quando la rail parte dall'alto, lascia lo spazio
+                  // equivalente a una voce menu prima della prima icona.
+                  leading: showDesktopToolbar
+                      ? null
+                      : SizedBox(
+                          width: railWidth,
+                          height: agendaToolbarHeight - 8,
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Image.asset(
+                              'assets/logo.png',
+                              width: railIconSize,
+                              height: railIconSize,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) =>
+                                  const SizedBox.shrink(),
+                            ),
+                          ),
+                        ),
                   labelType: NavigationRailLabelType.none,
                   useIndicator: false, // disattiva highlight di sistema su tap
                   // BusinessSelector rimosso - superadmin usa /businesses
@@ -296,11 +328,54 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                 ),
               ),
               _RailDivider(
-                topInset: layoutConfig.headerHeight,
+                topInset: showDesktopAppBar ? layoutConfig.headerHeight : 0,
                 color: dividerColor,
                 thickness: dividerThickness,
               ),
-              Expanded(child: navigationShell),
+              Expanded(
+                child: showDesktopInlineTopBar
+                    ? Column(
+                        children: [
+                          _DesktopInlineTopBar(
+                            hasBack: hasAltroBack,
+                            onBack: () => context.go(altroBackTarget),
+                            showClose: fromAltroEntry,
+                            backLeftPadding: altroBackLeftPadding,
+                            title: hideAltroSubsectionTitle
+                                ? const SizedBox.shrink()
+                                : isAgenda
+                                ? Padding(
+                                    padding: EdgeInsetsDirectional.only(
+                                      start: agendaControlsLeftInset,
+                                    ),
+                                    child: const AgendaTopControls(),
+                                  )
+                                : isMore
+                                ? Text(context.l10n.navMore)
+                                : isReport
+                                ? Text(context.l10n.reportsTitle)
+                                : isBookingsList
+                                ? Text(context.l10n.bookingsListTitle)
+                                : isClassEvents
+                                ? Text(context.l10n.classEventsTitle)
+                                : isMoreResources
+                                ? Text(context.l10n.resourcesTitle)
+                                : isMoreLocations
+                                ? Text(context.l10n.teamLocationsLabel)
+                                : isBookingNotifications
+                                ? Text(context.l10n.bookingNotificationsTitle)
+                                : isClosures
+                                ? Text(context.l10n.closuresTitle)
+                                : isPermessi
+                                ? Text(context.l10n.permissionsTitle)
+                                : const SizedBox.shrink(),
+                            actions: buildActions(),
+                          ),
+                          Expanded(child: navigationShell),
+                        ],
+                      )
+                    : navigationShell,
+              ),
             ],
           ),
         ),
@@ -324,7 +399,6 @@ class ScaffoldWithNavigation extends ConsumerWidget {
             const _AgendaFilterActions(padding: EdgeInsets.only(left: 8)),
           );
         }
-        // Icona report agenda temporaneamente disabilitata.
         if (canCreateAgendaItems) {
           actions.add(const _AgendaAddAction(compact: true));
         }
@@ -348,8 +422,6 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         actions.add(const _ResourcesAddAction(compact: true));
       } else if (isMoreLocations && canManageClosures) {
         actions.add(const _LocationsAddAction(compact: true));
-      } else if (isMoreLocationResources && canManageClosures) {
-        actions.add(const _ResourcesAddAction(compact: true));
       } else if (isBookingNotifications) {
         actions.add(_BookingNotificationsRefreshAction(ref: ref));
       } else if (isClosures && canManageClosures) {
@@ -376,17 +448,20 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
     return GlobalLoadingOverlay(
       child: Scaffold(
-        appBar: isMore && !hasAltroBack
+        appBar: isAltroRoot
             ? null
             : AppBar(
                 leading: hasAltroBack
                     ? AppBackButton(
                         onPressed: () => context.go(altroBackTarget),
+                        showClose: fromAltroEntry,
                       )
                     : null,
                 toolbarHeight: isTablet ? 76 : 64,
-                titleSpacing: isAgenda ? 4 : NavigationToolbar.kMiddleSpacing,
-                title: isAgenda
+                titleSpacing: isAgenda ? 0 : NavigationToolbar.kMiddleSpacing,
+                title: hideAltroSubsectionTitle
+                    ? const SizedBox.shrink()
+                    : isAgenda
                     ? const AgendaTopControls(compact: true)
                     : isMore
                     ? Text(context.l10n.navMore)
@@ -400,8 +475,6 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                     ? Text(context.l10n.resourcesTitle)
                     : isMoreLocations
                     ? Text(context.l10n.teamLocationsLabel)
-                    : isMoreLocationResources
-                    ? Text(context.l10n.resourcesTitle)
                     : isBookingNotifications
                     ? Text(context.l10n.bookingNotificationsTitle)
                     : isClosures
@@ -763,14 +836,12 @@ class _AgendaFilterActions extends ConsumerWidget {
     final currentLocationId = ref.watch(currentLocationIdProvider);
     // Mostra selettore staff solo se può vedere tutti gli appuntamenti
     final canViewAll = ref.watch(canViewAllAppointmentsProvider);
+    final canViewReports = ref.watch(currentUserCanViewReportsProvider);
     final showStaffSelector = canViewAll && staffCount > 1;
     final showLocationSelector = locations.length > 1;
-    final isSuperadmin = ref.watch(
-      authProvider.select((state) => state.user?.isSuperadmin ?? false),
-    );
-    final showViewModeSelector = isSuperadmin;
+    final showReportAction = canViewReports;
 
-    if (!showStaffSelector && !showLocationSelector && !showViewModeSelector) {
+    if (!showStaffSelector && !showLocationSelector && !showReportAction) {
       return const SizedBox.shrink();
     }
 
@@ -856,11 +927,13 @@ class _AgendaFilterActions extends ConsumerWidget {
                 ),
               ),
             ),
-          if ((showStaffSelector || showLocationSelector) &&
-              showViewModeSelector)
+          if (showStaffSelector || showLocationSelector)
             const SizedBox(width: _spacing),
-          if (showViewModeSelector)
-            AgendaViewModeButton(height: _actionButtonHeight),
+          AgendaViewModeButton(height: _actionButtonHeight),
+          if (showReportAction) ...[
+            const SizedBox(width: _spacing),
+            const AgendaLaunchReportButton(height: _actionButtonHeight),
+          ],
         ],
       ),
     );
@@ -1143,10 +1216,8 @@ class _TeamAddAction extends ConsumerWidget {
     // Controlla se ci sono staff e locations per determinare visibilità pulsanti
     final staffAsync = ref.watch(allStaffProvider);
     final staffCount = staffAsync.value?.length ?? 0;
-    final locations = ref.watch(locationsProvider);
-    final locationCount = locations.length;
+    final locationCount = ref.watch(locationsProvider).length;
     final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
-    final canManageResources = ref.watch(canManageBusinessSettingsProvider);
 
     Widget buildActionLabel(IconData icon, String label) {
       return showLabelEffective
@@ -1215,40 +1286,9 @@ class _TeamAddAction extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
           ],
-          if (canManageStaff || canManageResources)
-            AdaptiveDropdown<String>(
-              modalTitle: l10n.agendaAdd,
-              alignment: AdaptiveDropdownAlignment.right,
-              verticalPosition: AdaptiveDropdownVerticalPosition.above,
-              forcePopup: true,
-              hideTriggerWhenOpen: true,
-              popupWidth: 220,
-              items: [
-                if (canManageStaff)
-                  AdaptiveDropdownItem(
-                    value: 'location',
-                    child: Text(l10n.teamNewLocationTitle),
-                  ),
-                if (canManageStaff)
-                  AdaptiveDropdownItem(
-                    value: 'staff',
-                    child: Text(l10n.teamNewStaffTitle),
-                  ),
-                if (canManageResources)
-                  AdaptiveDropdownItem(
-                    value: 'resource',
-                    child: Text(l10n.resourceNew),
-                  ),
-              ],
-              onSelected: (value) async {
-                if (value == 'location') {
-                  showLocationDialog(context, ref);
-                } else if (value == 'staff') {
-                  showStaffDialog(context, ref);
-                } else if (value == 'resource') {
-                  await _showCreateResourceFlow(context, ref, locations);
-                }
-              },
+          if (canManageStaff)
+            GestureDetector(
+              onTap: () => showStaffDialog(context, ref),
               child: Material(
                 elevation: 0,
                 color: scheme.secondaryContainer,
@@ -1278,111 +1318,6 @@ class _TeamAddAction extends ConsumerWidget {
       ),
     );
   }
-}
-
-Future<void> _showCreateResourceFlow(
-  BuildContext context,
-  WidgetRef ref,
-  List<Location> locations,
-) async {
-  if (locations.isEmpty) return;
-  if (locations.length == 1) {
-    final location = locations.first;
-    final created = await showResourceDialog(
-      context,
-      ref,
-      locationId: location.id,
-    );
-    if (created == true && context.mounted) {
-      await Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(builder: (_) => ResourcesScreen(location: location)),
-      );
-    }
-    return;
-  }
-
-  final selectedLocationId = await _showResourceLocationPicker(
-    context,
-    locations,
-  );
-  if (selectedLocationId == null || !context.mounted) return;
-
-  final selectedLocation = locations.firstWhere(
-    (location) => location.id == selectedLocationId,
-  );
-  final created = await showResourceDialog(
-    context,
-    ref,
-    locationId: selectedLocationId,
-  );
-  if (created == true && context.mounted) {
-    await Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => ResourcesScreen(location: selectedLocation),
-      ),
-    );
-  }
-}
-
-Future<int?> _showResourceLocationPicker(
-  BuildContext context,
-  List<Location> locations,
-) async {
-  final l10n = context.l10n;
-  final formFactor = MediaQuery.sizeOf(context).width >= 1024
-      ? AppFormFactor.desktop
-      : AppFormFactor.mobile;
-
-  if (formFactor == AppFormFactor.desktop) {
-    return showDialog<int>(
-      context: context,
-      builder: (dialogContext) => Dialog(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 520),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  l10n.teamChooseLocationSingleButton,
-                  style: Theme.of(dialogContext).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 12),
-                Flexible(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: locations.length,
-                    separatorBuilder: (_, __) => const AppDivider(height: 1),
-                    itemBuilder: (_, index) {
-                      final location = locations[index];
-                      return ListTile(
-                        title: Text(location.name),
-                        onTap: () =>
-                            Navigator.of(dialogContext).pop(location.id),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  return AppBottomSheet.show<int>(
-    context: context,
-    builder: (sheetContext) => LocationSheetContent(
-      locations: locations,
-      currentLocationId: locations.first.id,
-      title: l10n.teamChooseLocationSingleButton,
-      onSelected: (id) => Navigator.of(sheetContext).pop(id),
-    ),
-    useRootNavigator: true,
-    padding: EdgeInsets.zero,
-  );
 }
 
 class _ClientsAddAction extends ConsumerWidget {
@@ -1616,6 +1551,44 @@ class _RailDivider extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _DesktopInlineTopBar extends StatelessWidget {
+  const _DesktopInlineTopBar({
+    required this.hasBack,
+    required this.onBack,
+    required this.showClose,
+    required this.backLeftPadding,
+    required this.title,
+    required this.actions,
+  });
+
+  final bool hasBack;
+  final VoidCallback onBack;
+  final bool showClose;
+  final double backLeftPadding;
+  final Widget title;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 76,
+      child: Row(
+        children: [
+          if (hasBack)
+            AppBackButton(
+              onPressed: onBack,
+              showClose: showClose,
+              leftPadding: backLeftPadding,
+            ),
+          Expanded(child: title),
+          ...actions,
+          const SizedBox(width: 6),
+        ],
       ),
     );
   }
@@ -1956,14 +1929,9 @@ class _ResourcesAddAction extends ConsumerWidget {
     final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
     const iconOnlyWidth = 46.0;
     final bool isIconOnly = !showLabelEffective;
-    final currentPath = GoRouterState.of(context).uri.path;
     final locations = ref.watch(sortedLocationsProvider);
     final currentLocation = ref.watch(currentLocationProvider);
-    final locationId = currentPath.startsWith('/altro/sedi/risorse/')
-        ? int.tryParse(currentPath.split('/').last)
-        : currentPath == '/altro/risorse'
-        ? currentLocation.id
-        : null;
+    final locationId = currentLocation.id;
     Location? location;
     for (final item in locations) {
       if (item.id == locationId) {
@@ -1991,7 +1959,8 @@ class _ResourcesAddAction extends ConsumerWidget {
             selectableLocations: locations,
           );
           if (created == true && context.mounted) {
-            context.go('/altro/sedi/risorse/${targetLocation.id}');
+            ref.read(currentLocationIdProvider.notifier).set(targetLocation.id);
+            context.go('/altro/risorse?from_altro=1');
           }
         },
         child: Builder(

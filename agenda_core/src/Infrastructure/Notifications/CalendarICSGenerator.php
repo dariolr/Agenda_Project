@@ -12,6 +12,8 @@ use DateTimeZone;
  */
 final class CalendarICSGenerator
 {
+    private const DEFAULT_TIMEZONE = 'Europe/Rome';
+
     /**
      * Generate ICS content only (no external links).
      *
@@ -27,7 +29,7 @@ final class CalendarICSGenerator
      */
     public static function generateIcsContent(array $event): string
     {
-        $timezone = $event['timezone'] ?? 'Europe/Rome';
+        $timezone = self::normalizeTimezone($event['timezone'] ?? null);
         $tz = new DateTimeZone($timezone);
 
         $startTime = new DateTimeImmutable($event['start_time'], $tz);
@@ -74,11 +76,12 @@ final class CalendarICSGenerator
             'PRODID:-//RomeoLab Agenda//IT',
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
+            'X-WR-TIMEZONE:' . $timezone,
             'BEGIN:VEVENT',
             'UID:' . $uid,
             'DTSTAMP:' . $now->format('Ymd\THis\Z'),
-            'DTSTART:' . $startLocal->format('Ymd\THis'),
-            'DTEND:' . $endLocal->format('Ymd\THis'),
+            'DTSTART;TZID=' . $timezone . ':' . $startLocal->format('Ymd\THis'),
+            'DTEND;TZID=' . $timezone . ':' . $endLocal->format('Ymd\THis'),
             'SUMMARY:' . $title,
             'DESCRIPTION:' . $description,
             'LOCATION:' . $location,
@@ -140,7 +143,7 @@ final class CalendarICSGenerator
             'start_time' => $booking['start_time'],
             'end_time' => $booking['end_time'],
             'location' => $location,
-            'timezone' => $booking['location_timezone'] ?? 'Europe/Rome',
+            'timezone' => self::normalizeTimezone($booking['location_timezone'] ?? null),
             'booking_id' => $booking['booking_id'] ?? 0,
         ];
     }
@@ -158,5 +161,20 @@ final class CalendarICSGenerator
             'content_type' => 'text/calendar; charset=utf-8',
             'encoding' => 'base64',
         ];
+    }
+
+    private static function normalizeTimezone(?string $timezone): string
+    {
+        $candidate = trim((string) $timezone);
+        if ($candidate === '') {
+            return self::DEFAULT_TIMEZONE;
+        }
+
+        try {
+            new DateTimeZone($candidate);
+            return $candidate;
+        } catch (\Throwable) {
+            return self::DEFAULT_TIMEZONE;
+        }
     }
 }

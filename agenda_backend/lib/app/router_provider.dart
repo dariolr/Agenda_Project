@@ -313,8 +313,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/staff',
                 name: 'staff',
-                builder: (BuildContext context, GoRouterState state) =>
-                    const TeamScreen(),
+                pageBuilder: (BuildContext context, GoRouterState state) =>
+                    const NoTransitionPage(child: TeamScreen()),
               ),
             ],
           ),
@@ -355,28 +355,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'risorse',
                     name: 'more-resources',
-                    builder: (BuildContext context, GoRouterState state) =>
-                        const MoreResourcesScreen(),
+                    pageBuilder: (BuildContext context, GoRouterState state) =>
+                        const NoTransitionPage(
+                          child: MoreResourcesScreen(),
+                        ),
                   ),
                   GoRoute(
                     path: 'sedi',
                     name: 'more-locations',
-                    builder: (BuildContext context, GoRouterState state) =>
-                        const MoreLocationsScreen(),
-                    routes: [
-                      GoRoute(
-                        path: 'risorse/:locationId',
-                        name: 'more-location-resources',
-                        builder: (BuildContext context, GoRouterState state) {
-                          final locationId = int.parse(
-                            state.pathParameters['locationId']!,
-                          );
-                          return MoreLocationResourcesScreen(
-                            locationId: locationId,
-                          );
-                        },
-                      ),
-                    ],
+                    pageBuilder: (BuildContext context, GoRouterState state) =>
+                        const NoTransitionPage(
+                          child: MoreLocationsScreen(),
+                        ),
                   ),
                   GoRoute(
                     path: 'classi',

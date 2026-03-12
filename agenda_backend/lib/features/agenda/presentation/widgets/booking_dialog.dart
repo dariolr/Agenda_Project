@@ -15,6 +15,8 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/booking.dart';
 import '../../../../core/models/booking_payment.dart';
+import '../../../../core/models/booking_payment_computed.dart';
+import '../../../../core/models/booking_payment_line.dart';
 import '../../../../core/models/recurrence_rule.dart';
 import '../../../../core/models/service_package.dart';
 import '../../../../core/models/service_variant.dart';
@@ -121,6 +123,7 @@ class _BookingDialog extends ConsumerStatefulWidget {
 }
 
 class _BookingDialogState extends ConsumerState<_BookingDialog> {
+  static const String _autoDiscountSourceTag = 'appointment_amount_adjustment';
   BookingPayment? _pendingPayment;
 
   final _formKey = GlobalKey<FormState>();
@@ -230,6 +233,121 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     }
   }
 
+  int _toCents(double value) => (value * 100).round();
+
+  int _baseTotalDueCents({
+    required int referenceTotalCents,
+    required int currentTotalCents,
+  }) {
+    return currentTotalCents > referenceTotalCents
+        ? currentTotalCents
+        : referenceTotalCents;
+  }
+
+  double _calculateReferenceTotalPrice(List<ServiceVariant> variants) {
+    double total = 0;
+    for (final item in _serviceItems) {
+      final variant = variants.cast<ServiceVariant?>().firstWhere(
+        (v) => v?.serviceId == item.serviceId,
+        orElse: () => null,
+      );
+      if (variant != null) {
+        total += variant.price;
+      }
+    }
+    return total;
+  }
+
+  BookingPayment _setAutoDiscountAmount({
+    required BookingPayment payment,
+    required int desiredAutoDiscountCents,
+  }) {
+    final lines = [...payment.lines];
+    final autoIndex = lines.indexWhere(
+      (line) =>
+          line.type == BookingPaymentLineType.discount &&
+          line.meta?['source'] == _autoDiscountSourceTag,
+    );
+
+    if (desiredAutoDiscountCents <= 0) {
+      if (autoIndex >= 0) {
+        lines.removeAt(autoIndex);
+      }
+    } else if (autoIndex >= 0) {
+      final line = lines[autoIndex];
+      lines[autoIndex] = BookingPaymentLine(
+        type: line.type,
+        amountCents: desiredAutoDiscountCents,
+        meta: line.meta,
+      );
+    } else {
+      lines.add(
+        BookingPaymentLine(
+          type: BookingPaymentLineType.discount,
+          amountCents: desiredAutoDiscountCents,
+          meta: const {'source': _autoDiscountSourceTag},
+        ),
+      );
+    }
+
+    return BookingPayment(
+      bookingId: payment.bookingId,
+      clientId: payment.clientId,
+      isActive: payment.isActive,
+      currency: payment.currency,
+      totalDueCents: payment.totalDueCents,
+      note: payment.note,
+      lines: lines,
+      computed: payment.computed,
+    );
+  }
+
+  BookingPayment _buildPaymentPreviewForDraft({
+    required double referenceTotalPrice,
+    required double currentTotalPrice,
+  }) {
+    final referenceTotalCents = _toCents(referenceTotalPrice);
+    final currentTotalCents = _toCents(currentTotalPrice);
+    final baseTotalDueCents = _baseTotalDueCents(
+      referenceTotalCents: referenceTotalCents,
+      currentTotalCents: currentTotalCents,
+    );
+    final desiredAutoDiscountCents = (baseTotalDueCents - currentTotalCents)
+        .clamp(0, 1 << 30);
+
+    final base = _pendingPayment ??
+        BookingPayment(
+          bookingId: 0,
+          clientId: _clientId,
+          isActive: true,
+          currency: PriceFormatter.effectiveCurrency(ref),
+          totalDueCents: baseTotalDueCents,
+          note: null,
+          lines: const [],
+          computed: const BookingPaymentComputed(
+            totalPaidCents: 0,
+            totalDiscountCents: 0,
+            balanceCents: 0,
+          ),
+        );
+
+    final normalized = BookingPayment(
+      bookingId: base.bookingId,
+      clientId: base.clientId,
+      isActive: base.isActive,
+      currency: base.currency,
+      totalDueCents: baseTotalDueCents,
+      note: base.note,
+      lines: base.lines,
+      computed: base.computed,
+    );
+
+    return _setAutoDiscountAmount(
+      payment: normalized,
+      desiredAutoDiscountCents: desiredAutoDiscountCents,
+    );
+  }
+
   @override
   void dispose() {
     _notesController.dispose();
@@ -296,6 +414,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final serviceCategories = ref.watch(serviceCategoriesProvider);
     final variants = ref.watch(serviceVariantsProvider).value ?? [];
     final totalPrice = _calculateTotalPrice(variants);
+    final referenceTotalPrice = _calculateReferenceTotalPrice(variants);
     final clients = ref.watch(clientsListProvider);
     final clientsById = ref.watch(clientsByIdProvider);
     final allStaff = ref.watch(staffForCurrentLocationProvider);
@@ -505,14 +624,28 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       AppOutlinedActionButton(
         onPressed: totalPrice > 0
             ? () async {
-                final navigator = Navigator.of(context);
-                final payment = await showPaymentDialog(
+              final navigator = Navigator.of(context);
+              final previewPayment = widget.existing == null
+                  ? _buildPaymentPreviewForDraft(
+                      referenceTotalPrice: referenceTotalPrice,
+                      currentTotalPrice: totalPrice,
+                    )
+                  : null;
+              final payment = await showPaymentDialog(
                   context,
                   ref,
-                  totalPrice: totalPrice,
+                  totalPrice: widget.existing == null
+                      ? _baseTotalDueCents(
+                              referenceTotalCents: _toCents(referenceTotalPrice),
+                              currentTotalCents: _toCents(totalPrice),
+                            ) /
+                            100
+                      : totalPrice,
                   currencyCode: PriceFormatter.effectiveCurrency(ref),
                   bookingId: widget.existing?.id,
-                  initialPayment: widget.existing == null ? _pendingPayment : null,
+                  initialPayment: widget.existing == null
+                      ? previewPayment
+                      : null,
                 );
                 if (!mounted || payment == null) return;
                 if (widget.existing == null) {
@@ -1810,6 +1943,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final bookingsNotifier = ref.read(bookingsProvider.notifier);
     final location = ref.read(currentLocationProvider);
     final repository = ref.read(bookingsRepositoryProvider);
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
+    final referenceTotalCents = _toCents(
+      _calculateReferenceTotalPrice(variants.cast<ServiceVariant>()),
+    );
 
     // Deriva il nome del cliente dal provider se _clientId è impostato
     final clientName = _clientId != null
@@ -1829,6 +1966,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           location: location,
           validItems: validItems,
           clientName: clientName,
+          referenceTotalCents: referenceTotalCents,
           desiredStatus: _selectedBookingStatus,
           bookingsNotifier: bookingsNotifier,
           repository: repository,
@@ -1856,6 +1994,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     required dynamic location,
     required List<ServiceItemData> validItems,
     required String clientName,
+    required int referenceTotalCents,
     required String? desiredStatus,
     required dynamic bookingsNotifier,
     required dynamic repository,
@@ -1924,7 +2063,10 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           );
     }
 
-    await _persistPendingPaymentIfNeeded(bookingResponse);
+    await _persistPendingPaymentIfNeeded(
+      bookingResponse,
+      referenceTotalCents: referenceTotalCents,
+    );
 
     // Refresh appointments per caricare i nuovi
     ref.invalidate(appointmentsProvider);
@@ -1942,19 +2084,65 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     }
   }
 
-  Future<void> _persistPendingPaymentIfNeeded(dynamic bookingResponse) async {
+  Future<void> _persistPendingPaymentIfNeeded(
+    dynamic bookingResponse, {
+    required int referenceTotalCents,
+  }) async {
     final pendingPayment = _pendingPayment;
-    if (pendingPayment == null) return;
+    final bookingTotalCents = (bookingResponse.totalPrice as num?) == null
+        ? referenceTotalCents
+        : ((bookingResponse.totalPrice as num).toDouble() * 100).round();
+    final baseTotalDueCents = _baseTotalDueCents(
+      referenceTotalCents: referenceTotalCents,
+      currentTotalCents: bookingTotalCents,
+    );
+    final desiredAutoDiscountCents =
+        (baseTotalDueCents - bookingTotalCents).clamp(0, 1 << 30);
+    if (pendingPayment == null && desiredAutoDiscountCents <= 0) {
+      return;
+    }
+
+    final basePending =
+        pendingPayment ??
+        BookingPayment(
+          bookingId: bookingResponse.id as int,
+          clientId: bookingResponse.clientId as int?,
+          isActive: true,
+          currency: PriceFormatter.effectiveCurrency(ref),
+          totalDueCents: baseTotalDueCents,
+          note: null,
+          lines: const [],
+          computed: const BookingPaymentComputed(
+            totalPaidCents: 0,
+            totalDiscountCents: 0,
+            balanceCents: 0,
+          ),
+        );
+    final normalizedBase = BookingPayment(
+      bookingId: basePending.bookingId,
+      clientId: basePending.clientId,
+      isActive: basePending.isActive,
+      currency: basePending.currency,
+      totalDueCents: baseTotalDueCents,
+      note: basePending.note,
+      lines: basePending.lines,
+      computed: basePending.computed,
+    );
+    final adjustedPending = _setAutoDiscountAmount(
+      payment: normalizedBase,
+      desiredAutoDiscountCents: desiredAutoDiscountCents,
+    );
+    final normalizedPending = adjustedPending;
 
     final paymentToSave = BookingPayment(
       bookingId: bookingResponse.id as int,
       clientId: bookingResponse.clientId as int?,
       isActive: true,
-      currency: pendingPayment.currency,
-      totalDueCents: pendingPayment.totalDueCents,
-      note: pendingPayment.note,
-      lines: pendingPayment.lines,
-      computed: pendingPayment.computed,
+      currency: normalizedPending.currency,
+      totalDueCents: normalizedPending.totalDueCents,
+      note: normalizedPending.note,
+      lines: normalizedPending.lines,
+      computed: normalizedPending.computed,
     );
 
     try {

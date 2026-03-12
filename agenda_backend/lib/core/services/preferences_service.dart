@@ -31,6 +31,9 @@ class PrefsKeys {
   static const legacyStaffFilterMode = 'staff_filter_mode';
   static const legacySelectedStaffIds = 'selected_staff_ids';
   static const legacyCurrentLocationId = 'current_location_id';
+
+  /// Preferenza globale UI: rail desktop dall'alto o sotto toolbar.
+  static const desktopRailStartsAtTop = 'desktop_rail_starts_at_top';
 }
 
 /// Service per gestire le preferenze utente.
@@ -133,6 +136,18 @@ class PreferencesService {
   }
 
   // ============================================
+  // Desktop Rail Position
+  // ============================================
+
+  bool getDesktopRailStartsAtTop() {
+    return _prefs.getBool(PrefsKeys.desktopRailStartsAtTop) ?? false;
+  }
+
+  Future<void> setDesktopRailStartsAtTop(bool value) async {
+    await _prefs.setBool(PrefsKeys.desktopRailStartsAtTop, value);
+  }
+
+  // ============================================
   // Superadmin Last Business ID
   // ============================================
 
@@ -170,7 +185,8 @@ class PreferencesService {
     for (final key in keys) {
       if (key.startsWith('staff_filter_mode') ||
           key.startsWith('selected_staff_ids') ||
-          key.startsWith('current_location_id')) {
+          key.startsWith('current_location_id') ||
+          key == PrefsKeys.desktopRailStartsAtTop) {
         await _prefs.remove(key);
       }
     }

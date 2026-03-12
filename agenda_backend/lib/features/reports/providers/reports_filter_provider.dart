@@ -139,11 +139,13 @@ final reportsFilterProvider =
 
 class AgendaReportLaunchRequest {
   const AgendaReportLaunchRequest({
-    required this.date,
+    required this.startDate,
+    required this.endDate,
     required this.locationId,
   });
 
-  final DateTime date;
+  final DateTime startDate;
+  final DateTime endDate;
   final int locationId;
 }
 
@@ -152,11 +154,13 @@ class AgendaReportLaunchNotifier extends Notifier<AgendaReportLaunchRequest?> {
   AgendaReportLaunchRequest? build() => null;
 
   void request({
-    required DateTime date,
+    required DateTime startDate,
+    required DateTime endDate,
     required int locationId,
   }) {
     state = AgendaReportLaunchRequest(
-      date: DateUtils.dateOnly(date),
+      startDate: DateUtils.dateOnly(startDate),
+      endDate: DateUtils.dateOnly(endDate),
       locationId: locationId,
     );
   }

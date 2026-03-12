@@ -759,6 +759,8 @@
   "authLastName": "Cognome",
   "authPhone": "Telefono",
   "switchBusiness": "Cambia",
+  "superadminRailStartTopLabel": "Navigation rail dall'alto",
+  "superadminRailStartTopHelp": "Se attivo, su desktop la colonna di navigazione parte dal bordo superiore senza toolbar.",
   "profileTitle": "Profilo",
   "profileUpdateSuccess": "Profilo aggiornato con successo",
   "profileEmailChangeWarning": "Attenzione: cambiando email dovrai usarla per il login",
@@ -1236,6 +1238,10 @@
   "bookingNotificationsFieldLastAttemptAt": "Ultimo tentativo",
   "bookingNotificationsFieldSentAt": "Inviata il",
   "bookingNotificationsFieldError": "Errore",
+  "bookingNotificationsFieldBody": "Corpo",
+  "bookingNotificationsActionViewBody": "Visualizza corpo",
+  "bookingNotificationsBodyDialogTitle": "Corpo notifica",
+  "bookingNotificationsBodyUnavailable": "Corpo notifica non disponibile",
   "bookingNotificationsNoSubject": "Nessun oggetto",
   "bookingNotificationsNotAvailable": "N/D",
 
@@ -1451,5 +1457,13 @@
   "paymentOutstanding": "Residuo da incassare",
   "paymentRemaining": "Rimanente",
   "paymentNotesLabel": "Note pagamento",
-  "paymentNotesPlaceholder": "Note sul pagamento..."
+  "paymentNotesPlaceholder": "Note sul pagamento...",
+  "moreSectionBusinessConfig": "Configurazione attività",
+  "moreSectionDataAnalysis": "Analisi dati",
+  "moreSectionProfileManage": "Gestisci il tuo profilo",
+  "moreClassEventsDescription": "Gestisci classi e programmazioni di gruppo",
+  "agendaDailyReportAction": "Report giornaliero",
+  "agendaWeeklyReportAction": "Report settimanale",
+  "agendaReportDisplayedDateAction": "Report giornata",
+  "agendaReportDisplayedWeekAction": "Report settimana"
 }

@@ -119,8 +119,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       return;
     }
 
-    final targetDate = DateUtils.dateOnly(launchRequest.date);
-    ref.read(reportsFilterProvider.notifier).setDateRange(targetDate, targetDate);
+    final startDate = DateUtils.dateOnly(launchRequest.startDate);
+    final endDate = DateUtils.dateOnly(launchRequest.endDate);
+    ref.read(reportsFilterProvider.notifier).setDateRange(startDate, endDate);
     _selectedLocationIds
       ..clear()
       ..add(launchRequest.locationId);

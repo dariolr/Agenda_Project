@@ -547,9 +547,18 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
     double currentPrice,
     double defaultPrice,
   ) {
-    final controller = TextEditingController(
-      text: currentPrice == 0 ? '' : currentPrice.toStringAsFixed(2),
-    );
+    final initialText = currentPrice == 0 ? '' : currentPrice.toStringAsFixed(2);
+    final controller = TextEditingController(text: initialText)
+      ..selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: initialText.length,
+      );
+    void selectAll() {
+      controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: controller.text.length,
+      );
+    }
 
     if (formFactor != AppFormFactor.desktop) {
       AppBottomSheet.show(
@@ -575,6 +584,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
                     decimal: true,
                   ),
                   autofocus: true,
+                  onTap: selectAll,
                   decoration: InputDecoration(
                     hintText: l10n.appointmentPriceHint,
                     prefixText: '€ ',
@@ -626,6 +636,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
                 decimal: true,
               ),
               autofocus: true,
+              onTap: selectAll,
               decoration: InputDecoration(
                 hintText: l10n.appointmentPriceHint,
                 prefixText: '€ ',

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +11,7 @@ import '/core/l10n/l10_extension.dart';
 import '/core/models/business.dart';
 import '/core/models/booking_notification_item.dart';
 import '/core/services/tenant_time_service.dart';
+import '/core/widgets/app_bottom_sheet.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/business_providers.dart';
 import '/features/agenda/providers/location_providers.dart';
@@ -47,9 +49,9 @@ class _BookingNotificationsScreenState
     _scrollController.addListener(_onScroll);
     if (_canSelectBusiness) {
       _selectedStatus = 'failed';
-      ref.read(bookingNotificationsFiltersProvider.notifier).setStatus(
-        const ['failed'],
-      );
+      ref.read(bookingNotificationsFiltersProvider.notifier).setStatus(const [
+        'failed',
+      ]);
     }
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadInitialData());
   }
@@ -62,8 +64,7 @@ class _BookingNotificationsScreenState
     super.dispose();
   }
 
-  bool get _isSuperadmin =>
-      ref.read(authProvider).user?.isSuperadmin ?? false;
+  bool get _isSuperadmin => ref.read(authProvider).user?.isSuperadmin ?? false;
 
   bool get _canSelectBusiness =>
       widget.enableBusinessSelectorForSuperadmin && _isSuperadmin;
@@ -81,10 +82,12 @@ class _BookingNotificationsScreenState
   }
 
   List<Business> _readBusinesses() {
-    return ref.read(businessesProvider).maybeWhen(
-      data: (businesses) => businesses,
-      orElse: () => const <Business>[],
-    );
+    return ref
+        .read(businessesProvider)
+        .maybeWhen(
+          data: (businesses) => businesses,
+          orElse: () => const <Business>[],
+        );
   }
 
   String _formatDateTime(BuildContext context, DateTime? dateTime) {
@@ -126,7 +129,9 @@ class _BookingNotificationsScreenState
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
       ref
           .read(bookingNotificationsProvider.notifier)
-          .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
+          .loadNotificationsForBusinesses(
+            _activeBusinessIds(_readBusinesses()),
+          );
     });
   }
 
@@ -163,10 +168,12 @@ class _BookingNotificationsScreenState
     final state = ref.watch(bookingNotificationsProvider);
     final formFactor = ref.watch(formFactorProvider);
     final isDesktop = formFactor == AppFormFactor.desktop;
-    final businesses = ref.watch(businessesProvider).maybeWhen(
-      data: (businesses) => businesses,
-      orElse: () => const <Business>[],
-    );
+    final businesses = ref
+        .watch(businessesProvider)
+        .maybeWhen(
+          data: (businesses) => businesses,
+          orElse: () => const <Business>[],
+        );
 
     ref.listen<BookingNotificationsState>(bookingNotificationsProvider, (
       prev,
@@ -324,7 +331,9 @@ class _BookingNotificationsScreenState
                     ),
                     if (showLastAttemptColumn)
                       DataColumn(
-                        label: Text(l10n.bookingNotificationsFieldLastAttemptAt),
+                        label: Text(
+                          l10n.bookingNotificationsFieldLastAttemptAt,
+                        ),
                         onSort: (_, ascending) =>
                             _onSortChanged('last_attempt', ascending),
                       ),
@@ -370,7 +379,9 @@ class _BookingNotificationsScreenState
                 child: OutlinedButton(
                   onPressed: () => ref
                       .read(bookingNotificationsProvider.notifier)
-                      .loadMoreForBusinesses(_activeBusinessIds(_readBusinesses())),
+                      .loadMoreForBusinesses(
+                        _activeBusinessIds(_readBusinesses()),
+                      ),
                   child: Text(l10n.bookingNotificationsLoadMore),
                 ),
               ),
@@ -383,22 +394,26 @@ class _BookingNotificationsScreenState
   DataRow _buildDataRow(BookingNotificationItem item) {
     final showLastAttemptColumn = _canSelectBusiness;
     return DataRow(
+      onSelectChanged: (_) => _showNotificationBody(item),
       cells: [
-        DataCell(Text(_formatDateTime(context, item.createdAt))),
+        _tappableDataCell(item, Text(_formatDateTime(context, item.createdAt))),
         if (showLastAttemptColumn)
-          DataCell(
+          _tappableDataCell(
+            item,
             Text(
               item.lastAttemptAt != null
                   ? _formatDateTime(context, item.lastAttemptAt)
                   : '',
             ),
           ),
-        DataCell(
+        _tappableDataCell(
+          item,
           Text(
             item.sentAt != null ? _formatDateTime(context, item.sentAt) : '',
           ),
         ),
-        DataCell(
+        _tappableDataCell(
+          item,
           SizedBox(
             width: 180,
             child: Text(
@@ -407,7 +422,8 @@ class _BookingNotificationsScreenState
             ),
           ),
         ),
-        DataCell(
+        _tappableDataCell(
+          item,
           SizedBox(
             width: 170,
             child: Text(
@@ -416,7 +432,8 @@ class _BookingNotificationsScreenState
             ),
           ),
         ),
-        DataCell(
+        _tappableDataCell(
+          item,
           SizedBox(
             width: 220,
             child: Text(
@@ -426,9 +443,13 @@ class _BookingNotificationsScreenState
             ),
           ),
         ),
-        DataCell(_NotificationStatusChip(item: item)),
-        DataCell(Text(_formatDateTime(context, item.firstStartTime))),
-        DataCell(
+        _tappableDataCell(item, _NotificationStatusChip(item: item)),
+        _tappableDataCell(
+          item,
+          Text(_formatDateTime(context, item.firstStartTime)),
+        ),
+        _tappableDataCell(
+          item,
           SizedBox(
             width: 150,
             child: Text(
@@ -438,7 +459,8 @@ class _BookingNotificationsScreenState
             ),
           ),
         ),
-        DataCell(
+        _tappableDataCell(
+          item,
           SizedBox(
             width: 240,
             child: Text(
@@ -454,6 +476,10 @@ class _BookingNotificationsScreenState
     );
   }
 
+  DataCell _tappableDataCell(BookingNotificationItem item, Widget child) {
+    return DataCell(child, onTap: () => _showNotificationBody(item));
+  }
+
   void _onSortChanged(String sortBy, bool ascending) {
     ref.read(bookingNotificationsFiltersProvider.notifier).setSortBy(sortBy);
     ref
@@ -462,6 +488,77 @@ class _BookingNotificationsScreenState
     ref
         .read(bookingNotificationsProvider.notifier)
         .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
+  }
+
+  String _notificationBodyContent(BookingNotificationItem item) {
+    final body = item.body?.trim();
+    if (body != null && body.isNotEmpty) {
+      return body;
+    }
+    return '';
+  }
+
+  String _notificationTitle(BookingNotificationItem item) {
+    final subject = item.subject?.trim();
+    if (subject != null && subject.isNotEmpty) {
+      return subject;
+    }
+    return context.l10n.bookingNotificationsBodyDialogTitle;
+  }
+
+  Future<void> _showNotificationBody(BookingNotificationItem item) async {
+    final body = _notificationBodyContent(item);
+    final title = _notificationTitle(item);
+    final l10n = context.l10n;
+    final isDesktop = ref.read(formFactorProvider) == AppFormFactor.desktop;
+
+    if (isDesktop) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: 760,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 560),
+              child: SingleChildScrollView(
+                child: _NotificationBodyViewer(
+                  body: body,
+                  emptyLabel: l10n.bookingNotificationsBodyUnavailable,
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.actionClose),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    await AppBottomSheet.show<void>(
+      context: context,
+      heightFactor: AppBottomSheet.defaultHeightFactor,
+      builder: (_) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 12),
+          Expanded(
+            child: SingleChildScrollView(
+              child: _NotificationBodyViewer(
+                body: body,
+                emptyLabel: l10n.bookingNotificationsBodyUnavailable,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCardList(BookingNotificationsState state) {
@@ -480,7 +577,11 @@ class _BookingNotificationsScreenState
               ),
             );
           }
-          return _NotificationCard(notification: state.notifications[index]);
+          final item = state.notifications[index];
+          return _NotificationCard(
+            notification: item,
+            onOpenBody: () => _showNotificationBody(item),
+          );
         },
       ),
     );
@@ -686,9 +787,13 @@ class _FiltersBar extends StatelessWidget {
 }
 
 class _NotificationCard extends ConsumerWidget {
-  const _NotificationCard({required this.notification});
+  const _NotificationCard({
+    required this.notification,
+    required this.onOpenBody,
+  });
 
   final BookingNotificationItem notification;
+  final VoidCallback onOpenBody;
 
   String _formatDateTime(
     WidgetRef ref,
@@ -711,74 +816,146 @@ class _NotificationCard extends ConsumerWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
+      child: InkWell(
+        onTap: onOpenBody,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      notification.subject?.trim().isNotEmpty == true
+                          ? notification.subject!
+                          : l10n.bookingNotificationsNoSubject,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  _NotificationStatusChip(item: notification),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${l10n.bookingNotificationsFieldType}: ${notification.channelLabel(context)}',
+                style: theme.textTheme.bodyMedium,
+              ),
+              if ((notification.clientName ?? '').isNotEmpty)
+                Text(
+                  '${l10n.bookingNotificationsFieldClient}: ${notification.clientName}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              if ((notification.locationName ?? '').isNotEmpty)
+                Text(
+                  '${l10n.bookingNotificationsFieldLocation}: ${notification.locationName}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              if (notification.firstStartTime != null)
+                Text(
+                  '${l10n.bookingNotificationsFieldAppointment}: ${_formatDateTime(ref, context, notification.firstStartTime)}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              Text(
+                '${l10n.bookingNotificationsFieldRecipient}: ${notification.recipientEmail ?? l10n.bookingNotificationsNotAvailable}',
+                style: theme.textTheme.bodyMedium,
+              ),
+              Text(
+                '${l10n.bookingNotificationsFieldCreatedAt}: ${_formatDateTime(ref, context, notification.createdAt)}',
+                style: theme.textTheme.bodySmall,
+              ),
+              if (notification.sentAt != null)
+                Text(
+                  '${l10n.bookingNotificationsFieldSentAt}: ${_formatDateTime(ref, context, notification.sentAt)}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              if ((notification.errorMessage ?? '').isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
                   child: Text(
-                    notification.subject?.trim().isNotEmpty == true
-                        ? notification.subject!
-                        : l10n.bookingNotificationsNoSubject,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    '${l10n.bookingNotificationsFieldError}: ${notification.errorMessage}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
                     ),
                   ),
                 ),
-                _NotificationStatusChip(item: notification),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${l10n.bookingNotificationsFieldType}: ${notification.channelLabel(context)}',
-              style: theme.textTheme.bodyMedium,
-            ),
-            if ((notification.clientName ?? '').isNotEmpty)
-              Text(
-                '${l10n.bookingNotificationsFieldClient}: ${notification.clientName}',
-                style: theme.textTheme.bodyMedium,
-              ),
-            if ((notification.locationName ?? '').isNotEmpty)
-              Text(
-                '${l10n.bookingNotificationsFieldLocation}: ${notification.locationName}',
-                style: theme.textTheme.bodyMedium,
-              ),
-            if (notification.firstStartTime != null)
-              Text(
-                '${l10n.bookingNotificationsFieldAppointment}: ${_formatDateTime(ref, context, notification.firstStartTime)}',
-                style: theme.textTheme.bodyMedium,
-              ),
-            Text(
-              '${l10n.bookingNotificationsFieldRecipient}: ${notification.recipientEmail ?? l10n.bookingNotificationsNotAvailable}',
-              style: theme.textTheme.bodyMedium,
-            ),
-            Text(
-              '${l10n.bookingNotificationsFieldCreatedAt}: ${_formatDateTime(ref, context, notification.createdAt)}',
-              style: theme.textTheme.bodySmall,
-            ),
-            if (notification.sentAt != null)
-              Text(
-                '${l10n.bookingNotificationsFieldSentAt}: ${_formatDateTime(ref, context, notification.sentAt)}',
-                style: theme.textTheme.bodySmall,
-              ),
-            if ((notification.errorMessage ?? '').isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  '${l10n.bookingNotificationsFieldError}: ${notification.errorMessage}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _NotificationBodyViewer extends StatelessWidget {
+  const _NotificationBodyViewer({required this.body, required this.emptyLabel});
+
+  final String body;
+  final String emptyLabel;
+
+  bool get _looksLikeHtml =>
+      RegExp(r'<[a-zA-Z][\s\S]*>').hasMatch(body) ||
+      body.toLowerCase().contains('<!doctype html');
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = body.trim();
+    if (trimmed.isEmpty) {
+      return Text(emptyLabel, style: Theme.of(context).textTheme.bodyMedium);
+    }
+
+    if (_looksLikeHtml) {
+      final plainText = _htmlToReadableText(trimmed);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Html(data: trimmed),
+          const SizedBox(height: 12),
+          const Divider(),
+          const SizedBox(height: 8),
+          SelectableText(
+            plainText.isNotEmpty ? plainText : trimmed,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      );
+    }
+
+    return SelectableText(
+      trimmed,
+      style: Theme.of(context).textTheme.bodyMedium,
+    );
+  }
+}
+
+String _htmlToReadableText(String html) {
+  return html
+      .replaceAll(
+        RegExp(
+          r'<script[^>]*>.*?</script>',
+          caseSensitive: false,
+          dotAll: true,
+        ),
+        ' ',
+      )
+      .replaceAll(
+        RegExp(r'<style[^>]*>.*?</style>', caseSensitive: false, dotAll: true),
+        ' ',
+      )
+      .replaceAll(RegExp(r'<br\\s*/?>', caseSensitive: false), '\n')
+      .replaceAll(RegExp(r'</p\\s*>', caseSensitive: false), '\n\n')
+      .replaceAll(RegExp(r'<[^>]*>'), ' ')
+      .replaceAll('&nbsp;', ' ')
+      .replaceAll('&amp;', '&')
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll(RegExp(r'[ \t]+'), ' ')
+      .replaceAll(RegExp(r' *\n *'), '\n')
+      .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+      .trim();
 }
 
 class _NotificationStatusChip extends StatelessWidget {

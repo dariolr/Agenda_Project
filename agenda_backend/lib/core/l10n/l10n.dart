@@ -4811,6 +4811,26 @@ class L10n {
     return Intl.message('Cambia', name: 'switchBusiness', desc: '', args: []);
   }
 
+  /// `Navigation rail dall'alto`
+  String get superadminRailStartTopLabel {
+    return Intl.message(
+      'Navigation rail dall\'alto',
+      name: 'superadminRailStartTopLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Se attivo, su desktop la colonna di navigazione parte dal bordo superiore senza toolbar.`
+  String get superadminRailStartTopHelp {
+    return Intl.message(
+      'Se attivo, su desktop la colonna di navigazione parte dal bordo superiore senza toolbar.',
+      name: 'superadminRailStartTopHelp',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Profilo`
   String get profileTitle {
     return Intl.message('Profilo', name: 'profileTitle', desc: '', args: []);
@@ -7700,6 +7720,46 @@ class L10n {
     );
   }
 
+  /// `Corpo`
+  String get bookingNotificationsFieldBody {
+    return Intl.message(
+      'Corpo',
+      name: 'bookingNotificationsFieldBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Visualizza corpo`
+  String get bookingNotificationsActionViewBody {
+    return Intl.message(
+      'Visualizza corpo',
+      name: 'bookingNotificationsActionViewBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Corpo notifica`
+  String get bookingNotificationsBodyDialogTitle {
+    return Intl.message(
+      'Corpo notifica',
+      name: 'bookingNotificationsBodyDialogTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Corpo notifica non disponibile`
+  String get bookingNotificationsBodyUnavailable {
+    return Intl.message(
+      'Corpo notifica non disponibile',
+      name: 'bookingNotificationsBodyUnavailable',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Nessun oggetto`
   String get bookingNotificationsNoSubject {
     return Intl.message(
@@ -9204,6 +9264,86 @@ class L10n {
     return Intl.message(
       'Note sul pagamento...',
       name: 'paymentNotesPlaceholder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Configurazione attività`
+  String get moreSectionBusinessConfig {
+    return Intl.message(
+      'Configurazione attività',
+      name: 'moreSectionBusinessConfig',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Analisi dati`
+  String get moreSectionDataAnalysis {
+    return Intl.message(
+      'Analisi dati',
+      name: 'moreSectionDataAnalysis',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Gestisci il tuo profilo`
+  String get moreSectionProfileManage {
+    return Intl.message(
+      'Gestisci il tuo profilo',
+      name: 'moreSectionProfileManage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Gestisci classi e programmazioni di gruppo`
+  String get moreClassEventsDescription {
+    return Intl.message(
+      'Gestisci classi e programmazioni di gruppo',
+      name: 'moreClassEventsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Report giornaliero`
+  String get agendaDailyReportAction {
+    return Intl.message(
+      'Report giornaliero',
+      name: 'agendaDailyReportAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Report settimanale`
+  String get agendaWeeklyReportAction {
+    return Intl.message(
+      'Report settimanale',
+      name: 'agendaWeeklyReportAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Report giornata`
+  String get agendaReportDisplayedDateAction {
+    return Intl.message(
+      'Report giornata',
+      name: 'agendaReportDisplayedDateAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Report settimana`
+  String get agendaReportDisplayedWeekAction {
+    return Intl.message(
+      'Report settimana',
+      name: 'agendaReportDisplayedWeekAction',
       desc: '',
       args: [],
     );

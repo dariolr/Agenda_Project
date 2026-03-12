@@ -127,6 +127,8 @@ class _WeeklyAppointmentsBody extends ConsumerStatefulWidget {
   static const double _daySpacing = 12;
   static const double _defaultDayColumnWidth = 280;
   static const double _emptyDayColumnWidth = 104;
+  static const double _maxDesktopDayColumnWidth = 380;
+  static const double _maxDesktopEmptyDayColumnWidth = 180;
   static const int _planningSlotMinutes = StaffPlanning.planningStepMinutes;
   static const int _planningTotalSlots = (24 * 60) ~/ _planningSlotMinutes;
 
@@ -276,11 +278,18 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
                       .clamp(120.0, double.infinity)
                       .toDouble()
                 : null;
+            final resolvedColumnWidths = !isMobile
+                ? _resolveDesktopColumnWidths(
+                    columns: visibleDayColumns,
+                    maxWidth: constraints.maxWidth,
+                  )
+                : null;
             _maybeAutoScrollToTargetDay(
               targetDate: widget.autoScrollTargetDate,
               visibleDayColumns: visibleDayColumns,
               isMobile: isMobile,
               mobileDayColumnWidth: mobileDayColumnWidth,
+              resolvedColumnWidths: resolvedColumnWidths,
             );
             return ListView.separated(
               controller: _weekColumnsController,
@@ -298,6 +307,7 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
                 return SizedBox(
                   width:
                       mobileDayColumnWidth ??
+                      resolvedColumnWidths?[index] ??
                       (column.appointments.isEmpty
                           ? _WeeklyAppointmentsBody._emptyDayColumnWidth
                           : _WeeklyAppointmentsBody._defaultDayColumnWidth),
@@ -374,6 +384,7 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
     visibleDayColumns,
     required bool isMobile,
     required double? mobileDayColumnWidth,
+    required List<double>? resolvedColumnWidths,
   }) {
     final requestId = widget.autoScrollRequestId;
     if (requestId <= 0 ||
@@ -401,6 +412,9 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
         if (mobileDayColumnWidth != null) {
           return mobileDayColumnWidth;
         }
+        if (resolvedColumnWidths != null) {
+          return resolvedColumnWidths[index];
+        }
         return visibleDayColumns[index].appointments.isEmpty
             ? _WeeklyAppointmentsBody._emptyDayColumnWidth
             : _WeeklyAppointmentsBody._defaultDayColumnWidth;
@@ -415,6 +429,40 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
         position.maxScrollExtent,
       );
       _weekColumnsController.jumpTo(clampedOffset);
+    });
+  }
+
+  List<double> _resolveDesktopColumnWidths({
+    required List<({DateTime day, List<Appointment> appointments})> columns,
+    required double maxWidth,
+  }) {
+    if (columns.isEmpty) {
+      return const <double>[];
+    }
+
+    final baseWidths = [
+      for (final column in columns)
+        column.appointments.isEmpty
+            ? _WeeklyAppointmentsBody._emptyDayColumnWidth
+            : _WeeklyAppointmentsBody._defaultDayColumnWidth,
+    ];
+    final spacing =
+        _WeeklyAppointmentsBody._daySpacing * (columns.length - 1).clamp(0, 9999);
+    final totalBaseWidth = baseWidths.fold<double>(0, (sum, w) => sum + w) + spacing;
+    if (totalBaseWidth >= maxWidth) {
+      return baseWidths;
+    }
+
+    final maxWidths = [
+      for (final column in columns)
+        column.appointments.isEmpty
+            ? _WeeklyAppointmentsBody._maxDesktopEmptyDayColumnWidth
+            : _WeeklyAppointmentsBody._maxDesktopDayColumnWidth,
+    ];
+    final extraPerColumn = (maxWidth - totalBaseWidth) / columns.length;
+    return List<double>.generate(columns.length, (index) {
+      final expandedWidth = baseWidths[index] + extraPerColumn;
+      return expandedWidth.clamp(baseWidths[index], maxWidths[index]).toDouble();
     });
   }
 }
@@ -435,6 +483,7 @@ class _WeeklyDayColumn extends ConsumerStatefulWidget {
 }
 
 class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
+  static const double _todayBadgeMinColumnWidth = 220;
   late final ScrollController _scrollController;
 
   @override
@@ -453,25 +502,68 @@ class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final localeTag = Localizations.localeOf(context).toLanguageTag();
+    final today = ref.watch(tenantTodayProvider);
+    final isTodayColumn = DateUtils.isSameDay(widget.day, today);
     final label = DateFormat('EEE d MMM', localeTag).format(widget.day);
-    final borderColor = theme.dividerColor.withOpacity(0.24);
+    final borderColor = isTodayColumn
+        ? theme.colorScheme.primary.withOpacity(0.72)
+        : theme.dividerColor.withOpacity(0.24);
+    final columnBackground = theme.colorScheme.primary.withOpacity(
+      isTodayColumn ? 0.03 : 0.012,
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: columnBackground,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
+        border: Border.all(color: borderColor, width: isTodayColumn ? 1.6 : 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-            child: Text(
-              label,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final showTodayBadge =
+                    isTodayColumn &&
+                    constraints.maxWidth >= _todayBadgeMinColumnWidth;
+                return Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isTodayColumn
+                              ? theme.colorScheme.primary
+                              : null,
+                        ),
+                      ),
+                    ),
+                    if (showTodayBadge)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          context.l10n.agendaToday,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
           Divider(height: 0.5, thickness: 0.5, color: borderColor),
