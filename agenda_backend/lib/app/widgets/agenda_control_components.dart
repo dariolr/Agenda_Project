@@ -1,4 +1,5 @@
 import 'package:agenda_backend/app/theme/extensions.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/constants/ui_sizes.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
@@ -682,7 +683,7 @@ class _WeekPickerContentState extends State<_WeekPickerContent> {
                     ],
                   ),
                 ),
-                const Divider(height: 1),
+                const AppDivider(height: 1),
                 // Weekday headers (Mon-Sun)
                 Padding(
                   padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
@@ -1374,7 +1375,7 @@ class AgendaViewModeButton extends ConsumerWidget {
                 ),
               ),
             ),
-            const Divider(height: 1),
+            const AppDivider(height: 1),
             for (final item in items)
               InkWell(
                 onTap: () => Navigator.of(ctx).pop(item.value),

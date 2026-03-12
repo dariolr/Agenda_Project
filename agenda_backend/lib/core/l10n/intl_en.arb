@@ -1194,6 +1194,7 @@
   "bookingsListNoClient": "No client",
 
   "moreServicesDescription": "Manage services, categories and pricing",
+  "moreLocationsDescription": "Manage business locations",
   "moreTeamDescription": "Manage operators, locations and working hours",
   "moreReportsDescription": "View statistics and business performance",
   "moreBookingsDescription": "Browse booking history",

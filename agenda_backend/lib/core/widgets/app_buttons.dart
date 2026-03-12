@@ -3,6 +3,45 @@ import 'package:flutter/material.dart';
 import '../constants/ui_sizes.dart';
 
 /// Centralizes button styling so we can reuse consistent widgets across the app.
+class AppBackButton extends StatelessWidget {
+  const AppBackButton({super.key, required this.onPressed});
+
+  final VoidCallback onPressed;
+  static const double _actionButtonHeight = 40;
+  static const double _iconOnlyWidth = _actionButtonHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final onContainer = scheme.onSecondaryContainer;
+
+    return Tooltip(
+      message: MaterialLocalizations.of(context).backButtonTooltip,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 16),
+        child: Center(
+          child: SizedBox(
+            width: _iconOnlyWidth,
+            height: _actionButtonHeight,
+            child: Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onPressed,
+                child: Icon(Icons.arrow_back, size: 22, color: onContainer),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class AppButtonStyles {
   static const double _outlinedBorderWidthMobile = 1.4;
   static const double _outlinedBorderWidthWide = 1.0;

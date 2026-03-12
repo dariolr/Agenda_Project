@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/location.dart';
@@ -100,7 +101,7 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
           // Sezione scope solo se più di una location
           if (widget.locations.length > 1) ...[
             const SizedBox(height: 24),
-            const Divider(),
+            const AppDivider(),
             const SizedBox(height: 16),
             _ScopeTypeSelector(
               selectedScopeType: _selectedScopeType,
@@ -268,7 +269,7 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
           // Sezione scope solo se più di una location
           if (widget.locations.length > 1) ...[
             const SizedBox(height: 24),
-            const Divider(),
+            const AppDivider(),
             const SizedBox(height: 16),
             _ScopeTypeSelector(
               selectedScopeType: _selectedScopeType,
@@ -621,7 +622,7 @@ class _LocationsMultiSelect extends StatelessWidget {
           child: Column(
             children: [
               for (var i = 0; i < locations.length; i++) ...[
-                if (i > 0) const Divider(height: 1),
+                if (i > 0) const AppDivider(height: 1),
                 _LocationCheckboxTile(
                   location: locations[i],
                   isSelected: selectedIds.contains(locations[i].id),

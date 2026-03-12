@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
@@ -1138,7 +1139,7 @@ class _StaffWeekOverviewScreenState
                 );
               },
             ),
-            const Divider(height: 1),
+            const AppDivider(height: 1),
             ListTile(
               leading: Icon(
                 Icons.restore_outlined,
@@ -1479,7 +1480,7 @@ class _StaffWeekOverviewScreenState
                   await editException();
                 },
               ),
-              const Divider(height: 1),
+              const AppDivider(height: 1),
               // Elimina eccezione
               ListTile(
                 leading: Icon(
@@ -1499,7 +1500,7 @@ class _StaffWeekOverviewScreenState
                   await deleteException();
                 },
               ),
-              const Divider(height: 1),
+              const AppDivider(height: 1),
               // Aggiungi eccezione
               ListTile(
                 leading: const Icon(Icons.add_circle_outline),
@@ -1549,7 +1550,7 @@ class _StaffWeekOverviewScreenState
                 editAll();
               },
             ),
-            const Divider(height: 1),
+            const AppDivider(height: 1),
             // Aggiungi eccezione
             ListTile(
               leading: const Icon(Icons.add_circle_outline),
@@ -1564,7 +1565,7 @@ class _StaffWeekOverviewScreenState
                 );
               },
             ),
-            const Divider(height: 1),
+            const AppDivider(height: 1),
             // Elimina solo questo turno
             ListTile(
               leading: Icon(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -805,7 +806,7 @@ class _ClassTypeLocationsMultiSelect extends StatelessWidget {
             child: ListView.separated(
               primary: false,
               itemCount: locations.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, __) => const AppDivider(height: 1),
               itemBuilder: (context, index) {
                 final location = locations[index];
                 return _ClassTypeLocationCheckboxTile(
@@ -1274,7 +1275,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                                       primary: false,
                                       itemCount: displayedSchedules.length,
                                       separatorBuilder: (_, __) =>
-                                          const Divider(height: 1),
+                                          const AppDivider(height: 1),
                                       itemBuilder: (context, index) {
                                         final schedule =
                                             displayedSchedules[index];

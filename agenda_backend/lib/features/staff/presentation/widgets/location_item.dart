@@ -22,6 +22,8 @@ class LocationItem extends StatelessWidget {
     this.headerTrailing,
     this.staffListOverride,
     this.showDefaultActions = true,
+    this.showBody = true,
+    this.onTap,
     this.readOnly = false,
   });
 
@@ -38,6 +40,8 @@ class LocationItem extends StatelessWidget {
   final Widget? headerTrailing;
   final Widget? staffListOverride;
   final bool showDefaultActions;
+  final bool showBody;
+  final VoidCallback? onTap;
   final bool readOnly;
 
   @override
@@ -46,126 +50,114 @@ class LocationItem extends StatelessWidget {
     final isEmptyLocation = staff.isEmpty;
     final locationBorderColor = colorScheme.outlineVariant.withOpacity(0.16);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border.all(color: locationBorderColor),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              border: Border(
-                bottom: BorderSide(color: locationBorderColor),
-              ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            border: showBody
+                ? Border(
+                    bottom: BorderSide(color: locationBorderColor),
+                  )
+                : null,
+            borderRadius: BorderRadius.vertical(
+              top: const Radius.circular(16),
+              bottom: showBody ? Radius.zero : const Radius.circular(16),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              location.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'ID: ${location.id}',
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                    fontFamily: 'monospace',
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (location.address != null &&
-                          location.address!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
                           child: Text(
-                            location.address!,
-                            maxLines: 2,
+                            location.name,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall
+                            style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
-                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w500,
                                 ),
                           ),
                         ),
-                    ],
-                  ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'ID: ${location.id}',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontFamily: 'monospace',
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (location.address != null && location.address!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          location.address!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+              ),
+              const SizedBox(width: 12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                     if (showDefaultActions && !readOnly) ...[
                       IconButton(
                         tooltip: context.l10n.teamAddStaff,
-                        icon: const Icon(Icons.person_add_alt_1),
+                        icon: const Icon(Icons.person_add_alt_outlined),
                         onPressed: onAddStaff,
                       ),
-                      if (onManageResources != null)
-                        IconButton(
-                          tooltip: context.l10n.resourcesTitle,
-                          icon: const Icon(Icons.inventory_2_outlined),
-                          onPressed: onManageResources,
-                        ),
+                    if (onManageResources != null)
                       IconButton(
-                        tooltip: context.l10n.actionEdit,
-                        icon: const Icon(Icons.edit_outlined),
-                        onPressed: onEditLocation,
+                        tooltip: context.l10n.resourcesTitle,
+                        icon: const Icon(Icons.inventory_2_outlined),
+                        onPressed: onManageResources,
                       ),
-                      if (isEmptyLocation)
-                        IconButton(
-                          tooltip: context.l10n.actionDelete,
-                          icon: const Icon(Icons.delete_outline, color: Colors.red),
-                          onPressed: onDeleteLocation,
-                        ),
-                    ],
-                    if (headerTrailing != null) headerTrailing!,
+                    IconButton(
+                      tooltip: context.l10n.actionEdit,
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: onEditLocation,
+                    ),
+                    if (isEmptyLocation)
+                      IconButton(
+                        tooltip: context.l10n.actionDelete,
+                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: onDeleteLocation,
+                      ),
                   ],
-                ),
-              ],
-            ),
+                  if (headerTrailing != null) headerTrailing!,
+                ],
+              ),
+            ],
           ),
+        ),
+        if (showBody)
           ClipRRect(
             borderRadius: const BorderRadius.vertical(
               bottom: Radius.circular(16),
@@ -192,8 +184,35 @@ class LocationItem extends StatelessWidget {
                         ],
                       )),
           ),
+      ],
+    );
+
+    final decoratedChild = onTap == null
+        ? content
+        : Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(16),
+              child: content,
+            ),
+          );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border.all(color: locationBorderColor),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
         ],
       ),
+      child: decoratedChild,
     );
   }
 }

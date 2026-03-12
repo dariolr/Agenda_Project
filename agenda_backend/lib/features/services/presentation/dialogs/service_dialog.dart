@@ -790,7 +790,7 @@ Future<void> showServiceDialog(
                     }
                   : () {},
             ),
-            const Divider(height: 1),
+            const AppDivider(height: 1),
             for (final member in staffList)
               _SelectableRow(
                 label: member.displayName,
@@ -836,13 +836,13 @@ Future<void> showServiceDialog(
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                       ),
-                      const Divider(height: 1),
+                      const AppDivider(height: 1),
                       Expanded(
                         child: SingleChildScrollView(
                           child: buildStaffRows(setStateLocal),
                         ),
                       ),
-                      const Divider(height: 1),
+                      const AppDivider(height: 1),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                         child: Align(
@@ -886,13 +886,13 @@ Future<void> showServiceDialog(
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    const Divider(height: 1),
+                    const AppDivider(height: 1),
                     Expanded(
                       child: SingleChildScrollView(
                         child: buildStaffRows(setStateLocal),
                       ),
                     ),
-                    const Divider(height: 1),
+                    const AppDivider(height: 1),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       child: Align(
@@ -960,7 +960,7 @@ Future<void> showServiceDialog(
                 setStateLocal(() {});
               },
             ),
-            const Divider(height: 1),
+            const AppDivider(height: 1),
             for (final loc in allLocations)
               _SelectableRow(
                 label: loc.name,
@@ -1007,13 +1007,13 @@ Future<void> showServiceDialog(
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                       ),
-                      const Divider(height: 1),
+                      const AppDivider(height: 1),
                       Expanded(
                         child: SingleChildScrollView(
                           child: buildLocationRows(setStateLocal),
                         ),
                       ),
-                      const Divider(height: 1),
+                      const AppDivider(height: 1),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                         child: Align(
@@ -1053,13 +1053,13 @@ Future<void> showServiceDialog(
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    const Divider(height: 1),
+                    const AppDivider(height: 1),
                     Expanded(
                       child: SingleChildScrollView(
                         child: buildLocationRows(setStateLocal),
                       ),
                     ),
-                    const Divider(height: 1),
+                    const AppDivider(height: 1),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       child: Align(
@@ -1162,13 +1162,13 @@ Future<void> showServiceDialog(
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                       ),
-                      const Divider(height: 1),
+                      const AppDivider(height: 1),
                       Expanded(
                         child: SingleChildScrollView(
                           child: buildResourceRows(setStateLocal),
                         ),
                       ),
-                      const Divider(height: 1),
+                      const AppDivider(height: 1),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                         child: Row(
@@ -1216,13 +1216,13 @@ Future<void> showServiceDialog(
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    const Divider(height: 1),
+                    const AppDivider(height: 1),
                     Expanded(
                       child: SingleChildScrollView(
                         child: buildResourceRows(setStateLocal),
                       ),
                     ),
-                    const Divider(height: 1),
+                    const AppDivider(height: 1),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       child: Row(

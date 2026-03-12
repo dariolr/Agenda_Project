@@ -32,14 +32,13 @@ class MoreScreen extends ConsumerWidget {
     final showProfile = !isSuperadmin || businessOwner != null;
 
     final items = [
-      // Servizi - visibile solo a chi può gestire impostazioni
-      if (canViewServices)
+      if (canManageSettings)
         _MoreItem(
-          icon: Icons.category_outlined,
-          title: l10n.navServices,
-          description: l10n.moreServicesDescription,
-          color: const Color(0xFF4CAF50), // Green
-          onTap: () => context.go('/servizi'),
+          icon: Icons.location_on_outlined,
+          title: l10n.teamLocationsLabel,
+          description: l10n.moreLocationsDescription,
+          color: const Color(0xFF009688),
+          onTap: () => context.go('/altro/sedi'),
         ),
       // Team - visibile solo a chi può gestire impostazioni
       if (canViewStaff)
@@ -49,6 +48,23 @@ class MoreScreen extends ConsumerWidget {
           description: l10n.moreTeamDescription,
           color: const Color(0xFF2196F3), // Blue
           onTap: () => context.go('/staff'),
+        ),
+      // Servizi - visibile solo a chi può gestire impostazioni
+      if (canViewServices)
+        _MoreItem(
+          icon: Icons.category_outlined,
+          title: l10n.navServices,
+          description: l10n.moreServicesDescription,
+          color: const Color(0xFF4CAF50), // Green
+          onTap: () => context.go('/servizi'),
+        ),
+      if (canManageSettings)
+        _MoreItem(
+          icon: Icons.inventory_2_outlined,
+          title: l10n.resourcesTitle,
+          description: l10n.resourcesEmptyHint,
+          color: const Color(0xFF8BC34A),
+          onTap: () => context.go('/altro/risorse'),
         ),
       // Permessi - visibile solo a chi può gestire operatori
       if (canManageOperators)
@@ -112,14 +128,13 @@ class MoreScreen extends ConsumerWidget {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // Header
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
                   isDesktop ? 32 : 20,
-                  isDesktop ? 24 : 16,
+                  isDesktop ? 16 : 12,
                   isDesktop ? 32 : 20,
-                  isDesktop ? 24 : 20,
+                  isDesktop ? 16 : 12,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,7 +159,12 @@ class MoreScreen extends ConsumerWidget {
             ),
             // Lista di cards (layout adattivo)
             SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: isDesktop ? 32 : 16),
+              padding: EdgeInsets.fromLTRB(
+                isDesktop ? 32 : 16,
+                0,
+                isDesktop ? 32 : 16,
+                0,
+              ),
               sliver: isDesktop
                   ? _buildDesktopGrid(items, context)
                   : _buildMobileList(items),

@@ -24,6 +24,7 @@ import '../features/business/providers/superadmin_selected_business_provider.dar
 import '../features/class_events/presentation/class_events_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
 import '../features/more/presentation/more_screen.dart';
+import '../features/more/presentation/locations_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_week_overview_screen.dart';
@@ -351,6 +352,32 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (BuildContext context, GoRouterState state) =>
                     const MoreScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'risorse',
+                    name: 'more-resources',
+                    builder: (BuildContext context, GoRouterState state) =>
+                        const MoreResourcesScreen(),
+                  ),
+                  GoRoute(
+                    path: 'sedi',
+                    name: 'more-locations',
+                    builder: (BuildContext context, GoRouterState state) =>
+                        const MoreLocationsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'risorse/:locationId',
+                        name: 'more-location-resources',
+                        builder: (BuildContext context, GoRouterState state) {
+                          final locationId = int.parse(
+                            state.pathParameters['locationId']!,
+                          );
+                          return MoreLocationResourcesScreen(
+                            locationId: locationId,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                   GoRoute(
                     path: 'classi',
                     name: 'class-events',

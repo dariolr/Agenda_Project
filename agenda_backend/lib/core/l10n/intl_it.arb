@@ -1194,6 +1194,7 @@
   "bookingsListNoClient": "Nessun cliente",
 
   "moreServicesDescription": "Gestisci i servizi offerti, categorie e listini",
+  "moreLocationsDescription": "Gestisci le sedi del business",
   "moreTeamDescription": "Gestisci operatori, sedi e orari di lavoro",
   "moreReportsDescription": "Visualizza statistiche e andamento attività",
   "moreBookingsDescription": "Consulta lo storico delle prenotazioni",

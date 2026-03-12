@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,7 +31,7 @@ class BusinessScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/operatori/${business.id}'),
           ),
-          const Divider(),
+          const AppDivider(),
           // Placeholder per future impostazioni
           // ListTile(
           //   leading: const Icon(Icons.settings_outlined),

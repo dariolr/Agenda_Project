@@ -1,5 +1,6 @@
 // Cleaned duplicate header
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_backend/app/widgets/agenda_staff_filter_selector.dart';
 import 'package:agenda_backend/app/widgets/top_controls.dart';
@@ -43,7 +44,10 @@ import '../features/services/providers/service_categories_provider.dart';
 import '../features/services/providers/services_provider.dart';
 import '../features/services/providers/services_reorder_provider.dart';
 import '../features/staff/presentation/dialogs/location_dialog.dart';
+import '../features/staff/presentation/dialogs/resource_dialog.dart';
 import '../features/staff/presentation/dialogs/staff_dialog.dart';
+import '../features/staff/presentation/screens/resources_screen.dart';
+import '../features/staff/providers/staff_sorted_providers.dart';
 import '../features/staff/providers/staff_providers.dart';
 import '../features/staff/providers/staff_reorder_provider.dart';
 
@@ -91,11 +95,35 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     final isStaff = navigationShell.currentIndex == 3;
     final isReport = navigationShell.currentIndex == 4;
     final isBookingsList = navigationShell.currentIndex == 5;
+    final isMore = navigationShell.currentIndex == 6;
     final isBookingNotifications = navigationShell.currentIndex == 10;
     final isClosures = navigationShell.currentIndex == 7;
+    final isProfile = navigationShell.currentIndex == 8;
     final isPermessi = navigationShell.currentIndex == 9;
     final currentPath = GoRouterState.of(context).uri.path;
+    final isAltroRoot = currentPath == '/altro';
     final isClassEvents = currentPath == '/altro/classi';
+    final isMoreResources = currentPath == '/altro/risorse';
+    final isMoreLocations = currentPath == '/altro/sedi';
+    final isMoreLocationResources = currentPath.startsWith('/altro/sedi/risorse/');
+    final hasAltroBack =
+        !isAltroRoot &&
+        ((isMore && currentPath.startsWith('/altro/')) ||
+            isServices ||
+            isStaff ||
+            isReport ||
+            isBookingsList ||
+            isBookingNotifications ||
+            isClosures ||
+            isProfile ||
+            isPermessi ||
+            isClassEvents ||
+            isMoreResources ||
+            isMoreLocations ||
+            isMoreLocationResources);
+    final altroBackTarget = isMoreLocationResources
+        ? '/altro/sedi'
+        : '/altro';
     final agendaDate = ref.watch(agendaDateProvider);
     final today = ref.watch(tenantTodayProvider);
     final isToday = DateUtils.isSameDay(agendaDate, today);
@@ -176,6 +204,12 @@ class ScaffoldWithNavigation extends ConsumerWidget {
           if (canManageServices) {
             actions.add(const _ClassEventsAddAction());
           }
+        } else if (isMoreResources && canManageClosures) {
+          actions.add(const _ResourcesAddAction());
+        } else if (isMoreLocations && canManageClosures) {
+          actions.add(const _LocationsAddAction());
+        } else if (isMoreLocationResources && canManageClosures) {
+          actions.add(const _ResourcesAddAction());
         } else if (isBookingNotifications) {
           actions.add(_BookingNotificationsRefreshAction(ref: ref));
         } else if (isClosures && canManageClosures) {
@@ -200,30 +234,45 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
       return GlobalLoadingOverlay(
         child: Scaffold(
-          appBar: AppBar(
-            titleSpacing: isTablet && isAgenda
-                ? 4
-                : NavigationToolbar.kMiddleSpacing,
-            title: isAgenda
-                ? const AgendaTopControls()
-                : isReport
-                ? Text(context.l10n.reportsTitle)
-                : isBookingsList
-                ? Text(context.l10n.bookingsListTitle)
-                : isClassEvents
-                ? Text(context.l10n.classEventsTitle)
-                : isBookingNotifications
-                ? Text(context.l10n.bookingNotificationsTitle)
-                : isClosures
-                ? Text(context.l10n.closuresTitle)
-                : isPermessi
-                ? Text(context.l10n.permissionsTitle)
-                : const SizedBox.shrink(),
-            centerTitle: false,
-            toolbarHeight: 76,
-            actionsPadding: const EdgeInsets.only(right: 6),
-            actions: buildActions(),
-          ),
+          appBar: isMore && !hasAltroBack
+              ? null
+              : AppBar(
+                  leading: hasAltroBack
+                      ? AppBackButton(
+                          onPressed: () => context.go(altroBackTarget),
+                        )
+                      : null,
+                  titleSpacing: isTablet && isAgenda
+                      ? 4
+                      : NavigationToolbar.kMiddleSpacing,
+                  title: isAgenda
+                      ? const AgendaTopControls()
+                      : isMore
+                      ? Text(context.l10n.navMore)
+                      : isReport
+                      ? Text(context.l10n.reportsTitle)
+                      : isBookingsList
+                      ? Text(context.l10n.bookingsListTitle)
+                      : isClassEvents
+                      ? Text(context.l10n.classEventsTitle)
+                      : isMoreResources
+                      ? Text(context.l10n.resourcesTitle)
+                      : isMoreLocations
+                      ? Text(context.l10n.teamLocationsLabel)
+                      : isMoreLocationResources
+                      ? Text(context.l10n.resourcesTitle)
+                      : isBookingNotifications
+                      ? Text(context.l10n.bookingNotificationsTitle)
+                      : isClosures
+                      ? Text(context.l10n.closuresTitle)
+                      : isPermessi
+                      ? Text(context.l10n.permissionsTitle)
+                      : const SizedBox.shrink(),
+                  centerTitle: false,
+                  toolbarHeight: 76,
+                  actionsPadding: const EdgeInsets.only(right: 6),
+                  actions: buildActions(),
+                ),
           body: Row(
             children: [
               Theme(
@@ -295,6 +344,12 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         if (canManageServices) {
           actions.add(const _ClassEventsAddAction(compact: true));
         }
+      } else if (isMoreResources && canManageClosures) {
+        actions.add(const _ResourcesAddAction(compact: true));
+      } else if (isMoreLocations && canManageClosures) {
+        actions.add(const _LocationsAddAction(compact: true));
+      } else if (isMoreLocationResources && canManageClosures) {
+        actions.add(const _ResourcesAddAction(compact: true));
       } else if (isBookingNotifications) {
         actions.add(_BookingNotificationsRefreshAction(ref: ref));
       } else if (isClosures && canManageClosures) {
@@ -321,28 +376,43 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
     return GlobalLoadingOverlay(
       child: Scaffold(
-        appBar: AppBar(
-          toolbarHeight: isTablet ? 76 : 64,
-          titleSpacing: isAgenda ? 4 : NavigationToolbar.kMiddleSpacing,
-          title: isAgenda
-              ? const AgendaTopControls(compact: true)
-              : isReport
-              ? Text(context.l10n.reportsTitle)
-              : isBookingsList
-              ? Text(context.l10n.bookingsListTitle)
-              : isClassEvents
-              ? Text(context.l10n.classEventsTitle)
-              : isBookingNotifications
-              ? Text(context.l10n.bookingNotificationsTitle)
-              : isClosures
-              ? Text(context.l10n.closuresTitle)
-              : isPermessi
-              ? Text(context.l10n.permissionsTitle)
-              : const SizedBox.shrink(),
-          centerTitle: false,
-          actionsPadding: const EdgeInsets.only(right: 6),
-          actions: buildMobileActions(),
-        ),
+        appBar: isMore && !hasAltroBack
+            ? null
+            : AppBar(
+                leading: hasAltroBack
+                    ? AppBackButton(
+                        onPressed: () => context.go(altroBackTarget),
+                      )
+                    : null,
+                toolbarHeight: isTablet ? 76 : 64,
+                titleSpacing: isAgenda ? 4 : NavigationToolbar.kMiddleSpacing,
+                title: isAgenda
+                    ? const AgendaTopControls(compact: true)
+                    : isMore
+                    ? Text(context.l10n.navMore)
+                    : isReport
+                    ? Text(context.l10n.reportsTitle)
+                    : isBookingsList
+                    ? Text(context.l10n.bookingsListTitle)
+                    : isClassEvents
+                    ? Text(context.l10n.classEventsTitle)
+                    : isMoreResources
+                    ? Text(context.l10n.resourcesTitle)
+                    : isMoreLocations
+                    ? Text(context.l10n.teamLocationsLabel)
+                    : isMoreLocationResources
+                    ? Text(context.l10n.resourcesTitle)
+                    : isBookingNotifications
+                    ? Text(context.l10n.bookingNotificationsTitle)
+                    : isClosures
+                    ? Text(context.l10n.closuresTitle)
+                    : isPermessi
+                    ? Text(context.l10n.permissionsTitle)
+                    : const SizedBox.shrink(),
+                centerTitle: false,
+                actionsPadding: const EdgeInsets.only(right: 6),
+                actions: buildMobileActions(),
+              ),
         body: navigationShell,
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1076,6 +1146,7 @@ class _TeamAddAction extends ConsumerWidget {
     final locations = ref.watch(locationsProvider);
     final locationCount = locations.length;
     final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
+    final canManageResources = ref.watch(canManageBusinessSettingsProvider);
 
     Widget buildActionLabel(IconData icon, String label) {
       return showLabelEffective
@@ -1144,7 +1215,7 @@ class _TeamAddAction extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
           ],
-          if (canManageStaff)
+          if (canManageStaff || canManageResources)
             AdaptiveDropdown<String>(
               modalTitle: l10n.agendaAdd,
               alignment: AdaptiveDropdownAlignment.right,
@@ -1153,20 +1224,29 @@ class _TeamAddAction extends ConsumerWidget {
               hideTriggerWhenOpen: true,
               popupWidth: 220,
               items: [
-                AdaptiveDropdownItem(
-                  value: 'location',
-                  child: Text(l10n.teamNewLocationTitle),
-                ),
-                AdaptiveDropdownItem(
-                  value: 'staff',
-                  child: Text(l10n.teamNewStaffTitle),
-                ),
+                if (canManageStaff)
+                  AdaptiveDropdownItem(
+                    value: 'location',
+                    child: Text(l10n.teamNewLocationTitle),
+                  ),
+                if (canManageStaff)
+                  AdaptiveDropdownItem(
+                    value: 'staff',
+                    child: Text(l10n.teamNewStaffTitle),
+                  ),
+                if (canManageResources)
+                  AdaptiveDropdownItem(
+                    value: 'resource',
+                    child: Text(l10n.resourceNew),
+                  ),
               ],
-              onSelected: (value) {
+              onSelected: (value) async {
                 if (value == 'location') {
                   showLocationDialog(context, ref);
                 } else if (value == 'staff') {
                   showStaffDialog(context, ref);
+                } else if (value == 'resource') {
+                  await _showCreateResourceFlow(context, ref, locations);
                 }
               },
               child: Material(
@@ -1198,6 +1278,111 @@ class _TeamAddAction extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _showCreateResourceFlow(
+  BuildContext context,
+  WidgetRef ref,
+  List<Location> locations,
+) async {
+  if (locations.isEmpty) return;
+  if (locations.length == 1) {
+    final location = locations.first;
+    final created = await showResourceDialog(
+      context,
+      ref,
+      locationId: location.id,
+    );
+    if (created == true && context.mounted) {
+      await Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(builder: (_) => ResourcesScreen(location: location)),
+      );
+    }
+    return;
+  }
+
+  final selectedLocationId = await _showResourceLocationPicker(
+    context,
+    locations,
+  );
+  if (selectedLocationId == null || !context.mounted) return;
+
+  final selectedLocation = locations.firstWhere(
+    (location) => location.id == selectedLocationId,
+  );
+  final created = await showResourceDialog(
+    context,
+    ref,
+    locationId: selectedLocationId,
+  );
+  if (created == true && context.mounted) {
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => ResourcesScreen(location: selectedLocation),
+      ),
+    );
+  }
+}
+
+Future<int?> _showResourceLocationPicker(
+  BuildContext context,
+  List<Location> locations,
+) async {
+  final l10n = context.l10n;
+  final formFactor = MediaQuery.sizeOf(context).width >= 1024
+      ? AppFormFactor.desktop
+      : AppFormFactor.mobile;
+
+  if (formFactor == AppFormFactor.desktop) {
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 520),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.teamChooseLocationSingleButton,
+                  style: Theme.of(dialogContext).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: locations.length,
+                    separatorBuilder: (_, __) => const AppDivider(height: 1),
+                    itemBuilder: (_, index) {
+                      final location = locations[index];
+                      return ListTile(
+                        title: Text(location.name),
+                        onTap: () =>
+                            Navigator.of(dialogContext).pop(location.id),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  return AppBottomSheet.show<int>(
+    context: context,
+    builder: (sheetContext) => LocationSheetContent(
+      locations: locations,
+      currentLocationId: locations.first.id,
+      title: l10n.teamChooseLocationSingleButton,
+      onSelected: (id) => Navigator.of(sheetContext).pop(id),
+    ),
+    useRootNavigator: true,
+    padding: EdgeInsets.zero,
+  );
 }
 
 class _ClientsAddAction extends ConsumerWidget {
@@ -1670,6 +1855,145 @@ class _ClosuresAddAction extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: GestureDetector(
         onTap: () => LocationClosureDialog.show(context),
+        child: Builder(
+          builder: (buttonContext) {
+            final scheme = Theme.of(buttonContext).colorScheme;
+            final onContainer = scheme.onSecondaryContainer;
+            return Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: Padding(
+                  padding: compact
+                      ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                      : const EdgeInsets.fromLTRB(12, 8, 28, 8),
+                  child: _buildAddButtonContent(
+                    showLabelEffective: showLabelEffective,
+                    compact: compact,
+                    label: l10n.agendaAdd,
+                    onContainer: onContainer,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _LocationsAddAction extends ConsumerWidget {
+  const _LocationsAddAction({this.compact = false});
+  final bool compact;
+  static const double _actionButtonHeight = 40;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: GestureDetector(
+        onTap: () => showLocationDialog(context, ref),
+        child: Builder(
+          builder: (buttonContext) {
+            final scheme = Theme.of(buttonContext).colorScheme;
+            final onContainer = scheme.onSecondaryContainer;
+            return Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: Padding(
+                  padding: compact
+                      ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                      : const EdgeInsets.fromLTRB(12, 8, 28, 8),
+                  child: _buildAddButtonContent(
+                    showLabelEffective: showLabelEffective,
+                    compact: compact,
+                    label: l10n.agendaAdd,
+                    onContainer: onContainer,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ResourcesAddAction extends ConsumerWidget {
+  const _ResourcesAddAction({this.compact = false});
+  final bool compact;
+  static const double _actionButtonHeight = 40;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
+    final currentPath = GoRouterState.of(context).uri.path;
+    final locations = ref.watch(sortedLocationsProvider);
+    final currentLocation = ref.watch(currentLocationProvider);
+    final locationId = currentPath.startsWith('/altro/sedi/risorse/')
+        ? int.tryParse(currentPath.split('/').last)
+        : currentPath == '/altro/risorse'
+        ? currentLocation.id
+        : null;
+    Location? location;
+    for (final item in locations) {
+      if (item.id == locationId) {
+        location = item;
+        break;
+      }
+    }
+    if (location == null && locations.isNotEmpty) {
+      location = locations.first;
+    }
+
+    if (location == null) {
+      return const SizedBox.shrink();
+    }
+    final targetLocation = location;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: GestureDetector(
+        onTap: () async {
+          final created = await showResourceDialog(
+            context,
+            ref,
+            locationId: targetLocation.id,
+            selectableLocations: locations,
+          );
+          if (created == true && context.mounted) {
+            context.go('/altro/sedi/risorse/${targetLocation.id}');
+          }
+        },
         child: Builder(
           builder: (buttonContext) {
             final scheme = Theme.of(buttonContext).colorScheme;

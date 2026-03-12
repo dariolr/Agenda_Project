@@ -2,6 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// App-level dialog scaffolds to ensure consistent layout across features.
+Future<T?> showAppFormDialog<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  bool barrierDismissible = true,
+  bool useRootNavigator = true,
+}) {
+  return showDialog<T>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    useRootNavigator: useRootNavigator,
+    builder: builder,
+  );
+}
+
 class AppFormDialog extends StatelessWidget {
   const AppFormDialog({
     super.key,

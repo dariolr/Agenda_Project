@@ -12,6 +12,7 @@ FLUSSO:
 */
 
 import 'package:agenda_backend/app/theme/extensions.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff.dart';
@@ -219,7 +220,7 @@ class _StaffPlanningScreenState extends ConsumerState<StaffPlanningScreen> {
             onSelected: _onStaffSelected,
           ),
 
-          const Divider(height: 1),
+          const AppDivider(height: 1),
 
           // ── Planning List ──
           Expanded(
