@@ -10,7 +10,6 @@ import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_prov
 import 'package:agenda_backend/features/agenda/providers/agenda_bootstrap_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
-import 'package:agenda_backend/features/auth/providers/auth_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -134,9 +133,6 @@ class TopControls extends ConsumerWidget {
 
     final canViewAllAppointments = ref.watch(canViewAllAppointmentsProvider);
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
-    final isSuperadmin = ref.watch(
-      authProvider.select((state) => state.user?.isSuperadmin ?? false),
-    );
     final calendarViewMode = ref.watch(calendarViewModeProvider);
     final isAgendaWeekMode =
         mode == TopControlsMode.agenda &&
@@ -216,7 +212,7 @@ class TopControls extends ConsumerWidget {
                 alignment: AlignmentDirectional.centerStart,
                 child: AgendaViewModeButton(),
               ),
-              if (canViewReports && isSuperadmin) ...[
+              if (canViewReports) ...[
                 const SizedBox(width: 8),
                 const Align(
                   alignment: AlignmentDirectional.centerStart,
@@ -263,9 +259,6 @@ class TopControls extends ConsumerWidget {
     }
     final canViewAllAppointments = ref.watch(canViewAllAppointmentsProvider);
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
-    final isSuperadmin = ref.watch(
-      authProvider.select((state) => state.user?.isSuperadmin ?? false),
-    );
     final showStaffSelector =
         mode == TopControlsMode.agenda && canViewAllAppointments;
     final showLocationSelector = data.locations.length > 1;
@@ -374,7 +367,7 @@ class TopControls extends ConsumerWidget {
             alignment: AlignmentDirectional.centerStart,
             child: AgendaViewModeButton(),
           ),
-          if (canViewReports && isSuperadmin) ...[
+          if (canViewReports) ...[
             const SizedBox(width: 8),
             const Align(
               alignment: AlignmentDirectional.centerStart,

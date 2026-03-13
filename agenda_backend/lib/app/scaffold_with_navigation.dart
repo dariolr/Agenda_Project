@@ -124,6 +124,8 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
     final currentPath = GoRouterState.of(context).uri.path;
     final fromAltroEntry =
         GoRouterState.of(context).uri.queryParameters['from_altro'] == '1';
+    final fromAgendaEntry =
+        GoRouterState.of(context).uri.queryParameters['from_agenda'] == '1';
     final isAltroRoot = currentPath == '/altro';
     final hideAltroSubsectionTitle =
         currentPath.startsWith('/altro/') && !isAltroRoot;
@@ -150,7 +152,8 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
             isClassEvents ||
             isMoreResources ||
             isMoreLocations);
-    const altroBackTarget = '/altro';
+    final backTarget = isReport && fromAgendaEntry ? '/agenda' : '/altro';
+    final showCloseBackButton = fromAltroEntry || (isReport && fromAgendaEntry);
     final agendaDate = ref.watch(agendaDateProvider);
     final today = ref.watch(tenantTodayProvider);
     final isToday = DateUtils.isSameDay(agendaDate, today);
@@ -208,9 +211,13 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
       final showDesktopToolbar = !ref.watch(desktopRailStartsAtTopProvider);
       final shouldPadAltroBack = !showDesktopToolbar && hasAltroBack;
       final altroBackLeftPadding = shouldPadAltroBack ? 16.0 : 0.0;
-      final agendaControlsLeftInset = hasAltroBack ? 0.0 : railWidth;
       final showDesktopAppBar = showDesktopToolbar && !isAltroRoot;
       final showDesktopInlineTopBar = !showDesktopAppBar && !isAltroRoot;
+      final agendaControlsLeftInset = hasAltroBack
+          ? 0.0
+          : showDesktopInlineTopBar
+          ? layoutConfig.hourColumnWidth
+          : railWidth;
       const dividerThickness = 1.0;
       // Desktop usa le stesse destinazioni del mobile (con "Altro")
       final railDestinations =
@@ -274,8 +281,8 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
                   leadingWidth: hasAltroBack ? railWidth : null,
                   leading: hasAltroBack
                       ? AppBackButton(
-                          onPressed: () => context.go(altroBackTarget),
-                          showClose: fromAltroEntry,
+                          onPressed: () => context.go(backTarget),
+                          showClose: showCloseBackButton,
                           leftPadding: altroBackLeftPadding,
                         )
                       : null,
@@ -366,8 +373,8 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
                         children: [
                           _DesktopInlineTopBar(
                             hasBack: hasAltroBack,
-                            onBack: () => context.go(altroBackTarget),
-                            showClose: fromAltroEntry,
+                            onBack: () => context.go(backTarget),
+                            showClose: showCloseBackButton,
                             backLeftPadding: altroBackLeftPadding,
                             title:
                                 hideAltroSubsectionTitle ||
@@ -483,8 +490,8 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
             : AppBar(
                 leading: hasAltroBack
                     ? AppBackButton(
-                        onPressed: () => context.go(altroBackTarget),
-                        showClose: fromAltroEntry,
+                        onPressed: () => context.go(backTarget),
+                        showClose: showCloseBackButton,
                       )
                     : null,
                 toolbarHeight: isTablet ? 76 : 64,
