@@ -1497,7 +1497,7 @@ class AgendaLaunchReportButton extends ConsumerWidget {
       endDate: viewMode == CalendarViewMode.week ? weekEnd : targetDate,
       locationId: targetLocation.id,
     );
-    context.go('/report');
+    context.go('/report?from_agenda=1');
   }
 }
 

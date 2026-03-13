@@ -47,6 +47,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   Set<String> _selectedStatuses = {'confirmed', 'completed'};
 
   late final TabController _tabController;
+  ProviderSubscription<AgendaReportLaunchRequest?>? _agendaReportLaunchSub;
   bool _wasReportRouteActive = false;
 
   /// 0 = Appointments report, 1 = Work Hours report
@@ -89,14 +90,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
+    _agendaReportLaunchSub = ref.listenManual<AgendaReportLaunchRequest?>(
+      agendaReportLaunchProvider,
+      (previous, next) {
+        if (next == null) return;
+        _applyAgendaLaunchPreset(next);
+      },
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _applyAgendaLaunchPresetIfAny();
+      final launchRequest = ref.read(agendaReportLaunchProvider);
+      if (launchRequest != null) {
+        _applyAgendaLaunchPreset(launchRequest);
+      }
       _fetchReport();
     });
   }
 
   @override
   void dispose() {
+    _agendaReportLaunchSub?.close();
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
@@ -115,19 +127,32 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     }
   }
 
-  void _applyAgendaLaunchPresetIfAny() {
-    final launchRequest = ref.read(agendaReportLaunchProvider);
-    if (launchRequest == null) {
-      return;
-    }
-
+  void _applyAgendaLaunchPreset(AgendaReportLaunchRequest launchRequest) {
     final startDate = DateUtils.dateOnly(launchRequest.startDate);
     final endDate = DateUtils.dateOnly(launchRequest.endDate);
+    if (mounted) {
+      setState(() {
+        _selectedLocationIds
+          ..clear()
+          ..add(launchRequest.locationId);
+      });
+    } else {
+      _selectedLocationIds
+        ..clear()
+        ..add(launchRequest.locationId);
+    }
     ref.read(reportsFilterProvider.notifier).setDateRange(startDate, endDate);
-    _selectedLocationIds
-      ..clear()
-      ..add(launchRequest.locationId);
     ref.read(agendaReportLaunchProvider.notifier).clear();
+
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_currentTab == 0) {
+        _fetchReport();
+      } else {
+        _fetchWorkHoursReport();
+      }
+    });
   }
 
   void _fetchReport() {
