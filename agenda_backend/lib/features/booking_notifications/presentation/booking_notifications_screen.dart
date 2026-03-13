@@ -316,6 +316,7 @@ class _BookingNotificationsScreenState
                   context,
                 ).copyWith(dividerColor: colorScheme.outline.withOpacity(0.2)),
                 child: DataTable(
+                  showCheckboxColumn: false,
                   dividerThickness: 0.2,
                   horizontalMargin: 16,
                   sortColumnIndex: sortColumnIndex,

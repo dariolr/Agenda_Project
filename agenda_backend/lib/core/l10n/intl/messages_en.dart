@@ -545,6 +545,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsTypeAll": MessageLookupByLibrary.simpleMessage(
       "All types",
     ),
+    "bookingPaymentExceedsDueMessage": MessageLookupByLibrary.simpleMessage(
+      "The payments and other coverages already entered exceed the new amount due. Update the payment first, then save the booking.",
+    ),
     "bookingRescheduleCancelAction": MessageLookupByLibrary.simpleMessage(
       "Cancel reschedule",
     ),
@@ -1519,6 +1522,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operators"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("You"),
     "paymentAmountDue": MessageLookupByLibrary.simpleMessage("Amount due"),
+    "paymentAppointmentsToCollect": MessageLookupByLibrary.simpleMessage(
+      "Total appointments to collect",
+    ),
     "paymentBookingAmount": MessageLookupByLibrary.simpleMessage(
       "Booking amount",
     ),
@@ -1526,7 +1532,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Total cash and cards",
     ),
     "paymentDialogTitle": MessageLookupByLibrary.simpleMessage("Payment"),
-    "paymentEntered": MessageLookupByLibrary.simpleMessage("Total entered"),
+    "paymentEntered": MessageLookupByLibrary.simpleMessage("Total collected"),
     "paymentMethodCard": MessageLookupByLibrary.simpleMessage(
       "Debit/Credit Card",
     ),
@@ -1552,6 +1558,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "paymentTotalCost": MessageLookupByLibrary.simpleMessage("Booking cost"),
     "paymentTotalPaid": MessageLookupByLibrary.simpleMessage("Paid amount"),
+    "paymentTotalToCollect": MessageLookupByLibrary.simpleMessage(
+      "Total to collect",
+    ),
     "permissionsDescription": MessageLookupByLibrary.simpleMessage(
       "Manage operator access and roles",
     ),
@@ -1729,7 +1738,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "reorderServicesLabel": MessageLookupByLibrary.simpleMessage("Services"),
     "reorderTitle": MessageLookupByLibrary.simpleMessage("Reorder"),
     "reportsAppointmentsAmount": MessageLookupByLibrary.simpleMessage(
-      "Total appointments",
+      "Total collected",
     ),
     "reportsByDayOfWeek": MessageLookupByLibrary.simpleMessage(
       "By day of week",

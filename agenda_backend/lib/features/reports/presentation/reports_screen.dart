@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/providers/form_factor_provider.dart';
@@ -46,6 +47,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   Set<String> _selectedStatuses = {'confirmed', 'completed'};
 
   late final TabController _tabController;
+  bool _wasReportRouteActive = false;
 
   /// 0 = Appointments report, 1 = Work Hours report
   int _currentTab = 0;
@@ -219,6 +221,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         );
       }
     });
+
+    final isReportRouteActive = GoRouterState.of(context).uri.path == '/report';
+    if (isReportRouteActive && !_wasReportRouteActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_currentTab == 0) {
+          _fetchReport();
+        } else {
+          _fetchWorkHoursReport();
+        }
+      });
+    }
+    _wasReportRouteActive = isReportRouteActive;
 
     // No Scaffold here - shell provides it
     return Column(
@@ -730,6 +745,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     );
     final numberFormat = NumberFormat.decimalPattern(locale);
     final percentFormat = NumberFormat.decimalPattern(locale);
+    final cashAndCardTotal = (summary.cashCents + summary.cardCents) / 100;
 
     final cards = [
       _SummaryCardData(
@@ -741,7 +757,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       _SummaryCardData(
         icon: Icons.euro,
         label: l10n.reportsAppointmentsAmount,
-        value: currencyFormat.format(summary.totalRevenue),
+        value: currencyFormat.format(cashAndCardTotal),
         color: Colors.green,
       ),
       _SummaryCardData(
@@ -797,6 +813,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
     String cents(int value) => currencyFormat.format(value / 100);
     final cashAndCardCents = summary.cashCents + summary.cardCents;
+    final totalToCollectCents =
+        (summary.dueCents -
+                summary.discountCents -
+                summary.voucherCents -
+                summary.otherCents)
+            .clamp(0, 1 << 31);
     final outstandingCents = (summary.dueCents -
             summary.paidCents -
             summary.discountCents)
@@ -815,17 +837,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
     final rows = <({String label, int valueCents, double? percentage})>[
       (
-        label: l10n.paymentRequired,
+        label: totalToCollectCents == summary.dueCents
+            ? l10n.paymentAppointmentsToCollect
+            : l10n.paymentRequired,
         valueCents: summary.dueCents,
         percentage: percentageOfDue(summary.dueCents, hideWhenFull: true),
       ),
+      if (totalToCollectCents != summary.dueCents)
+        (
+          label: l10n.paymentTotalToCollect,
+          valueCents: totalToCollectCents,
+          percentage: percentageOfDue(totalToCollectCents),
+        ),
       (
         label: l10n.paymentEntered,
-        valueCents: summary.paidCents,
-        percentage: percentageOfDue(summary.paidCents),
-      ),
-      (
-        label: l10n.paymentCashAndCardTotal,
         valueCents: cashAndCardCents,
         percentage: percentageOfDue(cashAndCardCents),
       ),

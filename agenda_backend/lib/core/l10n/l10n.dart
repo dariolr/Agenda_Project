@@ -6260,10 +6260,10 @@ class L10n {
     );
   }
 
-  /// `Totale appuntamenti`
+  /// `Totale incassato`
   String get reportsAppointmentsAmount {
     return Intl.message(
-      'Totale appuntamenti',
+      'Totale incassato',
       name: 'reportsAppointmentsAmount',
       desc: '',
       args: [],
@@ -9199,10 +9199,30 @@ class L10n {
     );
   }
 
-  /// `Totale inserito`
+  /// `Totale appuntamenti da incassare`
+  String get paymentAppointmentsToCollect {
+    return Intl.message(
+      'Totale appuntamenti da incassare',
+      name: 'paymentAppointmentsToCollect',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Totale da incassare`
+  String get paymentTotalToCollect {
+    return Intl.message(
+      'Totale da incassare',
+      name: 'paymentTotalToCollect',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Totale incassato`
   String get paymentEntered {
     return Intl.message(
-      'Totale inserito',
+      'Totale incassato',
       name: 'paymentEntered',
       desc: '',
       args: [],
@@ -9244,6 +9264,16 @@ class L10n {
     return Intl.message(
       'Rimanente',
       name: 'paymentRemaining',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `I pagamenti e le altre coperture gia inseriti superano il nuovo importo dovuto. Modifica prima il pagamento e poi salva la prenotazione.`
+  String get bookingPaymentExceedsDueMessage {
+    return Intl.message(
+      'I pagamenti e le altre coperture gia inseriti superano il nuovo importo dovuto. Modifica prima il pagamento e poi salva la prenotazione.',
+      name: 'bookingPaymentExceedsDueMessage',
       desc: '',
       args: [],
     );

@@ -12,7 +12,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
 import '../../../../core/models/booking_payment.dart';
-import '../../../../core/models/booking_payment_line.dart';
 import '../../../../core/models/service_package.dart';
 import '../../../../core/models/service_variant.dart';
 import '../../../../core/network/api_client.dart';
@@ -31,6 +30,7 @@ import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/service_packages_provider.dart';
 import '../../../services/providers/service_packages_repository_provider.dart';
 import '../../../services/providers/services_provider.dart';
+import '../../domain/booking_payment_preview.dart';
 import '../../domain/service_item_data.dart';
 import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/appointment_providers.dart';
@@ -94,8 +94,6 @@ class _AppointmentDialog extends ConsumerStatefulWidget {
 }
 
 class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
-  static const String _autoDiscountSourceTag = 'appointment_amount_adjustment';
-  static const String _manualDiscountSourceTag = 'manual';
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -1061,6 +1059,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   updated,
                   forcedStaffId: forcedStaffId,
                 ),
+                onPriceChangeConfirmed: (updated) =>
+                    _confirmServicePriceChange(i, updated),
                 onRemove: () => _removeServiceItem(i),
                 onStartTimeChanged: (time) => _updateServiceStartTime(i, time),
                 onEndTimeChanged: (time) => _updateServiceEndTime(i, time),
@@ -1884,41 +1884,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     required int referenceServicesTotalCents,
     required int nextServicesTotalCents,
   }) {
-    final baseTotalDueCents = nextServicesTotalCents > referenceServicesTotalCents
-        ? nextServicesTotalCents
-        : referenceServicesTotalCents;
-    final desiredAutoDiscountCents =
-        (baseTotalDueCents - nextServicesTotalCents).clamp(0, 1 << 30);
-
-    // Deterministic reset requested: when service prices change,
-    // rebuild discount from scratch to avoid stale residual discounts.
-    final lines = payment.lines
-        .where(
-          (line) =>
-              line.type != BookingPaymentLineType.discount ||
-              line.meta?['source'] == _manualDiscountSourceTag,
-        )
-        .toList();
-
-    if (desiredAutoDiscountCents > 0) {
-      lines.add(
-        BookingPaymentLine(
-          type: BookingPaymentLineType.discount,
-          amountCents: desiredAutoDiscountCents,
-          meta: const {'source': _autoDiscountSourceTag},
-        ),
-      );
-    }
-
-    return BookingPayment(
+    return buildBookingPaymentPreview(
       bookingId: payment.bookingId,
       clientId: payment.clientId,
-      isActive: payment.isActive,
       currency: payment.currency,
-      totalDueCents: baseTotalDueCents,
-      note: payment.note,
-      lines: lines,
-      computed: payment.computed,
+      referenceTotalCents: referenceServicesTotalCents,
+      currentTotalCents: nextServicesTotalCents,
+      basePayment: payment,
+      isActive: payment.isActive,
     );
   }
 
@@ -1942,6 +1915,39 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
   Future<void> _onSave() async {
     return _onSaveInternal();
+  }
+
+  Future<bool> _confirmServicePriceChange(
+    int index,
+    ServiceItemData updated,
+  ) async {
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
+    final nextItems = List<ServiceItemData>.from(_serviceItems);
+    nextItems[index] = updated;
+    final currentTotalCents = computeServiceItemsTotalCents(
+      items: nextItems,
+      variants: variants.cast<ServiceVariant>(),
+    );
+    final bookingId = widget.initial.bookingId;
+    final payment = await ref
+        .read(bookingPaymentControllerProvider(bookingId))
+        .load();
+    if (payment == null ||
+        !paymentExceedsCurrentDue(
+          payment: payment,
+          currentTotalCents: currentTotalCents,
+        )) {
+      return true;
+    }
+
+    if (!mounted) return false;
+    final l10n = context.l10n;
+    await FeedbackDialog.showError(
+      context,
+      title: l10n.errorTitle,
+      message: l10n.bookingPaymentExceedsDueMessage,
+    );
+    return false;
   }
 
   Future<void> _onSaveInternal({bool skipPaymentDiscountSync = false}) async {
@@ -1981,6 +1987,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     try {
       final variants = ref.read(serviceVariantsProvider).value ?? [];
       final services = ref.read(servicesProvider).value ?? [];
+      final bookingId = widget.initial.bookingId;
 
       // Client info (può essere null se nessun cliente è associato)
       final int? clientId = _clientId;
@@ -1990,8 +1997,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           : _notesController.text.trim();
 
       // Modifica appuntamento esistente
-      final bookingId = widget.initial.bookingId;
-
       // Ottieni gli appuntamenti esistenti per questa prenotazione
       final existingAppointments = ref
           .read(appointmentsProvider.notifier)
@@ -2212,19 +2217,23 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       variants.cast<ServiceVariant>(),
     );
     final controller = ref.read(bookingPaymentControllerProvider(bookingId));
-    final currentPayment = await controller.load();
-    if (currentPayment == null) return null;
-    final updated = _rebuildPaymentForServicesTotal(
-      payment: currentPayment,
-      referenceServicesTotalCents: referenceTotalCents,
-      nextServicesTotalCents: nextTotalCents,
+    final persistedPayment = await controller.load();
+    final updated = buildBookingPaymentPreview(
+      bookingId: bookingId,
+      clientId: widget.initial.clientId,
+      currency: PriceFormatter.effectiveCurrency(ref),
+      referenceTotalCents: referenceTotalCents,
+      currentTotalCents: nextTotalCents,
+      basePayment: persistedPayment,
+      isActive: true,
     );
-    if (updated.totalDueCents == currentPayment.totalDueCents &&
-        updated.lines.length == currentPayment.lines.length) {
+    if (persistedPayment != null &&
+        updated.totalDueCents == persistedPayment.totalDueCents &&
+        updated.lines.length == persistedPayment.lines.length) {
       var equal = true;
       for (int i = 0; i < updated.lines.length; i++) {
         final a = updated.lines[i];
-        final b = currentPayment.lines[i];
+        final b = persistedPayment.lines[i];
         if (a.type != b.type ||
             a.amountCents != b.amountCents ||
             a.meta.toString() != b.meta.toString()) {

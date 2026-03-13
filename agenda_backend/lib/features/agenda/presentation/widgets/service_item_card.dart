@@ -54,6 +54,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
     this.canRemove = true,
     this.isServiceRequired = true,
     this.autoOpenServicePicker = false,
+    this.onPriceChangeConfirmed,
     this.onServicePickerAutoOpened,
     this.onServicePickerAutoCompleted,
     this.onAutoOpenStaffPickerCompleted,
@@ -92,6 +93,7 @@ class ServiceItemCard extends ConsumerStatefulWidget {
   /// Se true, la selezione del servizio è obbligatoria (mostra errore di validazione).
   final bool isServiceRequired;
   final bool autoOpenServicePicker;
+  final Future<bool> Function(ServiceItemData updated)? onPriceChangeConfirmed;
   final VoidCallback? onServicePickerAutoOpened;
   final VoidCallback? onServicePickerAutoCompleted;
   final VoidCallback? onAutoOpenStaffPickerCompleted;
@@ -136,6 +138,8 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
   bool get autoOpenServicePicker => widget.autoOpenServicePicker;
   VoidCallback? get onServicePickerAutoOpened =>
       widget.onServicePickerAutoOpened;
+  Future<bool> Function(ServiceItemData updated)? get onPriceChangeConfirmed =>
+      widget.onPriceChangeConfirmed;
   VoidCallback? get onServicePickerAutoCompleted =>
       widget.onServicePickerAutoCompleted;
   VoidCallback? get onAutoOpenStaffPickerCompleted =>
@@ -512,9 +516,14 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
               ? IconButton(
                   icon: const Icon(Icons.refresh, size: 18),
                   tooltip: l10n.appointmentPriceResetTooltip,
-                  onPressed: () {
+                  onPressed: () async {
                     // Resetta al prezzo di default
-                    onChanged(item.copyWithPriceCleared());
+                    final updated = item.copyWithPriceCleared();
+                    if (onPriceChangeConfirmed != null) {
+                      final allowed = await onPriceChangeConfirmed!(updated);
+                      if (!allowed) return;
+                    }
+                    onChanged(updated);
                   },
                 )
               : IconButton(
@@ -603,7 +612,7 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
-                      onPressed: () {
+                      onPressed: () async {
                         final text = controller.text.trim().replaceAll(
                           ',',
                           '.',
@@ -611,8 +620,14 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
                         final newPrice = text.isEmpty
                             ? 0.0
                             : (double.tryParse(text) ?? currentPrice);
+                        final updated = item.copyWith(price: newPrice);
+                        if (onPriceChangeConfirmed != null) {
+                          final allowed = await onPriceChangeConfirmed!(updated);
+                          if (!allowed || !ctx.mounted) return;
+                        }
+                        if (!ctx.mounted) return;
                         Navigator.of(ctx).pop();
-                        onChanged(item.copyWith(price: newPrice));
+                        onChanged(updated);
                       },
                       child: Text(l10n.actionConfirm),
                     ),
@@ -652,13 +667,19 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
               child: Text(l10n.actionCancel),
             ),
             FilledButton(
-              onPressed: () {
+              onPressed: () async {
                 final text = controller.text.trim().replaceAll(',', '.');
                 final newPrice = text.isEmpty
                     ? 0.0
                     : (double.tryParse(text) ?? currentPrice);
+                final updated = item.copyWith(price: newPrice);
+                if (onPriceChangeConfirmed != null) {
+                  final allowed = await onPriceChangeConfirmed!(updated);
+                  if (!allowed || !ctx.mounted) return;
+                }
+                if (!ctx.mounted) return;
                 Navigator.of(ctx).pop();
-                onChanged(item.copyWith(price: newPrice));
+                onChanged(updated);
               },
               child: Text(l10n.actionConfirm),
             ),

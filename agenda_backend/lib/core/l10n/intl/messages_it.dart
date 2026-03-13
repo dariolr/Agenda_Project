@@ -568,6 +568,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsTypeAll": MessageLookupByLibrary.simpleMessage(
       "Tutti i tipi",
     ),
+    "bookingPaymentExceedsDueMessage": MessageLookupByLibrary.simpleMessage(
+      "I pagamenti e le altre coperture gia inseriti superano il nuovo importo dovuto. Modifica prima il pagamento e poi salva la prenotazione.",
+    ),
     "bookingRescheduleCancelAction": MessageLookupByLibrary.simpleMessage(
       "Annulla riprogrammazione",
     ),
@@ -1588,6 +1591,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "paymentAmountDue": MessageLookupByLibrary.simpleMessage(
       "Importo da pagare",
     ),
+    "paymentAppointmentsToCollect": MessageLookupByLibrary.simpleMessage(
+      "Totale appuntamenti da incassare",
+    ),
     "paymentBookingAmount": MessageLookupByLibrary.simpleMessage(
       "Importo prenotazione",
     ),
@@ -1595,7 +1601,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Totale contanti e carte",
     ),
     "paymentDialogTitle": MessageLookupByLibrary.simpleMessage("Pagamento"),
-    "paymentEntered": MessageLookupByLibrary.simpleMessage("Totale inserito"),
+    "paymentEntered": MessageLookupByLibrary.simpleMessage("Totale incassato"),
     "paymentMethodCard": MessageLookupByLibrary.simpleMessage(
       "Bancomat/Carta di credito",
     ),
@@ -1623,6 +1629,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Costo prenotazione",
     ),
     "paymentTotalPaid": MessageLookupByLibrary.simpleMessage("Importo pagato"),
+    "paymentTotalToCollect": MessageLookupByLibrary.simpleMessage(
+      "Totale da incassare",
+    ),
     "permissionsDescription": MessageLookupByLibrary.simpleMessage(
       "Gestisci accessi e ruoli degli operatori",
     ),
@@ -1816,7 +1825,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Modifica ordinamento",
     ),
     "reportsAppointmentsAmount": MessageLookupByLibrary.simpleMessage(
-      "Totale appuntamenti",
+      "Totale incassato",
     ),
     "reportsByDayOfWeek": MessageLookupByLibrary.simpleMessage(
       "Per giorno della settimana",
