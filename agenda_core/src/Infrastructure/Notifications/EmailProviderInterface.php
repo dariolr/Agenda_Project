@@ -47,4 +47,9 @@ interface EmailProviderInterface
      * Get the provider name for logging.
      */
     public function getName(): string;
+
+    /**
+     * Get the last provider error, if any.
+     */
+    public function getLastError(): ?string;
 }

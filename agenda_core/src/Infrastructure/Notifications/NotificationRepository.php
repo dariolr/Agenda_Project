@@ -91,14 +91,25 @@ final class NotificationRepository
     /**
      * Mark notification as sent.
      */
-    public function markSent(int $id, bool $writeBookingAuditEvent = true): void
+    public function markSent(
+        int $id,
+        bool $writeBookingAuditEvent = true,
+        ?string $providerUsed = null,
+    ): void
     {
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE notification_queue 
-             SET status = "sent", sent_at = NOW(), error_message = NULL, failed_at = NULL
+             SET status = "sent",
+                 sent_at = NOW(),
+                 error_message = NULL,
+                 failed_at = NULL,
+                 provider_used = :provider_used
              WHERE id = :id'
         );
-        $stmt->execute(['id' => $id]);
+        $stmt->execute([
+            'id' => $id,
+            'provider_used' => $providerUsed,
+        ]);
 
         if ($writeBookingAuditEvent) {
             $this->createBookingNotificationSentEvent($id);
@@ -251,7 +262,7 @@ final class NotificationRepository
     {
         try {
             $stmt = $this->db->getPdo()->prepare(
-                'SELECT id, booking_id, channel, recipient_email, subject
+                'SELECT id, booking_id, channel, recipient_email, subject, provider_used
                  FROM notification_queue
                  WHERE id = :id
                  LIMIT 1'
@@ -273,6 +284,7 @@ final class NotificationRepository
                 'channel' => (string) ($notification['channel'] ?? ''),
                 'recipient_email' => $notification['recipient_email'] ?? null,
                 'subject' => $notification['subject'] ?? null,
+                'provider_used' => $notification['provider_used'] ?? null,
                 'sent_at' => gmdate('Y-m-d H:i:s'),
             ]);
 
@@ -311,7 +323,7 @@ final class NotificationRepository
             SELECT nq.id, nq.type, nq.channel, nq.recipient_type, nq.recipient_id,
                    nq.recipient_email, nq.recipient_name, nq.subject, nq.payload,
                    nq.status, nq.priority, nq.attempts, nq.max_attempts,
-                   nq.scheduled_at, nq.last_attempt_at, nq.sent_at, nq.failed_at, nq.error_message,
+                   nq.scheduled_at, nq.last_attempt_at, nq.sent_at, nq.failed_at, nq.error_message, nq.provider_used,
                    nq.business_id, nq.booking_id, nq.created_at, nq.updated_at,
                    b.location_id, l.name AS location_name,
                    b.client_name AS booking_client_name,
