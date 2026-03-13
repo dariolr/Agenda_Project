@@ -435,15 +435,15 @@ final class Kernel
         $bookingAuditRepo = new BookingAuditRepository($this->db, $userRepo, $clientRepo);
         $bookingPaymentRepo = new BookingPaymentRepository($this->db);
         $recurrenceRuleRepo = new RecurrenceRuleRepository($this->db);
-        $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo, $timeBlockRepo, $staffExceptionRepo, $variantResourceRepo, $serviceRepo, $locationClosureRepo);
-        $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo, $computeAvailability, $bookingAuditRepo, $locationClosureRepo);
+        $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo, $timeBlockRepo, $staffExceptionRepo, $variantResourceRepo, $serviceRepo, $locationClosureRepo, $classEventRepo);
+        $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo, $computeAvailability, $bookingAuditRepo, $locationClosureRepo, $classEventRepo);
         $createRecurringBooking = new CreateRecurringBooking($this->db, $bookingRepo, $recurrenceRuleRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $computeAvailability, $notificationRepo, $bookingAuditRepo);
         $previewRecurringBooking = new PreviewRecurringBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo);
         $modifyRecurringSeries = new ModifyRecurringSeries($this->db, $bookingRepo, $recurrenceRuleRepo, $staffRepo, $bookingAuditRepo);
-        $updateBooking = new UpdateBooking($bookingRepo, $this->db, $clientRepo, $notificationRepo, $bookingAuditRepo);
+        $updateBooking = new UpdateBooking($bookingRepo, $this->db, $clientRepo, $notificationRepo, $bookingAuditRepo, $classEventRepo);
         $deleteBooking = new DeleteBooking($bookingRepo, $this->db, $notificationRepo, $bookingAuditRepo);
         $getMyBookings = new GetMyBookings($this->db);
-        $replaceBooking = new ReplaceBooking($this->db, $bookingRepo, $bookingAuditRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $notificationRepo, $computeAvailability);
+        $replaceBooking = new ReplaceBooking($this->db, $bookingRepo, $bookingAuditRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $notificationRepo, $computeAvailability, $classEventRepo);
 
         // Controllers
         $this->controllers = [

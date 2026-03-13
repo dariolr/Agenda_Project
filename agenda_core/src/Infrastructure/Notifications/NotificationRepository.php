@@ -30,10 +30,10 @@ final class NotificationRepository
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO notification_queue 
              (type, channel, recipient_type, recipient_id, recipient_email, recipient_name, 
-              subject, payload, priority, scheduled_at, business_id, booking_id, status)
+              subject, payload, priority, scheduled_at, max_attempts, business_id, booking_id, status)
              VALUES 
              (:type, :channel, :recipient_type, :recipient_id, :recipient_email, :recipient_name,
-              :subject, :payload, :priority, :scheduled_at, :business_id, :booking_id, "pending")'
+              :subject, :payload, :priority, :scheduled_at, :max_attempts, :business_id, :booking_id, "pending")'
         );
 
         $stmt->execute([
@@ -47,6 +47,7 @@ final class NotificationRepository
             'payload' => Json::encode($data['payload'] ?? []),
             'priority' => $data['priority'] ?? 5,
             'scheduled_at' => $data['scheduled_at'] ?? null,
+            'max_attempts' => $data['max_attempts'] ?? 3,
             'business_id' => $data['business_id'] ?? null,
             'booking_id' => $data['booking_id'] ?? null,
         ]);
@@ -107,16 +108,26 @@ final class NotificationRepository
     /**
      * Mark notification as failed.
      */
-    public function markFailed(int $id, string $error): void
+    public function markFailed(int $id, string $error, ?string $retryScheduledAt = null): void
     {
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE notification_queue 
              SET status = CASE WHEN attempts >= max_attempts THEN "failed" ELSE "pending" END,
                  failed_at = CASE WHEN attempts >= max_attempts THEN NOW() ELSE NULL END,
+                 scheduled_at = CASE
+                    WHEN attempts >= max_attempts THEN scheduled_at
+                    WHEN :retry_scheduled_at_check IS NOT NULL THEN :retry_scheduled_at_value
+                    ELSE scheduled_at
+                 END,
                  error_message = :error
              WHERE id = :id'
         );
-        $stmt->execute(['id' => $id, 'error' => $error]);
+        $stmt->execute([
+            'id' => $id,
+            'error' => $error,
+            'retry_scheduled_at_check' => $retryScheduledAt,
+            'retry_scheduled_at_value' => $retryScheduledAt,
+        ]);
     }
 
     /**

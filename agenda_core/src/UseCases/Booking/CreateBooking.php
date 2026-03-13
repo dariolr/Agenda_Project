@@ -13,6 +13,7 @@ use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\LocationClosureRepository;
+use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\UseCases\Notifications\QueueBookingConfirmation;
@@ -42,6 +43,7 @@ final class CreateBooking
         private readonly ?ComputeAvailability $computeAvailability = null,
         private readonly ?BookingAuditRepository $auditRepository = null,
         private readonly ?LocationClosureRepository $locationClosureRepository = null,
+        private readonly ?ClassEventRepository $classEventRepository = null,
     ) {}
 
     /**
@@ -746,7 +748,10 @@ final class CreateBooking
                     $totalDuration,
                     $dateStr,
                     $serviceIds,
-                    true // keepStaffInfo = true per ottenere staff_id
+                    true, // keepStaffInfo = true per ottenere staff_id
+                    null,
+                    false,
+                    true
                 );
                 
                 $slots = $availabilityResult['slots'] ?? [];
@@ -831,6 +836,14 @@ final class CreateBooking
                     $this->db->rollBack();
                     throw BookingException::slotConflict($conflicts);
                 }
+
+                $this->assertNoClassEventConflict(
+                    $businessId,
+                    $locationId,
+                    $staffId,
+                    $currentTime,
+                    $blockedEndTime
+                );
 
                 $itemsToCreate[] = [
                     'service_id' => (int) $service['id'],
@@ -1018,6 +1031,14 @@ final class CreateBooking
                     throw BookingException::slotConflict($conflicts);
                 }
 
+                $this->assertNoClassEventConflict(
+                    $businessId,
+                    $locationId,
+                    $staffId,
+                    $startTime,
+                    $blockedEndTime
+                );
+
                 $itemsToCreate[] = [
                     'service_id' => $serviceId,
                     'service_variant_id' => (int) $service['service_variant_id'],
@@ -1163,6 +1184,42 @@ final class CreateBooking
         } catch (\Throwable $e) {
             file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " queueNotificationsForClient ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
         }
+    }
+
+    private function assertNoClassEventConflict(
+        int $businessId,
+        int $locationId,
+        int $staffId,
+        DateTimeImmutable $startTime,
+        DateTimeImmutable $endTime
+    ): void {
+        if ($this->classEventRepository === null) {
+            return;
+        }
+
+        $conflicts = $this->classEventRepository->findConflictingEvents(
+            $businessId,
+            $locationId,
+            $staffId,
+            $startTime->format('Y-m-d H:i:s'),
+            $endTime->format('Y-m-d H:i:s')
+        );
+
+        if ($conflicts === []) {
+            return;
+        }
+
+        $details = array_map(
+            static fn (array $conflict): array => [
+                'class_event_id' => (int) $conflict['id'],
+                'start_time' => $conflict['starts_at'],
+                'end_time' => $conflict['ends_at'],
+                'type' => 'class_event',
+            ],
+            $conflicts
+        );
+
+        throw BookingException::slotConflict($details);
     }
 
     /**

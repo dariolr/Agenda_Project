@@ -13,6 +13,7 @@ import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/app_form.dart';
 import '../../../../core/widgets/app_switch.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
@@ -62,9 +63,6 @@ Future<void> showStaffDialog(
       !canEditManagerScopedStaff) {
     return;
   }
-  final formFactor = ref.read(formFactorProvider);
-  final isDesktop = formFactor == AppFormFactor.desktop;
-
   final dialog = _StaffDialog(
     initial: initial,
     initialLocationId: initialLocationId,
@@ -72,17 +70,13 @@ Future<void> showStaffDialog(
     readOnly: readOnly,
   );
 
-  if (isDesktop) {
-    await showDialog(context: context, builder: (_) => dialog);
-  } else {
-    await AppBottomSheet.show(
-      context: context,
-      builder: (_) => dialog,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-      heightFactor: AppBottomSheet.defaultHeightFactor,
-    );
-  }
+  await AppForm.show(
+    context: context,
+    builder: (_) => dialog,
+    useRootNavigator: true,
+    padding: EdgeInsets.zero,
+    heightFactor: AppForm.defaultBottomSheetHeightFactor,
+  );
 }
 
 class _StaffDialog extends ConsumerStatefulWidget {

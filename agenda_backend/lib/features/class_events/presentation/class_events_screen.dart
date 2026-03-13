@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '/app/providers/form_factor_provider.dart';
 import '/core/l10n/date_time_formats.dart';
 import '/core/l10n/l10_extension.dart';
+import '/core/models/appointment.dart';
 import '/core/models/class_event.dart';
 import '/core/models/class_type.dart';
 import '/core/models/location.dart';
@@ -14,7 +15,9 @@ import '/core/network/api_client.dart';
 import '/core/services/tenant_time_service.dart';
 import '/core/widgets/app_bottom_sheet.dart';
 import '/core/widgets/app_buttons.dart';
+import '/core/widgets/app_form.dart';
 import '/core/widgets/feedback_dialog.dart';
+import '/features/agenda/providers/appointment_providers.dart';
 import '/features/agenda/providers/date_range_provider.dart';
 import '/features/agenda/providers/location_providers.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
@@ -47,7 +50,6 @@ class ClassEventsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final classTypesAsync = ref.watch(classTypesWithInactiveProvider);
-    final currentLocation = ref.watch(currentLocationProvider);
     final canManageClassTypes = ref.watch(currentUserCanManageServicesProvider);
     final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
 
@@ -58,12 +60,7 @@ class ClassEventsScreen extends ConsumerWidget {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (_, __) => Center(child: Text(l10n.errorTitle)),
             data: (classTypes) {
-              final filteredClassTypes = classTypes.where((type) {
-                if (type.locationIds.isEmpty) return true;
-                return type.locationIds.contains(currentLocation.id);
-              }).toList();
-
-              if (filteredClassTypes.isEmpty) {
+              if (classTypes.isEmpty) {
                 return Center(
                   child: Text(
                     l10n.classTypesEmpty,
@@ -75,11 +72,11 @@ class ClassEventsScreen extends ConsumerWidget {
               }
               return ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                itemCount: filteredClassTypes.length,
+                itemCount: classTypes.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (_, index) => _ClassTypeCard(
-                  key: ValueKey<int>(filteredClassTypes[index].id),
-                  classType: filteredClassTypes[index],
+                  key: ValueKey<int>(classTypes[index].id),
+                  classType: classTypes[index],
                   canManageClassTypes: canManageClassTypes,
                 ),
               );
@@ -96,22 +93,7 @@ Future<void> showCreateClassTypeDialog(
   WidgetRef ref, {
   ClassType? initial,
 }) async {
-  final formFactor = ref.read(formFactorProvider);
-  final isDesktop = formFactor == AppFormFactor.desktop;
-  if (isDesktop) {
-    await showDialog<void>(
-      context: context,
-      builder: (_) => Dialog(
-        child: SizedBox(
-          width: 520,
-          child: _ClassTypeFormDialog(initial: initial),
-        ),
-      ),
-    );
-    return;
-  }
-
-  await AppBottomSheet.show<void>(
+  await AppForm.show<void>(
     context: context,
     builder: (_) => _ClassTypeFormDialog(initial: initial),
   );
@@ -123,30 +105,10 @@ Future<void> showCreateClassEventDialog(
   int? initialClassTypeId,
   ClassEvent? initialEvent,
 }) async {
-  final formFactor = ref.read(formFactorProvider);
-  final isDesktop = formFactor == AppFormFactor.desktop;
   final currentLocation = ref.read(currentLocationProvider);
   final initialDate = ref.read(agendaDateProvider);
 
-  if (isDesktop) {
-    await showDialog<void>(
-      context: context,
-      builder: (_) => Dialog(
-        child: SizedBox(
-          width: 620,
-          child: _CreateClassForm(
-            initialClassTypeId: initialClassTypeId,
-            initialLocationId: currentLocation.id,
-            initialDate: initialDate,
-            initialEvent: initialEvent,
-          ),
-        ),
-      ),
-    );
-    return;
-  }
-
-  await AppBottomSheet.show<void>(
+  await AppForm.show<void>(
     context: context,
     builder: (_) => _CreateClassForm(
       initialClassTypeId: initialClassTypeId,
@@ -518,8 +480,8 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late bool _isActive;
-  late bool _allLocations;
   late Set<int> _selectedLocationIds;
+  bool _hasChangedLocationSelection = false;
 
   bool get _isEdit => widget.initial != null;
 
@@ -531,7 +493,6 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
       text: widget.initial?.description ?? '',
     );
     _isActive = widget.initial?.isActive ?? true;
-    _allLocations = (widget.initial?.locationIds.isEmpty ?? true);
     _selectedLocationIds = {...?widget.initial?.locationIds};
   }
 
@@ -567,116 +528,98 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
         .map((location) => location.id)
         .toSet();
     final hasSingleVisibleLocation = visibleLocations.length == 1;
-    final effectiveSelectedLocationIds = _selectedLocationIds
+    final initialSelection = !_hasChangedLocationSelection &&
+            _selectedLocationIds.isEmpty &&
+            visibleLocations.length > 1
+        ? visibleLocationIds
+        : _selectedLocationIds;
+    final effectiveSelectedLocationIds = initialSelection
         .where(visibleLocationIds.contains)
         .toSet();
-    final allLocationsEnabled = isLocationScopedOperator
-        ? false
-        : _allLocations;
-    final shouldShowLocationsSelector =
-        !allLocationsEnabled && !hasSingleVisibleLocation;
+    final shouldShowLocationsSelector = !hasSingleVisibleLocation;
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _isEdit ? l10n.classTypesEditTitle : l10n.classTypesCreateTitle,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _nameController,
-                enabled: !isLoading,
-                decoration: InputDecoration(
-                  labelText: l10n.classTypesFieldName,
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if ((value ?? '').trim().isEmpty) {
-                    return l10n.classEventsValidationRequired;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descriptionController,
-                enabled: !isLoading,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: l10n.classTypesFieldDescriptionOptional,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: _isActive,
-                onChanged: isLoading
-                    ? null
-                    : (value) => setState(() => _isActive = value),
-                title: Text(l10n.classTypesFieldIsActive),
-              ),
-              if (!isLocationScopedOperator) ...[
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: _allLocations,
-                  onChanged: isLoading
-                      ? null
-                      : (value) => setState(() => _allLocations = value),
-                  title: Text(l10n.allLocations),
-                ),
-              ],
-              if (shouldShowLocationsSelector) ...[
-                const SizedBox(height: 8),
-                _ClassTypeLocationsMultiSelect(
-                  locations: visibleLocations,
-                  selectedIds: effectiveSelectedLocationIds,
-                  enabled: !isLoading,
-                  onChanged: (ids) => setState(() {
-                    _selectedLocationIds
-                      ..clear()
-                      ..addAll(ids);
-                  }),
-                ),
-                if (effectiveSelectedLocationIds.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      l10n.operatorsScopeLocationsRequired,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-              ],
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  AppOutlinedActionButton(
-                    onPressed: isLoading
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                    child: Text(l10n.actionCancel),
-                  ),
-                  const SizedBox(width: 8),
-                  AppAsyncFilledButton(
-                    isLoading: isLoading,
-                    onPressed: _submit,
-                    child: Text(l10n.actionSave),
-                  ),
-                ],
-              ),
-            ],
+    final content = Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextFormField(
+            controller: _nameController,
+            enabled: !isLoading,
+            decoration: InputDecoration(
+              labelText: l10n.classTypesFieldName,
+              border: const OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if ((value ?? '').trim().isEmpty) {
+                return l10n.classEventsValidationRequired;
+              }
+              return null;
+            },
           ),
-        ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _descriptionController,
+            enabled: !isLoading,
+            maxLines: 3,
+            decoration: InputDecoration(
+              labelText: l10n.classTypesFieldDescriptionOptional,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _isActive,
+            onChanged: isLoading
+                ? null
+                : (value) => setState(() => _isActive = value),
+            title: Text(l10n.classTypesFieldIsActive),
+          ),
+          if (shouldShowLocationsSelector) ...[
+            const SizedBox(height: 8),
+            _ClassTypeLocationsMultiSelect(
+              locations: visibleLocations,
+              selectedIds: effectiveSelectedLocationIds,
+              enabled: !isLoading,
+              onChanged: (ids) => setState(() {
+                _hasChangedLocationSelection = true;
+                _selectedLocationIds
+                  ..clear()
+                  ..addAll(ids);
+              }),
+            ),
+            if (effectiveSelectedLocationIds.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  l10n.operatorsScopeLocationsRequired,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+          ],
+        ],
       ),
+    );
+
+    return AppFormScaffold(
+      title: Text(
+        _isEdit ? l10n.classTypesEditTitle : l10n.classTypesCreateTitle,
+      ),
+      content: content,
+      actions: [
+        AppOutlinedActionButton(
+          onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+          child: Text(l10n.actionCancel),
+        ),
+        AppAsyncFilledButton(
+          isLoading: isLoading,
+          onPressed: _submit,
+          child: Text(l10n.actionSave),
+        ),
+      ],
+      isLoading: isLoading,
     );
   }
 
@@ -702,22 +645,23 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final singleVisibleLocationId = hasSingleVisibleLocation
         ? visibleLocations.first.id
         : null;
-    final effectiveSelectedLocationIds = _selectedLocationIds
+    final rawSelectedIds =
+        !_hasChangedLocationSelection &&
+            _selectedLocationIds.isEmpty &&
+            visibleLocations.length > 1
+        ? visibleLocations.map((location) => location.id).toSet()
+        : _selectedLocationIds;
+    final effectiveSelectedLocationIds = rawSelectedIds
         .where(
           (id) => allowedLocationIds == null || allowedLocationIds.contains(id),
         )
         .toSet();
-    final allLocationsEnabled = isLocationScopedOperator
-        ? false
-        : _allLocations;
-    final locationIdsForSubmit = allLocationsEnabled
-        ? <int>[]
-        : hasSingleVisibleLocation && singleVisibleLocationId != null
+    final locationIdsForSubmit = hasSingleVisibleLocation && singleVisibleLocationId != null
         ? <int>[singleVisibleLocationId]
         : effectiveSelectedLocationIds.toList();
 
     if (!_formKey.currentState!.validate()) return;
-    if (!allLocationsEnabled && locationIdsForSubmit.isEmpty) {
+    if (locationIdsForSubmit.isEmpty) {
       await FeedbackDialog.showError(
         context,
         title: l10n.errorTitle,
@@ -786,14 +730,33 @@ class _ClassTypeLocationsMultiSelect extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
-    final listHeight = (locations.length * 72).clamp(72, 280).toDouble();
+    final listHeight = (locations.length * 72).clamp(144, 360).toDouble();
+    final allLocationIds = locations.map((location) => location.id).toSet();
+    final allSelected =
+        locations.isNotEmpty && selectedIds.containsAll(allLocationIds);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          l10n.operatorsScopeSelectLocations,
-          style: Theme.of(context).textTheme.titleSmall,
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.operatorsScopeSelectLocations,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            TextButton(
+              onPressed: !enabled
+                  ? null
+                  : () => onChanged(allSelected ? <int>{} : allLocationIds),
+              child: Text(
+                allSelected
+                    ? l10n.actionDeselectAll
+                    : l10n.actionSelectAll,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         Container(
@@ -803,27 +766,30 @@ class _ClassTypeLocationsMultiSelect extends StatelessWidget {
           ),
           child: SizedBox(
             height: listHeight,
-            child: ListView.separated(
-              primary: false,
-              itemCount: locations.length,
-              separatorBuilder: (_, __) => const AppDivider(height: 1),
-              itemBuilder: (context, index) {
-                final location = locations[index];
-                return _ClassTypeLocationCheckboxTile(
-                  location: location,
-                  isSelected: selectedIds.contains(location.id),
-                  enabled: enabled,
-                  onChanged: (selected) {
-                    final newIds = Set<int>.from(selectedIds);
-                    if (selected) {
-                      newIds.add(location.id);
-                    } else {
-                      newIds.remove(location.id);
-                    }
-                    onChanged(newIds);
-                  },
-                );
-              },
+            child: Scrollbar(
+              thumbVisibility: locations.length > 4,
+              child: ListView.separated(
+                primary: false,
+                itemCount: locations.length,
+                separatorBuilder: (_, __) => const AppDivider(height: 1),
+                itemBuilder: (context, index) {
+                  final location = locations[index];
+                  return _ClassTypeLocationCheckboxTile(
+                    location: location,
+                    isSelected: selectedIds.contains(location.id),
+                    enabled: enabled,
+                    onChanged: (selected) {
+                      final newIds = Set<int>.from(selectedIds);
+                      if (selected) {
+                        newIds.add(location.id);
+                      } else {
+                        newIds.remove(location.id);
+                      }
+                      onChanged(newIds);
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -932,6 +898,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final l10n = context.l10n;
     final isEditMode = _editingEvent != null;
     final isFormMode = _showSchedulingForm || isEditMode;
+    final businessId = ref.watch(currentBusinessIdProvider);
 
     final classTypes = classTypesAsync.value ?? const <ClassType>[];
     final allStaff = staffAsync.value ?? const <Staff>[];
@@ -966,6 +933,23 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     };
     final dateFormat = DateFormat('dd/MM/yyyy');
     final timeFormat = DateFormat('HH:mm');
+    final selectedDayAppointmentsAsync =
+        _locationId != null && businessId > 0
+        ? ref.watch(
+            appointmentsForLocationDayProvider(
+              (
+                day: _date,
+                locationId: _locationId!,
+                businessId: businessId,
+              ),
+            ),
+          )
+        : const AsyncData<List<Appointment>>(<Appointment>[]);
+    final hasAppointmentConflict = selectedDayAppointmentsAsync.maybeWhen(
+      data: (appointments) =>
+          _countOverlappingAppointmentsForSelection(appointments) > 0,
+      orElse: () => false,
+    );
 
     return SafeArea(
       child: Padding(
@@ -1155,6 +1139,26 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                             ),
                           ],
                         ),
+                      if (isFormMode && hasAppointmentConflict) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.errorContainer.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                          child: Text(
+                            l10n.bookingUnavailableTimeWarningService,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
                       if (isFormMode && !isEditMode) ...[
                         const SizedBox(height: 12),
                         RecurrencePicker(
@@ -1376,6 +1380,12 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                                                 );
                                                 ref.invalidate(
                                                   classEventsProvider,
+                                                );
+                                                ref.invalidate(
+                                                  classEventsForRangeProvider,
+                                                );
+                                                ref.invalidate(
+                                                  classEventsForCurrentLocationDayProvider,
                                                 );
                                                 if (_classTypeId != null) {
                                                   ref.invalidate(
@@ -1660,6 +1670,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         final refreshedDayEvents = await ref.refresh(
           classEventsProvider.future,
         );
+        ref.invalidate(classEventsForRangeProvider);
+        ref.invalidate(classEventsForCurrentLocationDayProvider);
         final refreshedUpcoming = await ref.refresh(
           upcomingClassEventsByTypeProvider(classTypeIdForRefresh).future,
         );
@@ -1807,6 +1819,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         }
 
         ref.invalidate(classEventsProvider);
+        ref.invalidate(classEventsForRangeProvider);
+        ref.invalidate(classEventsForCurrentLocationDayProvider);
         ref.invalidate(allClassEventsByTypeProvider(_classTypeId!));
         ref.invalidate(upcomingClassEventsByTypeProvider(_classTypeId!));
         ref.invalidate(upcomingClassEventsCountByTypeProvider(_classTypeId!));
@@ -1925,6 +1939,38 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final min = value.minute.toString().padLeft(2, '0');
     final s = value.second.toString().padLeft(2, '0');
     return '$y-$m-${d}T$h:$min:$s';
+  }
+
+  int _countOverlappingAppointmentsForSelection(List<Appointment> appointments) {
+    if (_staffId == null || _locationId == null) {
+      return 0;
+    }
+
+    final startLocal = DateTime(
+      _date.year,
+      _date.month,
+      _date.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+    final endLocal = DateTime(
+      _date.year,
+      _date.month,
+      _date.day,
+      _endTime.hour,
+      _endTime.minute,
+    );
+    if (!endLocal.isAfter(startLocal)) {
+      return 0;
+    }
+
+    return appointments.where((appointment) {
+      if (appointment.staffId != _staffId || appointment.locationId != _locationId) {
+        return false;
+      }
+      return startLocal.isBefore(appointment.endTime) &&
+          appointment.startTime.isBefore(endLocal);
+    }).length;
   }
 
   Future<List<ClassEvent>> _loadExistingEventsForRecurrence({

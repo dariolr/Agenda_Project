@@ -1,9 +1,9 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart';
-import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
+import 'package:agenda_backend/core/widgets/app_form.dart';
 import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
 import 'package:agenda_backend/core/widgets/labeled_form_field.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
@@ -28,16 +28,13 @@ Future<StaffPlanning?> showStaffPlanningDialog(
     isDesktop: isDesktop,
   );
 
-  if (isDesktop) {
-    return showDialog<StaffPlanning>(context: context, builder: (_) => dialog);
-  } else {
-    return AppBottomSheet.show<StaffPlanning>(
-      context: context,
-      useRootNavigator: true,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-      builder: (_) => dialog,
-    );
-  }
+  return AppForm.show<StaffPlanning>(
+    context: context,
+    builder: (_) => dialog,
+    formFactor: formFactor,
+    useRootNavigator: true,
+    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+  );
 }
 
 class _StaffPlanningDialog extends ConsumerStatefulWidget {

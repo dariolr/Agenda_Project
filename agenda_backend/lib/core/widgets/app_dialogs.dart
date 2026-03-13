@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'app_form.dart';
+
+export 'app_form.dart' show DismissibleDialog;
+
 /// App-level dialog scaffolds to ensure consistent layout across features.
 Future<T?> showAppFormDialog<T>(
   BuildContext context, {
@@ -8,7 +12,7 @@ Future<T?> showAppFormDialog<T>(
   bool barrierDismissible = true,
   bool useRootNavigator = true,
 }) {
-  return showDialog<T>(
+  return AppForm.show<T>(
     context: context,
     barrierDismissible: barrierDismissible,
     useRootNavigator: useRootNavigator,
@@ -32,86 +36,17 @@ class AppFormDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = Theme.of(context);
-    final dialogTheme = base.copyWith(
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      splashFactory: NoSplash.splashFactory,
-      switchTheme: base.switchTheme.copyWith(
-        overlayColor: MaterialStateProperty.all(Colors.transparent),
-        thumbColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
-            return base.colorScheme.primary;
-          }
-          return null;
-        }),
-        trackColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
-            return base.colorScheme.primary.withOpacity(0.35);
-          }
-          return null;
-        }),
+    return AppFormScaffold(
+      title: title,
+      content: Padding(padding: contentPadding, child: content),
+      actions: actions,
+      dialogMinWidth: 0,
+      dialogMaxWidth: 640,
+      dialogInsetPadding: const EdgeInsets.symmetric(
+        horizontal: 40,
+        vertical: 24,
       ),
-      radioTheme: base.radioTheme.copyWith(
-        overlayColor: MaterialStateProperty.all(Colors.transparent),
-        fillColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
-            return base.colorScheme.primary;
-          }
-          return null;
-        }),
-      ),
-    );
-    return Theme(
-      data: dialogTheme,
-      child: CallbackShortcuts(
-        bindings: <ShortcutActivator, VoidCallback>{
-          SingleActivator(LogicalKeyboardKey.escape): () =>
-              Navigator.of(context, rootNavigator: true).pop(),
-        },
-        child: Focus(
-          autofocus: true,
-          child: Dialog(
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 40,
-              vertical: 24,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    DefaultTextStyle(
-                      style: dialogTheme.textTheme.titleLarge ??
-                          base.textTheme.titleLarge ??
-                          const TextStyle(fontSize: 18),
-                      child: title,
-                    ),
-                    const SizedBox(height: 8),
-                    Flexible(
-                      fit: FlexFit.loose,
-                      child: SingleChildScrollView(
-                        padding: contentPadding,
-                        child: content,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    OverflowBar(
-                      alignment: MainAxisAlignment.end,
-                      spacing: 8,
-                      overflowSpacing: 4,
-                      children: actions,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+      dialogPadding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
     );
   }
 }
@@ -315,23 +250,4 @@ Future<bool> showConfirmDialog(
     },
   );
   return result ?? false;
-}
-
-/// Wrapper per dialog che gestisce automaticamente la chiusura con ESC.
-/// Wrappa qualsiasi widget dialog per aggiungere supporto ESC.
-class DismissibleDialog extends StatelessWidget {
-  const DismissibleDialog({super.key, required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        SingleActivator(LogicalKeyboardKey.escape): () =>
-            Navigator.of(context, rootNavigator: true).pop(),
-      },
-      child: Focus(autofocus: true, child: child),
-    );
-  }
 }

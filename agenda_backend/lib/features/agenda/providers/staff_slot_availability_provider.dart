@@ -21,81 +21,73 @@ import 'layout_config_provider.dart';
 /// Ritorna un `Set<int>` contenente gli indici degli slot DISPONIBILI.
 /// - Set vuoto = nessuna disponibilità (staff non lavora quel giorno o sede chiusa)
 /// - Se non ci sono dati configurati, lo staff è considerato NON disponibile (comportamento restrittivo)
-final staffSlotAvailabilityProvider = Provider.family<Set<int>, int>((
-  ref,
-  staffId,
-) {
+final staffSlotAvailabilityForDateProvider =
+    Provider.family<Set<int>, ({int staffId, DateTime date})>((ref, params) {
+      final agendaDate = DateUtils.dateOnly(params.date);
+      final staffId = params.staffId;
+      final layoutConfig = ref.watch(layoutConfigProvider);
+
+      final isClosed = ref.watch(isDateClosedProvider(agendaDate));
+      if (isClosed) {
+        return const {};
+      }
+
+      ref.watch(ensureStaffPlanningLoadedProvider(staffId));
+
+      final planningLookup = ref.watch(
+        planningForStaffOnDateProvider((staffId: staffId, date: agendaDate)),
+      );
+      const planningSlotMinutes = StaffPlanning.planningStepMinutes;
+      final planningTotalSlots = (24 * 60) ~/ planningSlotMinutes;
+
+      Set<int> basePlanningSlots = switch (planningLookup) {
+        NoPlanningFound() => <int>{},
+        PlanningFound(template: final template) => template.getSlotsForDay(
+          agendaDate.weekday,
+        ),
+        MultiplePlanningsFound() => <int>{},
+      };
+
+      final exceptions = ref.watch(
+        exceptionsForStaffOnDateProvider((staffId: staffId, date: agendaDate)),
+      );
+
+      if (exceptions.isEmpty) {
+        return _projectPlanningSlotsToLayoutSlots(
+          planningSlots: basePlanningSlots,
+          planningSlotMinutes: planningSlotMinutes,
+          layoutMinutesPerSlot: layoutConfig.minutesPerSlot,
+          layoutTotalSlots: layoutConfig.totalSlots,
+        );
+      }
+
+      Set<int> finalPlanningSlots = Set<int>.from(basePlanningSlots);
+
+      for (final exception in exceptions) {
+        final exceptionSlots = exception.toSlotIndices(
+          minutesPerSlot: planningSlotMinutes,
+          totalSlotsPerDay: planningTotalSlots,
+        );
+
+        if (exception.type == AvailabilityExceptionType.available) {
+          finalPlanningSlots = finalPlanningSlots.union(exceptionSlots);
+        } else {
+          finalPlanningSlots = finalPlanningSlots.difference(exceptionSlots);
+        }
+      }
+
+      return _projectPlanningSlotsToLayoutSlots(
+        planningSlots: finalPlanningSlots,
+        planningSlotMinutes: planningSlotMinutes,
+        layoutMinutesPerSlot: layoutConfig.minutesPerSlot,
+        layoutTotalSlots: layoutConfig.totalSlots,
+      );
+    });
+
+final staffSlotAvailabilityProvider = Provider.family<Set<int>, int>((ref, staffId) {
   final agendaDate = ref.watch(agendaDateProvider);
-  final layoutConfig = ref.watch(layoutConfigProvider);
-
-  // ═══════════════════════════════════════════════════════════════
-  // 0️⃣ CHECK: Verifica se la data è in un periodo di chiusura
-  // ═══════════════════════════════════════════════════════════════
-  final isClosed = ref.watch(isDateClosedProvider(agendaDate));
-  if (isClosed) {
-    // Sede chiusa: tutti gli slot non disponibili
-    return const {};
-  }
-
-  // Triggera il caricamento automatico dei planning se non già caricati
-  ref.watch(ensureStaffPlanningLoadedProvider(staffId));
-
-  // Planning valido per la data corrente (source of truth per lo step planning)
-  final planningLookup = ref.watch(
-    planningForStaffOnDateProvider((staffId: staffId, date: agendaDate)),
-  );
-  const planningSlotMinutes = StaffPlanning.planningStepMinutes;
-  final planningTotalSlots = (24 * 60) ~/ planningSlotMinutes;
-
-  // 1️⃣ BASE: Planning da API (supporta weekly/biweekly, validità temporale)
-  Set<int> basePlanningSlots = switch (planningLookup) {
-    NoPlanningFound() => <int>{},
-    PlanningFound(template: final template) => template.getSlotsForDay(
-      agendaDate.weekday,
-    ),
-    MultiplePlanningsFound() => <int>{},
-  };
-
-  // ═══════════════════════════════════════════════════════════════
-  // 2️⃣ ECCEZIONI: Applica modifiche per la data specifica
-  // ═══════════════════════════════════════════════════════════════
-  final exceptions = ref.watch(
-    exceptionsForStaffOnDateProvider((staffId: staffId, date: agendaDate)),
-  );
-
-  if (exceptions.isEmpty) {
-    return _projectPlanningSlotsToLayoutSlots(
-      planningSlots: basePlanningSlots,
-      planningSlotMinutes: planningSlotMinutes,
-      layoutMinutesPerSlot: layoutConfig.minutesPerSlot,
-      layoutTotalSlots: layoutConfig.totalSlots,
-    );
-  }
-
-  // Applica le eccezioni in ordine
-  Set<int> finalPlanningSlots = Set<int>.from(basePlanningSlots);
-
-  for (final exception in exceptions) {
-    final exceptionSlots = exception.toSlotIndices(
-      minutesPerSlot: planningSlotMinutes,
-      totalSlotsPerDay: planningTotalSlots,
-    );
-
-    if (exception.type == AvailabilityExceptionType.available) {
-      // AGGIUNGE disponibilità (es. turno extra)
-      finalPlanningSlots = finalPlanningSlots.union(exceptionSlots);
-    } else {
-      // RIMUOVE disponibilità (es. ferie, malattia)
-      finalPlanningSlots = finalPlanningSlots.difference(exceptionSlots);
-    }
-  }
-
-  // 3️⃣ PROIEZIONE: planning step -> slot UI agenda
-  return _projectPlanningSlotsToLayoutSlots(
-    planningSlots: finalPlanningSlots,
-    planningSlotMinutes: planningSlotMinutes,
-    layoutMinutesPerSlot: layoutConfig.minutesPerSlot,
-    layoutTotalSlots: layoutConfig.totalSlots,
+  return ref.watch(
+    staffSlotAvailabilityForDateProvider((staffId: staffId, date: agendaDate)),
   );
 });
 
@@ -163,42 +155,58 @@ final unavailableSlotRangesProvider =
     Provider.family<List<({int startIndex, int count})>, int>((ref, staffId) {
       final availableSlots = ref.watch(staffSlotAvailabilityProvider(staffId));
       final layoutConfig = ref.watch(layoutConfigProvider);
-      final totalSlots = layoutConfig.totalSlots;
+      return _buildUnavailableSlotRanges(
+        availableSlots: availableSlots,
+        totalSlots: layoutConfig.totalSlots,
+      );
+    });
 
-      // Se il set è vuoto, l'intera giornata è non disponibile
-      if (availableSlots.isEmpty) {
-        return [(startIndex: 0, count: totalSlots)];
+final unavailableSlotRangesForDateProvider = Provider.family<
+  List<({int startIndex, int count})>,
+  ({int staffId, DateTime date})
+>((ref, params) {
+  final availableSlots = ref.watch(staffSlotAvailabilityForDateProvider(params));
+      final layoutConfig = ref.watch(layoutConfigProvider);
+      return _buildUnavailableSlotRanges(
+        availableSlots: availableSlots,
+        totalSlots: layoutConfig.totalSlots,
+      );
+    });
+
+List<({int startIndex, int count})> _buildUnavailableSlotRanges({
+  required Set<int> availableSlots,
+  required int totalSlots,
+}) {
+  if (availableSlots.isEmpty) {
+    return [(startIndex: 0, count: totalSlots)];
+  }
+
+  final List<({int startIndex, int count})> ranges = [];
+  int? rangeStart;
+  int rangeCount = 0;
+
+  for (int i = 0; i < totalSlots; i++) {
+    final isAvailable = availableSlots.contains(i);
+
+    if (!isAvailable) {
+      if (rangeStart == null) {
+        rangeStart = i;
+        rangeCount = 1;
+      } else {
+        rangeCount++;
       }
-
-      final List<({int startIndex, int count})> ranges = [];
-      int? rangeStart;
-      int rangeCount = 0;
-
-      for (int i = 0; i < totalSlots; i++) {
-        final isAvailable = availableSlots.contains(i);
-
-        if (!isAvailable) {
-          // Slot non disponibile
-          if (rangeStart == null) {
-            rangeStart = i;
-            rangeCount = 1;
-          } else {
-            rangeCount++;
-          }
-        } else {
-          // Slot disponibile: chiudi il range precedente se esiste
-          if (rangeStart != null) {
-            ranges.add((startIndex: rangeStart, count: rangeCount));
-            rangeStart = null;
-            rangeCount = 0;
-          }
-        }
-      }
-
-      // Chiudi l'ultimo range se necessario
+    } else {
       if (rangeStart != null) {
         ranges.add((startIndex: rangeStart, count: rangeCount));
+        rangeStart = null;
+        rangeCount = 0;
       }
+    }
+  }
 
-      return ranges;
-    });
+  if (rangeStart != null) {
+    ranges.add((startIndex: rangeStart, count: rangeCount));
+  }
+
+  return ranges;
+}

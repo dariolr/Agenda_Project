@@ -375,6 +375,35 @@ final class ClassEventRepository
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
+    public function findConflictingEvents(
+        int $businessId,
+        int $locationId,
+        int $staffId,
+        string $startTime,
+        string $endTime
+    ): array {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, class_type_id, starts_at, ends_at, status
+             FROM class_events
+             WHERE business_id = :business_id
+               AND location_id = :location_id
+               AND staff_id = :staff_id
+               AND status != "CANCELLED"
+               AND starts_at < :end_time
+               AND ends_at > :start_time
+             ORDER BY starts_at ASC, id ASC'
+        );
+        $stmt->execute([
+            'business_id' => $businessId,
+            'location_id' => $locationId,
+            'staff_id' => $staffId,
+            'start_time' => $startTime,
+            'end_time' => $endTime,
+        ]);
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
     public function findById(int $businessId, int $classEventId, ?int $customerId = null): ?array
     {
         $stmt = $this->db->getPdo()->prepare(

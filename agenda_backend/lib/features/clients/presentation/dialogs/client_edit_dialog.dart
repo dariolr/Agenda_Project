@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/l10n/l10_extension.dart';
-import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/app_form.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../auth/providers/current_business_user_provider.dart';
 import '../../domain/clients.dart';
@@ -32,21 +32,17 @@ Future<Client?> showClientEditDialog(
 
   final formFactor = ref.read(formFactorProvider);
 
-  if (formFactor == AppFormFactor.desktop) {
-    return await showDialog<Client>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => ClientEditDialog(initial: client),
-    );
-  } else {
-    return await AppBottomSheet.show<Client>(
-      context: context,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-      heightFactor: AppBottomSheet.defaultHeightFactor,
-      builder: (_) => ClientEditBottomSheet(initial: client),
-    );
-  }
+  return await AppForm.show<Client>(
+    context: context,
+    formFactor: formFactor,
+    barrierDismissible: false,
+    useRootNavigator: true,
+    padding: EdgeInsets.zero,
+    heightFactor: AppForm.defaultBottomSheetHeightFactor,
+    builder: (_) => formFactor == AppFormFactor.desktop
+        ? ClientEditDialog(initial: client)
+        : ClientEditBottomSheet(initial: client),
+  );
 }
 
 class ClientEditDialog extends ConsumerStatefulWidget {

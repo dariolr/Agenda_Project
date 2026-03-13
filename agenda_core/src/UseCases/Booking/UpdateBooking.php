@@ -8,6 +8,7 @@ use Agenda\Domain\Exceptions\BookingException;
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
+use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Database\Connection;
@@ -28,6 +29,7 @@ final class UpdateBooking
         private readonly ?ClientRepository $clientRepo = null,
         private readonly ?NotificationRepository $notificationRepo = null,
         private readonly ?BookingAuditRepository $auditRepo = null,
+        private readonly ?ClassEventRepository $classEventRepo = null,
     ) {}
 
     /**
@@ -317,6 +319,29 @@ final class UpdateBooking
                 }, $conflicts);
 
                 throw BookingException::slotConflict($conflictDetails);
+            }
+
+            if ($this->classEventRepo !== null) {
+                $classConflicts = $this->classEventRepo->findConflictingEvents(
+                    (int) $booking['business_id'],
+                    (int) $item['location_id'],
+                    (int) $item['staff_id'],
+                    $newItemStart->format('Y-m-d H:i:s'),
+                    $newItemEnd->format('Y-m-d H:i:s')
+                );
+
+                if ($classConflicts !== []) {
+                    $conflictDetails = array_map(static function(array $conflict): array {
+                        return [
+                            'class_event_id' => (int) $conflict['id'],
+                            'start_time' => $conflict['starts_at'],
+                            'end_time' => $conflict['ends_at'],
+                            'type' => 'class_event',
+                        ];
+                    }, $classConflicts);
+
+                    throw BookingException::slotConflict($conflictDetails);
+                }
             }
         }
     }

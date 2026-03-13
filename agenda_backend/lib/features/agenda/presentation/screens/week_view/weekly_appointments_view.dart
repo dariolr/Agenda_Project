@@ -1,6 +1,8 @@
+import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/availability_exception.dart';
 import 'package:agenda_backend/core/models/appointment.dart';
+import 'package:agenda_backend/core/models/class_event.dart';
 import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart'
     show StaffPlanning;
@@ -19,8 +21,10 @@ import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/appointment_card_base.dart';
+import 'package:agenda_backend/features/agenda/presentation/screens/week_view/single_staff_weekly_timeline.dart';
 import 'package:agenda_backend/features/agenda/presentation/widgets/appointment_dialog.dart';
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
+import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
 import 'package:agenda_backend/features/staff/providers/availability_exceptions_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
@@ -71,6 +75,15 @@ class WeeklyAppointmentsView extends ConsumerWidget {
     final weeklyAppointmentsAsync = ref.watch(
       weeklyAppointmentsProvider(request),
     );
+    final weeklyClassEventsAsync = ref.watch(
+      classEventsForLocationWeekProvider(
+        (
+          weekStart: weekRange.start,
+          locationId: location.id,
+          businessId: business.id,
+        ),
+      ),
+    );
     final previousResult = weeklyAppointmentsAsync.maybeWhen(
       data: (result) => result,
       orElse: () => null,
@@ -84,6 +97,7 @@ class WeeklyAppointmentsView extends ConsumerWidget {
             data: (result) => _WeeklyAppointmentsBody(
               weekRange: weekRange,
               appointments: result.appointments,
+              classEvents: weeklyClassEventsAsync.value ?? const [],
               staffList: staffList,
               staffFilterMode: staffFilterMode,
               autoScrollRequestId: autoScrollRequestId,
@@ -94,6 +108,7 @@ class WeeklyAppointmentsView extends ConsumerWidget {
                     ? _WeeklyAppointmentsBody(
                         weekRange: weekRange,
                         appointments: previousResult.appointments,
+                        classEvents: weeklyClassEventsAsync.value ?? const [],
                         staffList: staffList,
                         staffFilterMode: staffFilterMode,
                         autoScrollRequestId: autoScrollRequestId,
@@ -112,6 +127,7 @@ class _WeeklyAppointmentsBody extends ConsumerStatefulWidget {
   const _WeeklyAppointmentsBody({
     required this.weekRange,
     required this.appointments,
+    required this.classEvents,
     required this.staffList,
     required this.staffFilterMode,
     required this.autoScrollRequestId,
@@ -120,6 +136,7 @@ class _WeeklyAppointmentsBody extends ConsumerStatefulWidget {
 
   final WeekRange weekRange;
   final List<Appointment> appointments;
+  final List<ClassEvent> classEvents;
   final List<Staff> staffList;
   final StaffFilterMode staffFilterMode;
   final int autoScrollRequestId;
@@ -220,6 +237,12 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
       for (final appointment in widget.appointments)
         if (allowedStaffIds.contains(appointment.staffId)) appointment,
     ];
+    final filteredClassEvents = [
+      for (final event in widget.classEvents)
+        if (allowedStaffIds.contains(event.staffId) &&
+            event.status.toUpperCase() != 'CANCELLED')
+          event,
+    ];
 
     if (effectiveStaffList.isEmpty) {
       return ColoredBox(
@@ -256,12 +279,30 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
       filteredAppointments,
       weekRange: widget.weekRange,
     );
+    final classEventsByDay = _mapClassEventsByDay(
+      filteredClassEvents,
+      weekRange: widget.weekRange,
+    );
     final showStaffNameFooter = effectiveStaffList.length > 1;
     final dayColumns = [
       for (final day in widget.weekRange.days)
-        (day: day, appointments: appointmentsByDay[day] ?? const <Appointment>[]),
+        (
+          day: day,
+          appointments: appointmentsByDay[day] ?? const <Appointment>[],
+          classEvents: classEventsByDay[day] ?? const <ClassEvent>[],
+        ),
     ];
     final visibleDayColumns = dayColumns;
+
+    if (effectiveStaffList.length == 1) {
+      return SingleStaffWeeklyTimeline(
+        weekRange: widget.weekRange,
+        dayColumns: visibleDayColumns,
+        staffId: effectiveStaffList.first.id,
+        autoScrollRequestId: widget.autoScrollRequestId,
+        autoScrollTargetDate: widget.autoScrollTargetDate,
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 0, 2, 12),
@@ -308,12 +349,14 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
                   width:
                       mobileDayColumnWidth ??
                       resolvedColumnWidths?[index] ??
-                      (column.appointments.isEmpty
+                      (column.appointments.isEmpty &&
+                              column.classEvents.isEmpty
                           ? _WeeklyAppointmentsBody._emptyDayColumnWidth
                           : _WeeklyAppointmentsBody._defaultDayColumnWidth),
                   child: _WeeklyDayColumn(
                     day: column.day,
                     appointments: column.appointments,
+                    classEvents: column.classEvents,
                     showStaffNameFooter: showStaffNameFooter,
                   ),
                 );
@@ -322,7 +365,10 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
           }
 
           final emptyDaysCount = visibleDayColumns
-              .where((entry) => entry.appointments.isEmpty)
+              .where(
+                (entry) =>
+                    entry.appointments.isEmpty && entry.classEvents.isEmpty,
+              )
               .length;
           final nonEmptyDaysCount = visibleDayColumns.length - emptyDaysCount;
           final totalSpacing =
@@ -344,6 +390,7 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
                     child: _WeeklyDayColumn(
                       day: visibleDayColumns[i].day,
                       appointments: visibleDayColumns[i].appointments,
+                      classEvents: visibleDayColumns[i].classEvents,
                       showStaffNameFooter: showStaffNameFooter,
                     ),
                   ),
@@ -361,12 +408,14 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
                 if (i > 0)
                   const SizedBox(width: _WeeklyAppointmentsBody._daySpacing),
                 SizedBox(
-                  width: visibleDayColumns[i].appointments.isEmpty
+                  width: visibleDayColumns[i].appointments.isEmpty &&
+                          visibleDayColumns[i].classEvents.isEmpty
                       ? _WeeklyAppointmentsBody._emptyDayColumnWidth
                       : nonEmptyDayWidth,
                   child: _WeeklyDayColumn(
                     day: visibleDayColumns[i].day,
                     appointments: visibleDayColumns[i].appointments,
+                    classEvents: visibleDayColumns[i].classEvents,
                     showStaffNameFooter: showStaffNameFooter,
                   ),
                 ),
@@ -380,7 +429,13 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
 
   void _maybeAutoScrollToTargetDay({
     required DateTime? targetDate,
-    required List<({DateTime day, List<Appointment> appointments})>
+    required List<
+      ({
+        DateTime day,
+        List<Appointment> appointments,
+        List<ClassEvent> classEvents,
+      })
+    >
     visibleDayColumns,
     required bool isMobile,
     required double? mobileDayColumnWidth,
@@ -415,7 +470,8 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
         if (resolvedColumnWidths != null) {
           return resolvedColumnWidths[index];
         }
-        return visibleDayColumns[index].appointments.isEmpty
+        return visibleDayColumns[index].appointments.isEmpty &&
+                visibleDayColumns[index].classEvents.isEmpty
             ? _WeeklyAppointmentsBody._emptyDayColumnWidth
             : _WeeklyAppointmentsBody._defaultDayColumnWidth;
       }).fold<double>(0.0, (sum, width) => sum + width);
@@ -433,7 +489,14 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
   }
 
   List<double> _resolveDesktopColumnWidths({
-    required List<({DateTime day, List<Appointment> appointments})> columns,
+    required List<
+      ({
+        DateTime day,
+        List<Appointment> appointments,
+        List<ClassEvent> classEvents,
+      })
+    >
+    columns,
     required double maxWidth,
   }) {
     if (columns.isEmpty) {
@@ -442,7 +505,7 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
 
     final baseWidths = [
       for (final column in columns)
-        column.appointments.isEmpty
+        column.appointments.isEmpty && column.classEvents.isEmpty
             ? _WeeklyAppointmentsBody._emptyDayColumnWidth
             : _WeeklyAppointmentsBody._defaultDayColumnWidth,
     ];
@@ -455,7 +518,7 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
 
     final maxWidths = [
       for (final column in columns)
-        column.appointments.isEmpty
+        column.appointments.isEmpty && column.classEvents.isEmpty
             ? _WeeklyAppointmentsBody._maxDesktopEmptyDayColumnWidth
             : _WeeklyAppointmentsBody._maxDesktopDayColumnWidth,
     ];
@@ -471,11 +534,13 @@ class _WeeklyDayColumn extends ConsumerStatefulWidget {
   const _WeeklyDayColumn({
     required this.day,
     required this.appointments,
+    required this.classEvents,
     required this.showStaffNameFooter,
   });
 
   final DateTime day;
   final List<Appointment> appointments;
+  final List<ClassEvent> classEvents;
   final bool showStaffNameFooter;
 
   @override
@@ -512,91 +577,132 @@ class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
       isTodayColumn ? 0.03 : 0.012,
     );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: columnBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor, width: isTodayColumn ? 1.6 : 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    final borderRadius = BorderRadius.circular(12);
+
+    final borderWidth = isTodayColumn ? 1.6 : 1.0;
+
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final showTodayBadge =
-                    isTodayColumn &&
-                    constraints.maxWidth >= _todayBadgeMinColumnWidth;
-                return Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: isTodayColumn
-                              ? theme.colorScheme.primary
-                              : null,
-                        ),
-                      ),
-                    ),
-                    if (showTodayBadge)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          context.l10n.agendaToday,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                  ],
-                );
-              },
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: columnBackground,
+              borderRadius: borderRadius,
             ),
-          ),
-          Divider(height: 0.5, thickness: 0.5, color: borderColor),
-          Expanded(
-            child: widget.appointments.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(
-                        context.l10n.clientAppointmentsEmpty,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  )
-                : ListView.separated(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(12),
-                    itemCount: widget.appointments.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final appointment = widget.appointments[index];
-                      return _WeeklyAppointmentTile(
-                        day: widget.day,
-                        appointment: appointment,
-                        showStaffNameFooter: widget.showStaffNameFooter,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final showTodayBadge =
+                          isTodayColumn &&
+                          constraints.maxWidth >= _todayBadgeMinColumnWidth;
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: isTodayColumn
+                                    ? theme.colorScheme.primary
+                                    : null,
+                              ),
+                            ),
+                          ),
+                          if (showTodayBadge)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                context.l10n.agendaToday,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                        ],
                       );
                     },
                   ),
+                ),
+                Divider(height: 0.5, thickness: 0.5, color: borderColor),
+                Expanded(
+                  child: widget.appointments.isEmpty && widget.classEvents.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Text(
+                              context.l10n.clientAppointmentsEmpty,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(12),
+                          itemCount: _entries.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final entry = _entries[index];
+                            return switch (entry) {
+                              _WeeklyAgendaAppointmentEntry(
+                                appointment: final appointment,
+                              ) =>
+                                _WeeklyAppointmentTile(
+                                  day: widget.day,
+                                  appointment: appointment,
+                                  showStaffNameFooter: widget.showStaffNameFooter,
+                                ),
+                              _WeeklyAgendaClassEventEntry(
+                                classEvent: final event,
+                              ) =>
+                                _WeeklyClassEventTile(
+                                  classEvent: event,
+                                  showStaffNameFooter: widget.showStaffNameFooter,
+                                ),
+                            };
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+          IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: borderRadius,
+                border: Border.all(color: borderColor, width: borderWidth),
+              ),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  List<_WeeklyAgendaEntry> get _entries {
+    final entries = <_WeeklyAgendaEntry>[
+      for (final appointment in widget.appointments)
+        _WeeklyAgendaAppointmentEntry(appointment),
+      for (final event in widget.classEvents) _WeeklyAgendaClassEventEntry(event),
+    ];
+    entries.sort((a, b) => a.start.compareTo(b.start));
+    return entries;
   }
 }
 
@@ -755,6 +861,177 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _WeeklyClassEventTile extends ConsumerWidget {
+  const _WeeklyClassEventTile({
+    required this.classEvent,
+    required this.showStaffNameFooter,
+  });
+
+  final ClassEvent classEvent;
+  final bool showStaffNameFooter;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.tertiaryContainer;
+    final foreground =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+        ? Colors.white
+        : theme.colorScheme.onTertiaryContainer;
+    final footerHeight = showStaffNameFooter ? _WeeklyAppointmentTile._staffFooterHeight : 0.0;
+    final cardBorderRadius = showStaffNameFooter
+        ? const BorderRadius.only(
+            topLeft: Radius.circular(6),
+            topRight: Radius.circular(6),
+          )
+        : const BorderRadius.all(Radius.circular(8));
+    final startsAt = classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
+    final endsAt = classEvent.endsAtLocal ?? classEvent.endsAtUtc.toLocal();
+    final timeLabel =
+        '${DtFmt.hm(context, startsAt.hour, startsAt.minute)} - ${DtFmt.hm(context, endsAt.hour, endsAt.minute)}';
+    final staffName = _resolveStaffDisplayName(ref, classEvent.staffId);
+
+    return SizedBox(
+      height: _WeeklyAppointmentTile._tileHeight,
+      child: Column(
+        children: [
+          Container(
+            height: _WeeklyAppointmentTile._tileHeight - footerHeight,
+            width: double.infinity,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: cardBorderRadius,
+              border: Border.all(color: theme.colorScheme.tertiary),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.l10n.classEventsTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: foreground,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  timeLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(color: foreground),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  context.l10n.classEventsCapacitySummary(
+                    classEvent.confirmedCount,
+                    classEvent.capacityTotal,
+                    classEvent.waitlistCount,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: foreground,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (showStaffNameFooter)
+            Container(
+              height: _WeeklyAppointmentTile._staffFooterHeight,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(8),
+                ),
+                border: Border(
+                  left: BorderSide(color: color),
+                  right: BorderSide(color: color),
+                  bottom: BorderSide(color: color),
+                ),
+              ),
+              child: Text(
+                staffName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: foreground,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _resolveStaffDisplayName(WidgetRef ref, int staffId) {
+    final staff = ref
+        .watch(staffForCurrentLocationProvider)
+        .cast<Staff?>()
+        .firstWhere((entry) => entry?.id == staffId, orElse: () => null);
+    return staff?.displayName ?? '-';
+  }
+}
+
+Map<DateTime, List<ClassEvent>> _mapClassEventsByDay(
+  List<ClassEvent> classEvents, {
+  required WeekRange weekRange,
+}) {
+  final byDay = <DateTime, List<ClassEvent>>{
+    for (final day in weekRange.days) DateUtils.dateOnly(day): <ClassEvent>[],
+  };
+
+  for (final event in classEvents) {
+    final startsAt = event.startsAtLocal ?? event.startsAtUtc.toLocal();
+    final dayKey = DateUtils.dateOnly(startsAt);
+    final bucket = byDay[dayKey];
+    if (bucket == null) continue;
+    bucket.add(event);
+  }
+
+  for (final entries in byDay.values) {
+    entries.sort((a, b) {
+      final aStart = a.startsAtLocal ?? a.startsAtUtc.toLocal();
+      final bStart = b.startsAtLocal ?? b.startsAtUtc.toLocal();
+      return aStart.compareTo(bStart);
+    });
+  }
+
+  return byDay;
+}
+
+sealed class _WeeklyAgendaEntry {
+  const _WeeklyAgendaEntry();
+
+  DateTime get start;
+}
+
+class _WeeklyAgendaAppointmentEntry extends _WeeklyAgendaEntry {
+  const _WeeklyAgendaAppointmentEntry(this.appointment);
+
+  final Appointment appointment;
+
+  @override
+  DateTime get start => appointment.startTime;
+}
+
+class _WeeklyAgendaClassEventEntry extends _WeeklyAgendaEntry {
+  const _WeeklyAgendaClassEventEntry(this.classEvent);
+
+  final ClassEvent classEvent;
+
+  @override
+  DateTime get start => classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
 }
 
 class _WeeklyAppointmentsError extends ConsumerWidget {

@@ -108,15 +108,16 @@ foreach ($notifications as $notification) {
         echo "[{$id}] {$channel} -> {$recipient}... ";
     }
     
-    // Per i reminder, verifica che il booking sia ancora attivo (non cancellato)
+    // Per i reminder, verifica che il booking sia ancora attivo.
+    // I booking replaced non devono più generare reminder: la coda residua va pulita.
     if ($channel === 'booking_reminder' && $bookingId !== null) {
         $stmt = $db->getPdo()->prepare('SELECT status FROM bookings WHERE id = ?');
         $stmt->execute([$bookingId]);
         $bookingStatus = $stmt->fetchColumn();
         
-        if ($bookingStatus === 'cancelled') {
+        if ($bookingStatus === 'cancelled' || $bookingStatus === 'replaced') {
             if ($verbose) {
-                echo "SKIPPED (booking cancelled) - deleting\n";
+                echo "SKIPPED (booking {$bookingStatus}) - deleting\n";
             }
             // Elimina il reminder (coerente con deletePendingReminders)
             $deleteStmt = $db->getPdo()->prepare('DELETE FROM notification_queue WHERE id = ?');
@@ -269,7 +270,23 @@ foreach ($notifications as $notification) {
         
     } catch (\Throwable $e) {
         $error = $e->getMessage();
-        $notificationRepo->markFailed($id, $error);
+        $retryScheduledAt = null;
+        if ($channel === 'booking_reminder' && $bookingId !== null) {
+            $currentAttempt = ((int) ($notification['attempts'] ?? 0)) + 1;
+            $retryDecision = getReminderRetryDecision(
+                $db->getPdo(),
+                (int) $bookingId,
+                $currentAttempt
+            );
+
+            if ($retryDecision['skip_retry']) {
+                $error .= ' | Retry skipped: ' . $retryDecision['reason'];
+            } else {
+                $retryScheduledAt = $retryDecision['retry_at'];
+            }
+        }
+
+        $notificationRepo->markFailed($id, $error, $retryScheduledAt);
         $failed++;
         
         if ($verbose) {
@@ -401,4 +418,91 @@ function buildReminderIcsAttachment(\PDO $pdo, int $bookingId, string $locale = 
     $icsContent = CalendarICSGenerator::generateIcsContent($eventData);
 
     return CalendarICSGenerator::createIcsAttachment($icsContent);
+}
+
+/**
+ * Compute the next retry slot for booking reminders.
+ *
+ * Reminder retry policy:
+ * - 1st failure: retry after 30 minutes
+ * - 2nd failure: retry after 2 hours
+ * - 3rd failure: retry after 6 hours
+ * - no retry if the appointment is no longer active or the next slot would be
+ *   too close to the appointment start.
+ *
+ * @return array{skip_retry: bool, retry_at: ?string, reason: string}
+ */
+function getReminderRetryDecision(\PDO $pdo, int $bookingId, int $currentAttempt): array
+{
+    $delayMinutesByAttempt = [
+        1 => 30,
+        2 => 120,
+        3 => 360,
+    ];
+
+    if (!isset($delayMinutesByAttempt[$currentAttempt])) {
+        return [
+            'skip_retry' => true,
+            'retry_at' => null,
+            'reason' => 'no retry slot available',
+        ];
+    }
+
+    $stmt = $pdo->prepare(
+        'SELECT b.status, l.timezone AS location_timezone, MIN(bi.start_time) AS start_time
+         FROM bookings b
+         JOIN locations l ON b.location_id = l.id
+         LEFT JOIN booking_items bi ON bi.booking_id = b.id
+         WHERE b.id = :booking_id
+         GROUP BY b.id, b.status, l.timezone'
+    );
+    $stmt->execute(['booking_id' => $bookingId]);
+    $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+    if (!$booking) {
+        return [
+            'skip_retry' => true,
+            'retry_at' => null,
+            'reason' => 'booking not found',
+        ];
+    }
+
+    $status = (string) ($booking['status'] ?? '');
+    if (!in_array($status, ['pending', 'confirmed'], true)) {
+        return [
+            'skip_retry' => true,
+            'retry_at' => null,
+            'reason' => "booking status is {$status}",
+        ];
+    }
+
+    $startTimeRaw = $booking['start_time'] ?? null;
+    if (!is_string($startTimeRaw) || trim($startTimeRaw) === '') {
+        return [
+            'skip_retry' => true,
+            'retry_at' => null,
+            'reason' => 'appointment start time unavailable',
+        ];
+    }
+
+    $timezone = new \DateTimeZone((string) ($booking['location_timezone'] ?? 'Europe/Rome'));
+    $appointmentStart = new \DateTimeImmutable($startTimeRaw, $timezone);
+    $retryAt = new \DateTimeImmutable('now', $timezone);
+    $retryAt = $retryAt->modify('+' . $delayMinutesByAttempt[$currentAttempt] . ' minutes');
+
+    // Avoid reminders that would arrive too close to or after the appointment.
+    $retryDeadline = $appointmentStart->modify('-15 minutes');
+    if ($retryAt >= $retryDeadline) {
+        return [
+            'skip_retry' => true,
+            'retry_at' => null,
+            'reason' => 'appointment too close for another reminder retry',
+        ];
+    }
+
+    return [
+        'skip_retry' => false,
+        'retry_at' => $retryAt->format('Y-m-d H:i:s'),
+        'reason' => '',
+    ];
 }

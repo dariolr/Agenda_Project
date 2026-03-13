@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/staff.dart';
 import '../domain/staff_filter_mode.dart';
 import 'business_providers.dart';
+import 'location_providers.dart';
 import 'staff_slot_availability_provider.dart';
 
 /// Provider per la modalità di filtro staff corrente.
@@ -18,28 +19,33 @@ class StaffFilterModeNotifier extends Notifier<StaffFilterMode> {
   @override
   StaffFilterMode build() {
     final businessId = ref.watch(currentBusinessIdProvider);
-    if (businessId <= 0) return StaffFilterMode.onDutyTeam;
+    final allStaff = ref.watch(staffForCurrentLocationProvider);
+    final locationId = ref.watch(currentLocationIdProvider);
+    if (businessId <= 0 || allStaff.length <= 1) {
+      return StaffFilterMode.allTeam;
+    }
 
     // Carica da preferenze salvate
     final prefs = ref.watch(preferencesServiceProvider);
-    final saved = prefs.getStaffFilterMode(businessId);
+    final saved = prefs.getStaffFilterMode(businessId, locationId: locationId);
     if (saved != null) {
       return StaffFilterMode.values.firstWhere(
         (m) => m.name == saved,
-        orElse: () => StaffFilterMode.onDutyTeam,
+        orElse: () => StaffFilterMode.allTeam,
       );
     }
-    return StaffFilterMode.onDutyTeam;
+    return StaffFilterMode.allTeam;
   }
 
   void set(StaffFilterMode mode) {
     state = mode;
     // Salva in preferenze
     final businessId = ref.read(currentBusinessIdProvider);
-    if (businessId > 0) {
+    final locationId = ref.read(currentLocationIdProvider);
+    if (businessId > 0 && locationId > 0) {
       ref
           .read(preferencesServiceProvider)
-          .setStaffFilterMode(businessId, mode.name);
+          .setStaffFilterMode(businessId, mode.name, locationId: locationId);
     }
   }
 }
@@ -54,11 +60,12 @@ class SelectedStaffIdsNotifier extends Notifier<Set<int>> {
   @override
   Set<int> build() {
     final businessId = ref.watch(currentBusinessIdProvider);
+    final locationId = ref.watch(currentLocationIdProvider);
     if (businessId <= 0) return {};
 
     // Carica da preferenze salvate
     final prefs = ref.watch(preferencesServiceProvider);
-    final saved = prefs.getSelectedStaffIds(businessId);
+    final saved = prefs.getSelectedStaffIds(businessId, locationId: locationId);
 
     // Valida gli ID contro lo staff esistente nella location corrente
     final allStaff = ref.watch(staffForCurrentLocationProvider);
@@ -72,13 +79,13 @@ class SelectedStaffIdsNotifier extends Notifier<Set<int>> {
     // invece di lasciare il filtro custom vuoto.
     if (saved.isNotEmpty && validSavedIds.isEmpty && allStaff.length == 1) {
       final singleton = {allStaff.first.id};
-      _saveAsync(businessId, singleton);
+      _saveAsync(businessId, locationId, singleton);
       return singleton;
     }
 
     // Se c'erano ID salvati ma ora sono tutti invalidi, pulisci le preferenze
     if (saved.isNotEmpty && validSavedIds.isEmpty) {
-      _saveAsync(businessId, {});
+      _saveAsync(businessId, locationId, {});
     }
 
     return validSavedIds;
@@ -86,16 +93,22 @@ class SelectedStaffIdsNotifier extends Notifier<Set<int>> {
 
   void _save() {
     final businessId = ref.read(currentBusinessIdProvider);
-    if (businessId > 0) {
+    final locationId = ref.read(currentLocationIdProvider);
+    if (businessId > 0 && locationId > 0) {
       ref
           .read(preferencesServiceProvider)
-          .setSelectedStaffIds(businessId, state);
+          .setSelectedStaffIds(businessId, state, locationId: locationId);
     }
   }
 
   // Versione async per cleanup
-  void _saveAsync(int businessId, Set<int> ids) {
-    ref.read(preferencesServiceProvider).setSelectedStaffIds(businessId, ids);
+  void _saveAsync(int businessId, int locationId, Set<int> ids) {
+    if (locationId <= 0) return;
+    ref.read(preferencesServiceProvider).setSelectedStaffIds(
+          businessId,
+          ids,
+          locationId: locationId,
+        );
   }
 
   void toggle(int staffId) {

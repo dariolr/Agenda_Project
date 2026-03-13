@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/network_providers.dart';
-import '../../../../core/widgets/app_bottom_sheet.dart';
+import '../../../../core/widgets/app_form.dart';
 
 /// Mostra il dialog/bottom sheet con lo storico di una prenotazione
 Future<void> showBookingHistoryDialog(
@@ -18,24 +18,20 @@ Future<void> showBookingHistoryDialog(
 
   final content = _BookingHistoryContent(bookingId: bookingId);
 
-  if (formFactor == AppFormFactor.desktop) {
-    await showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
-          child: content,
-        ),
-      ),
-    );
-  } else {
-    await AppBottomSheet.show(
-      context: context,
-      useRootNavigator: true,
-      builder: (_) => content,
-      heightFactor: 0.7,
-    );
-  }
+  await AppForm.show(
+    context: context,
+    formFactor: formFactor,
+    useRootNavigator: true,
+    heightFactor: 0.7,
+    builder: (_) => formFactor == AppFormFactor.desktop
+        ? Dialog(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+              child: content,
+            ),
+          )
+        : content,
+  );
 }
 
 class _BookingHistoryContent extends ConsumerStatefulWidget {

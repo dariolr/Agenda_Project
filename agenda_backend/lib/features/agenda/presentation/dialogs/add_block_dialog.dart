@@ -2,6 +2,7 @@ import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
+import 'package:agenda_backend/core/widgets/app_form.dart';
 import 'package:agenda_backend/core/widgets/labeled_form_field.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +13,6 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/recurrence_rule.dart';
 import '../../../../core/models/time_block.dart';
 import '../../../../core/widgets/app_buttons.dart';
-import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
@@ -45,16 +45,13 @@ Future<void> showAddBlockDialog(
         : _BlockDialogPresentation.bottomSheet,
   );
 
-  if (isDesktop) {
-    await showDialog(context: context, builder: (_) => dialog);
-  } else {
-    await AppBottomSheet.show(
-      context: context,
-      useRootNavigator: true,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-      builder: (_) => dialog,
-    );
-  }
+  await AppForm.show(
+    context: context,
+    builder: (_) => dialog,
+    formFactor: formFactor,
+    useRootNavigator: true,
+    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+  );
 }
 
 enum _BlockDialogPresentation { dialog, bottomSheet }

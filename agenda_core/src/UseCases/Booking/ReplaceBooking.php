@@ -11,6 +11,7 @@ use Agenda\Infrastructure\Repositories\ServiceRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
+use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Domain\Exceptions\BookingException;
 use DateTimeImmutable;
@@ -38,6 +39,7 @@ final class ReplaceBooking
         private readonly LocationRepository $locationRepository,
         private readonly ?NotificationRepository $notificationRepo = null,
         private readonly ?ComputeAvailability $computeAvailability = null,
+        private readonly ?ClassEventRepository $classEventRepository = null,
     ) {}
 
     /**
@@ -306,7 +308,9 @@ final class ReplaceBooking
                     $dateStr,
                     $serviceIds,
                     true, // keepStaffInfo
-                    $excludeBookingId
+                    $excludeBookingId,
+                    false,
+                    $actorType === 'customer'
                 );
 
                 $slots = $availabilityResult['slots'] ?? [];
@@ -369,6 +373,28 @@ final class ReplaceBooking
 
             if (!empty($conflicts)) {
                 throw BookingException::slotConflict($conflicts);
+            }
+
+            if ($this->classEventRepository !== null) {
+                $classConflicts = $this->classEventRepository->findConflictingEvents(
+                    $businessId,
+                    $locationId,
+                    (int) $item['staff_id'],
+                    $item['start_time']->format('Y-m-d H:i:s'),
+                    $item['end_time']->format('Y-m-d H:i:s')
+                );
+
+                if ($classConflicts !== []) {
+                    throw BookingException::slotConflict(array_map(
+                        static fn (array $conflict): array => [
+                            'class_event_id' => (int) $conflict['id'],
+                            'start_time' => $conflict['starts_at'],
+                            'end_time' => $conflict['ends_at'],
+                            'type' => 'class_event',
+                        ],
+                        $classConflicts
+                    ));
+                }
             }
         }
     }

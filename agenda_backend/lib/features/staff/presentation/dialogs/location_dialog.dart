@@ -5,9 +5,9 @@ import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/location.dart';
-import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/app_form.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../agenda/providers/business_providers.dart';
@@ -19,21 +19,16 @@ Future<void> showLocationDialog(
   Location? initial,
 }) async {
   final formFactor = ref.read(formFactorProvider);
-  final isDesktop = formFactor == AppFormFactor.desktop;
-
   final dialog = _LocationDialog(initial: initial);
 
-  if (isDesktop) {
-    await showDialog(context: context, builder: (_) => dialog);
-  } else {
-    await AppBottomSheet.show(
-      context: context,
-      builder: (_) => dialog,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-      heightFactor: AppBottomSheet.defaultHeightFactor,
-    );
-  }
+  await AppForm.show(
+    context: context,
+    builder: (_) => dialog,
+    formFactor: formFactor,
+    useRootNavigator: true,
+    padding: EdgeInsets.zero,
+    heightFactor: AppForm.defaultBottomSheetHeightFactor,
+  );
 }
 
 class _LocationDialog extends ConsumerStatefulWidget {

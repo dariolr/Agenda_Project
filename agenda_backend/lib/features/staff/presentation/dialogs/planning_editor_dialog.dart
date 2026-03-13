@@ -16,8 +16,8 @@ import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart';
-import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
+import 'package:agenda_backend/core/widgets/app_form.dart';
 import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
 import 'package:agenda_backend/features/staff/presentation/widgets/weekly_schedule_editor.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
@@ -46,21 +46,15 @@ Future<bool?> showPlanningEditorDialog(
     existingPlannings: existingPlannings,
   );
 
-  if (isDesktop) {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => content,
-    );
-  } else {
-    return AppBottomSheet.show<bool>(
-      context: context,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-      builder: (_) => content,
-      heightFactor: AppBottomSheet.defaultHeightFactor,
-    );
-  }
+  return AppForm.show<bool>(
+    context: context,
+    builder: (_) => content,
+    formFactor: formFactor,
+    barrierDismissible: false,
+    useRootNavigator: true,
+    padding: EdgeInsets.zero,
+    heightFactor: AppForm.defaultBottomSheetHeightFactor,
+  );
 }
 
 class _PlanningEditorContent extends ConsumerStatefulWidget {
