@@ -244,7 +244,6 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
         } else if (isBookingsList) {
           actions.add(_BookingsListRefreshAction(ref: ref));
         } else if (isClassEvents) {
-          actions.add(const _ToolbarLocationSelectorAction());
           if (canManageServices) {
             actions.add(const _ClassEventsAddAction());
           }
@@ -451,7 +450,6 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
       } else if (isBookingsList) {
         actions.add(_BookingsListRefreshAction(ref: ref));
       } else if (isClassEvents) {
-        actions.add(const _ToolbarLocationSelectorAction(compact: true));
         if (canManageServices) {
           actions.add(const _ClassEventsAddAction(compact: true));
         }

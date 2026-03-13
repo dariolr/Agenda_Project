@@ -1,16 +1,12 @@
-import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service_category.dart';
-import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
-import '../../../../core/widgets/app_dialogs.dart';
-import '../../../../core/widgets/app_dividers.dart';
+import '../../../../core/widgets/app_form.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
-import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../providers/service_categories_provider.dart';
 import '../../utils/service_validators.dart';
 
@@ -21,7 +17,6 @@ Future<void> showCategoryDialog(
 }) async {
   final notifier = ref.read(serviceCategoriesProvider.notifier);
   final allCategories = ref.read(serviceCategoriesProvider);
-  final isDesktop = ref.read(formFactorProvider) == AppFormFactor.desktop;
 
   final nameController = TextEditingController(text: category?.name ?? '');
   final descController = TextEditingController(
@@ -152,126 +147,27 @@ Future<void> showCategoryDialog(
         ),
       );
 
-      if (isDesktop) {
-        return DismissibleDialog(
-          child: Dialog(
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 32,
-              vertical: 24,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-              child: LocalLoadingOverlay(
-                isLoading: isSaving,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(title, style: Theme.of(ctx).textTheme.headlineSmall),
-                      const SizedBox(height: 16),
-                      content,
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          cancelButton,
-                          const SizedBox(width: 8),
-                          saveButton,
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }
-
-      return SafeArea(
-        top: false,
-        child: LayoutBuilder(
-          builder: (ctx, constraints) {
-            final isKeyboardOpen = MediaQuery.of(ctx).viewInsets.bottom > 0;
-            return LocalLoadingOverlay(
-              isLoading: isSaving,
-              child: SizedBox(
-                height: constraints.maxHeight,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.only(bottom: 0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: Text(
-                                      title,
-                                      style: Theme.of(ctx).textTheme.titleLarge,
-                                    ),
-                                  ),
-                                  content,
-                                  const SizedBox(height: 24),
-                                  const SizedBox(
-                                    height: AppSpacing.formRowSpacing,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (!isKeyboardOpen) ...[
-                      const AppDivider(),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                        child: Align(
-                          alignment: 2 == 3
-                              ? Alignment.center
-                              : Alignment.centerRight,
-                          child: Wrap(
-                            alignment: 2 == 3
-                                ? WrapAlignment.center
-                                : WrapAlignment.end,
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [cancelButton, saveButton],
-                          ),
-                        ),
-                      ),
-                    ],
-                    SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
-                  ],
-                ),
-              ),
-            );
-          },
+      return AppFormScaffold(
+        title: Text(title),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            content,
+            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.formRowSpacing),
+          ],
         ),
+        actions: [cancelButton, saveButton],
+        isLoading: isSaving,
       );
     },
   );
 
-  if (isDesktop) {
-    await showDialog(context: context, builder: (_) => builder);
-  } else {
-    await AppBottomSheet.show(
-      context: context,
-      builder: (_) => builder,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-    );
-  }
+  await AppForm.show(
+    context: context,
+    builder: (_) => builder,
+    useRootNavigator: true,
+    padding: EdgeInsets.zero,
+  );
 }

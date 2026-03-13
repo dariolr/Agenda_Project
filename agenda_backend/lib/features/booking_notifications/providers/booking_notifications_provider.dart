@@ -14,7 +14,7 @@ class BookingNotificationsFilters {
     this.search,
     this.status,
     this.channels,
-    this.sortBy = 'created',
+    this.sortBy = 'last_attempt',
     this.sortOrder = 'desc',
   });
 

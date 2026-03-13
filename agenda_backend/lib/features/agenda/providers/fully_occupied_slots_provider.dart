@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../class_events/providers/class_events_providers.dart';
 import 'appointment_providers.dart';
 import 'date_range_provider.dart';
 import 'layout_config_provider.dart';
@@ -15,8 +16,16 @@ Set<int> fullyOccupiedSlots(Ref ref, int staffId) {
       .watch(appointmentsForCurrentLocationProvider)
       .where((a) => a.staffId == staffId)
       .toList();
+  final classEvents = (ref.watch(classEventsForCurrentLocationDayProvider).value ??
+          const [])
+      .where(
+        (event) =>
+            event.staffId == staffId &&
+            event.status.toUpperCase() != 'CANCELLED',
+      )
+      .toList();
 
-  if (appointments.isEmpty) return const {};
+  if (appointments.isEmpty && classEvents.isEmpty) return const {};
 
   final layoutConfig = ref.watch(layoutConfigProvider);
   final agendaDate = ref.watch(agendaDateProvider);
@@ -26,7 +35,16 @@ Set<int> fullyOccupiedSlots(Ref ref, int staffId) {
   // Calcola la geometria degli appuntamenti per determinare le frazioni di larghezza
   final layoutEntries = appointments
       .map((a) => _LayoutEntry(id: a.id, start: a.startTime, end: a.endTime))
-      .toList();
+      .toList()
+    ..addAll(
+      classEvents.map(
+        (event) => _LayoutEntry(
+          id: _classEventLayoutId(event.id),
+          start: event.startsAtLocal ?? event.startsAtUtc.toLocal(),
+          end: event.endsAtLocal ?? event.endsAtUtc.toLocal(),
+        ),
+      ),
+    );
 
   final geometryMap = _computeLayoutGeometry(
     layoutEntries,
@@ -55,6 +73,17 @@ Set<int> fullyOccupiedSlots(Ref ref, int staffId) {
       }
     }
 
+    for (final event in classEvents) {
+      final start = event.startsAtLocal ?? event.startsAtUtc.toLocal();
+      final end = event.endsAtLocal ?? event.endsAtUtc.toLocal();
+      if (start.isBefore(slotEnd) && end.isAfter(slotStart)) {
+        final geometry = geometryMap[_classEventLayoutId(event.id)];
+        if (geometry != null) {
+          totalWidthFraction += geometry.widthFraction;
+        }
+      }
+    }
+
     // Lo slot è completamente occupato se la somma >= 1.0 (100%)
     if (totalWidthFraction >= 0.999) {
       fullyOccupied.add(slotIndex);
@@ -63,6 +92,8 @@ Set<int> fullyOccupiedSlots(Ref ref, int staffId) {
 
   return fullyOccupied;
 }
+
+int _classEventLayoutId(int classEventId) => -1000000 - classEventId;
 
 // ── Classi helper per il calcolo della geometria ──────────────────────────────
 

@@ -131,6 +131,8 @@ void invalidateBusinessScopedProviders(Object refObj) {
 
   // Class events
   ref.invalidate(classEventsProvider);
+  ref.invalidate(classEventsForRangeProvider);
+  ref.invalidate(classEventsForCurrentLocationDayProvider);
   ref.invalidate(classTypesProvider);
   ref.invalidate(selectedClassTypeIdProvider);
 

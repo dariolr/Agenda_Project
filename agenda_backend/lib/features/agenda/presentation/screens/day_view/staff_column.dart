@@ -14,10 +14,12 @@ import 'package:agenda_backend/features/agenda/providers/dragged_card_size_provi
 import 'package:agenda_backend/features/agenda/providers/pending_drop_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_slot_availability_provider.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
+import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/appointment.dart';
+import '/core/models/class_event.dart';
 import '/core/models/staff.dart';
 import '/core/utils/color_utils.dart';
 import '../../../domain/config/agenda_theme.dart';
@@ -335,6 +337,15 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final staffAppointments = allAppointments
         .where((a) => a.staffId == widget.staff.id)
         .toList();
+    final allClassEvents =
+        ref.watch(classEventsForCurrentLocationDayProvider).value ?? const [];
+    final staffClassEvents = allClassEvents
+        .where(
+          (event) =>
+              event.staffId == widget.staff.id &&
+              event.status.toUpperCase() != 'CANCELLED',
+        )
+        .toList();
 
     // 6. RIMOSSO il blocco addPostFrameCallback da qui
 
@@ -456,9 +467,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
-    // 🔹 Appuntamenti (con larghezza ridotta se ci sono slot pieni)
+    // 🔹 Appuntamenti + classi (con larghezza ridotta se ci sono slot pieni)
     stackChildren.addAll(
-      _buildAppointments(slotHeight, staffAppointments, effectiveColumnWidth),
+      _buildScheduledEntries(
+        slotHeight,
+        staffAppointments,
+        staffClassEvents,
+        effectiveColumnWidth,
+      ),
     );
 
     // 🔹 Blocchi di non disponibilità
@@ -601,9 +617,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     );
   }
 
-  List<Widget> _buildAppointments(
+  List<Widget> _buildScheduledEntries(
     double slotHeight,
     List<Appointment> appointments,
+    List<ClassEvent> classEvents,
     double columnWidth,
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
@@ -639,145 +656,140 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       return appt;
     }).toList();
 
-    final List<List<Appointment>> overlapGroups = [];
-    for (final appt in layoutAppointments) {
-      bool added = false;
-      for (final group in overlapGroups) {
-        if (group.any(
-          (g) =>
-              appt.startTime.isBefore(g.endTime) &&
-              appt.endTime.isAfter(g.startTime),
-        )) {
-          group.add(appt);
-          added = true;
-          break;
-        }
-      }
-      if (!added) {
-        overlapGroups.add([appt]);
-      }
-    }
-
-    final positionedAppointments = <Widget>[];
+    final positionedEntries = <Widget>[];
 
     final originalAppointmentsMap = {for (var a in appointments) a.id: a};
     final layoutEntries = layoutAppointments
         .map((a) => LayoutEntry(id: a.id, start: a.startTime, end: a.endTime))
-        .toList();
+        .toList()
+      ..addAll(
+        classEvents.map(
+          (event) => LayoutEntry(
+            id: _classEventLayoutId(event.id),
+            start: event.startsAtLocal ?? event.startsAtUtc.toLocal(),
+            end: event.endsAtLocal ?? event.endsAtUtc.toLocal(),
+          ),
+        ),
+      );
     final layoutGeometry = computeLayoutGeometry(
       layoutEntries,
       useClusterMaxConcurrency: layoutConfig.useClusterMaxConcurrency,
     );
 
-    for (final group in overlapGroups) {
-      final groupWidgets = <Widget>[];
-      final groupSize = group.length;
-      group.sort((a, b) => a.startTime.compareTo(b.startTime));
+    for (final layoutAppt in layoutAppointments) {
+      final originalAppt = originalAppointmentsMap[layoutAppt.id]!;
+      final isDragged = originalAppt.id == draggedId;
+      final dayStart = DateTime(
+        originalAppt.startTime.year,
+        originalAppt.startTime.month,
+        originalAppt.startTime.day,
+      );
+      final startMinutes = originalAppt.startTime.difference(dayStart).inMinutes;
+      final endMinutes = layoutAppt.endTime.difference(dayStart).inMinutes;
+      final double top = layoutConfig.offsetForMinuteOfDay(startMinutes);
+      double height = layoutConfig.heightForMinutes(endMinutes - startMinutes);
 
-      for (int i = 0; i < groupSize; i++) {
-        final layoutAppt = group[i];
-        final originalAppt = originalAppointmentsMap[layoutAppt.id]!;
-
-        final isDragged = originalAppt.id == draggedId;
-
-        final dayStart = DateTime(
-          originalAppt.startTime.year,
-          originalAppt.startTime.month,
-          originalAppt.startTime.day,
-        );
-
-        final startMinutes = originalAppt.startTime
-            .difference(dayStart)
-            .inMinutes;
-
-        final endMinutes = layoutAppt.endTime.difference(dayStart).inMinutes;
-
-        final double top = layoutConfig.offsetForMinuteOfDay(startMinutes);
-        double height = layoutConfig.heightForMinutes(
-          endMinutes - startMinutes,
-        );
-
-        final entry = ref.watch(resizingEntryProvider(originalAppt.id));
-        if (entry != null) {
-          height = entry.currentPreviewHeightPx;
-        }
-
-        final geometry =
-            layoutGeometry[originalAppt.id] ??
-            const EventGeometry(leftFraction: 0, widthFraction: 1);
-
-        // Controlla se questo appuntamento ha un drop pendente (usa variabile pre-calcolata)
-        final hasPendingDrop = pendingDrop?.appointmentId == originalAppt.id;
-        final isOriginalPosition =
-            hasPendingDrop && pendingDrop!.originalStaffId == widget.staff.id;
-
-        double opacity = isDragged ? AgendaTheme.ghostOpacity : 1.0;
-        // Se è la posizione originale durante un drop pendente, mostra semi-trasparente
-        if (isOriginalPosition) {
-          opacity = AgendaTheme.ghostOpacity;
-        }
-
-        // 🔹 Costruisci la card (usa columnWidth passato, che è già ridotto se ci sono slot pieni)
-        final padding = LayoutConfig.columnInnerPadding;
-        final fullColumnWidth = math.max(columnWidth - padding * 2, 0.0);
-        final cardLeft = columnWidth * geometry.leftFraction + padding;
-        final cardWidth = math.max(
-          columnWidth * geometry.widthFraction - padding * 2,
-          0.0,
-        );
-
-        Color cardColor;
-        if (useServiceColors) {
-          if (isInitialVariantsLoading) {
-            cardColor = neutralServiceColor;
-          } else {
-            // Priorità: colore del servizio (configurabile dall'operatore).
-            final serviceColor = serviceColorMap[originalAppt.serviceId];
-            if (serviceColor != null) {
-              cardColor = serviceColor;
-            } else {
-              final variant = ref.watch(
-                serviceVariantByIdProvider(originalAppt.serviceVariantId),
-              );
-              if (variant != null && variant.colorHex != null) {
-                cardColor = ColorUtils.fromHex(variant.colorHex!);
-              } else {
-                // Fallback: colore neutro se servizio senza colore
-                cardColor = neutralServiceColor;
-              }
-            }
-          }
-        } else {
-          // Se non uso colori servizio, usa colore staff
-          cardColor = widget.staff.color;
-        }
-
-        groupWidgets.add(
-          Positioned(
-            key: ValueKey(originalAppt.id),
-            top: top,
-            left: cardLeft,
-            width: cardWidth,
-            height: height,
-            child: Opacity(
-              opacity: opacity,
-              child: AppointmentCard(
-                appointment: originalAppt,
-                color: cardColor,
-                columnWidth: cardWidth,
-                columnOffset: cardLeft,
-                dragTargetWidth: fullColumnWidth,
-                expandToLeft: i > 0,
-              ),
-            ),
-          ),
-        );
+      final entry = ref.watch(resizingEntryProvider(originalAppt.id));
+      if (entry != null) {
+        height = entry.currentPreviewHeightPx;
       }
 
-      // Posizioniamo i widget del gruppo in ordine inverso, così gli
-      // appuntamenti che iniziano prima rimangono sopra e non vengono
-      // parzialmente coperti da quelli iniziati dopo.
-      positionedAppointments.addAll(groupWidgets.reversed);
+      final geometry =
+          layoutGeometry[originalAppt.id] ??
+          const EventGeometry(leftFraction: 0, widthFraction: 1);
+      final hasPendingDrop = pendingDrop?.appointmentId == originalAppt.id;
+      final isOriginalPosition =
+          hasPendingDrop && pendingDrop!.originalStaffId == widget.staff.id;
+
+      double opacity = isDragged ? AgendaTheme.ghostOpacity : 1.0;
+      if (isOriginalPosition) {
+        opacity = AgendaTheme.ghostOpacity;
+      }
+
+      final padding = LayoutConfig.columnInnerPadding;
+      final fullColumnWidth = math.max(columnWidth - padding * 2, 0.0);
+      final cardLeft = columnWidth * geometry.leftFraction + padding;
+      final cardWidth = math.max(
+        columnWidth * geometry.widthFraction - padding * 2,
+        0.0,
+      );
+
+      Color cardColor;
+      if (useServiceColors) {
+        if (isInitialVariantsLoading) {
+          cardColor = neutralServiceColor;
+        } else {
+          final serviceColor = serviceColorMap[originalAppt.serviceId];
+          if (serviceColor != null) {
+            cardColor = serviceColor;
+          } else {
+            final variant = ref.watch(
+              serviceVariantByIdProvider(originalAppt.serviceVariantId),
+            );
+            if (variant != null && variant.colorHex != null) {
+              cardColor = ColorUtils.fromHex(variant.colorHex!);
+            } else {
+              cardColor = neutralServiceColor;
+            }
+          }
+        }
+      } else {
+        cardColor = widget.staff.color;
+      }
+
+      positionedEntries.add(
+        Positioned(
+          key: ValueKey(originalAppt.id),
+          top: top,
+          left: cardLeft,
+          width: cardWidth,
+          height: height,
+          child: Opacity(
+            opacity: opacity,
+            child: AppointmentCard(
+              appointment: originalAppt,
+              color: cardColor,
+              columnWidth: cardWidth,
+              columnOffset: cardLeft,
+              dragTargetWidth: fullColumnWidth,
+            ),
+          ),
+        ),
+      );
+    }
+
+    for (final classEvent in classEvents) {
+      final startsAt = classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
+      final endsAt = classEvent.endsAtLocal ?? classEvent.endsAtUtc.toLocal();
+      final dayStart = DateTime(startsAt.year, startsAt.month, startsAt.day);
+      final startMinutes = startsAt.difference(dayStart).inMinutes;
+      final endMinutes = endsAt.difference(dayStart).inMinutes;
+      final geometry =
+          layoutGeometry[_classEventLayoutId(classEvent.id)] ??
+          const EventGeometry(leftFraction: 0, widthFraction: 1);
+      final padding = LayoutConfig.columnInnerPadding;
+      final cardLeft = columnWidth * geometry.leftFraction + padding;
+      final cardWidth = math.max(
+        columnWidth * geometry.widthFraction - padding * 2,
+        0.0,
+      );
+
+      positionedEntries.add(
+        Positioned(
+          key: ValueKey('class_event_${classEvent.id}'),
+          top: layoutConfig.offsetForMinuteOfDay(startMinutes),
+          left: cardLeft,
+          width: cardWidth,
+          height: layoutConfig.heightForMinutes(endMinutes - startMinutes),
+          child: IgnorePointer(
+            child: _ClassEventCard(
+              event: classEvent,
+              width: cardWidth,
+              color: Theme.of(context).colorScheme.tertiaryContainer,
+            ),
+          ),
+        ),
+      );
     }
 
     // 🔹 Aggiungi preview per drop pendente se questa è la colonna di destinazione
@@ -837,7 +849,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         }
 
         // Preview card con bordo tratteggiato per indicare la posizione proposta
-        positionedAppointments.add(
+        positionedEntries.add(
           Positioned(
             key: const ValueKey('pending_drop_preview'),
             top: top,
@@ -867,7 +879,12 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       }
     }
 
-    return positionedAppointments;
+    positionedEntries.sort((a, b) {
+      final aTop = (a as Positioned).top ?? 0;
+      final bTop = (b as Positioned).top ?? 0;
+      return aTop.compareTo(bTop);
+    });
+    return positionedEntries;
   }
 
   /// Costruisce i widget per i blocchi di non disponibilità dello staff.
@@ -1023,5 +1040,68 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         _isApplyingBookingReschedule = false;
       }
     }
+  }
+}
+
+int _classEventLayoutId(int classEventId) => -1000000 - classEventId;
+
+class _ClassEventCard extends StatelessWidget {
+  const _ClassEventCard({
+    required this.event,
+    required this.width,
+    required this.color,
+  });
+
+  final ClassEvent event;
+  final double width;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final foreground =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+        ? Colors.white
+        : theme.colorScheme.onTertiaryContainer;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(LayoutConfig.borderRadius),
+        border: Border.all(
+          color: theme.colorScheme.tertiary.withOpacity(0.8),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.classEventsTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            l10n.classEventsCapacitySummary(
+              event.confirmedCount,
+              event.capacityTotal,
+              event.waitlistCount,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

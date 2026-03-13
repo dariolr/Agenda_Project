@@ -7,6 +7,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../../clients/providers/clients_providers.dart';
 import '../../services/providers/services_provider.dart';
+import '../utils/week_range.dart';
 import 'booking_reschedule_provider.dart';
 import 'bookings_provider.dart';
 import 'bookings_repository_provider.dart';
@@ -14,6 +15,7 @@ import 'business_providers.dart';
 import 'date_range_provider.dart';
 import 'location_providers.dart';
 import 'tenant_time_provider.dart';
+import 'weekly_appointments_provider.dart';
 
 /// Arrotonda un DateTime ai 5 minuti più vicini.
 /// Es: 10:12 → 10:10, 10:13 → 10:15
@@ -86,14 +88,15 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     required DateTime newStart,
     required DateTime newEnd,
   }) async {
-    final currentList = state.value;
-    if (currentList == null) return;
+    final currentList = state.value ?? const <Appointment>[];
 
     // Trova l'appointment originale per calcolare extra blocked
-    final originalAppt = currentList.firstWhere(
-      (a) => a.id == appointmentId,
-      orElse: () => throw Exception('Appointment not found'),
-    );
+    final originalAppt =
+        _findAppointmentById(currentList, appointmentId) ??
+        _findAppointmentInVisibleWeek(appointmentId);
+    if (originalAppt == null) {
+      return;
+    }
 
     // Arrotonda gli orari a multipli di 5 minuti
     final roundedStart = _roundToNearestFiveMinutes(newStart);
@@ -115,20 +118,24 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
       newBlocked = newTotalMinutes - baseMinutes;
     }
 
-    final newList = [
-      for (final appt in currentList)
-        if (appt.id == appointmentId)
-          _applyResizeToAppointment(
+    final hasAppointmentInCurrentList =
+        _findAppointmentById(currentList, appointmentId) != null;
+    if (hasAppointmentInCurrentList) {
+      final newList = [
+        for (final appt in currentList)
+          if (appt.id == appointmentId)
+            _applyResizeToAppointment(
+              appt,
+              staffId: newStaffId,
+              startTime: roundedStart,
+              endTime: roundedEnd,
+            )
+          else
             appt,
-            staffId: newStaffId,
-            startTime: roundedStart,
-            endTime: roundedEnd,
-          )
-        else
-          appt,
-    ];
+      ];
 
-    state = AsyncData(newList);
+      state = AsyncData(newList);
+    }
 
     // API update: chiama l'API per reschedule appointment
     final location = ref.read(currentLocationProvider);
@@ -143,9 +150,12 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
         staffId: newStaffId,
         extraBlockedMinutes: newBlocked,
       );
+      _invalidateVisibleWeek();
     } catch (_) {
       // Rollback on error
-      state = AsyncData(currentList);
+      if (hasAppointmentInCurrentList) {
+        state = AsyncData(currentList);
+      }
     }
   }
 
@@ -669,6 +679,64 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
       price: variant.price,
     );
   }
+
+  Appointment? _findAppointmentById(List<Appointment> source, int appointmentId) {
+    for (final appointment in source) {
+      if (appointment.id == appointmentId) {
+        return appointment;
+      }
+    }
+    return null;
+  }
+
+  Appointment? _findAppointmentInVisibleWeek(int appointmentId) {
+    final location = ref.read(currentLocationProvider);
+    final business = ref.read(currentBusinessProvider);
+    if (location.id <= 0 || business.id <= 0) {
+      return null;
+    }
+
+    final anchorDate = ref.read(agendaDateProvider);
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final weekRange = computeWeekRange(anchorDate, timezone);
+    final weeklyAppointments = ref.read(
+      weeklyAppointmentsProvider(
+        WeeklyAppointmentsRequest(
+          weekStart: weekRange.start,
+          locationId: location.id,
+          businessId: business.id,
+        ),
+      ),
+    );
+
+    final appointments = weeklyAppointments.value?.appointments;
+    if (appointments == null) {
+      return null;
+    }
+
+    return _findAppointmentById(appointments, appointmentId);
+  }
+
+  void _invalidateVisibleWeek() {
+    final location = ref.read(currentLocationProvider);
+    final business = ref.read(currentBusinessProvider);
+    if (location.id <= 0 || business.id <= 0) {
+      return;
+    }
+
+    final anchorDate = ref.read(agendaDateProvider);
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final weekRange = computeWeekRange(anchorDate, timezone);
+    ref.invalidate(
+      weeklyAppointmentsProvider(
+        WeeklyAppointmentsRequest(
+          weekStart: weekRange.start,
+          locationId: location.id,
+          businessId: business.id,
+        ),
+      ),
+    );
+  }
 }
 
 final appointmentsProvider =
@@ -701,4 +769,29 @@ final appointmentsForCurrentLocationProvider = Provider<List<Appointment>>((
               appt.staffId == currentUserStaffId))
         appt,
   ];
+});
+
+final appointmentsForLocationDayProvider = FutureProvider.family<
+  List<Appointment>,
+  ({DateTime day, int locationId, int businessId})
+>((ref, params) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) {
+    return const [];
+  }
+
+  if (params.locationId <= 0 || params.businessId <= 0) {
+    return const [];
+  }
+
+  final repository = ref.watch(bookingsRepositoryProvider);
+  final day = DateTime(params.day.year, params.day.month, params.day.day);
+
+  final result = await repository.getAppointmentsWithMetadata(
+    locationId: params.locationId,
+    businessId: params.businessId,
+    date: day,
+  );
+
+  return result.appointments;
 });

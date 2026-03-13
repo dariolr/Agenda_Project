@@ -1,17 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/services/preferences_service.dart';
+import 'business_providers.dart';
+import 'location_providers.dart';
 import 'tenant_time_provider.dart';
 
 class AgendaDateNotifier extends Notifier<DateTime> {
   @override
   DateTime build() {
-    return ref.watch(tenantTodayProvider);
+    final today = ref.watch(tenantTodayProvider);
+    final businessId = ref.watch(currentBusinessIdProvider);
+    final locationId = ref.watch(currentLocationIdProvider);
+    if (businessId <= 0 || locationId <= 0) {
+      return today;
+    }
+
+    final prefs = ref.watch(preferencesServiceProvider);
+    final saved = prefs.getAgendaDate(businessId, locationId: locationId);
+    if (saved == null) {
+      return today;
+    }
+
+    final savedDate = DateUtils.dateOnly(saved);
+    final yesterday = DateUtils.dateOnly(
+      today.subtract(const Duration(days: 1)),
+    );
+    if (DateUtils.isSameDay(savedDate, yesterday)) {
+      return today;
+    }
+
+    return savedDate;
   }
 
   void set(DateTime date) {
     final next = DateUtils.dateOnly(date);
     state = next;
+    _save(next);
   }
 
   void nextDay() {
@@ -54,7 +79,20 @@ class AgendaDateNotifier extends Notifier<DateTime> {
   }
 
   void setToday() {
-    state = ref.read(tenantTodayProvider);
+    final today = ref.read(tenantTodayProvider);
+    state = today;
+    _save(today);
+  }
+
+  void _save(DateTime date) {
+    final businessId = ref.read(currentBusinessIdProvider);
+    final locationId = ref.read(currentLocationIdProvider);
+    if (businessId <= 0 || locationId <= 0) return;
+    ref.read(preferencesServiceProvider).setAgendaDate(
+      businessId,
+      locationId: locationId,
+      date: date,
+    );
   }
 }
 

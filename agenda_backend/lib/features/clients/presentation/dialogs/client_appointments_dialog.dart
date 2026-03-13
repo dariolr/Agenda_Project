@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
-import '../../../../core/widgets/app_bottom_sheet.dart';
+import '../../../../core/widgets/app_form.dart';
 import '../../domain/clients.dart';
 import '../../providers/clients_providers.dart';
 
@@ -22,20 +22,16 @@ Future<void> showClientAppointmentsDialog(
   final formFactor = ref.read(formFactorProvider);
   ref.invalidate(clientAppointmentsProvider(client.id));
 
-  if (formFactor == AppFormFactor.desktop) {
-    await showDialog(
-      context: context,
-      builder: (_) => ClientAppointmentsDialog(client: client),
-    );
-  } else {
-    await AppBottomSheet.show<void>(
-      context: context,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-      heightFactor: AppBottomSheet.defaultHeightFactor,
-      builder: (_) => ClientAppointmentsBottomSheet(client: client),
-    );
-  }
+  await AppForm.show<void>(
+    context: context,
+    formFactor: formFactor,
+    useRootNavigator: true,
+    padding: EdgeInsets.zero,
+    heightFactor: AppForm.defaultBottomSheetHeightFactor,
+    builder: (_) => formFactor == AppFormFactor.desktop
+        ? ClientAppointmentsDialog(client: client)
+        : ClientAppointmentsBottomSheet(client: client),
+  );
 }
 
 class ClientAppointmentsDialog extends ConsumerWidget {

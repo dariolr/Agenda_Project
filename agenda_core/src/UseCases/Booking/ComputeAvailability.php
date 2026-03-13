@@ -12,6 +12,7 @@ use Agenda\Infrastructure\Repositories\StaffAvailabilityExceptionRepository;
 use Agenda\Infrastructure\Repositories\ServiceVariantResourceRepository;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
 use Agenda\Infrastructure\Repositories\LocationClosureRepository;
+use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use DateInterval;
@@ -46,6 +47,7 @@ final class ComputeAvailability
         private readonly ?ServiceVariantResourceRepository $resourceRequirementRepository = null,
         private readonly ?ServiceRepository $serviceRepository = null,
         private readonly ?LocationClosureRepository $locationClosureRepository = null,
+        private readonly ?ClassEventRepository $classEventRepository = null,
     ) {}
 
     /**
@@ -60,6 +62,7 @@ final class ComputeAvailability
      * @param bool $keepStaffInfo If true, keep staff_id even when deduplicating (for internal use)
      * @param int|null $excludeBookingId Exclude this booking from conflicts (for edit mode)
      * @param bool $isPublic If true, apply slot_display_mode filtering (for frontend booking)
+     * @param bool $includeClassEvents If true, class events occupy slots like bookings
      * @return array Available slots
      */
     public function execute(
@@ -71,7 +74,8 @@ final class ComputeAvailability
         array $serviceIds,
         bool $keepStaffInfo = false,
         ?int $excludeBookingId = null,
-        bool $isPublic = false
+        bool $isPublic = false,
+        bool $includeClassEvents = false
     ): array {
         // Store excludeBookingId for use in computeStaffAvailability
         $this->currentExcludeBookingId = $excludeBookingId;
@@ -160,12 +164,14 @@ final class ComputeAvailability
 
         foreach ($staffMembers as $staff) {
             $staffSlots = $this->computeStaffAvailability(
+                $businessId,
                 (int) $staff['id'],
                 $locationId,
                 $targetDate,
                 $durationMinutes,
                 $timezone,
-                $minBookingTime
+                $minBookingTime,
+                $includeClassEvents
             );
 
             foreach ($staffSlots as $slot) {
@@ -316,12 +322,14 @@ final class ComputeAvailability
     }
 
     private function computeStaffAvailability(
+        int $businessId,
         int $staffId,
         int $locationId,
         DateTimeImmutable $date,
         int $durationMinutes,
         DateTimeZone $timezone,
-        DateTimeImmutable $minBookingTime
+        DateTimeImmutable $minBookingTime,
+        bool $includeClassEvents
     ): array {
         $dateStr = $date->format('Y-m-d');
         $slotIntervalMinutes = $this->getSlotIntervalMinutes();
@@ -399,6 +407,22 @@ final class ComputeAvailability
                 'start' => new DateTimeImmutable($block['start_time'], $timezone),
                 'end' => new DateTimeImmutable($block['end_time'], $timezone),
             ];
+        }
+
+        if ($includeClassEvents && $this->classEventRepository !== null) {
+            $classEvents = $this->classEventRepository->findConflictingEvents(
+                $businessId,
+                $locationId,
+                $staffId,
+                $dayStart->format('Y-m-d H:i:s'),
+                $dayEnd->format('Y-m-d H:i:s')
+            );
+            foreach ($classEvents as $event) {
+                $occupied[] = [
+                    'start' => new DateTimeImmutable($event['starts_at'], $timezone),
+                    'end' => new DateTimeImmutable($event['ends_at'], $timezone),
+                ];
+            }
         }
 
         // Convert unavailable exceptions to occupied slots

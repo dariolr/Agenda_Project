@@ -76,7 +76,8 @@ final class AvailabilityController
             $serviceIds,
             false, // keepStaffInfo
             $excludeBookingId,
-            true   // isPublic - apply slot display mode filtering
+            true,  // isPublic - apply slot display mode filtering
+            true   // includeClassEvents - online booking must respect scheduled classes
         );
 
         return Response::success($result, 200);

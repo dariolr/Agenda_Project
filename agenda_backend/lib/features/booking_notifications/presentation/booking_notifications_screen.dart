@@ -49,11 +49,16 @@ class _BookingNotificationsScreenState
     _scrollController.addListener(_onScroll);
     if (_canSelectBusiness) {
       _selectedStatus = 'failed';
-      ref.read(bookingNotificationsFiltersProvider.notifier).setStatus(const [
-        'failed',
-      ]);
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadInitialData());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (_canSelectBusiness) {
+        ref.read(bookingNotificationsFiltersProvider.notifier).setStatus(const [
+          'failed',
+        ]);
+      }
+      await _loadInitialData();
+    });
   }
 
   @override
@@ -491,7 +496,17 @@ class _BookingNotificationsScreenState
         .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
   }
 
+  bool _shouldShowNotificationError(BookingNotificationItem item) {
+    final error = item.errorMessage?.trim();
+    return error != null && error.isNotEmpty;
+  }
+
   String _notificationBodyContent(BookingNotificationItem item) {
+    if (_shouldShowNotificationError(item)) {
+      final error = item.errorMessage?.trim();
+      return error ?? '';
+    }
+
     final body = item.body?.trim();
     if (body != null && body.isNotEmpty) {
       return body;
@@ -500,6 +515,10 @@ class _BookingNotificationsScreenState
   }
 
   String _notificationTitle(BookingNotificationItem item) {
+    if (_shouldShowNotificationError(item)) {
+      return context.l10n.bookingNotificationsFieldError;
+    }
+
     final subject = item.subject?.trim();
     if (subject != null && subject.isNotEmpty) {
       return subject;
@@ -507,9 +526,17 @@ class _BookingNotificationsScreenState
     return context.l10n.bookingNotificationsBodyDialogTitle;
   }
 
+  String _notificationEmptyLabel(BookingNotificationItem item) {
+    if (_shouldShowNotificationError(item)) {
+      return context.l10n.bookingNotificationsNotAvailable;
+    }
+    return context.l10n.bookingNotificationsBodyUnavailable;
+  }
+
   Future<void> _showNotificationBody(BookingNotificationItem item) async {
     final body = _notificationBodyContent(item);
     final title = _notificationTitle(item);
+    final emptyLabel = _notificationEmptyLabel(item);
     final l10n = context.l10n;
     final isDesktop = ref.read(formFactorProvider) == AppFormFactor.desktop;
 
@@ -525,7 +552,7 @@ class _BookingNotificationsScreenState
               child: SingleChildScrollView(
                 child: _NotificationBodyViewer(
                   body: body,
-                  emptyLabel: l10n.bookingNotificationsBodyUnavailable,
+                  emptyLabel: emptyLabel,
                 ),
               ),
             ),
@@ -553,7 +580,7 @@ class _BookingNotificationsScreenState
             child: SingleChildScrollView(
               child: _NotificationBodyViewer(
                 body: body,
-                emptyLabel: l10n.bookingNotificationsBodyUnavailable,
+                emptyLabel: emptyLabel,
               ),
             ),
           ),

@@ -474,10 +474,7 @@ class _AppointmentCardInteractiveState
 
     // Legge l'appuntamento aggiornato dal provider (potrebbe essere stato
     // modificato tramite resize o drag)
-    final currentAppointment = ref
-        .read(appointmentsProvider)
-        .requireValue
-        .firstWhere((a) => a.id == widget.appointment.id);
+    final currentAppointment = _resolveCurrentAppointment();
 
     // Apre direttamente la vista di modifica dell'appuntamento
     await showAppointmentDialog(context, ref, initial: currentAppointment);
@@ -495,16 +492,25 @@ class _AppointmentCardInteractiveState
 
     // Legge l'appuntamento aggiornato dal provider (potrebbe essere stato
     // modificato tramite resize o drag)
-    final currentAppointment = ref
-        .read(appointmentsProvider)
-        .requireValue
-        .firstWhere((a) => a.id == widget.appointment.id);
+    final currentAppointment = _resolveCurrentAppointment();
 
     // Apre direttamente la vista di modifica dell'appuntamento
     await showAppointmentDialog(context, ref, initial: currentAppointment);
 
     if (!mounted) return;
     ref.read(selectedAppointmentProvider.notifier).clear();
+  }
+
+  Appointment _resolveCurrentAppointment() {
+    final appointments = ref.read(appointmentsProvider).value;
+    if (appointments != null) {
+      for (final appointment in appointments) {
+        if (appointment.id == widget.appointment.id) {
+          return appointment;
+        }
+      }
+    }
+    return widget.appointment;
   }
 
   Widget _buildCard({

@@ -113,6 +113,11 @@ class _AgendaStaffFilterSelectorState
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final formFactor = ref.watch(formFactorProvider);
+    final allStaff = ref.watch(staffForCurrentLocationProvider);
+    if (allStaff.length <= 1) {
+      return const SizedBox.shrink();
+    }
+
     if (widget.isCompact) {
       Future<void> onPressed() => _showMobileSheet(context);
       if (widget.compactBuilder != null) {

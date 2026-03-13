@@ -31,6 +31,7 @@ import '../../../auth/providers/current_business_user_provider.dart';
 import '../../../clients/domain/clients.dart';
 import '../../../clients/presentation/dialogs/client_edit_dialog.dart';
 import '../../../clients/providers/clients_providers.dart';
+import '../../../class_events/providers/class_events_providers.dart';
 import '../../../services/providers/popular_services_provider.dart';
 import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/service_packages_provider.dart';
@@ -1302,8 +1303,41 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
   List<bool> _serviceConflictFlags() {
     final layout = ref.watch(layoutConfigProvider);
+    final location = ref.watch(currentLocationProvider);
+    final business = ref.watch(currentBusinessProvider);
     final Map<int, Set<int>> cache = {};
+    final appointmentsByStaff = <int, List<Appointment>>{};
+    final classEventsByStaff = <int, List<DateTimeRange>>{};
     final flags = <bool>[];
+
+    final selectedDayAppointments =
+        location.id > 0 && business.id > 0
+        ? ref.watch(
+            appointmentsForLocationDayProvider(
+              (
+                day: _date,
+                locationId: location.id,
+                businessId: business.id,
+              ),
+            ),
+          )
+              .value ??
+              const <Appointment>[]
+        : const <Appointment>[];
+    final selectedDayClassEvents =
+        location.id > 0 && business.id > 0
+        ? ref.watch(
+            classEventsForLocationDayProvider(
+              (
+                day: _date,
+                locationId: location.id,
+                businessId: business.id,
+              ),
+            ),
+          )
+              .value ??
+              const []
+        : const [];
 
     for (final item in _serviceItems) {
       final staffId = item.staffId;
@@ -1314,7 +1348,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
       final available = cache.putIfAbsent(
         staffId,
-        () => ref.watch(staffSlotAvailabilityProvider(staffId)),
+        () => ref.watch(staffSlotAvailabilityProvider(staffId)).toSet(),
       );
 
       if (available.isEmpty) {
@@ -1334,6 +1368,57 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           break;
         }
       }
+
+      final start = DateTime(
+        _date.year,
+        _date.month,
+        _date.day,
+        item.startTime.hour,
+        item.startTime.minute,
+      );
+      final end = start.add(Duration(minutes: item.durationMinutes));
+
+      final overlappingAppointments = appointmentsByStaff.putIfAbsent(
+        staffId,
+        () => selectedDayAppointments
+            .where(
+              (appointment) =>
+                  appointment.staffId == staffId &&
+                  (widget.existing == null ||
+                      appointment.bookingId != widget.existing!.id),
+            )
+            .toList(),
+      );
+      final appointmentConflict = overlappingAppointments.any(
+        (appointment) =>
+            start.isBefore(appointment.endTime) &&
+            appointment.startTime.isBefore(end),
+      );
+
+      final overlappingClassEvents = classEventsByStaff.putIfAbsent(
+        staffId,
+        () => selectedDayClassEvents
+            .where(
+              (event) =>
+                  event.staffId == staffId &&
+                  event.status.toUpperCase() != 'CANCELLED',
+            )
+            .map(
+              (event) => DateTimeRange(
+                start: event.startsAtLocal ?? event.startsAtUtc.toLocal(),
+                end: event.endsAtLocal ?? event.endsAtUtc.toLocal(),
+              ),
+            )
+            .toList(),
+      );
+      final classEventConflict = overlappingClassEvents.any(
+        (range) => start.isBefore(range.end) && range.start.isBefore(end),
+      );
+
+      if (appointmentConflict || classEventConflict) {
+        hasConflict = true;
+      }
+
       flags.add(hasConflict);
     }
     return flags;

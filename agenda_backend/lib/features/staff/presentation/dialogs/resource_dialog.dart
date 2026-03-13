@@ -10,9 +10,9 @@ import '../../../../core/models/resource.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/network/network_providers.dart';
-import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../../core/widgets/app_form.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../agenda/providers/resource_providers.dart';
 import '../../../services/providers/service_categories_provider.dart';
@@ -26,26 +26,19 @@ Future<bool?> showResourceDialog(
   Resource? resource,
   List<Location> selectableLocations = const [],
 }) async {
-  final formFactor = ref.read(formFactorProvider);
-  final isDesktop = formFactor == AppFormFactor.desktop;
-
   final dialog = _ResourceDialog(
     locationId: locationId,
     resource: resource,
     selectableLocations: selectableLocations,
   );
 
-  if (isDesktop) {
-    return showAppFormDialog<bool>(context, builder: (_) => dialog);
-  } else {
-    return AppBottomSheet.show<bool>(
-      context: context,
-      builder: (_) => dialog,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-      heightFactor: AppBottomSheet.defaultHeightFactor,
-    );
-  }
+  return AppForm.show<bool>(
+    context: context,
+    builder: (_) => dialog,
+    useRootNavigator: true,
+    padding: EdgeInsets.zero,
+    heightFactor: AppForm.defaultBottomSheetHeightFactor,
+  );
 }
 
 class _ResourceDialog extends ConsumerStatefulWidget {

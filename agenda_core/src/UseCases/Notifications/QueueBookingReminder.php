@@ -194,6 +194,7 @@ final class QueueBookingReminder
             'payload' => $payload,
             'priority' => 5, // Normal priority
             'scheduled_at' => $scheduledAt->format('Y-m-d H:i:s'),
+            'max_attempts' => 4,
             'business_id' => $booking['business_id'],
             'booking_id' => $booking['booking_id'],
         ]);
