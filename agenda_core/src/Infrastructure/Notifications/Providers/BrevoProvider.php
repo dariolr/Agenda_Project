@@ -19,6 +19,7 @@ final class BrevoProvider implements EmailProviderInterface
 {
     private const SMTP_HOST = 'smtp-relay.brevo.com';
     private const SMTP_PORT = 587;
+    private ?string $lastError = null;
 
     private string $apiKey;
     private string $smtpPassword;
@@ -47,6 +48,7 @@ final class BrevoProvider implements EmailProviderInterface
         ?string $fromName = null,
         ?string $replyTo = null,
     ): bool {
+        $this->lastError = null;
         $from = $fromEmail ?? $this->defaultFromEmail;
         $name = $fromName ?? $this->defaultFromName;
         $replyTo = $replyTo ?? $from;
@@ -118,7 +120,8 @@ final class BrevoProvider implements EmailProviderInterface
         curl_close($ch);
 
         if ($error) {
-            error_log("[Brevo] curl error: {$error} (to: {$to})");
+            $this->lastError = "[Brevo] curl error: {$error}";
+            error_log($this->lastError . " (to: {$to})");
             return false;
         }
 
@@ -126,7 +129,8 @@ final class BrevoProvider implements EmailProviderInterface
             return true;
         }
 
-        error_log("[Brevo] HTTP {$httpCode}: {$response} (to: {$to})");
+        $this->lastError = "[Brevo] HTTP {$httpCode}: {$response}";
+        error_log($this->lastError . " (to: {$to})");
         return false;
     }
 
@@ -174,5 +178,10 @@ final class BrevoProvider implements EmailProviderInterface
     public function getName(): string
     {
         return 'brevo';
+    }
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
     }
 }

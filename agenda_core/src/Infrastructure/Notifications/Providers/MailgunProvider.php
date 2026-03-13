@@ -24,6 +24,7 @@ final class MailgunProvider implements EmailProviderInterface
     private string $apiBase;
     private string $defaultFromEmail;
     private string $defaultFromName;
+    private ?string $lastError = null;
 
     public function __construct(
         string $apiKey,
@@ -49,6 +50,7 @@ final class MailgunProvider implements EmailProviderInterface
         ?string $fromName = null,
         ?string $replyTo = null,
     ): bool {
+        $this->lastError = null;
         $from = $fromEmail ?? $this->defaultFromEmail;
         $name = $fromName ?? $this->defaultFromName;
         $replyTo = $replyTo ?? $from;
@@ -108,7 +110,8 @@ final class MailgunProvider implements EmailProviderInterface
         }
 
         if ($error) {
-            error_log("Mailgun API Error: {$error}");
+            $this->lastError = "Mailgun API Error: {$error}";
+            error_log($this->lastError);
             return false;
         }
 
@@ -116,7 +119,8 @@ final class MailgunProvider implements EmailProviderInterface
             return true;
         }
 
-        error_log("Mailgun API Error ({$httpCode}): {$response}");
+        $this->lastError = "Mailgun API Error ({$httpCode}): {$response}";
+        error_log($this->lastError);
         return false;
     }
 
@@ -138,5 +142,10 @@ final class MailgunProvider implements EmailProviderInterface
     public function getName(): string
     {
         return 'mailgun';
+    }
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
     }
 }

@@ -139,6 +139,7 @@ final class BookingNotificationsController
             'html_body' => $htmlBody,
             'body' => $htmlBody,
             'error_message' => $item['error_message'] ?? null,
+            'provider_used' => $item['provider_used'] ?? null,
             'attempts' => (int) ($item['attempts'] ?? 0),
             'max_attempts' => (int) ($item['max_attempts'] ?? 0),
             'created_at' => $item['created_at'] ?? null,

@@ -507,6 +507,7 @@ CREATE TABLE `notification_queue` (
   `sent_at` timestamp NULL DEFAULT NULL,
   `failed_at` timestamp NULL DEFAULT NULL,
   `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `provider_used` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'smtp' COMMENT 'Actual provider used for delivery (smtp, brevo, mailgun, etc.)',
   `business_id` int UNSIGNED DEFAULT NULL COMMENT 'For business-specific templates',
   `booking_id` int UNSIGNED DEFAULT NULL COMMENT 'Reference to related booking',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,

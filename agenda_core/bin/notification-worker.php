@@ -256,11 +256,15 @@ foreach ($notifications as $notification) {
         }
         
         if ($success) {
-            $notificationRepo->markSent($id);
+            $usedProvider = method_exists($emailService, 'getLastUsedProvider')
+                ? $emailService->getLastUsedProvider()
+                : $emailService->getName();
+            $notificationRepo->markSent($id, true, $usedProvider);
             $sent++;
             if ($verbose) {
-                echo "OK\n";
+                echo "OK [provider={$usedProvider}]\n";
             }
+            error_log("Notification {$id} sent via {$usedProvider}");
         } else {
             $provider = $emailService->getName();
             throw new \RuntimeException(

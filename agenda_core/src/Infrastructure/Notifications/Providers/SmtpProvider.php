@@ -12,6 +12,8 @@ use Agenda\Infrastructure\Notifications\EmailProviderInterface;
  */
 final class SmtpProvider implements EmailProviderInterface
 {
+    private ?string $lastError = null;
+
     private string $host;
     private int $port;
     private string $username;
@@ -48,6 +50,7 @@ final class SmtpProvider implements EmailProviderInterface
         ?string $fromName = null,
         ?string $replyTo = null,
     ): bool {
+        $this->lastError = null;
         $from = $fromEmail ?? $this->defaultFromEmail;
         $name = $fromName ?? $this->defaultFromName;
         $replyTo = $replyTo ?? $from;
@@ -176,7 +179,8 @@ final class SmtpProvider implements EmailProviderInterface
             $mail->send();
             return true;
         } catch (\Exception $e) {
-            error_log("SMTP Error: " . $e->getMessage());
+            $this->lastError = $e->getMessage();
+            error_log("SMTP Error: " . $this->lastError);
             return false;
         }
     }
@@ -199,5 +203,10 @@ final class SmtpProvider implements EmailProviderInterface
     public function getName(): string
     {
         return 'smtp';
+    }
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
     }
 }
