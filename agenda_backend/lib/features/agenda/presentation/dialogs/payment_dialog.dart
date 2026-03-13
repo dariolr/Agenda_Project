@@ -78,15 +78,10 @@ class _PaymentDialog extends ConsumerStatefulWidget {
 }
 
 class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
-  static const List<_PaymentMethod> _paymentPriorityOrder = _PaymentMethod.values;
+  static const List<_PaymentMethod> _paymentPriorityOrder =
+      _PaymentMethod.values;
 
-  static const List<double> _quickPercentages = <double>[
-    10,
-    20,
-    30,
-    50,
-    100,
-  ];
+  static const List<double> _quickPercentages = <double>[10, 20, 30, 50, 100];
 
   final Map<_PaymentMethod, TextEditingController> _controllers = {
     for (final m in _PaymentMethod.values) m: TextEditingController(),
@@ -95,7 +90,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     for (final m in _PaymentMethod.values) m: FocusNode(),
   };
   late final TextEditingController _totalPriceController;
-  late final FocusNode _totalPriceFocusNode;
+  late final FocusNode _totalPriceReadOnlyFocusNode;
   late final TextEditingController _noteController;
   bool _isPersisting = false;
   bool _isLoadingPersisted = false;
@@ -110,15 +105,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     _totalPriceController = TextEditingController(
       text: _formatAmountValue(widget.totalPrice),
     );
-    _totalPriceFocusNode = FocusNode()
-      ..addListener(() {
-        if (!_totalPriceFocusNode.hasFocus) {
-          _rebalanceOverflow();
-          if (mounted) {
-            setState(() {});
-          }
-        }
-      });
+    _totalPriceReadOnlyFocusNode = FocusNode(skipTraversal: true);
     _noteController = TextEditingController();
     for (final entry in _focusNodes.entries) {
       entry.value.addListener(() {
@@ -146,7 +133,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       node.dispose();
     }
     _totalPriceController.dispose();
-    _totalPriceFocusNode.dispose();
+    _totalPriceReadOnlyFocusNode.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -201,10 +188,25 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
         method == _PaymentMethod.other;
   }
 
+  bool _isMethodEditable(_PaymentMethod method) {
+    return method != _PaymentMethod.discount;
+  }
+
+  List<_PaymentMethod> _visiblePaymentMethods() {
+    final methods = _PaymentMethod.values
+        .where((method) => method != _PaymentMethod.discount)
+        .toList(growable: true);
+
+    final discountAmount = _amountForMethod(_PaymentMethod.discount) ?? 0;
+    if (discountAmount > 0) {
+      methods.add(_PaymentMethod.discount);
+    }
+
+    return methods;
+  }
+
   String _formatAmountValue(double value) {
-    return value
-        .toStringAsFixed(_currencyDecimalDigits)
-        .replaceAll('.', ',');
+    return value.toStringAsFixed(_currencyDecimalDigits).replaceAll('.', ',');
   }
 
   String _formatPercentValue(double value) {
@@ -406,7 +408,9 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       isActive: false,
       currency: widget.currencyCode,
       totalDueCents: totalDueCents,
-      note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+      note: _noteController.text.trim().isEmpty
+          ? null
+          : _noteController.text.trim(),
       lines: lines,
       computed: BookingPaymentComputed(
         totalPaidCents: 0,
@@ -423,8 +427,11 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     setState(() => _isLoadingPersisted = true);
     try {
       final controller = ref.read(bookingPaymentControllerProvider(bookingId));
-      final loadedPayment = await ref.read(bookingPaymentProvider(bookingId).future);
-      final payment = loadedPayment == null || _shouldUseFormTotalFallback(loadedPayment)
+      final loadedPayment = await ref.read(
+        bookingPaymentProvider(bookingId).future,
+      );
+      final payment =
+          loadedPayment == null || _shouldUseFormTotalFallback(loadedPayment)
           ? controller.defaultValue(
               totalDueCents: _centsFromAmount(widget.totalPrice),
               currency: widget.currencyCode,
@@ -443,9 +450,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
 
   bool _shouldUseFormTotalFallback(BookingPayment payment) {
     final note = payment.note?.trim() ?? '';
-    return payment.totalDueCents <= 0 &&
-        payment.lines.isEmpty &&
-        note.isEmpty;
+    return payment.totalDueCents <= 0 && payment.lines.isEmpty && note.isEmpty;
   }
 
   Future<void> _handleSave() async {
@@ -522,7 +527,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     // The edited method keeps its value as long as possible. The other methods
     // are reduced first, starting from the lowest-priority one.
     final reductionOrder = _paymentPriorityOrder.reversed.where(
-      (method) => method != preservedMethod,
+      (method) => method != preservedMethod && _isMethodEditable(method),
     );
 
     for (final method in reductionOrder) {
@@ -537,7 +542,8 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     }
 
     for (final method in _paymentPriorityOrder) {
-      if (preservedMethod != null && method == preservedMethod) {
+      if ((preservedMethod != null && method == preservedMethod) ||
+          !_isMethodEditable(method)) {
         continue;
       }
       _setControllerValue(
@@ -589,6 +595,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     final theme = Theme.of(context);
     final selectedPercent = _selectedPercentForMethod(method);
     final options = _chipPercentagesForMethod(method);
+    final isEditable = _isMethodEditable(method);
 
     return Padding(
       padding: const EdgeInsets.only(top: 1),
@@ -599,7 +606,8 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
           for (final percentage in options)
             Builder(
               builder: (context) {
-                final isSelected = selectedPercent != null &&
+                final isSelected =
+                    selectedPercent != null &&
                     _samePercent(selectedPercent, percentage);
                 return ChoiceChip(
                   label: Text(
@@ -619,20 +627,19 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                         ? theme.colorScheme.primary
                         : theme.colorScheme.outline.withOpacity(0.18),
                   ),
-                  visualDensity: VisualDensity(
-                    horizontal: -4,
-                    vertical: -4,
-                  ),
+                  visualDensity: VisualDensity(horizontal: -4, vertical: -4),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 1,
                     vertical: 0,
                   ),
                   selected: isSelected,
-                  onSelected: (_) {
-                    _applyQuickPercentage(method, percentage);
-                    setState(() {});
-                  },
+                  onSelected: isEditable
+                      ? (_) {
+                          _applyQuickPercentage(method, percentage);
+                          setState(() {});
+                        }
+                      : null,
                 );
               },
             ),
@@ -643,17 +650,20 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
 
   Widget _buildAmountField(_PaymentMethod method) {
     final controller = _controllers[method]!;
+    final isEditable = _isMethodEditable(method);
 
     return _buildReadOnlyAwareAmountField(
       controller: controller,
       focusNode: _focusNodes[method]!,
-      isReadOnly: false,
-      onChanged: (value) {
-        _normalizeNonNegativeAmount(controller, value);
-        _rebalanceOverflow(preservedMethod: method);
-        setState(() {});
-      },
-      onTap: () => _selectAll(controller),
+      isReadOnly: !isEditable,
+      onChanged: isEditable
+          ? (value) {
+              _normalizeNonNegativeAmount(controller, value);
+              _rebalanceOverflow(preservedMethod: method);
+              setState(() {});
+            }
+          : null,
+      onTap: isEditable ? () => _selectAll(controller) : null,
     );
   }
 
@@ -674,25 +684,19 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
           controller: controller,
           focusNode: focusNode,
           readOnly: isReadOnly,
-          keyboardType: const TextInputType.numberWithOptions(
-            decimal: true,
-          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: _amountInputFormatters(),
           textAlign: TextAlign.right,
           decoration: InputDecoration(
             hintText: '0,00',
             isDense: true,
             filled: isReadOnly,
-            fillColor: isReadOnly
-                ? Colors.grey.withOpacity(0.10)
-                : null,
+            fillColor: isReadOnly ? Colors.grey.withOpacity(0.10) : null,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 8,
               vertical: 8,
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(7),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(7)),
             enabledBorder: null,
             focusedBorder: null,
           ),
@@ -705,50 +709,11 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   }
 
   Widget _buildTotalPriceField(Color accentColor) {
-    return SizedBox(
-      width: 92,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () => _selectAll(_totalPriceController),
-        child: TextField(
-          controller: _totalPriceController,
-          focusNode: _totalPriceFocusNode,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: _amountInputFormatters(),
-          textAlign: TextAlign.right,
-          decoration: InputDecoration(
-            hintText: '0,00',
-            isDense: true,
-            hintStyle: TextStyle(color: accentColor.withOpacity(0.7)),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 8,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(7),
-              borderSide: BorderSide(color: accentColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(7),
-              borderSide: BorderSide(color: accentColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(7),
-              borderSide: BorderSide(color: accentColor, width: 1.4),
-            ),
-          ),
-          style: TextStyle(
-            color: accentColor,
-            fontWeight: FontWeight.w700,
-          ),
-          onTap: () => _selectAll(_totalPriceController),
-          onChanged: (value) {
-            _normalizeNonNegativeAmount(_totalPriceController, value);
-            _rebalanceOverflow();
-            setState(() {});
-          },
-        ),
-      ),
+    return _buildReadOnlyAwareAmountField(
+      controller: _totalPriceController,
+      focusNode: _totalPriceReadOnlyFocusNode,
+      isReadOnly: true,
+      textStyle: TextStyle(color: accentColor, fontWeight: FontWeight.w700),
     );
   }
 
@@ -795,9 +760,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
         hintText: l10n.paymentNotesPlaceholder,
         alignLabelWithHint: true,
         isDense: true,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 12,
@@ -926,11 +889,12 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
 
   Widget _buildContent(BuildContext context) {
     final theme = Theme.of(context);
+    final visibleMethods = _visiblePaymentMethods();
 
     final methodRows = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (int i = 0; i < _PaymentMethod.values.length; i++)
+        for (int i = 0; i < visibleMethods.length; i++)
           Padding(
             padding: EdgeInsets.zero,
             child: DecoratedBox(
@@ -958,17 +922,14 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                           Row(
                             children: [
                               Icon(
-                                _methodIcon(_PaymentMethod.values[i]),
+                                _methodIcon(visibleMethods[i]),
                                 size: 18,
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  _methodLabel(
-                                    context,
-                                    _PaymentMethod.values[i],
-                                  ),
+                                  _methodLabel(context, visibleMethods[i]),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     fontSize:
                                         (theme.textTheme.bodySmall?.fontSize ??
@@ -980,16 +941,13 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                               ),
                             ],
                           ),
-                          if (_supportsQuickChips(_PaymentMethod.values[i]))
-                            _buildQuickChips(
-                              context,
-                              _PaymentMethod.values[i],
-                            ),
+                          if (_supportsQuickChips(visibleMethods[i]))
+                            _buildQuickChips(context, visibleMethods[i]),
                         ],
                       ),
                     ),
                     const SizedBox(width: 10),
-                    _buildAmountField(_PaymentMethod.values[i]),
+                    _buildAmountField(visibleMethods[i]),
                   ],
                 ),
               ),
@@ -1027,11 +985,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              content,
-              const SizedBox(height: 18),
-              summary,
-            ],
+            children: [content, const SizedBox(height: 18), summary],
           ),
           actions: actions,
           contentPadding: const EdgeInsets.only(top: 20),
@@ -1053,11 +1007,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
             ),
           ),
           const SizedBox(height: 12),
-          Expanded(
-            child: SingleChildScrollView(
-              child: content,
-            ),
-          ),
+          Expanded(child: SingleChildScrollView(child: content)),
           const SizedBox(height: 16),
           summary,
           const SizedBox(height: 16),

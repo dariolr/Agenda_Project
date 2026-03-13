@@ -80,31 +80,59 @@ Widget _buildAddButtonContent({
   );
 }
 
-class ScaffoldWithNavigation extends ConsumerWidget {
+class ScaffoldWithNavigation extends ConsumerStatefulWidget {
   const ScaffoldWithNavigation({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ScaffoldWithNavigation> createState() =>
+      _ScaffoldWithNavigationState();
+}
+
+class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation> {
+  int? _lastShellIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final navigationShell = widget.navigationShell;
+    final currentIndex = navigationShell.currentIndex;
+    if (_lastShellIndex != currentIndex) {
+      final enteringReports = currentIndex == 4 && _lastShellIndex != 4;
+      _lastShellIndex = currentIndex;
+      if (enteringReports) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref.read(reportsProvider.notifier).refresh();
+          ref.read(workHoursReportProvider.notifier).refresh();
+        });
+      }
+    }
+
     final formFactor = ref.watch(formFactorProvider);
-    final isAgenda = navigationShell.currentIndex == 0;
-    final isClients = navigationShell.currentIndex == 1;
-    final isServices = navigationShell.currentIndex == 2;
-    final isStaff = navigationShell.currentIndex == 3;
-    final isReport = navigationShell.currentIndex == 4;
-    final isBookingsList = navigationShell.currentIndex == 5;
-    final isMore = navigationShell.currentIndex == 6;
-    final isBookingNotifications = navigationShell.currentIndex == 10;
-    final isClosures = navigationShell.currentIndex == 7;
-    final isProfile = navigationShell.currentIndex == 8;
-    final isPermessi = navigationShell.currentIndex == 9;
+    final isAgenda = currentIndex == 0;
+    final isClients = currentIndex == 1;
+    final isServices = currentIndex == 2;
+    final isStaff = currentIndex == 3;
+    final isReport = currentIndex == 4;
+    final isBookingsList = currentIndex == 5;
+    final isMore = currentIndex == 6;
+    final isBookingNotifications = currentIndex == 10;
+    final isClosures = currentIndex == 7;
+    final isProfile = currentIndex == 8;
+    final isPermessi = currentIndex == 9;
     final currentPath = GoRouterState.of(context).uri.path;
     final fromAltroEntry =
         GoRouterState.of(context).uri.queryParameters['from_altro'] == '1';
     final isAltroRoot = currentPath == '/altro';
     final hideAltroSubsectionTitle =
         currentPath.startsWith('/altro/') && !isAltroRoot;
+    final hideManagedAltroSectionTitle =
+        isReport ||
+        isBookingsList ||
+        isBookingNotifications ||
+        isClosures ||
+        isPermessi;
     final isClassEvents = currentPath == '/altro/classi';
     final isMoreResources = currentPath == '/altro/risorse';
     final isMoreLocations = currentPath == '/altro/sedi';
@@ -252,7 +280,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                         )
                       : null,
                   titleSpacing: isAgenda ? 0 : NavigationToolbar.kMiddleSpacing,
-                  title: hideAltroSubsectionTitle
+                  title: hideAltroSubsectionTitle || hideManagedAltroSectionTitle
                       ? const SizedBox.shrink()
                       : isAgenda
                       ? Padding(
@@ -341,7 +369,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                             onBack: () => context.go(altroBackTarget),
                             showClose: fromAltroEntry,
                             backLeftPadding: altroBackLeftPadding,
-                            title: hideAltroSubsectionTitle
+                            title:
+                                hideAltroSubsectionTitle ||
+                                    hideManagedAltroSectionTitle
                                 ? const SizedBox.shrink()
                                 : isAgenda
                                 ? Padding(
@@ -459,7 +489,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                     : null,
                 toolbarHeight: isTablet ? 76 : 64,
                 titleSpacing: isAgenda ? 0 : NavigationToolbar.kMiddleSpacing,
-                title: hideAltroSubsectionTitle
+                title: hideAltroSubsectionTitle || hideManagedAltroSectionTitle
                     ? const SizedBox.shrink()
                     : isAgenda
                     ? const AgendaTopControls(compact: true)
@@ -542,7 +572,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
       return;
     }
 
-    if (index == 0 && navigationShell.currentIndex == 0) {
+    if (index == 0 && widget.navigationShell.currentIndex == 0) {
       final selectedDate = ref.read(agendaDateProvider);
       final today = ref.read(tenantTodayProvider);
       if (!DateUtils.isSameDay(selectedDate, today)) {
@@ -551,14 +581,14 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     }
 
     // Ricarica i provider quando si cambia tab per forzare il refresh dei dati
-    if (index != navigationShell.currentIndex) {
+    if (index != widget.navigationShell.currentIndex) {
       _refreshProvidersForTab(index, ref);
     }
 
-    navigationShell.goBranch(
+    widget.navigationShell.goBranch(
       index,
       initialLocation:
-          forceInitialLocation || index == navigationShell.currentIndex,
+          forceInitialLocation || index == widget.navigationShell.currentIndex,
     );
   }
 

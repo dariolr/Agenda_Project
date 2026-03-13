@@ -140,7 +140,7 @@ class PreferencesService {
   // ============================================
 
   bool getDesktopRailStartsAtTop() {
-    return _prefs.getBool(PrefsKeys.desktopRailStartsAtTop) ?? false;
+    return _prefs.getBool(PrefsKeys.desktopRailStartsAtTop) ?? true;
   }
 
   Future<void> setDesktopRailStartsAtTop(bool value) async {
