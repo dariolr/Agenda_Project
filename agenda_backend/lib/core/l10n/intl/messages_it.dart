@@ -584,9 +584,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingRescheduleModeHint": MessageLookupByLibrary.simpleMessage(
       "Modalità riprogrammazione attiva: seleziona una data e clicca uno slot.",
     ),
+    "bookingRescheduleModeHintWeekDifferent": MessageLookupByLibrary.simpleMessage(
+      "Modalità riprogrammazione attiva: seleziona una data (anche in un’altra settimana) e clicca uno slot.",
+    ),
+    "bookingRescheduleModeHintWeekSame": MessageLookupByLibrary.simpleMessage(
+      "Modalità riprogrammazione attiva: seleziona uno slot nella settimana corrente oppure cambia settimana per scegliere un’altra data.",
+    ),
     "bookingRescheduleMoveFailed": MessageLookupByLibrary.simpleMessage(
       "Impossibile riprogrammare la prenotazione.",
     ),
+    "bookingRescheduleNotAvailableForCurrentView":
+        MessageLookupByLibrary.simpleMessage(
+          "La riprogrammazione non è disponibile in visualizzazione settimanale multi-operatore. Seleziona un solo operatore o passa alla vista giorno.",
+        ),
     "bookingStaffNotEligibleWarning": MessageLookupByLibrary.simpleMessage(
       "Attenzione: il membro del team selezionato non è abilitato per questo servizio.",
     ),

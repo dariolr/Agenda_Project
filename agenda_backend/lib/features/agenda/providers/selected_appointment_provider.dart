@@ -38,6 +38,11 @@ class SelectedAppointmentNotifier extends Notifier<SelectedAppointmentsState> {
         .where((a) => a.bookingId == appointment.bookingId)
         .map((a) => a.id)
         .toSet();
+    if (bookingAppointments.isEmpty) {
+      // Fallback per card provenienti da viste non legate al provider del giorno
+      // (es. settimana single-staff): mantieni almeno la card corrente selezionata.
+      bookingAppointments.add(appointment.id);
+    }
 
     state = SelectedAppointmentsState(
       bookingId: appointment.bookingId,

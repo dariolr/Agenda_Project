@@ -78,8 +78,23 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
   /// ordinati per orario di inizio.
   List<Appointment> getByBookingId(int bookingId) {
     final currentList = state.value ?? [];
-    return currentList.where((a) => a.bookingId == bookingId).toList()
+    final mergedById = <int, Appointment>{
+      for (final appt in currentList)
+        if (appt.bookingId == bookingId) appt.id: appt,
+    };
+
+    // In vista settimana alcune card arrivano dal provider settimanale
+    // mentre appointmentsProvider contiene solo il giorno corrente.
+    // Uniamo anche i dati della settimana visibile per evitare falsi
+    // "booking non trovato" in riprogrammazione/modifica.
+    final weeklyItems = _findAppointmentsForBookingInVisibleWeek(bookingId);
+    for (final appt in weeklyItems) {
+      mergedById.putIfAbsent(appt.id, () => appt);
+    }
+
+    final merged = mergedById.values.toList()
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    return merged;
   }
 
   void moveAppointment({
@@ -715,6 +730,37 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     }
 
     return _findAppointmentById(appointments, appointmentId);
+  }
+
+  List<Appointment> _findAppointmentsForBookingInVisibleWeek(int bookingId) {
+    final location = ref.read(currentLocationProvider);
+    final business = ref.read(currentBusinessProvider);
+    if (location.id <= 0 || business.id <= 0) {
+      return const <Appointment>[];
+    }
+
+    final anchorDate = ref.read(agendaDateProvider);
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final weekRange = computeWeekRange(anchorDate, timezone);
+    final weeklyAppointments = ref.read(
+      weeklyAppointmentsProvider(
+        WeeklyAppointmentsRequest(
+          weekStart: weekRange.start,
+          locationId: location.id,
+          businessId: business.id,
+        ),
+      ),
+    );
+
+    final appointments = weeklyAppointments.value?.appointments;
+    if (appointments == null || appointments.isEmpty) {
+      return const <Appointment>[];
+    }
+
+    return [
+      for (final appointment in appointments)
+        if (appointment.bookingId == bookingId) appointment,
+    ];
   }
 
   void _invalidateVisibleWeek() {

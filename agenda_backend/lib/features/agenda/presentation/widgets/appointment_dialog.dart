@@ -34,6 +34,7 @@ import '../../domain/booking_payment_preview.dart';
 import '../../domain/service_item_data.dart';
 import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/appointment_providers.dart';
+import '../../providers/booking_reschedule_capability_provider.dart';
 import '../../providers/booking_reschedule_provider.dart';
 import '../../providers/booking_payment_providers.dart';
 import '../../providers/bookings_provider.dart';
@@ -368,6 +369,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
   Future<void> _startBookingReschedule() async {
     if (_isSaving) return;
+    if (!ref.read(canUseBookingRescheduleProvider)) {
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.actionReschedule,
+        message: context.l10n.bookingRescheduleNotAvailableForCurrentView,
+      );
+      return;
+    }
     final canProceed = await _confirmDiscardChangesIfNeeded();
     if (!canProceed || !mounted) return;
 

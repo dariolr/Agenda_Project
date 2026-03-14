@@ -10,6 +10,7 @@ import 'package:agenda_backend/features/agenda/presentation/screens/week_view/we
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/booking_reschedule_capability_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/booking_reschedule_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_provider.dart';
@@ -250,6 +251,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final currentLocationId = ref.watch(currentLocationIdProvider);
     final appointmentsAsync = ref.watch(appointmentsProvider);
     final rescheduleSession = ref.watch(bookingRescheduleSessionProvider);
+    final canUseBookingReschedule = ref.watch(canUseBookingRescheduleProvider);
     final currentBusinessId = ref.watch(currentBusinessIdProvider);
     final globalLoadingCount = ref.watch(globalLoadingProvider);
     final isGlobalLoading = globalLoadingCount > 0;
@@ -283,6 +285,13 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       }
     });
 
+    ref.listen<bool>(canUseBookingRescheduleProvider, (prev, next) {
+      if (next) return;
+      final session = ref.read(bookingRescheduleSessionProvider);
+      if (session == null) return;
+      ref.read(bookingRescheduleSessionProvider.notifier).clear();
+    });
+
     // Resetta il flag polling quando il caricamento finisce
     if (!appointmentsAsync.isLoading) {
       _isPolling = false;
@@ -309,16 +318,32 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final staffPlannings = ref.watch(staffPlanningsProvider);
     final staffFilterMode = ref.watch(staffFilterModeProvider);
     final calendarViewMode = ref.watch(calendarViewModeProvider);
+    final agendaDate = ref.watch(agendaDateProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
+    final timezone = ref.watch(effectiveTenantTimezoneProvider);
     final hasStaff = staffList.isNotEmpty;
     final serviceVariantsAsync = ref.watch(serviceVariantsProvider);
 
     _ensureExceptionsLoadedForVisibleRange(
       businessId: currentBusinessId,
-      selectedDate: ref.watch(agendaDateProvider),
+      selectedDate: agendaDate,
       calendarViewMode: calendarViewMode,
       staffIds: staffInCurrentLocation.map((s) => s.id).toList(),
     );
+
+    var rescheduleModeHint = context.l10n.bookingRescheduleModeHint;
+    if (rescheduleSession != null && calendarViewMode == CalendarViewMode.week) {
+      final visibleWeek = computeWeekRange(agendaDate, timezone);
+      final visibleWeekStart = DateUtils.dateOnly(visibleWeek.start);
+      final visibleWeekEnd = DateUtils.dateOnly(visibleWeek.end);
+      final originDate = DateUtils.dateOnly(rescheduleSession.originDate);
+      final isOriginInVisibleWeek =
+          !originDate.isBefore(visibleWeekStart) &&
+          !originDate.isAfter(visibleWeekEnd);
+      rescheduleModeHint = isOriginInVisibleWeek
+          ? context.l10n.bookingRescheduleModeHintWeekSame
+          : context.l10n.bookingRescheduleModeHintWeekDifferent;
+    }
 
     ref.listen<CalendarViewMode>(calendarViewModeProvider, (prev, next) {
       if (prev == CalendarViewMode.day && next == CalendarViewMode.week) {
@@ -503,7 +528,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (rescheduleSession != null)
+              if (rescheduleSession != null && canUseBookingReschedule)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -517,7 +542,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          context.l10n.bookingRescheduleModeHint,
+                          rescheduleModeHint,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
