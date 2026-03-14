@@ -561,9 +561,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingRescheduleModeHint": MessageLookupByLibrary.simpleMessage(
       "Reschedule mode active: select a date and click a slot.",
     ),
+    "bookingRescheduleModeHintWeekDifferent": MessageLookupByLibrary.simpleMessage(
+      "Reschedule mode active: select a date (including another week) and click a slot.",
+    ),
+    "bookingRescheduleModeHintWeekSame": MessageLookupByLibrary.simpleMessage(
+      "Reschedule mode active: select a slot in the current week or change week to choose another date.",
+    ),
     "bookingRescheduleMoveFailed": MessageLookupByLibrary.simpleMessage(
       "Unable to reschedule the booking.",
     ),
+    "bookingRescheduleNotAvailableForCurrentView":
+        MessageLookupByLibrary.simpleMessage(
+          "Rescheduling is not available in multi-staff weekly view. Select a single staff member or switch to day view.",
+        ),
     "bookingStaffNotEligibleWarning": MessageLookupByLibrary.simpleMessage(
       "Warning: the selected team member is not eligible for this service.",
     ),

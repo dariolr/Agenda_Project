@@ -224,6 +224,36 @@ class L10n {
     );
   }
 
+  /// `Modalità riprogrammazione attiva: seleziona uno slot nella settimana corrente oppure cambia settimana per scegliere un’altra data.`
+  String get bookingRescheduleModeHintWeekSame {
+    return Intl.message(
+      'Modalità riprogrammazione attiva: seleziona uno slot nella settimana corrente oppure cambia settimana per scegliere un’altra data.',
+      name: 'bookingRescheduleModeHintWeekSame',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modalità riprogrammazione attiva: seleziona una data (anche in un’altra settimana) e clicca uno slot.`
+  String get bookingRescheduleModeHintWeekDifferent {
+    return Intl.message(
+      'Modalità riprogrammazione attiva: seleziona una data (anche in un’altra settimana) e clicca uno slot.',
+      name: 'bookingRescheduleModeHintWeekDifferent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La riprogrammazione non è disponibile in visualizzazione settimanale multi-operatore. Seleziona un solo operatore o passa alla vista giorno.`
+  String get bookingRescheduleNotAvailableForCurrentView {
+    return Intl.message(
+      'La riprogrammazione non è disponibile in visualizzazione settimanale multi-operatore. Seleziona un solo operatore o passa alla vista giorno.',
+      name: 'bookingRescheduleNotAvailableForCurrentView',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Annulla riprogrammazione`
   String get bookingRescheduleCancelAction {
     return Intl.message(

@@ -376,7 +376,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final addButtonWidth = hasFullyOccupiedSlots
         ? LayoutConfig.addButtonStripWidth
         : 0.0;
-    final effectiveColumnWidth = widget.columnWidth - addButtonWidth;
+    final rightBorderCompensation = widget.showRightBorder ? 1.0 : 0.0;
+    final effectiveColumnWidth =
+        (widget.columnWidth - addButtonWidth - rightBorderCompensation)
+            .clamp(0.0, double.infinity)
+            .toDouble();
 
     final stackChildren = <Widget>[];
 
@@ -478,7 +482,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     );
 
     // 🔹 Blocchi di non disponibilità
-    stackChildren.addAll(_buildTimeBlocks(slotHeight));
+    stackChildren.addAll(_buildTimeBlocks(slotHeight, effectiveColumnWidth));
 
     // La fascia laterale è già riservata riducendo effectiveColumnWidth,
     // quindi le card si restringono automaticamente lasciando spazio a destra.
@@ -820,7 +824,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         );
 
         final padding = LayoutConfig.columnInnerPadding;
-        final cardWidth = math.max(widget.columnWidth - padding * 2, 0.0);
+        final cardWidth = math.max(columnWidth - padding * 2, 0.0);
 
         Color cardColor;
         if (useServiceColors) {
@@ -888,7 +892,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   }
 
   /// Costruisce i widget per i blocchi di non disponibilità dello staff.
-  List<Widget> _buildTimeBlocks(double slotHeight) {
+  List<Widget> _buildTimeBlocks(double slotHeight, double columnWidth) {
     final blocks = ref.watch(timeBlocksForStaffProvider(widget.staff.id));
     if (blocks.isEmpty) return [];
 
@@ -902,7 +906,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     final positionedBlocks = <Widget>[];
     final padding = LayoutConfig.columnInnerPadding;
-    final cardWidth = math.max(widget.columnWidth - padding * 2, 0.0);
+    final cardWidth = math.max(columnWidth - padding * 2, 0.0);
 
     for (final block in blocks) {
       // Calcola posizione verticale

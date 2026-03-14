@@ -5,12 +5,24 @@ import 'package:agenda_backend/core/models/appointment.dart';
 import 'package:agenda_backend/core/models/class_event.dart';
 import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/utils/color_utils.dart';
+import 'package:agenda_backend/core/widgets/app_dialogs.dart';
+import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
+import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/features/agenda/domain/config/agenda_theme.dart';
 import 'package:agenda_backend/features/agenda/domain/config/layout_config.dart';
+import 'package:agenda_backend/features/agenda/providers/agenda_scroll_request_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/booking_reschedule_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/drag_layer_link_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/drag_offset_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/drag_session_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/dragged_card_size_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/initial_scroll_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/pending_drop_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_slot_availability_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/temp_drag_time_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/time_blocks_provider.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/components/hour_column.dart';
@@ -69,18 +81,25 @@ class _SingleStaffWeeklyTimelineState
   bool _isSyncingVertical = false;
   bool _didApplyInitialVerticalOffset = false;
   int _lastHandledAutoScrollRequestId = 0;
+  final GlobalKey _bodyKey = GlobalKey();
+  late final DragBodyBoxNotifier _dragBodyNotifier;
 
   @override
   void initState() {
     super.initState();
+    _dragBodyNotifier = ref.read(dragBodyBoxProvider.notifier);
     _headerHorizontalController.addListener(_onHeaderHorizontalScroll);
     _bodyHorizontalController.addListener(_onBodyHorizontalScroll);
     _bodyVerticalController.addListener(_onBodyVerticalScroll);
     _hourColumnVerticalController.addListener(_onHourColumnVerticalScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _registerBodyBox();
+    });
   }
 
   @override
   void dispose() {
+    _clearBodyBox();
     _headerHorizontalController
       ..removeListener(_onHeaderHorizontalScroll)
       ..dispose();
@@ -101,6 +120,7 @@ class _SingleStaffWeeklyTimelineState
     final layoutConfig = ref.watch(layoutConfigProvider);
     final formFactor = ref.watch(formFactorProvider);
     final theme = Theme.of(context);
+    final dragLayerLink = ref.watch(dragLayerLinkProvider);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 0, 2, 12),
@@ -210,48 +230,52 @@ class _SingleStaffWeeklyTimelineState
                         thickness: 1,
                       ),
                       Expanded(
-                        child: ScrollConfiguration(
-                          behavior: const NoScrollbarBehavior(),
-                          child: SingleChildScrollView(
-                            controller: _bodyHorizontalController,
-                            scrollDirection: Axis.horizontal,
-                            physics: const ClampingScrollPhysics(),
-                            child: SizedBox(
-                              width: totalContentWidth,
-                              child: SingleChildScrollView(
-                                controller: _bodyVerticalController,
-                                physics: const ClampingScrollPhysics(),
-                                child: SizedBox(
-                                  width: totalContentWidth,
-                                  height: layoutConfig.totalHeight,
-                                  child: Stack(
-                                    children: [
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          for (var i = 0;
-                                              i < widget.dayColumns.length;
-                                              i++)
-                                            _SingleStaffWeekTimelineColumn(
-                                              staffId: widget.staffId,
-                                              day: widget.dayColumns[i].day,
-                                              appointments:
-                                                  widget.dayColumns[i].appointments,
-                                              classEvents:
-                                                  widget.dayColumns[i].classEvents,
-                                              width: columnWidth,
-                                              showRightBorder:
-                                                  i < widget.dayColumns.length - 1,
-                                            ),
-                                        ],
-                                      ),
-                                      if (showCurrentTimeLine)
-                                        _SingleStaffWeekCurrentTimeLine(
-                                          weekDays: widget.weekRange.days,
-                                          columnWidth: columnWidth,
+                        child: CompositedTransformTarget(
+                          key: _bodyKey,
+                          link: dragLayerLink,
+                          child: ScrollConfiguration(
+                            behavior: const NoScrollbarBehavior(),
+                            child: SingleChildScrollView(
+                              controller: _bodyHorizontalController,
+                              scrollDirection: Axis.horizontal,
+                              physics: const ClampingScrollPhysics(),
+                              child: SizedBox(
+                                width: totalContentWidth,
+                                child: SingleChildScrollView(
+                                  controller: _bodyVerticalController,
+                                  physics: const ClampingScrollPhysics(),
+                                  child: SizedBox(
+                                    width: totalContentWidth,
+                                    height: layoutConfig.totalHeight,
+                                    child: Stack(
+                                      children: [
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            for (var i = 0;
+                                                i < widget.dayColumns.length;
+                                                i++)
+                                              _SingleStaffWeekTimelineColumn(
+                                                staffId: widget.staffId,
+                                                day: widget.dayColumns[i].day,
+                                                appointments:
+                                                    widget.dayColumns[i].appointments,
+                                                classEvents:
+                                                    widget.dayColumns[i].classEvents,
+                                                width: columnWidth,
+                                                showRightBorder:
+                                                    i < widget.dayColumns.length - 1,
+                                              ),
+                                          ],
                                         ),
-                                    ],
+                                        if (showCurrentTimeLine)
+                                          _SingleStaffWeekCurrentTimeLine(
+                                            weekDays: widget.weekRange.days,
+                                            columnWidth: columnWidth,
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -268,6 +292,17 @@ class _SingleStaffWeeklyTimelineState
         },
       ),
     );
+  }
+
+  void _registerBodyBox() {
+    final box = _bodyKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null) {
+      _dragBodyNotifier.set(box);
+    }
+  }
+
+  void _clearBodyBox() {
+    _dragBodyNotifier.scheduleClear();
   }
 
   void _maybeApplyInitialVerticalOffset(LayoutConfig layoutConfig) {
@@ -337,6 +372,7 @@ class _SingleStaffWeeklyTimelineState
   }
 
   void _onBodyHorizontalScroll() {
+    _registerBodyBox();
     if (_isSyncingHorizontal || !_headerHorizontalController.hasClients) return;
     _isSyncingHorizontal = true;
     _headerHorizontalController.jumpTo(_bodyHorizontalController.offset);
@@ -344,6 +380,7 @@ class _SingleStaffWeeklyTimelineState
   }
 
   void _onBodyVerticalScroll() {
+    _registerBodyBox();
     if (_isSyncingVertical || !_hourColumnVerticalController.hasClients) return;
     _isSyncingVertical = true;
     _hourColumnVerticalController.jumpTo(_bodyVerticalController.offset);
@@ -372,17 +409,43 @@ class _SingleStaffWeekHeaderCell extends ConsumerWidget {
   final double width;
   final bool showRightBorder;
 
+  static const List<Color> _weekdayAvatarColors = [
+    Color(0xFF1E88E5), // Lun
+    Color(0xFF00897B), // Mar
+    Color(0xFF7CB342), // Mer
+    Color(0xFFF4511E), // Gio
+    Color(0xFF8E24AA), // Ven
+    Color(0xFF3949AB), // Sab
+    Color(0xFF6D4C41), // Dom
+  ];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final layoutConfig = ref.watch(layoutConfigProvider);
     final localeTag = Localizations.localeOf(context).toLanguageTag();
     final isToday = DateUtils.isSameDay(day, ref.watch(tenantTodayProvider));
+    final dayAcronym = DateFormat('EEE', localeTag).format(day).toUpperCase();
+    final avatarDefault = LayoutConfig.avatarSizeFor(context);
+    final maxByHeader = layoutConfig.headerHeight * 0.55;
+    final avatarSize = avatarDefault <= maxByHeader ? avatarDefault : maxByHeader;
+    final avatarColor = _weekdayAvatarColors[(day.weekday - 1).clamp(0, 6)];
 
     return Container(
       width: width,
       height: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: layoutConfig.headerHeight * 0.08),
       decoration: BoxDecoration(
+        gradient: isToday
+            ? LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  avatarColor.withOpacity(0.008),
+                  avatarColor.withOpacity(0.14),
+                ],
+              )
+            : null,
         border: showRightBorder
             ? Border(
                 right: BorderSide(
@@ -392,51 +455,35 @@ class _SingleStaffWeekHeaderCell extends ConsumerWidget {
               )
             : null,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  DateFormat('EEE', localeTag).format(day).toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: isToday ? theme.colorScheme.primary : null,
-                  ),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              StaffCircleAvatar(
+                height: avatarSize,
+                color: avatarColor,
+                isHighlighted: isToday,
+                initials: dayAcronym,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                DateFormat('d MMMM', localeTag).format(day),
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                  color: Colors.black87,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  DateFormat('d MMM', localeTag).format(day),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: isToday ? theme.colorScheme.primary : null,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          if (isToday)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                context.l10n.agendaToday,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -458,6 +505,8 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
   final List<ClassEvent> classEvents;
   final double width;
   final bool showRightBorder;
+  double get _contentWidth =>
+      (width - (showRightBorder ? 1.0 : 0.0)).clamp(0.0, double.infinity);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -479,7 +528,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final geometry = _buildGeometry(layoutConfig);
     final appointmentColors = _resolveAppointmentColors(context, ref);
 
-    return Container(
+    final content = Container(
       width: width,
       height: layoutConfig.totalHeight,
       decoration: BoxDecoration(
@@ -572,6 +621,25 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         ],
       ),
     );
+
+    if (!canManageBookings) {
+      return content;
+    }
+
+    return DragTarget<Appointment>(
+      onWillAcceptWithDetails: (_) => true,
+      onMove: (details) {
+        _updateDragPreviewTime(context, ref, details);
+      },
+      onLeave: (_) {
+        ref.read(tempDragTimeProvider.notifier).clear();
+      },
+      onAcceptWithDetails: (details) async {
+        ref.read(tempDragTimeProvider.notifier).clear();
+        await _handleAppointmentDrop(context, ref, details);
+      },
+      builder: (_, __, ___) => content,
+    );
   }
 
   Map<int, EventGeometry> _buildGeometry(LayoutConfig layoutConfig) {
@@ -644,9 +712,10 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         geometry[appointment.id] ??
         const EventGeometry(leftFraction: 0, widthFraction: 1);
     final padding = LayoutConfig.columnInnerPadding;
-    final fullWidth = width - padding * 2;
-    final cardLeft = width * eventGeometry.leftFraction + padding;
-    final cardWidth = (width * eventGeometry.widthFraction - padding * 2)
+    final contentWidth = _contentWidth;
+    final fullWidth = contentWidth - padding * 2;
+    final cardLeft = contentWidth * eventGeometry.leftFraction + padding;
+    final cardWidth = (contentWidth * eventGeometry.widthFraction - padding * 2)
         .clamp(0.0, double.infinity)
         .toDouble();
 
@@ -685,8 +754,9 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         geometry[_classEventLayoutId(event.id)] ??
         const EventGeometry(leftFraction: 0, widthFraction: 1);
     final padding = LayoutConfig.columnInnerPadding;
-    final cardLeft = width * eventGeometry.leftFraction + padding;
-    final cardWidth = (width * eventGeometry.widthFraction - padding * 2)
+    final contentWidth = _contentWidth;
+    final cardLeft = contentWidth * eventGeometry.leftFraction + padding;
+    final cardWidth = (contentWidth * eventGeometry.widthFraction - padding * 2)
         .clamp(0.0, double.infinity)
         .toDouble();
     final color = theme.colorScheme.tertiaryContainer;
@@ -757,7 +827,9 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     }
 
     final padding = LayoutConfig.columnInnerPadding;
-    final cardWidth = (width - padding * 2).clamp(0.0, double.infinity).toDouble();
+    final cardWidth = (_contentWidth - padding * 2)
+        .clamp(0.0, double.infinity)
+        .toDouble();
     final top = layoutConfig.offsetForMinuteOfDay(clampedStartMinutes);
     final height = layoutConfig.heightForMinutes(
       clampedEndMinutes - clampedStartMinutes,
@@ -777,7 +849,87 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     );
   }
 
-  void _handleSlotTap(BuildContext context, WidgetRef ref, DateTime dt) {
+  Future<void> _handleSlotTap(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime dt,
+  ) async {
+    final rescheduleSession = ref.read(bookingRescheduleSessionProvider);
+    if (rescheduleSession != null) {
+      if (rescheduleSession.items.isEmpty) {
+        ref.read(bookingRescheduleSessionProvider.notifier).clear();
+        if (context.mounted) {
+          await FeedbackDialog.showError(
+            context,
+            title: context.l10n.errorTitle,
+            message: context.l10n.bookingRescheduleMissingBooking,
+          );
+        }
+        return;
+      }
+
+      final targetStart = DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute);
+      final l10n = context.l10n;
+      final targetDateStr = DtFmt.longDate(context, targetStart);
+      final targetTimeStr = DtFmt.hm(
+        context,
+        targetStart.hour,
+        targetStart.minute,
+      );
+      final staffName = ref
+          .read(staffForCurrentLocationProvider)
+          .cast<Staff?>()
+          .firstWhere((s) => s?.id == staffId, orElse: () => null)
+          ?.displayName ??
+          '-';
+
+      final confirmed = await showConfirmDialog(
+        context,
+        title: Text(l10n.bookingRescheduleConfirmTitle),
+        content: Text(
+          l10n.bookingRescheduleConfirmMessage(
+            targetDateStr,
+            targetTimeStr,
+            staffName,
+          ),
+        ),
+        confirmLabel: l10n.actionConfirm,
+        cancelLabel: l10n.actionCancel,
+      );
+      if (confirmed != true) return;
+
+      final anchorId = rescheduleSession.anchorAppointmentId;
+      final success = await ref.read(appointmentsProvider.notifier).moveBookingByAnchor(
+            session: rescheduleSession,
+            targetStart: targetStart,
+            targetStaffId: staffId,
+          );
+
+      if (!context.mounted) return;
+      if (!success) {
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.bookingRescheduleMoveFailed,
+        );
+        return;
+      }
+
+      ref.read(bookingRescheduleSessionProvider.notifier).clear();
+      final refreshedAppointments = ref.read(appointmentsProvider).value ?? [];
+      Appointment? movedAnchor;
+      for (final appointment in refreshedAppointments) {
+        if (appointment.id == anchorId) {
+          movedAnchor = appointment;
+          break;
+        }
+      }
+      if (movedAnchor != null) {
+        ref.read(agendaScrollRequestProvider.notifier).request(movedAnchor);
+      }
+      return;
+    }
+
     showBookingDialog(
       context,
       ref,
@@ -785,6 +937,147 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
       time: TimeOfDay(hour: dt.hour, minute: dt.minute),
       initialStaffId: staffId,
     );
+  }
+
+  Future<void> _handleAppointmentDrop(
+    BuildContext context,
+    WidgetRef ref,
+    DragTargetDetails<Appointment> details,
+  ) async {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+
+    final dragOffsetY = ref.read(dragOffsetProvider) ?? 0.0;
+    final dragOffsetX = ref.read(dragOffsetXProvider) ?? 0.0;
+    final draggedCardHeightPx =
+        ref.read(draggedCardSizeProvider)?.height ?? 50.0;
+    final localPointer = box.globalToLocal(
+      details.offset + Offset(dragOffsetX, dragOffsetY),
+    );
+
+    final layoutConfig = ref.read(layoutConfigProvider);
+    final maxYStartPx = (box.size.height - draggedCardHeightPx)
+        .clamp(0, box.size.height)
+        .toDouble();
+    final clampedLocalDy = localPointer.dy.clamp(0.0, box.size.height.toDouble());
+    final effectiveDy = (clampedLocalDy - dragOffsetY)
+        .clamp(0.0, maxYStartPx)
+        .toDouble();
+
+    final durationMinutes =
+        details.data.endTime.difference(details.data.startTime).inMinutes;
+    const totalMinutes = LayoutConfig.hoursInDay * 60;
+    var startMinutes = ((layoutConfig.minutesFromHeight(effectiveDy) / 5).round() * 5)
+        .toInt();
+    final maxStartMinutes = (totalMinutes - durationMinutes).clamp(0, totalMinutes);
+    if (startMinutes < 0) startMinutes = 0;
+    if (startMinutes > maxStartMinutes) startMinutes = maxStartMinutes;
+
+    final targetDate = DateTime(day.year, day.month, day.day);
+    final newStart = targetDate.add(Duration(minutes: startMinutes));
+    final newEnd = newStart.add(Duration(minutes: durationMinutes));
+    final dayBoundary = targetDate.add(const Duration(days: 1));
+    final boundedEnd = newEnd.isAfter(dayBoundary) ? dayBoundary : newEnd;
+
+    ref.read(dragSessionProvider.notifier).markHandled();
+
+    final hasStaffChanged = details.data.staffId != staffId;
+    final hasTimeChanged =
+        details.data.startTime != newStart || details.data.endTime != boundedEnd;
+    if (!hasStaffChanged && !hasTimeChanged) {
+      return;
+    }
+
+    final pendingData = PendingDropData(
+      appointmentId: details.data.id,
+      originalStaffId: details.data.staffId,
+      originalStart: details.data.startTime,
+      originalEnd: details.data.endTime,
+      newStaffId: staffId,
+      newStart: newStart,
+      newEnd: boundedEnd,
+    );
+    ref.read(pendingDropProvider.notifier).setPending(pendingData);
+
+    final l10n = context.l10n;
+    final targetStaffName = ref
+        .read(staffForCurrentLocationProvider)
+        .cast<Staff?>()
+        .firstWhere((s) => s?.id == staffId, orElse: () => null)
+        ?.displayName ??
+        '-';
+    final isCrossDayMove = !DateUtils.isSameDay(details.data.startTime, newStart);
+    final targetDateLabel = DtFmt.longDate(context, newStart);
+    final confirmMessage = isCrossDayMove
+        ? '${l10n.moveAppointmentConfirmMessage(
+            DtFmt.hm(context, newStart.hour, newStart.minute),
+            targetStaffName,
+          )}\n$targetDateLabel'
+        : l10n.moveAppointmentConfirmMessage(
+            DtFmt.hm(context, newStart.hour, newStart.minute),
+            targetStaffName,
+          );
+    final confirmed = await showConfirmDialog(
+      context,
+      title: Text(l10n.moveAppointmentConfirmTitle),
+      content: Text(confirmMessage),
+      confirmLabel: l10n.actionConfirm,
+      cancelLabel: l10n.actionCancel,
+    );
+    ref.read(pendingDropProvider.notifier).clear();
+
+    if (confirmed != true) return;
+
+    ref.read(appointmentsProvider.notifier).moveAppointment(
+          appointmentId: details.data.id,
+          newStaffId: staffId,
+          newStart: newStart,
+          newEnd: boundedEnd,
+        );
+  }
+
+  void _updateDragPreviewTime(
+    BuildContext context,
+    WidgetRef ref,
+    DragTargetDetails<Appointment> details,
+  ) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+
+    final layoutConfig = ref.read(layoutConfigProvider);
+    final dragOffsetY = ref.read(dragOffsetProvider) ?? 0.0;
+    final dragOffsetX = ref.read(dragOffsetXProvider) ?? 0.0;
+    final draggedCardHeightPx =
+        ref.read(draggedCardSizeProvider)?.height ?? 50.0;
+    final localPointer = box.globalToLocal(
+      details.offset + Offset(dragOffsetX, dragOffsetY),
+    );
+
+    final maxYStartPx = (box.size.height - draggedCardHeightPx)
+        .clamp(0, box.size.height)
+        .toDouble();
+    final clampedLocalDy = localPointer.dy.clamp(0.0, box.size.height.toDouble());
+    final effectiveDy = (clampedLocalDy - dragOffsetY)
+        .clamp(0.0, maxYStartPx)
+        .toDouble();
+
+    final durationMinutes =
+        details.data.endTime.difference(details.data.startTime).inMinutes;
+    const totalMinutes = LayoutConfig.hoursInDay * 60;
+    var startMinutes =
+        ((layoutConfig.minutesFromHeight(effectiveDy) / 5).round() * 5).toInt();
+    final maxStartMinutes = (totalMinutes - durationMinutes).clamp(0, totalMinutes);
+    if (startMinutes < 0) startMinutes = 0;
+    if (startMinutes > maxStartMinutes) startMinutes = maxStartMinutes;
+
+    final targetDate = DateTime(day.year, day.month, day.day);
+    final previewStart = targetDate.add(Duration(minutes: startMinutes));
+    final rawPreviewEnd = previewStart.add(Duration(minutes: durationMinutes));
+    final dayBoundary = targetDate.add(const Duration(days: 1));
+    final previewEnd =
+        rawPreviewEnd.isAfter(dayBoundary) ? dayBoundary : rawPreviewEnd;
+
+    ref.read(tempDragTimeProvider.notifier).setTimes(previewStart, previewEnd);
   }
 }
 

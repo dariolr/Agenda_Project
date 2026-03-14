@@ -139,8 +139,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (redirect != null && redirect.startsWith('/')) {
           return redirect;
         }
-        // Dopo login: superadmin su lista business admin, utenti normali su selettore personale.
-        return isSuperadmin ? '/businesses' : '/my-businesses';
+        // Dopo login:
+        // - superadmin: se ha un ultimo business selezionato, entra direttamente in agenda
+        // - altrimenti va alla lista business admin
+        // - utenti normali: selettore personale
+        if (isSuperadmin) {
+          return superadminSelectedBusiness != null ? '/agenda' : '/businesses';
+        }
+        return '/my-businesses';
       }
 
       // Business list admin solo per superadmin.
