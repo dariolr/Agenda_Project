@@ -46,6 +46,7 @@ import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../../../providers/tenant_time_provider.dart';
 import '../../../providers/time_blocks_provider.dart';
+import '../../utils/multi_service_move_guard.dart';
 import '../../widgets/booking_dialog.dart';
 import '../helper/drag_drop_helper.dart';
 import '../helper/layout_geometry_helper.dart';
@@ -583,14 +584,44 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         // Pulisci sempre lo stato pendente dopo la decisione
         ref.read(pendingDropProvider.notifier).clear();
 
-        if (confirmed && mounted) {
+        if (confirmed != true || !context.mounted) return;
+
+        final bookingAppointments = appointmentsNotifier.getByBookingId(
+          details.data.bookingId,
+        );
+        if (!isMultiServiceBooking(bookingAppointments)) {
           appointmentsNotifier.moveAppointment(
             appointmentId: details.data.id,
             newStaffId: widget.staff.id,
             newStart: dropResult.newStart,
             newEnd: dropResult.newEnd,
           );
+          return;
         }
+        if (!isFirstItemInBooking(
+          appointment: details.data,
+          bookingAppointments: bookingAppointments,
+        )) {
+          await showNonFirstServiceMoveBlockedGuardrail(context);
+          return;
+        }
+
+        final decision = await showMultiServiceMoveDecisionDialog(context);
+        if (!context.mounted) return;
+        if (decision == MultiServiceMoveDecision.cancel) return;
+        if (decision == MultiServiceMoveDecision.splitSingleService) {
+          await showSplitMoveNotAvailableGuardrail(context);
+          return;
+        }
+
+        await moveWholeBookingFromAnchor(
+          ref: ref,
+          context: context,
+          anchorAppointment: details.data,
+          targetStart: dropResult.newStart,
+          targetStaffId: widget.staff.id,
+          bookingAppointments: bookingAppointments,
+        );
       },
       builder: (context, candidateData, rejectedData) {
         return GestureDetector(

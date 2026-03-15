@@ -1378,6 +1378,28 @@ class MessageLookup extends MessageLookupByLibrary {
     "moveAppointmentConfirmTitle": MessageLookupByLibrary.simpleMessage(
       "Confirm move?",
     ),
+    "multiServiceMoveDecisionMessage": MessageLookupByLibrary.simpleMessage(
+      "This booking contains multiple services. Choose how to proceed.",
+    ),
+    "multiServiceMoveDecisionMoveBooking": MessageLookupByLibrary.simpleMessage(
+      "Move entire booking",
+    ),
+    "multiServiceMoveDecisionSplitService":
+        MessageLookupByLibrary.simpleMessage("Move only this service"),
+    "multiServiceMoveDecisionTitle": MessageLookupByLibrary.simpleMessage(
+      "Multi-service booking",
+    ),
+    "multiServiceMoveSplitUnavailableMessage": MessageLookupByLibrary.simpleMessage(
+      "Moving a single service requires an atomic split not available in the current API. Use \"Move entire booking\".",
+    ),
+    "multiServiceMoveSplitUnavailableTitle":
+        MessageLookupByLibrary.simpleMessage("Move not available"),
+    "multiServiceNonFirstMoveBlockedMessage":
+        MessageLookupByLibrary.simpleMessage(
+          "For multi-service bookings, only the first service can be moved.",
+        ),
+    "multiServiceNonFirstMoveBlockedTitle":
+        MessageLookupByLibrary.simpleMessage("Move blocked"),
     "navAgenda": MessageLookupByLibrary.simpleMessage("Agenda"),
     "navClients": MessageLookupByLibrary.simpleMessage("Clients"),
     "navMore": MessageLookupByLibrary.simpleMessage("More"),

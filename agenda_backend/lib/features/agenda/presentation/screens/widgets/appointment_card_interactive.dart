@@ -28,6 +28,7 @@ import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
+import '../../utils/multi_service_move_guard.dart';
 import '../../widgets/appointment_dialog.dart';
 
 /// 🔹 Versione unificata per DESKTOP e MOBILE.
@@ -315,7 +316,7 @@ class _AppointmentCardInteractiveState
     sel.toggleByAppointment(widget.appointment);
   }
 
-  void _handleDragEnd(WidgetRef ref, DraggableDetails details) {
+  Future<void> _handleDragEnd(WidgetRef ref, DraggableDetails details) async {
     final canManageBookings = ref.read(currentUserCanManageBookingsProvider);
     if (!canManageBookings) {
       _handleEnd(ref, keepSelection: false);
@@ -416,14 +417,55 @@ class _AppointmentCardInteractiveState
     final dayBoundary = baseDate.add(const Duration(days: 1));
     if (newEnd.isAfter(dayBoundary)) newEnd = dayBoundary;
 
-    ref
-        .read(appointmentsProvider.notifier)
-        .moveAppointment(
-          appointmentId: widget.appointment.id,
-          newStaffId: dropStaffId,
-          newStart: newStart,
-          newEnd: newEnd,
-        );
+    final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
+    final bookingAppointments = appointmentsNotifier.getByBookingId(
+      widget.appointment.bookingId,
+    );
+    if (!isMultiServiceBooking(bookingAppointments)) {
+      appointmentsNotifier.moveAppointment(
+        appointmentId: widget.appointment.id,
+        newStaffId: dropStaffId,
+        newStart: newStart,
+        newEnd: newEnd,
+      );
+      _handleEnd(ref, keepSelection: true);
+      return;
+    }
+    if (!isFirstItemInBooking(
+      appointment: widget.appointment,
+      bookingAppointments: bookingAppointments,
+    )) {
+      await showNonFirstServiceMoveBlockedGuardrail(context);
+      if (!mounted) return;
+      _handleEnd(ref, keepSelection: true);
+      return;
+    }
+
+    final decision = await showMultiServiceMoveDecisionDialog(context);
+    if (!mounted) {
+      _handleEnd(ref, keepSelection: true);
+      return;
+    }
+    if (decision == MultiServiceMoveDecision.splitSingleService) {
+      await showSplitMoveNotAvailableGuardrail(context);
+      if (!mounted) return;
+      _handleEnd(ref, keepSelection: true);
+      return;
+    }
+    if (decision == MultiServiceMoveDecision.cancel) {
+      _handleEnd(ref, keepSelection: true);
+      return;
+    }
+
+    await moveWholeBookingFromAnchor(
+      ref: ref,
+      context: context,
+      anchorAppointment: widget.appointment,
+      targetStart: newStart,
+      targetStaffId: dropStaffId,
+      bookingAppointments: bookingAppointments,
+    );
+    if (!mounted) return;
 
     _handleEnd(ref, keepSelection: true);
   }

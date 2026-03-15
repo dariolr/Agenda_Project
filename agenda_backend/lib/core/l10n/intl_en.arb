@@ -372,6 +372,14 @@
   "serviceSeedServiceFaceDescription": "Cleansing and illuminating treatment",
   "serviceDuplicateCopyWord": "Copy",
   "moveAppointmentConfirmTitle": "Confirm move?",
+  "multiServiceMoveDecisionTitle": "Multi-service booking",
+  "multiServiceMoveDecisionMessage": "This booking contains multiple services. Choose how to proceed.",
+  "multiServiceMoveDecisionMoveBooking": "Move entire booking",
+  "multiServiceMoveDecisionSplitService": "Move only this service",
+  "multiServiceMoveSplitUnavailableTitle": "Move not available",
+  "multiServiceMoveSplitUnavailableMessage": "Moving a single service requires an atomic split not available in the current API. Use \"Move entire booking\".",
+  "multiServiceNonFirstMoveBlockedTitle": "Move blocked",
+  "multiServiceNonFirstMoveBlockedMessage": "For multi-service bookings, only the first service can be moved.",
   "moveAppointmentConfirmMessage": "The appointment will be moved to {newTime} for {staffName}.",
   "@moveAppointmentConfirmMessage": {
     "placeholders": {

@@ -17,6 +17,24 @@ bool isMultiServiceBooking(List<Appointment> bookingAppointments) {
   return bookingAppointments.length > 1;
 }
 
+bool isFirstItemInBooking({
+  required Appointment appointment,
+  required List<Appointment> bookingAppointments,
+}) {
+  final sorted = [...bookingAppointments]
+    ..sort((a, b) {
+      final byStart = a.startTime.compareTo(b.startTime);
+      if (byStart != 0) return byStart;
+      return a.id.compareTo(b.id);
+    });
+
+  if (sorted.isEmpty) {
+    return false;
+  }
+
+  return sorted.first.id == appointment.id;
+}
+
 BookingRescheduleSession buildBookingMoveSession({
   required int bookingId,
   required int anchorAppointmentId,
@@ -54,23 +72,28 @@ Future<MultiServiceMoveDecision> showMultiServiceMoveDecisionDialog(
   final result = await showDialog<MultiServiceMoveDecision>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => AlertDialog(
+    builder: (dialogContext) => AlertDialog(
       title: Text(l10n.multiServiceMoveDecisionTitle),
       content: Text(l10n.multiServiceMoveDecisionMessage),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(MultiServiceMoveDecision.cancel),
+          onPressed: () => Navigator.of(
+            dialogContext,
+            rootNavigator: true,
+          ).pop(MultiServiceMoveDecision.cancel),
           child: Text(l10n.actionCancel),
         ),
         OutlinedButton(
           onPressed: () => Navigator.of(
-            context,
+            dialogContext,
+            rootNavigator: true,
           ).pop(MultiServiceMoveDecision.splitSingleService),
           child: Text(l10n.multiServiceMoveDecisionSplitService),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(
-            context,
+            dialogContext,
+            rootNavigator: true,
           ).pop(MultiServiceMoveDecision.moveWholeBooking),
           child: Text(l10n.multiServiceMoveDecisionMoveBooking),
         ),
@@ -86,6 +109,15 @@ Future<void> showSplitMoveNotAvailableGuardrail(BuildContext context) async {
     context,
     title: l10n.multiServiceMoveSplitUnavailableTitle,
     message: l10n.multiServiceMoveSplitUnavailableMessage,
+  );
+}
+
+Future<void> showNonFirstServiceMoveBlockedGuardrail(BuildContext context) async {
+  final l10n = context.l10n;
+  await FeedbackDialog.showError(
+    context,
+    title: l10n.multiServiceNonFirstMoveBlockedTitle,
+    message: l10n.multiServiceNonFirstMoveBlockedMessage,
   );
 }
 

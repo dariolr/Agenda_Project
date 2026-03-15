@@ -2549,6 +2549,86 @@ class L10n {
     );
   }
 
+  /// `Prenotazione con più servizi`
+  String get multiServiceMoveDecisionTitle {
+    return Intl.message(
+      'Prenotazione con più servizi',
+      name: 'multiServiceMoveDecisionTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questa prenotazione contiene più servizi. Scegli come procedere.`
+  String get multiServiceMoveDecisionMessage {
+    return Intl.message(
+      'Questa prenotazione contiene più servizi. Scegli come procedere.',
+      name: 'multiServiceMoveDecisionMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sposta intera prenotazione`
+  String get multiServiceMoveDecisionMoveBooking {
+    return Intl.message(
+      'Sposta intera prenotazione',
+      name: 'multiServiceMoveDecisionMoveBooking',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sposta solo questo servizio`
+  String get multiServiceMoveDecisionSplitService {
+    return Intl.message(
+      'Sposta solo questo servizio',
+      name: 'multiServiceMoveDecisionSplitService',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Spostamento non disponibile`
+  String get multiServiceMoveSplitUnavailableTitle {
+    return Intl.message(
+      'Spostamento non disponibile',
+      name: 'multiServiceMoveSplitUnavailableTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Lo spostamento di un singolo servizio richiede uno split atomico non disponibile con l'API corrente. Usa "Sposta intera prenotazione".`
+  String get multiServiceMoveSplitUnavailableMessage {
+    return Intl.message(
+      'Lo spostamento di un singolo servizio richiede uno split atomico non disponibile con l\'API corrente. Usa "Sposta intera prenotazione".',
+      name: 'multiServiceMoveSplitUnavailableMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Spostamento bloccato`
+  String get multiServiceNonFirstMoveBlockedTitle {
+    return Intl.message(
+      'Spostamento bloccato',
+      name: 'multiServiceNonFirstMoveBlockedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nelle prenotazioni multi-servizio puoi spostare solo il primo servizio.`
+  String get multiServiceNonFirstMoveBlockedMessage {
+    return Intl.message(
+      'Nelle prenotazioni multi-servizio puoi spostare solo il primo servizio.',
+      name: 'multiServiceNonFirstMoveBlockedMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `L'appuntamento verrà spostato alle {newTime} per {staffName}.`
   String moveAppointmentConfirmMessage(String newTime, String staffName) {
     return Intl.message(

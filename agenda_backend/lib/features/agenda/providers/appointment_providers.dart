@@ -165,7 +165,9 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
         staffId: newStaffId,
         extraBlockedMinutes: newBlocked,
       );
-      _invalidateVisibleWeek();
+      _invalidateWeeksForDates([originalAppt.startTime, roundedStart]);
+      ref.invalidate(bookingsProvider);
+      ref.invalidateSelf();
     } catch (_) {
       // Rollback on error
       if (hasAppointmentInCurrentList) {
@@ -262,6 +264,11 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
           extraBlockedMinutes: updatedBlocked[item.appointmentId],
         );
       }
+      _invalidateWeeksForDates([
+        ...session.items.map((item) => item.startTime),
+        ...updatedStarts.values,
+      ]);
+      ref.invalidate(bookingsProvider);
       ref.invalidateSelf();
       return true;
     } catch (_) {
@@ -763,25 +770,33 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     ];
   }
 
-  void _invalidateVisibleWeek() {
+  void _invalidateWeeksForDates(Iterable<DateTime> dates) {
     final location = ref.read(currentLocationProvider);
     final business = ref.read(currentBusinessProvider);
     if (location.id <= 0 || business.id <= 0) {
       return;
     }
 
-    final anchorDate = ref.read(agendaDateProvider);
     final timezone = ref.read(effectiveTenantTimezoneProvider);
-    final weekRange = computeWeekRange(anchorDate, timezone);
-    ref.invalidate(
-      weeklyAppointmentsProvider(
-        WeeklyAppointmentsRequest(
-          weekStart: weekRange.start,
-          locationId: location.id,
-          businessId: business.id,
+    final invalidatedWeekStarts = <DateTime>{};
+    for (final date in dates) {
+      final normalized = DateUtils.dateOnly(date);
+      final weekStart = DateUtils.dateOnly(
+        computeWeekRange(normalized, timezone).start,
+      );
+      if (!invalidatedWeekStarts.add(weekStart)) {
+        continue;
+      }
+      ref.invalidate(
+        weeklyAppointmentsProvider(
+          WeeklyAppointmentsRequest(
+            weekStart: weekStart,
+            locationId: location.id,
+            businessId: business.id,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 }
 

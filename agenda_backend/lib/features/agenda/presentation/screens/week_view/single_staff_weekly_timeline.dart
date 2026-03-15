@@ -32,6 +32,7 @@ import 'package:agenda_backend/features/agenda/presentation/screens/widgets/appo
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/hover_slot.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/time_block_widget.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/unavailable_slot_pattern.dart';
+import 'package:agenda_backend/features/agenda/presentation/utils/multi_service_move_guard.dart';
 import 'package:agenda_backend/features/agenda/presentation/widgets/booking_dialog.dart';
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
@@ -1027,13 +1028,45 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     ref.read(pendingDropProvider.notifier).clear();
 
     if (confirmed != true) return;
+    if (!context.mounted) return;
 
-    ref.read(appointmentsProvider.notifier).moveAppointment(
-          appointmentId: details.data.id,
-          newStaffId: staffId,
-          newStart: newStart,
-          newEnd: boundedEnd,
-        );
+    final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
+    final bookingAppointments = appointmentsNotifier.getByBookingId(
+      details.data.bookingId,
+    );
+    if (!isMultiServiceBooking(bookingAppointments)) {
+      appointmentsNotifier.moveAppointment(
+        appointmentId: details.data.id,
+        newStaffId: staffId,
+        newStart: newStart,
+        newEnd: boundedEnd,
+      );
+      return;
+    }
+    if (!isFirstItemInBooking(
+      appointment: details.data,
+      bookingAppointments: bookingAppointments,
+    )) {
+      await showNonFirstServiceMoveBlockedGuardrail(context);
+      return;
+    }
+
+    final decision = await showMultiServiceMoveDecisionDialog(context);
+    if (!context.mounted) return;
+    if (decision == MultiServiceMoveDecision.cancel) return;
+    if (decision == MultiServiceMoveDecision.splitSingleService) {
+      await showSplitMoveNotAvailableGuardrail(context);
+      return;
+    }
+
+    await moveWholeBookingFromAnchor(
+      ref: ref,
+      context: context,
+      anchorAppointment: details.data,
+      targetStart: newStart,
+      targetStaffId: staffId,
+      bookingAppointments: bookingAppointments,
+    );
   }
 
   void _updateDragPreviewTime(

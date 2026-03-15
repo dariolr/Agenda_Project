@@ -33,9 +33,9 @@ class SelectedAppointmentNotifier extends Notifier<SelectedAppointmentsState> {
       return;
     }
 
-    final allAppointments = ref.read(appointmentsProvider).value ?? [];
-    final bookingAppointments = allAppointments
-        .where((a) => a.bookingId == appointment.bookingId)
+    final bookingAppointments = ref
+        .read(appointmentsProvider.notifier)
+        .getByBookingId(appointment.bookingId)
         .map((a) => a.id)
         .toSet();
     if (bookingAppointments.isEmpty) {
