@@ -174,26 +174,41 @@ final class CustomerAuthController
     public function refresh(Request $request): Response
     {
         $businessId = (int) $request->getRouteParam('business_id');
+        $ipAddress = $request->getClientIp() ?? 'unknown';
+        $userAgent = $request->getHeader('User-Agent') ?? 'unknown';
+        $body = $request->getBody() ?? [];
 
         // Try to get refresh token from cookie first, then from body
         $refreshToken = $request->getCookie('customer_refresh_token') 
-            ?? $request->getBody()['refresh_token'] 
+            ?? ($body['refresh_token'] ?? null)
             ?? null;
 
         if ($refreshToken === null) {
-            return Response::error('Refresh token is required', 'validation_error', 400);
+            error_log(sprintf(
+                '[CustomerAuthController::refresh] Missing refresh token | business_id=%d ip=%s ua=%s',
+                $businessId,
+                $ipAddress,
+                $userAgent
+            ));
+            return Response::error('Refresh token is required', 'invalid_refresh_token', 401);
         }
 
         try {
             $result = $this->refreshCustomerToken->execute(
                 $refreshToken,
-                $request->getHeader('User-Agent'),
-                $request->getClientIp()
+                $userAgent,
+                $ipAddress
             );
 
             // Verify business matches
             if ($result['client']['business_id'] !== $businessId) {
-                return Response::error('Invalid refresh token for this business', 'invalid_token', 401);
+                error_log(sprintf(
+                    '[CustomerAuthController::refresh] Business mismatch | route_business_id=%d token_business_id=%d ip=%s',
+                    $businessId,
+                    (int) $result['client']['business_id'],
+                    $ipAddress
+                ));
+                return Response::error('Invalid refresh token for this business', 'invalid_refresh_token', 401);
             }
 
             $response = Response::success($result, 200);
@@ -214,6 +229,13 @@ final class CustomerAuthController
             return $response;
 
         } catch (AuthException $e) {
+            error_log(sprintf(
+                '[CustomerAuthController::refresh] AuthException | business_id=%d ip=%s code=%s message=%s',
+                $businessId,
+                $ipAddress,
+                $e->getErrorCode(),
+                $e->getMessage()
+            ));
             return Response::error($e->getMessage(), $e->getErrorCode(), $e->getHttpStatus());
         }
     }

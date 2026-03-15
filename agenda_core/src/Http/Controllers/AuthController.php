@@ -89,20 +89,29 @@ final class AuthController
      */
     public function refresh(Request $request): Response
     {
+        $ipAddress = $request->getClientIp() ?? 'unknown';
+        $userAgent = $request->getHeader('User-Agent') ?? 'unknown';
+        $body = $request->getBody() ?? [];
+
         // Try to get refresh token from cookie first, then from body
         $refreshToken = $request->getCookie('refresh_token') 
-            ?? $request->getBody()['refresh_token'] 
+            ?? ($body['refresh_token'] ?? null)
             ?? null;
 
         if ($refreshToken === null) {
-            return Response::error('Refresh token is required', 'validation_error', 400);
+            error_log(sprintf(
+                '[AuthController::refresh] Missing refresh token | ip=%s ua=%s',
+                $ipAddress,
+                $userAgent
+            ));
+            return Response::error('Refresh token is required', 'invalid_refresh_token', 401);
         }
 
         try {
             $result = $this->refreshToken->execute(
                 $refreshToken,
-                $request->getHeader('User-Agent'),
-                $request->getClientIp()
+                $userAgent,
+                $ipAddress
             );
 
             $response = Response::success($result, 200);
@@ -123,6 +132,12 @@ final class AuthController
             return $response;
 
         } catch (AuthException $e) {
+            error_log(sprintf(
+                '[AuthController::refresh] AuthException | ip=%s code=%s message=%s',
+                $ipAddress,
+                $e->getErrorCode(),
+                $e->getMessage()
+            ));
             return Response::error($e->getMessage(), $e->getErrorCode(), $e->getHttpStatus());
         }
     }
