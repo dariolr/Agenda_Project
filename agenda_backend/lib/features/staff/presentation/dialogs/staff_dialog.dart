@@ -445,7 +445,6 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         dragDevices: {
                           PointerDeviceKind.touch,
                           PointerDeviceKind.mouse,
-                          PointerDeviceKind.trackpad,
                         },
                       ),
                       child: ListView.separated(

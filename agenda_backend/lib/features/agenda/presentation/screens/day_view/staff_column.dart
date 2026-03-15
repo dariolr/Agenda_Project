@@ -5,7 +5,6 @@ import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/service_variant.dart';
-import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/hover_slot.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/unavailable_slot_pattern.dart';
@@ -15,6 +14,7 @@ import 'package:agenda_backend/features/agenda/providers/pending_drop_provider.d
 import 'package:agenda_backend/features/agenda/providers/staff_slot_availability_provider.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
 import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
+import 'package:agenda_backend/features/clients/providers/clients_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -571,56 +571,38 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         );
         final staffName = widget.staff.displayName;
 
-        final confirmed = await showConfirmDialog(
-          context,
+        final bookingAppointments = appointmentsNotifier.getByBookingId(
+          details.data.bookingId,
+        );
+        final confirmResult = await showMoveConfirmDialog(
+          context: context,
           title: Text(l10n.moveAppointmentConfirmTitle),
           content: Text(
             l10n.moveAppointmentConfirmMessage(newTimeStr, staffName),
           ),
           confirmLabel: l10n.actionConfirm,
           cancelLabel: l10n.actionCancel,
+          showNotifyOption:
+              willBookingFirstStartChangeOnSingleMove(
+                movingAppointment: details.data,
+                newStart: dropResult.newStart,
+                bookingAppointments: bookingAppointments,
+              ) &&
+              _hasReachableClientContact(bookingAppointments),
         );
 
         // Pulisci sempre lo stato pendente dopo la decisione
         ref.read(pendingDropProvider.notifier).clear();
 
-        if (confirmed != true || !context.mounted) return;
+        if (!confirmResult.confirmed || !context.mounted) return;
+        // TODO(api): use confirmResult.notifyClient to control
+        // booking_rescheduled notification/reminder policy.
 
-        final bookingAppointments = appointmentsNotifier.getByBookingId(
-          details.data.bookingId,
-        );
-        if (!isMultiServiceBooking(bookingAppointments)) {
-          appointmentsNotifier.moveAppointment(
-            appointmentId: details.data.id,
-            newStaffId: widget.staff.id,
-            newStart: dropResult.newStart,
-            newEnd: dropResult.newEnd,
-          );
-          return;
-        }
-        if (!isFirstItemInBooking(
-          appointment: details.data,
-          bookingAppointments: bookingAppointments,
-        )) {
-          await showNonFirstServiceMoveBlockedGuardrail(context);
-          return;
-        }
-
-        final decision = await showMultiServiceMoveDecisionDialog(context);
-        if (!context.mounted) return;
-        if (decision == MultiServiceMoveDecision.cancel) return;
-        if (decision == MultiServiceMoveDecision.splitSingleService) {
-          await showSplitMoveNotAvailableGuardrail(context);
-          return;
-        }
-
-        await moveWholeBookingFromAnchor(
-          ref: ref,
-          context: context,
-          anchorAppointment: details.data,
-          targetStart: dropResult.newStart,
-          targetStaffId: widget.staff.id,
-          bookingAppointments: bookingAppointments,
+        appointmentsNotifier.moveAppointment(
+          appointmentId: details.data.id,
+          newStaffId: widget.staff.id,
+          newStart: dropResult.newStart,
+          newEnd: dropResult.newEnd,
         );
       },
       builder: (context, candidateData, rejectedData) {
@@ -1020,8 +1002,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       targetStart.minute,
     );
 
-    final confirmed = await showConfirmDialog(
-      context,
+    final bookingAppointments = ref
+        .read(appointmentsProvider.notifier)
+        .getByBookingId(rescheduleSession.bookingId);
+    final confirmResult = await showMoveConfirmDialog(
+      context: context,
       title: Text(l10n.bookingRescheduleConfirmTitle),
       content: Text(
         l10n.bookingRescheduleConfirmMessage(
@@ -1032,12 +1017,20 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
       confirmLabel: l10n.actionConfirm,
       cancelLabel: l10n.actionCancel,
+      showNotifyOption:
+          willBookingFirstStartChangeForRescheduleSession(
+            session: rescheduleSession,
+            targetStart: targetStart,
+          ) &&
+          _hasReachableClientContact(bookingAppointments),
     );
-    if (confirmed != true) return;
+    if (!confirmResult.confirmed || !mounted) return;
+    // TODO(api): use confirmResult.notifyClient to control
+    // booking_rescheduled notification/reminder policy.
 
     setState(() => _isApplyingBookingReschedule = true);
     try {
-      final success = await ref
+      final result = await ref
           .read(appointmentsProvider.notifier)
           .moveBookingByAnchor(
             session: rescheduleSession,
@@ -1047,11 +1040,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
       if (!mounted) return;
 
-      if (!success) {
+      if (result != MoveBookingByAnchorResult.success) {
+        final message = result == MoveBookingByAnchorResult.outOfTargetDay
+            ? l10n.bookingRescheduleOutOfDayBlocked
+            : l10n.bookingRescheduleMoveFailed;
         await FeedbackDialog.showError(
           context,
           title: l10n.errorTitle,
-          message: l10n.bookingRescheduleMoveFailed,
+          message: message,
         );
         return;
       }
@@ -1075,6 +1071,21 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         _isApplyingBookingReschedule = false;
       }
     }
+  }
+
+  bool _hasReachableClientContact(List<Appointment> bookingAppointments) {
+    if (bookingAppointments.isEmpty) return false;
+    final clientId = bookingAppointments.first.clientId;
+    if (clientId == null) return false;
+    final client = ref.read(clientsByIdProvider)[clientId];
+    if (client == null) {
+      // Se il cliente non è in cache locale, non possiamo verificare i contatti:
+      // mostriamo comunque il flag per lasciare decisione all'operatore.
+      return true;
+    }
+    final hasEmail = (client.email ?? '').trim().isNotEmpty;
+    final hasPhone = (client.phone ?? '').trim().isNotEmpty;
+    return hasEmail || hasPhone;
   }
 }
 

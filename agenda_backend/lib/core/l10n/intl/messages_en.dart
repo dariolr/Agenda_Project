@@ -574,6 +574,9 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "Rescheduling is not available in multi-staff weekly view. Select a single staff member or switch to day view.",
         ),
+    "bookingRescheduleOutOfDayBlocked": MessageLookupByLibrary.simpleMessage(
+      "Unable to reschedule: one or more services would fall outside the selected day.",
+    ),
     "bookingStaffNotEligibleWarning": MessageLookupByLibrary.simpleMessage(
       "Warning: the selected team member is not eligible for this service.",
     ),
@@ -1378,6 +1381,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "moveAppointmentConfirmTitle": MessageLookupByLibrary.simpleMessage(
       "Confirm move?",
     ),
+    "moveConfirmNotifyCheckbox": MessageLookupByLibrary.simpleMessage(
+      "Send client notification and adjust unsent reminders",
+    ),
     "multiServiceMoveDecisionMessage": MessageLookupByLibrary.simpleMessage(
       "This booking contains multiple services. Choose how to proceed.",
     ),
@@ -1874,6 +1880,18 @@ class MessageLookup extends MessageLookupByLibrary {
       "Occupancy",
     ),
     "reportsWorkHoursWorked": MessageLookupByLibrary.simpleMessage("Booked"),
+    "rescheduleNotifyDecisionMessage": MessageLookupByLibrary.simpleMessage(
+      "The booking start time changed. Do you want to send a client notification? Unsent reminders will be adjusted automatically.",
+    ),
+    "rescheduleNotifyDecisionSend": MessageLookupByLibrary.simpleMessage(
+      "Send notification",
+    ),
+    "rescheduleNotifyDecisionSkip": MessageLookupByLibrary.simpleMessage(
+      "Do not send",
+    ),
+    "rescheduleNotifyDecisionTitle": MessageLookupByLibrary.simpleMessage(
+      "Send notification to client?",
+    ),
     "resourceDeleteConfirm": MessageLookupByLibrary.simpleMessage(
       "Delete this resource?",
     ),

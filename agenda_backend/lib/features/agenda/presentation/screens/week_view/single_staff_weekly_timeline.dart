@@ -900,18 +900,21 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
       if (confirmed != true) return;
 
       final anchorId = rescheduleSession.anchorAppointmentId;
-      final success = await ref.read(appointmentsProvider.notifier).moveBookingByAnchor(
+      final result = await ref.read(appointmentsProvider.notifier).moveBookingByAnchor(
             session: rescheduleSession,
             targetStart: targetStart,
             targetStaffId: staffId,
           );
 
       if (!context.mounted) return;
-      if (!success) {
+      if (result != MoveBookingByAnchorResult.success) {
+        final message = result == MoveBookingByAnchorResult.outOfTargetDay
+            ? l10n.bookingRescheduleOutOfDayBlocked
+            : l10n.bookingRescheduleMoveFailed;
         await FeedbackDialog.showError(
           context,
           title: l10n.errorTitle,
-          message: l10n.bookingRescheduleMoveFailed,
+          message: message,
         );
         return;
       }
@@ -1009,18 +1012,29 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         '-';
     final isCrossDayMove = !DateUtils.isSameDay(details.data.startTime, newStart);
     final targetDateLabel = DtFmt.longDate(context, newStart);
-    final confirmMessage = isCrossDayMove
-        ? '${l10n.moveAppointmentConfirmMessage(
-            DtFmt.hm(context, newStart.hour, newStart.minute),
+    final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
+    final bookingAppointments = appointmentsNotifier.getByBookingId(
+      details.data.bookingId,
+    );
+    final isMultiService = isMultiServiceBooking(bookingAppointments);
+    final moveWholeBooking = isMultiService && isCrossDayMove;
+    final movedTimeLabel = DtFmt.hm(context, newStart.hour, newStart.minute);
+    final confirmMessage = moveWholeBooking
+        ? l10n.bookingRescheduleConfirmMessage(
+            targetDateLabel,
+            movedTimeLabel,
             targetStaffName,
-          )}\n$targetDateLabel'
-        : l10n.moveAppointmentConfirmMessage(
-            DtFmt.hm(context, newStart.hour, newStart.minute),
-            targetStaffName,
-          );
+          )
+        : isCrossDayMove
+        ? '${l10n.moveAppointmentConfirmMessage(movedTimeLabel, targetStaffName)}\n$targetDateLabel'
+        : l10n.moveAppointmentConfirmMessage(movedTimeLabel, targetStaffName);
     final confirmed = await showConfirmDialog(
       context,
-      title: Text(l10n.moveAppointmentConfirmTitle),
+      title: Text(
+        moveWholeBooking
+            ? l10n.bookingRescheduleConfirmTitle
+            : l10n.moveAppointmentConfirmTitle,
+      ),
       content: Text(confirmMessage),
       confirmLabel: l10n.actionConfirm,
       cancelLabel: l10n.actionCancel,
@@ -1030,11 +1044,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     if (confirmed != true) return;
     if (!context.mounted) return;
 
-    final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
-    final bookingAppointments = appointmentsNotifier.getByBookingId(
-      details.data.bookingId,
-    );
-    if (!isMultiServiceBooking(bookingAppointments)) {
+    if (!moveWholeBooking) {
       appointmentsNotifier.moveAppointment(
         appointmentId: details.data.id,
         newStaffId: staffId,
@@ -1043,22 +1053,6 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
       );
       return;
     }
-    if (!isFirstItemInBooking(
-      appointment: details.data,
-      bookingAppointments: bookingAppointments,
-    )) {
-      await showNonFirstServiceMoveBlockedGuardrail(context);
-      return;
-    }
-
-    final decision = await showMultiServiceMoveDecisionDialog(context);
-    if (!context.mounted) return;
-    if (decision == MultiServiceMoveDecision.cancel) return;
-    if (decision == MultiServiceMoveDecision.splitSingleService) {
-      await showSplitMoveNotAvailableGuardrail(context);
-      return;
-    }
-
     await moveWholeBookingFromAnchor(
       ref: ref,
       context: context,

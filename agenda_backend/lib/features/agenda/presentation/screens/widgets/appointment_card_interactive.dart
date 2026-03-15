@@ -23,6 +23,7 @@ import '../../../providers/dragged_base_range_provider.dart';
 import '../../../providers/dragged_last_staff_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
+import '../../../providers/calendar_view_mode_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
@@ -418,41 +419,18 @@ class _AppointmentCardInteractiveState
     if (newEnd.isAfter(dayBoundary)) newEnd = dayBoundary;
 
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
+    final currentViewMode = ref.read(calendarViewModeProvider);
     final bookingAppointments = appointmentsNotifier.getByBookingId(
       widget.appointment.bookingId,
     );
-    if (!isMultiServiceBooking(bookingAppointments)) {
+    if (currentViewMode == CalendarViewMode.day ||
+        !isMultiServiceBooking(bookingAppointments)) {
       appointmentsNotifier.moveAppointment(
         appointmentId: widget.appointment.id,
         newStaffId: dropStaffId,
         newStart: newStart,
         newEnd: newEnd,
       );
-      _handleEnd(ref, keepSelection: true);
-      return;
-    }
-    if (!isFirstItemInBooking(
-      appointment: widget.appointment,
-      bookingAppointments: bookingAppointments,
-    )) {
-      await showNonFirstServiceMoveBlockedGuardrail(context);
-      if (!mounted) return;
-      _handleEnd(ref, keepSelection: true);
-      return;
-    }
-
-    final decision = await showMultiServiceMoveDecisionDialog(context);
-    if (!mounted) {
-      _handleEnd(ref, keepSelection: true);
-      return;
-    }
-    if (decision == MultiServiceMoveDecision.splitSingleService) {
-      await showSplitMoveNotAvailableGuardrail(context);
-      if (!mounted) return;
-      _handleEnd(ref, keepSelection: true);
-      return;
-    }
-    if (decision == MultiServiceMoveDecision.cancel) {
       _handleEnd(ref, keepSelection: true);
       return;
     }

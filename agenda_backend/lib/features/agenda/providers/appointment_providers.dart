@@ -176,12 +176,12 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     }
   }
 
-  Future<bool> moveBookingByAnchor({
+  Future<MoveBookingByAnchorResult> moveBookingByAnchor({
     required BookingRescheduleSession session,
     required DateTime targetStart,
     required int targetStaffId,
   }) async {
-    if (session.items.isEmpty) return false;
+    if (session.items.isEmpty) return MoveBookingByAnchorResult.failed;
     final currentList = state.value;
 
     final anchor = session.items.firstWhere(
@@ -189,6 +189,8 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
       orElse: () => session.items.first,
     );
     final delta = targetStart.difference(anchor.startTime);
+    final targetDay = DateUtils.dateOnly(targetStart);
+    final targetDayBoundary = targetDay.add(const Duration(days: 1));
 
     final updates = <int, ({Appointment appointment, int blockedMinutes})>{};
     final updatedStarts = <int, DateTime>{};
@@ -203,6 +205,19 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
       final roundedStart = _roundToNearestFiveMinutes(rawStart);
       final duration = rawEnd.difference(rawStart);
       final roundedEnd = roundedStart.add(duration);
+
+      // Precheck atomico: se anche un solo item esce dalla giornata target,
+      // blocca l'intera riprogrammazione.
+      final isStartInsideTargetDay =
+          !roundedStart.isBefore(targetDay) &&
+          roundedStart.isBefore(targetDayBoundary);
+      final isEndInsideTargetDay =
+          roundedEnd.isAfter(targetDay) &&
+          roundedEnd.isAtSameMomentAs(targetDayBoundary) == false &&
+          roundedEnd.isBefore(targetDayBoundary);
+      if (!isStartInsideTargetDay || !isEndInsideTargetDay) {
+        return MoveBookingByAnchorResult.outOfTargetDay;
+      }
 
       final oldTotalMinutes = item.endTime.difference(item.startTime).inMinutes;
       final newTotalMinutes = roundedEnd.difference(roundedStart).inMinutes;
@@ -270,12 +285,12 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
       ]);
       ref.invalidate(bookingsProvider);
       ref.invalidateSelf();
-      return true;
+      return MoveBookingByAnchorResult.success;
     } catch (_) {
       if (currentList != null) {
         state = AsyncData(currentList);
       }
-      return false;
+      return MoveBookingByAnchorResult.failed;
     }
   }
 
@@ -798,6 +813,12 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
       );
     }
   }
+}
+
+enum MoveBookingByAnchorResult {
+  success,
+  outOfTargetDay,
+  failed,
 }
 
 final appointmentsProvider =

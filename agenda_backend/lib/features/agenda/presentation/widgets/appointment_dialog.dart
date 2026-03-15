@@ -18,6 +18,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/price_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
@@ -2382,15 +2383,49 @@ class _ClientSelectionField extends ConsumerWidget {
   }
 
   Future<void> _showClientPicker(BuildContext context, WidgetRef ref) async {
-    while (true) {
-      final result = await AppBottomSheet.show<_ClientItem?>(
+    Future<_ClientItem?> openClientPicker() {
+      final formFactor = ref.read(formFactorProvider);
+      if (formFactor == AppFormFactor.desktop) {
+        return showDialog<_ClientItem?>(
+          context: context,
+          useRootNavigator: true,
+          builder: (dialogContext) => DismissibleDialog(
+            child: Dialog(
+              clipBehavior: Clip.antiAlias,
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 24,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 600,
+                  maxWidth: 720,
+                  maxHeight: 600,
+                ),
+                child: _ClientPickerSheet(
+                  clients: clients,
+                  selectedClientId: clientId,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      return AppBottomSheet.show<_ClientItem?>(
         context: context,
         useRootNavigator: true,
         padding: EdgeInsets.zero,
         heightFactor: AppBottomSheet.defaultHeightFactor,
-        builder: (ctx) =>
-            _ClientPickerSheet(clients: clients, selectedClientId: clientId),
+        builder: (ctx) => _ClientPickerSheet(
+          clients: clients,
+          selectedClientId: clientId,
+        ),
       );
+    }
+
+    while (true) {
+      final result = await openClientPicker();
       if (result == null) {
         // Sheet dismissed without selection, do nothing
         return;

@@ -298,6 +298,16 @@ class L10n {
     );
   }
 
+  /// `Impossibile riprogrammare: uno o più servizi uscirebbero dalla giornata selezionata.`
+  String get bookingRescheduleOutOfDayBlocked {
+    return Intl.message(
+      'Impossibile riprogrammare: uno o più servizi uscirebbero dalla giornata selezionata.',
+      name: 'bookingRescheduleOutOfDayBlocked',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Prenotazione non trovata.`
   String get bookingRescheduleMissingBooking {
     return Intl.message(
@@ -2544,6 +2554,56 @@ class L10n {
     return Intl.message(
       'Confermi lo spostamento?',
       name: 'moveAppointmentConfirmTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inviare notifica al cliente?`
+  String get rescheduleNotifyDecisionTitle {
+    return Intl.message(
+      'Inviare notifica al cliente?',
+      name: 'rescheduleNotifyDecisionTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `L'orario di inizio della prenotazione è cambiato. Vuoi inviare una notifica al cliente? I promemoria non ancora inviati verranno adeguati automaticamente.`
+  String get rescheduleNotifyDecisionMessage {
+    return Intl.message(
+      'L\'orario di inizio della prenotazione è cambiato. Vuoi inviare una notifica al cliente? I promemoria non ancora inviati verranno adeguati automaticamente.',
+      name: 'rescheduleNotifyDecisionMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invia notifica`
+  String get rescheduleNotifyDecisionSend {
+    return Intl.message(
+      'Invia notifica',
+      name: 'rescheduleNotifyDecisionSend',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Non inviare`
+  String get rescheduleNotifyDecisionSkip {
+    return Intl.message(
+      'Non inviare',
+      name: 'rescheduleNotifyDecisionSkip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invia notifica al cliente e adegua i promemoria non ancora inviati`
+  String get moveConfirmNotifyCheckbox {
+    return Intl.message(
+      'Invia notifica al cliente e adegua i promemoria non ancora inviati',
+      name: 'moveConfirmNotifyCheckbox',
       desc: '',
       args: [],
     );

@@ -33,6 +33,11 @@ class PrefsKeys {
   static String agendaDate(int businessId, {required int locationId}) =>
       'agenda_date_${_scope(businessId, locationId)}';
 
+  /// Genera la chiave per l'ultimo "oggi" visualizzato in agenda
+  /// per business + location.
+  static String agendaTodaySeenDate(int businessId, {required int locationId}) =>
+      'agenda_today_seen_date_${_scope(businessId, locationId)}';
+
   /// Genera la chiave per la modalità vista agenda per business + location
   static String agendaViewMode(int businessId, {required int locationId}) =>
       'agenda_view_mode_${_scope(businessId, locationId)}';
@@ -222,6 +227,30 @@ class PreferencesService {
     await _prefs.setString(key, date.toIso8601String());
   }
 
+  DateTime? getAgendaTodaySeenDate(int businessId, {required int locationId}) {
+    final value = _prefs.getString(
+      PrefsKeys.agendaTodaySeenDate(businessId, locationId: locationId),
+    );
+    if (value == null || value.isEmpty) return null;
+    return DateTime.tryParse(value);
+  }
+
+  Future<void> setAgendaTodaySeenDate(
+    int businessId, {
+    required int locationId,
+    required DateTime? date,
+  }) async {
+    final key = PrefsKeys.agendaTodaySeenDate(
+      businessId,
+      locationId: locationId,
+    );
+    if (date == null) {
+      await _prefs.remove(key);
+      return;
+    }
+    await _prefs.setString(key, date.toIso8601String());
+  }
+
   String? getAgendaViewMode(int businessId, {required int locationId}) {
     var value = _prefs.getString(
       PrefsKeys.agendaViewMode(businessId, locationId: locationId),
@@ -295,6 +324,7 @@ class PreferencesService {
           key.startsWith('selected_staff_ids_${businessId}_') ||
           key == PrefsKeys.selectedStaffIds(businessId) ||
           key.startsWith('agenda_date_${businessId}_') ||
+          key.startsWith('agenda_today_seen_date_${businessId}_') ||
           key.startsWith('agenda_view_mode_${businessId}_')) {
         await _prefs.remove(key);
       }
@@ -309,6 +339,7 @@ class PreferencesService {
       if (key.startsWith('staff_filter_mode') ||
           key.startsWith('selected_staff_ids') ||
           key.startsWith('agenda_date') ||
+          key.startsWith('agenda_today_seen_date') ||
           key.startsWith('agenda_view_mode') ||
           key.startsWith('current_location_id') ||
           key == PrefsKeys.desktopRailStartsAtTop) {

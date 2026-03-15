@@ -17,19 +17,32 @@ class AgendaDateNotifier extends Notifier<DateTime> {
     }
 
     final prefs = ref.watch(preferencesServiceProvider);
+    final todaySeen = prefs.getAgendaTodaySeenDate(
+      businessId,
+      locationId: locationId,
+    );
+    final hasSeenToday = todaySeen != null && DateUtils.isSameDay(todaySeen, today);
+    if (!hasSeenToday) {
+      // Prima apertura del giorno: mostra oggi immediatamente.
+      prefs.setAgendaTodaySeenDate(
+        businessId,
+        locationId: locationId,
+        date: today,
+      );
+      prefs.setAgendaDate(
+        businessId,
+        locationId: locationId,
+        date: today,
+      );
+      return today;
+    }
+
     final saved = prefs.getAgendaDate(businessId, locationId: locationId);
     if (saved == null) {
       return today;
     }
 
     final savedDate = DateUtils.dateOnly(saved);
-    final yesterday = DateUtils.dateOnly(
-      today.subtract(const Duration(days: 1)),
-    );
-    if (DateUtils.isSameDay(savedDate, yesterday)) {
-      return today;
-    }
-
     return savedDate;
   }
 
@@ -42,21 +55,25 @@ class AgendaDateNotifier extends Notifier<DateTime> {
   void nextDay() {
     final next = DateUtils.dateOnly(state.add(const Duration(days: 1)));
     state = next;
+    _save(next);
   }
 
   void nextWeek() {
     final next = DateUtils.dateOnly(state.add(const Duration(days: 7)));
     state = next;
+    _save(next);
   }
 
   void previousDay() {
     final next = DateUtils.dateOnly(state.subtract(const Duration(days: 1)));
     state = next;
+    _save(next);
   }
 
   void previousWeek() {
     final next = DateUtils.dateOnly(state.subtract(const Duration(days: 7)));
     state = next;
+    _save(next);
   }
 
   void nextMonth() => _shiftMonths(1);
@@ -75,7 +92,9 @@ class AgendaDateNotifier extends Notifier<DateTime> {
 
     final dim = DateUtils.getDaysInMonth(targetYear, targetMonth);
     final int safeDay = d <= dim ? d : dim;
-    state = DateUtils.dateOnly(DateTime(targetYear, targetMonth, safeDay));
+    final next = DateUtils.dateOnly(DateTime(targetYear, targetMonth, safeDay));
+    state = next;
+    _save(next);
   }
 
   void setToday() {
@@ -88,11 +107,20 @@ class AgendaDateNotifier extends Notifier<DateTime> {
     final businessId = ref.read(currentBusinessIdProvider);
     final locationId = ref.read(currentLocationIdProvider);
     if (businessId <= 0 || locationId <= 0) return;
-    ref.read(preferencesServiceProvider).setAgendaDate(
+    final prefs = ref.read(preferencesServiceProvider);
+    prefs.setAgendaDate(
       businessId,
       locationId: locationId,
       date: date,
     );
+    final today = ref.read(tenantTodayProvider);
+    if (DateUtils.isSameDay(date, today)) {
+      prefs.setAgendaTodaySeenDate(
+        businessId,
+        locationId: locationId,
+        date: today,
+      );
+    }
   }
 }
 

@@ -597,6 +597,9 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "La riprogrammazione non è disponibile in visualizzazione settimanale multi-operatore. Seleziona un solo operatore o passa alla vista giorno.",
         ),
+    "bookingRescheduleOutOfDayBlocked": MessageLookupByLibrary.simpleMessage(
+      "Impossibile riprogrammare: uno o più servizi uscirebbero dalla giornata selezionata.",
+    ),
     "bookingStaffNotEligibleWarning": MessageLookupByLibrary.simpleMessage(
       "Attenzione: il membro del team selezionato non è abilitato per questo servizio.",
     ),
@@ -1439,6 +1442,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "moveAppointmentConfirmTitle": MessageLookupByLibrary.simpleMessage(
       "Confermi lo spostamento?",
     ),
+    "moveConfirmNotifyCheckbox": MessageLookupByLibrary.simpleMessage(
+      "Invia notifica al cliente e adegua i promemoria non ancora inviati",
+    ),
     "multiServiceMoveDecisionMessage": MessageLookupByLibrary.simpleMessage(
       "Questa prenotazione contiene più servizi. Scegli come procedere.",
     ),
@@ -1968,6 +1974,18 @@ class MessageLookup extends MessageLookupByLibrary {
       "Occupazione",
     ),
     "reportsWorkHoursWorked": MessageLookupByLibrary.simpleMessage("Prenotate"),
+    "rescheduleNotifyDecisionMessage": MessageLookupByLibrary.simpleMessage(
+      "L\'orario di inizio della prenotazione è cambiato. Vuoi inviare una notifica al cliente? I promemoria non ancora inviati verranno adeguati automaticamente.",
+    ),
+    "rescheduleNotifyDecisionSend": MessageLookupByLibrary.simpleMessage(
+      "Invia notifica",
+    ),
+    "rescheduleNotifyDecisionSkip": MessageLookupByLibrary.simpleMessage(
+      "Non inviare",
+    ),
+    "rescheduleNotifyDecisionTitle": MessageLookupByLibrary.simpleMessage(
+      "Inviare notifica al cliente?",
+    ),
     "resourceDeleteConfirm": MessageLookupByLibrary.simpleMessage(
       "Eliminare questa risorsa?",
     ),
