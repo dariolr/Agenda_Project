@@ -23,6 +23,7 @@ use Agenda\Infrastructure\Notifications\Providers\SmtpProvider;
 final class EmailService
 {
     private static ?EmailProviderInterface $instance = null;
+    private const TRUE_VALUES = ['1', 'true', 'yes', 'on'];
 
     /**
      * Create an email provider based on environment configuration.
@@ -32,6 +33,15 @@ final class EmailService
         if (self::$instance !== null) {
             return self::$instance;
         }
+
+        // Security default: force authenticated SMTP from app code only.
+        $smtpOnly = self::isEnabled($_ENV['EMAIL_SMTP_ONLY'] ?? 'true');
+        if ($smtpOnly) {
+            self::$instance = self::createSmtp();
+            return self::$instance;
+        }
+
+        error_log('[EmailService] WARNING: EMAIL_SMTP_ONLY is disabled. Non-SMTP providers/fallback may be used.');
 
         $primary = self::createProvider($_ENV['MAIL_PROVIDER'] ?? 'smtp');
         $fallbackProvider = trim((string) ($_ENV['MAIL_FALLBACK_PROVIDER'] ?? ''));
@@ -92,14 +102,38 @@ final class EmailService
 
     private static function createSmtp(string $envPrefix = ''): SmtpProvider
     {
+        $username = $_ENV[$envPrefix . 'SMTP_USERNAME']
+            ?? $_ENV[$envPrefix . 'SMTP_USER']
+            ?? $_ENV[$envPrefix . 'MAIL_USERNAME']
+            ?? $_ENV['SMTP_USERNAME']
+            ?? $_ENV['SMTP_USER']
+            ?? $_ENV['MAIL_USERNAME']
+            ?? '';
+        $password = $_ENV[$envPrefix . 'SMTP_PASSWORD']
+            ?? $_ENV[$envPrefix . 'SMTP_PASS']
+            ?? $_ENV[$envPrefix . 'MAIL_PASSWORD']
+            ?? $_ENV['SMTP_PASSWORD']
+            ?? $_ENV['SMTP_PASS']
+            ?? $_ENV['MAIL_PASSWORD']
+            ?? '';
+
+        if (trim((string) $username) === '' || trim((string) $password) === '') {
+            throw new \RuntimeException('SMTP credentials not configured');
+        }
+
         return new SmtpProvider(
             host: $_ENV[$envPrefix . 'SMTP_HOST'] ?? $_ENV[$envPrefix . 'MAIL_HOST'] ?? $_ENV['SMTP_HOST'] ?? $_ENV['MAIL_HOST'] ?? 'localhost',
             port: (int) ($_ENV[$envPrefix . 'SMTP_PORT'] ?? $_ENV[$envPrefix . 'MAIL_PORT'] ?? $_ENV['SMTP_PORT'] ?? $_ENV['MAIL_PORT'] ?? 587),
-            username: $_ENV[$envPrefix . 'SMTP_USERNAME'] ?? $_ENV[$envPrefix . 'SMTP_USER'] ?? $_ENV[$envPrefix . 'MAIL_USERNAME'] ?? $_ENV['SMTP_USERNAME'] ?? $_ENV['SMTP_USER'] ?? $_ENV['MAIL_USERNAME'] ?? '',
-            password: $_ENV[$envPrefix . 'SMTP_PASSWORD'] ?? $_ENV[$envPrefix . 'SMTP_PASS'] ?? $_ENV[$envPrefix . 'MAIL_PASSWORD'] ?? $_ENV['SMTP_PASSWORD'] ?? $_ENV['SMTP_PASS'] ?? $_ENV['MAIL_PASSWORD'] ?? '',
+            username: $username,
+            password: $password,
             encryption: $_ENV[$envPrefix . 'SMTP_ENCRYPTION'] ?? $_ENV[$envPrefix . 'MAIL_ENCRYPTION'] ?? $_ENV['SMTP_ENCRYPTION'] ?? $_ENV['MAIL_ENCRYPTION'] ?? 'tls',
             defaultFromEmail: $_ENV[$envPrefix . 'MAIL_FROM_ADDRESS'] ?? $_ENV['MAIL_FROM_ADDRESS'] ?? $_ENV[$envPrefix . 'SMTP_USERNAME'] ?? $_ENV[$envPrefix . 'SMTP_USER'] ?? $_ENV['SMTP_USERNAME'] ?? $_ENV['SMTP_USER'] ?? '',
             defaultFromName: $_ENV[$envPrefix . 'MAIL_FROM_NAME'] ?? $_ENV['MAIL_FROM_NAME'] ?? 'Agenda',
         );
+    }
+
+    private static function isEnabled(string $value): bool
+    {
+        return in_array(strtolower(trim($value)), self::TRUE_VALUES, true);
     }
 }

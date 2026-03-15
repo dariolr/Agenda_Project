@@ -13,6 +13,7 @@ use Agenda\Infrastructure\Notifications\EmailProviderInterface;
 final class SmtpProvider implements EmailProviderInterface
 {
     private ?string $lastError = null;
+    private const TRUE_VALUES = ['1', 'true', 'yes', 'on'];
 
     private string $host;
     private int $port;
@@ -55,10 +56,18 @@ final class SmtpProvider implements EmailProviderInterface
         $name = $fromName ?? $this->defaultFromName;
         $replyTo = $replyTo ?? $from;
 
-        // Use PHP's mail() for simple SMTP or PHPMailer if available
+        // Force authenticated SMTP transport when PHPMailer is available.
         if (class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
             return $this->sendWithPhpMailer($to, $subject, $htmlBody, $textBody, $attachments, $from, $name, $replyTo);
         }
+
+        // Emergency-only fallback (disabled by default for security hardening).
+        if (!$this->isEnabled($_ENV['ALLOW_PHP_MAIL_FALLBACK'] ?? 'false')) {
+            $this->lastError = 'PHPMailer not available and native mail() fallback disabled';
+            error_log('SMTP Error: ' . $this->lastError);
+            return false;
+        }
+        error_log('[SmtpProvider] WARNING: ALLOW_PHP_MAIL_FALLBACK is enabled. Native mail() fallback is active.');
 
         // Build email headers
         $hasAttachments = !empty($attachments);
@@ -208,5 +217,10 @@ final class SmtpProvider implements EmailProviderInterface
     public function getLastError(): ?string
     {
         return $this->lastError;
+    }
+
+    private function isEnabled(string $value): bool
+    {
+        return in_array(strtolower(trim($value)), self::TRUE_VALUES, true);
     }
 }
