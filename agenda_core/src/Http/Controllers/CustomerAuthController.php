@@ -293,7 +293,7 @@ final class CustomerAuthController
         }
 
         // Execute reset request - returns false if email not found
-        $emailFound = $this->requestPasswordReset->execute($email, $businessId);
+        $emailFound = $this->requestPasswordReset->execute($email, $businessId, $request->getClientIp());
 
         if (!$emailFound) {
             return Response::error(

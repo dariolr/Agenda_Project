@@ -6,6 +6,7 @@ namespace Agenda\UseCases\CustomerAuth;
 
 use Agenda\Infrastructure\Repositories\ClientAuthRepository;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
+use Agenda\Infrastructure\Repositories\ForgotPasswordRateLimitRepository;
 use Agenda\Infrastructure\Notifications\EmailService;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 
@@ -18,6 +19,7 @@ final class RequestCustomerPasswordReset
     public function __construct(
         private readonly ClientAuthRepository $clientAuthRepository,
         private readonly BusinessRepository $businessRepository,
+        private readonly ForgotPasswordRateLimitRepository $rateLimitRepository,
     ) {}
 
     /**
@@ -25,8 +27,15 @@ final class RequestCustomerPasswordReset
      * Works for both registered clients (with password) and imported clients (without password).
      * Returns true if email was found (for security, always show success message to user).
      */
-    public function execute(string $email, int $businessId): bool
+    public function execute(string $email, int $businessId, ?string $ipAddress = null): bool
     {
+        if ($this->rateLimitRepository->isRateLimited('customer', $businessId, $email, $ipAddress)) {
+            error_log("[RequestCustomerPasswordReset] Rate limit exceeded for business {$businessId}");
+            return true;
+        }
+
+        $this->rateLimitRepository->recordAttempt('customer', $businessId, $email, $ipAddress);
+
         // Find client by email in business (even without password - for first activation)
         $client = $this->clientAuthRepository->findByEmail($email, $businessId);
 

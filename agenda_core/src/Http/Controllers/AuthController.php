@@ -252,7 +252,7 @@ final class AuthController
         }
 
         // Always return success to prevent email enumeration
-        $this->requestPasswordReset->execute($email);
+        $this->requestPasswordReset->execute($email, $request->getClientIp());
 
         return Response::success([
             'message' => 'If the email exists, a password reset link has been sent',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Agenda\UseCases\Auth;
 
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Repositories\ForgotPasswordRateLimitRepository;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Notifications\EmailService;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
@@ -19,14 +20,22 @@ final class RequestPasswordReset
     public function __construct(
         private readonly Connection $db,
         private readonly UserRepository $userRepository,
+        private readonly ForgotPasswordRateLimitRepository $rateLimitRepository,
     ) {}
 
     /**
      * Request a password reset for the given email.
      * Returns true if email was found (for security, always returns success message to user).
      */
-    public function execute(string $email): bool
+    public function execute(string $email, ?string $ipAddress = null): bool
     {
+        if ($this->rateLimitRepository->isRateLimited('operator', null, $email, $ipAddress)) {
+            error_log('[RequestPasswordReset] Rate limit exceeded for operator forgot-password');
+            return true;
+        }
+
+        $this->rateLimitRepository->recordAttempt('operator', null, $email, $ipAddress);
+
         $user = $this->userRepository->findByEmail($email);
 
         if ($user === null) {

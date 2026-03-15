@@ -60,6 +60,7 @@ use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Repositories\PopularServiceRepository;
 use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use Agenda\Infrastructure\Repositories\ClassEventRepository;
+use Agenda\Infrastructure\Repositories\ForgotPasswordRateLimitRepository;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
 use Agenda\UseCases\Auth\GetMe;
@@ -403,6 +404,7 @@ final class Kernel
         $popularServiceRepo = new PopularServiceRepository($this->db);
         $locationClosureRepo = new LocationClosureRepository($this->db);
         $classEventRepo = new ClassEventRepository($this->db);
+        $forgotPasswordRateLimitRepo = new ForgotPasswordRateLimitRepository($this->db);
 
         // Services
         $jwtService = new JwtService();
@@ -414,7 +416,7 @@ final class Kernel
         $logoutUser = new LogoutUser($sessionRepo);
         $getMe = new GetMe($userRepo, $clientRepo);
         $registerUser = new RegisterUser($userRepo, $sessionRepo, $jwtService, $passwordHasher);
-        $requestPasswordReset = new RequestPasswordReset($this->db, $userRepo);
+        $requestPasswordReset = new RequestPasswordReset($this->db, $userRepo, $forgotPasswordRateLimitRepo);
         $resetPassword = new ResetPassword($this->db, $userRepo, $passwordHasher);
         $verifyResetToken = new VerifyResetToken($this->db);
         $changePassword = new ChangePassword($userRepo, $passwordHasher);
@@ -426,7 +428,7 @@ final class Kernel
         $refreshCustomerToken = new RefreshCustomerToken($clientAuthRepo, $jwtService);
         $logoutCustomer = new LogoutCustomer($clientAuthRepo);
         $getCustomerMe = new GetCustomerMe($clientAuthRepo);
-        $requestCustomerPasswordReset = new RequestCustomerPasswordReset($clientAuthRepo, $businessRepo);
+        $requestCustomerPasswordReset = new RequestCustomerPasswordReset($clientAuthRepo, $businessRepo, $forgotPasswordRateLimitRepo);
         $resetCustomerPassword = new ResetCustomerPassword($clientAuthRepo, $passwordHasher);
         $updateCustomerProfile = new UpdateCustomerProfile($clientAuthRepo);
         $changeCustomerPassword = new ChangeCustomerPassword($clientAuthRepo, $passwordHasher);

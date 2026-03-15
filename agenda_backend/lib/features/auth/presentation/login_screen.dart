@@ -358,7 +358,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _showForgotPasswordInfo(BuildContext context) {
     final l10n = context.l10n;
-    final emailController = TextEditingController();
+    var email = _emailController.text.trim();
 
     showDialog(
       context: context,
@@ -370,10 +370,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           children: [
             Text(l10n.authResetPasswordMessage),
             const SizedBox(height: 16),
-            TextField(
-              controller: emailController,
+            TextFormField(
+              initialValue: email,
               keyboardType: TextInputType.emailAddress,
               autofocus: true,
+              onChanged: (value) => email = value.trim(),
               decoration: InputDecoration(
                 labelText: l10n.authEmail,
                 prefixIcon: const Icon(Icons.email_outlined),
@@ -388,7 +389,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
           FilledButton(
             onPressed: () async {
-              final email = emailController.text.trim();
               if (email.isEmpty) return;
 
               // Chiudi il dialog prima di fare la chiamata
