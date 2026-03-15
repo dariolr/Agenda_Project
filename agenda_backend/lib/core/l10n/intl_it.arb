@@ -372,6 +372,14 @@
   "serviceSeedServiceFaceDescription": "Pulizia e trattamento illuminante",
   "serviceDuplicateCopyWord": "Copia",
   "moveAppointmentConfirmTitle": "Confermi lo spostamento?",
+  "multiServiceMoveDecisionTitle": "Prenotazione con più servizi",
+  "multiServiceMoveDecisionMessage": "Questa prenotazione contiene più servizi. Scegli come procedere.",
+  "multiServiceMoveDecisionMoveBooking": "Sposta intera prenotazione",
+  "multiServiceMoveDecisionSplitService": "Sposta solo questo servizio",
+  "multiServiceMoveSplitUnavailableTitle": "Spostamento non disponibile",
+  "multiServiceMoveSplitUnavailableMessage": "Lo spostamento di un singolo servizio richiede uno split atomico non disponibile con l'API corrente. Usa \"Sposta intera prenotazione\".",
+  "multiServiceNonFirstMoveBlockedTitle": "Spostamento bloccato",
+  "multiServiceNonFirstMoveBlockedMessage": "Nelle prenotazioni multi-servizio puoi spostare solo il primo servizio.",
   "moveAppointmentConfirmMessage": "L'appuntamento verrà spostato alle {newTime} per {staffName}.",
   "@moveAppointmentConfirmMessage": {
     "placeholders": {
