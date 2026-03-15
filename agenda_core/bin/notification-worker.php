@@ -347,13 +347,7 @@ function renderTemplate(string $channel, array $payload): array
             break;
             
         default:
-            // Generic email with custom subject/body from payload
-            $businessName = $variables['business_name'] ?? 'Agenda';
-            return [
-                'subject' => $variables['subject'] ?? 'Notifica da ' . $businessName,
-                'html' => $variables['html_body'] ?? $variables['body'] ?? '',
-                'text' => $variables['text_body'] ?? strip_tags($variables['body'] ?? ''),
-            ];
+            throw new \RuntimeException("Unsupported notification channel: {$channel}");
     }
     
     // Render template with variables

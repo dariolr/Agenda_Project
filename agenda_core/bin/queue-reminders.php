@@ -76,7 +76,7 @@ if ($verbose) {
 
 // Initialize services
 try {
-    $db = Connection::getInstance();
+    $db = new Connection();
     $notificationRepo = new NotificationRepository($db);
     $queueReminder = new QueueBookingReminder($db, $notificationRepo);
 } catch (\Throwable $e) {

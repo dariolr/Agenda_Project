@@ -299,6 +299,41 @@ final class ClientAuthRepository
         ]);
     }
 
+    public function hasRecentPasswordResetRequest(int $clientId, int $minutes): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT 1
+             FROM password_reset_token_clients
+             WHERE client_id = :client_id
+               AND created_at > DATE_SUB(NOW(), INTERVAL :minutes MINUTE)
+               AND used_at IS NULL
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'client_id' => $clientId,
+            'minutes' => $minutes,
+        ]);
+
+        return $stmt->fetch() !== false;
+    }
+
+    public function countRecentPasswordResetRequestsForBusiness(int $businessId, int $minutes): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*)
+             FROM password_reset_token_clients prt
+             INNER JOIN clients c ON c.id = prt.client_id
+             WHERE c.business_id = :business_id
+               AND prt.created_at > DATE_SUB(NOW(), INTERVAL :minutes MINUTE)'
+        );
+        $stmt->execute([
+            'business_id' => $businessId,
+            'minutes' => $minutes,
+        ]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
     /**
      * Find password reset token by hash.
      */

@@ -12,6 +12,10 @@ use DateTimeImmutable;
 
 final class RequestPasswordReset
 {
+    private const RESET_COOLDOWN_MINUTES = 5;
+    private const GLOBAL_WINDOW_MINUTES = 10;
+    private const GLOBAL_MAX_REQUESTS = 30;
+
     public function __construct(
         private readonly Connection $db,
         private readonly UserRepository $userRepository,
@@ -28,6 +32,16 @@ final class RequestPasswordReset
         if ($user === null) {
             // Don't reveal if email exists
             return false;
+        }
+
+        if ($this->isGlobalResetVolumeExceeded()) {
+            // Silent success: protect from burst abuse without leaking state
+            return true;
+        }
+
+        if ($this->hasRecentResetRequest((int) $user['id'])) {
+            // Silent success to avoid abuse and enumeration side-effects
+            return true;
         }
 
         // Generate reset token
@@ -58,6 +72,39 @@ final class RequestPasswordReset
         );
 
         return true;
+    }
+
+    private function hasRecentResetRequest(int $userId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT 1
+             FROM password_reset_token_users
+             WHERE user_id = :user_id
+               AND created_at > DATE_SUB(NOW(), INTERVAL :minutes MINUTE)
+               AND used_at IS NULL
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'user_id' => $userId,
+            'minutes' => self::RESET_COOLDOWN_MINUTES,
+        ]);
+
+        return $stmt->fetch() !== false;
+    }
+
+    private function isGlobalResetVolumeExceeded(): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) 
+             FROM password_reset_token_users
+             WHERE created_at > DATE_SUB(NOW(), INTERVAL :minutes MINUTE)'
+        );
+        $stmt->execute([
+            'minutes' => self::GLOBAL_WINDOW_MINUTES,
+        ]);
+
+        $count = (int) $stmt->fetchColumn();
+        return $count >= self::GLOBAL_MAX_REQUESTS;
     }
 
     private function sendPasswordResetEmail(

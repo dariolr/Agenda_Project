@@ -11,6 +11,10 @@ use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 
 final class RequestCustomerPasswordReset
 {
+    private const RESET_COOLDOWN_MINUTES = 5;
+    private const BUSINESS_WINDOW_MINUTES = 10;
+    private const BUSINESS_MAX_REQUESTS = 30;
+
     public function __construct(
         private readonly ClientAuthRepository $clientAuthRepository,
         private readonly BusinessRepository $businessRepository,
@@ -37,6 +41,16 @@ final class RequestCustomerPasswordReset
             return false;
         }
 
+        if ($this->isBusinessResetVolumeExceeded($businessId)) {
+            // Silent success: protect this business from reset bursts
+            return true;
+        }
+
+        if ($this->hasRecentResetRequest((int) $client['id'])) {
+            // Silent success to reduce abuse bursts on the same address
+            return true;
+        }
+
         // Generate reset token
         $token = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $token);
@@ -58,6 +72,24 @@ final class RequestCustomerPasswordReset
         );
 
         return true;
+    }
+
+    private function hasRecentResetRequest(int $clientId): bool
+    {
+        return $this->clientAuthRepository->hasRecentPasswordResetRequest(
+            $clientId,
+            self::RESET_COOLDOWN_MINUTES
+        );
+    }
+
+    private function isBusinessResetVolumeExceeded(int $businessId): bool
+    {
+        $count = $this->clientAuthRepository->countRecentPasswordResetRequestsForBusiness(
+            $businessId,
+            self::BUSINESS_WINDOW_MINUTES
+        );
+
+        return $count >= self::BUSINESS_MAX_REQUESTS;
     }
 
     private function sendPasswordResetEmail(

@@ -12,6 +12,14 @@ use Agenda\Infrastructure\Support\Json;
  */
 final class NotificationRepository
 {
+    /** @var string[] */
+    private const ALLOWED_CHANNELS = [
+        'booking_confirmed',
+        'booking_reminder',
+        'booking_cancelled',
+        'booking_rescheduled',
+    ];
+
     public function __construct(
         private readonly Connection $db,
     ) {}
@@ -21,6 +29,11 @@ final class NotificationRepository
      */
     public function queue(array $data): int
     {
+        $channel = (string) ($data['channel'] ?? '');
+        if (!in_array($channel, self::ALLOWED_CHANNELS, true)) {
+            throw new \InvalidArgumentException("Unsupported notification channel: {$channel}");
+        }
+
         // TEST MODE: Override recipient email with configured test address
         if (($_ENV['NOTIFICATION_TEST_MODE'] ?? 'false') === 'true') {
             $testEmail = $_ENV['NOTIFICATION_TEST_EMAIL'] ?? 'dariolarosa@romeolab.it';
@@ -38,7 +51,7 @@ final class NotificationRepository
 
         $stmt->execute([
             'type' => $data['type'] ?? 'email',
-            'channel' => $data['channel'],
+            'channel' => $channel,
             'recipient_type' => $data['recipient_type'],
             'recipient_id' => $data['recipient_id'],
             'recipient_email' => $data['recipient_email'] ?? null,
