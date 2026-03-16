@@ -68,4 +68,15 @@ final class ResponseTest extends TestCase
         $this->assertEquals(202, $response->status);
         $this->assertEquals(['custom' => 'format'], $response->data);
     }
+
+    public function testDemoBlockedResponse(): void
+    {
+        $response = Response::demoBlocked('Blocked in demo');
+
+        $this->assertEquals(403, $response->status);
+        $this->assertFalse($response->data['success']);
+        $this->assertEquals('demo_blocked', $response->data['error']['code']);
+        $this->assertEquals('Blocked in demo', $response->data['error']['message']);
+        $this->assertTrue($response->data['error']['demo_blocked']);
+    }
 }

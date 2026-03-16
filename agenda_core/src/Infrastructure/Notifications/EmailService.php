@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Infrastructure\Notifications;
 
+use Agenda\Infrastructure\Environment\EnvironmentPolicy;
 use Agenda\Infrastructure\Notifications\FallbackEmailProvider;
 use Agenda\Infrastructure\Notifications\Providers\BrevoProvider;
 use Agenda\Infrastructure\Notifications\Providers\MailgunProvider;
@@ -31,6 +32,51 @@ final class EmailService
     public static function create(): EmailProviderInterface
     {
         if (self::$instance !== null) {
+            return self::$instance;
+        }
+
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canSendRealEmails()) {
+            self::$instance = new class implements EmailProviderInterface {
+                private ?string $lastError = 'demo_blocked: real email sending disabled by environment policy';
+
+                public function send(
+                    string $to,
+                    string $subject,
+                    string $htmlBody,
+                    ?string $textBody = null,
+                    ?array $attachments = null,
+                    ?string $fromEmail = null,
+                    ?string $fromName = null,
+                    ?string $replyTo = null,
+                ): bool {
+                    error_log('[EmailService] demo_blocked: prevented real email send');
+                    return false;
+                }
+
+                public function sendBatch(array $messages): array
+                {
+                    error_log('[EmailService] demo_blocked: prevented real batch email send');
+                    $results = [];
+                    foreach ($messages as $message) {
+                        $recipient = (string) ($message['to'] ?? '');
+                        if ($recipient !== '') {
+                            $results[$recipient] = false;
+                        }
+                    }
+                    return $results;
+                }
+
+                public function getName(): string
+                {
+                    return 'blocked-demo-provider';
+                }
+
+                public function getLastError(): ?string
+                {
+                    return $this->lastError;
+                }
+            };
             return self::$instance;
         }
 

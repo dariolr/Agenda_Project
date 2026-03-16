@@ -7,6 +7,7 @@ namespace Agenda\Http\Controllers;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Environment\EnvironmentPolicy;
 use Agenda\Infrastructure\Repositories\BookingPaymentRepository;
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
@@ -53,6 +54,11 @@ final class BookingPaymentsController
 
     public function upsert(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canUseRealPayments()) {
+            return Response::demoBlocked('Pagamenti reali non consentiti in ambiente demo', $request->traceId);
+        }
+
         $bookingId = (int) $request->getAttribute('booking_id');
         $booking = $this->bookingRepo->findById($bookingId);
         if ($booking === null) {

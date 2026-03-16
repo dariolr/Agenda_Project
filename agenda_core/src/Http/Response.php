@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Http;
 
+use Agenda\Infrastructure\Environment\EnvironmentConfig;
 use Agenda\Infrastructure\Support\Json;
 
 final class Response
@@ -91,6 +92,18 @@ final class Response
         return self::error($message, 'internal_error', 500);
     }
 
+    public static function demoBlocked(string $message = 'Action is blocked in demo environment', ?string $traceId = null): self
+    {
+        return new self(403, [
+            'success' => false,
+            'error' => [
+                'code' => 'demo_blocked',
+                'message' => $message,
+                'demo_blocked' => true,
+            ],
+        ], $traceId);
+    }
+
     public function setCookie(string $name, string $value, array $options = []): self
     {
         $this->cookies[$name] = [
@@ -106,7 +119,7 @@ final class Response
         header('Content-Type: application/json; charset=utf-8');
         
         // Determina l'origin consentito dinamicamente
-        $allowedOrigins = array_map('trim', explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? '*'));
+        $allowedOrigins = array_map('trim', explode(',', EnvironmentConfig::current()->corsAllowedOrigins));
         $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
         $corsOrigin = in_array($requestOrigin, $allowedOrigins, true) ? $requestOrigin : ($allowedOrigins[0] ?? '*');
         header('Access-Control-Allow-Origin: ' . $corsOrigin);

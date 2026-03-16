@@ -6,6 +6,7 @@ namespace Agenda\Http\Controllers;
 
 use Agenda\Http\Request;
 use Agenda\Http\Response;
+use Agenda\Infrastructure\Environment\EnvironmentPolicy;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\BusinessInvitationRepository;
@@ -119,6 +120,11 @@ final class BusinessInvitationsController
      */
     public function store(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canSendRealEmails()) {
+            return Response::demoBlocked('Invio email reale non consentito in ambiente demo', $request->traceId);
+        }
+
         $userId = $request->userId();
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);

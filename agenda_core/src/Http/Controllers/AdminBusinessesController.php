@@ -7,6 +7,7 @@ namespace Agenda\Http\Controllers;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Environment\EnvironmentPolicy;
 use Agenda\UseCases\Business\CreateBusiness;
 use Agenda\UseCases\Business\GetAllBusinesses;
 use Agenda\UseCases\Business\GetUserBusinesses;
@@ -93,6 +94,11 @@ final class AdminBusinessesController
      */
     public function store(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canExecuteDestructiveBusinessActions()) {
+            return Response::demoBlocked('Creazione business non consentita in ambiente demo', $request->traceId);
+        }
+
         $userId = $request->userId();
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
@@ -163,6 +169,11 @@ final class AdminBusinessesController
      */
     public function update(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canExecuteDestructiveBusinessActions()) {
+            return Response::demoBlocked('Aggiornamento business non consentito in ambiente demo', $request->traceId);
+        }
+
         $userId = $request->userId();
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
@@ -194,6 +205,11 @@ final class AdminBusinessesController
      */
     public function destroy(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canDeleteBusiness()) {
+            return Response::demoBlocked('Eliminazione business non consentita in ambiente demo', $request->traceId);
+        }
+
         $userId = $request->userId();
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
@@ -226,6 +242,11 @@ final class AdminBusinessesController
      */
     public function resendInvite(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canSendRealEmails()) {
+            return Response::demoBlocked('Invio email reale non consentito in ambiente demo', $request->traceId);
+        }
+
         $userId = $request->userId();
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);

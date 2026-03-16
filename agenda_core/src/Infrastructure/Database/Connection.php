@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Infrastructure\Database;
 
+use Agenda\Infrastructure\Environment\EnvironmentConfig;
 use PDO;
 use PDOException;
 
@@ -14,11 +15,13 @@ final class Connection
     public function getPdo(): PDO
     {
         if ($this->pdo === null) {
-            $host = $_ENV['DB_HOST'] ?? 'localhost';
-            $port = $_ENV['DB_PORT'] ?? '3306';
-            $database = $_ENV['DB_DATABASE'] ?? 'agenda_core';
-            $username = $_ENV['DB_USERNAME'] ?? 'root';
-            $password = $_ENV['DB_PASSWORD'] ?? '';
+            $env = EnvironmentConfig::current();
+
+            $host = $env->dbHost;
+            $port = $env->dbPort;
+            $database = $env->dbDatabase;
+            $username = $env->dbUsername;
+            $password = $env->dbPassword;
 
             $dsn = "mysql:host={$host};port={$port};dbname={$database};charset=utf8mb4";
 

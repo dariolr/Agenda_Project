@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Http\Controllers;
 
+use Agenda\Infrastructure\Environment\EnvironmentPolicy;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\LocationRepository;
@@ -297,6 +298,11 @@ final class LocationsController
      */
     public function destroy(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canDeleteLocation()) {
+            return Response::demoBlocked('Eliminazione location non consentita in ambiente demo', $request->traceId);
+        }
+
         $locationId = (int) $request->getRouteParam('id');
         $userId = $request->getAttribute('user_id');
         $isSuperadmin = $this->userRepo->isSuperadmin($userId);

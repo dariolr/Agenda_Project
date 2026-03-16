@@ -23,6 +23,11 @@ cp .env.example .env
 # Modificare .env con le credenziali del database
 ```
 
+Documentazione ambienti/demo:
+
+- `docs/environments.md`
+- `docs/demo-environment.md`
+
 ### 3. Creare database e applicare migrazioni
 
 ```bash

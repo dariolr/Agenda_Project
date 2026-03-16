@@ -6,6 +6,7 @@ namespace Agenda\Http\Controllers;
 
 use Agenda\Http\Request;
 use Agenda\Http\Response;
+use Agenda\Infrastructure\Environment\EnvironmentPolicy;
 use Agenda\UseCases\Admin\ExportBusiness;
 use Agenda\UseCases\Admin\ImportBusiness;
 use Agenda\Infrastructure\Repositories\UserRepository;
@@ -29,6 +30,11 @@ final class BusinessSyncController
      */
     public function export(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canRunRealExports()) {
+            return Response::demoBlocked('Export business non consentito in ambiente demo', $request->traceId);
+        }
+
         $userId = $request->getAttribute('user_id');
         if (!$this->userRepo->isSuperadmin($userId)) {
             return Response::error('access_denied', 'Accesso riservato ai superadmin', 403);
@@ -52,6 +58,11 @@ final class BusinessSyncController
      */
     public function exportBySlug(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canRunRealExports()) {
+            return Response::demoBlocked('Export business non consentito in ambiente demo', $request->traceId);
+        }
+
         $userId = $request->getAttribute('user_id');
         if (!$this->userRepo->isSuperadmin($userId)) {
             return Response::error('access_denied', 'Accesso riservato ai superadmin', 403);
@@ -85,6 +96,11 @@ final class BusinessSyncController
      */
     public function import(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canExecuteDestructiveBusinessActions()) {
+            return Response::demoBlocked('Import business non consentito in ambiente demo', $request->traceId);
+        }
+
         $logFile = __DIR__ . '/../../../logs/import_debug.log';
         
         $userId = $request->getAttribute('user_id');
@@ -134,6 +150,11 @@ final class BusinessSyncController
      */
     public function syncFromProduction(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canCallExternalWebhooks()) {
+            return Response::demoBlocked('Sync da produzione non consentito in ambiente demo', $request->traceId);
+        }
+
         $userId = $request->getAttribute('user_id');
         if (!$this->userRepo->isSuperadmin($userId)) {
             return Response::error('access_denied', 'Accesso riservato ai superadmin', 403);

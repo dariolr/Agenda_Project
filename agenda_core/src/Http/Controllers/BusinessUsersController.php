@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Http\Controllers;
 
+use Agenda\Infrastructure\Environment\EnvironmentPolicy;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\AuthSessionRepository;
@@ -302,6 +303,11 @@ final class BusinessUsersController
      */
     public function destroy(Request $request): Response
     {
+        $policy = EnvironmentPolicy::current();
+        if (!$policy->canDeleteCriticalData()) {
+            return Response::demoBlocked('Rimozione operatori non consentita in ambiente demo', $request->traceId);
+        }
+
         $currentUserId = $request->userId();
         if ($currentUserId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);

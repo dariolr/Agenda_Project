@@ -13,13 +13,24 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use Agenda\Http\Kernel;
 use Agenda\Http\Request;
+use Agenda\Infrastructure\Environment\EnvironmentConfig;
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->safeLoad();
 
-date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'UTC');
+$environment = EnvironmentConfig::bootstrap();
+error_log(
+    sprintf(
+        '[bootstrap] APP_ENV=%s API_BASE_URL=%s DB_DATABASE=%s',
+        $environment->environmentName,
+        $environment->apiBaseUrl,
+        $environment->dbDatabase,
+    )
+);
 
-$allowedOrigins = array_map('trim', explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? '*'));
+date_default_timezone_set($environment->appTimezone);
+
+$allowedOrigins = array_map('trim', explode(',', $environment->corsAllowedOrigins));
 $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
 $corsOrigin = in_array($requestOrigin, $allowedOrigins, true) ? $requestOrigin : ($allowedOrigins[0] ?? '*');
 
