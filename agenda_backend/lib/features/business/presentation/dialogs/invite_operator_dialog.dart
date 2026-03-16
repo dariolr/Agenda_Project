@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/environment/environment_policy.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/location.dart';
 import '../../../../core/models/staff.dart';
@@ -167,14 +168,17 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
                       }),
                     ),
                   ],
-                  if (_selectedRole == 'staff' || _selectedScopeType == 'locations') ...[
+                  if (_selectedRole == 'staff' ||
+                      _selectedScopeType == 'locations') ...[
                     const SizedBox(height: 16),
                     _LocationsMultiSelect(
                       locations: locations,
                       selectedIds: _selectedLocationIds,
                       singleSelection: _selectedRole == 'staff',
                       onChanged: (ids) => setState(() {
-                        final previousSelection = Set<int>.from(_selectedLocationIds);
+                        final previousSelection = Set<int>.from(
+                          _selectedLocationIds,
+                        );
                         _selectedLocationIds.clear();
                         if (_selectedRole == 'staff') {
                           if (ids.isNotEmpty) {
@@ -186,7 +190,8 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
                         if (_selectedRole == 'staff' &&
                             previousSelection.length == 1 &&
                             _selectedLocationIds.length == 1 &&
-                            previousSelection.first != _selectedLocationIds.first) {
+                            previousSelection.first !=
+                                _selectedLocationIds.first) {
                           _selectedStaffId = null;
                         }
                         _clearInvalidSelectedStaff(availableStaff);
@@ -199,7 +204,8 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
                   _StaffSingleSelect(
                     staff: availableStaff,
                     selectedStaffId: _selectedStaffId,
-                    isEnabled: _selectedScopeType != 'locations' ||
+                    isEnabled:
+                        _selectedScopeType != 'locations' ||
                         _selectedLocationIds.isNotEmpty,
                     onChanged: (staffId) =>
                         setState(() => _selectedStaffId = staffId),
@@ -233,7 +239,9 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
     if (_selectedLocationIds.isEmpty) return const <Staff>[];
 
     return allStaff
-        .where((member) => member.locationIds.any(_selectedLocationIds.contains))
+        .where(
+          (member) => member.locationIds.any(_selectedLocationIds.contains),
+        )
         .toList();
   }
 
@@ -267,10 +275,21 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final environmentPolicy = ref.read(environmentPolicyProvider);
+
+    if (!environmentPolicy.canSendRealEmails()) {
+      FeedbackDialog.showError(
+        context,
+        title: context.l10n.operatorsInviteError,
+        message: context.l10n.operatorsInviteEmailUnavailable,
+      );
+      return;
+    }
 
     // Validazione scope
     if (_selectedScopeType == 'locations' && _selectedLocationIds.isEmpty) {
-      final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+      final isIt =
+          Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
       FeedbackDialog.showError(
         context,
         title: isIt ? 'Attenzione' : 'Warning',
@@ -294,8 +313,10 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
       return;
     }
 
-    if (_selectedRole == 'staff' && (_selectedStaffId == null || _selectedStaffId! <= 0)) {
-      final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+    if (_selectedRole == 'staff' &&
+        (_selectedStaffId == null || _selectedStaffId! <= 0)) {
+      final isIt =
+          Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
       FeedbackDialog.showError(
         context,
         title: isIt ? 'Attenzione' : 'Warning',
@@ -441,22 +462,22 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 8),
-                _RoleSelector(
-                  selectedRole: _selectedRole,
-                  onChanged: (role) => setState(() {
-                    _selectedRole = role;
-                    if (role == 'staff') {
-                      _selectedScopeType = 'locations';
-                      _selectedLocationIds.clear();
-                      if (locations.length == 1) {
-                        _selectedLocationIds.add(locations.first.id);
+                  _RoleSelector(
+                    selectedRole: _selectedRole,
+                    onChanged: (role) => setState(() {
+                      _selectedRole = role;
+                      if (role == 'staff') {
+                        _selectedScopeType = 'locations';
+                        _selectedLocationIds.clear();
+                        if (locations.length == 1) {
+                          _selectedLocationIds.add(locations.first.id);
+                        }
                       }
-                    }
-                    _enforceSingleLocationForStaff();
-                    if (role != 'staff') {
-                      _selectedStaffId = null;
-                    } else {
-                      _clearInvalidSelectedStaff(availableStaff);
+                      _enforceSingleLocationForStaff();
+                      if (role != 'staff') {
+                        _selectedStaffId = null;
+                      } else {
+                        _clearInvalidSelectedStaff(availableStaff);
                       }
                     }),
                   ),
@@ -477,14 +498,17 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
                         }),
                       ),
                     ],
-                    if (_selectedRole == 'staff' || _selectedScopeType == 'locations') ...[
+                    if (_selectedRole == 'staff' ||
+                        _selectedScopeType == 'locations') ...[
                       const SizedBox(height: 16),
                       _LocationsMultiSelect(
                         locations: locations,
                         selectedIds: _selectedLocationIds,
                         singleSelection: _selectedRole == 'staff',
                         onChanged: (ids) => setState(() {
-                          final previousSelection = Set<int>.from(_selectedLocationIds);
+                          final previousSelection = Set<int>.from(
+                            _selectedLocationIds,
+                          );
                           _selectedLocationIds.clear();
                           if (_selectedRole == 'staff') {
                             if (ids.isNotEmpty) {
@@ -496,7 +520,8 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
                           if (_selectedRole == 'staff' &&
                               previousSelection.length == 1 &&
                               _selectedLocationIds.length == 1 &&
-                              previousSelection.first != _selectedLocationIds.first) {
+                              previousSelection.first !=
+                                  _selectedLocationIds.first) {
                             _selectedStaffId = null;
                           }
                           _clearInvalidSelectedStaff(availableStaff);
@@ -509,7 +534,8 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
                     _StaffSingleSelect(
                       staff: availableStaff,
                       selectedStaffId: _selectedStaffId,
-                      isEnabled: _selectedScopeType != 'locations' ||
+                      isEnabled:
+                          _selectedScopeType != 'locations' ||
                           _selectedLocationIds.isNotEmpty,
                       onChanged: (staffId) =>
                           setState(() => _selectedStaffId = staffId),
@@ -556,7 +582,9 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
     if (_selectedLocationIds.isEmpty) return const <Staff>[];
 
     return allStaff
-        .where((member) => member.locationIds.any(_selectedLocationIds.contains))
+        .where(
+          (member) => member.locationIds.any(_selectedLocationIds.contains),
+        )
         .toList();
   }
 
@@ -590,10 +618,21 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final environmentPolicy = ref.read(environmentPolicyProvider);
+
+    if (!environmentPolicy.canSendRealEmails()) {
+      FeedbackDialog.showError(
+        context,
+        title: context.l10n.operatorsInviteError,
+        message: context.l10n.operatorsInviteEmailUnavailable,
+      );
+      return;
+    }
 
     // Validazione scope
     if (_selectedScopeType == 'locations' && _selectedLocationIds.isEmpty) {
-      final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+      final isIt =
+          Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
       FeedbackDialog.showError(
         context,
         title: isIt ? 'Attenzione' : 'Warning',
@@ -617,8 +656,10 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
       return;
     }
 
-    if (_selectedRole == 'staff' && (_selectedStaffId == null || _selectedStaffId! <= 0)) {
-      final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+    if (_selectedRole == 'staff' &&
+        (_selectedStaffId == null || _selectedStaffId! <= 0)) {
+      final isIt =
+          Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
       FeedbackDialog.showError(
         context,
         title: isIt ? 'Attenzione' : 'Warning',
@@ -942,14 +983,15 @@ class _StaffSingleSelect extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+    final isIt =
+        Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
     final uniqueStaff = <int, Staff>{};
     for (final member in staff) {
       uniqueStaff.putIfAbsent(member.id, () => member);
     }
     final staffItems = uniqueStaff.values.toList();
-    final effectiveSelectedId = (selectedStaffId != null &&
-            uniqueStaff.containsKey(selectedStaffId))
+    final effectiveSelectedId =
+        (selectedStaffId != null && uniqueStaff.containsKey(selectedStaffId))
         ? selectedStaffId
         : null;
 
@@ -1022,7 +1064,8 @@ class _LocationsMultiSelect extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
-    final isIt = Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
+    final isIt =
+        Localizations.localeOf(context).languageCode.toLowerCase() == 'it';
     final title = singleSelection
         ? (isIt ? 'Seleziona una sede' : 'Select one location')
         : l10n.operatorsScopeSelectLocations;
@@ -1031,10 +1074,7 @@ class _LocationsMultiSelect extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
+        Text(title, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
@@ -1054,7 +1094,9 @@ class _LocationsMultiSelect extends StatelessWidget {
                     location: location,
                     selectedId: selectedIds.isEmpty ? null : selectedIds.first,
                     onChanged: (locationId) {
-                      onChanged(locationId == null ? <int>{} : <int>{locationId});
+                      onChanged(
+                        locationId == null ? <int>{} : <int>{locationId},
+                      );
                     },
                   );
                 }

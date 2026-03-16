@@ -96,11 +96,16 @@ dart run build_runner build --delete-conflicting-outputs
 dart run intl_utils:generate
 ```
 
-4. **Configurazione API**:
-Modifica [lib/core/network/api_config.dart](lib/core/network/api_config.dart):
-```dart
-static const String baseUrl = 'http://your-api-host/v1';
+4. **Configurazione ambiente/API** (via `--dart-define`):
+```bash
+# Esempio local
+flutter run -d chrome \
+  --dart-define=APP_ENV=local \
+  --dart-define=API_BASE_URL=http://localhost:8080 \
+  --dart-define=WEB_BASE_URL=http://localhost:3000
 ```
+
+Configurazione completa ambienti in [docs/environments.md](docs/environments.md).
 
 ### Run
 
@@ -134,6 +139,21 @@ agenda_backend richiede [agenda_core](../agenda_core/) backend in esecuzione.
 - Staff: `/v1/staff`
 
 Vedere [agenda_core/docs/api_contract_v1.md](../agenda_core/docs/api_contract_v1.md) per contratto completo.
+
+---
+
+## 🌍 Ambienti
+
+Questo repo supporta `local`, `demo`, `staging`, `production` con config centralizzata:
+
+- `lib/core/environment/app_environment.dart`
+- `lib/core/environment/app_environment_config.dart`
+- `lib/core/environment/environment_policy.dart`
+
+Documentazione:
+
+- [docs/environments.md](docs/environments.md)
+- [docs/demo-environment.md](docs/demo-environment.md)
 
 ---
 

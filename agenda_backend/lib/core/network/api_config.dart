@@ -1,10 +1,9 @@
+import '/core/environment/app_environment_config.dart';
+
 /// Configurazione API per agenda_backend (gestionale)
 class ApiConfig {
   /// Base URL dell'API - configurabile via environment
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://api.romeolab.it',
-  );
+  static String get baseUrl => AppEnvironmentConfig.current.apiBaseUrl;
 
   /// Location ID di default (per MVP single-location)
   static const int defaultLocationId = 1;
@@ -85,10 +84,12 @@ class ApiConfig {
   // ========== CLASS EVENTS ENDPOINTS ==========
 
   /// Lista class events per business.
-  static String classEvents(int businessId) => '/v1/businesses/$businessId/class-events';
+  static String classEvents(int businessId) =>
+      '/v1/businesses/$businessId/class-events';
 
   /// Lista class types per business.
-  static String classTypes(int businessId) => '/v1/businesses/$businessId/class-types';
+  static String classTypes(int businessId) =>
+      '/v1/businesses/$businessId/class-types';
 
   /// Singolo class type.
   static String classType(int businessId, int classTypeId) =>

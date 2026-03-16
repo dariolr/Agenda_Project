@@ -607,6 +607,8 @@
   "operatorsInviteAlreadyPending": "An invite is already pending for this email. You can resend it from the pending invites list.",
   "operatorsInviteAlreadyHasAccess": "This user already has access to the business.",
   "operatorsInviteEmailUnavailable": "Email sending is unavailable in this environment. Please contact support.",
+  "environmentDemoBannerTitle": "DEMO ENVIRONMENT",
+  "environmentDemoBannerSubtitle": "Data is reset periodically.",
   "operatorsInviteEmailFailed": "Unable to send the invitation email. Please try again later.",
   "operatorsInviteError": "Unable to send invite",
   "operatorsInviteCopied": "Invite link copied",

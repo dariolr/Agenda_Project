@@ -1,4 +1,5 @@
 import 'package:agenda_backend/app/app.dart';
+import 'package:agenda_backend/core/environment/app_environment_config.dart';
 import 'package:agenda_backend/core/services/preferences_service.dart';
 import 'package:agenda_backend/core/services/version_checker.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,10 @@ import 'package:timezone/data/latest.dart' as tz_data;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  AppEnvironmentConfig.bootstrap();
+  debugPrint(
+    '[bootstrap] APP_ENV=${AppEnvironmentConfig.current.environmentName} API_BASE_URL=${AppEnvironmentConfig.current.apiBaseUrl}',
+  );
   usePathUrlStrategy(); // Usa URL path-based (senza #)
   tz_data.initializeTimeZones();
 

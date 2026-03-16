@@ -1161,6 +1161,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "emptyCategoriesNotReorderableNote": MessageLookupByLibrary.simpleMessage(
       "Le categorie senza servizi non sono riordinabili e restano in coda.",
     ),
+    "environmentDemoBannerSubtitle": MessageLookupByLibrary.simpleMessage(
+      "I dati vengono resettati periodicamente.",
+    ),
+    "environmentDemoBannerTitle": MessageLookupByLibrary.simpleMessage(
+      "AMBIENTE DEMO",
+    ),
     "errorExceptionNotFound": m24,
     "errorFormFactorBuilderMissing": m25,
     "errorFormFactorBuilderRequired": MessageLookupByLibrary.simpleMessage(

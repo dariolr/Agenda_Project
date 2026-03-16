@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/l10n/l10_extension.dart';
 import '/core/l10n/l10n.dart';
+import '/core/widgets/environment_banner.dart';
 import '../core/widgets/layout_config_auto_listener.dart';
 import '../core/widgets/session_expired_listener.dart';
 import 'router_provider.dart';
@@ -38,12 +39,19 @@ class MyApp extends ConsumerWidget {
         return Title(
           title: localizedTitle,
           color: Theme.of(context).scaffoldBackgroundColor,
-          // Questo widget ora aggiornerà i provider globali
-          // prima che qualsiasi schermata venga costruita.
-          child: SessionExpiredListener(
-            child: LayoutConfigAutoListener(
-              child: child ?? const SizedBox.shrink(),
-            ),
+          child: Column(
+            children: [
+              const EnvironmentBanner(),
+              Expanded(
+                // Questo widget ora aggiornerà i provider globali
+                // prima che qualsiasi schermata venga costruita.
+                child: SessionExpiredListener(
+                  child: LayoutConfigAutoListener(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },

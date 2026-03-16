@@ -607,6 +607,8 @@
   "operatorsInviteAlreadyPending": "Esiste già un invito in attesa per questa email. Puoi reinviarlo dalla lista degli inviti pendenti.",
   "operatorsInviteAlreadyHasAccess": "Questo utente ha già accesso al business.",
   "operatorsInviteEmailUnavailable": "Invio email non disponibile in questo ambiente. Contatta il supporto.",
+  "environmentDemoBannerTitle": "AMBIENTE DEMO",
+  "environmentDemoBannerSubtitle": "I dati vengono resettati periodicamente.",
   "operatorsInviteEmailFailed": "Impossibile inviare l'email di invito. Riprova più tardi.",
   "operatorsInviteError": "Impossibile inviare l'invito",
   "operatorsInviteCopied": "Link di invito copiato",

@@ -4006,6 +4006,26 @@ class L10n {
     );
   }
 
+  /// `AMBIENTE DEMO`
+  String get environmentDemoBannerTitle {
+    return Intl.message(
+      'AMBIENTE DEMO',
+      name: 'environmentDemoBannerTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `I dati vengono resettati periodicamente.`
+  String get environmentDemoBannerSubtitle {
+    return Intl.message(
+      'I dati vengono resettati periodicamente.',
+      name: 'environmentDemoBannerSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Impossibile inviare l'email di invito. Riprova più tardi.`
   String get operatorsInviteEmailFailed {
     return Intl.message(
