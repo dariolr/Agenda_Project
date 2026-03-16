@@ -1,12 +1,9 @@
+import '/core/environment/app_environment_config.dart';
+
 /// Configurazione API
 class ApiConfig {
   /// Base URL dell'API - configurabile via environment
-  /// Default: produzione (https://api.romeolab.it)
-  /// Dev locale: --dart-define=API_BASE_URL=http://localhost:8888/agenda_core/public
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://api.romeolab.it',
-  );
+  static String get baseUrl => AppEnvironmentConfig.current.apiBaseUrl;
 
   /// Timeout per le richieste (ridotti per risposta rapida)
   static const Duration connectTimeout = Duration(seconds: 5);

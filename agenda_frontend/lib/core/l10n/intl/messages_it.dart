@@ -414,6 +414,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "durationHourMinute": m8,
     "durationMinute": m9,
     "durationMinutes": m10,
+    "environmentDemoBannerSubtitle": MessageLookupByLibrary.simpleMessage(
+      "I dati vengono resettati periodicamente.",
+    ),
+    "environmentDemoBannerTitle": MessageLookupByLibrary.simpleMessage(
+      "AMBIENTE DEMO",
+    ),
     "errorBusinessNotActive": MessageLookupByLibrary.simpleMessage(
       "Attività non attiva",
     ),

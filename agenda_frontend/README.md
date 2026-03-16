@@ -33,6 +33,21 @@ cp web/.htaccess build/web/
 rsync -avz --delete -e "ssh -p 18765" build/web/ siteground:~/www/prenota.romeolab.it/public_html/
 ```
 
+## Ambienti
+
+Configurazione runtime tramite `--dart-define` (stesso codicebase: local/demo/staging/production).
+
+Esempio `local`:
+
+```bash
+flutter run -d chrome \
+  --dart-define=APP_ENV=local \
+  --dart-define=API_BASE_URL=http://localhost:8888/agenda_core/public \
+  --dart-define=WEB_BASE_URL=http://localhost:3000
+```
+
+Dettagli completi: `docs/environments.md`.
+
 ## Multi-Business Path-Based URL (29/12/2025)
 
 L'app supporta più business tramite URL path-based:

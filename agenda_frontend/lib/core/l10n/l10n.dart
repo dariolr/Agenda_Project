@@ -259,6 +259,26 @@ class L10n {
     );
   }
 
+  /// `AMBIENTE DEMO`
+  String get environmentDemoBannerTitle {
+    return Intl.message(
+      'AMBIENTE DEMO',
+      name: 'environmentDemoBannerTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `I dati vengono resettati periodicamente.`
+  String get environmentDemoBannerSubtitle {
+    return Intl.message(
+      'I dati vengono resettati periodicamente.',
+      name: 'environmentDemoBannerSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Attività non trovata`
   String get errorBusinessNotFound {
     return Intl.message(

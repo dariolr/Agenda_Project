@@ -4,10 +4,15 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
 import 'app/app.dart';
+import 'core/environment/app_environment_config.dart';
 import 'core/services/version_checker.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  AppEnvironmentConfig.bootstrap();
+  debugPrint(
+    '[bootstrap] APP_ENV=${AppEnvironmentConfig.current.environmentName} API_BASE_URL=${AppEnvironmentConfig.current.apiBaseUrl}',
+  );
   tz_data.initializeTimeZones();
 
   // Usa path URL strategy invece di hash (#) per URL puliti

@@ -33,6 +33,8 @@
   "staffEmpty": "Nessun operatore disponibile al momento",
   "noStaffForAllServices": "Nessun operatore può eseguire tutti i servizi selezionati. Prova a selezionare meno servizi o servizi diversi.",
   "errorConnectionTimeout": "La connessione sta impiegando troppo tempo. Riprova.",
+  "environmentDemoBannerTitle": "AMBIENTE DEMO",
+  "environmentDemoBannerSubtitle": "I dati vengono resettati periodicamente.",
   "errorBusinessNotFound": "Attività non trovata",
   "errorBusinessNotFoundSubtitle": "L'attività richiesta non esiste. Verifica l'indirizzo o contatta direttamente l'attività.",
   "errorBusinessNotActive": "Attività non attiva",

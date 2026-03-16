@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/l10n/l10n.dart';
 import '../core/utils/color_cache.dart';
 import '../core/widgets/app_loading_screen.dart';
+import '../core/widgets/environment_banner.dart';
 import '../features/auth/domain/auth_state.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/booking/providers/business_provider.dart';
@@ -69,8 +70,9 @@ class _AppState extends ConsumerState<App> {
     if (businessColor != null && businessColor != _lastBusinessColor) {
       _lastBusinessColor = businessColor;
       // Persiste il colore per il prossimo caricamento
-      final segments =
-          Uri.base.pathSegments.where((s) => s.isNotEmpty).toList();
+      final segments = Uri.base.pathSegments
+          .where((s) => s.isNotEmpty)
+          .toList();
       if (segments.isNotEmpty && !_reservedPaths.contains(segments.first)) {
         saveCachedBusinessColor(segments.first, businessColor);
       }
@@ -105,7 +107,12 @@ class _AppState extends ConsumerState<App> {
         if (authResolving) {
           return const AppLoadingScreen();
         }
-        return child ?? const SizedBox.shrink();
+        return Column(
+          children: [
+            const EnvironmentBanner(),
+            Expanded(child: child ?? const SizedBox.shrink()),
+          ],
+        );
       },
     );
   }

@@ -33,6 +33,8 @@
   "staffEmpty": "No staff available at the moment",
   "noStaffForAllServices": "No staff member can perform all selected services. Try selecting fewer or different services.",
   "errorConnectionTimeout": "The connection is taking too long. Please try again.",
+  "environmentDemoBannerTitle": "DEMO ENVIRONMENT",
+  "environmentDemoBannerSubtitle": "Data is reset periodically.",
   "errorBusinessNotFound": "Business not found",
   "errorBusinessNotFoundSubtitle": "The requested business does not exist. Please check the URL or contact the business directly.",
   "errorBusinessNotActive": "Business not active",
