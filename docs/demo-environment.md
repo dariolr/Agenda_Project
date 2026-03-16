@@ -5,6 +5,7 @@ La demo è un ambiente ufficiale dello stesso monorepo, non un fork.
 ## Checklist operativa
 
 1. Configurare variabili `APP_ENV=demo` nei 3 progetti.
+   Source of truth monorepo: `config/environments/demo/`.
 2. Verificare flag demo:
    - `agenda_backend/scripts/demo/verify_demo_env.sh`
    - `agenda_frontend/scripts/demo/verify_demo_env.sh`
@@ -13,3 +14,9 @@ La demo è un ambiente ufficiale dello stesso monorepo, non un fork.
 4. Deploy su host demo separati.
 5. Seed/reset DB demo in `agenda_core`.
 6. Verificare risposta `demo_blocked` su endpoint sensibili API.
+
+Wrapper monorepo utili:
+
+- `scripts/db/core_prepare_demo.sh`
+- `scripts/db/core_seed_demo.sh`
+- `scripts/db/core_reset_demo.sh`
