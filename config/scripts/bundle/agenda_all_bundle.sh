@@ -1,47 +1,57 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-# Root progetto
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-
-# File generati dai progetti
-FRONTEND_FILE="$PROJECT_ROOT/agenda_frontend/lib_bundle_frontend.txt"
-BACKEND_FILE="$PROJECT_ROOT/agenda_backend/lib_bundle_backend.txt"
-CORE_FILE="$PROJECT_ROOT/agenda_core/agenda_core_snapshot.txt"
-
-# File di output finale
 FINAL_BUNDLE="$SCRIPT_DIR/agenda_all_bundle.txt"
 
-# Inizio
-echo "=== Bundle di tutti i file TXT dei progetti ===" > "$FINAL_BUNDLE"
-echo "Bundle generato il: $(date)" >> "$FINAL_BUNDLE"
-echo "" >> "$FINAL_BUNDLE"
+BACKEND_SCRIPT="$SCRIPT_DIR/agenda_backend_bundle.sh"
+FRONTEND_SCRIPT="$SCRIPT_DIR/agenda_frontend_bundle.sh"
+CORE_SCRIPT="$SCRIPT_DIR/agenda_core_bundle.sh"
 
-# Aggiungi frontend
-echo ">>> CONTENUTO: Frontend" >> "$FINAL_BUNDLE"
-if [ -f "$FRONTEND_FILE" ]; then
-  cat "$FRONTEND_FILE" >> "$FINAL_BUNDLE"
-else
-  echo "⚠ File non trovato: $FRONTEND_FILE" >> "$FINAL_BUNDLE"
-fi
-echo -e "\n--------------------------\n" >> "$FINAL_BUNDLE"
+BACKEND_FILE="$SCRIPT_DIR/agenda_backend_bundle.txt"
+FRONTEND_FILE="$SCRIPT_DIR/agenda_frontend_bundle.txt"
+CORE_FILE="$SCRIPT_DIR/agenda_core_bundle.txt"
 
-# Aggiungi backend
-echo ">>> CONTENUTO: Backend" >> "$FINAL_BUNDLE"
-if [ -f "$BACKEND_FILE" ]; then
-  cat "$BACKEND_FILE" >> "$FINAL_BUNDLE"
-else
-  echo "⚠ File non trovato: $BACKEND_FILE" >> "$FINAL_BUNDLE"
-fi
-echo -e "\n--------------------------\n" >> "$FINAL_BUNDLE"
+"$BACKEND_SCRIPT"
+"$FRONTEND_SCRIPT"
+"$CORE_SCRIPT"
 
-# Aggiungi core
-echo ">>> CONTENUTO: Core" >> "$FINAL_BUNDLE"
-if [ -f "$CORE_FILE" ]; then
-  cat "$CORE_FILE" >> "$FINAL_BUNDLE"
-else
-  echo "⚠ File non trovato: $CORE_FILE" >> "$FINAL_BUNDLE"
-fi
-echo -e "\n=== FINE DEL BUNDLE ===" >> "$FINAL_BUNDLE"
+{
+  echo "=== Bundle di tutti i file sorgente ==="
+  echo "Bundle generato il: $(date)"
+  echo
 
-echo "File unificato creato: $FINAL_BUNDLE"
+  echo ">>> CONTENUTO: Frontend"
+  if [[ -f "$FRONTEND_FILE" ]]; then
+    cat "$FRONTEND_FILE"
+  else
+    echo "File non trovato: $FRONTEND_FILE"
+  fi
+
+  echo
+  echo "--------------------------"
+  echo
+
+  echo ">>> CONTENUTO: Backend"
+  if [[ -f "$BACKEND_FILE" ]]; then
+    cat "$BACKEND_FILE"
+  else
+    echo "File non trovato: $BACKEND_FILE"
+  fi
+
+  echo
+  echo "--------------------------"
+  echo
+
+  echo ">>> CONTENUTO: Core"
+  if [[ -f "$CORE_FILE" ]]; then
+    cat "$CORE_FILE"
+  else
+    echo "File non trovato: $CORE_FILE"
+  fi
+
+  echo
+  echo "=== FINE DEL BUNDLE ==="
+} > "$FINAL_BUNDLE"
+
+echo "Bundle unificato creato: $FINAL_BUNDLE"

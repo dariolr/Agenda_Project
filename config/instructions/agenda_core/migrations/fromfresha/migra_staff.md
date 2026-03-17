@@ -89,8 +89,8 @@ Ogni staff viene associato alla LOCATION_ID specificata.
 
 | First Name | Last Name | Email | Job Title |
 |------------|-----------|-------|-----------|
-| Giovanni | Santoro | santoro.barber.1994@gmail.com | Accademia Artestile Nettuno |
-| Giusy | (vuoto) | feolagiuseppina655@gmail.com | (vuoto) |
+| Mario | Rossi | mario.rossi@example.com | Staff |
+| Giulia | (vuoto) | giulia@example.com | (vuoto) |
 
 **Totale: 2 staff**
 

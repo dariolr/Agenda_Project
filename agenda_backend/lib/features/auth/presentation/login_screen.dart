@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,7 +30,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = true;
   bool _isLoading = false;
-  bool _credentialsLoaded = false;
   String? _errorMessage;
 
   String get _postLoginRoute {
@@ -49,12 +47,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _loadSavedCredentials() async {
-    // In debug mode, usa credenziali di test se non ci sono credenziali salvate
-    if (kDebugMode && !_credentialsLoaded) {
-      _emailController.text = 'dariolarosa@hotmail.com';
-      _passwordController.text = 'Abc123@@';
-    }
-
     try {
       final storage = ref.read(credentialsStorageProvider);
       final credentials = await storage.getSavedCredentials();
@@ -65,7 +57,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _emailController.text = credentials.email!;
             _passwordController.text = credentials.password!;
             _rememberMe = true;
-            _credentialsLoaded = true;
           });
         }
       }

@@ -54,3 +54,10 @@ agenda_frontend/.vscode/settings.json
 scripts/reset_local_db_from_prod.sh
 config/migrations/fromfresha/migrate_fresha_production.sh
 agenda_core/.env
+
+# Generated source bundles
+config/scripts/bundle/*.txt
+agenda_frontend/lib_bundle_frontend.txt
+agenda_backend/lib_bundle_backend.txt
+agenda_core/agenda_core_snapshot.txt
+agenda_core/agenda_all_bundle.txt

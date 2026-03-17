@@ -36,7 +36,7 @@ final class NotificationRepository
 
         // TEST MODE: Override recipient email with configured test address
         if (($_ENV['NOTIFICATION_TEST_MODE'] ?? 'false') === 'true') {
-            $testEmail = $_ENV['NOTIFICATION_TEST_EMAIL'] ?? 'dariolarosa@romeolab.it';
+            $testEmail = $_ENV['NOTIFICATION_TEST_EMAIL'] ?? 'test@example.com';
             $data['recipient_email'] = $testEmail;
         }
 

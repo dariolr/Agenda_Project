@@ -14,10 +14,26 @@
 #
 # ❌ MAI DEPLOYARE: tests/, docs/, config/migrations/, scripts/, bin/, .git/, *.md
 
-set -e
+set -euo pipefail
 
 # Ambiente deploy (default: production)
-ENV_NAME="${1:-production}"
+ENV_NAME="production"
+DRY_RUN=0
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run)
+      DRY_RUN=1
+      ;;
+    demo|production)
+      ENV_NAME="$arg"
+      ;;
+    *)
+      echo "ERROR: argomento non valido: $arg" >&2
+      echo "Uso: $0 [demo|production] [--dry-run]" >&2
+      exit 1
+      ;;
+  esac
+done
 
 # === CONFIGURAZIONE ===
 SSH_ALIAS="romeolab"
@@ -66,6 +82,19 @@ if [[ -z "$REMOTE_BASE" ]]; then
   REMOTE_BASE="www/$api_host"
 fi
 
+run_cmd() {
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    printf '[dry-run] %q' "$1"
+    shift
+    for token in "$@"; do
+      printf ' %q' "$token"
+    done
+    printf '\n'
+    return 0
+  fi
+  "$@"
+}
+
 echo "📦 Deploy agenda_core"
 echo "   Env: $ENV_NAME"
 echo "   Da: $LOCAL_DIR"
@@ -76,17 +105,21 @@ echo ""
 # Controlla che non esistano cartelle vietate sul server
 echo "🔍 Verifica cartelle vietate sul server..."
 FORBIDDEN_DIRS="tests docs migrations scripts .git phpunit.xml composer.json"
-for dir in $FORBIDDEN_DIRS; do
-  if ssh "$SSH_ALIAS" "test -e $REMOTE_BASE/$dir" 2>/dev/null; then
-    echo "⚠️  ATTENZIONE: trovata cartella/file vietato sul server: $dir"
-    echo "   Rimuovila manualmente: ssh $SSH_ALIAS 'rm -rf $REMOTE_BASE/$dir'"
-  fi
-done
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  echo "[dry-run] salto verifica remota cartelle vietate"
+else
+  for dir in $FORBIDDEN_DIRS; do
+    if run_cmd ssh "$SSH_ALIAS" "test -e $REMOTE_BASE/$dir" 2>/dev/null; then
+      echo "⚠️  ATTENZIONE: trovata cartella/file vietato sul server: $dir"
+      echo "   Rimuovila manualmente: ssh $SSH_ALIAS 'rm -rf $REMOTE_BASE/$dir'"
+    fi
+  done
+fi
 echo ""
 
 # === 1. Deploy public/ → public_html/ ===
 echo "🔹 [1/3] Sincronizzando public_html (index.php, .htaccess)..."
-rsync -avz --delete \
+run_cmd rsync -avz --delete \
   --exclude='.DS_Store' \
   -e "ssh" \
   "$LOCAL_DIR/public/" \
@@ -94,7 +127,7 @@ rsync -avz --delete \
 
 # === 2. Deploy src/ ===
 echo "🔹 [2/3] Sincronizzando src/..."
-rsync -avz --delete \
+run_cmd rsync -avz --delete \
   --exclude='.DS_Store' \
   -e "ssh" \
   "$LOCAL_DIR/src/" \
@@ -102,7 +135,7 @@ rsync -avz --delete \
 
 # === 3. Deploy vendor/ ===
 echo "🔹 [3/4] Sincronizzando vendor/..."
-rsync -avz --delete \
+run_cmd rsync -avz --delete \
   --exclude='.DS_Store' \
   --exclude='.git' \
   --exclude='*/test' \
@@ -116,7 +149,7 @@ rsync -avz --delete \
 
 # === 4. Deploy bin/ (worker cron) ===
 echo "🔹 [4/4] Sincronizzando bin/ (worker cron)..."
-rsync -avz --delete \
+run_cmd rsync -avz --delete \
   --exclude='.DS_Store' \
   -e "ssh" \
   "$LOCAL_DIR/bin/" \

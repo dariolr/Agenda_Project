@@ -2,7 +2,36 @@
 set -euo pipefail
 
 # Ambiente deploy (default: production)
-ENV_NAME="${1:-production}"
+ENV_NAME="production"
+DRY_RUN=0
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run)
+      DRY_RUN=1
+      ;;
+    demo|production)
+      ENV_NAME="$arg"
+      ;;
+    *)
+      echo "Errore: argomento non valido: $arg" >&2
+      echo "Uso: $0 [demo|production] [--dry-run]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+run_cmd() {
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    printf '[dry-run] %q' "$1"
+    shift
+    for token in "$@"; do
+      printf ' %q' "$token"
+    done
+    printf '\n'
+    return 0
+  fi
+  "$@"
+}
 
 ###############################################################################
 # 1) Bump versione in web/index.html (window.appVersion)
@@ -122,18 +151,22 @@ fi
 
 new_v="${today}-${next_n}.${next_p}"
 
-# Aggiorna window.appVersion (supporta sia formato YYYYMMDD-N che YYYYMMDD-N.P)
-NEW_V="$new_v" perl -0777 -i -pe '
-  my $newv = $ENV{NEW_V};
-  s{(window\.appVersion\s*=\s*")[0-9]{8}-[0-9]+(?:\.[0-9]+)?(")}{\1$newv\2}g;
-' "$INDEX_FILE"
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  echo "[dry-run] salto bump versione in $INDEX_FILE e web/app_version.txt (next: \"$new_v\")"
+else
+  # Aggiorna window.appVersion (supporta sia formato YYYYMMDD-N che YYYYMMDD-N.P)
+  NEW_V="$new_v" perl -0777 -i -pe '
+    my $newv = $ENV{NEW_V};
+    s{(window\.appVersion\s*=\s*")[0-9]{8}-[0-9]+(?:\.[0-9]+)?(")}{\1$newv\2}g;
+  ' "$INDEX_FILE"
 
-echo "OK: aggiornato $INDEX_FILE -> window.appVersion = \"$new_v\""
+  echo "OK: aggiornato $INDEX_FILE -> window.appVersion = \"$new_v\""
 
-# Aggiorna anche app_version.txt (usato dal VersionChecker per auto-aggiornamento)
-VERSION_FILE="$ROOT_DIR/web/app_version.txt"
-echo "$new_v" > "$VERSION_FILE"
-echo "OK: aggiornato $VERSION_FILE -> \"$new_v\""
+  # Aggiorna anche app_version.txt (usato dal VersionChecker per auto-aggiornamento)
+  VERSION_FILE="$ROOT_DIR/web/app_version.txt"
+  echo "$new_v" > "$VERSION_FILE"
+  echo "OK: aggiornato $VERSION_FILE -> \"$new_v\""
+fi
 
 ###############################################################################
 # 2) Build Flutter Web (zsh)
@@ -142,7 +175,7 @@ echo "OK: aggiornato $VERSION_FILE -> \"$new_v\""
 # Percorso assoluto a flutter, se necessario sovrascrivi FLUTTER_HOME
 FLUTTER_BIN="${FLUTTER_HOME:-/Applications/flutter}/bin/flutter"
 
-if [[ ! -x "$FLUTTER_BIN" ]]; then
+if [[ "$DRY_RUN" -eq 0 && ! -x "$FLUTTER_BIN" ]]; then
   echo "Errore: non trovo flutter in $FLUTTER_BIN" >&2
   exit 1
 fi
@@ -150,7 +183,7 @@ fi
 cd "$ROOT_DIR"
 
 echo "Eseguo build backend per env=$ENV_NAME usando $ENV_FILE"
-"$FLUTTER_BIN" build web --no-pub --release --no-tree-shake-icons --pwa-strategy=none "${DART_DEFINES[@]}"
+run_cmd "$FLUTTER_BIN" build web --no-pub --release --no-tree-shake-icons --pwa-strategy=none "${DART_DEFINES[@]}"
 
 ###############################################################################
 # 3) Copia .htaccess nel build (necessario per SPA routing)
@@ -160,13 +193,13 @@ HTACCESS_SRC="$ROOT_DIR/web/.htaccess"
 HTACCESS_DST="$ROOT_DIR/build/web/.htaccess"
 
 if [[ -f "$HTACCESS_SRC" ]]; then
-  cp "$HTACCESS_SRC" "$HTACCESS_DST"
+  run_cmd cp "$HTACCESS_SRC" "$HTACCESS_DST"
   echo "OK: copiato .htaccess in build/web/"
 else
   echo "WARN: .htaccess non trovato in web/, SPA routing potrebbe non funzionare"
 fi
 
 echo "Deploy target: $DEPLOY_SSH_ALIAS:$DEPLOY_PATH"
-rsync -avz --delete "$ROOT_DIR/build/web/" "$DEPLOY_SSH_ALIAS:$DEPLOY_PATH"
+run_cmd rsync -avz --delete "$ROOT_DIR/build/web/" "$DEPLOY_SSH_ALIAS:$DEPLOY_PATH"
 
 # Use the VSCode task named dart-analyze instead of running dart analyze directly.

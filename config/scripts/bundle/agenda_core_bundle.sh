@@ -1,104 +1,65 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# ================================
-# Agenda Core - Project Snapshot
-# ================================
-
-# Root di agenda_core.
-# Caso 1: script dentro agenda_core/scripts (comportamento originario)
-# Caso 2: script dentro config/scripts/bundle (questa copia)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-if [ ! -d "$ROOT_DIR/src" ] || [ ! -d "$ROOT_DIR/public" ]; then
-  ROOT_DIR="$(cd "$SCRIPT_DIR/../../../agenda_core" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../../../agenda_core" && pwd)"
+OUTPUT_FILE="$SCRIPT_DIR/agenda_core_bundle.txt"
+
+if [[ ! -d "$ROOT_DIR/src" || ! -d "$ROOT_DIR/public" ]]; then
+  echo "Errore: root agenda_core non valida: $ROOT_DIR" >&2
+  exit 1
 fi
 
-cd "$ROOT_DIR"
-
-OUTPUT_FILE="$SCRIPT_DIR/agenda_core_snapshot.txt"
-
-echo "Generating Agenda Core snapshot..."
-echo "Output file: $OUTPUT_FILE"
-echo ""
-
-# Pulizia file precedente
 rm -f "$OUTPUT_FILE"
 
-# Header
 {
   echo "======================================="
-  echo "AGENDA CORE - PROJECT SNAPSHOT"
+  echo "AGENDA CORE - SOURCE BUNDLE"
   echo "Generated on: $(date)"
+  echo "Project root: $ROOT_DIR"
   echo "======================================="
-  echo ""
+  echo
 } >> "$OUTPUT_FILE"
 
-# Funzione helper
-dump_section () {
-  TITLE=$1
-  PATTERN=$2
-
-  echo "---- $TITLE ----"
-  echo ""
-  echo "======================================="
-  echo "$TITLE"
-  echo "=======================================" >> "$OUTPUT_FILE"
-
-  for FILE in $PATTERN; do
-    if [ -f "$FILE" ]; then
-      echo ""
-      echo "----- FILE: $FILE -----" >> "$OUTPUT_FILE"
-      echo "" >> "$OUTPUT_FILE"
-      cat "$FILE" >> "$OUTPUT_FILE"
-      echo "" >> "$OUTPUT_FILE"
-    fi
-  done
+append_file() {
+  local file="$1"
+  if [[ -f "$file" ]]; then
+    echo "--- FILE: $file ---" >> "$OUTPUT_FILE"
+    cat "$file" >> "$OUTPUT_FILE"
+    echo >> "$OUTPUT_FILE"
+  fi
 }
 
-# ================================
-# Documentazione
-# ================================
-dump_section "DOCUMENTATION (.md)" \
-"AGENTS.md docs/*.md"
+# File singoli utili
+append_file "$ROOT_DIR/AGENTS.md"
+append_file "$ROOT_DIR/.env.example"
+append_file "$ROOT_DIR/public/index.php"
+append_file "$ROOT_DIR/composer.json"
 
-# ================================
-# Config / Env (se presenti)
-# ================================
-dump_section "CONFIG FILES" \
-".env.example config/*.php config/*.json"
+# Documentazione locale core
+while IFS= read -r file; do
+  append_file "$file"
+done < <(find "$ROOT_DIR/docs" -type f -name "*.md" 2>/dev/null | sort)
 
-# ================================
-# Database / Migrations
-# ================================
-dump_section "DATABASE MIGRATIONS" \
-"../config/migrations/*.sql"
+# Config core
+while IFS= read -r file; do
+  append_file "$file"
+done < <(find "$ROOT_DIR/config" -type f \( -name "*.php" -o -name "*.json" \) 2>/dev/null | sort)
 
-# ================================
-# Source Code (PHP)
-# ================================
-dump_section "PHP SOURCE CODE" \
-"public/*.php src/**/*.php"
+# Migrations centralizzate monorepo
+while IFS= read -r file; do
+  append_file "$file"
+done < <(find "$ROOT_DIR/../config/migrations" -type f -name "*.sql" 2>/dev/null | sort)
 
-# ================================
-# Routing / Entry points
-# ================================
-dump_section "ENTRY POINTS & ROUTING" \
-"public/index.php routes/*.php"
+# Sorgenti PHP core
+while IFS= read -r file; do
+  append_file "$file"
+done < <(find "$ROOT_DIR/public" "$ROOT_DIR/src" "$ROOT_DIR/routes" "$ROOT_DIR/tests" -type f -name "*.php" 2>/dev/null | sort)
 
-# ================================
-# Tests (se presenti)
-# ================================
-dump_section "TESTS" \
-"tests/**/*.php"
-
-# Footer
 {
-  echo ""
   echo "======================================="
-  echo "END OF SNAPSHOT"
+  echo "END OF BUNDLE"
   echo "======================================="
 } >> "$OUTPUT_FILE"
 
-echo ""
-echo "Snapshot completed."
-echo "File created: $OUTPUT_FILE"
+echo "Bundle core creato: $OUTPUT_FILE"

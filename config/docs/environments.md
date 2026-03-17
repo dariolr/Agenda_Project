@@ -38,8 +38,9 @@ I template ambiente centralizzati sono in `config/environments/`:
 
 ## Script wrapper monorepo
 
-- build backend web con env: `config/scripts/deploy/build_backend.sh <env>`
-- build frontend web con env: `config/scripts/deploy/build_frontend.sh <env>`
+- deploy backend web con env: `config/scripts/deploy/deploy_backend.sh <demo|production>`
+- deploy frontend web con env: `config/scripts/deploy/deploy_frontend.sh <demo|production>`
+- deploy core API con env: `config/scripts/deploy/deploy_core.sh <demo|production>`
 - prepare demo DB core: `config/scripts/db/core_prepare_demo.sh`
 - seed demo DB core: `config/scripts/db/core_seed_demo.sh`
 - reset demo DB core: `config/scripts/db/core_reset_demo.sh`
