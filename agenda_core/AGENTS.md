@@ -20,11 +20,14 @@ php -l <file>
 
 ## Qualità
 - Ogni modifica API deve includere validazione input e gestione errori standard.
-- Endpoint nuovi/variati devono essere documentati in `docs/api_contract_v1.md`.
+- Endpoint nuovi/variati devono essere documentati in `../config/instructions/agenda_core/docs/api_contract_v1.md`.
 
 ## Deploy
-- Guida deploy: `DEPLOY.md`
+- Guida deploy: `../config/instructions/agenda_core/DEPLOY.md`
 
 ## Source of Truth Staff Planning
-- Documento canonico: `docs/STAFF_PLANNING_MODEL.md`
+- Documento canonico: `../config/docs/STAFF_PLANNING_MODEL.md`
 - Non introdurre regole diverse dal documento.
+
+## Documentazione Progetto Centralizzata
+- Cartella: `../config/instructions/agenda_core/`

@@ -12,7 +12,6 @@ void main() {
       webBaseUrl: 'https://demo-prenota.romeolab.it',
       isLocal: false,
       isDemo: true,
-      isStaging: false,
       isProduction: false,
       showDemoBanner: true,
       demoResetExpected: true,

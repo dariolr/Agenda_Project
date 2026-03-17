@@ -12,7 +12,6 @@ final class EnvironmentConfig
         public readonly string $environmentName,
         public readonly bool $isLocal,
         public readonly bool $isDemo,
-        public readonly bool $isStaging,
         public readonly bool $isProduction,
         public readonly string $apiBaseUrl,
         public readonly string $webBaseUrl,
@@ -45,13 +44,11 @@ final class EnvironmentConfig
         $isProduction = $appEnv === AppEnvironment::PRODUCTION;
         $isDemo = $appEnv === AppEnvironment::DEMO;
         $isLocal = $appEnv === AppEnvironment::LOCAL;
-        $isStaging = $appEnv === AppEnvironment::STAGING;
 
         $config = new self(
             environmentName: $appEnv,
             isLocal: $isLocal,
             isDemo: $isDemo,
-            isStaging: $isStaging,
             isProduction: $isProduction,
             apiBaseUrl: self::env('API_BASE_URL', 'https://api.romeolab.it'),
             webBaseUrl: self::env('WEB_BASE_URL', 'https://prenota.romeolab.it'),

@@ -440,7 +440,7 @@ void main() {
     });
   });
 
-  group('Edge cases critici (da docs/STAFF_PLANNING_MODEL.md)', () {
+  group('Edge cases critici (da ../config/docs/STAFF_PLANNING_MODEL.md)', () {
     test('valid_to < valid_from → rifiutare', () {
       final planning = createPlanning(
         validFrom: DateTime(2026, 6, 15),

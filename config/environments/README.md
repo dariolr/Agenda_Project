@@ -1,10 +1,9 @@
 # Environment Templates
 
-Questa cartella contiene template centralizzati per i 4 ambienti ufficiali del monorepo:
+Questa cartella contiene template centralizzati per i 3 ambienti ufficiali del monorepo:
 
 - `local`
 - `demo`
-- `staging`
 - `production`
 
 Ogni ambiente contiene 3 file:

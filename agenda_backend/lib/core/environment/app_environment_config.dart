@@ -46,7 +46,6 @@ class AppEnvironmentConfig {
     required this.webBaseUrl,
     required this.isLocal,
     required this.isDemo,
-    required this.isStaging,
     required this.isProduction,
     required this.showDemoBanner,
     required this.allowRealEmails,
@@ -67,7 +66,6 @@ class AppEnvironmentConfig {
 
   final bool isLocal;
   final bool isDemo;
-  final bool isStaging;
   final bool isProduction;
 
   final bool showDemoBanner;
@@ -93,7 +91,6 @@ class AppEnvironmentConfig {
     final isDemo = environment == AppEnvironment.demo;
     final isProduction = environment == AppEnvironment.production;
     final isLocal = environment == AppEnvironment.local;
-    final isStaging = environment == AppEnvironment.staging;
 
     final apiBaseUrl = raw.apiBaseUrl.trim();
     final webBaseUrl = raw.webBaseUrl.trim();
@@ -151,7 +148,6 @@ class AppEnvironmentConfig {
       webBaseUrl: webBaseUrl,
       isLocal: isLocal,
       isDemo: isDemo,
-      isStaging: isStaging,
       isProduction: isProduction,
       showDemoBanner: showDemoBanner,
       allowRealEmails: allowRealEmails,

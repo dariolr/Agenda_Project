@@ -42,7 +42,10 @@ flutter test
 - Se una sede: step sede saltato
 
 ## Source of Truth Staff Planning
-- Documento canonico: `docs/STAFF_PLANNING_MODEL.md`
+- Documento canonico: `../config/docs/STAFF_PLANNING_MODEL.md`
+
+## Documentazione Progetto Centralizzata
+- Cartella: `../config/instructions/agenda_frontend/`
 
 ## Checklist
 1. `context.l10n` per i testi

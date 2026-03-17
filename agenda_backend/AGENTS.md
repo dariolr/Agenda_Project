@@ -83,8 +83,11 @@ Route non-shell:
 - Ogni nuovo provider legato a `business_id` deve essere aggiunto alla invalidazione.
 
 ## Source of Truth Staff Planning
-- Documento canonico: `docs/STAFF_PLANNING_MODEL.md`
+- Documento canonico: `../config/docs/STAFF_PLANNING_MODEL.md`
 - Non inventare regole oltre quel documento.
+
+## Documentazione Progetto Centralizzata
+- Cartella: `../config/instructions/agenda_backend/`
 
 ## Checklist Rapida
 1. Drag & drop invariato

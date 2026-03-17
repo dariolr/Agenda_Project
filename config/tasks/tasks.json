@@ -1,0 +1,56 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Deploy agenda_core",
+      "type": "shell",
+      "command": "zsh",
+      "args": [
+        "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_core/config/scripts/deploy/deploy_core.sh"
+      ],
+      "options": {
+        "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_core"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Deploy agenda_backend",
+      "type": "shell",
+      "command": "zsh",
+      "args": [
+        "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_core/config/scripts/deploy/deploy_backend.sh"
+      ],
+      "options": {
+        "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_backend"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Deploy agenda_frontend",
+      "type": "shell",
+      "command": "zsh",
+      "args": [
+        "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_core/config/scripts/deploy/deploy_frontend.sh"
+      ],
+      "options": {
+        "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_frontend"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    }
+  ]
+}

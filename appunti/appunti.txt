@@ -1,5 +1,0 @@
-
-Shell
-
-
-$ bash -lc 'dart analyze'
