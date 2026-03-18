@@ -25,6 +25,7 @@ final agendaBootstrapLoadingProvider = Provider<bool>((ref) {
   final staffFilterMode = ref.watch(staffFilterModeProvider);
   final layoutConfig = ref.watch(layoutConfigProvider);
   final serviceVariantsAsync = ref.watch(serviceVariantsProvider);
+  final variants = serviceVariantsAsync.value ?? const [];
 
   final hasLocations = locations.isNotEmpty;
   final isWaitingForBusiness = currentBusinessId <= 0;
@@ -47,10 +48,13 @@ final agendaBootstrapLoadingProvider = Provider<bool>((ref) {
             ref.watch(ensureStaffPlanningLoadedProvider(staff.id)).isLoading,
       );
 
+  final hasStaleVariantsForCurrentLocation =
+      currentLocationId > 0 &&
+      variants.isNotEmpty &&
+      variants.any((variant) => variant.locationId != currentLocationId);
   final isServiceVariantsBootstrapLoading =
       layoutConfig.useServiceColorsForAppointments &&
-      serviceVariantsAsync.isLoading &&
-      !serviceVariantsAsync.hasValue;
+      (serviceVariantsAsync.isLoading || hasStaleVariantsForCurrentLocation);
 
   return isWaitingForBusiness ||
       isWaitingForLocations ||

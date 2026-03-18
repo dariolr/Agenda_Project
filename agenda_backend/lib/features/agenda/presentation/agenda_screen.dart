@@ -323,6 +323,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final timezone = ref.watch(effectiveTenantTimezoneProvider);
     final hasStaff = staffList.isNotEmpty;
     final serviceVariantsAsync = ref.watch(serviceVariantsProvider);
+    final serviceVariants = serviceVariantsAsync.value ?? const [];
 
     _ensureExceptionsLoadedForVisibleRange(
       businessId: currentBusinessId,
@@ -371,10 +372,13 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
               !staffPlannings.containsKey(staff.id) &&
               ref.watch(ensureStaffPlanningLoadedProvider(staff.id)).isLoading,
         );
+    final hasStaleVariantsForCurrentLocation =
+        currentLocationId > 0 &&
+        serviceVariants.isNotEmpty &&
+        serviceVariants.any((variant) => variant.locationId != currentLocationId);
     final isServiceVariantsBootstrapLoading =
         layoutConfig.useServiceColorsForAppointments &&
-        serviceVariantsAsync.isLoading &&
-        !serviceVariantsAsync.hasValue;
+        (serviceVariantsAsync.isLoading || hasStaleVariantsForCurrentLocation);
     final isBootstrapLoading =
         isWaitingBaseData ||
         isInitialStaffLoad ||
