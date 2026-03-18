@@ -233,6 +233,7 @@ class BookingsApi {
     int? extraProcessingMinutes,
     double? price,
     bool priceExplicitlySet = false,
+    bool notifyClient = true,
   }) async {
     await _apiClient.updateAppointment(
       locationId: locationId,
@@ -250,6 +251,7 @@ class BookingsApi {
       extraProcessingMinutes: extraProcessingMinutes,
       price: price,
       priceExplicitlySet: priceExplicitlySet,
+      notifyClient: notifyClient,
     );
   }
 

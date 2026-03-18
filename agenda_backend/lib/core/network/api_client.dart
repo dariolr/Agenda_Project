@@ -732,6 +732,7 @@ class ApiClient {
     int? extraProcessingMinutes,
     double? price,
     bool priceExplicitlySet = false,
+    bool notifyClient = true,
   }) async {
     final data = <String, dynamic>{};
     if (startTime != null) data['start_time'] = startTime;
@@ -756,6 +757,7 @@ class ApiClient {
     if (priceExplicitlySet) {
       data['price'] = price;
     }
+    data['notify_client'] = notifyClient;
 
     try {
       final response = await _dio.patch(

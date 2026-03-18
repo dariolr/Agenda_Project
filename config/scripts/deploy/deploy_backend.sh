@@ -57,15 +57,15 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 DART_DEFINES=()
-WEB_BASE_URL=""
+FRONTEND_URL=""
 DEPLOY_PATH=""
 DEPLOY_SSH_ALIAS=""
 while IFS='=' read -r key value; do
   [[ -z "${key// }" ]] && continue
   [[ "$key" == \#* ]] && continue
 
-  if [[ "$key" == "WEB_BASE_URL" ]]; then
-    WEB_BASE_URL="$value"
+  if [[ "$key" == "FRONTEND_URL" ]]; then
+    FRONTEND_URL="$value"
   fi
   if [[ "$key" == "DEPLOY_PATH" ]]; then
     DEPLOY_PATH="$value"
@@ -79,8 +79,8 @@ while IFS='=' read -r key value; do
   DART_DEFINES+=("--dart-define=${key}=${value}")
 done < "$ENV_FILE"
 
-if [[ -z "$WEB_BASE_URL" ]]; then
-  echo "Errore: WEB_BASE_URL mancante in $ENV_FILE" >&2
+if [[ -z "$FRONTEND_URL" ]]; then
+  echo "Errore: FRONTEND_URL mancante in $ENV_FILE" >&2
   exit 1
 fi
 
@@ -89,10 +89,10 @@ if [[ -z "$DEPLOY_SSH_ALIAS" ]]; then
 fi
 
 if [[ -z "$DEPLOY_PATH" ]]; then
-  web_host="${WEB_BASE_URL#*://}"
+  web_host="${FRONTEND_URL#*://}"
   web_host="${web_host%%/*}"
   if [[ -z "$web_host" || "$web_host" == "localhost"* || "$web_host" == "127.0.0.1"* ]]; then
-    echo "Errore: impossibile derivare DEPLOY_PATH da WEB_BASE_URL=$WEB_BASE_URL. Imposta DEPLOY_PATH in $ENV_FILE" >&2
+    echo "Errore: impossibile derivare DEPLOY_PATH da FRONTEND_URL=$FRONTEND_URL. Imposta DEPLOY_PATH in $ENV_FILE" >&2
     exit 1
   fi
   DEPLOY_PATH="www/${web_host}/public_html/"

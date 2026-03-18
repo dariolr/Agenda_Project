@@ -39,18 +39,16 @@ class MyApp extends ConsumerWidget {
         return Title(
           title: localizedTitle,
           color: Theme.of(context).scaffoldBackgroundColor,
-          child: Column(
+          child: Stack(
             children: [
-              const EnvironmentBanner(),
-              Expanded(
-                // Questo widget ora aggiornerà i provider globali
-                // prima che qualsiasi schermata venga costruita.
-                child: SessionExpiredListener(
-                  child: LayoutConfigAutoListener(
-                    child: child ?? const SizedBox.shrink(),
-                  ),
+              // Questo widget aggiorna i provider globali
+              // prima che qualsiasi schermata venga costruita.
+              SessionExpiredListener(
+                child: LayoutConfigAutoListener(
+                  child: child ?? const SizedBox.shrink(),
                 ),
               ),
+              const EnvironmentBanner(),
             ],
           ),
         );

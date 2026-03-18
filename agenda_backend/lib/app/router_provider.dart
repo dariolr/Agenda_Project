@@ -99,6 +99,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isOnSuperadminBookingNotifications =
           state.matchedLocation == '/businesses/notifiche-prenotazioni';
       final isOnUserBusinessSwitch = state.matchedLocation == '/my-businesses';
+      final isOnChangePassword = state.matchedLocation == '/change-password';
       final invitationPath = state.uri.path;
       final isInvitationPage =
           invitationPath == '/invitation' ||
@@ -185,6 +186,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           !isOnBusinessList &&
           !isOnSuperadminBookingNotifications &&
           !isOnUserBusinessSwitch &&
+          !isOnChangePassword &&
           !isLoggingIn) {
         return '/businesses';
       }

@@ -13,10 +13,13 @@ use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\UseCases\Booking\CreateBooking;
 use Agenda\UseCases\Booking\UpdateBooking;
 use Agenda\UseCases\Booking\DeleteBooking;
 use Agenda\UseCases\Notifications\QueueBookingReminder;
+use Agenda\UseCases\Notifications\QueueBookingRescheduled;
+use DateTimeImmutable;
 
 final class AppointmentsController
 {
@@ -170,6 +173,9 @@ final class AppointmentsController
         $businessId = (int) $location['business_id'];
         $userId = $request->getAttribute('user_id');
         $booking = $this->bookingRepo->findById((int) $appointment['booking_id']);
+        $notifyClient = $this->readBoolFromBody($body, 'notify_client', true);
+        $requestedLocale = isset($body['locale']) ? (string) $body['locale'] : null;
+        $oldBookingFirstStart = $this->extractFirstStartTime($booking);
 
         // Allow if: user is owner of booking OR has business access (operator)
         $isOwner = $booking && (int) $booking['user_id'] === (int) $userId;
@@ -265,7 +271,26 @@ final class AppointmentsController
             $reminderRelevantFields = ['start_time', 'end_time', 'service_id', 'service_variant_id'];
             $shouldRefreshReminder = !empty(array_intersect(array_keys($actuallyChangedFields), $reminderRelevantFields));
             if ($shouldRefreshReminder) {
-                $this->refreshBookingReminder($bookingId);
+                if ($notifyClient) {
+                    $updatedBooking = $this->bookingRepo->findById($bookingId);
+                    $newBookingFirstStart = $this->extractFirstStartTime($updatedBooking);
+                    $firstStartChanged =
+                        $oldBookingFirstStart !== null &&
+                        $newBookingFirstStart !== null &&
+                        $oldBookingFirstStart !== $newBookingFirstStart;
+
+                    if ($firstStartChanged && $updatedBooking !== null) {
+                        $this->queueRescheduleNotification(
+                            $updatedBooking,
+                            $oldBookingFirstStart,
+                            $requestedLocale
+                        );
+                    }
+
+                    $this->refreshBookingReminder($bookingId);
+                } else {
+                    $this->clearPendingBookingReminder($bookingId);
+                }
             }
         }
 
@@ -731,6 +756,199 @@ final class AppointmentsController
         } catch (\Throwable $e) {
             file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createBookingCancelledEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
         }
+    }
+
+    private function readBoolFromBody(array $body, string $key, bool $default): bool
+    {
+        if (!array_key_exists($key, $body)) {
+            return $default;
+        }
+
+        $value = $body[$key];
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (is_int($value) || is_float($value)) {
+            return ((int) $value) !== 0;
+        }
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+            if (in_array($normalized, ['1', 'true', 'yes', 'on'], true)) {
+                return true;
+            }
+            if (in_array($normalized, ['0', 'false', 'no', 'off'], true)) {
+                return false;
+            }
+        }
+
+        return $default;
+    }
+
+    private function extractFirstStartTime(?array $booking): ?string
+    {
+        if ($booking === null || !isset($booking['items']) || !is_array($booking['items'])) {
+            return null;
+        }
+
+        $first = null;
+        foreach ($booking['items'] as $item) {
+            $start = $item['start_time'] ?? null;
+            if (!is_string($start) || $start === '') {
+                continue;
+            }
+            if ($first === null || strcmp($start, $first) < 0) {
+                $first = $start;
+            }
+        }
+
+        return $first;
+    }
+
+    private function clearPendingBookingReminder(int $bookingId): void
+    {
+        if ($this->notificationRepo === null) {
+            return;
+        }
+
+        try {
+            $this->notificationRepo->deletePendingReminders($bookingId);
+        } catch (\Throwable $e) {
+            error_log("Failed to clear pending reminders for booking {$bookingId}: " . $e->getMessage());
+        }
+    }
+
+    private function queueRescheduleNotification(
+        array $booking,
+        string $oldStartTime,
+        ?string $requestedLocale = null
+    ): void {
+        if ($this->notificationRepo === null || $this->db === null) {
+            return;
+        }
+
+        $clientId = isset($booking['client_id']) ? (int) $booking['client_id'] : 0;
+        if ($clientId <= 0) {
+            return;
+        }
+
+        try {
+            $locationData = $this->getLocationAndBusinessData((int) ($booking['location_id'] ?? 0));
+            $locale = EmailTemplateRenderer::resolvePreferredLocale(
+                $requestedLocale,
+                $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,
+                $_ENV['DEFAULT_LOCALE'] ?? 'it'
+            );
+            $strings = EmailTemplateRenderer::strings($locale);
+
+            $clientStmt = $this->db->getPdo()->prepare(
+                'SELECT first_name, last_name, email FROM clients WHERE id = ? LIMIT 1'
+            );
+            $clientStmt->execute([$clientId]);
+            $client = $clientStmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+            $clientEmail = is_array($client) ? ($client['email'] ?? null) : null;
+            if (!is_string($clientEmail) || trim($clientEmail) === '') {
+                return;
+            }
+
+            $clientName = trim((string) (($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? '')));
+            if ($clientName === '') {
+                $clientName = trim((string) ($booking['client_name'] ?? ''));
+            }
+            if ($clientName === '') {
+                $clientName = $strings['client_fallback'];
+            }
+
+            $newStartTime = $this->extractFirstStartTime($booking);
+            if ($newStartTime === null) {
+                return;
+            }
+
+            $timezoneName = $locationData['location_timezone'] ?? 'Europe/Rome';
+            $timezone = new \DateTimeZone($timezoneName);
+            $startTime = new DateTimeImmutable($newStartTime, $timezone);
+            $nowLocal = new DateTimeImmutable('now', $timezone);
+            if ($startTime <= $nowLocal) {
+                return;
+            }
+
+            $locationEmail = trim((string) ($locationData['location_email'] ?? ''));
+            $businessEmail = trim((string) ($locationData['business_email'] ?? ''));
+            $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
+            $senderName = $locationEmail !== ''
+                ? ($locationData['location_name'] ?? null)
+                : ($businessEmail !== '' ? ($locationData['business_name'] ?? null) : null);
+
+            $services = [];
+            $items = is_array($booking['items'] ?? null) ? $booking['items'] : [];
+            foreach ($items as $item) {
+                $serviceName = $item['service_name'] ?? null;
+                if (is_string($serviceName) && trim($serviceName) !== '') {
+                    $services[] = trim($serviceName);
+                }
+            }
+
+            $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it';
+            $businessSlug = $locationData['business_slug'] ?? '';
+            $notificationData = [
+                'booking_id' => (int) $booking['id'],
+                'client_id' => $clientId,
+                'client_email' => $clientEmail,
+                'client_name' => $clientName,
+                'business_id' => (int) ($booking['business_id'] ?? 0),
+                'business_name' => $locationData['business_name'] ?? '',
+                'business_email' => $locationData['business_email'] ?? '',
+                'location_name' => $locationData['location_name'] ?? '',
+                'location_email' => $locationData['location_email'] ?? '',
+                'location_address' => $locationData['location_address'] ?? '',
+                'location_city' => $locationData['location_city'] ?? '',
+                'location_phone' => $locationData['location_phone'] ?? '',
+                'location_timezone' => $timezoneName,
+                'sender_email' => $senderEmail,
+                'sender_name' => $senderName,
+                'old_start_time' => $oldStartTime,
+                'new_start_time' => $newStartTime,
+                'start_time' => $newStartTime,
+                'services' => implode(', ', $services),
+                'manage_url' => $frontendUrl . '/' . $businessSlug . '/my-bookings',
+                'booking_url' => $frontendUrl . '/' . $businessSlug . '/booking',
+                'locale' => $locale,
+            ];
+
+            $rescheduledUseCase = new QueueBookingRescheduled($this->db, $this->notificationRepo);
+            $rescheduledUseCase->execute($notificationData);
+        } catch (\Throwable $e) {
+            error_log(
+                'Failed to queue booking_rescheduled notification for booking ' .
+                (string) ($booking['id'] ?? 0) .
+                ': ' .
+                $e->getMessage()
+            );
+        }
+    }
+
+    private function getLocationAndBusinessData(int $locationId): array
+    {
+        if ($this->db === null || $locationId <= 0) {
+            return [];
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT
+                l.name as location_name,
+                l.email as location_email,
+                l.address as location_address,
+                l.city as location_city,
+                l.phone as location_phone,
+                l.timezone as location_timezone,
+                b.name as business_name,
+                b.email as business_email,
+                b.slug as business_slug
+             FROM locations l
+             JOIN businesses b ON l.business_id = b.id
+             WHERE l.id = ?'
+        );
+        $stmt->execute([$locationId]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
     }
 
     /**

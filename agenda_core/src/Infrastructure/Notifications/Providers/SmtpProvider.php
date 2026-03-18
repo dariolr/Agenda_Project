@@ -64,7 +64,6 @@ final class SmtpProvider implements EmailProviderInterface
         // Emergency-only fallback (disabled by default for security hardening).
         if (!$this->isEnabled($_ENV['ALLOW_PHP_MAIL_FALLBACK'] ?? 'false')) {
             $this->lastError = 'PHPMailer not available and native mail() fallback disabled';
-            error_log('SMTP Error: ' . $this->lastError);
             return false;
         }
         error_log('[SmtpProvider] WARNING: ALLOW_PHP_MAIL_FALLBACK is enabled. Native mail() fallback is active.');
@@ -159,7 +158,9 @@ final class SmtpProvider implements EmailProviderInterface
             // Recipients
             $mail->setFrom($from, $name);
             $mail->addAddress($to);
-            $mail->addReplyTo($replyTo);
+            if ($this->isValidEmail($replyTo)) {
+                $mail->addReplyTo($replyTo);
+            }
 
             // Content
             $mail->isHTML(true);
@@ -189,7 +190,6 @@ final class SmtpProvider implements EmailProviderInterface
             return true;
         } catch (\Exception $e) {
             $this->lastError = $e->getMessage();
-            error_log("SMTP Error: " . $this->lastError);
             return false;
         }
     }
@@ -222,5 +222,10 @@ final class SmtpProvider implements EmailProviderInterface
     private function isEnabled(string $value): bool
     {
         return in_array(strtolower(trim($value)), self::TRUE_VALUES, true);
+    }
+
+    private function isValidEmail(string $email): bool
+    {
+        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
     }
 }

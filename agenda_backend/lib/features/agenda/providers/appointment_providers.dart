@@ -102,6 +102,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     required int newStaffId,
     required DateTime newStart,
     required DateTime newEnd,
+    bool notifyClient = true,
   }) async {
     final currentList = state.value ?? const <Appointment>[];
 
@@ -164,6 +165,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
         endTime: roundedEnd,
         staffId: newStaffId,
         extraBlockedMinutes: newBlocked,
+        notifyClient: notifyClient,
       );
       _invalidateWeeksForDates([originalAppt.startTime, roundedStart]);
       ref.invalidate(bookingsProvider);
@@ -180,6 +182,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     required BookingRescheduleSession session,
     required DateTime targetStart,
     required int targetStaffId,
+    bool notifyClient = true,
   }) async {
     if (session.items.isEmpty) return MoveBookingByAnchorResult.failed;
     final currentList = state.value;
@@ -277,6 +280,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
           endTime: updatedEnds[item.appointmentId],
           staffId: updatedStaffIds[item.appointmentId],
           extraBlockedMinutes: updatedBlocked[item.appointmentId],
+          notifyClient: notifyClient,
         );
       }
       _invalidateWeeksForDates([

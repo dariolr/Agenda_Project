@@ -16,7 +16,7 @@
 
 - `APP_ENV`
 - `API_BASE_URL`
-- `WEB_BASE_URL`
+- `FRONTEND_URL`
 - `DB_HOST`
 - `DB_PORT`
 - `DB_DATABASE`

@@ -51,7 +51,7 @@ final class EnvironmentConfig
             isDemo: $isDemo,
             isProduction: $isProduction,
             apiBaseUrl: self::env('API_BASE_URL', 'https://api.romeolab.it'),
-            webBaseUrl: self::env('WEB_BASE_URL', 'https://prenota.romeolab.it'),
+            webBaseUrl: self::env('FRONTEND_URL', 'https://prenota.romeolab.it'),
             showDemoBanner: self::envBool('SHOW_DEMO_BANNER', $isDemo),
             allowRealEmails: self::envBool('ALLOW_REAL_EMAILS', $isProduction),
             allowRealWhatsapp: self::envBool('ALLOW_REAL_WHATSAPP', $isProduction),
@@ -85,7 +85,7 @@ final class EnvironmentConfig
     private static function validate(self $config): void
     {
         self::assertValidUrl('API_BASE_URL', $config->apiBaseUrl);
-        self::assertValidUrl('WEB_BASE_URL', $config->webBaseUrl);
+        self::assertValidUrl('FRONTEND_URL', $config->webBaseUrl);
 
         if ($config->isDemo) {
             if (
