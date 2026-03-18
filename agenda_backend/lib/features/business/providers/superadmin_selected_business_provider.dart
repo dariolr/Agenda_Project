@@ -78,6 +78,7 @@ void invalidateBusinessScopedProviders(Object refObj) {
 
   // Services
   ref.invalidate(servicesProvider);
+  ref.invalidate(serviceVariantsProvider);
   ref.invalidate(serviceCategoriesProvider);
   ref.invalidate(serviceStaffEligibilityProvider);
 

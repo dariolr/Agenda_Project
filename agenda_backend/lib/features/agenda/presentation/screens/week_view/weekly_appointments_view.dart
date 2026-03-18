@@ -815,8 +815,11 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
     }
 
     final variantsAsync = ref.watch(serviceVariantsProvider);
+    final neutralServiceColor = Theme.of(
+      context,
+    ).colorScheme.surfaceContainerHighest;
     if (variantsAsync.isLoading && !variantsAsync.hasValue) {
-      return Theme.of(context).colorScheme.primary;
+      return neutralServiceColor;
     }
 
     final variants = variantsAsync.value ?? const [];
@@ -827,7 +830,7 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
       serviceColorMap[variant.serviceId] = ColorUtils.fromHex(colorHex);
     }
 
-    return serviceColorMap[currentAppointment.serviceId] ?? fallbackColor;
+    return serviceColorMap[currentAppointment.serviceId] ?? neutralServiceColor;
   }
 
   String _resolveStaffDisplayName(WidgetRef ref, int staffId) {

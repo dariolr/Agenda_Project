@@ -619,7 +619,13 @@ class _AppointmentCardInteractiveState
         cardHeight < 34;
     final showStatusIcon = statusVisual != null && !forFeedback;
     final durationMinutes = endTime.difference(startTime).inMinutes;
+    final isUltraShortCard = durationMinutes < 10;
     final isShortCard = durationMinutes <= 15;
+    final effectiveAppointmentPrice = isUltraShortCard ? null : appointmentPrice;
+    final effectiveBookingTotal = isUltraShortCard ? null : bookingTotal;
+    final verticalTopPadding = isUltraShortCard ? 0.0 : (isShortCard ? 2.0 : 4.0);
+    final verticalBottomPadding = isUltraShortCard ? 0.0 : 4.0;
+    final horizontalRightPadding = isUltraShortCard ? 2.0 : 6.0;
 
     final animationDuration = _isDraggingResize || forFeedback
         ? Duration.zero
@@ -676,9 +682,9 @@ class _AppointmentCardInteractiveState
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   6,
-                  isShortCard ? 2 : 4,
-                  6,
-                  4,
+                  verticalTopPadding,
+                  horizontalRightPadding,
+                  verticalBottomPadding,
                 ),
                 child: SizedBox.expand(
                   child: _buildContent(
@@ -690,8 +696,8 @@ class _AppointmentCardInteractiveState
                     bookingSource: forFeedback
                         ? ''
                         : (widget.appointment.bookingSource ?? ''),
-                    appointmentPrice: appointmentPrice,
-                    bookingTotal: bookingTotal,
+                    appointmentPrice: effectiveAppointmentPrice,
+                    bookingTotal: effectiveBookingTotal,
                     statusVisual: statusVisual,
                     showStatusIcon: showStatusIcon && !showCompactStatusBar,
                     isRecurring: widget.appointment.isRecurring,
@@ -703,11 +709,12 @@ class _AppointmentCardInteractiveState
                             clientNotes: hasClientNotes ? clientNotes : null,
                           )
                         : null,
+                    ultraCompact: isUltraShortCard,
                   ),
                 ),
               ),
               if (!forFeedback && !isResizingDisabled && isSelected)
-                _buildResizeHandle(),
+                _buildResizeHandle(compact: isUltraShortCard),
             ],
           ),
         ),
@@ -747,12 +754,13 @@ class _AppointmentCardInteractiveState
     int? recurrenceIndex,
     int? recurrenceTotal,
     VoidCallback? onNotesTap,
+    bool ultraCompact = false,
   }) {
-    final formFactor = ref.watch(formFactorProvider);
     final effectiveColumnWidth = widget.columnWidth ?? _lastSize?.width;
     final appointmentDurationMinutes = widget.appointment.endTime
         .difference(widget.appointment.startTime)
         .inMinutes;
+    final isUltraShortCard = appointmentDurationMinutes < 10;
     final isShortCard = appointmentDurationMinutes <= 15;
     final trailingIconSize = isShortCard ? 11.0 : 14.0;
     final trailingIconLeftPadding = isShortCard ? 2.0 : 4.0;
@@ -773,19 +781,10 @@ class _AppointmentCardInteractiveState
       fontSize: isShortCard ? 9 : null,
       height: 1.1,
     );
-    final screenWidth = MediaQuery.of(context).size.width;
-    final approxVisibleColumns =
-        (effectiveColumnWidth != null &&
-            effectiveColumnWidth > 0 &&
-            screenWidth > 0)
-        ? (screenWidth / effectiveColumnWidth).round()
-        : 0;
-    // Stack client name below time when cards are narrow:
-    // - on smartphone with 3+ visible columns
-    // - on any form factor when the card is narrower than 130px (overlapping)
     final stackClientUnderTime =
-        (formFactor == AppFormFactor.mobile && approxVisibleColumns >= 3) ||
-        (effectiveColumnWidth != null && effectiveColumnWidth < 130);
+        !isUltraShortCard &&
+        appointmentDurationMinutes >= 30 &&
+        client.isNotEmpty;
 
     final trailingIcons = <Widget>[];
     final isCompactIconsLayout =
@@ -877,9 +876,39 @@ class _AppointmentCardInteractiveState
       );
     }
 
+    if (ultraCompact) {
+      const compactTimeStyle = TextStyle(
+        color: Colors.black87,
+        fontWeight: FontWeight.w600,
+        fontSize: 8,
+        height: 1.0,
+      );
+      const compactClientStyle = TextStyle(
+        color: Colors.black87,
+        fontWeight: FontWeight.w700,
+        fontSize: 8,
+        height: 1.0,
+      );
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 1, right: 10),
+        child: RichText(
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          text: TextSpan(
+            children: [
+              TextSpan(text: '$start ', style: compactTimeStyle),
+              TextSpan(text: client, style: compactClientStyle),
+            ],
+          ),
+        ),
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxIcons = isCompactIconsLayout ? 2 : 4;
+        final maxIcons = isUltraShortCard ? 0 : (isCompactIconsLayout ? 2 : 4);
         final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
 
         return ClipRect(
@@ -900,7 +929,7 @@ class _AppointmentCardInteractiveState
                       Row(
                         children: [
                           Expanded(
-                            child: stackClientUnderTime
+                              child: stackClientUnderTime
                                 ? Text(
                                     '$start - $end',
                                     maxLines: 1,
@@ -915,7 +944,9 @@ class _AppointmentCardInteractiveState
                                     text: TextSpan(
                                       children: [
                                         TextSpan(
-                                          text: '$start - $end  ',
+                                          text: isUltraShortCard
+                                              ? '$start  '
+                                              : '$start - $end  ',
                                           style: timeTextStyle,
                                         ),
                                         TextSpan(
@@ -938,7 +969,7 @@ class _AppointmentCardInteractiveState
                           overflow: TextOverflow.ellipsis,
                           style: stackedClientTextStyle,
                         ),
-                      if (info.isNotEmpty)
+                      if (!isUltraShortCard && info.isNotEmpty)
                         Text(
                           info,
                           maxLines: 1,
@@ -1130,49 +1161,64 @@ class _AppointmentCardInteractiveState
   }
 
   // 🔹 Resize identico all’originale
-  Widget _buildResizeHandle() {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.resizeUpDown,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onVerticalDragStart: (details) {
-            final renderBox = context.findRenderObject() as RenderBox?;
-            final currentHeightPx = renderBox?.size.height ?? 0;
-            _lastPointerGlobalPosition = details.globalPosition;
-            _updateDragBlock(true);
-
-            ref
-                .read(resizingProvider.notifier)
-                .startResize(
-                  appointmentId: widget.appointment.id,
-                  currentHeightPx: currentHeightPx,
-                  startTime: widget.appointment.startTime,
-                  endTime: widget.appointment.endTime,
-                );
-            ref.read(isResizingProvider.notifier).start();
-            setState(() => _isDraggingResize = true);
-          },
-          onVerticalDragUpdate: (details) {
-            // Gestito da onPointerMove
-          },
-          onVerticalDragEnd: (_) {
-            // Gestito da onPointerUp
-          },
-          onVerticalDragCancel: () {
-            // Gestito da onPointerCancel
-          },
-          child: Container(
-            height: 20,
-            width: double.infinity,
-            alignment: Alignment.bottomCenter,
-            child: const Padding(
-              padding: EdgeInsets.only(bottom: 1),
-              child: Icon(Icons.drag_indicator, size: 14, color: Colors.grey),
+  Widget _buildResizeHandle({bool compact = false}) {
+    final handleChild = compact
+        ? Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              width: 10,
+              height: double.infinity,
+              alignment: Alignment.center,
+              child: const RotatedBox(
+                quarterTurns: 1,
+                child: Icon(Icons.drag_indicator, size: 12, color: Colors.grey),
+              ),
             ),
-          ),
-        ),
+          )
+        : Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              height: 20,
+              width: double.infinity,
+              alignment: Alignment.bottomCenter,
+              child: const Padding(
+                padding: EdgeInsets.only(bottom: 1),
+                child: Icon(Icons.drag_indicator, size: 14, color: Colors.grey),
+              ),
+            ),
+          );
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeUpDown,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onVerticalDragStart: (details) {
+          final renderBox = context.findRenderObject() as RenderBox?;
+          final currentHeightPx = renderBox?.size.height ?? 0;
+          _lastPointerGlobalPosition = details.globalPosition;
+          _updateDragBlock(true);
+
+          ref
+              .read(resizingProvider.notifier)
+              .startResize(
+                appointmentId: widget.appointment.id,
+                currentHeightPx: currentHeightPx,
+                startTime: widget.appointment.startTime,
+                endTime: widget.appointment.endTime,
+              );
+          ref.read(isResizingProvider.notifier).start();
+          setState(() => _isDraggingResize = true);
+        },
+        onVerticalDragUpdate: (details) {
+          // Gestito da onPointerMove
+        },
+        onVerticalDragEnd: (_) {
+          // Gestito da onPointerUp
+        },
+        onVerticalDragCancel: () {
+          // Gestito da onPointerCancel
+        },
+        child: handleChild,
       ),
     );
   }
