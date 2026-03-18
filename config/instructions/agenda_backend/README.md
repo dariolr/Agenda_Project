@@ -102,7 +102,7 @@ dart run intl_utils:generate
 flutter run -d chrome \
   --dart-define=APP_ENV=local \
   --dart-define=API_BASE_URL=http://localhost:8080 \
-  --dart-define=WEB_BASE_URL=http://localhost:3000
+  --dart-define=FRONTEND_URL=http://localhost:3000
 ```
 
 Configurazione completa ambienti in [../config/docs/agenda_backend-environments.md](../config/docs/agenda_backend-environments.md).

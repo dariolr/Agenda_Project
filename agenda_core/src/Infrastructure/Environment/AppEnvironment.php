@@ -18,6 +18,11 @@ final class AppEnvironment
             return self::PRODUCTION;
         }
 
+        // Alias legacy/comuni in ambienti locali (es. MAMP/Apache).
+        if ($normalized === 'dev' || $normalized === 'development') {
+            return self::LOCAL;
+        }
+
         if (!in_array($normalized, [self::LOCAL, self::DEMO, self::PRODUCTION], true)) {
             throw new \RuntimeException(
                 sprintf('APP_ENV non riconosciuto: "%s". Valori ammessi: local, demo, production.', $value)

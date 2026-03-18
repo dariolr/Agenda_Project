@@ -96,7 +96,7 @@ class AppEnvironmentConfig {
     final webBaseUrl = raw.webBaseUrl.trim();
 
     _assertValidUrl('API_BASE_URL', apiBaseUrl);
-    _assertValidUrl('WEB_BASE_URL', webBaseUrl);
+    _assertValidUrl('FRONTEND_URL', webBaseUrl);
 
     final resolvedDemoMode = raw.demoMode ?? isDemo;
     if (resolvedDemoMode != isDemo) {
@@ -185,7 +185,7 @@ class AppEnvironmentConfig {
           defaultValue: _defaultProductionApiBaseUrl,
         ),
         webBaseUrl: String.fromEnvironment(
-          'WEB_BASE_URL',
+          'FRONTEND_URL',
           defaultValue: 'https://gestionale.romeolab.it',
         ),
         demoMode: bool.hasEnvironment('DEMO_MODE')

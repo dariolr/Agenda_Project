@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +25,15 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  static const String _debugLoginEmail = String.fromEnvironment(
+    'DEBUG_LOGIN_EMAIL',
+    defaultValue: '',
+  );
+  static const String _debugLoginPassword = String.fromEnvironment(
+    'DEBUG_LOGIN_PASSWORD',
+    defaultValue: '',
+  );
+
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -59,10 +69,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _rememberMe = true;
           });
         }
+      } else {
+        _applyDebugCredentialsPrefill();
       }
     } catch (e) {
       debugPrint('Error loading saved credentials: $e');
+      _applyDebugCredentialsPrefill();
     }
+  }
+
+  void _applyDebugCredentialsPrefill() {
+    if (!kDebugMode || !mounted) {
+      return;
+    }
+
+    final email = _debugLoginEmail.trim();
+    final password = _debugLoginPassword.trim();
+    if (email.isEmpty && password.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      if (email.isNotEmpty && _emailController.text.trim().isEmpty) {
+        _emailController.text = email;
+      }
+      if (password.isNotEmpty && _passwordController.text.trim().isEmpty) {
+        _passwordController.text = password;
+      }
+      if (_emailController.text.trim().isNotEmpty &&
+          _passwordController.text.trim().isNotEmpty) {
+        _rememberMe = true;
+      }
+    });
   }
 
   @override

@@ -1026,7 +1026,7 @@ final class BookingsController
         $tz = (string) ($booking['location_timezone'] ?? '');
         if ($tz !== '') return $tz;
         // Fallback: use environment or Rome
-        return $_ENV['DEFAULT_TIMEZONE'] ?? 'Europe/Rome';
+        return $_ENV['APP_TIMEZONE'] ?? 'Europe/Rome';
     }
 
     private function resolveLocationLocale(array $booking): string

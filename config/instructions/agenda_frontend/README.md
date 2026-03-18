@@ -43,7 +43,7 @@ Esempio `local`:
 flutter run -d chrome \
   --dart-define=APP_ENV=local \
   --dart-define=API_BASE_URL=http://localhost:8888/agenda_core/public \
-  --dart-define=WEB_BASE_URL=http://localhost:3000
+  --dart-define=FRONTEND_URL=http://localhost:3000
 ```
 
 Dettagli completi: `../config/docs/agenda_frontend-environments.md`.

@@ -595,14 +595,12 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         ref.read(pendingDropProvider.notifier).clear();
 
         if (!confirmResult.confirmed || !context.mounted) return;
-        // TODO(api): use confirmResult.notifyClient to control
-        // booking_rescheduled notification/reminder policy.
-
         appointmentsNotifier.moveAppointment(
           appointmentId: details.data.id,
           newStaffId: widget.staff.id,
           newStart: dropResult.newStart,
           newEnd: dropResult.newEnd,
+          notifyClient: confirmResult.notifyClient,
         );
       },
       builder: (context, candidateData, rejectedData) {
@@ -1025,9 +1023,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           _hasReachableClientContact(bookingAppointments),
     );
     if (!confirmResult.confirmed || !mounted) return;
-    // TODO(api): use confirmResult.notifyClient to control
-    // booking_rescheduled notification/reminder policy.
-
     setState(() => _isApplyingBookingReschedule = true);
     try {
       final result = await ref
@@ -1036,6 +1031,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             session: rescheduleSession,
             targetStart: targetStart,
             targetStaffId: widget.staff.id,
+            notifyClient: confirmResult.notifyClient,
           );
 
       if (!mounted) return;

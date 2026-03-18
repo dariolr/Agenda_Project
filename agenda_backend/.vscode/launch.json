@@ -6,7 +6,24 @@
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
-      "args": ["--web-port=8080", "--dart-define=API_BASE_URL=https://api.romeolab.it"]
+      "args": [
+        "--web-port=8080",
+        "--dart-define-from-file=.vscode/debug_credentials.json",
+        "--dart-define=APP_ENV=production",
+        "--dart-define=DEMO_MODE=false",
+        "--dart-define=API_BASE_URL=https://api.romeolab.it",
+        "--dart-define=WEB_BASE_URL=https://gestionale.romeolab.it",
+        "--dart-define=ALLOW_REAL_EMAILS=true",
+        "--dart-define=ALLOW_REAL_WHATSAPP=true",
+        "--dart-define=ALLOW_REAL_PAYMENTS=true",
+        "--dart-define=ALLOW_EXTERNAL_WEBHOOKS=true",
+        "--dart-define=ALLOW_DESTRUCTIVE_BUSINESS_ACTIONS=true",
+        "--dart-define=ALLOW_PLAN_CHANGES=true",
+        "--dart-define=ALLOW_REAL_EXPORTS=true",
+        "--dart-define=SHOW_DEMO_BANNER=false",
+        "--dart-define=DEMO_RESET_EXPECTED=false",
+        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false"
+      ]
     },
     {
       "name": "Backend (Local API)",
@@ -15,8 +32,72 @@
       "deviceId": "chrome",
       "args": [
         "--no-pub",
-        "--web-port=8081", 
-        "--dart-define=API_BASE_URL=http://localhost:8888"
+        "--web-port=8081",
+        "--dart-define-from-file=.vscode/debug_credentials.json",
+        "--dart-define=APP_ENV=local",
+        "--dart-define=DEMO_MODE=false",
+        "--dart-define=API_BASE_URL=http://localhost:8888",
+        "--dart-define=WEB_BASE_URL=http://localhost:3001",
+        "--dart-define=ALLOW_REAL_EMAILS=false",
+        "--dart-define=ALLOW_REAL_WHATSAPP=false",
+        "--dart-define=ALLOW_REAL_PAYMENTS=false",
+        "--dart-define=ALLOW_EXTERNAL_WEBHOOKS=false",
+        "--dart-define=ALLOW_DESTRUCTIVE_BUSINESS_ACTIONS=false",
+        "--dart-define=ALLOW_PLAN_CHANGES=false",
+        "--dart-define=ALLOW_REAL_EXPORTS=false",
+        "--dart-define=SHOW_DEMO_BANNER=false",
+        "--dart-define=DEMO_RESET_EXPECTED=false",
+        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false"
+      ]
+    },
+    {
+      "name": "Backend (Demo API)",
+      "type": "dart",
+      "request": "launch",
+      "deviceId": "chrome",
+      "args": [
+        "--no-pub",
+        "--web-port=8080",
+        "--dart-define-from-file=.vscode/debug_credentials.json",
+        "--dart-define=APP_ENV=demo",
+        "--dart-define=DEMO_MODE=true",
+        "--dart-define=API_BASE_URL=https://demo-api.romeolab.it",
+        "--dart-define=WEB_BASE_URL=https://demo-gestionale.romeolab.it",
+        "--dart-define=ALLOW_REAL_EMAILS=false",
+        "--dart-define=ALLOW_REAL_WHATSAPP=false",
+        "--dart-define=ALLOW_REAL_PAYMENTS=false",
+        "--dart-define=ALLOW_EXTERNAL_WEBHOOKS=false",
+        "--dart-define=ALLOW_DESTRUCTIVE_BUSINESS_ACTIONS=false",
+        "--dart-define=ALLOW_PLAN_CHANGES=false",
+        "--dart-define=ALLOW_REAL_EXPORTS=false",
+        "--dart-define=SHOW_DEMO_BANNER=true",
+        "--dart-define=DEMO_RESET_EXPECTED=true",
+        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false"
+      ]
+    },
+    {
+      "name": "Backend (Demo Local API)",
+      "type": "dart",
+      "request": "launch",
+      "deviceId": "chrome",
+      "args": [
+        "--no-pub",
+        "--web-port=8081",
+        "--dart-define-from-file=.vscode/debug_credentials.json",
+        "--dart-define=APP_ENV=demo",
+        "--dart-define=DEMO_MODE=true",
+        "--dart-define=API_BASE_URL=http://localhost:8888",
+        "--dart-define=WEB_BASE_URL=http://localhost:3001",
+        "--dart-define=ALLOW_REAL_EMAILS=false",
+        "--dart-define=ALLOW_REAL_WHATSAPP=false",
+        "--dart-define=ALLOW_REAL_PAYMENTS=false",
+        "--dart-define=ALLOW_EXTERNAL_WEBHOOKS=false",
+        "--dart-define=ALLOW_DESTRUCTIVE_BUSINESS_ACTIONS=false",
+        "--dart-define=ALLOW_PLAN_CHANGES=false",
+        "--dart-define=ALLOW_REAL_EXPORTS=false",
+        "--dart-define=SHOW_DEMO_BANNER=true",
+        "--dart-define=DEMO_RESET_EXPECTED=true",
+        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false"
       ]
     }
   ]

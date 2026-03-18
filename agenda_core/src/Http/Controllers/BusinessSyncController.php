@@ -175,7 +175,7 @@ final class BusinessSyncController
         }
         
         // URL API produzione
-        $prodApiUrl = $_ENV['PRODUCTION_API_URL'] ?? 'https://api.romeolab.it';
+        $prodApiUrl = $_ENV['API_BASE_URL'] ?? 'https://api.romeolab.it';
         
         try {
             // 1. Chiama API produzione per esportare

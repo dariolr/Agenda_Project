@@ -6,7 +6,7 @@ Il frontend prenotazioni supporta `local`, `demo`, `production` con config centr
 
 - `APP_ENV`
 - `API_BASE_URL`
-- `WEB_BASE_URL`
+- `FRONTEND_URL`
 - `DEMO_MODE`
 - `SHOW_DEMO_BANNER`
 - `DEMO_RESET_EXPECTED`
@@ -34,7 +34,7 @@ flutter build web --release --no-tree-shake-icons \
   --dart-define=APP_ENV=demo \
   --dart-define=DEMO_MODE=true \
   --dart-define=API_BASE_URL=https://demo-api.romeolab.it \
-  --dart-define=WEB_BASE_URL=https://demo-prenota.romeolab.it \
+  --dart-define=FRONTEND_URL=https://demo-prenota.romeolab.it \
   --dart-define=ALLOW_REAL_PAYMENTS=false \
   --dart-define=ALLOW_EXTERNAL_WEBHOOKS=false \
   --dart-define=ALLOW_REAL_EXPORTS=false \

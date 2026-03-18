@@ -267,8 +267,15 @@ foreach ($notifications as $notification) {
             error_log("Notification {$id} sent via {$usedProvider}");
         } else {
             $provider = $emailService->getName();
+            $providerError = null;
+            if (method_exists($emailService, 'getLastError')) {
+                $providerError = $emailService->getLastError();
+            }
+            $errorDetail = $providerError !== null && trim($providerError) !== ''
+                ? " | provider_error={$providerError}"
+                : '';
             throw new \RuntimeException(
-                "Email service returned false (provider={$provider}, channel={$channel}, recipient={$recipient}, from={$fromEmail})"
+                "Email service returned false (provider={$provider}, channel={$channel}, recipient={$recipient}, from={$fromEmail}){$errorDetail}"
             );
         }
         

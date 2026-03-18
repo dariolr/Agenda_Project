@@ -13,7 +13,7 @@
 - `APP_ENV` (`local|demo|production`)
 - `DEMO_MODE`
 - `API_BASE_URL`
-- `WEB_BASE_URL`
+- `FRONTEND_URL`
 - `ALLOW_REAL_EMAILS`
 - `ALLOW_REAL_WHATSAPP`
 - `ALLOW_REAL_PAYMENTS`
@@ -32,7 +32,7 @@ L'app esegue bootstrap in `main.dart` con `AppEnvironmentConfig.bootstrap()`.
 Controlli fail-fast:
 
 - `APP_ENV` deve essere valido.
-- `API_BASE_URL` e `WEB_BASE_URL` devono essere URL validi.
+- `API_BASE_URL` e `FRONTEND_URL` devono essere URL validi.
 - In `demo`, i flag reali/sensibili devono essere `false`.
 - In `demo`, `SHOW_DEMO_BANNER` deve essere `true`.
 - In `demo`, `API_BASE_URL` non può essere `https://api.romeolab.it`.
@@ -57,7 +57,7 @@ flutter build web --release --no-tree-shake-icons \
   --dart-define=APP_ENV=demo \
   --dart-define=DEMO_MODE=true \
   --dart-define=API_BASE_URL=https://demo-api.romeolab.it \
-  --dart-define=WEB_BASE_URL=https://demo-gestionale.romeolab.it \
+  --dart-define=FRONTEND_URL=https://demo-gestionale.romeolab.it \
   --dart-define=ALLOW_REAL_EMAILS=false \
   --dart-define=ALLOW_REAL_WHATSAPP=false \
   --dart-define=ALLOW_REAL_PAYMENTS=false \
@@ -75,5 +75,5 @@ Production:
 flutter build web --release --no-tree-shake-icons \
   --dart-define=APP_ENV=production \
   --dart-define=API_BASE_URL=https://api.romeolab.it \
-  --dart-define=WEB_BASE_URL=https://gestionale.romeolab.it
+  --dart-define=FRONTEND_URL=https://gestionale.romeolab.it
 ```

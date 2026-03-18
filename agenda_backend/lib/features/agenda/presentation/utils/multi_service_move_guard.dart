@@ -301,9 +301,8 @@ Future<MoveBookingByAnchorResult> moveWholeBookingFromAnchor({
   required DateTime targetStart,
   required int targetStaffId,
   required List<Appointment> bookingAppointments,
+  bool notifyClient = true,
 }) async {
-  // TODO(api): add explicit backend parameter for notify/reminder policy
-  // chosen by operator in showMoveConfirmDialog.
   final session = buildBookingMoveSession(
     bookingId: anchorAppointment.bookingId,
     anchorAppointmentId: anchorAppointment.id,
@@ -315,6 +314,7 @@ Future<MoveBookingByAnchorResult> moveWholeBookingFromAnchor({
         session: session,
         targetStart: targetStart,
         targetStaffId: targetStaffId,
+        notifyClient: notifyClient,
       );
 
   if (result != MoveBookingByAnchorResult.success && context.mounted) {

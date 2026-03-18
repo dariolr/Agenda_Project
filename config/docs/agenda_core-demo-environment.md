@@ -26,7 +26,7 @@ In `APP_ENV=demo` la bootstrap validation richiede:
 ```bash
 APP_ENV=demo \
 API_BASE_URL=https://demo-api.romeolab.it \
-WEB_BASE_URL=https://demo-gestionale.romeolab.it \
+FRONTEND_URL=https://demo-gestionale.romeolab.it \
 SHOW_DEMO_BANNER=true \
 ALLOW_REAL_EMAILS=false \
 ALLOW_REAL_WHATSAPP=false \
