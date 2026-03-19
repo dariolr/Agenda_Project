@@ -17,6 +17,8 @@ import 'package:intl/intl.dart';
 
 enum TopControlsMode { agenda, staff }
 
+const double kTopControlsSpacing = 8.0;
+
 class TopControls extends ConsumerWidget {
   const TopControls.agenda({super.key, this.compact = false})
     : mode = TopControlsMode.agenda,
@@ -92,9 +94,8 @@ class TopControls extends ConsumerWidget {
           useWeekRangePicker: true,
           isCompact: compact,
         ),
-        const SizedBox(width: 8),
         if (data.locations.length > 1) ...[
-          const SizedBox(width: 16),
+          const SizedBox(width: kTopControlsSpacing),
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: AgendaLocationSelector(
@@ -189,7 +190,9 @@ class TopControls extends ConsumerWidget {
                 child: const AgendaStaffFilterSelector(isCompact: false),
               ),
             if (data.locations.length > 1) ...[
-              const SizedBox(width: 16),
+              SizedBox(
+                width: kTopControlsSpacing,
+              ),
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: AgendaLocationSelector(
@@ -207,13 +210,13 @@ class TopControls extends ConsumerWidget {
               ),
             ],
             if (mode == TopControlsMode.agenda) ...[
-              const SizedBox(width: 12),
+              const SizedBox(width: kTopControlsSpacing),
               const Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: AgendaViewModeButton(),
               ),
               if (canViewReports) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: kTopControlsSpacing),
                 const Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: AgendaLaunchReportButton(),
@@ -332,14 +335,16 @@ class TopControls extends ConsumerWidget {
             useWeekRangePicker:
                 mode == TopControlsMode.staff || isAgendaWeekMode,
           ),
-        if (showStaffSelector) const SizedBox(width: 16),
+        if (showStaffSelector) const SizedBox(width: kTopControlsSpacing),
         if (showStaffSelector)
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: const AgendaStaffFilterSelector(isCompact: false),
           ),
         if (showLocationSelector) ...[
-          const SizedBox(width: 16),
+          SizedBox(
+            width: kTopControlsSpacing,
+          ),
           if (mode == TopControlsMode.staff)
             Align(
               alignment: AlignmentDirectional.centerStart,
@@ -362,13 +367,13 @@ class TopControls extends ConsumerWidget {
             ),
         ],
         if (mode == TopControlsMode.agenda) ...[
-          const SizedBox(width: 16),
+          const SizedBox(width: kTopControlsSpacing),
           const Align(
             alignment: AlignmentDirectional.centerStart,
             child: AgendaViewModeButton(),
           ),
           if (canViewReports) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: kTopControlsSpacing),
             const Align(
               alignment: AlignmentDirectional.centerStart,
               child: AgendaLaunchReportButton(),
