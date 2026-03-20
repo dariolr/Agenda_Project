@@ -11,7 +11,7 @@ if ! command -v mysql >/dev/null 2>&1; then
   exit 1
 fi
 
-RESET_SQL="$REPO_ROOT/scripts/reset_local_db.sql"
+RESET_SQL="$REPO_ROOT/config/scripts/demo/reset_local_db.sql"
 if [[ ! -f "$RESET_SQL" ]]; then
   echo "ERROR: missing reset script $RESET_SQL"
   exit 1
