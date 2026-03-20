@@ -95,18 +95,6 @@ class StaffPlanningsNotifier extends Notifier<StaffPlanningsState> {
 
     try {
       final api = ref.read(apiClientProvider);
-      // DEBUG: stampa payload
-      final payload = {
-        'staffId': planning.staffId,
-        'type': planning.type.name,
-        'validFrom': _dateToIso(planning.validFrom),
-        'validTo': planning.validTo != null
-            ? _dateToIso(planning.validTo!)
-            : null,
-        'templates': planning.templates.map((t) => t.toJson()).toList(),
-      };
-      // ignore: avoid_print
-      print('DEBUG createStaffPlanning payload: $payload');
 
       final response = await api.createStaffPlanning(
         staffId: planning.staffId,
@@ -117,9 +105,6 @@ class StaffPlanningsNotifier extends Notifier<StaffPlanningsState> {
             : null,
         templates: planning.templates.map((t) => t.toJson()).toList(),
       );
-
-      // ignore: avoid_print
-      print('DEBUG createStaffPlanning response: $response');
 
       // Usa il planning ritornato dal server (con ID generato)
       final createdPlanning = StaffPlanning.fromJson(response);
@@ -194,10 +179,55 @@ class StaffPlanningsNotifier extends Notifier<StaffPlanningsState> {
   Future<void> deletePlanning(int staffId, int planningId) async {
     try {
       final api = ref.read(apiClientProvider);
-      await api.deleteStaffPlanning(staffId, planningId);
-
       final staffPlannings = List<StaffPlanning>.from(state[staffId] ?? []);
+      final planningToDelete = staffPlannings
+          .where((p) => p.id == planningId)
+          .firstOrNull;
+
+      StaffPlanning? previousPlanningToReopen;
+      if (planningToDelete != null && planningToDelete.validTo == null) {
+        final deletedStart = DateTime(
+          planningToDelete.validFrom.year,
+          planningToDelete.validFrom.month,
+          planningToDelete.validFrom.day,
+        );
+        final previousPlannings = staffPlannings
+            .where((p) => p.id != planningId)
+            .where((p) => p.validTo != null)
+            .where((p) {
+              final end = p.validTo!;
+              final endDate = DateTime(end.year, end.month, end.day);
+              return endDate.isBefore(deletedStart);
+            })
+            .toList()
+          ..sort((a, b) {
+            final aEnd = a.validTo!;
+            final bEnd = b.validTo!;
+            final endCompare = bEnd.compareTo(aEnd);
+            if (endCompare != 0) return endCompare;
+            return b.validFrom.compareTo(a.validFrom);
+          });
+        previousPlanningToReopen = previousPlannings.firstOrNull;
+      }
+
+      await api.deleteStaffPlanning(staffId, planningId);
       staffPlannings.removeWhere((p) => p.id == planningId);
+
+      if (previousPlanningToReopen != null &&
+          previousPlanningToReopen.validTo != null) {
+        final updatedPrevious = await api.updateStaffPlanning(
+          staffId: staffId,
+          planningId: previousPlanningToReopen.id,
+          setValidToNull: true,
+        );
+        final updatedPlanning = StaffPlanning.fromJson(updatedPrevious);
+        final previousIndex = staffPlannings.indexWhere(
+          (p) => p.id == updatedPlanning.id,
+        );
+        if (previousIndex != -1) {
+          staffPlannings[previousIndex] = updatedPlanning;
+        }
+      }
 
       state = {...state, staffId: staffPlannings};
     } catch (e) {

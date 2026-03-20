@@ -118,13 +118,22 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
       // dagli orari già presenti nel planning (massimo valore possibile).
       _displayStepMinutes = _computeOptimalDisplayStep();
     } else {
-      _type = StaffPlanningType.weekly;
       // Data inizio = data fine planning attivo + 1 giorno, altrimenti oggi
       _validFrom = _calculateDefaultStartDate();
       _validTo = null;
       _isOpenEnded = true;
-      _slotsA = {for (int d = 1; d <= 7; d++) d: <int>{}};
-      _slotsB = {for (int d = 1; d <= 7; d++) d: <int>{}};
+
+      final latestValidPlanning = _findLatestValidPlanning();
+      if (latestValidPlanning != null) {
+        _type = latestValidPlanning.type;
+        _slotsA = _loadSlotsFromTemplate(latestValidPlanning.templateA);
+        _slotsB = _loadSlotsFromTemplate(latestValidPlanning.templateB);
+        _displayStepMinutes = _computeOptimalDisplayStep();
+      } else {
+        _type = StaffPlanningType.weekly;
+        _slotsA = {for (int d = 1; d <= 7; d++) d: <int>{}};
+        _slotsB = {for (int d = 1; d <= 7; d++) d: <int>{}};
+      }
     }
 
     _setupTabController();
@@ -158,6 +167,31 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
 
     return today;
   }
+
+  /// Ritorna l'ultimo planning valido rispetto a oggi.
+  /// Se non esiste alcun planning valido o passato, ritorna null.
+  StaffPlanning? _findLatestValidPlanning() {
+    final today = ref.read(tenantTodayProvider);
+
+    final candidates = widget.existingPlannings.where((planning) {
+      // Esclude planning con inizio nel futuro.
+      return !_dateOnly(planning.validFrom).isAfter(today);
+    }).toList();
+
+    if (candidates.isEmpty) return null;
+
+    candidates.sort((a, b) {
+      final aEnd = _dateOnly(a.validTo ?? today);
+      final bEnd = _dateOnly(b.validTo ?? today);
+      final endCompare = bEnd.compareTo(aEnd);
+      if (endCompare != 0) return endCompare;
+      return b.validFrom.compareTo(a.validFrom);
+    });
+
+    return candidates.first;
+  }
+
+  DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 
   void _setupTabController() {
     _tabController?.dispose();

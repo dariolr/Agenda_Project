@@ -89,7 +89,7 @@ class AppButtonStyles {
       backgroundColor: backgroundColor ?? colorScheme.primary,
       foregroundColor: foregroundColor ?? colorScheme.onPrimary,
       padding: padding ?? defaultPadding,
-      fixedSize: const Size.fromHeight(kSharedAgendaControlHeight),
+      minimumSize: const Size.fromHeight(kSharedAgendaControlHeight),
       shape: RoundedRectangleBorder(
         borderRadius: borderRadius ?? defaultBorderRadius,
       ),
@@ -114,7 +114,7 @@ class AppButtonStyles {
       foregroundColor: foregroundColor ?? resolvedBorderColor,
       side: BorderSide(color: resolvedBorderColor, width: borderWidth),
       padding: padding ?? defaultPadding,
-      fixedSize: const Size.fromHeight(kSharedAgendaControlHeight),
+      minimumSize: const Size.fromHeight(kSharedAgendaControlHeight),
       shape: RoundedRectangleBorder(
         borderRadius: borderRadius ?? defaultBorderRadius,
       ),
