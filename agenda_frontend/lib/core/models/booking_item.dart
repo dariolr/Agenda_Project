@@ -15,6 +15,7 @@ class BookingItem {
   final DateTime endTime;
   final double totalPrice;
   final String? notes;
+  final String source;
   final bool canModify;
   final DateTime? canModifyUntil;
 
@@ -39,6 +40,7 @@ class BookingItem {
     required this.endTime,
     this.totalPrice = 0.0,
     this.notes,
+    this.source = 'manual',
     required this.canModify,
     this.canModifyUntil,
     this.canModifyUntilRaw,
@@ -74,6 +76,7 @@ class BookingItem {
           (json['price'] as num?)?.toDouble() ??
           0.0,
       notes: json['notes'] as String?,
+      source: (json['source'] as String?) ?? 'manual',
       canModify: json['can_modify'] as bool? ?? false,
       canModifyUntil: json['can_modify_until'] != null
           ? DateTime.parse(json['can_modify_until'] as String)
@@ -112,6 +115,10 @@ class BookingItem {
 
   /// Stringa formattata dei servizi
   String get servicesDisplay => serviceNames.join(' + ');
+  bool get isOnlineCustomerBooking =>
+      source == 'online' || source == 'onlinestaff';
+  bool get shouldShowCustomerNotes =>
+      isOnlineCustomerBooking && (notes?.trim().isNotEmpty ?? false);
 
   bool isPastAt(DateTime referenceNow) => endTime.isBefore(referenceNow);
   bool isUpcomingAt(DateTime referenceNow) => !isPastAt(referenceNow);
@@ -129,6 +136,7 @@ class BookingItem {
     DateTime? startTime,
     DateTime? endTime,
     String? notes,
+    String? source,
     bool? canModify,
     DateTime? canModifyUntil,
     String? canModifyUntilRaw,
@@ -150,6 +158,7 @@ class BookingItem {
       endTime: endTime ?? this.endTime,
       totalPrice: totalPrice,
       notes: notes ?? this.notes,
+      source: source ?? this.source,
       canModify: canModify ?? this.canModify,
       canModifyUntil: canModifyUntil ?? this.canModifyUntil,
       canModifyUntilRaw: canModifyUntilRaw ?? this.canModifyUntilRaw,

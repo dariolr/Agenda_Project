@@ -480,8 +480,8 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
               ),
             ],
 
-            // Note (se presenti)
-            if (booking.notes != null && booking.notes!.isNotEmpty) ...[
+            // Note cliente: visibili solo per prenotazioni create online dal cliente
+            if (booking.shouldShowCustomerNotes) ...[
               const SizedBox(height: 12),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,7 +494,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      booking.notes!,
+                      booking.notes!.trim(),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
