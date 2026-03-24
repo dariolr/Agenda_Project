@@ -35,7 +35,9 @@ class _RescheduleBookingDialogState
   @override
   void initState() {
     super.initState();
-    _notesController.text = widget.booking.notes ?? '';
+    if (widget.booking.shouldShowCustomerNotes) {
+      _notesController.text = widget.booking.notes ?? '';
+    }
     // Imposta data corrente della prenotazione
     _selectedDate = widget.booking.startTime;
     _loadAvailability(_selectedDate!);
@@ -188,7 +190,8 @@ class _RescheduleBookingDialogState
             serviceIds: serviceIds,
             startTime: newStartTime,
             idempotencyKey: idempotencyKey,
-            notes: _notesController.text.isNotEmpty
+            notes: widget.booking.isOnlineCustomerBooking &&
+                    _notesController.text.isNotEmpty
                 ? _notesController.text
                 : null,
           );
@@ -290,16 +293,17 @@ class _RescheduleBookingDialogState
               ],
               const SizedBox(height: 16),
 
-              // Note
-              TextField(
-                controller: _notesController,
-                decoration: InputDecoration(
-                  labelText: context.l10n.summaryNotes,
-                  hintText: context.l10n.summaryNotesHint,
-                  border: const OutlineInputBorder(),
+              // Note cliente: modificabili solo per prenotazioni create online dal cliente
+              if (widget.booking.isOnlineCustomerBooking)
+                TextField(
+                  controller: _notesController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.summaryNotes,
+                    hintText: context.l10n.summaryNotesHint,
+                    border: const OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
                 ),
-                maxLines: 3,
-              ),
             ],
           ),
         ),

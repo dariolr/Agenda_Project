@@ -415,6 +415,7 @@ BookingItem _fromCustomerBooking(
     endTime: endTime,
     totalPrice: (json['total_price'] as num?)?.toDouble() ?? 0.0,
     notes: json['notes'] as String?,
+    source: (json['source'] as String?) ?? 'manual',
     canModify: json['can_modify'] as bool? ?? false,
     canModifyUntil: json['can_modify_until'] != null
         ? DateTime.parse(json['can_modify_until'] as String)
