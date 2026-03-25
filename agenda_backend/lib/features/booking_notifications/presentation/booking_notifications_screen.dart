@@ -188,6 +188,8 @@ class _BookingNotificationsScreenState
     final state = ref.watch(bookingNotificationsProvider);
     final formFactor = ref.watch(formFactorProvider);
     final isDesktop = formFactor == AppFormFactor.desktop;
+    final canAccessWhatsappSection = _isSuperadmin;
+    final selectedTabIndex = canAccessWhatsappSection ? _selectedTabIndex : 0;
     final businesses = ref
         .watch(businessesProvider)
         .maybeWhen(
@@ -244,15 +246,17 @@ class _BookingNotificationsScreenState
                         icon: const Icon(Icons.history_rounded),
                         label: Text(l10n.bookingNotificationsTitle),
                       ),
-                      ButtonSegment<int>(
-                        value: 1,
-                        icon: const Icon(Icons.chat_bubble_outline_rounded),
-                        label: Text(l10n.whatsappTabTitle),
-                      ),
+                      if (canAccessWhatsappSection)
+                        ButtonSegment<int>(
+                          value: 1,
+                          icon: const Icon(Icons.chat_bubble_outline_rounded),
+                          label: Text(l10n.whatsappTabTitle),
+                        ),
                     ],
-                    selected: <int>{_selectedTabIndex},
+                    selected: <int>{selectedTabIndex},
                     showSelectedIcon: false,
                     onSelectionChanged: (selection) {
+                      if (!canAccessWhatsappSection) return;
                       final next = selection.first;
                       setState(() => _selectedTabIndex = next);
                       if (next == 1) {
@@ -264,7 +268,7 @@ class _BookingNotificationsScreenState
               ],
             ),
           ),
-          if (_selectedTabIndex == 0) ...[
+          if (selectedTabIndex == 0) ...[
             _FiltersBar(
               searchController: _searchController,
               selectedStatus: _selectedStatus,
