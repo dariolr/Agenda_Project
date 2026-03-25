@@ -4,6 +4,7 @@ set -euo pipefail
 # Ambiente deploy (default: production)
 ENV_NAME="production"
 DRY_RUN=0
+ENV_DEPLOY_SSH_ALIAS="${DEPLOY_SSH_ALIAS:-}"
 for arg in "$@"; do
   case "$arg" in
     --dry-run)
@@ -59,7 +60,7 @@ fi
 DART_DEFINES=()
 FRONTEND_URL=""
 DEPLOY_PATH=""
-DEPLOY_SSH_ALIAS=""
+DEPLOY_SSH_ALIAS_FROM_FILE=""
 while IFS='=' read -r key value; do
   [[ -z "${key// }" ]] && continue
   [[ "$key" == \#* ]] && continue
@@ -72,7 +73,7 @@ while IFS='=' read -r key value; do
     continue
   fi
   if [[ "$key" == "DEPLOY_SSH_ALIAS" ]]; then
-    DEPLOY_SSH_ALIAS="$value"
+    DEPLOY_SSH_ALIAS_FROM_FILE="$value"
     continue
   fi
 
@@ -84,6 +85,10 @@ if [[ -z "$FRONTEND_URL" ]]; then
   exit 1
 fi
 
+DEPLOY_SSH_ALIAS="$ENV_DEPLOY_SSH_ALIAS"
+if [[ -z "$DEPLOY_SSH_ALIAS" ]]; then
+  DEPLOY_SSH_ALIAS="$DEPLOY_SSH_ALIAS_FROM_FILE"
+fi
 if [[ -z "$DEPLOY_SSH_ALIAS" ]]; then
   DEPLOY_SSH_ALIAS="romeolab"
 fi
