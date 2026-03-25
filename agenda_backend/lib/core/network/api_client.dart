@@ -8,6 +8,10 @@ import '/core/models/class_booking.dart';
 import '/core/models/class_event.dart';
 import '/core/models/class_type.dart';
 import '/core/models/location_closure.dart';
+import '/core/models/whatsapp_location_mapping.dart';
+import '/core/models/whatsapp_config.dart';
+import '/core/models/whatsapp_go_live_check.dart';
+import '/core/models/whatsapp_outbox_item.dart';
 import 'api_config.dart';
 import 'token_storage.dart';
 
@@ -355,7 +359,8 @@ class ApiClient {
       final body = response.data;
       if (body is Map<String, dynamic>) {
         final backendCode = body['error']?['code'] ?? 'api_error';
-        final backendMessage = body['error']?['message'] ?? error.message ?? 'API Error';
+        final backendMessage =
+            body['error']?['message'] ?? error.message ?? 'API Error';
         return ApiException(
           code: backendCode,
           message: _localizedHttpErrorMessage(
@@ -380,7 +385,10 @@ class ApiClient {
       code: 'network_error',
       message: _localizedNetworkErrorMessage(error),
       statusCode: error.response?.statusCode ?? 0,
-      details: {'type': error.type.name, 'uri': error.requestOptions.uri.toString()},
+      details: {
+        'type': error.type.name,
+        'uri': error.requestOptions.uri.toString(),
+      },
     );
   }
 
@@ -395,17 +403,13 @@ class ApiClient {
       DioExceptionType.connectionTimeout ||
       DioExceptionType.sendTimeout ||
       DioExceptionType.receiveTimeout =>
-        l10n?.networkTimeoutError ??
-            'Connection timed out. Please try again.',
+        l10n?.networkTimeoutError ?? 'Connection timed out. Please try again.',
       DioExceptionType.connectionError =>
         l10n?.networkConnectionError ??
             'Could not connect to the server. Check your internet connection.',
       DioExceptionType.cancel =>
-        l10n?.networkRequestCancelled ??
-            'Request cancelled.',
-      _ =>
-        l10n?.networkUnknownError ??
-            'Network error. Please try again.',
+        l10n?.networkRequestCancelled ?? 'Request cancelled.',
+      _ => l10n?.networkUnknownError ?? 'Network error. Please try again.',
     };
   }
 
@@ -421,14 +425,17 @@ class ApiClient {
     }
 
     return switch (statusCode) {
-      500 => l10n?.serverError500 ??
-          'Internal server error. Please try again later.',
-      502 => l10n?.serverError502 ??
-          'Service temporarily unavailable (bad gateway). Please try again.',
-      503 => l10n?.serverError503 ??
-          'Service temporarily unavailable. Please try again shortly.',
-      504 => l10n?.serverError504 ??
-          'Server response timeout. Please try again.',
+      500 =>
+        l10n?.serverError500 ??
+            'Internal server error. Please try again later.',
+      502 =>
+        l10n?.serverError502 ??
+            'Service temporarily unavailable (bad gateway). Please try again.',
+      503 =>
+        l10n?.serverError503 ??
+            'Service temporarily unavailable. Please try again shortly.',
+      504 =>
+        l10n?.serverError504 ?? 'Server response timeout. Please try again.',
       _ => fallbackMessage,
     };
   }
@@ -1035,8 +1042,6 @@ class ApiClient {
     );
   }
 
-
-
   /// GET /v1/businesses/{business_id}/class-events
   Future<List<ClassEvent>> getClassEvents({
     required int businessId,
@@ -1077,9 +1082,7 @@ class ApiClient {
   }) async {
     final response = await get(
       ApiConfig.classTypes(businessId),
-      queryParameters: {
-        if (includeInactive) 'include_inactive': '1',
-      },
+      queryParameters: {if (includeInactive) 'include_inactive': '1'},
     );
     final data = response['_list'] ?? response['data'] ?? response;
     if (data is List) {
@@ -1104,7 +1107,9 @@ class ApiClient {
   }) async {
     final response = await post(ApiConfig.classTypes(businessId), data: data);
     final payload = response['data'];
-    return ClassType.fromJson(payload is Map<String, dynamic> ? payload : response);
+    return ClassType.fromJson(
+      payload is Map<String, dynamic> ? payload : response,
+    );
   }
 
   /// PUT /v1/businesses/{business_id}/class-types/{id}
@@ -1118,7 +1123,9 @@ class ApiClient {
       data: data,
     );
     final payload = response['data'];
-    return ClassType.fromJson(payload is Map<String, dynamic> ? payload : response);
+    return ClassType.fromJson(
+      payload is Map<String, dynamic> ? payload : response,
+    );
   }
 
   /// DELETE /v1/businesses/{business_id}/class-types/{id}
@@ -1148,7 +1155,9 @@ class ApiClient {
   }) async {
     final response = await get(
       ApiConfig.classEventParticipants(businessId, classEventId),
-      queryParameters: {if (status != null && status.isNotEmpty) 'status': status},
+      queryParameters: {
+        if (status != null && status.isNotEmpty) 'status': status,
+      },
     );
     final data = response['_list'] ?? response['data'] ?? response;
     if (data is List) {
@@ -1246,7 +1255,8 @@ class ApiClient {
     List<String>? channels,
     String? startDate,
     String? endDate,
-    String sortBy = 'last_attempt', // 'created' | 'scheduled' | 'sent' | 'last_attempt' | 'appointment'
+    String sortBy =
+        'last_attempt', // 'created' | 'scheduled' | 'sent' | 'last_attempt' | 'appointment'
     String sortOrder = 'desc', // 'asc' | 'desc'
     int limit = 50,
     int offset = 0,
@@ -2459,6 +2469,292 @@ class ApiClient {
   /// DELETE /v1/staff/{staffId}/plannings/{planningId}
   Future<void> deleteStaffPlanning(int staffId, int planningId) async {
     await delete(ApiConfig.staffPlanning(staffId, planningId));
+  }
+
+  // ==========================================================================
+  // WHATSAPP INTEGRATION (Multi-tenant)
+  // ==========================================================================
+
+  Future<List<WhatsappConfig>> getBusinessWhatsappConfigs(
+    int businessId,
+  ) async {
+    final response = await get(ApiConfig.businessWhatsappConfigs(businessId));
+    final raw =
+        response['configs'] ??
+        response['items'] ??
+        response['_list'] ??
+        response['data'] ??
+        const <dynamic>[];
+    if (raw is! List) return const <WhatsappConfig>[];
+    return raw
+        .map(
+          (e) => WhatsappConfig.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
+        .toList();
+  }
+
+  Future<WhatsappConfig> createBusinessWhatsappConfig({
+    required int businessId,
+    required String wabaId,
+    required String phoneNumberId,
+    required String accessTokenEncrypted,
+    String status = 'pending',
+    bool isDefault = false,
+  }) async {
+    final response = await post(
+      ApiConfig.businessWhatsappConfigs(businessId),
+      data: {
+        'waba_id': wabaId,
+        'phone_number_id': phoneNumberId,
+        'access_token_encrypted': accessTokenEncrypted,
+        'status': status,
+        'is_default': isDefault,
+      },
+    );
+    final map = Map<String, dynamic>.from(
+      (response['config'] as Map?) ?? response,
+    );
+    return WhatsappConfig.fromJson(map);
+  }
+
+  Future<WhatsappConfig> updateBusinessWhatsappConfig({
+    required int businessId,
+    required int configId,
+    String? wabaId,
+    String? phoneNumberId,
+    String? accessTokenEncrypted,
+    String? status,
+    bool? isDefault,
+  }) async {
+    final data = <String, dynamic>{};
+    if (wabaId != null) data['waba_id'] = wabaId;
+    if (phoneNumberId != null) data['phone_number_id'] = phoneNumberId;
+    if (accessTokenEncrypted != null) {
+      data['access_token_encrypted'] = accessTokenEncrypted;
+    }
+    if (status != null) data['status'] = status;
+    if (isDefault != null) data['is_default'] = isDefault;
+
+    final response = await put(
+      ApiConfig.businessWhatsappConfig(businessId, configId),
+      data: data,
+    );
+    final map = Map<String, dynamic>.from(
+      (response['config'] as Map?) ?? response,
+    );
+    return WhatsappConfig.fromJson(map);
+  }
+
+  Future<void> deleteBusinessWhatsappConfig({
+    required int businessId,
+    required int configId,
+  }) async {
+    await delete(ApiConfig.businessWhatsappConfig(businessId, configId));
+  }
+
+  Future<List<WhatsappLocationMapping>> getWhatsappLocationMappings(
+    int businessId,
+  ) async {
+    final response = await get(ApiConfig.locationWhatsappMappings(businessId));
+    final raw =
+        response['mappings'] ??
+        response['items'] ??
+        response['_list'] ??
+        response['data'] ??
+        const <dynamic>[];
+    if (raw is! List) return const <WhatsappLocationMapping>[];
+    return raw
+        .map(
+          (e) => WhatsappLocationMapping.fromJson(
+            Map<String, dynamic>.from(e as Map),
+          ),
+        )
+        .toList();
+  }
+
+  Future<WhatsappLocationMapping> upsertWhatsappLocationMapping({
+    required int businessId,
+    required int locationId,
+    required int whatsappConfigId,
+  }) async {
+    final response = await post(
+      ApiConfig.locationWhatsappMappings(businessId),
+      data: {'location_id': locationId, 'whatsapp_config_id': whatsappConfigId},
+    );
+    final map = Map<String, dynamic>.from(
+      (response['mapping'] as Map?) ?? response,
+    );
+    return WhatsappLocationMapping.fromJson(map);
+  }
+
+  Future<void> deleteWhatsappLocationMapping({
+    required int businessId,
+    required int mappingId,
+  }) async {
+    await delete(ApiConfig.locationWhatsappMapping(businessId, mappingId));
+  }
+
+  Future<List<WhatsappOutboxItem>> getWhatsappOutbox({
+    required int businessId,
+    String? status,
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    final response = await get(
+      ApiConfig.whatsappOutbox(businessId),
+      queryParameters: {
+        if (status != null && status.trim().isNotEmpty) 'status': status,
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+      },
+    );
+    final raw =
+        response['messages'] ??
+        response['items'] ??
+        response['_list'] ??
+        response['data'] ??
+        const <dynamic>[];
+    if (raw is! List) return const <WhatsappOutboxItem>[];
+    return raw
+        .map(
+          (e) =>
+              WhatsappOutboxItem.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
+        .toList();
+  }
+
+  Future<WhatsappOutboxItem> enqueueWhatsappTemplateMessage({
+    required int businessId,
+    required int locationId,
+    required int bookingId,
+    required String recipientPhone,
+    required String templateName,
+    required String templateLanguage,
+    required Map<String, dynamic> templateVariables,
+    required bool optIn,
+    DateTime? scheduledAt,
+  }) async {
+    final response = await post(
+      ApiConfig.whatsappOutbox(businessId),
+      data: {
+        'location_id': locationId,
+        'booking_id': bookingId,
+        'recipient_phone': recipientPhone,
+        'template_name': templateName,
+        'template_language': templateLanguage,
+        'template_variables': templateVariables,
+        'opt_in': optIn,
+        if (scheduledAt != null) 'scheduled_at': scheduledAt.toIso8601String(),
+      },
+    );
+    final map = Map<String, dynamic>.from(
+      (response['message'] as Map?) ?? response,
+    );
+    return WhatsappOutboxItem.fromJson(map);
+  }
+
+  Future<WhatsappOutboxItem> sendWhatsappOutboxItem({
+    required int businessId,
+    required int outboxId,
+  }) async {
+    final response = await post(
+      ApiConfig.whatsappOutboxSend(businessId, outboxId),
+    );
+    final map = Map<String, dynamic>.from(
+      (response['message'] as Map?) ?? response,
+    );
+    return WhatsappOutboxItem.fromJson(map);
+  }
+
+  Future<WhatsappOutboxItem> retryWhatsappOutboxItem({
+    required int businessId,
+    required int outboxId,
+  }) async {
+    final response = await post(
+      ApiConfig.whatsappOutboxRetry(businessId, outboxId),
+    );
+    final map = Map<String, dynamic>.from(
+      (response['message'] as Map?) ?? response,
+    );
+    return WhatsappOutboxItem.fromJson(map);
+  }
+
+  Future<WhatsappOutboxItem> updateWhatsappOutboxStatus({
+    required int businessId,
+    required int outboxId,
+    required String status,
+    String? errorMessage,
+  }) async {
+    final response = await put(
+      ApiConfig.whatsappOutboxItem(businessId, outboxId),
+      data: {
+        'status': status,
+        if (errorMessage != null) 'error_message': errorMessage,
+      },
+    );
+    final map = Map<String, dynamic>.from(
+      (response['message'] as Map?) ?? response,
+    );
+    return WhatsappOutboxItem.fromJson(map);
+  }
+
+  Future<Map<String, dynamic>> processWhatsappWebhook({
+    required int businessId,
+    required Map<String, dynamic> payload,
+    String? eventId,
+  }) async {
+    return await post(
+      ApiConfig.whatsappWebhook(businessId),
+      data: {
+        'payload': payload,
+        if (eventId != null && eventId.trim().isNotEmpty) 'event_id': eventId,
+      },
+    );
+  }
+
+  Future<void> setWhatsappOptIn({
+    required int businessId,
+    required int clientId,
+    required bool optIn,
+  }) async {
+    await post(
+      ApiConfig.whatsappOptIn(businessId),
+      data: {'client_id': clientId, 'opt_in': optIn},
+    );
+  }
+
+  Future<WhatsappGoLiveCheck> getWhatsappGoLiveCheck({
+    required int businessId,
+    int? locationId,
+  }) async {
+    final response = await get(
+      ApiConfig.whatsappGoLiveCheck(businessId),
+      queryParameters: {if (locationId != null) 'location_id': locationId},
+    );
+    final map = Map<String, dynamic>.from(
+      (response['checks'] as Map?) ?? response,
+    );
+    return WhatsappGoLiveCheck.fromJson(map);
+  }
+
+  Future<WhatsappConfig> completeWhatsappEmbeddedSignup({
+    required int businessId,
+    required String wabaId,
+    required String phoneNumberId,
+    required String token,
+  }) async {
+    final response = await post(
+      ApiConfig.whatsappEmbeddedSignupComplete(businessId),
+      data: {
+        'waba_id': wabaId,
+        'phone_number_id': phoneNumberId,
+        'token': token,
+      },
+    );
+    final map = Map<String, dynamic>.from(
+      (response['config'] as Map?) ?? response,
+    );
+    return WhatsappConfig.fromJson(map);
   }
 
   // ==========================================================================

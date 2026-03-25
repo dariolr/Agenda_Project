@@ -9568,6 +9568,596 @@ class L10n {
       args: [],
     );
   }
+
+  /// `WhatsApp`
+  String get whatsappTabTitle {
+    return Intl.message(
+      'WhatsApp',
+      name: 'whatsappTabTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Integrazione WhatsApp`
+  String get whatsappPanelTitle {
+    return Intl.message(
+      'Integrazione WhatsApp',
+      name: 'whatsappPanelTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Configurazione numeri, mapping sedi, test invio e monitor outbox`
+  String get whatsappPanelSubtitle {
+    return Intl.message(
+      'Configurazione numeri, mapping sedi, test invio e monitor outbox',
+      name: 'whatsappPanelSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seleziona un business per gestire l'integrazione WhatsApp.`
+  String get whatsappSelectBusinessHint {
+    return Intl.message(
+      'Seleziona un business per gestire l\'integrazione WhatsApp.',
+      name: 'whatsappSelectBusinessHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Aggiorna dati`
+  String get whatsappRefresh {
+    return Intl.message(
+      'Aggiorna dati',
+      name: 'whatsappRefresh',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Esegui worker`
+  String get whatsappRunWorker {
+    return Intl.message(
+      'Esegui worker',
+      name: 'whatsappRunWorker',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Go-live check`
+  String get whatsappGoLiveCheck {
+    return Intl.message(
+      'Go-live check',
+      name: 'whatsappGoLiveCheck',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Esegui il controllo per verificare se il business è pronto alla messa in produzione.`
+  String get whatsappGoLiveHint {
+    return Intl.message(
+      'Esegui il controllo per verificare se il business è pronto alla messa in produzione.',
+      name: 'whatsappGoLiveHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Configurazione pronta al go-live`
+  String get whatsappGoLiveReady {
+    return Intl.message(
+      'Configurazione pronta al go-live',
+      name: 'whatsappGoLiveReady',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Configurazione incompleta`
+  String get whatsappGoLiveNotReady {
+    return Intl.message(
+      'Configurazione incompleta',
+      name: 'whatsappGoLiveNotReady',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Numero WhatsApp attivo`
+  String get whatsappCheckPhoneNumberActive {
+    return Intl.message(
+      'Numero WhatsApp attivo',
+      name: 'whatsappCheckPhoneNumberActive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Webhook verificato`
+  String get whatsappCheckWebhookVerified {
+    return Intl.message(
+      'Webhook verificato',
+      name: 'whatsappCheckWebhookVerified',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Template utility approvato`
+  String get whatsappCheckTemplateApproved {
+    return Intl.message(
+      'Template utility approvato',
+      name: 'whatsappCheckTemplateApproved',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Opt-in clienti attivo`
+  String get whatsappCheckOptInActive {
+    return Intl.message(
+      'Opt-in clienti attivo',
+      name: 'whatsappCheckOptInActive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Configurazioni`
+  String get whatsappStatsConfigs {
+    return Intl.message(
+      'Configurazioni',
+      name: 'whatsappStatsConfigs',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mapping sedi`
+  String get whatsappStatsMappings {
+    return Intl.message(
+      'Mapping sedi',
+      name: 'whatsappStatsMappings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Messaggi in coda`
+  String get whatsappStatsQueued {
+    return Intl.message(
+      'Messaggi in coda',
+      name: 'whatsappStatsQueued',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Messaggi falliti`
+  String get whatsappStatsFailed {
+    return Intl.message(
+      'Messaggi falliti',
+      name: 'whatsappStatsFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Numeri e configurazioni`
+  String get whatsappConfigsTitle {
+    return Intl.message(
+      'Numeri e configurazioni',
+      name: 'whatsappConfigsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nuova configurazione`
+  String get whatsappAddConfig {
+    return Intl.message(
+      'Nuova configurazione',
+      name: 'whatsappAddConfig',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna configurazione presente.`
+  String get whatsappNoConfigs {
+    return Intl.message(
+      'Nessuna configurazione presente.',
+      name: 'whatsappNoConfigs',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modifica configurazione`
+  String get whatsappEditConfig {
+    return Intl.message(
+      'Modifica configurazione',
+      name: 'whatsappEditConfig',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Eliminare configurazione WhatsApp?`
+  String get whatsappDeleteConfigTitle {
+    return Intl.message(
+      'Eliminare configurazione WhatsApp?',
+      name: 'whatsappDeleteConfigTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Questa azione rimuove la configurazione e i mapping associati.`
+  String get whatsappDeleteConfigMessage {
+    return Intl.message(
+      'Questa azione rimuove la configurazione e i mapping associati.',
+      name: 'whatsappDeleteConfigMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Phone Number ID`
+  String get whatsappFieldPhoneNumberId {
+    return Intl.message(
+      'Phone Number ID',
+      name: 'whatsappFieldPhoneNumberId',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WABA ID`
+  String get whatsappFieldWabaId {
+    return Intl.message(
+      'WABA ID',
+      name: 'whatsappFieldWabaId',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Access token`
+  String get whatsappFieldAccessToken {
+    return Intl.message(
+      'Access token',
+      name: 'whatsappFieldAccessToken',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Stato`
+  String get whatsappFieldStatus {
+    return Intl.message(
+      'Stato',
+      name: 'whatsappFieldStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Predefinita`
+  String get whatsappFieldDefault {
+    return Intl.message(
+      'Predefinita',
+      name: 'whatsappFieldDefault',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Attiva`
+  String get whatsappStatusActive {
+    return Intl.message(
+      'Attiva',
+      name: 'whatsappStatusActive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inattiva`
+  String get whatsappStatusInactive {
+    return Intl.message(
+      'Inattiva',
+      name: 'whatsappStatusInactive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `In attesa`
+  String get whatsappStatusPending {
+    return Intl.message(
+      'In attesa',
+      name: 'whatsappStatusPending',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Errore`
+  String get whatsappStatusError {
+    return Intl.message(
+      'Errore',
+      name: 'whatsappStatusError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mapping location → numero`
+  String get whatsappLocationMappingTitle {
+    return Intl.message(
+      'Mapping location → numero',
+      name: 'whatsappLocationMappingTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna location attiva disponibile.`
+  String get whatsappNoLocations {
+    return Intl.message(
+      'Nessuna location attiva disponibile.',
+      name: 'whatsappNoLocations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna assegnazione`
+  String get whatsappUnassigned {
+    return Intl.message(
+      'Nessuna assegnazione',
+      name: 'whatsappUnassigned',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invio test template`
+  String get whatsappTestSendTitle {
+    return Intl.message(
+      'Invio test template',
+      name: 'whatsappTestSendTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Location`
+  String get whatsappFieldLocation {
+    return Intl.message(
+      'Location',
+      name: 'whatsappFieldLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Booking ID`
+  String get whatsappFieldBookingId {
+    return Intl.message(
+      'Booking ID',
+      name: 'whatsappFieldBookingId',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Client ID`
+  String get whatsappFieldClientId {
+    return Intl.message(
+      'Client ID',
+      name: 'whatsappFieldClientId',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Numero destinatario`
+  String get whatsappFieldRecipientPhone {
+    return Intl.message(
+      'Numero destinatario',
+      name: 'whatsappFieldRecipientPhone',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nome template`
+  String get whatsappFieldTemplateName {
+    return Intl.message(
+      'Nome template',
+      name: 'whatsappFieldTemplateName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Variabili template (JSON)`
+  String get whatsappFieldTemplateVariables {
+    return Intl.message(
+      'Variabili template (JSON)',
+      name: 'whatsappFieldTemplateVariables',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accoda test`
+  String get whatsappQueueTest {
+    return Intl.message(
+      'Accoda test',
+      name: 'whatsappQueueTest',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accoda e invia`
+  String get whatsappQueueAndSendTest {
+    return Intl.message(
+      'Accoda e invia',
+      name: 'whatsappQueueAndSendTest',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Outbox WhatsApp`
+  String get whatsappOutboxTitle {
+    return Intl.message(
+      'Outbox WhatsApp',
+      name: 'whatsappOutboxTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessun messaggio presente in outbox.`
+  String get whatsappOutboxEmpty {
+    return Intl.message(
+      'Nessun messaggio presente in outbox.',
+      name: 'whatsappOutboxEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Consegnato`
+  String get whatsappOutboxDelivered {
+    return Intl.message(
+      'Consegnato',
+      name: 'whatsappOutboxDelivered',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Letto`
+  String get whatsappOutboxRead {
+    return Intl.message(
+      'Letto',
+      name: 'whatsappOutboxRead',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invia ora`
+  String get whatsappSendNow {
+    return Intl.message(
+      'Invia ora',
+      name: 'whatsappSendNow',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Riprova`
+  String get whatsappRetryNow {
+    return Intl.message(
+      'Riprova',
+      name: 'whatsappRetryNow',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ultimo aggiornamento`
+  String get whatsappLastUpdate {
+    return Intl.message(
+      'Ultimo aggiornamento',
+      name: 'whatsappLastUpdate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Compila tutti i campi obbligatori.`
+  String get whatsappValidationRequired {
+    return Intl.message(
+      'Compila tutti i campi obbligatori.',
+      name: 'whatsappValidationRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `JSON variabili non valido.`
+  String get whatsappInvalidJson {
+    return Intl.message(
+      'JSON variabili non valido.',
+      name: 'whatsappInvalidJson',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp aggiornato`
+  String get whatsappSavedSuccessTitle {
+    return Intl.message(
+      'WhatsApp aggiornato',
+      name: 'whatsappSavedSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modifiche WhatsApp salvate correttamente.`
+  String get whatsappSavedSuccessMessage {
+    return Intl.message(
+      'Modifiche WhatsApp salvate correttamente.',
+      name: 'whatsappSavedSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Worker outbox eseguito con successo.`
+  String get whatsappWorkerCompleted {
+    return Intl.message(
+      'Worker outbox eseguito con successo.',
+      name: 'whatsappWorkerCompleted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Messaggio accodato correttamente.`
+  String get whatsappQueuedOnly {
+    return Intl.message(
+      'Messaggio accodato correttamente.',
+      name: 'whatsappQueuedOnly',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Messaggio accodato e inviato.`
+  String get whatsappQueuedAndSent {
+    return Intl.message(
+      'Messaggio accodato e inviato.',
+      name: 'whatsappQueuedAndSent',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

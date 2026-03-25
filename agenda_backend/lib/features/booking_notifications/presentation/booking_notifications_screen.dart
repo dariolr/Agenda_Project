@@ -18,6 +18,8 @@ import '/features/agenda/providers/location_providers.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/auth/providers/auth_provider.dart';
 import '/features/booking_notifications/providers/booking_notifications_provider.dart';
+import '/features/booking_notifications/providers/whatsapp_integration_provider.dart';
+import '/features/booking_notifications/presentation/whatsapp_management_panel.dart';
 
 class BookingNotificationsScreen extends ConsumerStatefulWidget {
   const BookingNotificationsScreen({
@@ -42,6 +44,7 @@ class _BookingNotificationsScreenState
   String? _selectedStatus;
   String? _selectedChannel;
   int? _selectedBusinessId;
+  int _selectedTabIndex = 0;
 
   @override
   void initState() {
@@ -128,6 +131,17 @@ class _BookingNotificationsScreenState
         .loadNotificationsForBusinesses(ids);
   }
 
+  int? get _selectedBusinessForWhatsapp =>
+      _canSelectBusiness ? _selectedBusinessId : _fallbackBusinessId;
+
+  Future<void> _loadWhatsappDataIfPossible() async {
+    final businessId = _selectedBusinessForWhatsapp;
+    if (businessId == null || businessId <= 0) return;
+    await ref
+        .read(whatsappIntegrationProvider.notifier)
+        .loadBusinessWhatsappData(businessId);
+  }
+
   void _onSearchChanged(String value) {
     ref.read(bookingNotificationsFiltersProvider.notifier).setSearch(value);
     _searchDebounce?.cancel();
@@ -165,6 +179,7 @@ class _BookingNotificationsScreenState
     ref
         .read(bookingNotificationsProvider.notifier)
         .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
+    _loadWhatsappDataIfPossible();
   }
 
   @override
@@ -192,6 +207,18 @@ class _BookingNotificationsScreenState
         );
       }
     });
+    ref.listen<WhatsappIntegrationState>(whatsappIntegrationProvider, (
+      prev,
+      next,
+    ) async {
+      if (prev?.error != next.error && next.error != null && mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: next.error!,
+        );
+      }
+    });
 
     return Scaffold(
       appBar: widget.showStandaloneAppBar
@@ -205,30 +232,74 @@ class _BookingNotificationsScreenState
           : null,
       body: Column(
         children: [
-          _FiltersBar(
-            searchController: _searchController,
-            selectedStatus: _selectedStatus,
-            selectedChannel: _selectedChannel,
-            showBusinessFilter: _canSelectBusiness,
-            selectedBusinessId: _selectedBusinessId,
-            businesses: businesses,
-            onSearchChanged: _onSearchChanged,
-            onStatusChanged: _onStatusChanged,
-            onChannelChanged: _onChannelChanged,
-            onBusinessChanged: _onBusinessChanged,
-          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
               children: [
-                Text(
-                  l10n.bookingNotificationsTotalCount(state.total),
-                  style: Theme.of(context).textTheme.bodyMedium,
+                Expanded(
+                  child: SegmentedButton<int>(
+                    segments: <ButtonSegment<int>>[
+                      ButtonSegment<int>(
+                        value: 0,
+                        icon: const Icon(Icons.history_rounded),
+                        label: Text(l10n.bookingNotificationsTitle),
+                      ),
+                      ButtonSegment<int>(
+                        value: 1,
+                        icon: const Icon(Icons.chat_bubble_outline_rounded),
+                        label: Text(l10n.whatsappTabTitle),
+                      ),
+                    ],
+                    selected: <int>{_selectedTabIndex},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (selection) {
+                      final next = selection.first;
+                      setState(() => _selectedTabIndex = next);
+                      if (next == 1) {
+                        _loadWhatsappDataIfPossible();
+                      }
+                    },
+                  ),
                 ),
               ],
             ),
           ),
-          Expanded(child: _buildContent(state, isDesktop: isDesktop)),
+          if (_selectedTabIndex == 0) ...[
+            _FiltersBar(
+              searchController: _searchController,
+              selectedStatus: _selectedStatus,
+              selectedChannel: _selectedChannel,
+              showBusinessFilter: _canSelectBusiness,
+              selectedBusinessId: _selectedBusinessId,
+              businesses: businesses,
+              onSearchChanged: _onSearchChanged,
+              onStatusChanged: _onStatusChanged,
+              onChannelChanged: _onChannelChanged,
+              onBusinessChanged: _onBusinessChanged,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  Text(
+                    l10n.bookingNotificationsTotalCount(state.total),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildContent(state, isDesktop: isDesktop)),
+          ] else ...[
+            Expanded(
+              child: WhatsappManagementPanel(
+                businessId: _selectedBusinessForWhatsapp,
+                requireBusinessSelection: _canSelectBusiness,
+                businesses: businesses,
+                selectedBusinessId: _selectedBusinessId,
+                onBusinessChanged: _onBusinessChanged,
+              ),
+            ),
+          ],
         ],
       ),
     );
