@@ -803,7 +803,7 @@ class _AppointmentCardInteractiveState
     final statusDotSize = presentation.statusDotSize;
     final timeTextStyle = TextStyle(
       color: Colors.black87,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w400,
       fontSize: effectivePrimaryFontSize,
     );
     final clientTextStyle = TextStyle(
