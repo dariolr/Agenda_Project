@@ -451,9 +451,13 @@
       function persistSessionContext(businessId) {
         // Keep the same keys used by Flutter Web token storage.
         storageSet(savedBusinessIdKey, String(businessId));
-        // Refresh token is now managed via httpOnly cookie on web.
-        // Remove stale client-stored token to avoid wrong refresh fallback.
-        storageRemove(savedRefreshTokenKey);
+      }
+
+      function persistRefreshTokenFallback(refreshToken) {
+        if (!refreshToken || typeof refreshToken !== "string") return;
+        // Compatibility fallback for embedded browsers/webviews that may not
+        // persist/set httpOnly cookies reliably during XHR-based auth flows.
+        storageSet(savedRefreshTokenKey, refreshToken);
       }
 
       async function getBusinessId() {
@@ -505,6 +509,8 @@
           }
           throw new Error("Accesso non riuscito. Riprova.");
         }
+
+        return payload;
       }
 
       async function tryAutoRefreshSession() {
@@ -542,6 +548,8 @@
 
           // Session restored via httpOnly refresh cookie.
           persistSessionContext(businessId);
+          const refreshTokenFromPayload = payload && payload.data && payload.data.refresh_token;
+          persistRefreshTokenFallback(refreshTokenFromPayload);
           window.location.assign(`/${encodeURIComponent(slug)}/${routeFrom}`);
           return true;
         } catch (_) {
@@ -644,9 +652,11 @@
         let loginSucceeded = false;
         try {
           const businessId = await getBusinessId();
-          await login(businessId, email, password);
+          const loginPayload = await login(businessId, email, password);
           loginSucceeded = true;
           persistSessionContext(businessId);
+          const refreshTokenFromPayload = loginPayload && loginPayload.data && loginPayload.data.refresh_token;
+          persistRefreshTokenFallback(refreshTokenFromPayload);
           persistCredentials(email, password);
           window.location.assign(`/${encodeURIComponent(slug)}/${routeFrom}`);
         } catch (error) {

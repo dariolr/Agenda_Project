@@ -580,6 +580,10 @@ class _AppointmentCardInteractiveState
         business.showAppointmentPriceInCard &&
         widget.appointment.price != null &&
         widget.appointment.price! > 0;
+    final hidesRedundantBookingTotal =
+        showAppointmentPrice &&
+        bookingSummary != null &&
+        (bookingSummary.totalPrice - widget.appointment.price!).abs() < 0.01;
     final appointmentPrice = showAppointmentPrice
         ? PriceFormatter.format(
             context: context,
@@ -592,6 +596,7 @@ class _AppointmentCardInteractiveState
         bookingSummary != null &&
         bookingSummary.itemsCount > 1 &&
         bookingSummary.totalPrice > 0 &&
+        !hidesRedundantBookingTotal &&
         lastAppointmentIdForBooking == widget.appointment.id;
     final bookingTotal = showBookingTotal
         ? PriceFormatter.format(
@@ -619,13 +624,33 @@ class _AppointmentCardInteractiveState
         cardHeight < 34;
     final showStatusIcon = statusVisual != null && !forFeedback;
     final durationMinutes = endTime.difference(startTime).inMinutes;
-    final isUltraShortCard = durationMinutes < 10;
-    final isShortCard = durationMinutes <= 15;
-    final effectiveAppointmentPrice = isUltraShortCard ? null : appointmentPrice;
-    final effectiveBookingTotal = isUltraShortCard ? null : bookingTotal;
-    final verticalTopPadding = isUltraShortCard ? 0.0 : (isShortCard ? 2.0 : 4.0);
-    final verticalBottomPadding = isUltraShortCard ? 0.0 : 4.0;
-    final horizontalRightPadding = isUltraShortCard ? 2.0 : 6.0;
+    final presentation = _CardPresentationModel(
+      durationMinutes: durationMinutes,
+      hasClient: client.trim().isNotEmpty,
+      isPriceDisplayEnabled: business.showAppointmentPriceInCard,
+    );
+    final useAnchoredRowsLayout =
+        presentation.durationMinutes >= 20 && presentation.durationMinutes <= 35;
+    final boostAnchoredVerticalPadding =
+        useAnchoredRowsLayout && presentation.durationMinutes < 30;
+    const anchoredVerticalPaddingBoost = 1.5;
+    final useCompactResizeHandle = presentation.useCompactResizeHandle;
+    final showResizeHandle = !forFeedback && !isResizingDisabled && isSelected;
+    final reserveBottomResizeSpace =
+        showResizeHandle && !useCompactResizeHandle;
+    final effectiveAppointmentPrice = presentation.isUltraShort
+        ? null
+        : appointmentPrice;
+    final effectiveBookingTotal = presentation.isUltraShort
+        ? null
+        : bookingTotal;
+    final verticalTopPadding = presentation.verticalTopPadding +
+        (boostAnchoredVerticalPadding ? anchoredVerticalPaddingBoost : 0.0);
+    final baseBottomPadding = presentation.baseBottomPadding +
+        (boostAnchoredVerticalPadding ? anchoredVerticalPaddingBoost : 0.0);
+    final verticalBottomPadding =
+        baseBottomPadding + (reserveBottomResizeSpace ? 18.0 : 0.0);
+    final horizontalRightPadding = presentation.horizontalRightPadding;
 
     final animationDuration = _isDraggingResize || forFeedback
         ? Duration.zero
@@ -709,12 +734,15 @@ class _AppointmentCardInteractiveState
                             clientNotes: hasClientNotes ? clientNotes : null,
                           )
                         : null,
-                    ultraCompact: isUltraShortCard,
+                    presentation: presentation.copyWith(
+                      hasAppointmentPrice: effectiveAppointmentPrice != null,
+                      hasBookingTotal: effectiveBookingTotal != null,
+                    ),
                   ),
                 ),
               ),
-              if (!forFeedback && !isResizingDisabled && isSelected)
-                _buildResizeHandle(compact: isUltraShortCard),
+              if (showResizeHandle)
+                _buildResizeHandle(compact: useCompactResizeHandle),
             ],
           ),
         ),
@@ -744,6 +772,7 @@ class _AppointmentCardInteractiveState
     String end,
     String client,
     String info, {
+    required _CardPresentationModel presentation,
     required bool showNotes,
     required String bookingSource,
     required String? appointmentPrice,
@@ -754,36 +783,57 @@ class _AppointmentCardInteractiveState
     int? recurrenceIndex,
     int? recurrenceTotal,
     VoidCallback? onNotesTap,
-    bool ultraCompact = false,
   }) {
     final effectiveColumnWidth = widget.columnWidth ?? _lastSize?.width;
-    final appointmentDurationMinutes = widget.appointment.endTime
-        .difference(widget.appointment.startTime)
-        .inMinutes;
-    final isUltraShortCard = appointmentDurationMinutes < 10;
-    final isShortCard = appointmentDurationMinutes <= 15;
-    final trailingIconSize = isShortCard ? 11.0 : 14.0;
-    final trailingIconLeftPadding = isShortCard ? 2.0 : 4.0;
-    final statusDotSize = isShortCard ? 10.0 : 12.0;
+    final useAnchoredRowsLayout =
+        presentation.durationMinutes >= 20 && presentation.durationMinutes <= 35;
+    final boostAnchoredText =
+        useAnchoredRowsLayout &&
+        presentation.durationMinutes >= 25 &&
+        presentation.durationMinutes < 30;
+    const anchoredTextSizeBoost = 2.0;
+    final effectivePrimaryFontSize = boostAnchoredText
+        ? ((presentation.primaryTextFontSize ?? 11) + anchoredTextSizeBoost)
+        : presentation.primaryTextFontSize;
+    final effectivePriceFontSize = boostAnchoredText
+        ? (presentation.priceTextFontSize + anchoredTextSizeBoost)
+        : presentation.priceTextFontSize;
+    final trailingIconSize = presentation.trailingIconSize;
+    final trailingIconLeftPadding = presentation.trailingIconLeftPadding;
+    final statusDotSize = presentation.statusDotSize;
     final timeTextStyle = TextStyle(
       color: Colors.black87,
       fontWeight: FontWeight.w500,
-      fontSize: isShortCard ? 9 : null,
+      fontSize: effectivePrimaryFontSize,
     );
     final clientTextStyle = TextStyle(
       color: Colors.black87,
       fontWeight: FontWeight.w700,
-      fontSize: isShortCard ? 9 : null,
+      fontSize: effectivePrimaryFontSize,
     );
     final stackedClientTextStyle = TextStyle(
       color: Colors.black87,
       fontWeight: FontWeight.w700,
-      fontSize: isShortCard ? 9 : null,
+      fontSize: effectivePrimaryFontSize,
       height: 1.1,
     );
-    final stackClientUnderTime =
-        !isUltraShortCard &&
-        client.isNotEmpty;
+    final serviceTextStyle = TextStyle(
+      color: Colors.black54,
+      fontWeight: FontWeight.w500,
+      fontSize: effectivePrimaryFontSize,
+      height: 1.1,
+    );
+    final priceSecondaryTextStyle = TextStyle(
+      fontSize: effectivePriceFontSize,
+      color: Colors.black54,
+      height: 1.1,
+    );
+    final pricePrimaryTextStyle = TextStyle(
+      fontSize: effectivePriceFontSize,
+      color: Colors.black87,
+      height: 1.1,
+    );
+    final stackClientUnderTime = presentation.showClientOnSecondRow;
 
     final trailingIcons = <Widget>[];
     final isCompactIconsLayout =
@@ -875,31 +925,38 @@ class _AppointmentCardInteractiveState
       );
     }
 
-    if (ultraCompact) {
-      const compactTimeStyle = TextStyle(
+    if (presentation.useUltraCompactLayout) {
+      final compactTimeStyle = TextStyle(
         color: Colors.black87,
         fontWeight: FontWeight.w600,
-        fontSize: 8,
-        height: 1.0,
+        fontSize: presentation.primaryTextFontSize ?? 8,
       );
-      const compactClientStyle = TextStyle(
+      final compactClientStyle = TextStyle(
         color: Colors.black87,
         fontWeight: FontWeight.w700,
-        fontSize: 8,
-        height: 1.0,
+        fontSize: presentation.primaryTextFontSize ?? 8,
       );
 
       return Padding(
-        padding: const EdgeInsets.only(top: 1, right: 10),
-        child: RichText(
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
-          text: TextSpan(
-            children: [
-              TextSpan(text: '$start ', style: compactTimeStyle),
-              TextSpan(text: client, style: compactClientStyle),
-            ],
+        padding: const EdgeInsets.only(right: 10),
+        child: Center(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: RichText(
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              text: TextSpan(
+                children: [
+                  TextSpan(text: '$start ', style: compactTimeStyle),
+                  TextSpan(text: client, style: compactClientStyle),
+                  if (info.isNotEmpty && client.isNotEmpty)
+                    TextSpan(text: ' - ', style: compactTimeStyle),
+                  if (info.isNotEmpty)
+                    TextSpan(text: info, style: serviceTextStyle),
+                ],
+              ),
+            ),
           ),
         ),
       );
@@ -907,8 +964,151 @@ class _AppointmentCardInteractiveState
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxIcons = isUltraShortCard ? 0 : (isCompactIconsLayout ? 2 : 4);
+        final maxIcons = presentation.maxTrailingIcons(
+          isCompactIconsLayout: isCompactIconsLayout,
+        );
         final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
+        final centerVerticallyForShort = presentation.centerVertically;
+        final showInlineServicePrice =
+            presentation.showServiceRow &&
+            presentation.showPriceInlineWithService &&
+            (appointmentPrice != null || bookingTotal != null) &&
+            info.isNotEmpty;
+        final showBottomAppointmentPrice =
+            appointmentPrice != null && !showInlineServicePrice;
+        final showBottomBookingTotal = bookingTotal != null && !showInlineServicePrice;
+        final hasBottomPriceRow = showBottomAppointmentPrice || showBottomBookingTotal;
+        final compactPricesInline =
+            presentation.durationMinutes < 20 &&
+            appointmentPrice != null &&
+            bookingTotal != null;
+        final firstRow = Row(
+          children: [
+            Expanded(
+              child: presentation.showServiceInlineWithTime
+                  ? RichText(
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '$start - $end  ',
+                            style: timeTextStyle,
+                          ),
+                          TextSpan(text: info, style: serviceTextStyle),
+                        ],
+                      ),
+                    )
+                  : stackClientUnderTime
+                  ? Text(
+                      '$start - $end',
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      style: timeTextStyle,
+                    )
+                  : RichText(
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: presentation.isUltraShort
+                                ? '$start  '
+                                : '$start - $end  ',
+                            style: timeTextStyle,
+                          ),
+                          TextSpan(text: client, style: clientTextStyle),
+                        ],
+                      ),
+                    ),
+            ),
+            if (visibleTrailingIcons.isNotEmpty) ...visibleTrailingIcons,
+          ],
+        );
+
+        final Widget? secondRow =
+            (stackClientUnderTime && client.isNotEmpty)
+                ? Text(
+                    client,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    style: stackedClientTextStyle,
+                  )
+                : null;
+
+        final Widget? thirdRow =
+            (presentation.showServiceRow && info.isNotEmpty)
+                ? (showInlineServicePrice
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              info,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: serviceTextStyle,
+                            ),
+                          ),
+                          if (bookingTotal != null) ...[
+                            Text(
+                              bookingTotal,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: priceSecondaryTextStyle,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          if (appointmentPrice != null)
+                            Text(
+                              appointmentPrice,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: pricePrimaryTextStyle,
+                            ),
+                        ],
+                      )
+                    : Text(
+                        info,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                        style: serviceTextStyle,
+                      ))
+                : null;
+
+        final textContent = useAnchoredRowsLayout
+            ? Stack(
+                fit: StackFit.expand,
+                children: [
+                  Align(alignment: Alignment.topLeft, child: firstRow),
+                  if (secondRow != null)
+                    Align(alignment: Alignment.centerLeft, child: secondRow),
+                  if (thirdRow != null)
+                    Align(alignment: Alignment.bottomLeft, child: thirdRow),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  firstRow,
+                  if (secondRow != null) secondRow,
+                  if (thirdRow != null) thirdRow,
+                ],
+              );
+        final anchoredTextContent = useAnchoredRowsLayout
+            ? SizedBox(
+                height: constraints.maxHeight,
+                child: textContent,
+              )
+            : textContent;
 
         return ClipRect(
           child: Stack(
@@ -916,113 +1116,80 @@ class _AppointmentCardInteractiveState
             children: [
               Padding(
                 padding: EdgeInsets.only(
-                  bottom:
-                      appointmentPrice != null || bookingTotal != null ? 14 : 0,
+                  bottom: centerVerticallyForShort
+                      ? 0
+                      : (hasBottomPriceRow ? 14 : 0),
                 ),
-                child: SingleChildScrollView(
-                  physics: const NeverScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                              child: stackClientUnderTime
-                                ? Text(
-                                    '$start - $end',
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: timeTextStyle,
-                                  )
-                                : RichText(
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    overflow: TextOverflow.ellipsis,
-                                    text: TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: isUltraShortCard
-                                              ? '$start  '
-                                              : '$start - $end  ',
-                                          style: timeTextStyle,
-                                        ),
-                                        TextSpan(
-                                          text: client,
-                                          style: clientTextStyle,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                child: centerVerticallyForShort
+                    ? SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
                           ),
-                          if (visibleTrailingIcons.isNotEmpty)
-                            ...visibleTrailingIcons,
-                        ],
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: anchoredTextContent,
+                          ),
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: anchoredTextContent,
                       ),
-                      if (stackClientUnderTime && client.isNotEmpty)
-                        Text(
-                          client,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: stackedClientTextStyle,
-                        ),
-                      if (!isUltraShortCard && info.isNotEmpty)
-                        Text(
-                          info,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.black54,
-                            height: 1.1,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
               ),
-              if (appointmentPrice != null || bookingTotal != null)
+              if (hasBottomPriceRow)
                 Positioned(
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: Row(
-                    children: [
-                      if (bookingTotal != null)
-                        Expanded(
-                          child: Text(
-                            bookingTotal,
-                            maxLines: 1,
-                            softWrap: false,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.left,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Colors.black54,
-                              height: 1.1,
+                  child: compactPricesInline && showBottomAppointmentPrice
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              bookingTotal,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: priceSecondaryTextStyle,
                             ),
-                          ),
+                            const SizedBox(width: 6),
+                            Text(
+                              appointmentPrice,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: pricePrimaryTextStyle,
+                            ),
+                          ],
                         )
-                      else
-                        const Spacer(),
-                      if (appointmentPrice != null)
-                        Text(
-                          appointmentPrice,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.black87,
-                            height: 1.1,
-                          ),
+                      : Row(
+                          children: [
+                            if (showBottomBookingTotal)
+                              Expanded(
+                                child: Text(
+                                  bookingTotal,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.left,
+                                  style: priceSecondaryTextStyle,
+                                ),
+                              )
+                            else
+                              const Spacer(),
+                            if (showBottomAppointmentPrice)
+                              Text(
+                                appointmentPrice,
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                                style: pricePrimaryTextStyle,
+                              ),
+                          ],
                         ),
-                    ],
-                  ),
                 ),
             ],
           ),
@@ -1334,6 +1501,70 @@ class _AppointmentCardInteractiveState
     );
   }
 } // Closing brace for _AppointmentCardInteractiveState
+
+class _CardPresentationModel {
+  const _CardPresentationModel({
+    required this.durationMinutes,
+    required this.hasClient,
+    this.isPriceDisplayEnabled = false,
+    this.hasAppointmentPrice = false,
+    this.hasBookingTotal = false,
+  });
+
+  final int durationMinutes;
+  final bool hasClient;
+  final bool isPriceDisplayEnabled;
+  final bool hasAppointmentPrice;
+  final bool hasBookingTotal;
+
+  bool get isUltraShort => durationMinutes < 10;
+  bool get isShort => durationMinutes <= 25;
+  bool get useUltraShortTextSize => durationMinutes < 15;
+  bool get centerVertically => durationMinutes < 20;
+  bool get showServiceInlineWithTime => durationMinutes < 20 && !isUltraShort;
+  bool get showServiceRow =>
+      !showServiceInlineWithTime && durationMinutes >= 20;
+  bool get showPriceInlineWithService =>
+      isPriceDisplayEnabled && durationMinutes >= 20 && durationMinutes <= 35;
+  bool get useCompactResizeHandle => isShort;
+  bool get showClientOnSecondRow => !isUltraShort && hasClient;
+  bool get useUltraCompactLayout => isUltraShort;
+  bool get hasPriceRow => hasAppointmentPrice || hasBookingTotal;
+
+  double get verticalTopPadding => isShort ? 0.0 : 4.0;
+  double get baseBottomPadding => isShort ? 0.0 : 4.0;
+  double get horizontalRightPadding => isUltraShort ? 2.0 : 6.0;
+
+  double get trailingIconSize => isShort ? 11.0 : 14.0;
+  double get trailingIconLeftPadding => isShort ? 2.0 : 4.0;
+  double get statusDotSize => isShort ? 10.0 : 12.0;
+  double? get primaryTextFontSize =>
+      useUltraShortTextSize ? 8 : (isShort ? 9 : null);
+  double get priceTextFontSize =>
+      useUltraShortTextSize ? 8 : (isShort ? 9 : 11);
+
+  int maxTrailingIcons({required bool isCompactIconsLayout}) {
+    if (isUltraShort) return 0;
+    return isCompactIconsLayout ? 2 : 4;
+  }
+
+  _CardPresentationModel copyWith({
+    int? durationMinutes,
+    bool? hasClient,
+    bool? isPriceDisplayEnabled,
+    bool? hasAppointmentPrice,
+    bool? hasBookingTotal,
+  }) {
+    return _CardPresentationModel(
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      hasClient: hasClient ?? this.hasClient,
+      isPriceDisplayEnabled:
+          isPriceDisplayEnabled ?? this.isPriceDisplayEnabled,
+      hasAppointmentPrice: hasAppointmentPrice ?? this.hasAppointmentPrice,
+      hasBookingTotal: hasBookingTotal ?? this.hasBookingTotal,
+    );
+  }
+}
 
 class _ExtraMinutesBand extends StatelessWidget {
   const _ExtraMinutesBand({required this.ratio, required this.color});
