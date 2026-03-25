@@ -783,7 +783,6 @@ class _AppointmentCardInteractiveState
     );
     final stackClientUnderTime =
         !isUltraShortCard &&
-        appointmentDurationMinutes >= 30 &&
         client.isNotEmpty;
 
     final trailingIcons = <Widget>[];

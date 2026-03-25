@@ -89,7 +89,7 @@ class AppButtonStyles {
       backgroundColor: backgroundColor ?? colorScheme.primary,
       foregroundColor: foregroundColor ?? colorScheme.onPrimary,
       padding: padding ?? defaultPadding,
-      minimumSize: const Size.fromHeight(kSharedAgendaControlHeight),
+      minimumSize: const Size(0, kSharedAgendaControlHeight),
       shape: RoundedRectangleBorder(
         borderRadius: borderRadius ?? defaultBorderRadius,
       ),
@@ -114,7 +114,7 @@ class AppButtonStyles {
       foregroundColor: foregroundColor ?? resolvedBorderColor,
       side: BorderSide(color: resolvedBorderColor, width: borderWidth),
       padding: padding ?? defaultPadding,
-      minimumSize: const Size.fromHeight(kSharedAgendaControlHeight),
+      minimumSize: const Size(0, kSharedAgendaControlHeight),
       shape: RoundedRectangleBorder(
         borderRadius: borderRadius ?? defaultBorderRadius,
       ),
@@ -158,7 +158,14 @@ class AppFilledButton extends StatelessWidget {
     );
 
     if (expand) {
-      return SizedBox(width: double.infinity, child: button);
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.hasBoundedWidth) {
+            return SizedBox(width: double.infinity, child: button);
+          }
+          return button;
+        },
+      );
     }
     return button;
   }
@@ -232,7 +239,14 @@ class AppOutlinedActionButton extends StatelessWidget {
     );
 
     if (expand) {
-      return SizedBox(width: double.infinity, child: button);
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.hasBoundedWidth) {
+            return SizedBox(width: double.infinity, child: button);
+          }
+          return button;
+        },
+      );
     }
     return button;
   }
