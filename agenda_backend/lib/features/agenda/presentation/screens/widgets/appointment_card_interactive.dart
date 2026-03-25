@@ -69,12 +69,15 @@ class _AppointmentCardInteractiveState
   Offset? _lastPointerGlobalPosition;
   bool _isDraggingResize = false;
   bool _blockDragDuringResize = false;
+  bool _isResizeZoneHovered = false;
+  bool _preferResizeFromPointerDown = false;
   bool _selectedFromHover = false;
   int? _currentDragSessionId;
   late final AgendaCardHoverNotifier _hoverNotifier;
 
   static const double _dragBlockZoneHeight = 28.0;
   static const int _minSlotsForDragBlock = 3;
+  static const double _bottomResizeHandleHitHeight = 24.0;
 
   LayoutConfig get _layoutConfig => ref.read(layoutConfigProvider);
 
@@ -120,11 +123,19 @@ class _AppointmentCardInteractiveState
     final showThickBorder = isSelected || isDragging;
 
     return MouseRegion(
+      cursor: _isResizeZoneHovered
+          ? SystemMouseCursors.resizeUpDown
+          : MouseCursor.defer,
       onEnter: (_) {
         _hoverNotifier.enter();
         _selectAppointment(ref, fromHover: true);
       },
       onExit: (_) {
+        if (mounted) {
+          setState(() {
+            _isResizeZoneHovered = false;
+          });
+        }
         _hoverNotifier.exit();
         if (_selectedFromHover &&
             ref
@@ -149,8 +160,16 @@ class _AppointmentCardInteractiveState
             onPointerDown: (e) {
               final cardBox = context.findRenderObject() as RenderBox?;
               if (cardBox != null) {
+                final shouldPreferResize =
+                    canManageBookings &&
+                    _isPointerInResizeHotzone(cardBox, e.position);
+                _preferResizeFromPointerDown = shouldPreferResize;
                 _lastPointerGlobalPosition = e.position;
-                _evaluateDragBlock(cardBox, e.position);
+                if (shouldPreferResize) {
+                  _updateDragBlock(true);
+                } else {
+                  _evaluateDragBlock(cardBox, e.position);
+                }
                 ref
                     .read(draggedBaseRangeProvider.notifier)
                     .set(
@@ -176,13 +195,31 @@ class _AppointmentCardInteractiveState
               }
             },
             onPointerMove: (e) {
+              if (_preferResizeFromPointerDown && !_isDraggingResize) {
+                _startResizeInteraction();
+              }
               if (_isDraggingResize) {
                 _performResizeUpdate(e);
                 return;
               }
               final cardBox = context.findRenderObject() as RenderBox?;
               if (cardBox != null) {
-                _evaluateDragBlock(cardBox, e.position);
+                if (_preferResizeFromPointerDown) {
+                  _updateDragBlock(true);
+                } else {
+                  _evaluateDragBlock(cardBox, e.position);
+                }
+              }
+            },
+            onPointerHover: (e) {
+              final cardBox = context.findRenderObject() as RenderBox?;
+              if (cardBox == null) return;
+              final hoveringResizeZone = _isPointerInResizeHotzone(
+                cardBox,
+                e.position,
+              );
+              if (_isResizeZoneHovered != hoveringResizeZone && mounted) {
+                setState(() => _isResizeZoneHovered = hoveringResizeZone);
               }
             },
             onPointerUp: (e) {
@@ -190,6 +227,7 @@ class _AppointmentCardInteractiveState
                 _performResizeEnd();
                 return;
               }
+              _preferResizeFromPointerDown = false;
               if (ref.read(dragPositionProvider) != null) {
                 ref.read(dragPositionProvider.notifier).clear();
               }
@@ -202,6 +240,7 @@ class _AppointmentCardInteractiveState
                 _performResizeCancel();
                 return;
               }
+              _preferResizeFromPointerDown = false;
               if (ref.read(dragPositionProvider) != null) {
                 ref.read(dragPositionProvider.notifier).clear();
               }
@@ -634,10 +673,6 @@ class _AppointmentCardInteractiveState
     final boostAnchoredVerticalPadding =
         useAnchoredRowsLayout && presentation.durationMinutes < 30;
     const anchoredVerticalPaddingBoost = 1.5;
-    final useCompactResizeHandle = presentation.useCompactResizeHandle;
-    final showResizeHandle = !forFeedback && !isResizingDisabled && isSelected;
-    final reserveBottomResizeSpace =
-        showResizeHandle && !useCompactResizeHandle;
     final effectiveAppointmentPrice = presentation.isUltraShort
         ? null
         : appointmentPrice;
@@ -648,8 +683,7 @@ class _AppointmentCardInteractiveState
         (boostAnchoredVerticalPadding ? anchoredVerticalPaddingBoost : 0.0);
     final baseBottomPadding = presentation.baseBottomPadding +
         (boostAnchoredVerticalPadding ? anchoredVerticalPaddingBoost : 0.0);
-    final verticalBottomPadding =
-        baseBottomPadding + (reserveBottomResizeSpace ? 18.0 : 0.0);
+    final verticalBottomPadding = baseBottomPadding;
     final horizontalRightPadding = presentation.horizontalRightPadding;
 
     final animationDuration = _isDraggingResize || forFeedback
@@ -741,8 +775,6 @@ class _AppointmentCardInteractiveState
                   ),
                 ),
               ),
-              if (showResizeHandle)
-                _buildResizeHandle(compact: useCompactResizeHandle),
             ],
           ),
         ),
@@ -1327,66 +1359,31 @@ class _AppointmentCardInteractiveState
   }
 
   // 🔹 Resize identico all’originale
-  Widget _buildResizeHandle({bool compact = false}) {
-    final handleChild = compact
-        ? Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              width: 10,
-              height: double.infinity,
-              alignment: Alignment.center,
-              child: const RotatedBox(
-                quarterTurns: 1,
-                child: Icon(Icons.drag_indicator, size: 12, color: Colors.grey),
-              ),
-            ),
-          )
-        : Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              height: 20,
-              width: double.infinity,
-              alignment: Alignment.bottomCenter,
-              child: const Padding(
-                padding: EdgeInsets.only(bottom: 1),
-                child: Icon(Icons.drag_indicator, size: 14, color: Colors.grey),
-              ),
-            ),
-          );
+  bool _isPointerInResizeHotzone(RenderBox cardBox, Offset globalPosition) {
+    final localPos = cardBox.globalToLocal(globalPosition);
+    final width = cardBox.size.width;
+    final height = cardBox.size.height;
+    if (localPos.dx < 0 || localPos.dy < 0 || localPos.dx > width || localPos.dy > height) {
+      return false;
+    }
+    return localPos.dy >= (height - _bottomResizeHandleHitHeight);
+  }
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.resizeUpDown,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onVerticalDragStart: (details) {
-          final renderBox = context.findRenderObject() as RenderBox?;
-          final currentHeightPx = renderBox?.size.height ?? 0;
-          _lastPointerGlobalPosition = details.globalPosition;
-          _updateDragBlock(true);
-
-          ref
-              .read(resizingProvider.notifier)
-              .startResize(
-                appointmentId: widget.appointment.id,
-                currentHeightPx: currentHeightPx,
-                startTime: widget.appointment.startTime,
-                endTime: widget.appointment.endTime,
-              );
-          ref.read(isResizingProvider.notifier).start();
-          setState(() => _isDraggingResize = true);
-        },
-        onVerticalDragUpdate: (details) {
-          // Gestito da onPointerMove
-        },
-        onVerticalDragEnd: (_) {
-          // Gestito da onPointerUp
-        },
-        onVerticalDragCancel: () {
-          // Gestito da onPointerCancel
-        },
-        child: handleChild,
-      ),
-    );
+  void _startResizeInteraction() {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final currentHeightPx = renderBox?.size.height ?? 0;
+    ref
+        .read(resizingProvider.notifier)
+        .startResize(
+          appointmentId: widget.appointment.id,
+          currentHeightPx: currentHeightPx,
+          startTime: widget.appointment.startTime,
+          endTime: widget.appointment.endTime,
+        );
+    ref.read(isResizingProvider.notifier).start();
+    if (mounted) {
+      setState(() => _isDraggingResize = true);
+    }
   }
 
   Widget _buildFollowerFeedback(
