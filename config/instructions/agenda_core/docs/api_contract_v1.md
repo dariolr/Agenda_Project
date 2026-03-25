@@ -1781,3 +1781,55 @@ Se una richiesta con lo stesso `idempotency_key` viene ripetuta (stesso business
 - Se in corso → attende completamento
 
 Chiave unica: `(business_id, idempotency_key)`
+
+---
+
+## WhatsApp Integration (2026)
+
+Endpoint protetti (`Authorization: Bearer <access_token>`) per business:
+
+- `GET /v1/businesses/{business_id}/whatsapp-configs`
+- `POST /v1/businesses/{business_id}/whatsapp-configs`
+- `PUT /v1/businesses/{business_id}/whatsapp-configs/{id}`
+- `DELETE /v1/businesses/{business_id}/whatsapp-configs/{id}`
+
+- `GET /v1/businesses/{business_id}/location-whatsapp-mappings`
+- `POST /v1/businesses/{business_id}/location-whatsapp-mappings`
+- `DELETE /v1/businesses/{business_id}/location-whatsapp-mappings/{id}`
+
+- `GET /v1/businesses/{business_id}/whatsapp-outbox`
+- `POST /v1/businesses/{business_id}/whatsapp-outbox`
+- `PUT /v1/businesses/{business_id}/whatsapp-outbox/{id}`
+- `POST /v1/businesses/{business_id}/whatsapp-outbox/{id}/send`
+- `POST /v1/businesses/{business_id}/whatsapp-outbox/{id}/retry`
+
+- `POST /v1/businesses/{business_id}/whatsapp/webhook`
+- `GET /v1/businesses/{business_id}/whatsapp/go-live-check`
+- `POST /v1/businesses/{business_id}/whatsapp/opt-in`
+- `POST /v1/businesses/{business_id}/whatsapp/embedded-signup/complete`
+
+### Regole operative
+
+- Resolver numero:
+  - se esiste mapping location-specifico, usa quel numero
+  - altrimenti usa `is_default=1` del business
+  - se nessuno, outbox `POST` ritorna `skipped=true`
+- Outbox flow: `queued -> sent -> delivered -> read` (oppure `failed`)
+- Webhook idempotente su `event_id`
+- Invio bloccato se `opt_in=false`
+
+### Go Live Check response
+
+```json
+{
+  "success": true,
+  "data": {
+    "checks": {
+      "phone_number_active": true,
+      "webhook_verified": true,
+      "template_approved": true,
+      "opt_in_active": true
+    }
+  }
+}
+```

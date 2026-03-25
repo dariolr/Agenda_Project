@@ -30,6 +30,7 @@ use Agenda\Http\Controllers\BusinessSyncController;
 use Agenda\Http\Controllers\LocationClosuresController;
 use Agenda\Http\Controllers\ClassEventsController;
 use Agenda\Http\Controllers\ReportsController;
+use Agenda\Http\Controllers\WhatsappController;
 use Agenda\Http\Middleware\AuthMiddleware;
 use Agenda\Http\Middleware\BusinessAccessMiddleware;
 use Agenda\Http\Middleware\CustomerAuthMiddleware;
@@ -61,6 +62,7 @@ use Agenda\Infrastructure\Repositories\PopularServiceRepository;
 use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Repositories\ForgotPasswordRateLimitRepository;
+use Agenda\Infrastructure\Repositories\WhatsappRepository;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
 use Agenda\UseCases\Auth\GetMe;
@@ -307,6 +309,25 @@ final class Kernel
         // Bookings list (paginated with filters)
         $this->router->get('/v1/businesses/{business_id}/bookings/list', BookingsController::class, 'listAll', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/booking-notifications', BookingNotificationsController::class, 'index', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/whatsapp-configs', WhatsappController::class, 'configsIndex', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp-configs', WhatsappController::class, 'configsStore', ['auth']);
+        $this->router->put('/v1/businesses/{business_id}/whatsapp-configs/{id}', WhatsappController::class, 'configsUpdate', ['auth']);
+        $this->router->delete('/v1/businesses/{business_id}/whatsapp-configs/{id}', WhatsappController::class, 'configsDestroy', ['auth']);
+
+        $this->router->get('/v1/businesses/{business_id}/location-whatsapp-mappings', WhatsappController::class, 'mappingsIndex', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/location-whatsapp-mappings', WhatsappController::class, 'mappingsStore', ['auth']);
+        $this->router->delete('/v1/businesses/{business_id}/location-whatsapp-mappings/{id}', WhatsappController::class, 'mappingsDestroy', ['auth']);
+
+        $this->router->get('/v1/businesses/{business_id}/whatsapp-outbox', WhatsappController::class, 'outboxIndex', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp-outbox', WhatsappController::class, 'outboxStore', ['auth']);
+        $this->router->put('/v1/businesses/{business_id}/whatsapp-outbox/{id}', WhatsappController::class, 'outboxUpdate', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp-outbox/{id}/send', WhatsappController::class, 'outboxSend', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp-outbox/{id}/retry', WhatsappController::class, 'outboxRetry', ['auth']);
+
+        $this->router->post('/v1/businesses/{business_id}/whatsapp/webhook', WhatsappController::class, 'webhook', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/whatsapp/go-live-check', WhatsappController::class, 'goLiveCheck', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp/opt-in', WhatsappController::class, 'optInStore', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp/embedded-signup/complete', WhatsappController::class, 'embeddedSignupComplete', ['auth']);
 
         // Reports (admin/owner only)
         $this->router->get('/v1/reports/appointments', ReportsController::class, 'appointments', ['auth']);
@@ -405,6 +426,7 @@ final class Kernel
         $locationClosureRepo = new LocationClosureRepository($this->db);
         $classEventRepo = new ClassEventRepository($this->db);
         $forgotPasswordRateLimitRepo = new ForgotPasswordRateLimitRepository($this->db);
+        $whatsappRepo = new WhatsappRepository($this->db);
 
         // Services
         $jwtService = new JwtService();
@@ -479,6 +501,7 @@ final class Kernel
             ReportsController::class => new ReportsController($this->db, $businessUserRepo, $userRepo, $locationClosureRepo),
             LocationClosuresController::class => new LocationClosuresController($locationClosureRepo, $locationRepo, $businessUserRepo, $userRepo),
             ClassEventsController::class => new ClassEventsController($classEventRepo, $businessUserRepo, $locationRepo, $userRepo),
+            WhatsappController::class => new WhatsappController($whatsappRepo, $businessUserRepo, $userRepo, $locationRepo),
         ];
     }
 

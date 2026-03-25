@@ -560,6 +560,117 @@ CREATE TABLE `notification_templates` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `whatsapp_business_config`
+--
+
+CREATE TABLE `whatsapp_business_config` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `waba_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `phone_number_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `display_phone_number` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `access_token_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` enum('active','inactive','pending','error') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `whatsapp_client_optins`
+--
+
+CREATE TABLE `whatsapp_client_optins` (
+  `id` bigint UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `client_id` int UNSIGNED NOT NULL,
+  `opt_in` tinyint(1) NOT NULL DEFAULT '0',
+  `source` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `whatsapp_location_mapping`
+--
+
+CREATE TABLE `whatsapp_location_mapping` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `location_id` int UNSIGNED NOT NULL,
+  `whatsapp_config_id` int UNSIGNED NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `whatsapp_outbox`
+--
+
+CREATE TABLE `whatsapp_outbox` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `booking_id` int UNSIGNED DEFAULT NULL,
+  `location_id` int UNSIGNED DEFAULT NULL,
+  `whatsapp_config_id` int UNSIGNED DEFAULT NULL,
+  `recipient_phone` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `template_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `template_language` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'it',
+  `template_payload` json DEFAULT NULL,
+  `status` enum('queued','sent','delivered','read','failed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'queued',
+  `attempts` int UNSIGNED NOT NULL DEFAULT '0',
+  `max_attempts` int UNSIGNED NOT NULL DEFAULT '3',
+  `provider_message_id` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `scheduled_at` datetime DEFAULT NULL,
+  `last_attempt_at` datetime DEFAULT NULL,
+  `sent_at` datetime DEFAULT NULL,
+  `delivered_at` datetime DEFAULT NULL,
+  `read_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `whatsapp_templates`
+--
+
+CREATE TABLE `whatsapp_templates` (
+  `id` bigint UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `template_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` enum('marketing','utility','authentication','service') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'utility',
+  `status` enum('approved','pending','rejected','paused') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `whatsapp_webhook_events`
+--
+
+CREATE TABLE `whatsapp_webhook_events` (
+  `id` bigint UNSIGNED NOT NULL,
+  `event_id` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `payload_json` json NOT NULL,
+  `processed_at` datetime NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `password_reset_token_clients`
 --
 
@@ -1161,6 +1272,59 @@ ALTER TABLE `notification_templates`
   ADD UNIQUE KEY `uk_business_channel_type` (`business_id`,`channel`,`type`);
 
 --
+-- Indici per le tabelle `whatsapp_business_config`
+--
+ALTER TABLE `whatsapp_business_config`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_bwc_business_phone` (`business_id`,`phone_number_id`),
+  ADD KEY `idx_bwc_business_default` (`business_id`,`is_default`),
+  ADD KEY `idx_bwc_status` (`status`);
+
+--
+-- Indici per le tabelle `whatsapp_client_optins`
+--
+ALTER TABLE `whatsapp_client_optins`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_cwo_business_client` (`business_id`,`client_id`),
+  ADD KEY `idx_cwo_optin` (`business_id`,`opt_in`);
+
+--
+-- Indici per le tabelle `whatsapp_location_mapping`
+--
+ALTER TABLE `whatsapp_location_mapping`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_wlm_location` (`location_id`),
+  ADD KEY `idx_wlm_business` (`business_id`),
+  ADD KEY `idx_wlm_config` (`whatsapp_config_id`);
+
+--
+-- Indici per le tabelle `whatsapp_outbox`
+--
+ALTER TABLE `whatsapp_outbox`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_wo_provider_msg` (`provider_message_id`),
+  ADD KEY `idx_wo_business_status` (`business_id`,`status`),
+  ADD KEY `idx_wo_schedule` (`status`,`scheduled_at`);
+
+--
+-- Indici per le tabelle `whatsapp_templates`
+--
+ALTER TABLE `whatsapp_templates`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_wt_business_name` (`business_id`,`template_name`),
+  ADD KEY `idx_wt_business_status` (`business_id`,`status`),
+  ADD KEY `idx_wt_business_category` (`business_id`,`category`);
+
+--
+-- Indici per le tabelle `whatsapp_webhook_events`
+--
+ALTER TABLE `whatsapp_webhook_events`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_wwe_event_id` (`event_id`),
+  ADD KEY `idx_wwe_business` (`business_id`),
+  ADD KEY `idx_wwe_processed` (`processed_at`);
+
+--
 -- Indici per le tabelle `password_reset_token_clients`
 --
 ALTER TABLE `password_reset_token_clients`
@@ -1488,6 +1652,42 @@ ALTER TABLE `notification_templates`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `whatsapp_business_config`
+--
+ALTER TABLE `whatsapp_business_config`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `whatsapp_client_optins`
+--
+ALTER TABLE `whatsapp_client_optins`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `whatsapp_location_mapping`
+--
+ALTER TABLE `whatsapp_location_mapping`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `whatsapp_outbox`
+--
+ALTER TABLE `whatsapp_outbox`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `whatsapp_templates`
+--
+ALTER TABLE `whatsapp_templates`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `whatsapp_webhook_events`
+--
+ALTER TABLE `whatsapp_webhook_events`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `password_reset_token_clients`
 --
 ALTER TABLE `password_reset_token_clients`
@@ -1770,6 +1970,48 @@ ALTER TABLE `notification_settings`
 --
 ALTER TABLE `notification_templates`
   ADD CONSTRAINT `fk_notification_templates_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Limiti per la tabella `whatsapp_business_config`
+--
+ALTER TABLE `whatsapp_business_config`
+  ADD CONSTRAINT `fk_bwc_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `whatsapp_client_optins`
+--
+ALTER TABLE `whatsapp_client_optins`
+  ADD CONSTRAINT `fk_cwo_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_cwo_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `whatsapp_location_mapping`
+--
+ALTER TABLE `whatsapp_location_mapping`
+  ADD CONSTRAINT `fk_wlm_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_wlm_config` FOREIGN KEY (`whatsapp_config_id`) REFERENCES `whatsapp_business_config` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_wlm_location` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `whatsapp_outbox`
+--
+ALTER TABLE `whatsapp_outbox`
+  ADD CONSTRAINT `fk_wo_booking` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_wo_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_wo_config` FOREIGN KEY (`whatsapp_config_id`) REFERENCES `whatsapp_business_config` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_wo_location` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE SET NULL;
+
+--
+-- Limiti per la tabella `whatsapp_templates`
+--
+ALTER TABLE `whatsapp_templates`
+  ADD CONSTRAINT `fk_wt_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `whatsapp_webhook_events`
+--
+ALTER TABLE `whatsapp_webhook_events`
+  ADD CONSTRAINT `fk_wwe_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE;
 
 --
 -- Limiti per la tabella `password_reset_token_clients`

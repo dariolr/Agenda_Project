@@ -2382,5 +2382,146 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "weeklyScheduleTitle": MessageLookupByLibrary.simpleMessage("Weekly"),
     "weeklyScheduleTotalHours": m77,
+    "whatsappAddConfig": MessageLookupByLibrary.simpleMessage(
+      "New configuration",
+    ),
+    "whatsappCheckOptInActive": MessageLookupByLibrary.simpleMessage(
+      "Client opt-in active",
+    ),
+    "whatsappCheckPhoneNumberActive": MessageLookupByLibrary.simpleMessage(
+      "WhatsApp number active",
+    ),
+    "whatsappCheckTemplateApproved": MessageLookupByLibrary.simpleMessage(
+      "Utility template approved",
+    ),
+    "whatsappCheckWebhookVerified": MessageLookupByLibrary.simpleMessage(
+      "Webhook verified",
+    ),
+    "whatsappConfigsTitle": MessageLookupByLibrary.simpleMessage(
+      "Numbers and configurations",
+    ),
+    "whatsappDeleteConfigMessage": MessageLookupByLibrary.simpleMessage(
+      "This action removes the configuration and related mappings.",
+    ),
+    "whatsappDeleteConfigTitle": MessageLookupByLibrary.simpleMessage(
+      "Delete WhatsApp configuration?",
+    ),
+    "whatsappEditConfig": MessageLookupByLibrary.simpleMessage(
+      "Edit configuration",
+    ),
+    "whatsappFieldAccessToken": MessageLookupByLibrary.simpleMessage(
+      "Access token",
+    ),
+    "whatsappFieldBookingId": MessageLookupByLibrary.simpleMessage(
+      "Booking ID",
+    ),
+    "whatsappFieldClientId": MessageLookupByLibrary.simpleMessage("Client ID"),
+    "whatsappFieldDefault": MessageLookupByLibrary.simpleMessage("Default"),
+    "whatsappFieldLocation": MessageLookupByLibrary.simpleMessage("Location"),
+    "whatsappFieldPhoneNumberId": MessageLookupByLibrary.simpleMessage(
+      "Phone Number ID",
+    ),
+    "whatsappFieldRecipientPhone": MessageLookupByLibrary.simpleMessage(
+      "Recipient phone",
+    ),
+    "whatsappFieldStatus": MessageLookupByLibrary.simpleMessage("Status"),
+    "whatsappFieldTemplateName": MessageLookupByLibrary.simpleMessage(
+      "Template name",
+    ),
+    "whatsappFieldTemplateVariables": MessageLookupByLibrary.simpleMessage(
+      "Template variables (JSON)",
+    ),
+    "whatsappFieldWabaId": MessageLookupByLibrary.simpleMessage("WABA ID"),
+    "whatsappGoLiveCheck": MessageLookupByLibrary.simpleMessage(
+      "Go-live check",
+    ),
+    "whatsappGoLiveHint": MessageLookupByLibrary.simpleMessage(
+      "Run checks to verify if this business is ready for production go-live.",
+    ),
+    "whatsappGoLiveNotReady": MessageLookupByLibrary.simpleMessage(
+      "Configuration is incomplete",
+    ),
+    "whatsappGoLiveReady": MessageLookupByLibrary.simpleMessage(
+      "Configuration ready for go-live",
+    ),
+    "whatsappInvalidJson": MessageLookupByLibrary.simpleMessage(
+      "Template variables JSON is invalid.",
+    ),
+    "whatsappLastUpdate": MessageLookupByLibrary.simpleMessage("Last update"),
+    "whatsappLocationMappingTitle": MessageLookupByLibrary.simpleMessage(
+      "Location to number mapping",
+    ),
+    "whatsappNoConfigs": MessageLookupByLibrary.simpleMessage(
+      "No configurations found.",
+    ),
+    "whatsappNoLocations": MessageLookupByLibrary.simpleMessage(
+      "No active locations available.",
+    ),
+    "whatsappOutboxDelivered": MessageLookupByLibrary.simpleMessage(
+      "Delivered",
+    ),
+    "whatsappOutboxEmpty": MessageLookupByLibrary.simpleMessage(
+      "No messages in outbox.",
+    ),
+    "whatsappOutboxRead": MessageLookupByLibrary.simpleMessage("Read"),
+    "whatsappOutboxTitle": MessageLookupByLibrary.simpleMessage(
+      "WhatsApp outbox",
+    ),
+    "whatsappPanelSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Manage numbers, location mappings, test sends, and outbox monitoring",
+    ),
+    "whatsappPanelTitle": MessageLookupByLibrary.simpleMessage(
+      "WhatsApp integration",
+    ),
+    "whatsappQueueAndSendTest": MessageLookupByLibrary.simpleMessage(
+      "Queue and send",
+    ),
+    "whatsappQueueTest": MessageLookupByLibrary.simpleMessage("Queue test"),
+    "whatsappQueuedAndSent": MessageLookupByLibrary.simpleMessage(
+      "Message queued and sent.",
+    ),
+    "whatsappQueuedOnly": MessageLookupByLibrary.simpleMessage(
+      "Message queued successfully.",
+    ),
+    "whatsappRefresh": MessageLookupByLibrary.simpleMessage("Refresh data"),
+    "whatsappRetryNow": MessageLookupByLibrary.simpleMessage("Retry"),
+    "whatsappRunWorker": MessageLookupByLibrary.simpleMessage("Run worker"),
+    "whatsappSavedSuccessMessage": MessageLookupByLibrary.simpleMessage(
+      "WhatsApp changes were saved successfully.",
+    ),
+    "whatsappSavedSuccessTitle": MessageLookupByLibrary.simpleMessage(
+      "WhatsApp updated",
+    ),
+    "whatsappSelectBusinessHint": MessageLookupByLibrary.simpleMessage(
+      "Select one business to manage WhatsApp integration.",
+    ),
+    "whatsappSendNow": MessageLookupByLibrary.simpleMessage("Send now"),
+    "whatsappStatsConfigs": MessageLookupByLibrary.simpleMessage(
+      "Configurations",
+    ),
+    "whatsappStatsFailed": MessageLookupByLibrary.simpleMessage(
+      "Failed messages",
+    ),
+    "whatsappStatsMappings": MessageLookupByLibrary.simpleMessage(
+      "Location mappings",
+    ),
+    "whatsappStatsQueued": MessageLookupByLibrary.simpleMessage(
+      "Queued messages",
+    ),
+    "whatsappStatusActive": MessageLookupByLibrary.simpleMessage("Active"),
+    "whatsappStatusError": MessageLookupByLibrary.simpleMessage("Error"),
+    "whatsappStatusInactive": MessageLookupByLibrary.simpleMessage("Inactive"),
+    "whatsappStatusPending": MessageLookupByLibrary.simpleMessage("Pending"),
+    "whatsappTabTitle": MessageLookupByLibrary.simpleMessage("WhatsApp"),
+    "whatsappTestSendTitle": MessageLookupByLibrary.simpleMessage(
+      "Template test send",
+    ),
+    "whatsappUnassigned": MessageLookupByLibrary.simpleMessage("Unassigned"),
+    "whatsappValidationRequired": MessageLookupByLibrary.simpleMessage(
+      "Fill in all required fields.",
+    ),
+    "whatsappWorkerCompleted": MessageLookupByLibrary.simpleMessage(
+      "Outbox worker completed successfully.",
+    ),
   };
 }

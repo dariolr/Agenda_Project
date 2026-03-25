@@ -81,6 +81,56 @@ class ApiConfig {
   static String bookingNotifications(int businessId) =>
       '/v1/businesses/$businessId/booking-notifications';
 
+  // ========== WHATSAPP INTEGRATION ENDPOINTS ==========
+
+  /// Configurazioni WhatsApp per business
+  static String businessWhatsappConfigs(int businessId) =>
+      '/v1/businesses/$businessId/whatsapp-configs';
+
+  /// Singola configurazione WhatsApp
+  static String businessWhatsappConfig(int businessId, int configId) =>
+      '/v1/businesses/$businessId/whatsapp-configs/$configId';
+
+  /// Mapping location -> configurazione WhatsApp
+  static String locationWhatsappMappings(int businessId) =>
+      '/v1/businesses/$businessId/location-whatsapp-mappings';
+
+  /// Singolo mapping location -> configurazione WhatsApp
+  static String locationWhatsappMapping(int businessId, int mappingId) =>
+      '/v1/businesses/$businessId/location-whatsapp-mappings/$mappingId';
+
+  /// Outbox WhatsApp per business
+  static String whatsappOutbox(int businessId) =>
+      '/v1/businesses/$businessId/whatsapp-outbox';
+
+  /// Singolo messaggio outbox WhatsApp
+  static String whatsappOutboxItem(int businessId, int outboxId) =>
+      '/v1/businesses/$businessId/whatsapp-outbox/$outboxId';
+
+  /// Trigger invio singolo messaggio in outbox
+  static String whatsappOutboxSend(int businessId, int outboxId) =>
+      '/v1/businesses/$businessId/whatsapp-outbox/$outboxId/send';
+
+  /// Retry singolo messaggio in outbox
+  static String whatsappOutboxRetry(int businessId, int outboxId) =>
+      '/v1/businesses/$businessId/whatsapp-outbox/$outboxId/retry';
+
+  /// Endpoint webhook WhatsApp
+  static String whatsappWebhook(int businessId) =>
+      '/v1/businesses/$businessId/whatsapp/webhook';
+
+  /// Validazione prerequisiti go-live WhatsApp
+  static String whatsappGoLiveCheck(int businessId) =>
+      '/v1/businesses/$businessId/whatsapp/go-live-check';
+
+  /// Salvataggio consenso opt-in per ricezione messaggi WhatsApp
+  static String whatsappOptIn(int businessId) =>
+      '/v1/businesses/$businessId/whatsapp/opt-in';
+
+  /// Onboarding embedded signup completato
+  static String whatsappEmbeddedSignupComplete(int businessId) =>
+      '/v1/businesses/$businessId/whatsapp/embedded-signup/complete';
+
   // ========== CLASS EVENTS ENDPOINTS ==========
 
   /// Lista class events per business.
