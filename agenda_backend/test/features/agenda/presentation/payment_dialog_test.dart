@@ -40,6 +40,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
+            theme: ThemeData(
+              useMaterial3: false,
+              splashFactory: NoSplash.splashFactory,
+            ),
             locale: const Locale('it'),
             localizationsDelegates: const [
               L10n.delegate,
