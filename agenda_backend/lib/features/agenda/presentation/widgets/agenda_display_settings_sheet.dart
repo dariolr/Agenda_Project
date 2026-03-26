@@ -73,9 +73,9 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
               ),
               Expanded(
                 child: Slider(
-                  min: 0.8,
-                  max: 1.2,
-                  divisions: 8,
+                  min: 0.5,
+                  max: 1.5,
+                  divisions: 20,
                   value: settings.cardTextScale,
                   onChanged: notifier.setCardTextScale,
                 ),
@@ -136,6 +136,74 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
             groupValue: useServiceColors,
             title: Text(context.l10n.teamStaffLabel, style: settingLabelStyle),
             onChanged: (value) => notifier.setUseServiceColorsOverride(value),
+          ),
+          const SizedBox(height: _sectionSpacing),
+          Text(
+            context.l10n.agendaDisplaySettingsCardColorOpacityLabel,
+            style: settingLabelStyle,
+          ),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  notifier.setCardColorOpacity(settings.cardColorOpacity - 0.05);
+                },
+                icon: const Icon(Icons.remove),
+              ),
+              Expanded(
+                child: Slider(
+                  min: 0.3,
+                  max: 1.0,
+                  divisions: 14,
+                  value: settings.cardColorOpacity,
+                  onChanged: notifier.setCardColorOpacity,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  notifier.setCardColorOpacity(settings.cardColorOpacity + 0.05);
+                },
+                icon: const Icon(Icons.add),
+              ),
+              const SizedBox(width: 6),
+              Text('${(settings.cardColorOpacity * 100).round()}%'),
+            ],
+          ),
+          const SizedBox(height: _sectionSpacing),
+          Text(
+            context.l10n.agendaDisplaySettingsExtraMinutesBandIntensityLabel,
+            style: settingLabelStyle,
+          ),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  notifier.setExtraMinutesBandIntensity(
+                    settings.extraMinutesBandIntensity - 0.05,
+                  );
+                },
+                icon: const Icon(Icons.remove),
+              ),
+              Expanded(
+                child: Slider(
+                  min: 0.0,
+                  max: 1.0,
+                  divisions: 20,
+                  value: settings.extraMinutesBandIntensity,
+                  onChanged: notifier.setExtraMinutesBandIntensity,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  notifier.setExtraMinutesBandIntensity(
+                    settings.extraMinutesBandIntensity + 0.05,
+                  );
+                },
+                icon: const Icon(Icons.add),
+              ),
+              const SizedBox(width: 6),
+              Text('${(settings.extraMinutesBandIntensity * 100).round()}%'),
+            ],
           ),
         ],
       ),

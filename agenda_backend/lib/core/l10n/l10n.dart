@@ -10189,10 +10189,30 @@ class L10n {
     );
   }
 
-  /// `Mostra importi`
+  /// `Intensità colori appuntamenti`
+  String get agendaDisplaySettingsCardColorOpacityLabel {
+    return Intl.message(
+      'Intensità colori appuntamenti',
+      name: 'agendaDisplaySettingsCardColorOpacityLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Intensità colori tempo aggiuntivo`
+  String get agendaDisplaySettingsExtraMinutesBandIntensityLabel {
+    return Intl.message(
+      'Intensità colori tempo aggiuntivo',
+      name: 'agendaDisplaySettingsExtraMinutesBandIntensityLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Visualizza importi`
   String get agendaDisplaySettingsShowPricesLabel {
     return Intl.message(
-      'Mostra importi',
+      'Visualizza importi',
       name: 'agendaDisplaySettingsShowPricesLabel',
       desc: '',
       args: [],

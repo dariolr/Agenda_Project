@@ -247,8 +247,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "agendaDisplaySettingsAction": MessageLookupByLibrary.simpleMessage(
       "Display settings",
     ),
+    "agendaDisplaySettingsCardColorOpacityLabel":
+        MessageLookupByLibrary.simpleMessage("Color intensity"),
     "agendaDisplaySettingsCardTextZoomLabel":
         MessageLookupByLibrary.simpleMessage("Card text zoom"),
+    "agendaDisplaySettingsExtraMinutesBandIntensityLabel":
+        MessageLookupByLibrary.simpleMessage("Additional extra-band intensity"),
     "agendaDisplaySettingsResetDefaultsAction":
         MessageLookupByLibrary.simpleMessage("Reset defaults"),
     "agendaDisplaySettingsServiceColorsLabel":

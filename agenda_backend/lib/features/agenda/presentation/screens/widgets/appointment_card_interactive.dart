@@ -639,8 +639,19 @@ class _AppointmentCardInteractiveState
     final hasClientNotes = clientNotes != null && clientNotes.isNotEmpty;
     final hasNotes = hasBookingNotes || hasClientNotes;
 
-    final baseColor = widget.color.withOpacity(0.55);
-    final r = widget.borderRadius;
+    final cardColorIntensity = ref.watch(agendaCardColorOpacityProvider);
+    final extraMinutesBandIntensity = ref.watch(
+      agendaExtraMinutesBandIntensityProvider,
+    );
+    final baseCardOpacity = cardColorIntensity.clamp(0.3, 1.0);
+    // Keep the extra-minutes band always subtle, regardless of card intensity.
+    final extraMinutesBandOpacity =
+        (0.08 + (extraMinutesBandIntensity * 0.22)).clamp(0.08, 0.30);
+    final extraMinutesBandColor = Color.alphaBlend(
+      Colors.black.withOpacity(0.03 + (extraMinutesBandIntensity * 0.10)),
+      widget.color,
+    );
+    final baseColor = widget.color.withOpacity(baseCardOpacity);
 
     final startTime = overrideStart ?? widget.appointment.startTime;
     final endTime =
@@ -715,6 +726,13 @@ class _AppointmentCardInteractiveState
       isPriceDisplayEnabled: isPriceDisplayEnabled,
       forceCompactPresentation: widget.forceCompactPresentation,
     );
+    final radiusScale = presentation.isUltraShort
+        ? 0.58
+        : (presentation.isShort ? 0.75 : 1.0);
+    final effectiveBorderRadius = _scaleBorderRadius(
+      widget.borderRadius,
+      radiusScale,
+    );
     final useAnchoredRowsLayout =
         !presentation.forceCompactPresentation &&
         presentation.durationMinutes >= 20 &&
@@ -722,9 +740,7 @@ class _AppointmentCardInteractiveState
     final boostAnchoredVerticalPadding =
         useAnchoredRowsLayout && presentation.durationMinutes < 30;
     const anchoredVerticalPaddingBoost = 1.5;
-    final effectiveAppointmentPrice = presentation.isUltraShort
-        ? null
-        : appointmentPrice;
+    final effectiveAppointmentPrice = appointmentPrice;
     final effectiveBookingTotal = presentation.isUltraShort
         ? null
         : bookingTotal;
@@ -754,14 +770,14 @@ class _AppointmentCardInteractiveState
     return Opacity(
       opacity: isGhost ? AgendaTheme.ghostOpacity : 1,
       child: Material(
-        borderRadius: r,
+        borderRadius: effectiveBorderRadius,
         color: Colors.transparent,
         child: AnimatedContainer(
           duration: animationDuration,
           curve: animationCurve,
           decoration: BoxDecoration(
             color: Color.alphaBlend(baseColor, Colors.white),
-            borderRadius: r,
+            borderRadius: effectiveBorderRadius,
             border: Border.all(color: borderColor, width: borderWidth),
             boxShadow: [
               BoxShadow(
@@ -784,8 +800,9 @@ class _AppointmentCardInteractiveState
                     width: 3,
                     decoration: BoxDecoration(
                       color: statusVisual.borderColor.withOpacity(0.9),
-                      borderRadius: const BorderRadius.horizontal(
-                        left: Radius.circular(6),
+                      borderRadius: BorderRadius.only(
+                        topLeft: effectiveBorderRadius.topLeft,
+                        bottomLeft: effectiveBorderRadius.bottomLeft,
                       ),
                     ),
                   ),
@@ -793,7 +810,9 @@ class _AppointmentCardInteractiveState
               if (widget.showExtraMinutesBand)
                 _ExtraMinutesBand(
                   ratio: _extraMinutesRatio(startTime, endTime),
-                  color: widget.color,
+                  color: extraMinutesBandColor,
+                  opacity: extraMinutesBandOpacity,
+                  borderRadius: effectiveBorderRadius,
                 ),
 
               Padding(
@@ -866,6 +885,27 @@ class _AppointmentCardInteractiveState
     final hours = time.hour.toString().padLeft(2, '0');
     final minutes = time.minute.toString().padLeft(2, '0');
     return '$hours:$minutes';
+  }
+
+  BorderRadius _scaleBorderRadius(BorderRadius radius, double factor) {
+    return BorderRadius.only(
+      topLeft: Radius.elliptical(
+        radius.topLeft.x * factor,
+        radius.topLeft.y * factor,
+      ),
+      topRight: Radius.elliptical(
+        radius.topRight.x * factor,
+        radius.topRight.y * factor,
+      ),
+      bottomLeft: Radius.elliptical(
+        radius.bottomLeft.x * factor,
+        radius.bottomLeft.y * factor,
+      ),
+      bottomRight: Radius.elliptical(
+        radius.bottomRight.x * factor,
+        radius.bottomRight.y * factor,
+      ),
+    );
   }
 
   // Menu contestuale disabilitato su desktop: rimosso
@@ -1041,7 +1081,7 @@ class _AppointmentCardInteractiveState
     if (presentation.useUltraCompactLayout) {
       final compactTimeStyle = TextStyle(
         color: Colors.black87,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w400,
         fontSize: presentation.primaryTextFontSize ?? 8,
       );
       final compactClientStyle = TextStyle(
@@ -1050,29 +1090,102 @@ class _AppointmentCardInteractiveState
         fontSize: presentation.primaryTextFontSize ?? 8,
       );
 
-      return Padding(
-        padding: const EdgeInsets.only(right: 10),
-        child: Center(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: RichText(
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              text: TextSpan(
+      return LayoutBuilder(
+          builder: (context, constraints) {
+            final maxIcons = presentation.maxTrailingIcons(
+              isCompactIconsLayout: isCompactIconsLayout,
+            );
+            final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
+
+            List<InlineSpan> buildBaseChildren({required bool fullTime}) {
+              return <InlineSpan>[
+                TextSpan(
+                  text: fullTime ? '$start - $end ' : '$start ',
+                  style: compactTimeStyle,
+                ),
+                TextSpan(text: client, style: compactClientStyle),
+                if (info.isNotEmpty && client.isNotEmpty)
+                  TextSpan(text: ' - ', style: compactTimeStyle),
+                if (info.isNotEmpty)
+                  TextSpan(text: info, style: serviceTextStyle),
+              ];
+            }
+
+            var showInlinePrice = false;
+            var inlinePriceWidth = 0.0;
+            if (appointmentPrice != null && constraints.maxWidth.isFinite) {
+              final pricePainter = TextPainter(
+                text: TextSpan(
+                  text: appointmentPrice,
+                  style: pricePrimaryTextStyle,
+                ),
+                textDirection: Directionality.of(context),
+                maxLines: 1,
+              )..layout(maxWidth: double.infinity);
+              inlinePriceWidth = pricePainter.width;
+              final iconsReservedWidth =
+                  visibleTrailingIcons.length *
+                  (scaledTrailingIconSize + trailingIconLeftPadding);
+              final reservedWidthForRightSide =
+                  iconsReservedWidth + inlinePriceWidth + 6;
+              const minLeftTextWidth = 54.0;
+              showInlinePrice =
+                  (constraints.maxWidth - reservedWidthForRightSide) >=
+                  minLeftTextWidth;
+            }
+
+            final iconsReservedWidth =
+                visibleTrailingIcons.length *
+                (scaledTrailingIconSize + trailingIconLeftPadding);
+            final rightSideReservedWidth =
+                iconsReservedWidth + (showInlinePrice ? (inlinePriceWidth + 6) : 0);
+            final availableLeftWidth = constraints.maxWidth.isFinite
+                ? (constraints.maxWidth - rightSideReservedWidth).clamp(0.0, double.infinity)
+                : double.infinity;
+
+            final fullTimeChildren = buildBaseChildren(fullTime: true);
+            var effectiveChildren = fullTimeChildren;
+            if (constraints.maxWidth.isFinite) {
+              final fullTimePainter = TextPainter(
+                text: TextSpan(children: fullTimeChildren),
+                textDirection: Directionality.of(context),
+                maxLines: 1,
+              )..layout(maxWidth: double.infinity);
+              if (fullTimePainter.width > availableLeftWidth) {
+                effectiveChildren = buildBaseChildren(fullTime: false);
+              }
+            }
+
+            return Center(
+              child: Row(
                 children: [
-                  TextSpan(text: '$start ', style: compactTimeStyle),
-                  TextSpan(text: client, style: compactClientStyle),
-                  if (info.isNotEmpty && client.isNotEmpty)
-                    TextSpan(text: ' - ', style: compactTimeStyle),
-                  if (info.isNotEmpty)
-                    TextSpan(text: info, style: serviceTextStyle),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: RichText(
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(children: effectiveChildren),
+                      ),
+                    ),
+                  ),
+                  if (showInlinePrice) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      appointmentPrice!,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      style: pricePrimaryTextStyle,
+                    ),
+                  ],
+                  if (visibleTrailingIcons.isNotEmpty) ...visibleTrailingIcons,
                 ],
               ),
-            ),
-          ),
-        ),
-      );
+            );
+          },
+        );
     }
 
     return LayoutBuilder(
@@ -1655,10 +1768,10 @@ class _CardPresentationModel {
   final bool hasAppointmentPrice;
   final bool hasBookingTotal;
 
-  bool get isUltraShort => !forceCompactPresentation && durationMinutes < 10;
+  bool get isUltraShort => !forceCompactPresentation && durationMinutes <= 10;
   bool get isShort => forceCompactPresentation || durationMinutes <= 25;
   bool get useUltraShortTextSize =>
-      !forceCompactPresentation && durationMinutes < 15;
+      !forceCompactPresentation && durationMinutes < 10;
   bool get centerVertically =>
       !forceCompactPresentation && durationMinutes < 20;
   bool get showServiceInlineWithTime =>
@@ -1679,7 +1792,7 @@ class _CardPresentationModel {
 
   double get verticalTopPadding => isShort ? 0.0 : 4.0;
   double get baseBottomPadding => isShort ? 0.0 : 4.0;
-  double get horizontalRightPadding => isUltraShort ? 2.0 : 6.0;
+  double get horizontalRightPadding => 6.0;
 
   double get trailingIconSize => isShort ? 11.0 : 14.0;
   double get trailingIconLeftPadding => isShort ? 2.0 : 4.0;
@@ -1716,10 +1829,17 @@ class _CardPresentationModel {
 }
 
 class _ExtraMinutesBand extends StatelessWidget {
-  const _ExtraMinutesBand({required this.ratio, required this.color});
+  const _ExtraMinutesBand({
+    required this.ratio,
+    required this.color,
+    required this.opacity,
+    required this.borderRadius,
+  });
 
   final double ratio;
   final Color color;
+  final double opacity;
+  final BorderRadius borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -1732,9 +1852,10 @@ class _ExtraMinutesBand extends StatelessWidget {
           widthFactor: 1,
           child: Container(
             decoration: BoxDecoration(
-              color: color.withOpacity(0.25),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(6),
+              color: color.withOpacity(opacity),
+              borderRadius: BorderRadius.only(
+                bottomLeft: borderRadius.bottomLeft,
+                bottomRight: borderRadius.bottomRight,
               ),
             ),
           ),

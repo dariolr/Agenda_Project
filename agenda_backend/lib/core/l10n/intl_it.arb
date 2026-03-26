@@ -1550,7 +1550,9 @@
   "agendaDisplaySettingsAction": "Impostazioni di visualizzazione",
   "agendaDisplaySettingsSuperadminTitle": "Impostazioni di visualizzazione",
   "agendaDisplaySettingsCardTextZoomLabel": "Zoom testo",
-  "agendaDisplaySettingsShowPricesLabel": "Mostra importi",
+  "agendaDisplaySettingsCardColorOpacityLabel": "Intensità colori appuntamenti",
+  "agendaDisplaySettingsExtraMinutesBandIntensityLabel": "Intensità colori tempo aggiuntivo",
+  "agendaDisplaySettingsShowPricesLabel": "Visualizza importi",
   "agendaDisplaySettingsShowCancelledLabel": "Mostra appuntamenti cancellati",
   "agendaDisplaySettingsServiceColorsLabel": "Imposta colori da:",
   "agendaDisplaySettingsResetDefaultsAction": "Ripristina default"

@@ -129,6 +129,8 @@ void invalidateBusinessScopedProviders(Object refObj) {
   ref.invalidate(effectiveUseServiceColorsForAppointmentsProvider);
   ref.invalidate(effectiveShowCancelledAppointmentsProvider);
   ref.invalidate(agendaCardTextScaleProvider);
+  ref.invalidate(agendaCardColorOpacityProvider);
+  ref.invalidate(agendaExtraMinutesBandIntensityProvider);
   ref.invalidate(agendaBootstrapLoadingProvider);
   ref.invalidate(agendaBootstrapUnlockedProvider);
   ref.invalidate(agendaDateProvider);

@@ -254,8 +254,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "agendaDisplaySettingsAction": MessageLookupByLibrary.simpleMessage(
       "Impostazioni di visualizzazione",
     ),
+    "agendaDisplaySettingsCardColorOpacityLabel":
+        MessageLookupByLibrary.simpleMessage("Intensità colori appuntamenti"),
     "agendaDisplaySettingsCardTextZoomLabel":
         MessageLookupByLibrary.simpleMessage("Zoom testo"),
+    "agendaDisplaySettingsExtraMinutesBandIntensityLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Intensità colori tempo aggiuntivo",
+        ),
     "agendaDisplaySettingsResetDefaultsAction":
         MessageLookupByLibrary.simpleMessage("Ripristina default"),
     "agendaDisplaySettingsServiceColorsLabel":
@@ -263,7 +269,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "agendaDisplaySettingsShowCancelledLabel":
         MessageLookupByLibrary.simpleMessage("Mostra appuntamenti cancellati"),
     "agendaDisplaySettingsShowPricesLabel":
-        MessageLookupByLibrary.simpleMessage("Mostra importi"),
+        MessageLookupByLibrary.simpleMessage("Visualizza importi"),
     "agendaDisplaySettingsSuperadminTitle":
         MessageLookupByLibrary.simpleMessage("Impostazioni di visualizzazione"),
     "agendaNextDay": MessageLookupByLibrary.simpleMessage("Giorno successivo"),
