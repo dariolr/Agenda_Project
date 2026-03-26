@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '/core/models/appointment.dart';
 import '/core/utils/price_utils.dart';
@@ -45,6 +48,7 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
   final bool expandToLeft;
   final bool showExtraMinutesBand;
   final BorderRadius borderRadius;
+  final bool forceCompactPresentation;
 
   const AppointmentCardInteractive({
     super.key,
@@ -56,6 +60,7 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
     this.expandToLeft = false,
     this.showExtraMinutesBand = true,
     this.borderRadius = const BorderRadius.all(Radius.circular(6)),
+    this.forceCompactPresentation = false,
   });
 
   @override
@@ -71,13 +76,22 @@ class _AppointmentCardInteractiveState
   bool _blockDragDuringResize = false;
   bool _isResizeZoneHovered = false;
   bool _preferResizeFromPointerDown = false;
+  bool _touchResizePriming = false;
+  bool _touchResizeArmed = false;
   bool _selectedFromHover = false;
   int? _currentDragSessionId;
   late final AgendaCardHoverNotifier _hoverNotifier;
+  Timer? _touchResizeArmTimer;
+  Offset? _touchPointerDownGlobalPosition;
+  Offset? _touchResizeArmOriginGlobalPosition;
 
   static const double _dragBlockZoneHeight = 28.0;
   static const int _minSlotsForDragBlock = 3;
-  static const double _bottomResizeHandleHitHeight = 24.0;
+  static const double _bottomResizeHandleHitHeightDesktop = 24.0;
+  static const double _bottomResizeHandleHitHeightTouch = 14.0;
+  static const Duration _touchResizeArmDelay = Duration(milliseconds: 260);
+  static const double _touchResizePrimingCancelThreshold = 10.0;
+  static const double _touchResizeStartMoveThreshold = 6.0;
 
   LayoutConfig get _layoutConfig => ref.read(layoutConfigProvider);
 
@@ -160,14 +174,20 @@ class _AppointmentCardInteractiveState
             onPointerDown: (e) {
               final cardBox = context.findRenderObject() as RenderBox?;
               if (cardBox != null) {
+                final isNonDesktop =
+                    ref.read(formFactorProvider) != AppFormFactor.desktop;
                 final shouldPreferResize =
                     canManageBookings &&
                     _isPointerInResizeHotzone(cardBox, e.position);
-                _preferResizeFromPointerDown = shouldPreferResize;
                 _lastPointerGlobalPosition = e.position;
-                if (shouldPreferResize) {
+                if (shouldPreferResize && isNonDesktop) {
+                  _startTouchResizePriming(e.position);
+                } else if (shouldPreferResize) {
+                  _preferResizeFromPointerDown = true;
                   _updateDragBlock(true);
                 } else {
+                  _stopTouchResizePriming();
+                  _preferResizeFromPointerDown = false;
                   _evaluateDragBlock(cardBox, e.position);
                 }
                 ref
@@ -195,8 +215,27 @@ class _AppointmentCardInteractiveState
               }
             },
             onPointerMove: (e) {
+              final isNonDesktop =
+                  ref.read(formFactorProvider) != AppFormFactor.desktop;
+              if (isNonDesktop &&
+                  _touchResizePriming &&
+                  !_touchResizeArmed &&
+                  _touchPointerDownGlobalPosition != null &&
+                  (e.position - _touchPointerDownGlobalPosition!).distance >
+                      _touchResizePrimingCancelThreshold) {
+                _stopTouchResizePriming();
+                _updateDragBlock(false);
+              }
               if (_preferResizeFromPointerDown && !_isDraggingResize) {
-                _startResizeInteraction();
+                if (!isNonDesktop) {
+                  _startResizeInteraction();
+                } else if (_touchResizeArmed &&
+                    _touchResizeArmOriginGlobalPosition != null &&
+                    (e.position - _touchResizeArmOriginGlobalPosition!)
+                            .distance >=
+                        _touchResizeStartMoveThreshold) {
+                  _startResizeInteraction();
+                }
               }
               if (_isDraggingResize) {
                 _performResizeUpdate(e);
@@ -227,6 +266,7 @@ class _AppointmentCardInteractiveState
                 _performResizeEnd();
                 return;
               }
+              _stopTouchResizePriming();
               _preferResizeFromPointerDown = false;
               if (ref.read(dragPositionProvider) != null) {
                 ref.read(dragPositionProvider.notifier).clear();
@@ -240,6 +280,7 @@ class _AppointmentCardInteractiveState
                 _performResizeCancel();
                 return;
               }
+              _stopTouchResizePriming();
               _preferResizeFromPointerDown = false;
               if (ref.read(dragPositionProvider) != null) {
                 ref.read(dragPositionProvider.notifier).clear();
@@ -327,6 +368,7 @@ class _AppointmentCardInteractiveState
 
   @override
   void dispose() {
+    _stopTouchResizePriming();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _hoverNotifier.exit();
     });
@@ -667,9 +709,12 @@ class _AppointmentCardInteractiveState
       durationMinutes: durationMinutes,
       hasClient: client.trim().isNotEmpty,
       isPriceDisplayEnabled: business.showAppointmentPriceInCard,
+      forceCompactPresentation: widget.forceCompactPresentation,
     );
     final useAnchoredRowsLayout =
-        presentation.durationMinutes >= 20 && presentation.durationMinutes <= 35;
+        !presentation.forceCompactPresentation &&
+        presentation.durationMinutes >= 20 &&
+        presentation.durationMinutes <= 35;
     final boostAnchoredVerticalPadding =
         useAnchoredRowsLayout && presentation.durationMinutes < 30;
     const anchoredVerticalPaddingBoost = 1.5;
@@ -679,9 +724,11 @@ class _AppointmentCardInteractiveState
     final effectiveBookingTotal = presentation.isUltraShort
         ? null
         : bookingTotal;
-    final verticalTopPadding = presentation.verticalTopPadding +
+    final verticalTopPadding =
+        presentation.verticalTopPadding +
         (boostAnchoredVerticalPadding ? anchoredVerticalPaddingBoost : 0.0);
-    final baseBottomPadding = presentation.baseBottomPadding +
+    final baseBottomPadding =
+        presentation.baseBottomPadding +
         (boostAnchoredVerticalPadding ? anchoredVerticalPaddingBoost : 0.0);
     final verticalBottomPadding = baseBottomPadding;
     final horizontalRightPadding = presentation.horizontalRightPadding;
@@ -692,6 +739,13 @@ class _AppointmentCardInteractiveState
     final animationCurve = _isDraggingResize || forFeedback
         ? Curves.linear
         : Curves.easeOutQuad;
+    final isNonDesktop = ref.watch(formFactorProvider) != AppFormFactor.desktop;
+    final showTouchResizeFeedback =
+        isNonDesktop &&
+        (_touchResizePriming ||
+            _touchResizeArmed ||
+            _preferResizeFromPointerDown ||
+            _isDraggingResize);
 
     return Opacity(
       opacity: isGhost ? AgendaTheme.ghostOpacity : 1,
@@ -775,6 +829,19 @@ class _AppointmentCardInteractiveState
                   ),
                 ),
               ),
+              if (showTouchResizeFeedback)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: IgnorePointer(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 120),
+                      height: 3,
+                      color: Colors.black.withOpacity(0.22),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -818,15 +885,21 @@ class _AppointmentCardInteractiveState
   }) {
     final effectiveColumnWidth = widget.columnWidth ?? _lastSize?.width;
     final useAnchoredRowsLayout =
-        presentation.durationMinutes >= 20 && presentation.durationMinutes <= 35;
+        !presentation.forceCompactPresentation &&
+        presentation.durationMinutes >= 20 &&
+        presentation.durationMinutes <= 35;
     final boostAnchoredText =
         useAnchoredRowsLayout &&
         presentation.durationMinutes >= 25 &&
         presentation.durationMinutes < 30;
+    final boostCompactText =
+        presentation.forceCompactPresentation;
     const anchoredTextSizeBoost = 2.0;
+    const compactNoPriceTextBoost = 1.0;
     final effectivePrimaryFontSize = boostAnchoredText
         ? ((presentation.primaryTextFontSize ?? 11) + anchoredTextSizeBoost)
-        : presentation.primaryTextFontSize;
+        : ((presentation.primaryTextFontSize ?? 11) +
+              (boostCompactText ? compactNoPriceTextBoost : 0));
     final effectivePriceFontSize = boostAnchoredText
         ? (presentation.priceTextFontSize + anchoredTextSizeBoost)
         : presentation.priceTextFontSize;
@@ -1008,12 +1081,24 @@ class _AppointmentCardInteractiveState
             info.isNotEmpty;
         final showBottomAppointmentPrice =
             appointmentPrice != null && !showInlineServicePrice;
-        final showBottomBookingTotal = bookingTotal != null && !showInlineServicePrice;
-        final hasBottomPriceRow = showBottomAppointmentPrice || showBottomBookingTotal;
+        final showBottomBookingTotal =
+            bookingTotal != null && !showInlineServicePrice;
+        final hasBottomPriceRow =
+            showBottomAppointmentPrice || showBottomBookingTotal;
         final compactPricesInline =
+            !presentation.forceCompactPresentation &&
             presentation.durationMinutes < 20 &&
             appointmentPrice != null &&
             bookingTotal != null;
+        final isNarrowOverlappedCard =
+            effectiveColumnWidth != null &&
+            widget.dragTargetWidth != null &&
+            widget.dragTargetWidth! > 0 &&
+            (effectiveColumnWidth / widget.dragTargetWidth!) <= 0.65;
+        final rightAlignedDualPrices =
+            showBottomBookingTotal &&
+            showBottomAppointmentPrice &&
+            isNarrowOverlappedCard;
         final firstRow = Row(
           children: [
             Expanded(
@@ -1061,59 +1146,58 @@ class _AppointmentCardInteractiveState
           ],
         );
 
-        final Widget? secondRow =
-            (stackClientUnderTime && client.isNotEmpty)
-                ? Text(
-                    client,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                    style: stackedClientTextStyle,
-                  )
-                : null;
+        final Widget? secondRow = (stackClientUnderTime && client.isNotEmpty)
+            ? Text(
+                client,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: stackedClientTextStyle,
+              )
+            : null;
 
         final Widget? thirdRow =
             (presentation.showServiceRow && info.isNotEmpty)
-                ? (showInlineServicePrice
-                    ? Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              info,
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                              style: serviceTextStyle,
-                            ),
+            ? (showInlineServicePrice
+                  ? Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            info,
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            style: serviceTextStyle,
                           ),
-                          if (bookingTotal != null) ...[
-                            Text(
-                              bookingTotal,
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                              style: priceSecondaryTextStyle,
-                            ),
-                            const SizedBox(width: 6),
-                          ],
-                          if (appointmentPrice != null)
-                            Text(
-                              appointmentPrice,
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                              style: pricePrimaryTextStyle,
-                            ),
+                        ),
+                        if (bookingTotal != null) ...[
+                          Text(
+                            bookingTotal,
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            style: priceSecondaryTextStyle,
+                          ),
+                          const SizedBox(width: 6),
                         ],
-                      )
-                    : Text(
-                        info,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                        style: serviceTextStyle,
-                      ))
-                : null;
+                        if (appointmentPrice != null)
+                          Text(
+                            appointmentPrice,
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            style: pricePrimaryTextStyle,
+                          ),
+                      ],
+                    )
+                  : Text(
+                      info,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      style: serviceTextStyle,
+                    ))
+            : null;
 
         final textContent = useAnchoredRowsLayout
             ? Stack(
@@ -1136,10 +1220,7 @@ class _AppointmentCardInteractiveState
                 ],
               );
         final anchoredTextContent = useAnchoredRowsLayout
-            ? SizedBox(
-                height: constraints.maxHeight,
-                child: textContent,
-              )
+            ? SizedBox(height: constraints.maxHeight, child: textContent)
             : textContent;
 
         return ClipRect(
@@ -1175,7 +1256,9 @@ class _AppointmentCardInteractiveState
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: compactPricesInline && showBottomAppointmentPrice
+                  child:
+                      (compactPricesInline && showBottomAppointmentPrice) ||
+                          rightAlignedDualPrices
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -1334,6 +1417,8 @@ class _AppointmentCardInteractiveState
 
     await Future.delayed(const Duration(milliseconds: 100));
     if (mounted) setState(() => _isDraggingResize = false);
+    _stopTouchResizePriming();
+    _preferResizeFromPointerDown = false;
     _lastPointerGlobalPosition = null;
     _updateDragBlock(false);
     ref.read(isResizingProvider.notifier).stop();
@@ -1352,6 +1437,8 @@ class _AppointmentCardInteractiveState
     if (mounted) {
       setState(() => _isDraggingResize = false);
     }
+    _stopTouchResizePriming();
+    _preferResizeFromPointerDown = false;
     _updateDragBlock(false);
     if (ref.read(dragPositionProvider) != null) {
       ref.read(dragPositionProvider.notifier).clear();
@@ -1363,15 +1450,31 @@ class _AppointmentCardInteractiveState
     final localPos = cardBox.globalToLocal(globalPosition);
     final width = cardBox.size.width;
     final height = cardBox.size.height;
-    if (localPos.dx < 0 || localPos.dy < 0 || localPos.dx > width || localPos.dy > height) {
+    final configuredHitHeight =
+        ref.read(formFactorProvider) == AppFormFactor.desktop
+        ? _bottomResizeHandleHitHeightDesktop
+        : _bottomResizeHandleHitHeightTouch;
+    final bottomResizeHandleHitHeight = (height * 0.35).clamp(
+      8.0,
+      configuredHitHeight,
+    );
+    if (localPos.dx < 0 ||
+        localPos.dy < 0 ||
+        localPos.dx > width ||
+        localPos.dy > height) {
       return false;
     }
-    return localPos.dy >= (height - _bottomResizeHandleHitHeight);
+    return localPos.dy >= (height - bottomResizeHandleHitHeight);
   }
 
   void _startResizeInteraction() {
     final renderBox = context.findRenderObject() as RenderBox?;
     final currentHeightPx = renderBox?.size.height ?? 0;
+    final formFactor = ref.read(formFactorProvider);
+    if (formFactor != AppFormFactor.desktop) {
+      HapticFeedback.selectionClick();
+    }
+    _stopTouchResizePriming();
     ref
         .read(resizingProvider.notifier)
         .startResize(
@@ -1384,6 +1487,34 @@ class _AppointmentCardInteractiveState
     if (mounted) {
       setState(() => _isDraggingResize = true);
     }
+  }
+
+  void _startTouchResizePriming(Offset pointerGlobalPosition) {
+    _stopTouchResizePriming();
+    _touchPointerDownGlobalPosition = pointerGlobalPosition;
+    _touchResizePriming = true;
+    _touchResizeArmed = false;
+    _touchResizeArmOriginGlobalPosition = null;
+    _preferResizeFromPointerDown = false;
+    _updateDragBlock(true);
+    if (mounted) setState(() {});
+    _touchResizeArmTimer = Timer(_touchResizeArmDelay, () {
+      if (!mounted || _isDraggingResize) return;
+      _touchResizePriming = false;
+      _touchResizeArmed = true;
+      _touchResizeArmOriginGlobalPosition = _lastPointerGlobalPosition;
+      _preferResizeFromPointerDown = true;
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _stopTouchResizePriming() {
+    _touchResizeArmTimer?.cancel();
+    _touchResizeArmTimer = null;
+    _touchResizePriming = false;
+    _touchResizeArmed = false;
+    _touchPointerDownGlobalPosition = null;
+    _touchResizeArmOriginGlobalPosition = null;
   }
 
   Widget _buildFollowerFeedback(
@@ -1504,6 +1635,7 @@ class _CardPresentationModel {
     required this.durationMinutes,
     required this.hasClient,
     this.isPriceDisplayEnabled = false,
+    this.forceCompactPresentation = false,
     this.hasAppointmentPrice = false,
     this.hasBookingTotal = false,
   });
@@ -1511,20 +1643,29 @@ class _CardPresentationModel {
   final int durationMinutes;
   final bool hasClient;
   final bool isPriceDisplayEnabled;
+  final bool forceCompactPresentation;
   final bool hasAppointmentPrice;
   final bool hasBookingTotal;
 
-  bool get isUltraShort => durationMinutes < 10;
-  bool get isShort => durationMinutes <= 25;
-  bool get useUltraShortTextSize => durationMinutes < 15;
-  bool get centerVertically => durationMinutes < 20;
-  bool get showServiceInlineWithTime => durationMinutes < 20 && !isUltraShort;
+  bool get isUltraShort => !forceCompactPresentation && durationMinutes < 10;
+  bool get isShort => forceCompactPresentation || durationMinutes <= 25;
+  bool get useUltraShortTextSize =>
+      !forceCompactPresentation && durationMinutes < 15;
+  bool get centerVertically =>
+      !forceCompactPresentation && durationMinutes < 20;
+  bool get showServiceInlineWithTime =>
+      !forceCompactPresentation && durationMinutes < 20 && !isUltraShort;
   bool get showServiceRow =>
-      !showServiceInlineWithTime && durationMinutes >= 20;
+      forceCompactPresentation ||
+      (!showServiceInlineWithTime && durationMinutes >= 20);
   bool get showPriceInlineWithService =>
-      isPriceDisplayEnabled && durationMinutes >= 20 && durationMinutes <= 35;
+      !forceCompactPresentation &&
+      isPriceDisplayEnabled &&
+      durationMinutes >= 20 &&
+      durationMinutes <= 35;
   bool get useCompactResizeHandle => isShort;
-  bool get showClientOnSecondRow => !isUltraShort && hasClient;
+  bool get showClientOnSecondRow =>
+      hasClient && (!isUltraShort || forceCompactPresentation);
   bool get useUltraCompactLayout => isUltraShort;
   bool get hasPriceRow => hasAppointmentPrice || hasBookingTotal;
 
@@ -1549,6 +1690,7 @@ class _CardPresentationModel {
     int? durationMinutes,
     bool? hasClient,
     bool? isPriceDisplayEnabled,
+    bool? forceCompactPresentation,
     bool? hasAppointmentPrice,
     bool? hasBookingTotal,
   }) {
@@ -1557,6 +1699,8 @@ class _CardPresentationModel {
       hasClient: hasClient ?? this.hasClient,
       isPriceDisplayEnabled:
           isPriceDisplayEnabled ?? this.isPriceDisplayEnabled,
+      forceCompactPresentation:
+          forceCompactPresentation ?? this.forceCompactPresentation,
       hasAppointmentPrice: hasAppointmentPrice ?? this.hasAppointmentPrice,
       hasBookingTotal: hasBookingTotal ?? this.hasBookingTotal,
     );

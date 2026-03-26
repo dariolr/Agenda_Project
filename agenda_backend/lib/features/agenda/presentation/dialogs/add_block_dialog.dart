@@ -532,21 +532,9 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
   Future<void> _pickTime({required bool isStart}) async {
     final l10n = context.l10n;
-    final selected = await AppBottomSheet.show<TimeOfDay>(
-      context: context,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-      builder: (ctx) {
-        final height = MediaQuery.of(ctx).size.height * 0.9;
-        return SizedBox(
-          height: height,
-          child: _TimeGridPicker(
-            initial: isStart ? _startTime : _endTime,
-            stepMinutes: _timePickerStepMinutes,
-            title: isStart ? l10n.blockStartTime : l10n.blockEndTime,
-          ),
-        );
-      },
+    final selected = await _showTimeSelection(
+      initial: isStart ? _startTime : _endTime,
+      title: isStart ? l10n.blockStartTime : l10n.blockEndTime,
     );
     if (selected != null) {
       setState(() {
@@ -567,6 +555,50 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
         }
       });
     }
+  }
+
+  Future<TimeOfDay?> _showTimeSelection({
+    required TimeOfDay initial,
+    required String title,
+  }) async {
+    final formFactor = ref.read(formFactorProvider);
+    if (formFactor != AppFormFactor.desktop) {
+      return AppBottomSheet.show<TimeOfDay>(
+        context: context,
+        useRootNavigator: true,
+        padding: EdgeInsets.zero,
+        builder: (ctx) {
+          final height = MediaQuery.of(ctx).size.height * 0.9;
+          return SizedBox(
+            height: height,
+            child: _TimeGridPicker(
+              initial: initial,
+              stepMinutes: _timePickerStepMinutes,
+              title: title,
+            ),
+          );
+        },
+      );
+    }
+
+    return showDialog<TimeOfDay>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: _TimeGridPicker(
+              initial: initial,
+              stepMinutes: _timePickerStepMinutes,
+              title: title,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _onSave() async {

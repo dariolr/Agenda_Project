@@ -1,17 +1,19 @@
+import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
-import 'package:agenda_backend/core/models/availability_exception.dart';
 import 'package:agenda_backend/core/models/appointment.dart';
+import 'package:agenda_backend/core/models/availability_exception.dart';
 import 'package:agenda_backend/core/models/class_event.dart';
 import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart'
     show StaffPlanning;
 import 'package:agenda_backend/core/utils/color_utils.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
-import 'package:agenda_backend/app/providers/form_factor_provider.dart';
-import 'package:agenda_backend/features/business/providers/location_closures_provider.dart';
 import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:agenda_backend/features/agenda/mappers/appointments_by_day.dart';
+import 'package:agenda_backend/features/agenda/presentation/screens/week_view/single_staff_weekly_timeline.dart';
+import 'package:agenda_backend/features/agenda/presentation/screens/widgets/appointment_card_base.dart';
+import 'package:agenda_backend/features/agenda/presentation/widgets/appointment_dialog.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
@@ -20,10 +22,8 @@ import 'package:agenda_backend/features/agenda/providers/location_providers.dart
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
-import 'package:agenda_backend/features/agenda/presentation/screens/widgets/appointment_card_base.dart';
-import 'package:agenda_backend/features/agenda/presentation/screens/week_view/single_staff_weekly_timeline.dart';
-import 'package:agenda_backend/features/agenda/presentation/widgets/appointment_dialog.dart';
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
+import 'package:agenda_backend/features/business/providers/location_closures_provider.dart';
 import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
 import 'package:agenda_backend/features/staff/providers/availability_exceptions_provider.dart';
@@ -76,13 +76,11 @@ class WeeklyAppointmentsView extends ConsumerWidget {
       weeklyAppointmentsProvider(request),
     );
     final weeklyClassEventsAsync = ref.watch(
-      classEventsForLocationWeekProvider(
-        (
-          weekStart: weekRange.start,
-          locationId: location.id,
-          businessId: business.id,
-        ),
-      ),
+      classEventsForLocationWeekProvider((
+        weekStart: weekRange.start,
+        locationId: location.id,
+        businessId: business.id,
+      )),
     );
     final previousResult = weeklyAppointmentsAsync.maybeWhen(
       data: (result) => result,
@@ -103,18 +101,17 @@ class WeeklyAppointmentsView extends ConsumerWidget {
               autoScrollRequestId: autoScrollRequestId,
               autoScrollTargetDate: autoScrollTargetDate,
             ),
-            loading: () =>
-                previousResult != null
-                    ? _WeeklyAppointmentsBody(
-                        weekRange: weekRange,
-                        appointments: previousResult.appointments,
-                        classEvents: weeklyClassEventsAsync.value ?? const [],
-                        staffList: staffList,
-                        staffFilterMode: staffFilterMode,
-                        autoScrollRequestId: autoScrollRequestId,
-                        autoScrollTargetDate: autoScrollTargetDate,
-                      )
-                    : const Center(child: CircularProgressIndicator()),
+            loading: () => previousResult != null
+                ? _WeeklyAppointmentsBody(
+                    weekRange: weekRange,
+                    appointments: previousResult.appointments,
+                    classEvents: weeklyClassEventsAsync.value ?? const [],
+                    staffList: staffList,
+                    staffFilterMode: staffFilterMode,
+                    autoScrollRequestId: autoScrollRequestId,
+                    autoScrollTargetDate: autoScrollTargetDate,
+                  )
+                : const Center(child: CircularProgressIndicator()),
             error: (_, __) => _WeeklyAppointmentsError(request: request),
           ),
         ),
@@ -213,7 +210,8 @@ class _WeeklyAppointmentsBody extends ConsumerStatefulWidget {
   }
 }
 
-class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody> {
+class _WeeklyAppointmentsBodyState
+    extends ConsumerState<_WeeklyAppointmentsBody> {
   late final ScrollController _weekColumnsController;
   int _lastHandledAutoScrollRequestId = 0;
 
@@ -315,7 +313,9 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
           if (useHorizontalCards) {
             final isMobile = formFactor == AppFormFactor.mobile;
             final mobileDayColumnWidth = isMobile
-                ? ((constraints.maxWidth - (_WeeklyAppointmentsBody._daySpacing * 3)) / 2)
+                ? ((constraints.maxWidth -
+                              (_WeeklyAppointmentsBody._daySpacing * 3)) /
+                          2)
                       .clamp(120.0, double.infinity)
                       .toDouble()
                 : null;
@@ -349,8 +349,7 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
                   width:
                       mobileDayColumnWidth ??
                       resolvedColumnWidths?[index] ??
-                      (column.appointments.isEmpty &&
-                              column.classEvents.isEmpty
+                      (column.appointments.isEmpty && column.classEvents.isEmpty
                           ? _WeeklyAppointmentsBody._emptyDayColumnWidth
                           : _WeeklyAppointmentsBody._defaultDayColumnWidth),
                   child: _WeeklyDayColumn(
@@ -408,7 +407,8 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
                 if (i > 0)
                   const SizedBox(width: _WeeklyAppointmentsBody._daySpacing),
                 SizedBox(
-                  width: visibleDayColumns[i].appointments.isEmpty &&
+                  width:
+                      visibleDayColumns[i].appointments.isEmpty &&
                           visibleDayColumns[i].classEvents.isEmpty
                       ? _WeeklyAppointmentsBody._emptyDayColumnWidth
                       : nonEmptyDayWidth,
@@ -461,8 +461,9 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
         return;
       }
 
-      final horizontalPadding =
-          isMobile ? _WeeklyAppointmentsBody._daySpacing : 0.0;
+      final horizontalPadding = isMobile
+          ? _WeeklyAppointmentsBody._daySpacing
+          : 0.0;
       final previousWidth = List<double>.generate(targetIndex, (index) {
         if (mobileDayColumnWidth != null) {
           return mobileDayColumnWidth;
@@ -475,10 +476,10 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
             ? _WeeklyAppointmentsBody._emptyDayColumnWidth
             : _WeeklyAppointmentsBody._defaultDayColumnWidth;
       }).fold<double>(0.0, (sum, width) => sum + width);
-      final spacingBefore =
-          _WeeklyAppointmentsBody._daySpacing * targetIndex;
+      final spacingBefore = _WeeklyAppointmentsBody._daySpacing * targetIndex;
       final rawOffset = horizontalPadding + previousWidth + spacingBefore;
-      final offsetWithLeftMargin = rawOffset - _WeeklyAppointmentsBody._daySpacing;
+      final offsetWithLeftMargin =
+          rawOffset - _WeeklyAppointmentsBody._daySpacing;
       final position = _weekColumnsController.position;
       final clampedOffset = offsetWithLeftMargin.clamp(
         position.minScrollExtent,
@@ -510,8 +511,10 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
             : _WeeklyAppointmentsBody._defaultDayColumnWidth,
     ];
     final spacing =
-        _WeeklyAppointmentsBody._daySpacing * (columns.length - 1).clamp(0, 9999);
-    final totalBaseWidth = baseWidths.fold<double>(0, (sum, w) => sum + w) + spacing;
+        _WeeklyAppointmentsBody._daySpacing *
+        (columns.length - 1).clamp(0, 9999);
+    final totalBaseWidth =
+        baseWidths.fold<double>(0, (sum, w) => sum + w) + spacing;
     if (totalBaseWidth >= maxWidth) {
       return baseWidths;
     }
@@ -525,7 +528,9 @@ class _WeeklyAppointmentsBodyState extends ConsumerState<_WeeklyAppointmentsBody
     final extraPerColumn = (maxWidth - totalBaseWidth) / columns.length;
     return List<double>.generate(columns.length, (index) {
       final expandedWidth = baseWidths[index] + extraPerColumn;
-      return expandedWidth.clamp(baseWidths[index], maxWidths[index]).toDouble();
+      return expandedWidth
+          .clamp(baseWidths[index], maxWidths[index])
+          .toDouble();
     });
   }
 }
@@ -623,7 +628,9 @@ class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.primary.withOpacity(0.12),
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.12,
+                                ),
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: Text(
@@ -641,7 +648,8 @@ class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
                 ),
                 Divider(height: 0.5, thickness: 0.5, color: borderColor),
                 Expanded(
-                  child: widget.appointments.isEmpty && widget.classEvents.isEmpty
+                  child:
+                      widget.appointments.isEmpty && widget.classEvents.isEmpty
                       ? Center(
                           child: Padding(
                             padding: const EdgeInsets.all(12),
@@ -656,7 +664,8 @@ class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
                           controller: _scrollController,
                           padding: const EdgeInsets.all(12),
                           itemCount: _entries.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final entry = _entries[index];
                             return switch (entry) {
@@ -666,14 +675,16 @@ class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
                                 _WeeklyAppointmentTile(
                                   day: widget.day,
                                   appointment: appointment,
-                                  showStaffNameFooter: widget.showStaffNameFooter,
+                                  showStaffNameFooter:
+                                      widget.showStaffNameFooter,
                                 ),
                               _WeeklyAgendaClassEventEntry(
                                 classEvent: final event,
                               ) =>
                                 _WeeklyClassEventTile(
                                   classEvent: event,
-                                  showStaffNameFooter: widget.showStaffNameFooter,
+                                  showStaffNameFooter:
+                                      widget.showStaffNameFooter,
                                 ),
                             };
                           },
@@ -699,7 +710,8 @@ class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
     final entries = <_WeeklyAgendaEntry>[
       for (final appointment in widget.appointments)
         _WeeklyAgendaAppointmentEntry(appointment),
-      for (final event in widget.classEvents) _WeeklyAgendaClassEventEntry(event),
+      for (final event in widget.classEvents)
+        _WeeklyAgendaClassEventEntry(event),
     ];
     entries.sort((a, b) => a.start.compareTo(b.start));
     return entries;
@@ -714,7 +726,8 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
   });
 
   static const _tileHeight = 62.0;
-  static const _staffFooterHeight = 18.0;
+  static const _tileHeightWhenPriceHidden = 56.0;
+  static const _staffFooterHeight = 12.0;
 
   final DateTime day;
   final Appointment appointment;
@@ -724,6 +737,11 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final color = _resolveAppointmentColor(context, ref, appointment);
     final staffName = _resolveStaffDisplayName(ref, appointment.staffId);
+    final showPriceInCard =
+        ref.watch(currentBusinessProvider).showAppointmentPriceInCard;
+    final tileHeight = showPriceInCard
+        ? _tileHeight
+        : _tileHeightWhenPriceHidden;
     final theme = Theme.of(context);
     final footerHeight = showStaffNameFooter ? _staffFooterHeight : 0.0;
     final cardBorderRadius = showStaffNameFooter
@@ -734,14 +752,14 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
         : const BorderRadius.all(Radius.circular(8));
 
     return SizedBox(
-      height: _tileHeight,
+      height: tileHeight,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => _handleTap(context, ref),
         child: Column(
           children: [
             SizedBox(
-              height: _tileHeight - footerHeight,
+              height: tileHeight - footerHeight,
               child: Stack(
                 children: [
                   Positioned.fill(
@@ -751,6 +769,7 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
                         color: color,
                         showExtraMinutesBand: false,
                         borderRadius: cardBorderRadius,
+                        forceCompactPresentation: true,
                       ),
                     ),
                   ),
@@ -761,11 +780,11 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
               Container(
                 height: _staffFooterHeight,
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6),
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(8),
+                    bottom: Radius.circular(6),
                   ),
                   border: Border(
                     left: BorderSide(color: color),
@@ -773,18 +792,22 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
                     bottom: BorderSide(color: color),
                   ),
                 ),
-                child: Text(
-                  staffName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color:
-                        ThemeData.estimateBrightnessForColor(color) ==
-                            Brightness.dark
-                        ? Colors.white
-                        : Colors.black,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    staffName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      height: 1.0,
+                      color:
+                          ThemeData.estimateBrightnessForColor(color) ==
+                              Brightness.dark
+                          ? Colors.white
+                          : Colors.black,
+                    ),
                   ),
                 ),
               ),
@@ -883,14 +906,17 @@ class _WeeklyClassEventTile extends ConsumerWidget {
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark
         ? Colors.white
         : theme.colorScheme.onTertiaryContainer;
-    final footerHeight = showStaffNameFooter ? _WeeklyAppointmentTile._staffFooterHeight : 0.0;
+    final footerHeight = showStaffNameFooter
+        ? _WeeklyAppointmentTile._staffFooterHeight
+        : 0.0;
     final cardBorderRadius = showStaffNameFooter
         ? const BorderRadius.only(
             topLeft: Radius.circular(6),
             topRight: Radius.circular(6),
           )
         : const BorderRadius.all(Radius.circular(8));
-    final startsAt = classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
+    final startsAt =
+        classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
     final endsAt = classEvent.endsAtLocal ?? classEvent.endsAtUtc.toLocal();
     final timeLabel =
         '${DtFmt.hm(context, startsAt.hour, startsAt.minute)} - ${DtFmt.hm(context, endsAt.hour, endsAt.minute)}';
@@ -949,11 +975,11 @@ class _WeeklyClassEventTile extends ConsumerWidget {
             Container(
               height: _WeeklyAppointmentTile._staffFooterHeight,
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(8),
+                  bottom: Radius.circular(6),
                 ),
                 border: Border(
                   left: BorderSide(color: color),
@@ -1034,7 +1060,8 @@ class _WeeklyAgendaClassEventEntry extends _WeeklyAgendaEntry {
   final ClassEvent classEvent;
 
   @override
-  DateTime get start => classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
+  DateTime get start =>
+      classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
 }
 
 class _WeeklyAppointmentsError extends ConsumerWidget {
