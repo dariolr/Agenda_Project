@@ -728,8 +728,8 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
     required this.showStaffNameFooter,
   });
 
-  static const _tileHeight = 62.0;
-  static const _tileHeightWhenPriceHidden = 56.0;
+  static const _tileHeight = 68.0;
+  static const _tileHeightWhenPriceHidden = 60.0;
   static const _staffFooterHeight = 12.0;
 
   final DateTime day;
@@ -743,9 +743,12 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
     final showPriceInCard = ref.watch(
       effectiveShowAppointmentPriceInCardProvider,
     );
-    final tileHeight = showPriceInCard
+    final cardTextScale = ref.watch(agendaCardTextScaleProvider);
+    final effectiveHeightScale = cardTextScale > 1.0 ? cardTextScale : 1.0;
+    final baseTileHeight = showPriceInCard
         ? _tileHeight
         : _tileHeightWhenPriceHidden;
+    final tileHeight = baseTileHeight * effectiveHeightScale;
     final theme = Theme.of(context);
     final footerHeight = showStaffNameFooter ? _staffFooterHeight : 0.0;
     final cardBorderRadius = showStaffNameFooter
@@ -908,6 +911,9 @@ class _WeeklyClassEventTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final color = theme.colorScheme.tertiaryContainer;
+    final cardTextScale = ref.watch(agendaCardTextScaleProvider);
+    final effectiveHeightScale = cardTextScale > 1.0 ? cardTextScale : 1.0;
+    final tileHeight = _WeeklyAppointmentTile._tileHeight * effectiveHeightScale;
     final foreground =
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark
         ? Colors.white
@@ -929,11 +935,11 @@ class _WeeklyClassEventTile extends ConsumerWidget {
     final staffName = _resolveStaffDisplayName(ref, classEvent.staffId);
 
     return SizedBox(
-      height: _WeeklyAppointmentTile._tileHeight,
+      height: tileHeight,
       child: Column(
         children: [
           Container(
-            height: _WeeklyAppointmentTile._tileHeight - footerHeight,
+            height: tileHeight - footerHeight,
             width: double.infinity,
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(

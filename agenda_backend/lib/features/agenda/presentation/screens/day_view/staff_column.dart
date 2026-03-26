@@ -1119,10 +1119,13 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final top = layoutConfig.heightForMinutes(slotIndex * minutesPerSlot);
     final rightPadding = LayoutConfig.columnInnerPadding + 4;
-    final trademarkStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+    final trademarkStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      fontSize: 11,
       fontWeight: FontWeight.w700,
+      fontStyle: FontStyle.normal,
+      height: 1.0,
       color: Colors.black.withOpacity(0.5),
-      letterSpacing: 0.2,
+      letterSpacing: 0,
     );
 
     return Positioned(

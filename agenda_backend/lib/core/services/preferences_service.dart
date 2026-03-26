@@ -50,6 +50,18 @@ class PrefsKeys {
     required int locationId,
   }) => 'agenda_card_text_scale_${_scope(businessId, locationId)}';
 
+  /// Intensità colore card agenda (opacità) (scope business + location)
+  static String agendaCardColorOpacity(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_card_color_opacity_${_scope(businessId, locationId)}';
+
+  /// Intensità fascia minuti extra in card agenda (scope business + location)
+  static String agendaExtraMinutesBandIntensity(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_extra_minutes_band_intensity_${_scope(businessId, locationId)}';
+
   /// Override superadmin: mostra prezzi in card (scope business + location)
   static String agendaShowPricesOverride(
     int businessId, {
@@ -326,6 +338,51 @@ class PreferencesService {
     );
   }
 
+  double getAgendaCardColorOpacity(int businessId, {required int locationId}) {
+    final value = _prefs.getDouble(
+      PrefsKeys.agendaCardColorOpacity(businessId, locationId: locationId),
+    );
+    return value ?? 1.0;
+  }
+
+  Future<void> setAgendaCardColorOpacity(
+    int businessId,
+    double opacity, {
+    required int locationId,
+  }) async {
+    await _prefs.setDouble(
+      PrefsKeys.agendaCardColorOpacity(businessId, locationId: locationId),
+      opacity,
+    );
+  }
+
+  double getAgendaExtraMinutesBandIntensity(
+    int businessId, {
+    required int locationId,
+  }) {
+    final value = _prefs.getDouble(
+      PrefsKeys.agendaExtraMinutesBandIntensity(
+        businessId,
+        locationId: locationId,
+      ),
+    );
+    return value ?? 0.5;
+  }
+
+  Future<void> setAgendaExtraMinutesBandIntensity(
+    int businessId,
+    double intensity, {
+    required int locationId,
+  }) async {
+    await _prefs.setDouble(
+      PrefsKeys.agendaExtraMinutesBandIntensity(
+        businessId,
+        locationId: locationId,
+      ),
+      intensity,
+    );
+  }
+
   bool? getAgendaShowPricesOverride(int businessId, {required int locationId}) {
     return _prefs.getBool(
       PrefsKeys.agendaShowPricesOverride(businessId, locationId: locationId),
@@ -453,6 +510,10 @@ class PreferencesService {
           key.startsWith('agenda_view_mode_${businessId}_') ||
           key.startsWith('agenda_card_text_scale_${businessId}_') ||
           key == 'agenda_card_text_scale_$businessId' ||
+          key.startsWith('agenda_card_color_opacity_${businessId}_') ||
+          key == 'agenda_card_color_opacity_$businessId' ||
+          key.startsWith('agenda_extra_minutes_band_intensity_${businessId}_') ||
+          key == 'agenda_extra_minutes_band_intensity_$businessId' ||
           key.startsWith('agenda_show_prices_override_${businessId}_') ||
           key == 'agenda_show_prices_override_$businessId' ||
           key.startsWith('agenda_use_service_colors_override_${businessId}_') ||
@@ -474,6 +535,8 @@ class PreferencesService {
           key.startsWith('agenda_today_seen_date') ||
           key.startsWith('agenda_view_mode') ||
           key.startsWith('agenda_card_text_scale_') ||
+          key.startsWith('agenda_card_color_opacity_') ||
+          key.startsWith('agenda_extra_minutes_band_intensity_') ||
           key.startsWith('agenda_show_prices_override_') ||
           key.startsWith('agenda_use_service_colors_override_') ||
           key.startsWith('agenda_show_cancelled_appointments_') ||

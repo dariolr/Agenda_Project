@@ -8,18 +8,24 @@ import 'location_providers.dart';
 class AgendaDisplaySettings {
   const AgendaDisplaySettings({
     this.cardTextScale = 1.0,
+    this.cardColorOpacity = 1.0,
+    this.extraMinutesBandIntensity = 0.5,
     this.showPricesOverride,
     this.useServiceColorsOverride,
     this.showCancelledAppointments = false,
   });
 
   final double cardTextScale;
+  final double cardColorOpacity;
+  final double extraMinutesBandIntensity;
   final bool? showPricesOverride;
   final bool? useServiceColorsOverride;
   final bool showCancelledAppointments;
 
   AgendaDisplaySettings copyWith({
     double? cardTextScale,
+    double? cardColorOpacity,
+    double? extraMinutesBandIntensity,
     bool? showPricesOverride,
     bool? useServiceColorsOverride,
     bool? showCancelledAppointments,
@@ -28,6 +34,9 @@ class AgendaDisplaySettings {
   }) {
     return AgendaDisplaySettings(
       cardTextScale: cardTextScale ?? this.cardTextScale,
+      cardColorOpacity: cardColorOpacity ?? this.cardColorOpacity,
+      extraMinutesBandIntensity:
+          extraMinutesBandIntensity ?? this.extraMinutesBandIntensity,
       showPricesOverride: clearShowPricesOverride
           ? null
           : (showPricesOverride ?? this.showPricesOverride),
@@ -41,8 +50,12 @@ class AgendaDisplaySettings {
 }
 
 class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
-  static const _minTextScale = 0.8;
-  static const _maxTextScale = 1.2;
+  static const _minTextScale = 0.5;
+  static const _maxTextScale = 1.5;
+  static const _minCardOpacity = 0.3;
+  static const _maxCardOpacity = 1.0;
+  static const _minExtraMinutesBandIntensity = 0.0;
+  static const _maxExtraMinutesBandIntensity = 1.0;
 
   @override
   AgendaDisplaySettings build() {
@@ -57,6 +70,15 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
         .clamp(_minTextScale, _maxTextScale);
     return AgendaDisplaySettings(
       cardTextScale: scale,
+      cardColorOpacity: prefs
+          .getAgendaCardColorOpacity(businessId, locationId: locationId)
+          .clamp(_minCardOpacity, _maxCardOpacity),
+      extraMinutesBandIntensity: prefs
+          .getAgendaExtraMinutesBandIntensity(businessId, locationId: locationId)
+          .clamp(
+            _minExtraMinutesBandIntensity,
+            _maxExtraMinutesBandIntensity,
+          ),
       showPricesOverride: prefs.getAgendaShowPricesOverride(
         businessId,
         locationId: locationId,
@@ -84,6 +106,35 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     await ref
         .read(preferencesServiceProvider)
         .setAgendaCardTextScale(businessId, next, locationId: locationId);
+  }
+
+  Future<void> setCardColorOpacity(double value) async {
+    final businessId = _businessId();
+    final locationId = _locationId();
+    if (businessId <= 0 || locationId <= 0) return;
+    final next = value.clamp(_minCardOpacity, _maxCardOpacity);
+    state = state.copyWith(cardColorOpacity: next);
+    await ref
+        .read(preferencesServiceProvider)
+        .setAgendaCardColorOpacity(businessId, next, locationId: locationId);
+  }
+
+  Future<void> setExtraMinutesBandIntensity(double value) async {
+    final businessId = _businessId();
+    final locationId = _locationId();
+    if (businessId <= 0 || locationId <= 0) return;
+    final next = value.clamp(
+      _minExtraMinutesBandIntensity,
+      _maxExtraMinutesBandIntensity,
+    );
+    state = state.copyWith(extraMinutesBandIntensity: next);
+    await ref
+        .read(preferencesServiceProvider)
+        .setAgendaExtraMinutesBandIntensity(
+          businessId,
+          next,
+          locationId: locationId,
+        );
   }
 
   Future<void> setShowPricesOverride(bool? value) async {
@@ -138,6 +189,16 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     state = const AgendaDisplaySettings();
     final prefs = ref.read(preferencesServiceProvider);
     await prefs.setAgendaCardTextScale(businessId, 1.0, locationId: locationId);
+    await prefs.setAgendaCardColorOpacity(
+      businessId,
+      1.0,
+      locationId: locationId,
+    );
+    await prefs.setAgendaExtraMinutesBandIntensity(
+      businessId,
+      0.5,
+      locationId: locationId,
+    );
     await prefs.setAgendaShowPricesOverride(
       businessId,
       null,
@@ -148,6 +209,8 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
       null,
       locationId: locationId,
     );
+    // Ripristina anche il valore runtime base del layout (default: colori da servizio)
+    ref.read(layoutConfigProvider.notifier).setUseServiceColors(true);
     await prefs.setAgendaShowCancelledAppointments(
       businessId,
       false,
@@ -163,6 +226,14 @@ final agendaDisplaySettingsProvider =
 
 final agendaCardTextScaleProvider = Provider<double>((ref) {
   return ref.watch(agendaDisplaySettingsProvider).cardTextScale;
+});
+
+final agendaCardColorOpacityProvider = Provider<double>((ref) {
+  return ref.watch(agendaDisplaySettingsProvider).cardColorOpacity;
+});
+
+final agendaExtraMinutesBandIntensityProvider = Provider<double>((ref) {
+  return ref.watch(agendaDisplaySettingsProvider).extraMinutesBandIntensity;
 });
 
 final effectiveShowAppointmentPriceInCardProvider = Provider<bool>((ref) {

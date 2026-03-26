@@ -1550,6 +1550,8 @@
   "agendaDisplaySettingsAction": "Display settings",
   "agendaDisplaySettingsSuperadminTitle": "Agenda Settings",
   "agendaDisplaySettingsCardTextZoomLabel": "Card text zoom",
+  "agendaDisplaySettingsCardColorOpacityLabel": "Color intensity",
+  "agendaDisplaySettingsExtraMinutesBandIntensityLabel": "Additional extra-band intensity",
   "agendaDisplaySettingsShowPricesLabel": "Show prices in cards",
   "agendaDisplaySettingsShowCancelledLabel": "Show cancelled appointments",
   "agendaDisplaySettingsServiceColorsLabel": "Card colors from:",
