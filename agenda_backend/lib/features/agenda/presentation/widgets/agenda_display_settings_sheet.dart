@@ -1,0 +1,165 @@
+import 'package:agenda_backend/app/providers/form_factor_provider.dart';
+import 'package:agenda_backend/core/l10n/l10_extension.dart';
+import 'package:agenda_backend/core/widgets/app_buttons.dart';
+import 'package:agenda_backend/core/widgets/app_dialogs.dart';
+import 'package:agenda_backend/core/widgets/app_form.dart';
+import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+Future<void> showAgendaDisplaySettingsSheet(BuildContext context) async {
+  final formFactor = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(formFactorProvider);
+  final isDesktop = formFactor == AppFormFactor.desktop;
+  await showAppFormDialog<void>(
+    context,
+    useRootNavigator: true,
+    bottomSheetHeightFactor: null,
+    bottomSheetMaxHeightFactor: isDesktop ? null : 0.78,
+    builder: (_) => const _AgendaDisplaySettingsSheetContent(),
+  );
+}
+
+class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
+  const _AgendaDisplaySettingsSheetContent();
+  static const double _titleToFirstSettingSpacing = 52;
+  static const double _sectionSpacing = 30;
+  static const double _radioGroupTopSpacing = 10;
+  static const double _radioItemSpacing = 4;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingLabelStyle = Theme.of(
+      context,
+    ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600);
+    final formFactor = ref.watch(formFactorProvider);
+    final isDesktop = formFactor == AppFormFactor.desktop;
+    final settings = ref.watch(agendaDisplaySettingsProvider);
+    final showPrices = ref.watch(effectiveShowAppointmentPriceInCardProvider);
+    // final showCancelled = ref.watch(effectiveShowCancelledAppointmentsProvider);
+    final useServiceColors = ref.watch(
+      effectiveUseServiceColorsForAppointmentsProvider,
+    );
+    final notifier = ref.read(agendaDisplaySettingsProvider.notifier);
+
+    return AppFormScaffold(
+      title: Text(context.l10n.agendaDisplaySettingsSuperadminTitle),
+      dialogMinWidth: 0,
+      dialogMaxWidth: 620,
+      dialogInsetPadding: const EdgeInsets.symmetric(
+        horizontal: 32,
+        vertical: 24,
+      ),
+      dialogPadding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+      mobileActionsPadding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: _titleToFirstSettingSpacing),
+          Text(
+            context.l10n.agendaDisplaySettingsCardTextZoomLabel,
+            style: settingLabelStyle,
+          ),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  notifier.setCardTextScale(settings.cardTextScale - 0.05);
+                },
+                icon: const Icon(Icons.remove),
+              ),
+              Expanded(
+                child: Slider(
+                  min: 0.8,
+                  max: 1.2,
+                  divisions: 8,
+                  value: settings.cardTextScale,
+                  onChanged: notifier.setCardTextScale,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  notifier.setCardTextScale(settings.cardTextScale + 0.05);
+                },
+                icon: const Icon(Icons.add),
+              ),
+              const SizedBox(width: 6),
+              Text('${(settings.cardTextScale * 100).round()}%'),
+            ],
+          ),
+          const SizedBox(height: _sectionSpacing),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              context.l10n.agendaDisplaySettingsShowPricesLabel,
+              style: settingLabelStyle,
+            ),
+            value: showPrices,
+            onChanged: notifier.setShowPricesOverride,
+          ),
+          // const SizedBox(height: _sectionSpacing),
+          // SwitchListTile.adaptive(
+          //   contentPadding: EdgeInsets.zero,
+          //   title: Text(
+          //     context.l10n.agendaDisplaySettingsShowCancelledLabel,
+          //     style: settingLabelStyle,
+          //   ),
+          //   value: showCancelled,
+          //   onChanged: notifier.setShowCancelledAppointments,
+          // ),
+          const SizedBox(height: _sectionSpacing),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              context.l10n.agendaDisplaySettingsServiceColorsLabel,
+              style: settingLabelStyle,
+            ),
+          ),
+          const SizedBox(height: _radioGroupTopSpacing),
+          RadioListTile<bool>(
+            contentPadding: EdgeInsets.zero,
+            value: true,
+            groupValue: useServiceColors,
+            title: Text(
+              context.l10n.servicesTabLabel,
+              style: settingLabelStyle,
+            ),
+            onChanged: (value) => notifier.setUseServiceColorsOverride(value),
+          ),
+          const SizedBox(height: _radioItemSpacing),
+          RadioListTile<bool>(
+            contentPadding: EdgeInsets.zero,
+            value: false,
+            groupValue: useServiceColors,
+            title: Text(context.l10n.teamStaffLabel, style: settingLabelStyle),
+            onChanged: (value) => notifier.setUseServiceColorsOverride(value),
+          ),
+        ],
+      ),
+      actions: [
+        if (isDesktop)
+          SizedBox(
+            width: AppButtonStyles.dialogButtonWidth,
+            child: AppOutlinedActionButton(
+              onPressed: () => Navigator.of(context).pop(),
+              borderColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.primary,
+              padding: AppButtonStyles.dialogButtonPadding,
+              child: Text(context.l10n.actionClose),
+            ),
+          ),
+        SizedBox(
+          width: AppButtonStyles.dialogButtonWidth + 30,
+          child: AppFilledButton(
+            onPressed: notifier.resetToDefaults,
+            padding: AppButtonStyles.dialogButtonPadding,
+            child: Text(context.l10n.agendaDisplaySettingsResetDefaultsAction),
+          ),
+        ),
+      ],
+    );
+  }
+}

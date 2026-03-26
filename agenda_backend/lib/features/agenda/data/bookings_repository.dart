@@ -43,6 +43,13 @@ class BookingsRepository {
 
   final BookingsApi _api;
 
+  String? _normalizeBookingStatus(Object? rawStatus) {
+    if (rawStatus is! String) return null;
+    final normalized = rawStatus.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    return normalized;
+  }
+
   /// Carica gli appuntamenti per una location in una data specifica
   Future<List<Appointment>> getAppointments({
     required int locationId,
@@ -294,6 +301,9 @@ class BookingsRepository {
 
   /// Converte JSON appointment API in Appointment interno
   Appointment _appointmentFromJson(Map<String, dynamic> json, int businessId) {
+    final bookingStatus = _normalizeBookingStatus(
+      json['booking_status'] ?? json['status'],
+    );
     return Appointment(
       id: json['id'] as int,
       bookingId: json['booking_id'] as int,
@@ -309,7 +319,7 @@ class BookingsRepository {
       endTime: DateTime.parse(json['end_time'] as String),
       price: (json['price'] as num?)?.toDouble(),
       bookingSource: json['source'] as String?,
-      bookingStatus: json['booking_status'] as String?,
+      bookingStatus: bookingStatus,
       extraMinutes: json['extra_blocked_minutes'] as int?,
       extraMinutesType:
           (json['extra_blocked_minutes'] as int?) != null &&
@@ -342,11 +352,15 @@ class BookingsRepository {
       endTime: item.endDateTime,
       price: item.price,
       bookingSource: booking.source,
-      bookingStatus: booking.status,
+      bookingStatus: _normalizeBookingStatus(booking.status),
       extraBlockedMinutes: item.extraBlockedMinutes,
       extraProcessingMinutes: item.extraProcessingMinutes,
-      extraMinutes: item.extraBlockedMinutes > 0 ? item.extraBlockedMinutes : null,
-      extraMinutesType: item.extraBlockedMinutes > 0 ? ExtraMinutesType.blocked : null,
+      extraMinutes: item.extraBlockedMinutes > 0
+          ? item.extraBlockedMinutes
+          : null,
+      extraMinutesType: item.extraBlockedMinutes > 0
+          ? ExtraMinutesType.blocked
+          : null,
     );
   }
 }

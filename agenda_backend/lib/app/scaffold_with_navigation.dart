@@ -22,6 +22,7 @@ import '../core/widgets/app_bottom_sheet.dart';
 import '../core/widgets/app_buttons.dart';
 import '../core/widgets/global_loading_overlay.dart';
 import '../features/agenda/presentation/dialogs/add_block_dialog.dart';
+import '../features/agenda/presentation/widgets/agenda_display_settings_sheet.dart';
 import '../features/agenda/presentation/widgets/agenda_top_controls.dart';
 import '../features/agenda/presentation/widgets/booking_dialog.dart';
 import '../features/agenda/providers/business_providers.dart';
@@ -90,7 +91,8 @@ class ScaffoldWithNavigation extends ConsumerStatefulWidget {
       _ScaffoldWithNavigationState();
 }
 
-class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation> {
+class _ScaffoldWithNavigationState
+    extends ConsumerState<ScaffoldWithNavigation> {
   int? _lastShellIndex;
 
   @override
@@ -286,7 +288,8 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
                         )
                       : null,
                   titleSpacing: isAgenda ? 0 : NavigationToolbar.kMiddleSpacing,
-                  title: hideAltroSubsectionTitle || hideManagedAltroSectionTitle
+                  title:
+                      hideAltroSubsectionTitle || hideManagedAltroSectionTitle
                       ? const SizedBox.shrink()
                       : isAgenda
                       ? Padding(
@@ -876,10 +879,6 @@ class _AgendaFilterActions extends ConsumerWidget {
     final showLocationSelector = locations.length > 1;
     final showReportAction = canViewReports;
 
-    if (!showStaffSelector && !showLocationSelector && !showReportAction) {
-      return const SizedBox.shrink();
-    }
-
     Widget buildActionLabel(IconData icon, String label) {
       return showLabelEffective
           ? Row(
@@ -969,6 +968,28 @@ class _AgendaFilterActions extends ConsumerWidget {
             const SizedBox(width: _spacing),
             const AgendaLaunchReportButton(height: _actionButtonHeight),
           ],
+          const SizedBox(width: _spacing),
+          Tooltip(
+            message: l10n.agendaDisplaySettingsAction,
+            child: SizedBox(
+              height: _actionButtonHeight,
+              width: showLabelEffective ? null : _iconOnlyWidth,
+              child: AppOutlinedActionButton(
+                onPressed: () => showAgendaDisplaySettingsSheet(context),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                borderColor: scheme.primary,
+                foregroundColor: scheme.primary,
+                child: buildActionLabel(
+                  Icons.tune,
+                  l10n.agendaDisplaySettingsAction,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

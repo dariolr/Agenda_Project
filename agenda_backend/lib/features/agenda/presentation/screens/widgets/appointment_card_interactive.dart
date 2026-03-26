@@ -6,15 +6,16 @@ import 'package:flutter/services.dart';
 
 import '/core/models/appointment.dart';
 import '/core/utils/price_utils.dart';
+import '/core/utils/string_utils.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
 import '../../../../../../core/l10n/l10_extension.dart';
 import '../../../../../../core/widgets/app_dialogs.dart';
-import '../../../providers/business_providers.dart';
 import '../../../../auth/providers/current_business_user_provider.dart';
 import '../../../../clients/providers/clients_providers.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_interaction_lock_provider.dart';
+import '../../../providers/agenda_display_settings_provider.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/bookings_provider.dart';
@@ -649,8 +650,10 @@ class _AppointmentCardInteractiveState
 
     final start = _formatTime(startTime);
     final formattedEndTime = _formatTime(endTime);
-    final client = widget.appointment.clientName;
-    final business = ref.watch(currentBusinessProvider);
+    final client = StringUtils.toTitleCase(widget.appointment.clientName);
+    final isPriceDisplayEnabled = ref.watch(
+      effectiveShowAppointmentPriceInCardProvider,
+    );
     final bookingSummary = ref.watch(
       bookingSummaryProvider(widget.appointment.bookingId),
     );
@@ -658,7 +661,7 @@ class _AppointmentCardInteractiveState
       lastAppointmentIdForBookingProvider(widget.appointment.bookingId),
     );
     final showAppointmentPrice =
-        business.showAppointmentPriceInCard &&
+        isPriceDisplayEnabled &&
         widget.appointment.price != null &&
         widget.appointment.price! > 0;
     final hidesRedundantBookingTotal =
@@ -673,7 +676,7 @@ class _AppointmentCardInteractiveState
           )
         : null;
     final showBookingTotal =
-        business.showAppointmentPriceInCard &&
+        isPriceDisplayEnabled &&
         bookingSummary != null &&
         bookingSummary.itemsCount > 1 &&
         bookingSummary.totalPrice > 0 &&
@@ -687,9 +690,10 @@ class _AppointmentCardInteractiveState
           )
         : null;
 
+    final serviceName = StringUtils.toTitleCase(widget.appointment.serviceName);
     final pieces = <String>[];
-    if (widget.appointment.serviceName.isNotEmpty) {
-      pieces.add(widget.appointment.serviceName);
+    if (serviceName.isNotEmpty) {
+      pieces.add(serviceName);
     }
     final info = pieces.join(' – ');
     final borderWidth = showThickBorder ? 2.5 : 1.0;
@@ -708,7 +712,7 @@ class _AppointmentCardInteractiveState
     final presentation = _CardPresentationModel(
       durationMinutes: durationMinutes,
       hasClient: client.trim().isNotEmpty,
-      isPriceDisplayEnabled: business.showAppointmentPriceInCard,
+      isPriceDisplayEnabled: isPriceDisplayEnabled,
       forceCompactPresentation: widget.forceCompactPresentation,
     );
     final useAnchoredRowsLayout =
@@ -892,49 +896,53 @@ class _AppointmentCardInteractiveState
         useAnchoredRowsLayout &&
         presentation.durationMinutes >= 25 &&
         presentation.durationMinutes < 30;
-    final boostCompactText =
-        presentation.forceCompactPresentation;
+    final boostCompactText = presentation.forceCompactPresentation;
     const anchoredTextSizeBoost = 2.0;
     const compactNoPriceTextBoost = 1.0;
+    final cardTextScale = ref.watch(agendaCardTextScaleProvider);
     final effectivePrimaryFontSize = boostAnchoredText
         ? ((presentation.primaryTextFontSize ?? 11) + anchoredTextSizeBoost)
         : ((presentation.primaryTextFontSize ?? 11) +
               (boostCompactText ? compactNoPriceTextBoost : 0));
+    final scaledPrimaryFontSize = effectivePrimaryFontSize * cardTextScale;
     final effectivePriceFontSize = boostAnchoredText
         ? (presentation.priceTextFontSize + anchoredTextSizeBoost)
         : presentation.priceTextFontSize;
+    final scaledPriceFontSize = effectivePriceFontSize * cardTextScale;
     final trailingIconSize = presentation.trailingIconSize;
     final trailingIconLeftPadding = presentation.trailingIconLeftPadding;
     final statusDotSize = presentation.statusDotSize;
+    final scaledTrailingIconSize = trailingIconSize * cardTextScale;
+    final scaledStatusDotSize = statusDotSize * cardTextScale;
     final timeTextStyle = TextStyle(
       color: Colors.black87,
       fontWeight: FontWeight.w400,
-      fontSize: effectivePrimaryFontSize,
+      fontSize: scaledPrimaryFontSize,
     );
     final clientTextStyle = TextStyle(
       color: Colors.black87,
       fontWeight: FontWeight.w700,
-      fontSize: effectivePrimaryFontSize,
+      fontSize: scaledPrimaryFontSize,
     );
     final stackedClientTextStyle = TextStyle(
       color: Colors.black87,
       fontWeight: FontWeight.w700,
-      fontSize: effectivePrimaryFontSize,
+      fontSize: scaledPrimaryFontSize,
       height: 1.1,
     );
     final serviceTextStyle = TextStyle(
       color: Colors.black54,
       fontWeight: FontWeight.w500,
-      fontSize: effectivePrimaryFontSize,
+      fontSize: scaledPrimaryFontSize,
       height: 1.1,
     );
     final priceSecondaryTextStyle = TextStyle(
-      fontSize: effectivePriceFontSize,
+      fontSize: scaledPriceFontSize,
       color: Colors.black54,
       height: 1.1,
     );
     final pricePrimaryTextStyle = TextStyle(
-      fontSize: effectivePriceFontSize,
+      fontSize: scaledPriceFontSize,
       color: Colors.black87,
       height: 1.1,
     );
@@ -952,8 +960,8 @@ class _AppointmentCardInteractiveState
           child: Tooltip(
             message: statusVisual.label,
             child: Container(
-              width: statusDotSize,
-              height: statusDotSize,
+              height: scaledStatusDotSize,
+              width: scaledStatusDotSize,
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   center: const Alignment(-0.25, -0.25),
@@ -985,7 +993,7 @@ class _AppointmentCardInteractiveState
                 padding: const EdgeInsets.all(2),
                 child: Icon(
                   Icons.sticky_note_2_outlined,
-                  size: trailingIconSize,
+                  size: scaledTrailingIconSize,
                   color: Colors.black54,
                 ),
               ),
@@ -1004,7 +1012,7 @@ class _AppointmentCardInteractiveState
           padding: EdgeInsets.only(left: trailingIconLeftPadding),
           child: Icon(
             Icons.cloud_outlined,
-            size: trailingIconSize,
+            size: scaledTrailingIconSize,
             color: isOnlineStaff ? Colors.red : Colors.black54,
           ),
         ),
@@ -1022,7 +1030,7 @@ class _AppointmentCardInteractiveState
             message: tooltipText,
             child: Icon(
               Icons.repeat,
-              size: trailingIconSize,
+              size: scaledTrailingIconSize,
               color: Colors.black54,
             ),
           ),

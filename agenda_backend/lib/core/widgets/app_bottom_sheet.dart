@@ -16,6 +16,8 @@ class AppBottomSheet {
     bool useRootNavigator = true,
     EdgeInsetsGeometry? padding,
     double? heightFactor = defaultHeightFactor,
+    bool adaptiveHeight = false,
+    double adaptiveMaxHeightFactor = defaultHeightFactor,
   }) {
     return AppForm.show<T>(
       context: context,
@@ -24,7 +26,8 @@ class AppBottomSheet {
       useSafeArea: useSafeArea,
       useRootNavigator: useRootNavigator,
       padding: padding,
-      heightFactor: heightFactor,
+      heightFactor: adaptiveHeight ? null : heightFactor,
+      maxHeightFactor: adaptiveHeight ? adaptiveMaxHeightFactor : null,
     );
   }
 }

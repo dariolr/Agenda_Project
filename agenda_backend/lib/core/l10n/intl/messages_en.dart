@@ -244,6 +244,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "agendaDailyReportAction": MessageLookupByLibrary.simpleMessage(
       "Daily report",
     ),
+    "agendaDisplaySettingsAction": MessageLookupByLibrary.simpleMessage(
+      "Display settings",
+    ),
+    "agendaDisplaySettingsCardTextZoomLabel":
+        MessageLookupByLibrary.simpleMessage("Card text zoom"),
+    "agendaDisplaySettingsResetDefaultsAction":
+        MessageLookupByLibrary.simpleMessage("Reset defaults"),
+    "agendaDisplaySettingsServiceColorsLabel":
+        MessageLookupByLibrary.simpleMessage("Card colors from:"),
+    "agendaDisplaySettingsShowCancelledLabel":
+        MessageLookupByLibrary.simpleMessage("Show cancelled appointments"),
+    "agendaDisplaySettingsShowPricesLabel":
+        MessageLookupByLibrary.simpleMessage("Show prices in cards"),
+    "agendaDisplaySettingsSuperadminTitle":
+        MessageLookupByLibrary.simpleMessage("Agenda Settings"),
     "agendaNextDay": MessageLookupByLibrary.simpleMessage("Next day"),
     "agendaNextMonth": MessageLookupByLibrary.simpleMessage("Next month"),
     "agendaNextWeek": MessageLookupByLibrary.simpleMessage("Next Week"),

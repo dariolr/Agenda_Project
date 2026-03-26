@@ -11,11 +11,15 @@ Future<T?> showAppFormDialog<T>(
   required WidgetBuilder builder,
   bool barrierDismissible = true,
   bool useRootNavigator = true,
+  double? bottomSheetHeightFactor = AppForm.defaultBottomSheetHeightFactor,
+  double? bottomSheetMaxHeightFactor,
 }) {
   return AppForm.show<T>(
     context: context,
     barrierDismissible: barrierDismissible,
     useRootNavigator: useRootNavigator,
+    heightFactor: bottomSheetHeightFactor,
+    maxHeightFactor: bottomSheetMaxHeightFactor,
     builder: builder,
   );
 }

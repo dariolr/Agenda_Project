@@ -5,8 +5,8 @@ import '../../services/providers/services_provider.dart';
 import '../../staff/providers/staff_planning_provider.dart';
 import '../../staff/providers/staff_providers.dart';
 import 'appointment_providers.dart';
+import 'agenda_display_settings_provider.dart';
 import 'business_providers.dart';
-import 'layout_config_provider.dart';
 import 'location_providers.dart';
 import 'staff_filter_providers.dart';
 
@@ -23,7 +23,9 @@ final agendaBootstrapLoadingProvider = Provider<bool>((ref) {
   final staffInCurrentLocation = ref.watch(staffForCurrentLocationProvider);
   final staffPlannings = ref.watch(staffPlanningsProvider);
   final staffFilterMode = ref.watch(staffFilterModeProvider);
-  final layoutConfig = ref.watch(layoutConfigProvider);
+  final useServiceColors = ref.watch(
+    effectiveUseServiceColorsForAppointmentsProvider,
+  );
   final serviceVariantsAsync = ref.watch(serviceVariantsProvider);
   final variants = serviceVariantsAsync.value ?? const [];
 
@@ -53,7 +55,7 @@ final agendaBootstrapLoadingProvider = Provider<bool>((ref) {
       variants.isNotEmpty &&
       variants.any((variant) => variant.locationId != currentLocationId);
   final isServiceVariantsBootstrapLoading =
-      layoutConfig.useServiceColorsForAppointments &&
+      useServiceColors &&
       (serviceVariantsAsync.isLoading || hasStaleVariantsForCurrentLocation);
 
   return isWaitingForBusiness ||

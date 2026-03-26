@@ -14,8 +14,8 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
 class PrefsKeys {
   static String _scope(int businessId, int? locationId) =>
       locationId != null && locationId > 0
-          ? '${businessId}_loc_$locationId'
-          : '$businessId';
+      ? '${businessId}_loc_$locationId'
+      : '$businessId';
 
   /// Genera la chiave per staff filter mode per un business specifico
   static String staffFilterMode(int businessId, {int? locationId}) =>
@@ -35,12 +35,38 @@ class PrefsKeys {
 
   /// Genera la chiave per l'ultimo "oggi" visualizzato in agenda
   /// per business + location.
-  static String agendaTodaySeenDate(int businessId, {required int locationId}) =>
-      'agenda_today_seen_date_${_scope(businessId, locationId)}';
+  static String agendaTodaySeenDate(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_today_seen_date_${_scope(businessId, locationId)}';
 
   /// Genera la chiave per la modalità vista agenda per business + location
   static String agendaViewMode(int businessId, {required int locationId}) =>
       'agenda_view_mode_${_scope(businessId, locationId)}';
+
+  /// Zoom testo card agenda (scope business + location)
+  static String agendaCardTextScale(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_card_text_scale_${_scope(businessId, locationId)}';
+
+  /// Override superadmin: mostra prezzi in card (scope business + location)
+  static String agendaShowPricesOverride(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_show_prices_override_${_scope(businessId, locationId)}';
+
+  /// Override superadmin: usa colori servizio nelle card (scope business + location)
+  static String agendaUseServiceColorsOverride(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_use_service_colors_override_${_scope(businessId, locationId)}';
+
+  /// Mostra appuntamenti cancellati (scope business + location)
+  static String agendaShowCancelledAppointments(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_show_cancelled_appointments_${_scope(businessId, locationId)}';
 
   /// Chiave per ultimo business visitato dal superadmin
   static const superadminLastBusinessId = 'superadmin_last_business_id';
@@ -279,6 +305,105 @@ class PreferencesService {
   }
 
   // ============================================
+  // Agenda Display Settings (Superadmin)
+  // ============================================
+
+  double getAgendaCardTextScale(int businessId, {required int locationId}) {
+    final value = _prefs.getDouble(
+      PrefsKeys.agendaCardTextScale(businessId, locationId: locationId),
+    );
+    return value ?? 1.0;
+  }
+
+  Future<void> setAgendaCardTextScale(
+    int businessId,
+    double scale, {
+    required int locationId,
+  }) async {
+    await _prefs.setDouble(
+      PrefsKeys.agendaCardTextScale(businessId, locationId: locationId),
+      scale,
+    );
+  }
+
+  bool? getAgendaShowPricesOverride(int businessId, {required int locationId}) {
+    return _prefs.getBool(
+      PrefsKeys.agendaShowPricesOverride(businessId, locationId: locationId),
+    );
+  }
+
+  Future<void> setAgendaShowPricesOverride(
+    int businessId,
+    bool? value, {
+    required int locationId,
+  }) async {
+    final key = PrefsKeys.agendaShowPricesOverride(
+      businessId,
+      locationId: locationId,
+    );
+    if (value == null) {
+      await _prefs.remove(key);
+      return;
+    }
+    await _prefs.setBool(key, value);
+  }
+
+  bool? getAgendaUseServiceColorsOverride(
+    int businessId, {
+    required int locationId,
+  }) {
+    return _prefs.getBool(
+      PrefsKeys.agendaUseServiceColorsOverride(
+        businessId,
+        locationId: locationId,
+      ),
+    );
+  }
+
+  Future<void> setAgendaUseServiceColorsOverride(
+    int businessId,
+    bool? value, {
+    required int locationId,
+  }) async {
+    final key = PrefsKeys.agendaUseServiceColorsOverride(
+      businessId,
+      locationId: locationId,
+    );
+    if (value == null) {
+      await _prefs.remove(key);
+      return;
+    }
+    await _prefs.setBool(key, value);
+  }
+
+  bool getAgendaShowCancelledAppointments(
+    int businessId, {
+    required int locationId,
+  }) {
+    return _prefs.getBool(
+          PrefsKeys.agendaShowCancelledAppointments(
+            businessId,
+            locationId: locationId,
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> setAgendaShowCancelledAppointments(
+    int businessId,
+    bool value, {
+    required int locationId,
+  }) async {
+    await _prefs.setBool(
+      PrefsKeys.agendaShowCancelledAppointments(
+        businessId,
+        locationId: locationId,
+      ),
+      value,
+    );
+  }
+
+  // ============================================
   // Desktop Rail Position
   // ============================================
 
@@ -325,7 +450,14 @@ class PreferencesService {
           key == PrefsKeys.selectedStaffIds(businessId) ||
           key.startsWith('agenda_date_${businessId}_') ||
           key.startsWith('agenda_today_seen_date_${businessId}_') ||
-          key.startsWith('agenda_view_mode_${businessId}_')) {
+          key.startsWith('agenda_view_mode_${businessId}_') ||
+          key.startsWith('agenda_card_text_scale_${businessId}_') ||
+          key == 'agenda_card_text_scale_$businessId' ||
+          key.startsWith('agenda_show_prices_override_${businessId}_') ||
+          key == 'agenda_show_prices_override_$businessId' ||
+          key.startsWith('agenda_use_service_colors_override_${businessId}_') ||
+          key == 'agenda_use_service_colors_override_$businessId' ||
+          key.startsWith('agenda_show_cancelled_appointments_${businessId}_')) {
         await _prefs.remove(key);
       }
     }
@@ -341,6 +473,10 @@ class PreferencesService {
           key.startsWith('agenda_date') ||
           key.startsWith('agenda_today_seen_date') ||
           key.startsWith('agenda_view_mode') ||
+          key.startsWith('agenda_card_text_scale_') ||
+          key.startsWith('agenda_show_prices_override_') ||
+          key.startsWith('agenda_use_service_colors_override_') ||
+          key.startsWith('agenda_show_cancelled_appointments_') ||
           key.startsWith('current_location_id') ||
           key == PrefsKeys.desktopRailStartsAtTop) {
         await _prefs.remove(key);

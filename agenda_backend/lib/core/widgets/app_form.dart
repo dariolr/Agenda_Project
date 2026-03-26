@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,13 +22,15 @@ class AppForm {
     bool useRootNavigator = true,
     EdgeInsetsGeometry? padding,
     double? heightFactor = defaultBottomSheetHeightFactor,
+    double? maxHeightFactor,
     AppFormFactor? formFactor,
   }) {
     final effectiveFormFactor =
         formFactor ??
-        ProviderScope.containerOf(context, listen: false).read(
-          formFactorProvider,
-        );
+        ProviderScope.containerOf(
+          context,
+          listen: false,
+        ).read(formFactorProvider);
 
     if (effectiveFormFactor == AppFormFactor.desktop) {
       return showDialog<T>(
@@ -52,6 +55,7 @@ class AppForm {
       builder: (ctx) => AppBottomSheetFormContainer(
         padding: effectivePadding,
         heightFactor: heightFactor,
+        maxHeightFactor: maxHeightFactor,
         child: builder(ctx),
       ),
     );
@@ -65,12 +69,14 @@ class AppBottomSheetFormContainer extends StatelessWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
     this.showHandle = true,
     this.heightFactor,
+    this.maxHeightFactor,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final bool showHandle;
   final double? heightFactor;
+  final double? maxHeightFactor;
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +95,18 @@ class AppBottomSheetFormContainer extends StatelessWidget {
         child: Padding(padding: effectivePadding, child: child),
       );
     } else {
-      content = Padding(padding: padding, child: child);
+      final paddedChild = Padding(padding: padding, child: child);
+      if (maxHeightFactor != null) {
+        final screenHeight = MediaQuery.of(context).size.height;
+        content = ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: screenHeight * maxHeightFactor!,
+          ),
+          child: paddedChild,
+        );
+      } else {
+        content = paddedChild;
+      }
     }
 
     final body = showHandle
@@ -108,7 +125,7 @@ class AppBottomSheetFormContainer extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Flexible(child: content),
+              Flexible(fit: FlexFit.loose, child: content),
             ],
           )
         : content;
@@ -141,6 +158,7 @@ class AppFormScaffold extends StatelessWidget {
     this.mobileActionsPadding = const EdgeInsets.fromLTRB(16, 12, 16, 0),
     this.mobileBottomSpacing = 0,
     this.barrierDismissible = true,
+    this.mobileExpandToAvailableHeight = false,
   });
 
   final Widget title;
@@ -156,6 +174,7 @@ class AppFormScaffold extends StatelessWidget {
   final EdgeInsets mobileActionsPadding;
   final double mobileBottomSpacing;
   final bool barrierDismissible;
+  final bool mobileExpandToAvailableHeight;
 
   bool _resolveDesktop(BuildContext context) {
     if (presentation != null) {
@@ -198,9 +217,7 @@ class AppFormScaffold extends StatelessWidget {
                       child: title,
                     ),
                     const SizedBox(height: 16),
-                    Flexible(
-                      child: SingleChildScrollView(child: content),
-                    ),
+                    Flexible(child: SingleChildScrollView(child: content)),
                     if (actions.isNotEmpty) ...[
                       const SizedBox(height: 24),
                       Wrap(
@@ -224,37 +241,37 @@ class AppFormScaffold extends StatelessWidget {
       top: false,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          return _AppFormBody(
-            isLoading: isLoading,
-            child: SizedBox(
+          final contentSection = SingleChildScrollView(
+            child: Padding(
+              padding: mobileContentPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DefaultTextStyle(
+                    style:
+                        theme.textTheme.titleLarge ??
+                        const TextStyle(fontSize: 22),
+                    child: title,
+                  ),
+                  const SizedBox(height: 12),
+                  content,
+                  SizedBox(height: mobileBottomSpacing),
+                ],
+              ),
+            ),
+          );
+
+          Widget mobileBody;
+          if (mobileExpandToAvailableHeight) {
+            mobileBody = SizedBox(
               height: constraints.maxHeight,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Padding(
-                        padding: mobileContentPadding,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            DefaultTextStyle(
-                              style:
-                                  theme.textTheme.titleLarge ??
-                                  const TextStyle(fontSize: 22),
-                              child: title,
-                            ),
-                            const SizedBox(height: 12),
-                            content,
-                            SizedBox(height: mobileBottomSpacing),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  Expanded(child: contentSection),
                   if (actions.isNotEmpty && !isKeyboardOpen) ...[
-                    const Divider(height: 1),
+                    const AppDivider(height: 1),
                     Padding(
                       padding: mobileActionsPadding,
                       child: Align(
@@ -271,8 +288,40 @@ class AppFormScaffold extends StatelessWidget {
                   SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
                 ],
               ),
-            ),
-          );
+            );
+          } else {
+            final maxHeight = constraints.maxHeight.isFinite
+                ? constraints.maxHeight
+                : MediaQuery.of(context).size.height * 0.9;
+            mobileBody = ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Flexible(fit: FlexFit.loose, child: contentSection),
+                  if (actions.isNotEmpty && !isKeyboardOpen) ...[
+                    const AppDivider(height: 1),
+                    Padding(
+                      padding: mobileActionsPadding,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Wrap(
+                          alignment: WrapAlignment.end,
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: actions,
+                        ),
+                      ),
+                    ),
+                  ],
+                  SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
+                ],
+              ),
+            );
+          }
+
+          return _AppFormBody(isLoading: isLoading, child: mobileBody);
         },
       ),
     );

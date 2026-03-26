@@ -9,6 +9,7 @@ import 'package:agenda_backend/features/agenda/presentation/screens/day_view/com
 import 'package:agenda_backend/features/agenda/presentation/screens/week_view/weekly_appointments_view.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
+import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/booking_reschedule_capability_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/booking_reschedule_provider.dart';
@@ -77,7 +78,9 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
     final targetDate = DateUtils.dateOnly(selectedDate);
     final rangeStart = calendarViewMode == CalendarViewMode.week
-        ? targetDate.subtract(Duration(days: targetDate.weekday - DateTime.monday))
+        ? targetDate.subtract(
+            Duration(days: targetDate.weekday - DateTime.monday),
+          )
         : targetDate;
     final rangeEnd = calendarViewMode == CalendarViewMode.week
         ? rangeStart.add(const Duration(days: 6))
@@ -324,6 +327,9 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final hasStaff = staffList.isNotEmpty;
     final serviceVariantsAsync = ref.watch(serviceVariantsProvider);
     final serviceVariants = serviceVariantsAsync.value ?? const [];
+    final useServiceColors = ref.watch(
+      effectiveUseServiceColorsForAppointmentsProvider,
+    );
 
     _ensureExceptionsLoadedForVisibleRange(
       businessId: currentBusinessId,
@@ -333,7 +339,8 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     );
 
     var rescheduleModeHint = context.l10n.bookingRescheduleModeHint;
-    if (rescheduleSession != null && calendarViewMode == CalendarViewMode.week) {
+    if (rescheduleSession != null &&
+        calendarViewMode == CalendarViewMode.week) {
       final visibleWeek = computeWeekRange(agendaDate, timezone);
       final visibleWeekStart = DateUtils.dateOnly(visibleWeek.start);
       final visibleWeekEnd = DateUtils.dateOnly(visibleWeek.end);
@@ -375,9 +382,11 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final hasStaleVariantsForCurrentLocation =
         currentLocationId > 0 &&
         serviceVariants.isNotEmpty &&
-        serviceVariants.any((variant) => variant.locationId != currentLocationId);
+        serviceVariants.any(
+          (variant) => variant.locationId != currentLocationId,
+        );
     final isServiceVariantsBootstrapLoading =
-        layoutConfig.useServiceColorsForAppointments &&
+        useServiceColors &&
         (serviceVariantsAsync.isLoading || hasStaleVariantsForCurrentLocation);
     final isBootstrapLoading =
         isWaitingBaseData ||
@@ -413,21 +422,20 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
-                      offset: const Offset(3, 0),
-                      blurRadius: 12,
-                      spreadRadius: 0,
+              Material(
+                elevation: 8,
+                shadowColor: Colors.black.withOpacity(0.3),
+                surfaceTintColor: Colors.transparent,
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Color(0x1F000000), width: 0.5),
                     ),
-                  ],
-                ),
-                child: SizedBox(
-                  width: hourColumnWidth,
-                  height: layoutConfig.headerHeight,
+                  ),
+                  child: SizedBox(
+                    width: hourColumnWidth,
+                    height: layoutConfig.headerHeight,
+                  ),
                 ),
               ),
               Expanded(
