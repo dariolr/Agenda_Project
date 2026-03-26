@@ -15,6 +15,7 @@ class AppointmentCard extends ConsumerWidget {
   final bool expandToLeft;
   final bool showExtraMinutesBand;
   final BorderRadius borderRadius;
+  final bool forceCompactPresentation;
 
   const AppointmentCard({
     super.key,
@@ -26,6 +27,7 @@ class AppointmentCard extends ConsumerWidget {
     this.expandToLeft = false,
     this.showExtraMinutesBand = true,
     this.borderRadius = const BorderRadius.all(Radius.circular(6)),
+    this.forceCompactPresentation = false,
   });
 
   @override
@@ -39,6 +41,7 @@ class AppointmentCard extends ConsumerWidget {
       expandToLeft: expandToLeft,
       showExtraMinutesBand: showExtraMinutesBand,
       borderRadius: borderRadius,
+      forceCompactPresentation: forceCompactPresentation,
     );
   }
 }
