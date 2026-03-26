@@ -8,6 +8,7 @@ import '../../auth/providers/current_business_user_provider.dart';
 import '../../clients/providers/clients_providers.dart';
 import '../../services/providers/services_provider.dart';
 import '../utils/week_range.dart';
+import 'agenda_display_settings_provider.dart';
 import 'booking_reschedule_provider.dart';
 import 'bookings_provider.dart';
 import 'bookings_repository_provider.dart';
@@ -721,7 +722,10 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     );
   }
 
-  Appointment? _findAppointmentById(List<Appointment> source, int appointmentId) {
+  Appointment? _findAppointmentById(
+    List<Appointment> source,
+    int appointmentId,
+  ) {
     for (final appointment in source) {
       if (appointment.id == appointmentId) {
         return appointment;
@@ -819,11 +823,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
   }
 }
 
-enum MoveBookingByAnchorResult {
-  success,
-  outOfTargetDay,
-  failed,
-}
+enum MoveBookingByAnchorResult { success, outOfTargetDay, failed }
 
 final appointmentsProvider =
     AsyncNotifierProvider<AppointmentsNotifier, List<Appointment>>(
@@ -843,12 +843,14 @@ final appointmentsForCurrentLocationProvider = Provider<List<Appointment>>((
   // Filtro per ruolo: staff vede solo i propri appuntamenti
   final canViewAll = ref.watch(canViewAllAppointmentsProvider);
   final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
+  final showCancelled = ref.watch(effectiveShowCancelledAppointmentsProvider);
 
   return [
     for (final appt in appointments)
       if (appt.locationId == location.id &&
           !appt.endTime.isBefore(dayStart) &&
           appt.startTime.isBefore(dayEnd) &&
+          (showCancelled || !appt.isCancelled) &&
           // Se può vedere tutto, mostra. Altrimenti solo i propri
           (canViewAll ||
               currentUserStaffId == null ||
@@ -857,27 +859,28 @@ final appointmentsForCurrentLocationProvider = Provider<List<Appointment>>((
   ];
 });
 
-final appointmentsForLocationDayProvider = FutureProvider.family<
-  List<Appointment>,
-  ({DateTime day, int locationId, int businessId})
->((ref, params) async {
-  final authState = ref.watch(authProvider);
-  if (!authState.isAuthenticated) {
-    return const [];
-  }
+final appointmentsForLocationDayProvider =
+    FutureProvider.family<
+      List<Appointment>,
+      ({DateTime day, int locationId, int businessId})
+    >((ref, params) async {
+      final authState = ref.watch(authProvider);
+      if (!authState.isAuthenticated) {
+        return const [];
+      }
 
-  if (params.locationId <= 0 || params.businessId <= 0) {
-    return const [];
-  }
+      if (params.locationId <= 0 || params.businessId <= 0) {
+        return const [];
+      }
 
-  final repository = ref.watch(bookingsRepositoryProvider);
-  final day = DateTime(params.day.year, params.day.month, params.day.day);
+      final repository = ref.watch(bookingsRepositoryProvider);
+      final day = DateTime(params.day.year, params.day.month, params.day.day);
 
-  final result = await repository.getAppointmentsWithMetadata(
-    locationId: params.locationId,
-    businessId: params.businessId,
-    date: day,
-  );
+      final result = await repository.getAppointmentsWithMetadata(
+        locationId: params.locationId,
+        businessId: params.businessId,
+        date: day,
+      );
 
-  return result.appointments;
-});
+      return result.appointments;
+    });

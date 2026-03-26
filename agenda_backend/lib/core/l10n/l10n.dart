@@ -10158,6 +10158,76 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Impostazioni di visualizzazione`
+  String get agendaDisplaySettingsAction {
+    return Intl.message(
+      'Impostazioni di visualizzazione',
+      name: 'agendaDisplaySettingsAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impostazioni di visualizzazione`
+  String get agendaDisplaySettingsSuperadminTitle {
+    return Intl.message(
+      'Impostazioni di visualizzazione',
+      name: 'agendaDisplaySettingsSuperadminTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Zoom testo`
+  String get agendaDisplaySettingsCardTextZoomLabel {
+    return Intl.message(
+      'Zoom testo',
+      name: 'agendaDisplaySettingsCardTextZoomLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mostra importi`
+  String get agendaDisplaySettingsShowPricesLabel {
+    return Intl.message(
+      'Mostra importi',
+      name: 'agendaDisplaySettingsShowPricesLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mostra appuntamenti cancellati`
+  String get agendaDisplaySettingsShowCancelledLabel {
+    return Intl.message(
+      'Mostra appuntamenti cancellati',
+      name: 'agendaDisplaySettingsShowCancelledLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Imposta colori da:`
+  String get agendaDisplaySettingsServiceColorsLabel {
+    return Intl.message(
+      'Imposta colori da:',
+      name: 'agendaDisplaySettingsServiceColorsLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ripristina default`
+  String get agendaDisplaySettingsResetDefaultsAction {
+    return Intl.message(
+      'Ripristina default',
+      name: 'agendaDisplaySettingsResetDefaultsAction',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

@@ -12,6 +12,7 @@ import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/features/agenda/domain/config/agenda_theme.dart';
 import 'package:agenda_backend/features/agenda/domain/config/layout_config.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_scroll_request_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/booking_reschedule_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/drag_layer_link_provider.dart';
@@ -43,12 +44,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../../core/models/time_block.dart';
 
-typedef WeekDayColumn =
-    ({
-      DateTime day,
-      List<Appointment> appointments,
-      List<ClassEvent> classEvents,
-    });
+typedef WeekDayColumn = ({
+  DateTime day,
+  List<Appointment> appointments,
+  List<ClassEvent> classEvents,
+});
 
 class SingleStaffWeeklyTimeline extends ConsumerStatefulWidget {
   const SingleStaffWeeklyTimeline({
@@ -134,10 +134,12 @@ class _SingleStaffWeeklyTimelineState
           final bodyViewportWidth = (availableWidth - hourColumnWidth - 1)
               .clamp(0.0, double.infinity)
               .toDouble();
-          final minColumnWidth =
-              formFactor == AppFormFactor.mobile ? 140.0 : 180.0;
-          final maxColumnWidth =
-              formFactor == AppFormFactor.mobile ? 220.0 : 280.0;
+          final minColumnWidth = formFactor == AppFormFactor.mobile
+              ? 140.0
+              : 180.0;
+          final maxColumnWidth = formFactor == AppFormFactor.mobile
+              ? 220.0
+              : 280.0;
           final baseColumnWidth = widget.dayColumns.isEmpty
               ? minColumnWidth
               : bodyViewportWidth / widget.dayColumns.length;
@@ -192,7 +194,11 @@ class _SingleStaffWeeklyTimelineState
                               height: layoutConfig.headerHeight,
                               child: Row(
                                 children: [
-                                  for (var i = 0; i < widget.dayColumns.length; i++)
+                                  for (
+                                    var i = 0;
+                                    i < widget.dayColumns.length;
+                                    i++
+                                  )
                                     _SingleStaffWeekHeaderCell(
                                       day: widget.dayColumns[i].day,
                                       width: columnWidth,
@@ -254,19 +260,25 @@ class _SingleStaffWeeklyTimelineState
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            for (var i = 0;
-                                                i < widget.dayColumns.length;
-                                                i++)
+                                            for (
+                                              var i = 0;
+                                              i < widget.dayColumns.length;
+                                              i++
+                                            )
                                               _SingleStaffWeekTimelineColumn(
                                                 staffId: widget.staffId,
                                                 day: widget.dayColumns[i].day,
-                                                appointments:
-                                                    widget.dayColumns[i].appointments,
-                                                classEvents:
-                                                    widget.dayColumns[i].classEvents,
+                                                appointments: widget
+                                                    .dayColumns[i]
+                                                    .appointments,
+                                                classEvents: widget
+                                                    .dayColumns[i]
+                                                    .classEvents,
                                                 width: columnWidth,
                                                 showRightBorder:
-                                                    i < widget.dayColumns.length - 1,
+                                                    i <
+                                                    widget.dayColumns.length -
+                                                        1,
                                               ),
                                           ],
                                         ),
@@ -315,7 +327,9 @@ class _SingleStaffWeeklyTimelineState
       final savedOffset = ref.read(agendaVerticalOffsetProvider);
       final now = ref.read(tenantNowProvider);
       final snappedHour = (now.hour - 1).clamp(0, 23);
-      final fallbackOffset = layoutConfig.offsetForMinuteOfDay(snappedHour * 60);
+      final fallbackOffset = layoutConfig.offsetForMinuteOfDay(
+        snappedHour * 60,
+      );
       final target = (savedOffset ?? fallbackOffset).clamp(
         _bodyVerticalController.position.minScrollExtent,
         _bodyVerticalController.position.maxScrollExtent,
@@ -353,7 +367,8 @@ class _SingleStaffWeeklyTimelineState
       final rawOffset = targetIndex * columnWidth;
       final centeredOffset =
           rawOffset -
-          (_bodyHorizontalController.position.viewportDimension - columnWidth) / 2;
+          (_bodyHorizontalController.position.viewportDimension - columnWidth) /
+              2;
       final clampedOffset = centeredOffset.clamp(
         _bodyHorizontalController.position.minScrollExtent,
         _bodyHorizontalController.position.maxScrollExtent,
@@ -429,13 +444,17 @@ class _SingleStaffWeekHeaderCell extends ConsumerWidget {
     final dayAcronym = DateFormat('EEE', localeTag).format(day).toUpperCase();
     final avatarDefault = LayoutConfig.avatarSizeFor(context);
     final maxByHeader = layoutConfig.headerHeight * 0.55;
-    final avatarSize = avatarDefault <= maxByHeader ? avatarDefault : maxByHeader;
+    final avatarSize = avatarDefault <= maxByHeader
+        ? avatarDefault
+        : maxByHeader;
     final avatarColor = _weekdayAvatarColors[(day.weekday - 1).clamp(0, 6)];
 
     return Container(
       width: width,
       height: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: layoutConfig.headerHeight * 0.08),
+      padding: EdgeInsets.symmetric(
+        horizontal: layoutConfig.headerHeight * 0.08,
+      ),
       decoration: BoxDecoration(
         gradient: isToday
             ? LinearGradient(
@@ -522,7 +541,10 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     );
     final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
     final timeBlocks =
-        ref.watch(timeBlocksForStaffOnDateProvider((staffId: staffId, date: day)))
+        ref
+            .watch(
+              timeBlocksForStaffOnDateProvider((staffId: staffId, date: day)),
+            )
             .value ??
         const <TimeBlock>[];
 
@@ -582,9 +604,10 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
                           patternColor: AgendaTheme.unavailablePatternColor(
                             theme.colorScheme,
                           ),
-                          backgroundColor: AgendaTheme.unavailableBackgroundColor(
-                            theme.colorScheme,
-                          ),
+                          backgroundColor:
+                              AgendaTheme.unavailableBackgroundColor(
+                                theme.colorScheme,
+                              ),
                         ),
                       ),
                   ],
@@ -617,8 +640,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
             ),
           for (final event in classEvents)
             _buildClassEvent(context, event, layoutConfig, geometry),
-          for (final block in timeBlocks)
-            _buildTimeBlock(block, layoutConfig),
+          for (final block in timeBlocks) _buildTimeBlock(block, layoutConfig),
         ],
       ),
     );
@@ -664,9 +686,16 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     );
   }
 
-  Map<int, Color> _resolveAppointmentColors(BuildContext context, WidgetRef ref) {
-    final layoutConfig = ref.watch(layoutConfigProvider);
-    final firstStaffId = appointments.isEmpty ? null : appointments.first.staffId;
+  Map<int, Color> _resolveAppointmentColors(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final useServiceColors = ref.watch(
+      effectiveUseServiceColorsForAppointmentsProvider,
+    );
+    final firstStaffId = appointments.isEmpty
+        ? null
+        : appointments.first.staffId;
     final staff = ref
         .watch(staffForCurrentLocationProvider)
         .cast<Staff?>()
@@ -675,7 +704,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         staff?.color ?? Theme.of(context).colorScheme.primary.withOpacity(0.8);
 
     final colors = <int, Color>{};
-    if (!layoutConfig.useServiceColorsForAppointments) {
+    if (!useServiceColors) {
       for (final appointment in appointments) {
         colors[appointment.id] = fallbackColor;
       }
@@ -763,8 +792,8 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final color = theme.colorScheme.tertiaryContainer;
     final foreground =
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-            ? Colors.white
-            : theme.colorScheme.onTertiaryContainer;
+        ? Colors.white
+        : theme.colorScheme.onTertiaryContainer;
 
     return Positioned(
       top: top,
@@ -779,7 +808,8 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
           border: Border.all(color: theme.colorScheme.tertiary),
         ),
         child: DefaultTextStyle(
-          style: theme.textTheme.bodySmall?.copyWith(color: foreground) ??
+          style:
+              theme.textTheme.bodySmall?.copyWith(color: foreground) ??
               TextStyle(color: foreground),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -820,7 +850,10 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final dayStart = DateTime(day.year, day.month, day.day);
     final startMinutes = block.startTime.difference(dayStart).inMinutes;
     final endMinutes = block.endTime.difference(dayStart).inMinutes;
-    final clampedStartMinutes = startMinutes.clamp(0, LayoutConfig.hoursInDay * 60);
+    final clampedStartMinutes = startMinutes.clamp(
+      0,
+      LayoutConfig.hoursInDay * 60,
+    );
     final clampedEndMinutes = endMinutes.clamp(0, LayoutConfig.hoursInDay * 60);
 
     if (clampedEndMinutes <= clampedStartMinutes) {
@@ -842,11 +875,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
       left: padding,
       width: cardWidth,
       height: height,
-      child: TimeBlockWidget(
-        block: block,
-        height: height,
-        width: cardWidth,
-      ),
+      child: TimeBlockWidget(block: block, height: height, width: cardWidth),
     );
   }
 
@@ -869,7 +898,13 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         return;
       }
 
-      final targetStart = DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute);
+      final targetStart = DateTime(
+        dt.year,
+        dt.month,
+        dt.day,
+        dt.hour,
+        dt.minute,
+      );
       final l10n = context.l10n;
       final targetDateStr = DtFmt.longDate(context, targetStart);
       final targetTimeStr = DtFmt.hm(
@@ -877,11 +912,12 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         targetStart.hour,
         targetStart.minute,
       );
-      final staffName = ref
-          .read(staffForCurrentLocationProvider)
-          .cast<Staff?>()
-          .firstWhere((s) => s?.id == staffId, orElse: () => null)
-          ?.displayName ??
+      final staffName =
+          ref
+              .read(staffForCurrentLocationProvider)
+              .cast<Staff?>()
+              .firstWhere((s) => s?.id == staffId, orElse: () => null)
+              ?.displayName ??
           '-';
 
       final confirmed = await showConfirmDialog(
@@ -900,7 +936,9 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
       if (confirmed != true) return;
 
       final anchorId = rescheduleSession.anchorAppointmentId;
-      final result = await ref.read(appointmentsProvider.notifier).moveBookingByAnchor(
+      final result = await ref
+          .read(appointmentsProvider.notifier)
+          .moveBookingByAnchor(
             session: rescheduleSession,
             targetStart: targetStart,
             targetStaffId: staffId,
@@ -963,17 +1001,24 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final maxYStartPx = (box.size.height - draggedCardHeightPx)
         .clamp(0, box.size.height)
         .toDouble();
-    final clampedLocalDy = localPointer.dy.clamp(0.0, box.size.height.toDouble());
+    final clampedLocalDy = localPointer.dy.clamp(
+      0.0,
+      box.size.height.toDouble(),
+    );
     final effectiveDy = (clampedLocalDy - dragOffsetY)
         .clamp(0.0, maxYStartPx)
         .toDouble();
 
-    final durationMinutes =
-        details.data.endTime.difference(details.data.startTime).inMinutes;
+    final durationMinutes = details.data.endTime
+        .difference(details.data.startTime)
+        .inMinutes;
     const totalMinutes = LayoutConfig.hoursInDay * 60;
-    var startMinutes = ((layoutConfig.minutesFromHeight(effectiveDy) / 5).round() * 5)
-        .toInt();
-    final maxStartMinutes = (totalMinutes - durationMinutes).clamp(0, totalMinutes);
+    var startMinutes =
+        ((layoutConfig.minutesFromHeight(effectiveDy) / 5).round() * 5).toInt();
+    final maxStartMinutes = (totalMinutes - durationMinutes).clamp(
+      0,
+      totalMinutes,
+    );
     if (startMinutes < 0) startMinutes = 0;
     if (startMinutes > maxStartMinutes) startMinutes = maxStartMinutes;
 
@@ -987,7 +1032,8 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
 
     final hasStaffChanged = details.data.staffId != staffId;
     final hasTimeChanged =
-        details.data.startTime != newStart || details.data.endTime != boundedEnd;
+        details.data.startTime != newStart ||
+        details.data.endTime != boundedEnd;
     if (!hasStaffChanged && !hasTimeChanged) {
       return;
     }
@@ -1004,13 +1050,17 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     ref.read(pendingDropProvider.notifier).setPending(pendingData);
 
     final l10n = context.l10n;
-    final targetStaffName = ref
-        .read(staffForCurrentLocationProvider)
-        .cast<Staff?>()
-        .firstWhere((s) => s?.id == staffId, orElse: () => null)
-        ?.displayName ??
+    final targetStaffName =
+        ref
+            .read(staffForCurrentLocationProvider)
+            .cast<Staff?>()
+            .firstWhere((s) => s?.id == staffId, orElse: () => null)
+            ?.displayName ??
         '-';
-    final isCrossDayMove = !DateUtils.isSameDay(details.data.startTime, newStart);
+    final isCrossDayMove = !DateUtils.isSameDay(
+      details.data.startTime,
+      newStart,
+    );
     final targetDateLabel = DtFmt.longDate(context, newStart);
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
     final bookingAppointments = appointmentsNotifier.getByBookingId(
@@ -1083,17 +1133,24 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final maxYStartPx = (box.size.height - draggedCardHeightPx)
         .clamp(0, box.size.height)
         .toDouble();
-    final clampedLocalDy = localPointer.dy.clamp(0.0, box.size.height.toDouble());
+    final clampedLocalDy = localPointer.dy.clamp(
+      0.0,
+      box.size.height.toDouble(),
+    );
     final effectiveDy = (clampedLocalDy - dragOffsetY)
         .clamp(0.0, maxYStartPx)
         .toDouble();
 
-    final durationMinutes =
-        details.data.endTime.difference(details.data.startTime).inMinutes;
+    final durationMinutes = details.data.endTime
+        .difference(details.data.startTime)
+        .inMinutes;
     const totalMinutes = LayoutConfig.hoursInDay * 60;
     var startMinutes =
         ((layoutConfig.minutesFromHeight(effectiveDy) / 5).round() * 5).toInt();
-    final maxStartMinutes = (totalMinutes - durationMinutes).clamp(0, totalMinutes);
+    final maxStartMinutes = (totalMinutes - durationMinutes).clamp(
+      0,
+      totalMinutes,
+    );
     if (startMinutes < 0) startMinutes = 0;
     if (startMinutes > maxStartMinutes) startMinutes = maxStartMinutes;
 
@@ -1101,8 +1158,9 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final previewStart = targetDate.add(Duration(minutes: startMinutes));
     final rawPreviewEnd = previewStart.add(Duration(minutes: durationMinutes));
     final dayBoundary = targetDate.add(const Duration(days: 1));
-    final previewEnd =
-        rawPreviewEnd.isAfter(dayBoundary) ? dayBoundary : rawPreviewEnd;
+    final previewEnd = rawPreviewEnd.isAfter(dayBoundary)
+        ? dayBoundary
+        : rawPreviewEnd;
 
     ref.read(tempDragTimeProvider.notifier).setTimes(previewStart, previewEnd);
   }
@@ -1145,9 +1203,7 @@ class _SingleStaffWeekCurrentTimeLine extends ConsumerWidget {
                 shape: BoxShape.circle,
               ),
             ),
-            Expanded(
-              child: Container(height: 1, color: Colors.redAccent),
-            ),
+            Expanded(child: Container(height: 1, color: Colors.redAccent)),
           ],
         ),
       ),

@@ -103,6 +103,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       ),
     );
   }
+
   static final List<int> _onlineBookingSlotIntervalOptions = [
     for (int minutes = 5; minutes <= 120; minutes += 5) minutes,
   ];
@@ -319,9 +320,10 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                       context,
                       businessCancellationHours,
                     );
-                    label = l10n.teamLocationCancellationHoursUseBusinessWithValue(
-                      businessPolicy,
-                    );
+                    label = l10n
+                        .teamLocationCancellationHoursUseBusinessWithValue(
+                          businessPolicy,
+                        );
                   } else {
                     label = l10n.teamLocationCancellationHoursUseBusiness;
                   }
@@ -615,8 +617,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           maxBookingAdvanceDays: _maxBookingAdvanceDays,
           cancellationHours: _cancellationHours,
           allowCustomerChooseStaff: _allowCustomerChooseStaff,
-          onlineBookingSlotIntervalMinutes:
-              _onlineBookingSlotIntervalMinutes,
+          onlineBookingSlotIntervalMinutes: _onlineBookingSlotIntervalMinutes,
           slotDisplayMode: _slotDisplayMode,
           minGapMinutes: _minGapMinutes,
         );

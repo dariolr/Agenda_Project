@@ -7,6 +7,7 @@ import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
+import 'package:agenda_backend/features/agenda/presentation/widgets/agenda_display_settings_sheet.dart';
 import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
@@ -1492,12 +1493,63 @@ class AgendaLaunchReportButton extends ConsumerWidget {
     );
     final weekEnd = weekStart.add(const Duration(days: 6));
 
-    ref.read(agendaReportLaunchProvider.notifier).request(
-      startDate: viewMode == CalendarViewMode.week ? weekStart : targetDate,
-      endDate: viewMode == CalendarViewMode.week ? weekEnd : targetDate,
-      locationId: targetLocation.id,
-    );
+    ref
+        .read(agendaReportLaunchProvider.notifier)
+        .request(
+          startDate: viewMode == CalendarViewMode.week ? weekStart : targetDate,
+          endDate: viewMode == CalendarViewMode.week ? weekEnd : targetDate,
+          locationId: targetLocation.id,
+        );
     context.go('/report?from_agenda=1');
+  }
+}
+
+class AgendaDisplaySettingsButton extends ConsumerWidget {
+  const AgendaDisplaySettingsButton({
+    super.key,
+    this.height = kAgendaControlHeight,
+    this.iconOnly = true,
+  });
+
+  final double height;
+  final bool iconOnly;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final formFactor = ref.watch(formFactorProvider);
+    final isDesktopOrTablet =
+        formFactor == AppFormFactor.desktop ||
+        formFactor == AppFormFactor.tablet;
+
+    return Tooltip(
+      message: context.l10n.agendaDisplaySettingsAction,
+      child: SizedBox(
+        height: height,
+        width: iconOnly ? 46 : null,
+        child: AppOutlinedActionButton(
+          onPressed: () => showAgendaDisplaySettingsSheet(context),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          borderRadius: isDesktopOrTablet
+              ? kAgendaPillRadius
+              : BorderRadius.circular(8),
+          borderColor: isDesktopOrTablet
+              ? Colors.grey.withOpacity(0.35)
+              : scheme.primary,
+          foregroundColor: scheme.onSurface,
+          child: iconOnly
+              ? const Icon(Icons.tune, size: 22)
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.tune, size: 22),
+                    const SizedBox(width: 8),
+                    Text(context.l10n.agendaDisplaySettingsAction),
+                  ],
+                ),
+        ),
+      ),
+    );
   }
 }
 

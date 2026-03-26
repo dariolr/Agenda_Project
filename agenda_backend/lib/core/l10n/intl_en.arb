@@ -1546,5 +1546,12 @@
   "whatsappSavedSuccessMessage": "WhatsApp changes were saved successfully.",
   "whatsappWorkerCompleted": "Outbox worker completed successfully.",
   "whatsappQueuedOnly": "Message queued successfully.",
-  "whatsappQueuedAndSent": "Message queued and sent."
+  "whatsappQueuedAndSent": "Message queued and sent.",
+  "agendaDisplaySettingsAction": "Display settings",
+  "agendaDisplaySettingsSuperadminTitle": "Agenda Settings",
+  "agendaDisplaySettingsCardTextZoomLabel": "Card text zoom",
+  "agendaDisplaySettingsShowPricesLabel": "Show prices in cards",
+  "agendaDisplaySettingsShowCancelledLabel": "Show cancelled appointments",
+  "agendaDisplaySettingsServiceColorsLabel": "Card colors from:",
+  "agendaDisplaySettingsResetDefaultsAction": "Reset defaults"
 }

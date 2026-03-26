@@ -15,9 +15,9 @@ import 'package:agenda_backend/features/agenda/presentation/screens/week_view/si
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/appointment_card_base.dart';
 import 'package:agenda_backend/features/agenda/presentation/widgets/appointment_dialog.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
-import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
@@ -231,9 +231,12 @@ class _WeeklyAppointmentsBodyState
   Widget build(BuildContext context) {
     final effectiveStaffList = widget.resolveEffectiveStaffList(ref);
     final allowedStaffIds = effectiveStaffList.map((staff) => staff.id).toSet();
+    final showCancelled = ref.watch(effectiveShowCancelledAppointmentsProvider);
     final filteredAppointments = [
       for (final appointment in widget.appointments)
-        if (allowedStaffIds.contains(appointment.staffId)) appointment,
+        if (allowedStaffIds.contains(appointment.staffId) &&
+            (showCancelled || !appointment.isCancelled))
+          appointment,
     ];
     final filteredClassEvents = [
       for (final event in widget.classEvents)
@@ -737,8 +740,9 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final color = _resolveAppointmentColor(context, ref, appointment);
     final staffName = _resolveStaffDisplayName(ref, appointment.staffId);
-    final showPriceInCard =
-        ref.watch(currentBusinessProvider).showAppointmentPriceInCard;
+    final showPriceInCard = ref.watch(
+      effectiveShowAppointmentPriceInCardProvider,
+    );
     final tileHeight = showPriceInCard
         ? _tileHeight
         : _tileHeightWhenPriceHidden;
@@ -832,8 +836,10 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
     final fallbackColor =
         staff?.color ?? Theme.of(context).colorScheme.primary.withOpacity(0.8);
 
-    final layoutConfig = ref.watch(layoutConfigProvider);
-    if (!layoutConfig.useServiceColorsForAppointments) {
+    final useServiceColors = ref.watch(
+      effectiveUseServiceColorsForAppointmentsProvider,
+    );
+    if (!useServiceColors) {
       return fallbackColor;
     }
 

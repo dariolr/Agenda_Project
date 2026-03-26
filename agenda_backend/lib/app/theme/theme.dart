@@ -136,9 +136,11 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: colorPrimary1,
       selectedItemColor: colorPrimary2,
-      unselectedItemColor: colorPrimary2.withOpacity(0.5),
+      unselectedItemColor: colorPrimary2.withOpacity(0.72),
       selectedIconTheme: const IconThemeData(color: colorPrimary2, size: 26),
-      unselectedIconTheme: IconThemeData(color: colorPrimary2.withOpacity(0.5)),
+      unselectedIconTheme: IconThemeData(
+        color: colorPrimary2.withOpacity(0.72),
+      ),
       selectedLabelStyle: const TextStyle(
         fontWeight: FontWeight.w600,
         fontSize: 12,

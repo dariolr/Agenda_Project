@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/preferences_service.dart';
 import '../../agenda/providers/agenda_scroll_provider.dart';
+import '../../agenda/providers/agenda_display_settings_provider.dart';
 import '../../agenda/providers/agenda_bootstrap_provider.dart';
 import '../../agenda/providers/appointment_providers.dart';
 import '../../agenda/providers/booking_reschedule_provider.dart';
@@ -123,6 +124,11 @@ void invalidateBusinessScopedProviders(Object refObj) {
 
   // Layout e UI state (per sicurezza, anche se sembrano UI-only)
   ref.invalidate(layoutConfigProvider);
+  ref.invalidate(agendaDisplaySettingsProvider);
+  ref.invalidate(effectiveShowAppointmentPriceInCardProvider);
+  ref.invalidate(effectiveUseServiceColorsForAppointmentsProvider);
+  ref.invalidate(effectiveShowCancelledAppointmentsProvider);
+  ref.invalidate(agendaCardTextScaleProvider);
   ref.invalidate(agendaBootstrapLoadingProvider);
   ref.invalidate(agendaBootstrapUnlockedProvider);
   ref.invalidate(agendaDateProvider);

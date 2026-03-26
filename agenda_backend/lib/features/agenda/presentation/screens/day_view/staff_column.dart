@@ -21,10 +21,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '/core/models/appointment.dart';
 import '/core/models/class_event.dart';
 import '/core/models/staff.dart';
+import '/core/models/time_block.dart';
 import '/core/utils/color_utils.dart';
+import '/core/utils/price_utils.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
+import '../../../providers/agenda_display_settings_provider.dart';
 import '../../../providers/agenda_scroll_request_provider.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/booking_reschedule_provider.dart';
@@ -356,6 +359,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
     final agendaDate = ref.watch(agendaDateProvider);
     final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
+    final showPrices = ref.watch(effectiveShowAppointmentPriceInCardProvider);
+    final staffBlocks = ref.watch(timeBlocksForStaffProvider(widget.staff.id));
 
     // Interaction lock propagated from parent (evaluated once per visible group)
     final isInteractionLocked = widget.isInteractionLocked;
@@ -471,6 +476,44 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         ),
       ),
     );
+
+    final staffDailyTotal = _computeStaffDailyTotal(staffAppointments);
+    final staffDailyServicesCount = _computeStaffDailyServicesCount(
+      staffAppointments: staffAppointments,
+      classEvents: staffClassEvents,
+    );
+    if (showPrices && staffDailyTotal > 0) {
+      final availableSlots = ref.watch(
+        staffSlotAvailabilityProvider(widget.staff.id),
+      );
+      final totalSlotIndex = _resolveDailyTotalSlotIndex(
+        agendaDate: agendaDate,
+        totalSlots: totalSlots,
+        minutesPerSlot: layoutConfig.minutesPerSlot,
+        availableSlots: availableSlots,
+        appointments: staffAppointments,
+        classEvents: staffClassEvents,
+        blocks: staffBlocks,
+      );
+
+      if (totalSlotIndex != null) {
+        final currencyCode = PriceFormatter.effectiveCurrency(ref);
+        final formattedTotal = PriceFormatter.format(
+          context: context,
+          amount: staffDailyTotal,
+          currencyCode: currencyCode,
+        );
+        stackChildren.add(
+          _buildDailyTotalTrademark(
+            slotIndex: totalSlotIndex,
+            slotHeight: slotHeight,
+            minutesPerSlot: layoutConfig.minutesPerSlot,
+            servicesCount: staffDailyServicesCount,
+            formattedTotal: formattedTotal,
+          ),
+        );
+      }
+    }
 
     // 🔹 Appuntamenti + classi (con larghezza ridotta se ci sono slot pieni)
     stackChildren.addAll(
@@ -640,7 +683,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
-    final useServiceColors = layoutConfig.useServiceColorsForAppointments;
+    final useServiceColors = ref.watch(
+      effectiveUseServiceColorsForAppointmentsProvider,
+    );
     // 🔹 Watch fuori dal loop per evitare rebuild multipli
     final pendingDrop = ref.watch(pendingDropProvider);
     final variantsAsync = useServiceColors
@@ -674,18 +719,21 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final positionedEntries = <Widget>[];
 
     final originalAppointmentsMap = {for (var a in appointments) a.id: a};
-    final layoutEntries = layoutAppointments
-        .map((a) => LayoutEntry(id: a.id, start: a.startTime, end: a.endTime))
-        .toList()
-      ..addAll(
-        classEvents.map(
-          (event) => LayoutEntry(
-            id: _classEventLayoutId(event.id),
-            start: event.startsAtLocal ?? event.startsAtUtc.toLocal(),
-            end: event.endsAtLocal ?? event.endsAtUtc.toLocal(),
-          ),
-        ),
-      );
+    final layoutEntries =
+        layoutAppointments
+            .map(
+              (a) => LayoutEntry(id: a.id, start: a.startTime, end: a.endTime),
+            )
+            .toList()
+          ..addAll(
+            classEvents.map(
+              (event) => LayoutEntry(
+                id: _classEventLayoutId(event.id),
+                start: event.startsAtLocal ?? event.startsAtUtc.toLocal(),
+                end: event.endsAtLocal ?? event.endsAtUtc.toLocal(),
+              ),
+            ),
+          );
     final layoutGeometry = computeLayoutGeometry(
       layoutEntries,
       useClusterMaxConcurrency: layoutConfig.useClusterMaxConcurrency,
@@ -699,7 +747,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         originalAppt.startTime.month,
         originalAppt.startTime.day,
       );
-      final startMinutes = originalAppt.startTime.difference(dayStart).inMinutes;
+      final startMinutes = originalAppt.startTime
+          .difference(dayStart)
+          .inMinutes;
       final endMinutes = layoutAppt.endTime.difference(dayStart).inMinutes;
       final double top = layoutConfig.offsetForMinuteOfDay(startMinutes);
       double height = layoutConfig.heightForMinutes(endMinutes - startMinutes);
@@ -774,7 +824,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }
 
     for (final classEvent in classEvents) {
-      final startsAt = classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
+      final startsAt =
+          classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
       final endsAt = classEvent.endsAtLocal ?? classEvent.endsAtUtc.toLocal();
       final dayStart = DateTime(startsAt.year, startsAt.month, startsAt.day);
       final startMinutes = startsAt.difference(dayStart).inMinutes;
@@ -960,6 +1011,145 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     return positionedBlocks;
   }
 
+  double _computeStaffDailyTotal(List<Appointment> appointments) {
+    return appointments
+        .where((a) => !a.isCancelled && !a.isReplaced)
+        .fold<double>(0, (sum, a) => sum + (a.price ?? 0));
+  }
+
+  int _computeStaffDailyServicesCount({
+    required List<Appointment> staffAppointments,
+    required List<ClassEvent> classEvents,
+  }) {
+    final appointmentsCount = staffAppointments
+        .where((a) => !a.isCancelled && !a.isReplaced)
+        .length;
+    return appointmentsCount + classEvents.length;
+  }
+
+  int? _resolveDailyTotalSlotIndex({
+    required DateTime agendaDate,
+    required int totalSlots,
+    required int minutesPerSlot,
+    required Set<int> availableSlots,
+    required List<Appointment> appointments,
+    required List<ClassEvent> classEvents,
+    required List<TimeBlock> blocks,
+  }) {
+    bool isSlotOccupiedByAppointmentsOrClasses(int slotIndex) {
+      final slotStart = agendaDate.add(
+        Duration(minutes: slotIndex * minutesPerSlot),
+      );
+      final slotEnd = slotStart.add(Duration(minutes: minutesPerSlot));
+
+      final occupiedByAppointment = appointments.any(
+        (a) =>
+            !a.isCancelled &&
+            !a.isReplaced &&
+            a.startTime.isBefore(slotEnd) &&
+            a.endTime.isAfter(slotStart),
+      );
+      if (occupiedByAppointment) return true;
+
+      final occupiedByClass = classEvents.any((event) {
+        final startsAt = event.startsAtLocal ?? event.startsAtUtc.toLocal();
+        final endsAt = event.endsAtLocal ?? event.endsAtUtc.toLocal();
+        return startsAt.isBefore(slotEnd) && endsAt.isAfter(slotStart);
+      });
+      return occupiedByClass;
+    }
+
+    bool isSlotOccupiedByBlock(int slotIndex) {
+      final slotStart = agendaDate.add(
+        Duration(minutes: slotIndex * minutesPerSlot),
+      );
+      final slotEnd = slotStart.add(Duration(minutes: minutesPerSlot));
+      return blocks.any(
+        (block) =>
+            block.startTime.isBefore(slotEnd) &&
+            block.endTime.isAfter(slotStart),
+      );
+    }
+
+    bool isSlotOccupied(int slotIndex) {
+      return isSlotOccupiedByAppointmentsOrClasses(slotIndex) ||
+          isSlotOccupiedByBlock(slotIndex);
+    }
+
+    int? preferredSlot;
+    if (availableSlots.isNotEmpty) {
+      final lastAvailable = availableSlots.reduce(math.max);
+      final candidate = lastAvailable + 1;
+      if (candidate < totalSlots) {
+        preferredSlot = candidate;
+      }
+    }
+
+    if (preferredSlot != null && !isSlotOccupied(preferredSlot)) {
+      return preferredSlot;
+    }
+
+    if (preferredSlot != null) {
+      for (int i = preferredSlot + 1; i < totalSlots; i++) {
+        if (!isSlotOccupied(i)) return i;
+      }
+    }
+
+    final lastSlot = totalSlots - 1;
+    if (lastSlot >= 0 && !isSlotOccupied(lastSlot)) {
+      return lastSlot;
+    }
+
+    if (lastSlot >= 0 &&
+        !isSlotOccupiedByAppointmentsOrClasses(lastSlot) &&
+        isSlotOccupiedByBlock(lastSlot)) {
+      return lastSlot;
+    }
+
+    return null;
+  }
+
+  Widget _buildDailyTotalTrademark({
+    required int slotIndex,
+    required double slotHeight,
+    required int minutesPerSlot,
+    required int servicesCount,
+    required String formattedTotal,
+  }) {
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final top = layoutConfig.heightForMinutes(slotIndex * minutesPerSlot);
+    final rightPadding = LayoutConfig.columnInnerPadding + 4;
+    final trademarkStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: Colors.black.withOpacity(0.5),
+      letterSpacing: 0.2,
+    );
+
+    return Positioned(
+      top: top,
+      left: 0,
+      right: rightPadding,
+      height: slotHeight,
+      child: IgnorePointer(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Row(
+            children: [
+              Text('$servicesCount', maxLines: 1, style: trademarkStyle),
+              const Spacer(),
+              Text(
+                formattedTotal,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: trademarkStyle,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleSlotTap({
     required DateTime dt,
     required BookingRescheduleSession? rescheduleSession,
@@ -1112,9 +1302,7 @@ class _ClassEventCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(LayoutConfig.borderRadius),
-        border: Border.all(
-          color: theme.colorScheme.tertiary.withOpacity(0.8),
-        ),
+        border: Border.all(color: theme.colorScheme.tertiary.withOpacity(0.8)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
