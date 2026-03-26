@@ -283,6 +283,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     for (final data in categoryDataList) {
       widgets.add(
         _CategorySection(
+          key: ValueKey<int>(data.category.id),
           category: data.category,
           entries: data.entries,
           selectedServiceIds: selectedServiceIds,
@@ -386,6 +387,7 @@ class _CategorySection extends StatefulWidget {
   final bool isCollapsible;
 
   const _CategorySection({
+    super.key,
     required this.category,
     required this.entries,
     required this.selectedServiceIds,
@@ -509,47 +511,39 @@ class _CategorySectionState extends State<_CategorySection> {
       ),
     );
 
-    final body = AnimatedSize(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
-      alignment: Alignment.topCenter,
-      child: _isExpanded
-          ? Padding(
-              padding: widget.isCollapsible
-                  ? const EdgeInsets.fromLTRB(10, 0, 10, 10)
-                  : EdgeInsets.zero,
-              child: Column(
-                children: [
-                  for (final entry in widget.entries)
-                    if (entry.isPackage)
-                      _PackageTile(
-                        package: entry.package!,
-                        isSelected: widget.selectedPackageIds.contains(
-                          entry.package!.id,
-                        ),
-                        isDisabled:
-                            !entry.package!.isActive ||
-                            entry.package!.isBroken,
-                        onTap:
-                            (!entry.package!.isActive ||
-                                entry.package!.isBroken)
-                            ? null
-                            : () => widget.onPackageTap(entry.package!),
-                      )
-                    else
-                      _ServiceTile(
-                        service: entry.service!,
-                        isSelected: widget.selectedServiceIds.contains(
-                          entry.service!.id,
-                        ),
-                        onTap: () => widget.onServiceTap(entry.service!),
+    final body = _isExpanded
+        ? Padding(
+            padding: widget.isCollapsible
+                ? const EdgeInsets.fromLTRB(10, 0, 10, 10)
+                : EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (final entry in widget.entries)
+                  if (entry.isPackage)
+                    _PackageTile(
+                      package: entry.package!,
+                      isSelected: widget.selectedPackageIds.contains(
+                        entry.package!.id,
                       ),
-                  if (!widget.isCollapsible) const SizedBox(height: 8),
-                ],
-              ),
-            )
-          : const SizedBox.shrink(),
-    );
+                      isDisabled:
+                          !entry.package!.isActive || entry.package!.isBroken,
+                      onTap: (!entry.package!.isActive || entry.package!.isBroken)
+                          ? null
+                          : () => widget.onPackageTap(entry.package!),
+                    )
+                  else
+                    _ServiceTile(
+                      service: entry.service!,
+                      isSelected: widget.selectedServiceIds.contains(
+                        entry.service!.id,
+                      ),
+                      onTap: () => widget.onServiceTap(entry.service!),
+                    ),
+                if (!widget.isCollapsible) const SizedBox(height: 8),
+              ],
+            ),
+          )
+        : const SizedBox.shrink();
 
     if (!widget.isCollapsible) {
       return Column(
@@ -564,12 +558,9 @@ class _CategorySectionState extends State<_CategorySection> {
         border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [header, body],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [header, body],
       ),
     );
   }
