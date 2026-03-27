@@ -317,7 +317,13 @@ class BookingsRepository {
       serviceName: json['service_name'] as String? ?? 'Servizio',
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
+      listPrice: (json['list_price'] as num?)?.toDouble() ??
+          ((json['list_price_cents'] as num?) != null
+              ? (json['list_price_cents'] as num).toDouble() / 100.0
+              : null),
       price: (json['price'] as num?)?.toDouble(),
+      packageId: json['package_id'] as int?,
+      pricingSource: json['pricing_source'] as String?,
       bookingSource: json['source'] as String?,
       bookingStatus: bookingStatus,
       extraMinutes: json['extra_blocked_minutes'] as int?,
@@ -350,7 +356,12 @@ class BookingsRepository {
       serviceName: item.serviceName ?? 'Service ${item.serviceId}',
       startTime: item.startDateTime,
       endTime: item.endDateTime,
+      listPrice: item.listPriceCents != null
+          ? item.listPriceCents! / 100.0
+          : null,
       price: item.price,
+      packageId: item.packageId,
+      pricingSource: item.pricingSource,
       bookingSource: booking.source,
       bookingStatus: _normalizeBookingStatus(booking.status),
       extraBlockedMinutes: item.extraBlockedMinutes,

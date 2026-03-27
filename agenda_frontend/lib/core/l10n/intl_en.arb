@@ -188,7 +188,7 @@
       "hours": { "type": "int" }
     }
   },
-  "summaryCancellationPolicyDays": "Up to {days} days before",
+  "summaryCancellationPolicyDays": "{days, plural, =1{Up to 1 day before} other{Up to {days} days before}}",
   "@summaryCancellationPolicyDays": {
     "placeholders": {
       "days": { "type": "int" }
@@ -309,6 +309,13 @@
   },
   "modifiableUntilDateTime": "Modifiable until {dateTime}",
   "@modifiableUntilDateTime": {
+    "placeholders": {
+      "dateTime": {}
+    }
+  },
+  "modificationWindowExpired": "The time window to modify or cancel this booking has expired.",
+  "modificationWindowExpiredDateTime": "The deadline to modify or cancel expired on {dateTime}.",
+  "@modificationWindowExpiredDateTime": {
     "placeholders": {
       "dateTime": {}
     }

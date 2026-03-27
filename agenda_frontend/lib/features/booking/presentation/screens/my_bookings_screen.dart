@@ -292,6 +292,9 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     );
     final cancellationHours =
         location?.cancellationHours ?? business?.cancellationHours ?? 24;
+    // Keep server-side classification as source of truth (upcoming/past is
+    // already computed by API with business/location context).
+    final isFutureNotStarted = widget.isUpcoming && !booking.isCancelled;
     final showCancellationPolicy = widget.isUpcoming && !booking.isCancelled;
     final fallbackAddressParts = <String>[
       if ((booking.locationAddress ?? '').trim().isNotEmpty)
@@ -503,7 +506,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
             ],
 
             // Badge e azioni per prenotazioni future (non cancellate)
-            if (widget.isUpcoming && !booking.isCancelled) ...[
+            if (isFutureNotStarted) ...[
               const SizedBox(height: 16),
               if (formFactor == AppFormFactor.mobile)
                 Column(
@@ -518,6 +521,12 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                           locale: locale,
                         ),
                         style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    if (!booking.canModifyEffective)
+                      _buildModificationExpiredWarning(
+                        context,
+                        booking: booking,
+                        locale: locale,
                       ),
                     if (booking.canModifyEffective) ...[
                       const SizedBox(height: 8),
@@ -550,48 +559,47 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                   ],
                 )
               else
-                Row(
-                  children: [
-                    // Countdown se modificabile
-                    if (booking.canModifyEffective &&
-                        booking.canModifyUntil != null)
-                      Text(
-                        _formatModifiableUntil(
-                          context,
-                          booking: booking,
-                          locale: locale,
-                        ),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-
-                    const Spacer(),
-
-                    // Pulsanti azione
-                    if (booking.canModifyEffective) ...[
-                      ElevatedButton(
-                        onPressed: () => _handleModify(context, ref),
-                        style: modifyButtonStyle,
-                        child: Text(context.l10n.modify),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton(
-                        onPressed: _isCancelling
-                            ? null
-                            : () => _handleCancel(context, ref),
-                        style: cancelButtonStyle,
-                        child: _isCancelling
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(context.l10n.actionCancelBooking),
-                      ),
-                    ],
-                  ],
-                ),
+                (booking.canModifyEffective
+                    ? Row(
+                        children: [
+                          if (booking.canModifyUntil != null)
+                            Text(
+                              _formatModifiableUntil(
+                                context,
+                                booking: booking,
+                                locale: locale,
+                              ),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          const Spacer(),
+                          ElevatedButton(
+                            onPressed: () => _handleModify(context, ref),
+                            style: modifyButtonStyle,
+                            child: Text(context.l10n.modify),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: _isCancelling
+                                ? null
+                                : () => _handleCancel(context, ref),
+                            style: cancelButtonStyle,
+                            child: _isCancelling
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(context.l10n.actionCancelBooking),
+                          ),
+                        ],
+                      )
+                    : _buildModificationExpiredWarning(
+                        context,
+                        booking: booking,
+                        locale: locale,
+                      )),
             ],
           ],
         ),
@@ -607,6 +615,79 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     final deadline = _modifiableDeadline(booking);
     final formatted = DateFormat.yMd(locale).add_jm().format(deadline);
     return context.l10n.modifiableUntilDateTime(formatted);
+  }
+
+  String _formatModificationExpired(
+    BuildContext context, {
+    required BookingItem booking,
+    required String locale,
+  }) {
+    if (booking.canModifyUntil == null &&
+        (booking.canModifyUntilRaw == null ||
+            booking.canModifyUntilRaw!.isEmpty)) {
+      return context.l10n.modificationWindowExpired;
+    }
+    final deadline = _modifiableDeadline(booking);
+    final formattedDate = DateFormat.yMMMMd(
+      locale,
+    ).format(deadline).replaceAll(' ', '\u00A0');
+    final formattedTime = DateFormat.jm(
+      locale,
+    ).format(deadline).replaceAll(' ', '\u00A0');
+    final formatted = '$formattedDate\u00A0$formattedTime';
+    return context.l10n.modificationWindowExpiredDateTime(formatted);
+  }
+
+  Widget _buildModificationExpiredWarning(
+    BuildContext context, {
+    required BookingItem booking,
+    required String locale,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceVariant.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            size: 16,
+            color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final preferSingleLine = constraints.maxWidth >= 420;
+                return Text(
+                  _formatModificationExpired(
+                    context,
+                    booking: booking,
+                    locale: locale,
+                  ),
+                  maxLines: preferSingleLine ? 1 : null,
+                  overflow: preferSingleLine
+                      ? TextOverflow.ellipsis
+                      : TextOverflow.visible,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   static DateTime _modifiableDeadline(BookingItem booking) {

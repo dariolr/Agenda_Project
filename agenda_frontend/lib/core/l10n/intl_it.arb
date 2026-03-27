@@ -188,7 +188,7 @@
       "hours": { "type": "int" }
     }
   },
-  "summaryCancellationPolicyDays": "Fino a {days} giorni prima",
+  "summaryCancellationPolicyDays": "{days, plural, =1{Fino a 1 giorno prima} other{Fino a {days} giorni prima}}",
   "@summaryCancellationPolicyDays": {
     "placeholders": {
       "days": { "type": "int" }
@@ -309,6 +309,13 @@
   },
   "modifiableUntilDateTime": "Modificabile fino al {dateTime}",
   "@modifiableUntilDateTime": {
+    "placeholders": {
+      "dateTime": {}
+    }
+  },
+  "modificationWindowExpired": "Il tempo per modificare o annullare questa prenotazione è scaduto.",
+  "modificationWindowExpiredDateTime": "Il termine per modificare o annullare è scaduto il {dateTime}.",
+  "@modificationWindowExpiredDateTime": {
     "placeholders": {
       "dateTime": {}
     }

@@ -554,6 +554,24 @@ final class BookingsController
                 if (isset($item['price'])) {
                     $parsedItem['price'] = (float) $item['price'];
                 }
+                if (isset($item['list_price'])) {
+                    $parsedItem['list_price'] = (float) $item['list_price'];
+                }
+                if (isset($item['list_price_cents'])) {
+                    $parsedItem['list_price_cents'] = (int) $item['list_price_cents'];
+                }
+                if (isset($item['applied_price'])) {
+                    $parsedItem['applied_price'] = (float) $item['applied_price'];
+                }
+                if (isset($item['applied_price_cents'])) {
+                    $parsedItem['applied_price_cents'] = (int) $item['applied_price_cents'];
+                }
+                if (isset($item['package_id'])) {
+                    $parsedItem['package_id'] = (int) $item['package_id'];
+                }
+                if (isset($item['pricing_source'])) {
+                    $parsedItem['pricing_source'] = (string) $item['pricing_source'];
+                }
                 $items[] = $parsedItem;
             }
             if (empty($items)) {
@@ -1369,11 +1387,33 @@ final class BookingsController
                         400
                     );
                 }
-                $items[] = [
+                $parsedItem = [
                     'service_id' => (int) $item['service_id'],
                     'staff_id' => (int) $item['staff_id'],
                     'start_time' => $item['start_time'],
                 ];
+                if (isset($item['price'])) {
+                    $parsedItem['price'] = (float) $item['price'];
+                }
+                if (isset($item['list_price'])) {
+                    $parsedItem['list_price'] = (float) $item['list_price'];
+                }
+                if (isset($item['list_price_cents'])) {
+                    $parsedItem['list_price_cents'] = (int) $item['list_price_cents'];
+                }
+                if (isset($item['applied_price'])) {
+                    $parsedItem['applied_price'] = (float) $item['applied_price'];
+                }
+                if (isset($item['applied_price_cents'])) {
+                    $parsedItem['applied_price_cents'] = (int) $item['applied_price_cents'];
+                }
+                if (isset($item['package_id'])) {
+                    $parsedItem['package_id'] = (int) $item['package_id'];
+                }
+                if (isset($item['pricing_source'])) {
+                    $parsedItem['pricing_source'] = (string) $item['pricing_source'];
+                }
+                $items[] = $parsedItem;
             }
             if (empty($items)) {
                 return Response::error('items array cannot be empty', 'validation_error', 400);
@@ -1416,6 +1456,9 @@ final class BookingsController
                         'service_ids' => array_map('intval', $body['service_ids']),
                         'staff_id' => isset($body['staff_id']) ? (int) $body['staff_id'] : null,
                         'start_time' => $body['start_time'],
+                        'pricing_overrides' => isset($body['pricing_overrides']) && is_array($body['pricing_overrides'])
+                            ? $body['pricing_overrides']
+                            : [],
                         'notes' => $body['notes'] ?? null,
                         'locale' => $requestLocale,
                     ],
@@ -2094,6 +2137,10 @@ final class BookingsController
                 'start_time' => $item['start_time'],
                 'end_time' => $item['end_time'],
                 'price' => (float) ($item['price'] ?? 0),
+                'list_price_cents' => isset($item['list_price_cents']) ? (int) $item['list_price_cents'] : null,
+                'applied_price_cents' => isset($item['applied_price_cents']) ? (int) $item['applied_price_cents'] : null,
+                'package_id' => isset($item['package_id']) ? (int) $item['package_id'] : null,
+                'pricing_source' => $item['pricing_source'] ?? null,
                 'duration_minutes' => (int) ($item['duration_minutes'] ?? 0),
                 'service_name' => $item['service_name'] ?? $item['service_name_snapshot'],
                 'staff_display_name' => $item['staff_display_name'],
@@ -2117,6 +2164,10 @@ final class BookingsController
             'start_time' => $item['start_time'],
             'end_time' => $item['end_time'],
             'price' => (float) ($item['price'] ?? 0),
+            'list_price_cents' => isset($item['list_price_cents']) ? (int) $item['list_price_cents'] : null,
+            'applied_price_cents' => isset($item['applied_price_cents']) ? (int) $item['applied_price_cents'] : null,
+            'package_id' => isset($item['package_id']) ? (int) $item['package_id'] : null,
+            'pricing_source' => $item['pricing_source'] ?? null,
             'duration_minutes' => (int) ($item['duration_minutes'] ?? 0),
             'service_name' => $item['service_name'] ?? $item['service_name_snapshot'] ?? '',
             'staff_display_name' => $item['staff_display_name'] ?? '',

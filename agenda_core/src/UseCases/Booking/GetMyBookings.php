@@ -30,7 +30,7 @@ final class GetMyBookings
                 bi.id as item_id,
                 bi.start_time,
                 bi.end_time,
-                bi.price as item_price,
+                COALESCE(bi.applied_price_cents / 100, bi.price, 0) as item_price,
                 bi.duration_minutes,
                 sv.id as service_variant_id,
                 s.name as service_name,

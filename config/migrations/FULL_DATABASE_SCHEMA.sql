@@ -101,6 +101,10 @@ CREATE TABLE `booking_items` (
   `start_time` timestamp NOT NULL COMMENT 'UTC',
   `end_time` timestamp NOT NULL COMMENT 'UTC',
   `price` decimal(10,2) DEFAULT NULL COMMENT 'Applied price at booking time',
+  `list_price_cents` int UNSIGNED DEFAULT NULL COMMENT 'List/original item price snapshot in cents',
+  `applied_price_cents` int UNSIGNED DEFAULT NULL COMMENT 'Final applied item price snapshot in cents',
+  `package_id` int UNSIGNED DEFAULT NULL COMMENT 'Service package used for pricing, if any',
+  `pricing_source` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Pricing origin: service/package/discount/custom',
   `extra_blocked_minutes` int UNSIGNED NOT NULL DEFAULT '0',
   `extra_processing_minutes` int UNSIGNED NOT NULL DEFAULT '0',
   `service_name_snapshot` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -1068,7 +1072,8 @@ ALTER TABLE `booking_items`
   ADD KEY `idx_booking_items_staff_time` (`staff_id`,`start_time`,`end_time`),
   ADD KEY `idx_booking_items_location_time` (`location_id`,`start_time`,`end_time`),
   ADD KEY `idx_booking_items_service` (`service_id`),
-  ADD KEY `idx_booking_items_variant` (`service_variant_id`);
+  ADD KEY `idx_booking_items_variant` (`service_variant_id`),
+  ADD KEY `idx_booking_items_package` (`package_id`);
 
 --
 -- Indici per le tabelle `booking_recurrence_rules`
@@ -1822,6 +1827,7 @@ ALTER TABLE `booking_events`
 ALTER TABLE `booking_items`
   ADD CONSTRAINT `fk_booking_items_booking` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_booking_items_location` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_booking_items_package` FOREIGN KEY (`package_id`) REFERENCES `service_packages` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_booking_items_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_booking_items_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_booking_items_variant` FOREIGN KEY (`service_variant_id`) REFERENCES `service_variants` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

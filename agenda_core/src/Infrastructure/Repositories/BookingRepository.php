@@ -55,8 +55,8 @@ final class BookingRepository
 
         $result['items'] = $this->getBookingItems($bookingId);
         
-        // Calculate totals from items
-        $result['total_price'] = array_sum(array_column($result['items'], 'price'));
+        // Calculate totals from item pricing snapshots (fallback to legacy decimal price).
+        $result['total_price'] = $this->calculateTotalPrice($result['items']);
         $result['total_duration_minutes'] = $this->calculateTotalDuration($result['items']);
 
         return $result;
@@ -103,6 +103,7 @@ final class BookingRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT bi.id, bi.booking_id, bi.location_id, bi.service_id, bi.service_variant_id,
                     bi.staff_id, bi.start_time, bi.end_time, bi.price,
+                    bi.list_price_cents, bi.applied_price_cents, bi.package_id, bi.pricing_source,
                     bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.service_name_snapshot, bi.client_name_snapshot,
                     s.name AS service_name,
@@ -147,6 +148,94 @@ final class BookingRepository
         $lastEnd = new DateTimeImmutable($items[count($items) - 1]['end_time']);
         
         return (int) (($lastEnd->getTimestamp() - $firstStart->getTimestamp()) / 60);
+    }
+
+    private function calculateTotalPrice(array $items): float
+    {
+        $total = 0.0;
+        foreach ($items as $item) {
+            $total += $this->resolveAppliedPrice($item);
+        }
+
+        return $total;
+    }
+
+    private function resolveAppliedPrice(array $item): float
+    {
+        if (isset($item['applied_price_cents']) && $item['applied_price_cents'] !== null) {
+            return ((int) $item['applied_price_cents']) / 100;
+        }
+
+        return (float) ($item['price'] ?? 0);
+    }
+
+    private function centsFromPriceValue(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        return (int) round(((float) $value) * 100);
+    }
+
+    private function resolveItemPricingSnapshot(array $item): array
+    {
+        $legacyPrice = array_key_exists('price', $item) ? (float) $item['price'] : 0.0;
+
+        $listPriceCents = array_key_exists('list_price_cents', $item)
+            ? $this->centsFromPriceValue($item['list_price_cents'])
+            : null;
+        if ($listPriceCents === null && array_key_exists('list_price', $item)) {
+            $listPriceCents = $this->centsFromPriceValue($item['list_price']);
+        }
+        if ($listPriceCents === null) {
+            $listPriceCents = $this->centsFromPriceValue($legacyPrice);
+        }
+
+        $appliedPriceCents = array_key_exists('applied_price_cents', $item)
+            ? $this->centsFromPriceValue($item['applied_price_cents'])
+            : null;
+        if ($appliedPriceCents === null && array_key_exists('applied_price', $item)) {
+            $appliedPriceCents = $this->centsFromPriceValue($item['applied_price']);
+        }
+        if ($appliedPriceCents === null) {
+            $appliedPriceCents = $this->centsFromPriceValue($legacyPrice);
+        }
+
+        $packageId = null;
+        if (array_key_exists('package_id', $item) && $item['package_id'] !== null && $item['package_id'] !== '') {
+            $packageId = (int) $item['package_id'];
+        }
+
+        $pricingSource = null;
+        if (array_key_exists('pricing_source', $item) && $item['pricing_source'] !== null) {
+            $pricingSource = (string) $item['pricing_source'];
+        } elseif ($packageId !== null) {
+            $pricingSource = 'package';
+        } else {
+            $pricingSource = 'service';
+        }
+
+        $price = $legacyPrice;
+        if ($appliedPriceCents !== null) {
+            $price = $appliedPriceCents / 100;
+        }
+
+        return [
+            'price' => $price,
+            'list_price_cents' => $listPriceCents,
+            'applied_price_cents' => $appliedPriceCents,
+            'package_id' => $packageId,
+            'pricing_source' => $pricingSource,
+        ];
     }
 
     /**
@@ -231,10 +320,12 @@ final class BookingRepository
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO booking_items (booking_id, location_id, service_id, service_variant_id,
                                         staff_id, start_time, end_time, price,
+                                        list_price_cents, applied_price_cents, package_id, pricing_source,
                                         extra_blocked_minutes, extra_processing_minutes,
                                         service_name_snapshot, client_name_snapshot)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
+        $pricing = $this->resolveItemPricingSnapshot($item);
         $stmt->execute([
             $bookingId,
             $item['location_id'],
@@ -243,7 +334,11 @@ final class BookingRepository
             $item['staff_id'],
             $item['start_time'],
             $item['end_time'],
-            $item['price'] ?? 0,
+            $pricing['price'],
+            $pricing['list_price_cents'],
+            $pricing['applied_price_cents'],
+            $pricing['package_id'],
+            $pricing['pricing_source'],
             $item['extra_blocked_minutes'] ?? 0,
             $item['extra_processing_minutes'] ?? 0,
             $item['service_name_snapshot'] ?? null,
@@ -657,7 +752,8 @@ final class BookingRepository
 
         $stmt = $this->db->getPdo()->prepare(
             "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
-                    bi.start_time, bi.end_time, bi.price, bi.extra_blocked_minutes, bi.extra_processing_minutes,
+                    bi.start_time, bi.end_time, bi.price, bi.list_price_cents, bi.applied_price_cents, bi.package_id, bi.pricing_source,
+                    bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.created_at, bi.updated_at,
                     b.status AS booking_status, b.client_name, b.notes AS booking_notes, b.client_id, b.business_id, b.source,
                     b.replaces_booking_id, b.replaced_by_booking_id,
@@ -697,7 +793,8 @@ final class BookingRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
-                    bi.start_time, bi.end_time, bi.price, bi.extra_blocked_minutes, bi.extra_processing_minutes,
+                    bi.start_time, bi.end_time, bi.price, bi.list_price_cents, bi.applied_price_cents, bi.package_id, bi.pricing_source,
+                    bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.created_at, bi.updated_at,
                     b.status AS booking_status, b.client_name, b.notes AS booking_notes, b.client_id, b.business_id, b.source,
                     b.recurrence_rule_id, b.recurrence_index,
@@ -728,7 +825,33 @@ final class BookingRepository
         $fields = [];
         $params = [];
 
-        foreach (['start_time', 'end_time', 'staff_id', 'service_id', 'service_variant_id', 'service_name_snapshot', 'client_name_snapshot', 'extra_blocked_minutes', 'extra_processing_minutes', 'price'] as $field) {
+        if (array_key_exists('price', $data) && !array_key_exists('applied_price_cents', $data)) {
+            $data['applied_price_cents'] = $this->centsFromPriceValue($data['price']);
+        }
+        if (array_key_exists('applied_price_cents', $data) && !array_key_exists('price', $data)) {
+            $applied = $this->centsFromPriceValue($data['applied_price_cents']);
+            $data['price'] = $applied !== null ? $applied / 100 : 0;
+        }
+        if (array_key_exists('price', $data) && !array_key_exists('list_price_cents', $data)) {
+            $data['list_price_cents'] = $this->centsFromPriceValue($data['price']);
+        }
+
+        foreach ([
+            'start_time',
+            'end_time',
+            'staff_id',
+            'service_id',
+            'service_variant_id',
+            'service_name_snapshot',
+            'client_name_snapshot',
+            'extra_blocked_minutes',
+            'extra_processing_minutes',
+            'price',
+            'list_price_cents',
+            'applied_price_cents',
+            'package_id',
+            'pricing_source',
+        ] as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "$field = ?";
                 $params[] = $data[$field];
@@ -813,7 +936,7 @@ final class BookingRepository
         }
 
         $result['items'] = $this->getBookingItems($bookingId);
-        $result['total_price'] = array_sum(array_column($result['items'], 'price'));
+        $result['total_price'] = $this->calculateTotalPrice($result['items']);
         $result['total_duration_minutes'] = $this->calculateTotalDuration($result['items']);
 
         return $result;
@@ -852,7 +975,7 @@ final class BookingRepository
         $bookings = [];
         while ($row = $stmt->fetch()) {
             $row['items'] = $this->getBookingItems((int) $row['id']);
-            $row['total_price'] = array_sum(array_column($row['items'], 'price'));
+            $row['total_price'] = $this->calculateTotalPrice($row['items']);
             $row['total_duration_minutes'] = $this->calculateTotalDuration($row['items']);
             $bookings[] = $row;
         }
@@ -885,7 +1008,7 @@ final class BookingRepository
         }
 
         $result['items'] = $this->getBookingItems((int) $result['id']);
-        $result['total_price'] = array_sum(array_column($result['items'], 'price'));
+        $result['total_price'] = $this->calculateTotalPrice($result['items']);
         $result['total_duration_minutes'] = $this->calculateTotalDuration($result['items']);
 
         return $result;
@@ -1009,7 +1132,7 @@ final class BookingRepository
                    l.name AS location_name,
                    MIN(bi.start_time) AS first_start_time,
                    MAX(bi.end_time) AS last_end_time,
-                   SUM(bi.price) AS total_price,
+                   SUM(COALESCE(bi.applied_price_cents / 100, bi.price, 0)) AS total_price,
                    GROUP_CONCAT(DISTINCT s.name ORDER BY bi.start_time SEPARATOR ', ') AS service_names,
                    GROUP_CONCAT(DISTINCT CONCAT(st.name, ' ', LEFT(st.surname, 1), '.') ORDER BY bi.start_time SEPARATOR ', ') AS staff_names,
                    creator.first_name AS creator_first_name, creator.last_name AS creator_last_name

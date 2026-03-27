@@ -12,6 +12,7 @@ import '../../../../../../core/l10n/l10_extension.dart';
 import '../../../../../../core/widgets/app_dialogs.dart';
 import '../../../../auth/providers/current_business_user_provider.dart';
 import '../../../../clients/providers/clients_providers.dart';
+import '../../../../services/providers/services_provider.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_interaction_lock_provider.dart';
@@ -652,6 +653,7 @@ class _AppointmentCardInteractiveState
       widget.color,
     );
     final baseColor = widget.color.withOpacity(baseCardOpacity);
+    final renderedCardColor = Color.alphaBlend(baseColor, Colors.white);
 
     final startTime = overrideStart ?? widget.appointment.startTime;
     final endTime =
@@ -675,14 +677,31 @@ class _AppointmentCardInteractiveState
         isPriceDisplayEnabled &&
         widget.appointment.price != null &&
         widget.appointment.price! > 0;
+    final selectedVariant = ref.watch(
+      serviceVariantByIdProvider(widget.appointment.serviceVariantId),
+    );
+    final variantPrice = selectedVariant?.isFree == true
+        ? 0.0
+        : selectedVariant?.price;
+    final isPackageItem =
+        widget.appointment.packageId != null ||
+        widget.appointment.pricingSource == 'package';
+    final showStruckVariantPrice =
+        showAppointmentPrice &&
+        isPackageItem &&
+        variantPrice != null &&
+        (widget.appointment.price! - variantPrice).abs() > 0.004;
     final hidesRedundantBookingTotal =
         showAppointmentPrice &&
         bookingSummary != null &&
         (bookingSummary.totalPrice - widget.appointment.price!).abs() < 0.01;
+    final appointmentPriceValue = showStruckVariantPrice
+        ? variantPrice
+        : widget.appointment.price!;
     final appointmentPrice = showAppointmentPrice
         ? PriceFormatter.format(
             context: context,
-            amount: widget.appointment.price!,
+            amount: appointmentPriceValue,
             currencyCode: PriceFormatter.effectiveCurrency(ref),
           )
         : null;
@@ -707,10 +726,23 @@ class _AppointmentCardInteractiveState
       pieces.add(serviceName);
     }
     final info = pieces.join(' – ');
-    final borderWidth = showThickBorder ? 2.5 : 1.0;
-    final borderColor = showThickBorder
-        ? Color.alphaBlend(Colors.black.withOpacity(0.05), widget.color)
-        : widget.color;
+    final isSelectedHighlight = isSelected && !forFeedback;
+    final selectedContrastBaseColor =
+        ThemeData.estimateBrightnessForColor(renderedCardColor) ==
+            Brightness.dark
+        ? Colors.white
+        : Colors.black;
+    final borderWidth = isSelectedHighlight
+        ? 2.0
+        : (showThickBorder ? 2.5 : 1.0);
+    final borderColor = isSelectedHighlight
+        ? Color.alphaBlend(
+            selectedContrastBaseColor.withOpacity(0.18),
+            widget.color,
+          )
+        : (showThickBorder
+              ? Color.alphaBlend(Colors.black.withOpacity(0.05), widget.color)
+              : widget.color);
     final statusVisual = _statusVisual(context);
     final cardHeight = _lastSize?.height ?? 0;
     final showCompactStatusBar =
@@ -776,10 +808,19 @@ class _AppointmentCardInteractiveState
           duration: animationDuration,
           curve: animationCurve,
           decoration: BoxDecoration(
-            color: Color.alphaBlend(baseColor, Colors.white),
+            color: renderedCardColor,
             borderRadius: effectiveBorderRadius,
             border: Border.all(color: borderColor, width: borderWidth),
             boxShadow: [
+              if (isSelectedHighlight)
+                BoxShadow(
+                  color: Color.alphaBlend(
+                    selectedContrastBaseColor.withOpacity(0.10),
+                    widget.color,
+                  ).withOpacity(0.55),
+                  blurRadius: 0,
+                  spreadRadius: 1.0,
+                ),
               BoxShadow(
                 color: widget.color.withOpacity(showThickBorder ? 0.25 : 0.1),
                 blurRadius: showThickBorder ? 8 : 4,
@@ -834,6 +875,7 @@ class _AppointmentCardInteractiveState
                         : (widget.appointment.bookingSource ?? ''),
                     appointmentPrice: effectiveAppointmentPrice,
                     bookingTotal: effectiveBookingTotal,
+                    strikeAppointmentPrice: showStruckVariantPrice,
                     statusVisual: statusVisual,
                     showStatusIcon: showStatusIcon && !showCompactStatusBar,
                     isRecurring: widget.appointment.isRecurring,
@@ -920,6 +962,7 @@ class _AppointmentCardInteractiveState
     required String bookingSource,
     required String? appointmentPrice,
     required String? bookingTotal,
+    required bool strikeAppointmentPrice,
     required _CardStatusVisual? statusVisual,
     required bool showStatusIcon,
     bool isRecurring = false,
@@ -986,6 +1029,12 @@ class _AppointmentCardInteractiveState
       color: Colors.black87,
       height: 1.1,
     );
+    final appointmentPriceTextStyle = strikeAppointmentPrice
+        ? priceSecondaryTextStyle.copyWith(
+            decoration: TextDecoration.lineThrough,
+            decorationColor: Colors.black54,
+          )
+        : pricePrimaryTextStyle;
     final stackClientUnderTime = presentation.showClientOnSecondRow;
 
     final trailingIcons = <Widget>[];
@@ -1307,7 +1356,7 @@ class _AppointmentCardInteractiveState
                             maxLines: 1,
                             softWrap: false,
                             overflow: TextOverflow.ellipsis,
-                            style: pricePrimaryTextStyle,
+                            style: appointmentPriceTextStyle,
                           ),
                       ],
                     )
@@ -1396,7 +1445,7 @@ class _AppointmentCardInteractiveState
                               maxLines: 1,
                               softWrap: false,
                               overflow: TextOverflow.ellipsis,
-                              style: pricePrimaryTextStyle,
+                              style: appointmentPriceTextStyle,
                             ),
                           ],
                         )
@@ -1422,7 +1471,7 @@ class _AppointmentCardInteractiveState
                                 softWrap: false,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.right,
-                                style: pricePrimaryTextStyle,
+                                style: appointmentPriceTextStyle,
                               ),
                           ],
                         ),
