@@ -44,7 +44,10 @@ class Appointment {
   final String serviceName;
   final DateTime startTime;
   final DateTime endTime;
+  final double? listPrice; // prezzo di listino snapshot (se presente)
   final double? price; // prezzo applicato al singolo appuntamento
+  final int? packageId; // package associato (se pricing da pacchetto)
+  final String? pricingSource; // service/package/discount/custom
   final String? bookingSource;
   final String? bookingStatus; // pending, confirmed, replaced, cancelled
   // Legacy single extra fields (kept for backward compatibility)
@@ -71,7 +74,10 @@ class Appointment {
     required this.serviceName,
     required this.startTime,
     required this.endTime,
+    this.listPrice,
     this.price,
+    this.packageId,
+    this.pricingSource,
     this.bookingSource,
     this.bookingStatus,
     this.extraMinutes,
@@ -105,7 +111,14 @@ class Appointment {
     serviceName: json['service_name'] as String? ?? '',
     startTime: DateTime.parse(json['start_time'] as String),
     endTime: DateTime.parse(json['end_time'] as String),
+    listPrice: json['list_price'] != null
+        ? (json['list_price'] as num).toDouble()
+        : (json['list_price_cents'] != null
+              ? (json['list_price_cents'] as num).toDouble() / 100.0
+              : null),
     price: json['price'] != null ? (json['price'] as num).toDouble() : null,
+    packageId: json['package_id'] as int?,
+    pricingSource: json['pricing_source'] as String?,
     bookingSource: json['source'] as String?,
     bookingStatus: _bookingStatusFromJson(json),
     extraMinutes: json['extra_minutes'] as int?,
@@ -130,7 +143,10 @@ class Appointment {
     String? serviceName,
     DateTime? startTime,
     DateTime? endTime,
+    double? listPrice,
     double? price,
+    int? packageId,
+    String? pricingSource,
     String? bookingSource,
     String? bookingStatus,
     int? extraMinutes,
@@ -154,7 +170,10 @@ class Appointment {
       serviceName: serviceName ?? this.serviceName,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
+      listPrice: listPrice ?? this.listPrice,
       price: price ?? this.price,
+      packageId: packageId ?? this.packageId,
+      pricingSource: pricingSource ?? this.pricingSource,
       bookingSource: bookingSource ?? this.bookingSource,
       bookingStatus: bookingStatus ?? this.bookingStatus,
       extraMinutes: extraMinutes ?? this.extraMinutes,
@@ -190,7 +209,10 @@ class Appointment {
       'service_name': serviceName,
       'start_time': startTime.toIso8601String(),
       'end_time': endTime.toIso8601String(),
+      if (listPrice != null) 'list_price': listPrice,
       if (price != null) 'price': price,
+      if (packageId != null) 'package_id': packageId,
+      if (pricingSource != null) 'pricing_source': pricingSource,
       if (bookingSource != null) 'source': bookingSource,
       if (legacyMinutes != null) 'extra_minutes': legacyMinutes,
       if (legacyType != null)

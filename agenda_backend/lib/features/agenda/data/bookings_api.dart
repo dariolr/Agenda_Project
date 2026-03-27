@@ -66,7 +66,12 @@ class BookingItemRequest {
   final int? durationMinutes;
   final int? blockedExtraMinutes;
   final int? processingExtraMinutes;
+  final double? listPrice;
   final double? price;
+  final int? listPriceCents;
+  final int? appliedPriceCents;
+  final int? packageId;
+  final String? pricingSource;
 
   const BookingItemRequest({
     required this.serviceId,
@@ -76,7 +81,12 @@ class BookingItemRequest {
     this.durationMinutes,
     this.blockedExtraMinutes,
     this.processingExtraMinutes,
+    this.listPrice,
     this.price,
+    this.listPriceCents,
+    this.appliedPriceCents,
+    this.packageId,
+    this.pricingSource,
   });
 
   Map<String, dynamic> toJson() {
@@ -93,7 +103,14 @@ class BookingItemRequest {
     if (processingExtraMinutes != null) {
       map['processing_extra_minutes'] = processingExtraMinutes;
     }
+    if (listPrice != null) map['list_price'] = listPrice;
     if (price != null) map['price'] = price;
+    if (listPriceCents != null) map['list_price_cents'] = listPriceCents;
+    if (appliedPriceCents != null) {
+      map['applied_price_cents'] = appliedPriceCents;
+    }
+    if (packageId != null) map['package_id'] = packageId;
+    if (pricingSource != null) map['pricing_source'] = pricingSource;
     return map;
   }
 }

@@ -46,6 +46,111 @@ final class CreateBooking
         private readonly ?ClassEventRepository $classEventRepository = null,
     ) {}
 
+    private function priceToCents(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_int($value)) {
+            return $value;
+        }
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        return (int) round(((float) $value) * 100);
+    }
+
+    private function buildItemPricingSnapshot(array $item, array $service): array
+    {
+        $serviceListPrice = (float) ($service['price'] ?? 0);
+        $appliedPrice = isset($item['price']) ? (float) $item['price'] : $serviceListPrice;
+
+        $listPriceCents = array_key_exists('list_price_cents', $item)
+            ? $this->priceToCents($item['list_price_cents'])
+            : null;
+        if ($listPriceCents === null && array_key_exists('list_price', $item)) {
+            $listPriceCents = $this->priceToCents($item['list_price']);
+        }
+        if ($listPriceCents === null) {
+            $listPriceCents = $this->priceToCents($serviceListPrice);
+        }
+
+        $appliedPriceCents = array_key_exists('applied_price_cents', $item)
+            ? $this->priceToCents($item['applied_price_cents'])
+            : null;
+        if ($appliedPriceCents === null && array_key_exists('applied_price', $item)) {
+            $appliedPriceCents = $this->priceToCents($item['applied_price']);
+        }
+        if ($appliedPriceCents === null) {
+            $appliedPriceCents = $this->priceToCents($appliedPrice);
+        }
+
+        $packageId = null;
+        if (array_key_exists('package_id', $item) && $item['package_id'] !== null && $item['package_id'] !== '') {
+            $packageId = (int) $item['package_id'];
+        }
+
+        $pricingSource = null;
+        if (array_key_exists('pricing_source', $item) && $item['pricing_source'] !== null) {
+            $pricingSource = (string) $item['pricing_source'];
+        } elseif ($packageId !== null) {
+            $pricingSource = 'package';
+        } elseif ($appliedPriceCents !== null && $listPriceCents !== null && $appliedPriceCents < $listPriceCents) {
+            $pricingSource = 'discount';
+        } else {
+            $pricingSource = 'service';
+        }
+
+        return [
+            'price' => $appliedPriceCents !== null ? $appliedPriceCents / 100 : $appliedPrice,
+            'list_price_cents' => $listPriceCents,
+            'applied_price_cents' => $appliedPriceCents,
+            'package_id' => $packageId,
+            'pricing_source' => $pricingSource,
+        ];
+    }
+
+    /**
+     * Normalize optional pricing overrides sent with legacy customer payload.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizePricingOverrides(mixed $raw): array
+    {
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($raw as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            $row = [];
+            if (isset($entry['service_id'])) {
+                $row['service_id'] = (int) $entry['service_id'];
+            }
+            if (array_key_exists('list_price_cents', $entry)) {
+                $row['list_price_cents'] = (int) $entry['list_price_cents'];
+            }
+            if (array_key_exists('applied_price_cents', $entry)) {
+                $row['applied_price_cents'] = (int) $entry['applied_price_cents'];
+            }
+            if (isset($entry['package_id']) && $entry['package_id'] !== null && $entry['package_id'] !== '') {
+                $row['package_id'] = (int) $entry['package_id'];
+            }
+            if (isset($entry['pricing_source']) && $entry['pricing_source'] !== null) {
+                $row['pricing_source'] = (string) $entry['pricing_source'];
+            }
+
+            $normalized[] = $row;
+        }
+
+        return $normalized;
+    }
+
     /**
      * Create a new booking with conflict detection.
      * Idempotent: returns existing booking if idempotency_key matches.
@@ -312,10 +417,9 @@ final class CreateBooking
                     'staff_id' => $staffId,
                     'start_time' => $currentTime->format('Y-m-d H:i:s'),
                     'end_time' => $displayEndTime->format('Y-m-d H:i:s'), // Display duration only
-                    'price' => (float) $service['price'],
                     'service_name_snapshot' => $service['name'],
                     'client_name_snapshot' => $clientName,
-                ];
+                ] + $this->buildItemPricingSnapshot([], $service);
 
                 // Next service starts after blocked time (not display time)
                 $currentTime = $blockedEndTime;
@@ -483,7 +587,6 @@ final class CreateBooking
                 // Use override values if provided, otherwise use service defaults
                 $duration = isset($item['duration_minutes']) ? (int) $item['duration_minutes'] : (int) $service['duration_minutes'];
                 $variantId = isset($item['service_variant_id']) ? (int) $item['service_variant_id'] : (int) $service['service_variant_id'];
-                $price = isset($item['price']) ? (float) $item['price'] : (float) $service['price'];
                 $blockedExtra = isset($item['blocked_extra_minutes']) ? (int) $item['blocked_extra_minutes'] : 0;
                 $processingExtra = isset($item['processing_extra_minutes']) ? (int) $item['processing_extra_minutes'] : 0;
 
@@ -510,12 +613,11 @@ final class CreateBooking
                     'staff_id' => $staffId,
                     'start_time' => $startTime->format('Y-m-d H:i:s'),
                     'end_time' => $endTime->format('Y-m-d H:i:s'),
-                    'price' => $price,
                     'extra_blocked_minutes' => $blockedExtra,
                     'extra_processing_minutes' => $processingExtra,
                     'service_name_snapshot' => $service['name'],
                     'client_name_snapshot' => $clientName,
-                ];
+                ] + $this->buildItemPricingSnapshot($item, $service);
             }
 
             // Create booking (container)
@@ -589,6 +691,10 @@ final class CreateBooking
                 'start_time' => $item['start_time'],
                 'end_time' => $item['end_time'],
                 'price' => (float) ($item['price'] ?? 0),
+                'list_price_cents' => isset($item['list_price_cents']) ? (int) $item['list_price_cents'] : null,
+                'applied_price_cents' => isset($item['applied_price_cents']) ? (int) $item['applied_price_cents'] : null,
+                'package_id' => isset($item['package_id']) ? (int) $item['package_id'] : null,
+                'pricing_source' => $item['pricing_source'] ?? null,
                 'duration_minutes' => (int) ($item['duration_minutes'] ?? 0),
             ], $booking['items'] ?? []),
         ];
@@ -722,6 +828,7 @@ final class CreateBooking
 
         // Get services with variants
         $services = $this->serviceRepository->findByIds($serviceIds, $locationId, $businessId);
+        $pricingOverrides = $this->normalizePricingOverrides($data['pricing_overrides'] ?? null);
         
         if (count($services) !== count($serviceIds)) {
             throw BookingException::invalidService($serviceIds);
@@ -812,7 +919,7 @@ final class CreateBooking
             $currentTime = $startTime;
             $itemsToCreate = [];
 
-            foreach ($services as $service) {
+            foreach ($services as $index => $service) {
                 // Display duration (what appears in gestionale) - only service time
                 $displayDuration = (int) $service['duration_minutes'];
                 // Blocked duration (for conflict check and next service start) - includes processing/blocked time
@@ -851,10 +958,17 @@ final class CreateBooking
                     'staff_id' => $staffId,
                     'start_time' => $currentTime->format('Y-m-d H:i:s'),
                     'end_time' => $displayEndTime->format('Y-m-d H:i:s'), // Display duration only
-                    'price' => (float) $service['price'],
                     'service_name_snapshot' => $service['name'],
                     'client_name_snapshot' => $clientName,
-                ];
+                ] + $this->buildItemPricingSnapshot(
+                    (
+                        isset($pricingOverrides[$index]) &&
+                        (!isset($pricingOverrides[$index]['service_id']) || (int) $pricingOverrides[$index]['service_id'] === (int) $service['id'])
+                    )
+                        ? $pricingOverrides[$index]
+                        : [],
+                    $service
+                );
 
                 // Next service starts after blocked time (not display time)
                 $currentTime = $blockedEndTime;
@@ -1045,10 +1159,9 @@ final class CreateBooking
                     'staff_id' => $staffId,
                     'start_time' => $startTime->format('Y-m-d H:i:s'),
                     'end_time' => $displayEndTime->format('Y-m-d H:i:s'), // Display duration only
-                    'price' => (float) $service['price'],
                     'service_name_snapshot' => $service['name'],
                     'client_name_snapshot' => $clientName,
-                ];
+                ] + $this->buildItemPricingSnapshot($item, $service);
             }
 
             // Create booking (container)

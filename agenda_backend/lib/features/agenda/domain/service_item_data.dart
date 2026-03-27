@@ -12,7 +12,10 @@ class ServiceItemData {
   final int durationMinutes;
   final int blockedExtraMinutes;
   final int processingExtraMinutes;
+  final double? listPrice; // Prezzo di listino snapshot
   final double? price; // Prezzo personalizzato (null = usa prezzo variante)
+  final int? packageId; // Package usato per pricing, se presente
+  final String? pricingSource; // service/package/discount/custom
 
   const ServiceItemData({
     required this.key,
@@ -24,7 +27,10 @@ class ServiceItemData {
     this.durationMinutes = 30,
     this.blockedExtraMinutes = 0,
     this.processingExtraMinutes = 0,
+    this.listPrice,
     this.price,
+    this.packageId,
+    this.pricingSource,
   });
 
   /// Calcola l'orario di fine basato su startTime e durationMinutes
@@ -60,7 +66,10 @@ class ServiceItemData {
     int? durationMinutes,
     int? blockedExtraMinutes,
     int? processingExtraMinutes,
+    double? listPrice,
     double? price,
+    int? packageId,
+    String? pricingSource,
   }) {
     return ServiceItemData(
       key: key ?? this.key,
@@ -73,7 +82,10 @@ class ServiceItemData {
       blockedExtraMinutes: blockedExtraMinutes ?? this.blockedExtraMinutes,
       processingExtraMinutes:
           processingExtraMinutes ?? this.processingExtraMinutes,
+      listPrice: listPrice ?? this.listPrice,
       price: price ?? this.price,
+      packageId: packageId ?? this.packageId,
+      pricingSource: pricingSource ?? this.pricingSource,
     );
   }
 
@@ -89,7 +101,10 @@ class ServiceItemData {
       durationMinutes: durationMinutes,
       blockedExtraMinutes: blockedExtraMinutes,
       processingExtraMinutes: processingExtraMinutes,
+      listPrice: listPrice,
       price: null,
+      packageId: packageId,
+      pricingSource: pricingSource,
     );
   }
 
@@ -105,7 +120,10 @@ class ServiceItemData {
       durationMinutes: 30,
       blockedExtraMinutes: 0,
       processingExtraMinutes: 0,
+      listPrice: null,
       price: null,
+      packageId: null,
+      pricingSource: null,
     );
   }
 

@@ -1332,10 +1332,12 @@ class L10n {
     );
   }
 
-  /// `Fino a {days} giorni prima`
+  /// `{days, plural, =1{Fino a 1 giorno prima} other{Fino a {days} giorni prima}}`
   String summaryCancellationPolicyDays(int days) {
-    return Intl.message(
-      'Fino a $days giorni prima',
+    return Intl.plural(
+      days,
+      one: 'Fino a 1 giorno prima',
+      other: 'Fino a $days giorni prima',
       name: 'summaryCancellationPolicyDays',
       desc: '',
       args: [days],
@@ -1863,6 +1865,26 @@ class L10n {
     return Intl.message(
       'Modificabile fino al $dateTime',
       name: 'modifiableUntilDateTime',
+      desc: '',
+      args: [dateTime],
+    );
+  }
+
+  /// `Il tempo per modificare o annullare questa prenotazione è scaduto.`
+  String get modificationWindowExpired {
+    return Intl.message(
+      'Il tempo per modificare o annullare questa prenotazione è scaduto.',
+      name: 'modificationWindowExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Il termine per modificare o annullare è scaduto il {dateTime}.`
+  String modificationWindowExpiredDateTime(Object dateTime) {
+    return Intl.message(
+      'Il termine per modificare o annullare è scaduto il $dateTime.',
+      name: 'modificationWindowExpiredDateTime',
       desc: '',
       args: [dateTime],
     );

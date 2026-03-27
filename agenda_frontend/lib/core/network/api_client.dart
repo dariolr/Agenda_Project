@@ -517,6 +517,7 @@ class ApiClient {
     int? staffId,
     String? notes,
     List<Map<String, dynamic>>? items,
+    List<Map<String, dynamic>>? pricingOverrides,
   }) async {
     final data = <String, dynamic>{'location_id': locationId};
     if (items != null) {
@@ -526,6 +527,9 @@ class ApiClient {
       data['start_time'] = startTime;
       if (staffId != null) {
         data['staff_id'] = staffId;
+      }
+      if (pricingOverrides != null && pricingOverrides.isNotEmpty) {
+        data['pricing_overrides'] = pricingOverrides;
       }
     }
     if (notes != null && notes.isNotEmpty) {

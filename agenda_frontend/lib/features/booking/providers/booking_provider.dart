@@ -261,6 +261,129 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
   BookingConfig get _config => ref.read(bookingConfigProvider);
   bool get _hasMultipleLocations => ref.read(hasMultipleLocationsProvider);
 
+  int _priceToCents(double value) => (value * 100).round();
+
+  List<Map<String, dynamic>> _buildLegacyPricingOverrides(
+    List<Service> services,
+  ) {
+    final selectedPackageIds = state.request.selectedPackageIds;
+    if (services.isEmpty || selectedPackageIds.isEmpty) {
+      return const [];
+    }
+
+    final availablePackages =
+        ref.read(servicePackagesProvider).value ?? const <ServicePackage>[];
+    if (availablePackages.isEmpty) {
+      return const [];
+    }
+
+    final overrides = List<Map<String, dynamic>>.generate(services.length, (
+      index,
+    ) {
+      final service = services[index];
+      final listPriceCents = _priceToCents(service.isFree ? 0 : service.price);
+      return {
+        'service_id': service.id,
+        'list_price_cents': listPriceCents,
+        'applied_price_cents': listPriceCents,
+        'pricing_source': 'service',
+      };
+    });
+
+    final serviceIndicesById = <int, List<int>>{};
+    for (var i = 0; i < services.length; i++) {
+      serviceIndicesById.putIfAbsent(services[i].id, () => <int>[]).add(i);
+    }
+
+    final packageCandidates =
+        availablePackages
+            .where(
+              (pkg) =>
+                  selectedPackageIds.contains(pkg.id) &&
+                  pkg.isActive &&
+                  !pkg.isBroken &&
+                  pkg.orderedServiceIds.isNotEmpty,
+            )
+            .toList()
+          ..sort(
+            (a, b) => b.orderedServiceIds.length.compareTo(
+              a.orderedServiceIds.length,
+            ),
+          );
+
+    for (final pkg in packageCandidates) {
+      final requiredCounts = <int, int>{};
+      for (final serviceId in pkg.orderedServiceIds) {
+        requiredCounts[serviceId] = (requiredCounts[serviceId] ?? 0) + 1;
+      }
+
+      var canApply = true;
+      for (final entry in requiredCounts.entries) {
+        final available = serviceIndicesById[entry.key]?.length ?? 0;
+        if (available < entry.value) {
+          canApply = false;
+          break;
+        }
+      }
+      if (!canApply) {
+        continue;
+      }
+
+      final matchedIndices = <int>[];
+      for (final serviceId in pkg.orderedServiceIds) {
+        final queue = serviceIndicesById[serviceId];
+        if (queue == null || queue.isEmpty) {
+          canApply = false;
+          break;
+        }
+        matchedIndices.add(queue.removeAt(0));
+      }
+      if (!canApply || matchedIndices.isEmpty) {
+        continue;
+      }
+
+      final listCentsByIndex = <int, int>{};
+      var totalListCents = 0;
+      for (final index in matchedIndices) {
+        final listCents = overrides[index]['list_price_cents'] as int? ?? 0;
+        listCentsByIndex[index] = listCents;
+        totalListCents += listCents;
+      }
+
+      var remainingAppliedCents = _priceToCents(pkg.effectivePrice);
+      final lastPos = matchedIndices.length - 1;
+      for (var pos = 0; pos < matchedIndices.length; pos++) {
+        final index = matchedIndices[pos];
+        int appliedCents;
+        if (pos == lastPos) {
+          appliedCents = remainingAppliedCents;
+        } else if (totalListCents > 0) {
+          appliedCents =
+              ((listCentsByIndex[index]! * _priceToCents(pkg.effectivePrice)) /
+                      totalListCents)
+                  .round();
+          if (appliedCents > remainingAppliedCents) {
+            appliedCents = remainingAppliedCents;
+          }
+        } else {
+          appliedCents = (remainingAppliedCents / (matchedIndices.length - pos))
+              .round();
+        }
+
+        remainingAppliedCents -= appliedCents;
+        overrides[index] = {
+          'service_id': services[index].id,
+          'list_price_cents': listCentsByIndex[index] ?? 0,
+          'applied_price_cents': appliedCents,
+          'package_id': pkg.id,
+          'pricing_source': 'package',
+        };
+      }
+    }
+
+    return overrides;
+  }
+
   /// Reset del flow
   void reset() {
     final initialStep = _hasMultipleLocations
@@ -888,6 +1011,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       }
 
       final staffId = state.request.singleStaffId;
+      final pricingOverrides = _buildLegacyPricingOverrides(services);
       // Se ci sono più servizi senza selezione staff specifica,
       // trattiamo come "qualsiasi operatore" (staffId = null)
       // Questo è valido quando:
@@ -906,6 +1030,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         staffId: staffId,
         notes: state.request.notes,
         items: items,
+        pricingOverrides: pricingOverrides.isEmpty ? null : pricingOverrides,
       );
 
       // Prenotazione confermata - elimina lo stato salvato

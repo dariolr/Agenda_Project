@@ -55,24 +55,28 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m15(minutes) =>
       "${Intl.plural(minutes, one: 'Modifiable for 1 minute', other: 'Modifiable for ${minutes} minutes')}";
 
-  static String m16(price) => "€${price}";
+  static String m16(dateTime) =>
+      "The deadline to modify or cancel expired on ${dateTime}.";
 
-  static String m17(id) => "Category ${id}";
+  static String m17(price) => "€${price}";
 
-  static String m18(duration) => "${duration} min";
+  static String m18(id) => "Category ${id}";
 
-  static String m19(price) => "from ${price}";
+  static String m19(duration) => "${duration} min";
 
-  static String m20(count) =>
+  static String m20(price) => "from ${price}";
+
+  static String m21(count) =>
       "${Intl.plural(count, zero: 'No service selected', one: '1 service selected', other: '${count} services selected')}";
 
-  static String m21(total) => "Total: ${total}";
+  static String m22(total) => "Total: ${total}";
 
-  static String m22(days) => "Up to ${days} days before";
+  static String m23(days) =>
+      "${Intl.plural(days, one: 'Up to 1 day before', other: 'Up to ${days} days before')}";
 
-  static String m23(hours) => "Up to ${hours} hours before";
+  static String m24(hours) => "Up to ${hours} hours before";
 
-  static String m24(businessName) =>
+  static String m25(businessName) =>
       "To book at ${businessName}, you need to log in with an account registered here.";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -469,6 +473,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "modifiableUntilDays": m13,
     "modifiableUntilHours": m14,
     "modifiableUntilMinutes": m15,
+    "modificationWindowExpired": MessageLookupByLibrary.simpleMessage(
+      "The time window to modify or cancel this booking has expired.",
+    ),
+    "modificationWindowExpiredDateTime": m16,
     "modify": MessageLookupByLibrary.simpleMessage("Reschedule"),
     "modifyNotImplemented": MessageLookupByLibrary.simpleMessage(
       "Modify feature under development",
@@ -501,7 +509,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "notModifiable": MessageLookupByLibrary.simpleMessage("Not modifiable"),
     "pastBookings": MessageLookupByLibrary.simpleMessage("Past"),
-    "priceFormat": m16,
+    "priceFormat": m17,
     "profileTitle": MessageLookupByLibrary.simpleMessage("Profile"),
     "rescheduleBookingTitle": MessageLookupByLibrary.simpleMessage(
       "Modify booking",
@@ -523,8 +531,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "Or pick a ready-made package",
     ),
     "servicePackagesTitle": MessageLookupByLibrary.simpleMessage("Packages"),
-    "servicesCategoryFallbackName": m17,
-    "servicesDuration": m18,
+    "servicesCategoryFallbackName": m18,
+    "servicesDuration": m19,
     "servicesEmpty": MessageLookupByLibrary.simpleMessage(
       "No services available at the moment",
     ),
@@ -532,13 +540,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "There are no services available for online booking at this business",
     ),
     "servicesFree": MessageLookupByLibrary.simpleMessage("Free"),
-    "servicesPriceFrom": m19,
-    "servicesSelected": m20,
+    "servicesPriceFrom": m20,
+    "servicesSelected": m21,
     "servicesSubtitle": MessageLookupByLibrary.simpleMessage(
       "You can select one or more services",
     ),
     "servicesTitle": MessageLookupByLibrary.simpleMessage("Choose services"),
-    "servicesTotal": m21,
+    "servicesTotal": m22,
     "sessionExpired": MessageLookupByLibrary.simpleMessage(
       "Session expired. Please log in again.",
     ),
@@ -569,8 +577,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "summaryCancellationPolicyAlways": MessageLookupByLibrary.simpleMessage(
       "Always",
     ),
-    "summaryCancellationPolicyDays": m22,
-    "summaryCancellationPolicyHours": m23,
+    "summaryCancellationPolicyDays": m23,
+    "summaryCancellationPolicyHours": m24,
     "summaryCancellationPolicyNever": MessageLookupByLibrary.simpleMessage(
       "Never (not allowed after booking)",
     ),
@@ -612,7 +620,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "wrongBusinessAuthAction": MessageLookupByLibrary.simpleMessage(
       "Log out and sign in here",
     ),
-    "wrongBusinessAuthMessage": m24,
+    "wrongBusinessAuthMessage": m25,
     "wrongBusinessAuthTitle": MessageLookupByLibrary.simpleMessage(
       "Account linked to another business",
     ),

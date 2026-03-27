@@ -248,6 +248,7 @@ class BookingRepository {
     String? notes,
     String? idempotencyKey,
     List<Map<String, dynamic>>? items,
+    List<Map<String, dynamic>>? pricingOverrides,
   }) async {
     // Genera idempotency key se non fornita
     final key = idempotencyKey ?? _uuid.v4();
@@ -262,6 +263,7 @@ class BookingRepository {
       staffId: staffId,
       notes: notes,
       items: items,
+      pricingOverrides: pricingOverrides,
     );
   }
 

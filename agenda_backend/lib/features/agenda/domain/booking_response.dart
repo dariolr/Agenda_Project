@@ -77,6 +77,10 @@ class BookingItemResponse {
   final String startTime;
   final String endTime;
   final double price;
+  final int? listPriceCents;
+  final int? appliedPriceCents;
+  final int? packageId;
+  final String? pricingSource;
   final int durationMinutes;
   final String? serviceName;
   final String? staffDisplayName;
@@ -92,6 +96,10 @@ class BookingItemResponse {
     required this.startTime,
     required this.endTime,
     required this.price,
+    this.listPriceCents,
+    this.appliedPriceCents,
+    this.packageId,
+    this.pricingSource,
     required this.durationMinutes,
     this.serviceName,
     this.staffDisplayName,
@@ -109,6 +117,10 @@ class BookingItemResponse {
       startTime: json['start_time'] as String,
       endTime: json['end_time'] as String,
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      listPriceCents: json['list_price_cents'] as int?,
+      appliedPriceCents: json['applied_price_cents'] as int?,
+      packageId: json['package_id'] as int?,
+      pricingSource: json['pricing_source'] as String?,
       durationMinutes: json['duration_minutes'] as int? ?? 0,
       serviceName: json['service_name'] as String?,
       staffDisplayName:

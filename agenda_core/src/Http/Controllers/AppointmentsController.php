@@ -529,7 +529,14 @@ final class AppointmentsController
             'service_variant_id' => (int) $appointment['service_variant_id'],
             'start_time' => $appointment['start_time'],
             'end_time' => $appointment['end_time'],
+            'list_price_cents' => isset($appointment['list_price_cents']) ? (int) $appointment['list_price_cents'] : null,
+            'list_price' => isset($appointment['list_price_cents'])
+                ? ((int) $appointment['list_price_cents']) / 100
+                : null,
+            'applied_price_cents' => isset($appointment['applied_price_cents']) ? (int) $appointment['applied_price_cents'] : null,
             'price' => isset($appointment['price']) ? (float) $appointment['price'] : null,
+            'package_id' => isset($appointment['package_id']) ? (int) $appointment['package_id'] : null,
+            'pricing_source' => $appointment['pricing_source'] ?? null,
             'extra_blocked_minutes' => (int) ($appointment['extra_blocked_minutes'] ?? 0),
             'extra_processing_minutes' => (int) ($appointment['extra_processing_minutes'] ?? 0),
             'created_at' => $appointment['created_at'],
