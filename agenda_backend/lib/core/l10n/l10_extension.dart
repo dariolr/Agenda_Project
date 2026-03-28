@@ -28,11 +28,11 @@ extension DurationLocalization on BuildContext {
     final l10n = this.l10n;
 
     if (hours > 0 && mins > 0) {
-      return l10n.durationHourMinute(hours, mins);
+      return '${l10n.teamLocationHours(hours)} ${l10n.teamLocationMinutes(mins)}';
     } else if (hours > 0) {
-      return l10n.durationHour(hours);
+      return l10n.teamLocationHours(hours);
     } else {
-      return l10n.durationMinute(mins);
+      return l10n.teamLocationMinutes(mins);
     }
   }
 }
