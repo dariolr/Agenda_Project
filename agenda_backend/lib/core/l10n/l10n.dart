@@ -9609,10 +9609,10 @@ class L10n {
     );
   }
 
-  /// `Aggiorna dati`
+  /// `Aggiorna`
   String get whatsappRefresh {
     return Intl.message(
-      'Aggiorna dati',
+      'Aggiorna',
       name: 'whatsappRefresh',
       desc: '',
       args: [],
@@ -9634,6 +9634,66 @@ class L10n {
     return Intl.message(
       'Go-live check',
       name: 'whatsappGoLiveCheck',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verifica go-live business`
+  String get whatsappGoLiveCheckBusiness {
+    return Intl.message(
+      'Verifica go-live business',
+      name: 'whatsappGoLiveCheckBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verifica go-live location`
+  String get whatsappGoLiveCheckLocation {
+    return Intl.message(
+      'Verifica go-live location',
+      name: 'whatsappGoLiveCheckLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ambito: business`
+  String get whatsappGoLiveScopeBusiness {
+    return Intl.message(
+      'Ambito: business',
+      name: 'whatsappGoLiveScopeBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nessuna location attiva`
+  String get whatsappNoLocationBannerTitle {
+    return Intl.message(
+      'Nessuna location attiva',
+      name: 'whatsappNoLocationBannerTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per usare WhatsApp devi prima creare almeno una sede attiva.`
+  String get whatsappNoLocationBannerMessage {
+    return Intl.message(
+      'Per usare WhatsApp devi prima creare almeno una sede attiva.',
+      name: 'whatsappNoLocationBannerMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crea location`
+  String get whatsappCreateLocationCta {
+    return Intl.message(
+      'Crea location',
+      name: 'whatsappCreateLocationCta',
       desc: '',
       args: [],
     );
@@ -9904,6 +9964,16 @@ class L10n {
     return Intl.message(
       'Mapping location → numero',
       name: 'whatsappLocationMappingTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Una sola location attiva: mapping non necessario.`
+  String get whatsappSingleLocationMappingHint {
+    return Intl.message(
+      'Una sola location attiva: mapping non necessario.',
+      name: 'whatsappSingleLocationMappingHint',
       desc: '',
       args: [],
     );

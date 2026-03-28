@@ -7,7 +7,7 @@ declare(strict_types=1);
  * Queue Upcoming Reminders
  * 
  * Scans bookings scheduled in the next 48 hours and queues reminder notifications.
- * Run via cron: 0 * * * * php /path/to/agenda_core/bin/queue-reminders.php
+ * Run via cron: 0 * * * * php /path/to/agenda_core/bin/job-queue-reminders.php
  * 
  * Options:
  *   --verbose     Show detailed output
@@ -28,7 +28,7 @@ if (isset($options['help'])) {
     echo <<<HELP
 Queue Upcoming Reminders
 
-Usage: php queue-reminders.php [options]
+Usage: php job-queue-reminders.php [options]
 
 Options:
   --verbose     Show detailed output

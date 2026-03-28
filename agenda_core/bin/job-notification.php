@@ -7,7 +7,7 @@ declare(strict_types=1);
  * Notification Queue Worker
  * 
  * Processes pending notifications from the queue.
- * Run via cron: * * * * * php /path/to/agenda_core/bin/notification-worker.php
+ * Run via cron: * * * * * php /path/to/agenda_core/bin/job-notification.php
  * 
  * Options:
  *   --batch=N     Process N notifications per run (default: 50)
@@ -32,7 +32,7 @@ if (isset($options['help'])) {
     echo <<<HELP
 Notification Queue Worker
 
-Usage: php notification-worker.php [options]
+Usage: php job-notification.php [options]
 
 Options:
   --batch=N     Process N notifications per run (default: 50)

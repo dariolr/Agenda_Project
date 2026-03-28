@@ -4,14 +4,14 @@
  * Genera hash bcrypt per password superadmin
  * 
  * Uso:
- *   php bin/generate-password-hash.php "MiaPasswordSicura123!"
+ *   php bin/job-generate-password-hash.php "MiaPasswordSicura123!"
  *   
  * Output:
  *   Hash da copiare nel seed SQL
  */
 
 if ($argc < 2) {
-    echo "Uso: php bin/generate-password-hash.php \"password\"\n";
+    echo "Uso: php bin/job-generate-password-hash.php \"password\"\n";
     exit(1);
 }
 

@@ -151,6 +151,7 @@ run_cmd rsync -avz --delete \
 echo "🔹 [4/4] Sincronizzando bin/ (worker cron)..."
 run_cmd rsync -avz --delete \
   --exclude='.DS_Store' \
+  --exclude='job-generate-password-hash.php' \
   -e "ssh" \
   "$LOCAL_DIR/bin/" \
   "$SSH_ALIAS:$REMOTE_BASE/bin/"
