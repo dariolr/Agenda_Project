@@ -2523,6 +2523,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappConfigsTitle": MessageLookupByLibrary.simpleMessage(
       "Numeri e configurazioni",
     ),
+    "whatsappCreateLocationCta": MessageLookupByLibrary.simpleMessage(
+      "Crea location",
+    ),
     "whatsappDeleteConfigMessage": MessageLookupByLibrary.simpleMessage(
       "Questa azione rimuove la configurazione e i mapping associati.",
     ),
@@ -2558,6 +2561,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappGoLiveCheck": MessageLookupByLibrary.simpleMessage(
       "Go-live check",
     ),
+    "whatsappGoLiveCheckBusiness": MessageLookupByLibrary.simpleMessage(
+      "Verifica go-live business",
+    ),
+    "whatsappGoLiveCheckLocation": MessageLookupByLibrary.simpleMessage(
+      "Verifica go-live location",
+    ),
     "whatsappGoLiveHint": MessageLookupByLibrary.simpleMessage(
       "Esegui il controllo per verificare se il business è pronto alla messa in produzione.",
     ),
@@ -2566,6 +2575,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappGoLiveReady": MessageLookupByLibrary.simpleMessage(
       "Configurazione pronta al go-live",
+    ),
+    "whatsappGoLiveScopeBusiness": MessageLookupByLibrary.simpleMessage(
+      "Ambito: business",
     ),
     "whatsappInvalidJson": MessageLookupByLibrary.simpleMessage(
       "JSON variabili non valido.",
@@ -2578,6 +2590,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappNoConfigs": MessageLookupByLibrary.simpleMessage(
       "Nessuna configurazione presente.",
+    ),
+    "whatsappNoLocationBannerMessage": MessageLookupByLibrary.simpleMessage(
+      "Per usare WhatsApp devi prima creare almeno una sede attiva.",
+    ),
+    "whatsappNoLocationBannerTitle": MessageLookupByLibrary.simpleMessage(
+      "Nessuna location attiva",
     ),
     "whatsappNoLocations": MessageLookupByLibrary.simpleMessage(
       "Nessuna location attiva disponibile.",
@@ -2608,7 +2626,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappQueuedOnly": MessageLookupByLibrary.simpleMessage(
       "Messaggio accodato correttamente.",
     ),
-    "whatsappRefresh": MessageLookupByLibrary.simpleMessage("Aggiorna dati"),
+    "whatsappRefresh": MessageLookupByLibrary.simpleMessage("Aggiorna"),
     "whatsappRetryNow": MessageLookupByLibrary.simpleMessage("Riprova"),
     "whatsappRunWorker": MessageLookupByLibrary.simpleMessage("Esegui worker"),
     "whatsappSavedSuccessMessage": MessageLookupByLibrary.simpleMessage(
@@ -2621,6 +2639,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Seleziona un business per gestire l\'integrazione WhatsApp.",
     ),
     "whatsappSendNow": MessageLookupByLibrary.simpleMessage("Invia ora"),
+    "whatsappSingleLocationMappingHint": MessageLookupByLibrary.simpleMessage(
+      "Una sola location attiva: mapping non necessario.",
+    ),
     "whatsappStatsConfigs": MessageLookupByLibrary.simpleMessage(
       "Configurazioni",
     ),

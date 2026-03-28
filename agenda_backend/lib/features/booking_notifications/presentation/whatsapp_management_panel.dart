@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '/core/l10n/l10_extension.dart';
 import '/core/models/business.dart';
@@ -63,6 +64,7 @@ class _WhatsappManagementPanelState
   bool _isCreatingConfig = false;
   bool _isApplyingMappings = false;
   Map<String, bool>? _lastGoLiveChecks;
+  String? _lastGoLiveScopeLabel;
 
   int? get _businessId => widget.businessId;
 
@@ -79,6 +81,7 @@ class _WhatsappManagementPanelState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.businessId != widget.businessId) {
       _lastGoLiveChecks = null;
+      _lastGoLiveScopeLabel = null;
       _loadIfPossible();
     }
   }
@@ -131,14 +134,14 @@ class _WhatsappManagementPanelState
     };
   }
 
-  Future<void> _runGoLiveCheck() async {
+  Future<void> _runGoLiveCheck({int? locationId, String? scopeLabel}) async {
     final businessId = _businessId;
     if (businessId == null) return;
     setState(() => _isRunningCheck = true);
     try {
       final check = await ref
           .read(whatsappIntegrationProvider.notifier)
-          .runGoLiveCheck(businessId: businessId);
+          .runGoLiveCheck(businessId: businessId, locationId: locationId);
       if (!mounted) return;
       setState(() {
         _lastGoLiveChecks = {
@@ -147,6 +150,7 @@ class _WhatsappManagementPanelState
           'template': check.templateApproved,
           'optin': check.optInActive,
         };
+        _lastGoLiveScopeLabel = scopeLabel;
       });
     } catch (e) {
       if (!mounted) return;
@@ -160,6 +164,67 @@ class _WhatsappManagementPanelState
         setState(() => _isRunningCheck = false);
       }
     }
+  }
+
+  Future<void> _runLocationGoLiveCheck(List<Location> locations) async {
+    if (locations.isEmpty) return;
+    final l10n = context.l10n;
+    int selectedLocationId = locations.first.id;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text(l10n.whatsappGoLiveCheckLocation),
+              content: DropdownButtonFormField<int>(
+                value: selectedLocationId,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  labelText: l10n.whatsappFieldLocation,
+                ),
+                items: locations
+                    .map(
+                      (location) => DropdownMenuItem<int>(
+                        value: location.id,
+                        child: Text(location.name),
+                      ),
+                    )
+                    .toList(growable: false),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setStateDialog(() => selectedLocationId = value);
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: Text(l10n.actionCancel),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: Text(l10n.whatsappGoLiveCheckLocation),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final selectedLocation = locations
+        .where((location) => location.id == selectedLocationId)
+        .cast<Location?>()
+        .firstWhere((location) => location != null, orElse: () => null);
+    if (selectedLocation == null) return;
+
+    await _runGoLiveCheck(
+      locationId: selectedLocation.id,
+      scopeLabel: '${l10n.whatsappFieldLocation}: ${selectedLocation.name}',
+    );
   }
 
   Future<void> _runWorker() async {
@@ -621,6 +686,16 @@ class _WhatsappManagementPanelState
     final locationsAsync = ref.watch(
       whatsappLocationsByBusinessProvider(businessId),
     );
+    final locations = locationsAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <Location>[],
+    );
+    final hasNoLocations = locations.isEmpty;
+    final hasSingleLocation = locations.length == 1;
+    final singleLocation = hasSingleLocation ? locations.first : null;
+    if (singleLocation != null && _testLocationId != singleLocation.id) {
+      _testLocationId = singleLocation.id;
+    }
     final configs = state.configs;
     final outbox = state.outbox;
     final queuedCount = outbox
@@ -644,11 +719,12 @@ class _WhatsappManagementPanelState
                 value: '${configs.length}',
                 icon: Icons.settings_rounded,
               ),
-              _StatCard(
-                label: l10n.whatsappStatsMappings,
-                value: '${state.mappings.length}',
-                icon: Icons.alt_route_rounded,
-              ),
+              if (!hasSingleLocation)
+                _StatCard(
+                  label: l10n.whatsappStatsMappings,
+                  value: '${state.mappings.length}',
+                  icon: Icons.alt_route_rounded,
+                ),
               _StatCard(
                 label: l10n.whatsappStatsQueued,
                 value: '$queuedCount',
@@ -698,7 +774,11 @@ class _WhatsappManagementPanelState
                         label: Text(l10n.whatsappRefresh),
                       ),
                       FilledButton.icon(
-                        onPressed: _isRunningCheck ? null : _runGoLiveCheck,
+                        onPressed: _isRunningCheck
+                            ? null
+                            : () => _runGoLiveCheck(
+                                scopeLabel: l10n.whatsappGoLiveScopeBusiness,
+                              ),
                         icon: _isRunningCheck
                             ? const SizedBox(
                                 width: 16,
@@ -708,8 +788,20 @@ class _WhatsappManagementPanelState
                                 ),
                               )
                             : const Icon(Icons.verified_outlined),
-                        label: Text(l10n.whatsappGoLiveCheck),
+                        label: Text(l10n.whatsappGoLiveCheckBusiness),
                       ),
+                      if (!hasSingleLocation)
+                        locationsAsync.when(
+                          data: (locations) => FilledButton.icon(
+                            onPressed: _isRunningCheck || locations.isEmpty
+                                ? null
+                                : () => _runLocationGoLiveCheck(locations),
+                            icon: const Icon(Icons.place_outlined),
+                            label: Text(l10n.whatsappGoLiveCheckLocation),
+                          ),
+                          error: (_, __) => const SizedBox.shrink(),
+                          loading: () => const SizedBox.shrink(),
+                        ),
                       FilledButton.tonalIcon(
                         onPressed: _isRunningWorker ? null : _runWorker,
                         icon: _isRunningWorker
@@ -730,7 +822,49 @@ class _WhatsappManagementPanelState
             ),
           ),
           const SizedBox(height: 12),
-          _GoLiveChecksCard(checks: _lastGoLiveChecks),
+          if (hasNoLocations) ...[
+            Card(
+              color: theme.colorScheme.errorContainer.withValues(alpha: 0.35),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: theme.colorScheme.error,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n.whatsappNoLocationBannerTitle,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(l10n.whatsappNoLocationBannerMessage),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      onPressed: () => context.go('/staff'),
+                      icon: const Icon(Icons.add_business_outlined),
+                      label: Text(l10n.whatsappCreateLocationCta),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          _GoLiveChecksCard(
+            checks: _lastGoLiveChecks,
+            scopeLabel: _lastGoLiveScopeLabel,
+          ),
           const SizedBox(height: 12),
           Card(
             child: Padding(
@@ -906,6 +1040,14 @@ class _WhatsappManagementPanelState
                           ),
                         );
                       }
+                      if (locations.length == 1) {
+                        return Text(
+                          l10n.whatsappSingleLocationMappingHint,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        );
+                      }
                       return Column(
                         children: locations
                             .map((location) {
@@ -985,121 +1127,152 @@ class _WhatsappManagementPanelState
                     ),
                   ),
                   const SizedBox(height: 10),
-                  locationsAsync.when(
-                    data: (locations) {
-                      final selectedValid =
-                          _testLocationId != null &&
-                          locations.any((l) => l.id == _testLocationId);
-                      if (!selectedValid && locations.isNotEmpty) {
-                        _testLocationId = locations.first.id;
-                      }
-                      return DropdownButtonFormField<int?>(
-                        value: _testLocationId,
-                        decoration: InputDecoration(
-                          border: const OutlineInputBorder(),
-                          labelText: l10n.whatsappFieldLocation,
-                        ),
-                        items: locations
-                            .map(
-                              (location) => DropdownMenuItem<int?>(
-                                value: location.id,
-                                child: Text(location.name),
+                  if (hasNoLocations) ...[
+                    Text(
+                      l10n.whatsappNoLocations,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      onPressed: () => context.go('/staff'),
+                      icon: const Icon(Icons.add_business_outlined),
+                      label: Text(l10n.whatsappCreateLocationCta),
+                    ),
+                  ] else ...[
+                    locationsAsync.when(
+                      data: (locations) {
+                        final selectedValid =
+                            _testLocationId != null &&
+                            locations.any((l) => l.id == _testLocationId);
+                        if (!selectedValid && locations.isNotEmpty) {
+                          _testLocationId = locations.first.id;
+                        }
+                        if (locations.length == 1) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerLowest,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: theme.colorScheme.outlineVariant,
                               ),
-                            )
-                            .toList(growable: false),
-                        onChanged: (value) =>
-                            setState(() => _testLocationId = value),
-                      );
-                    },
-                    error: (_, __) => const SizedBox.shrink(),
-                    loading: () => const SizedBox.shrink(),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      SizedBox(
-                        width: 160,
-                        child: TextField(
-                          controller: _testBookingIdController,
-                          keyboardType: TextInputType.number,
+                            ),
+                            child: Text(
+                              '${l10n.whatsappFieldLocation}: ${locations.first.name}',
+                            ),
+                          );
+                        }
+                        return DropdownButtonFormField<int?>(
+                          value: _testLocationId,
                           decoration: InputDecoration(
                             border: const OutlineInputBorder(),
-                            labelText: l10n.whatsappFieldBookingId,
+                            labelText: l10n.whatsappFieldLocation,
                           ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 160,
-                        child: TextField(
-                          controller: _testClientIdController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            border: const OutlineInputBorder(),
-                            labelText: l10n.whatsappFieldClientId,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 280,
-                        child: TextField(
-                          controller: _testRecipientController,
-                          decoration: InputDecoration(
-                            border: const OutlineInputBorder(),
-                            labelText: l10n.whatsappFieldRecipientPhone,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _testTemplateController,
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      labelText: l10n.whatsappFieldTemplateName,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _testVariablesController,
-                    minLines: 3,
-                    maxLines: 6,
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      labelText: l10n.whatsappFieldTemplateVariables,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _isQueueingTest
-                            ? null
-                            : () => _queueTestMessage(sendNow: false),
-                        icon: const Icon(Icons.outbox_outlined),
-                        label: Text(l10n.whatsappQueueTest),
-                      ),
-                      FilledButton.icon(
-                        onPressed: _isQueueingTest
-                            ? null
-                            : () => _queueTestMessage(sendNow: true),
-                        icon: _isQueueingTest
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                          items: locations
+                              .map(
+                                (location) => DropdownMenuItem<int?>(
+                                  value: location.id,
+                                  child: Text(location.name),
                                 ),
                               )
-                            : const Icon(Icons.send_rounded),
-                        label: Text(l10n.whatsappQueueAndSendTest),
+                              .toList(growable: false),
+                          onChanged: (value) =>
+                              setState(() => _testLocationId = value),
+                        );
+                      },
+                      error: (_, __) => const SizedBox.shrink(),
+                      loading: () => const SizedBox.shrink(),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        SizedBox(
+                          width: 160,
+                          child: TextField(
+                            controller: _testBookingIdController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              border: const OutlineInputBorder(),
+                              labelText: l10n.whatsappFieldBookingId,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 160,
+                          child: TextField(
+                            controller: _testClientIdController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              border: const OutlineInputBorder(),
+                              labelText: l10n.whatsappFieldClientId,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 280,
+                          child: TextField(
+                            controller: _testRecipientController,
+                            decoration: InputDecoration(
+                              border: const OutlineInputBorder(),
+                              labelText: l10n.whatsappFieldRecipientPhone,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _testTemplateController,
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        labelText: l10n.whatsappFieldTemplateName,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _testVariablesController,
+                      minLines: 3,
+                      maxLines: 6,
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        labelText: l10n.whatsappFieldTemplateVariables,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _isQueueingTest
+                              ? null
+                              : () => _queueTestMessage(sendNow: false),
+                          icon: const Icon(Icons.outbox_outlined),
+                          label: Text(l10n.whatsappQueueTest),
+                        ),
+                        FilledButton.icon(
+                          onPressed: _isQueueingTest
+                              ? null
+                              : () => _queueTestMessage(sendNow: true),
+                          icon: _isQueueingTest
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.send_rounded),
+                          label: Text(l10n.whatsappQueueAndSendTest),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -1217,9 +1390,10 @@ class _StatCard extends StatelessWidget {
 }
 
 class _GoLiveChecksCard extends StatelessWidget {
-  const _GoLiveChecksCard({required this.checks});
+  const _GoLiveChecksCard({required this.checks, required this.scopeLabel});
 
   final Map<String, bool>? checks;
+  final String? scopeLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -1272,6 +1446,15 @@ class _GoLiveChecksCard extends StatelessWidget {
                       : theme.colorScheme.error,
                 ),
               ),
+              if (scopeLabel != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  scopeLabel!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               buildRow(
                 l10n.whatsappCheckPhoneNumberActive,

@@ -1060,10 +1060,8 @@ src/UseCases/Notifications/
 └── QueueBookingReminder.php
 
 bin/
-├── notification-worker.php
-├── queue-reminders.php
-├── run-worker.sh
-└── run-reminders.sh
+├── job-notification.php
+└── job-queue-reminders.php
 
 config/migrations/
 └── FULL_DATABASE_SCHEMA.sql  # Include notification_queue, notification_templates, notification_settings
@@ -1071,11 +1069,11 @@ config/migrations/
 
 ### Cron setup produzione
 ```bash
-# Processa coda ogni minuto (usa wrapper per portabilità PHP path)
-* * * * * /path/to/agenda_core/bin/run-worker.sh
+# Processa coda ogni minuto
+* * * * * /usr/bin/php /path/to/agenda_core/bin/job-notification.php
 
 # Accoda reminder ogni ora
-0 * * * * /path/to/agenda_core/bin/run-reminders.sh
+0 * * * * /usr/bin/php /path/to/agenda_core/bin/job-queue-reminders.php
 ```
 
 ### Configurazione .env

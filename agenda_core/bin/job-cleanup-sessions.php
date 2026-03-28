@@ -7,7 +7,7 @@
  * - auth_sessions (operators)
  * - client_sessions (customers)
  * 
- * Run via cron: 0 3 * * 0 /usr/bin/php /path/to/cleanup-sessions.php
+ * Run via cron: 0 3 * * 0 /usr/bin/php /path/to/agenda_core/bin/job-cleanup-sessions.php
  * (Every Sunday at 3 AM)
  */
 

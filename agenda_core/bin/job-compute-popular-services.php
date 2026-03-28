@@ -9,7 +9,7 @@ declare(strict_types=1);
  * Analyzes booking data from the last 90 days to determine the top 5 most
  * booked services per staff member. Results are stored in the popular_services table.
  * 
- * Run via cron: 0 4 * * 0 php /path/to/agenda_core/bin/compute-popular-services.php
+ * Run via cron: 0 4 * * 0 php /path/to/agenda_core/bin/job-compute-popular-services.php
  * (Every Sunday at 4:00 AM)
  * 
  * Options:
@@ -31,7 +31,7 @@ if (isset($options['help'])) {
     echo <<<HELP
 Compute Popular Services
 
-Usage: php compute-popular-services.php [options]
+Usage: php job-compute-popular-services.php [options]
 
 Options:
   --verbose     Show detailed output
