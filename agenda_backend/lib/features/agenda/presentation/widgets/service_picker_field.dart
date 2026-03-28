@@ -674,8 +674,23 @@ class _PackagesSection extends StatelessWidget {
     required Color evenBackgroundColor,
     required ThemeData theme,
   }) {
-    final priceStr = package.effectivePrice > 0
-        ? '€${package.effectivePrice.toStringAsFixed(2)}'
+    final itemsTotalPrice = package.items.fold<double>(
+      0,
+      (sum, item) => sum + (item.price ?? 0),
+    );
+    final packagePrice = package.effectivePrice;
+    final itemsTotalCents = (itemsTotalPrice * 100).round();
+    final packagePriceCents = (packagePrice * 100).round();
+    final hasDifferentTotalPrice =
+        itemsTotalCents != packagePriceCents;
+    final durationStr = package.effectiveDurationMinutes > 0
+        ? context.localizedDurationLabel(package.effectiveDurationMinutes)
+        : null;
+    final itemsTotalPriceStr = itemsTotalPrice >= 0
+        ? '€${itemsTotalPrice.toStringAsFixed(2)}'
+        : null;
+    final packagePriceStr = packagePrice >= 0
+        ? '€${packagePrice.toStringAsFixed(2)}'
         : null;
 
     return Material(
@@ -709,13 +724,59 @@ class _PackagesSection extends StatelessWidget {
                   ],
                 ),
               ),
-              if (priceStr != null)
-                Text(
-                  priceStr,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.secondary,
-                  ),
+              if (hasDifferentTotalPrice &&
+                  itemsTotalPriceStr != null &&
+                  packagePriceStr != null)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (durationStr != null)
+                      Text(
+                        durationStr,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    if (durationStr != null) const SizedBox(height: 1),
+                    Text(
+                      itemsTotalPriceStr,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      packagePriceStr,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.secondary,
+                      ),
+                    ),
+                  ],
+                )
+              else if (packagePriceStr != null)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (durationStr != null)
+                      Text(
+                        durationStr,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    if (durationStr != null) const SizedBox(height: 2),
+                    Text(
+                      packagePriceStr,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.secondary,
+                      ),
+                    ),
+                  ],
                 ),
             ],
           ),
@@ -798,6 +859,12 @@ class _PopularServicesSection extends StatelessWidget {
     required ThemeData theme,
   }) {
     final isSelected = popularService.serviceId == selectedId;
+    final durationStr = popularService.durationMinutes > 0
+        ? context.localizedDurationLabel(popularService.durationMinutes)
+        : null;
+    final servicePriceStr = popularService.price >= 0
+        ? '€${popularService.price.toStringAsFixed(2)}'
+        : null;
 
     return Material(
       color: isEven ? evenBackgroundColor : Colors.transparent,
@@ -827,6 +894,31 @@ class _PopularServicesSection extends StatelessWidget {
                   ],
                 ),
               ),
+              if (durationStr != null || servicePriceStr != null)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (durationStr != null)
+                      Text(
+                        durationStr,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    if (durationStr != null && servicePriceStr != null)
+                      const SizedBox(height: 2),
+                    if (servicePriceStr != null)
+                      Text(
+                        servicePriceStr,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
+                ),
+              if (isSelected && (durationStr != null || servicePriceStr != null))
+                const SizedBox(width: 8),
               if (isSelected)
                 Icon(Icons.check, color: theme.colorScheme.primary, size: 20),
             ],
@@ -901,6 +993,12 @@ class _CategorySection extends StatelessWidget {
     required ThemeData theme,
   }) {
     final isSelected = service.id == selectedId;
+    final durationStr = service.durationMinutes != null && service.durationMinutes! > 0
+        ? context.localizedDurationLabel(service.durationMinutes!)
+        : null;
+    final servicePriceStr = service.price != null && service.price! >= 0
+        ? '€${service.price!.toStringAsFixed(2)}'
+        : null;
     return Material(
       color: isEven ? evenBackgroundColor : Colors.transparent,
       child: InkWell(
@@ -910,6 +1008,31 @@ class _CategorySection extends StatelessWidget {
           child: Row(
             children: [
               Expanded(child: Text(service.name)),
+              if (durationStr != null || servicePriceStr != null)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (durationStr != null)
+                      Text(
+                        durationStr,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    if (durationStr != null && servicePriceStr != null)
+                      const SizedBox(height: 2),
+                    if (servicePriceStr != null)
+                      Text(
+                        servicePriceStr,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
+                ),
+              if (isSelected && (durationStr != null || servicePriceStr != null))
+                const SizedBox(width: 8),
               if (isSelected)
                 Icon(Icons.check, color: theme.colorScheme.primary, size: 20),
             ],

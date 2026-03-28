@@ -274,6 +274,56 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     return total;
   }
 
+  List<int> _distributePackageAppliedPricesCents({
+    required List<int> serviceIds,
+    required List<ServiceVariant> variants,
+    required int packageTotalCents,
+  }) {
+    if (serviceIds.isEmpty) return const <int>[];
+
+    final baseCents = serviceIds.map((serviceId) {
+      final variant = variants.cast<ServiceVariant?>().firstWhere(
+        (v) => v?.serviceId == serviceId,
+        orElse: () => null,
+      );
+      final price = variant?.price ?? 0;
+      return _toCents(price);
+    }).toList();
+
+    final totalBase = baseCents.fold<int>(0, (sum, value) => sum + value);
+    if (totalBase <= 0) {
+      final equal = packageTotalCents ~/ serviceIds.length;
+      final remainder = packageTotalCents - (equal * serviceIds.length);
+      return List<int>.generate(
+        serviceIds.length,
+        (index) => equal + (index < remainder ? 1 : 0),
+      );
+    }
+
+    final floors = <int>[];
+    final fractions = <MapEntry<int, double>>[];
+    var distributed = 0;
+    for (var i = 0; i < baseCents.length; i++) {
+      final raw = (packageTotalCents * baseCents[i]) / totalBase;
+      final floorValue = raw.floor();
+      floors.add(floorValue);
+      fractions.add(MapEntry(i, raw - floorValue));
+      distributed += floorValue;
+    }
+
+    var remaining = packageTotalCents - distributed;
+    fractions.sort((a, b) => b.value.compareTo(a.value));
+    var cursor = 0;
+    while (remaining > 0 && fractions.isNotEmpty) {
+      final idx = fractions[cursor % fractions.length].key;
+      floors[idx] += 1;
+      remaining -= 1;
+      cursor += 1;
+    }
+
+    return floors;
+  }
+
   int _baseDurationFromAppointment(Appointment appointment) {
     final totalMinutes = appointment.endTime
         .difference(appointment.startTime)
@@ -1598,6 +1648,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         // Pass the captured staff and removal index to do everything in one setState
         _appendServicesFromPackage(
           expansion.serviceIds,
+          package: package,
+          packageEffectivePrice: expansion.effectivePrice,
           overrideStaffId: staffIdFromSlot,
           removeEmptyAtIndex: shouldRemoveEmpty ? currentIndex : null,
         );
@@ -1623,10 +1675,22 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   /// before appending (all in one setState to avoid visual flash).
   void _appendServicesFromPackage(
     List<int> serviceIds, {
+    ServicePackage? package,
+    double? packageEffectivePrice,
     int? overrideStaffId,
     int? removeEmptyAtIndex,
   }) {
     final variants = ref.read(serviceVariantsProvider).value ?? [];
+    final packageTotalCents = packageEffectivePrice != null
+        ? _toCents(packageEffectivePrice)
+        : null;
+    final distributedPackageCents = packageTotalCents != null
+        ? _distributePackageAppliedPricesCents(
+            serviceIds: serviceIds,
+            variants: variants.cast<ServiceVariant>(),
+            packageTotalCents: packageTotalCents,
+          )
+        : const <int>[];
 
     setState(() {
       // Remove empty slot first if requested (before calculating staff)
@@ -1644,7 +1708,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               ? _serviceItems.last.staffId
               : widget.initial.staffId);
 
-      for (final serviceId in serviceIds) {
+      for (var index = 0; index < serviceIds.length; index++) {
+        final serviceId = serviceIds[index];
         TimeOfDay nextStart;
         if (_serviceItems.isEmpty) {
           nextStart = TimeOfDay.fromDateTime(widget.initial.startTime);
@@ -1666,6 +1731,14 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             .where((v) => v.serviceId == serviceId)
             .firstOrNull;
         final duration = variant?.durationMinutes ?? 30;
+        final listPrice = variant?.price;
+        final packageItemPriceCents =
+            index < distributedPackageCents.length
+            ? distributedPackageCents[index]
+            : null;
+        final packageItemPrice = packageItemPriceCents != null
+            ? packageItemPriceCents / 100
+            : null;
 
         _serviceItems.add(
           ServiceItemData(
@@ -1677,6 +1750,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             staffId: staffIdForAll,
             blockedExtraMinutes: variant?.blockedTime ?? 0,
             processingExtraMinutes: variant?.processingTime ?? 0,
+            listPrice: listPrice,
+            price: packageItemPrice,
+            packageId: package?.id,
+            pricingSource: package != null ? 'package' : null,
           ),
         );
       }

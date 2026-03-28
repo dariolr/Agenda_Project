@@ -693,6 +693,7 @@ class _AppointmentCardInteractiveState
         (widget.appointment.price! - variantPrice).abs() > 0.004;
     final hidesRedundantBookingTotal =
         showAppointmentPrice &&
+        !showStruckVariantPrice &&
         bookingSummary != null &&
         (bookingSummary.totalPrice - widget.appointment.price!).abs() < 0.01;
     final appointmentPriceValue = showStruckVariantPrice
@@ -708,10 +709,12 @@ class _AppointmentCardInteractiveState
     final showBookingTotal =
         isPriceDisplayEnabled &&
         bookingSummary != null &&
-        bookingSummary.itemsCount > 1 &&
+        (bookingSummary.itemsCount > 1 || showStruckVariantPrice) &&
         bookingSummary.totalPrice > 0 &&
         !hidesRedundantBookingTotal &&
-        lastAppointmentIdForBooking == widget.appointment.id;
+        (bookingSummary.itemsCount > 1
+            ? lastAppointmentIdForBooking == widget.appointment.id
+            : true);
     final bookingTotal = showBookingTotal
         ? PriceFormatter.format(
             context: context,
