@@ -37,17 +37,23 @@ import 'location_closures_provider.dart';
 class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
   @override
   int? build() {
-    // Carica l'ultimo business salvato dalle preferenze
     final prefs = ref.read(preferencesServiceProvider);
+    // Se richiesto esplicitamente, al login mostra il selettore business
+    // invece di entrare automaticamente nell'ultimo business visitato.
+    if (prefs.getSuperadminShowBusinessPickerOnLogin()) {
+      return null;
+    }
+    // Altrimenti carica l'ultimo business salvato dalle preferenze.
     return prefs.getSuperadminLastBusinessId();
   }
 
   void select(int businessId) {
     state = businessId;
-    // Salva nelle preferenze per accesso rapido al prossimo login
-    ref
-        .read(preferencesServiceProvider)
-        .setSuperadminLastBusinessId(businessId);
+    final prefs = ref.read(preferencesServiceProvider);
+    // Salva nelle preferenze per accesso rapido al prossimo login.
+    prefs.setSuperadminLastBusinessId(businessId);
+    // Dopo una selezione esplicita, non forzare più il picker al login.
+    prefs.setSuperadminShowBusinessPickerOnLogin(false);
   }
 
   /// Pulisce la selezione e invalida tutti i provider relativi al business.
@@ -57,11 +63,22 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
     // ma al prossimo login verrà comunque portato all'ultimo business
   }
 
+  /// Mostra la lista business al prossimo login del superadmin.
+  /// Mantiene comunque l'ultimo business salvato per uso successivo.
+  void showBusinessPickerOnNextLogin() {
+    state = null;
+    ref
+        .read(preferencesServiceProvider)
+        .setSuperadminShowBusinessPickerOnLogin(true);
+  }
+
   /// Pulisce completamente la selezione, anche dalle preferenze.
   /// Da usare al logout o se il business viene eliminato.
   void clearCompletely() {
     state = null;
-    ref.read(preferencesServiceProvider).clearSuperadminLastBusinessId();
+    final prefs = ref.read(preferencesServiceProvider);
+    prefs.clearSuperadminLastBusinessId();
+    prefs.clearSuperadminShowBusinessPickerOnLogin();
   }
 }
 

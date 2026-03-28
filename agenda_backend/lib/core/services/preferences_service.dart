@@ -82,6 +82,8 @@ class PrefsKeys {
 
   /// Chiave per ultimo business visitato dal superadmin
   static const superadminLastBusinessId = 'superadmin_last_business_id';
+  static const superadminShowBusinessPickerOnLogin =
+      'superadmin_show_business_picker_on_login';
 
   /// Chiave legacy (senza business_id) per migrazione
   static const legacyStaffFilterMode = 'staff_filter_mode';
@@ -489,6 +491,21 @@ class PreferencesService {
   /// Rimuove l'ultimo business salvato (es. se il business viene eliminato).
   Future<void> clearSuperadminLastBusinessId() async {
     await _prefs.remove(PrefsKeys.superadminLastBusinessId);
+  }
+
+  /// Se true, al prossimo login del superadmin viene mostrata la lista business
+  /// invece dell'ultimo business visitato.
+  bool getSuperadminShowBusinessPickerOnLogin() {
+    return _prefs.getBool(PrefsKeys.superadminShowBusinessPickerOnLogin) ??
+        false;
+  }
+
+  Future<void> setSuperadminShowBusinessPickerOnLogin(bool value) async {
+    await _prefs.setBool(PrefsKeys.superadminShowBusinessPickerOnLogin, value);
+  }
+
+  Future<void> clearSuperadminShowBusinessPickerOnLogin() async {
+    await _prefs.remove(PrefsKeys.superadminShowBusinessPickerOnLogin);
   }
 
   // ============================================

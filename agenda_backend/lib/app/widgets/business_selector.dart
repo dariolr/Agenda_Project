@@ -5,6 +5,7 @@ import '../../core/models/business.dart';
 import '../../core/utils/initials_utils.dart';
 import '../../features/agenda/providers/business_providers.dart';
 import '../../features/business/providers/superadmin_selected_business_provider.dart';
+import '../../features/business/domain/business_sorting.dart';
 import '../../features/auth/providers/auth_provider.dart';
 
 /// Selettore business per superadmin.
@@ -25,7 +26,7 @@ class BusinessSelector extends ConsumerWidget {
 
     return businessesAsync.when(
       data: (businesses) => _BusinessDropdown(
-        businesses: businesses,
+        businesses: sortBusinessesForSelection(businesses),
         currentBusinessId: currentBusinessId,
         onChanged: (id) {
           ref.read(currentBusinessIdProvider.notifier).selectByUser(id);

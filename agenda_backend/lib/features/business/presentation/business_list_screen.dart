@@ -14,6 +14,7 @@ import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../auth/providers/current_business_user_provider.dart';
+import '../domain/business_sorting.dart';
 import '../providers/business_providers.dart';
 import '../providers/superadmin_selected_business_provider.dart';
 import 'dialogs/create_business_dialog.dart';
@@ -48,12 +49,14 @@ class BusinessListScreen extends ConsumerWidget {
         ],
       ),
       body: businessesAsync.when(
-        data: (businesses) => Column(
+        data: (businesses) {
+          final orderedBusinesses = sortBusinessesForSelection(businesses);
+          return Column(
           children: [
             if (isDesktop) const _DesktopRailPositionToggle(),
             Expanded(
               child: _BusinessList(
-                businesses: businesses,
+                businesses: orderedBusinesses,
                 onSelect: (business) => _selectBusiness(context, ref, business),
                 onEdit: (business) =>
                     _showEditBusinessDialog(context, ref, business),
@@ -66,7 +69,8 @@ class BusinessListScreen extends ConsumerWidget {
               ),
             ),
           ],
-        ),
+          );
+        },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
           child: Column(
