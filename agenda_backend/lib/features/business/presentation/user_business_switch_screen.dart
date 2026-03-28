@@ -10,6 +10,7 @@ import '../../../core/utils/initials_utils.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../auth/providers/current_business_user_provider.dart';
+import '../domain/business_sorting.dart';
 import '../providers/superadmin_selected_business_provider.dart';
 
 /// Schermata selezione business per utenti non superadmin.
@@ -65,7 +66,9 @@ class UserBusinessSwitchScreen extends ConsumerWidget {
       ),
       body: businessesAsync.when(
         data: (businesses) {
-          if (businesses.isEmpty) {
+          final orderedBusinesses = sortBusinessesForSelection(businesses);
+
+          if (orderedBusinesses.isEmpty) {
             return Center(
               child: Text(
                 'Nessun business disponibile',
@@ -74,8 +77,8 @@ class UserBusinessSwitchScreen extends ConsumerWidget {
             );
           }
 
-          if (businesses.length == 1) {
-            final onlyBusiness = businesses.first;
+          if (orderedBusinesses.length == 1) {
+            final onlyBusiness = orderedBusinesses.first;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _selectBusinessAndEnter(context, ref, onlyBusiness.id);
             });
@@ -83,7 +86,7 @@ class UserBusinessSwitchScreen extends ConsumerWidget {
           }
 
           return _UserBusinessList(
-            businesses: businesses,
+            businesses: orderedBusinesses,
             onSelect: (business) =>
                 _selectBusinessAndEnter(context, ref, business.id),
           );

@@ -84,6 +84,7 @@ class LazyHoverSlot extends StatefulWidget {
   final double height;
   final Color colorPrimary1;
   final void Function(DateTime)? onTap;
+  final ValueChanged<bool>? onVisibilityChanged;
 
   const LazyHoverSlot({
     super.key,
@@ -91,6 +92,7 @@ class LazyHoverSlot extends StatefulWidget {
     required this.height,
     required this.colorPrimary1,
     this.onTap,
+    this.onVisibilityChanged,
   });
 
   @override
@@ -100,28 +102,34 @@ class LazyHoverSlot extends StatefulWidget {
 class _LazyHoverSlotState extends State<LazyHoverSlot> {
   bool _show = false;
 
+  void _setShow(bool value) {
+    if (_show == value) return;
+    setState(() => _show = value);
+    widget.onVisibilityChanged?.call(value);
+  }
+
   void _onEnter(PointerEvent _) {
-    setState(() => _show = true);
+    _setShow(true);
   }
 
   void _onExit(PointerEvent _) {
-    setState(() => _show = false);
+    _setShow(false);
   }
 
   void _onTapDown(TapDownDetails _) {
     // On touch devices show the hover content while pressing.
-    setState(() => _show = true);
+    _setShow(true);
   }
 
   void _onTapUp(TapUpDetails _) {
     // Hide shortly after release to mimic hover disappearing.
     Future.delayed(const Duration(milliseconds: 250), () {
-      if (mounted) setState(() => _show = false);
+      if (mounted) _setShow(false);
     });
   }
 
   void _onTapCancel() {
-    setState(() => _show = false);
+    _setShow(false);
   }
 
   @override

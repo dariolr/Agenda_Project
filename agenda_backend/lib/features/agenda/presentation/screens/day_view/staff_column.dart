@@ -79,6 +79,7 @@ class StaffColumn extends ConsumerStatefulWidget {
 
 class _StaffColumnState extends ConsumerState<StaffColumn> {
   bool _isHighlighted = false;
+  int? _hoveredSlotIndex;
   double? _hoverY;
   bool _isApplyingBookingReschedule = false;
   late final ProviderSubscription<Offset?> _dragListener;
@@ -463,6 +464,19 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                 slotTime: slotTime,
                 height: slotHeight,
                 colorPrimary1: Theme.of(context).colorScheme.primary,
+                onVisibilityChanged: (isVisible) {
+                  if (isVisible) {
+                    if (_hoveredSlotIndex == index) return;
+                    setState(() {
+                      _hoveredSlotIndex = index;
+                    });
+                    return;
+                  }
+                  if (_hoveredSlotIndex != index) return;
+                  setState(() {
+                    _hoveredSlotIndex = null;
+                  });
+                },
                 onTap: (dt) => _handleSlotTap(
                   dt: dt,
                   rescheduleSession: rescheduleSession,
@@ -496,7 +510,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         blocks: staffBlocks,
       );
 
-      if (totalSlotIndex != null) {
+      if (totalSlotIndex != null && _hoveredSlotIndex != totalSlotIndex) {
         final currencyCode = PriceFormatter.effectiveCurrency(ref);
         final formattedTotal = PriceFormatter.format(
           context: context,
@@ -1119,14 +1133,18 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final top = layoutConfig.heightForMinutes(slotIndex * minutesPerSlot);
     final rightPadding = LayoutConfig.columnInnerPadding + 4;
-    final trademarkStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      fontSize: 11,
-      fontWeight: FontWeight.w700,
-      fontStyle: FontStyle.normal,
-      height: 1.0,
-      color: Colors.black.withOpacity(0.5),
-      letterSpacing: 0,
+    final chipBackgroundColor = Colors.grey.shade200;
+    final chipTextColor = Colors.black.withOpacity(0.42);
+    final countStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: chipTextColor,
     );
+    final totalStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: chipTextColor,
+    );
+    final countChipColor = chipBackgroundColor;
+    final totalChipColor = chipBackgroundColor;
 
     return Positioned(
       top: top,
@@ -1138,13 +1156,37 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           padding: const EdgeInsets.symmetric(horizontal: 6),
           child: Row(
             children: [
-              Text('$servicesCount', maxLines: 1, style: trademarkStyle),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: countChipColor,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 1.5,
+                  ),
+                  child: Text('$servicesCount', maxLines: 1, style: countStyle),
+                ),
+              ),
               const Spacer(),
-              Text(
-                formattedTotal,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: trademarkStyle,
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: totalChipColor,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 1.5,
+                  ),
+                  child: Text(
+                    formattedTotal,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: totalStyle,
+                  ),
+                ),
               ),
             ],
           ),

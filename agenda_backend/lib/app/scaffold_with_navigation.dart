@@ -725,7 +725,9 @@ class _ScaffoldWithNavigationState
     final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
     invalidateBusinessScopedProviders(ref);
     if (isSuperadmin) {
-      ref.read(superadminSelectedBusinessProvider.notifier).clear();
+      ref
+          .read(superadminSelectedBusinessProvider.notifier)
+          .showBusinessPickerOnNextLogin();
       context.go('/businesses');
       return;
     }
