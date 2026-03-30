@@ -16,6 +16,7 @@ class RecurringBookingRequest {
   final String? endDate;
   final String conflictStrategy;
   final List<int>? excludedIndices;
+  final List<RecurringBookingItemRequest>? items;
 
   const RecurringBookingRequest({
     required this.serviceIds,
@@ -30,6 +31,7 @@ class RecurringBookingRequest {
     this.endDate,
     this.conflictStrategy = 'skip',
     this.excludedIndices,
+    this.items,
   });
 
   Map<String, dynamic> toJson() {
@@ -50,6 +52,48 @@ class RecurringBookingRequest {
     if (notes != null) map['notes'] = notes;
     if (excludedIndices != null && excludedIndices!.isNotEmpty) {
       map['excluded_indices'] = excludedIndices;
+    }
+    if (items != null && items!.isNotEmpty) {
+      map['items'] = items!.map((item) => item.toJson()).toList();
+    }
+    return map;
+  }
+}
+
+/// Item template per creazione ricorrente.
+/// `start_offset_minutes` è relativo allo start_time della ricorrenza.
+class RecurringBookingItemRequest {
+  final int serviceId;
+  final int? staffId;
+  final int? serviceVariantId;
+  final int? startOffsetMinutes;
+  final int? durationMinutes;
+  final int? blockedExtraMinutes;
+  final int? processingExtraMinutes;
+
+  const RecurringBookingItemRequest({
+    required this.serviceId,
+    this.staffId,
+    this.serviceVariantId,
+    this.startOffsetMinutes,
+    this.durationMinutes,
+    this.blockedExtraMinutes,
+    this.processingExtraMinutes,
+  });
+
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{'service_id': serviceId};
+    if (staffId != null) map['staff_id'] = staffId;
+    if (serviceVariantId != null) map['service_variant_id'] = serviceVariantId;
+    if (startOffsetMinutes != null) {
+      map['start_offset_minutes'] = startOffsetMinutes;
+    }
+    if (durationMinutes != null) map['duration_minutes'] = durationMinutes;
+    if (blockedExtraMinutes != null) {
+      map['blocked_extra_minutes'] = blockedExtraMinutes;
+    }
+    if (processingExtraMinutes != null) {
+      map['processing_extra_minutes'] = processingExtraMinutes;
     }
     return map;
   }

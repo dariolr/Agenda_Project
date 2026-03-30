@@ -536,12 +536,6 @@ class _ServicePickerContentState extends State<_ServicePickerContent> {
               : ListView(
                   controller: _scrollController,
                   children: [
-                    // Packages section (if available)
-                    if (showPackages)
-                      _PackagesSection(
-                        packages: filteredPackages,
-                        onSelected: widget.onPackageSelected!,
-                      ),
                     // Popular services section (if available and search empty)
                     if (_searchQuery.isEmpty &&
                         widget.popularServices != null &&
@@ -571,6 +565,12 @@ class _ServicePickerContentState extends State<_ServicePickerContent> {
                             onSelected: widget.onSelected,
                           );
                         },
+                      ),
+                    // Packages section (if available)
+                    if (showPackages)
+                      _PackagesSection(
+                        packages: filteredPackages,
+                        onSelected: widget.onPackageSelected!,
                       ),
                     // Categories and services
                     for (final category in sortedCategories)

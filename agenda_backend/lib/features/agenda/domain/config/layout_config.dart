@@ -15,7 +15,7 @@ class LayoutConfig {
 
   static const double horizontalPadding = 8;
   static const double verticalPadding = 4;
-  static const double columnInnerPadding = 2;
+  static const double columnInnerPadding = 1;
   static const double minColumnWidthMobile =
       100; // Larghezza minima colonna su mobile
   static const double minColumnWidthDesktop = 160;

@@ -30,6 +30,7 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_display_settings_provider.dart';
 import '../../../providers/agenda_scroll_request_provider.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/block_resizing_provider.dart';
 import '../../../providers/booking_reschedule_provider.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/drag_layer_link_provider.dart';
@@ -50,6 +51,7 @@ import '../../../providers/temp_drag_time_provider.dart';
 import '../../../providers/tenant_time_provider.dart';
 import '../../../providers/time_blocks_provider.dart';
 import '../../utils/multi_service_move_guard.dart';
+import '../../dialogs/add_block_dialog.dart';
 import '../../widgets/booking_dialog.dart';
 import '../helper/drag_drop_helper.dart';
 import '../helper/layout_geometry_helper.dart';
@@ -481,6 +483,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                   dt: dt,
                   rescheduleSession: rescheduleSession,
                 ),
+                onSecondaryTapDown: (dt, details) => _handleSlotSecondaryTap(
+                  dt: dt,
+                  details: details,
+                  appointments: staffAppointments,
+                  classEvents: staffClassEvents,
+                  blocks: staffBlocks,
+                  minutesPerSlot: layoutConfig.minutesPerSlot,
+                ),
               );
             }
 
@@ -529,6 +539,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       }
     }
 
+    // 🔹 Blocchi di non disponibilità
+    stackChildren.addAll(_buildTimeBlocks(slotHeight, effectiveColumnWidth));
+
     // 🔹 Appuntamenti + classi (con larghezza ridotta se ci sono slot pieni)
     stackChildren.addAll(
       _buildScheduledEntries(
@@ -538,9 +551,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         effectiveColumnWidth,
       ),
     );
-
-    // 🔹 Blocchi di non disponibilità
-    stackChildren.addAll(_buildTimeBlocks(slotHeight, effectiveColumnWidth));
 
     // La fascia laterale è già riservata riducendo effectiveColumnWidth,
     // quindi le card si restringono automaticamente lasciando spazio a destra.
@@ -761,6 +771,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         originalAppt.startTime.month,
         originalAppt.startTime.day,
       );
+      const appointmentVerticalGap = 1.0;
       final startMinutes = originalAppt.startTime
           .difference(dayStart)
           .inMinutes;
@@ -771,6 +782,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       final entry = ref.watch(resizingEntryProvider(originalAppt.id));
       if (entry != null) {
         height = entry.currentPreviewHeightPx;
+      }
+      final visualTop = top + (appointmentVerticalGap / 2);
+      final visualHeight = math.max(height - appointmentVerticalGap, 0.0);
+      if (visualHeight <= 0) {
+        continue;
       }
 
       final geometry =
@@ -819,10 +835,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       positionedEntries.add(
         Positioned(
           key: ValueKey(originalAppt.id),
-          top: top,
+          top: visualTop,
           left: cardLeft,
           width: cardWidth,
-          height: height,
+          height: visualHeight,
           child: Opacity(
             opacity: opacity,
             child: AppointmentCard(
@@ -985,9 +1001,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final cardWidth = math.max(columnWidth - padding * 2, 0.0);
 
     for (final block in blocks) {
+      final previewEnd = ref.watch(blockResizingEndTimeProvider(block.id));
+      final effectiveBlock = previewEnd == null
+          ? block
+          : block.copyWith(endTime: previewEnd);
+
       // Calcola posizione verticale
-      final startMinutes = block.startTime.difference(dayStart).inMinutes;
-      final endMinutes = block.endTime.difference(dayStart).inMinutes;
+      final startMinutes = effectiveBlock.startTime.difference(dayStart).inMinutes;
+      final endMinutes = effectiveBlock.endTime.difference(dayStart).inMinutes;
 
       // Clamp ai limiti della giornata visualizzata
       final clampedStartMinutes = startMinutes.clamp(
@@ -1014,7 +1035,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           width: cardWidth,
           height: height,
           child: TimeBlockWidget(
-            block: block,
+            block: effectiveBlock,
             height: height,
             width: cardWidth,
           ),
@@ -1302,6 +1323,46 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         _isApplyingBookingReschedule = false;
       }
     }
+  }
+
+  Future<void> _handleSlotSecondaryTap({
+    required DateTime dt,
+    required TapDownDetails details,
+    required List<Appointment> appointments,
+    required List<ClassEvent> classEvents,
+    required List<TimeBlock> blocks,
+    required int minutesPerSlot,
+  }) async {
+    final slotEnd = dt.add(Duration(minutes: minutesPerSlot));
+    final isSlotOccupiedByAppointment = appointments.any(
+      (appointment) =>
+          !appointment.isCancelled &&
+          !appointment.isReplaced &&
+          appointment.startTime.isBefore(slotEnd) &&
+          appointment.endTime.isAfter(dt),
+    );
+    final isSlotOccupiedByClassEvent = classEvents.any((event) {
+      final startsAt = event.startsAtLocal ?? event.startsAtUtc.toLocal();
+      final endsAt = event.endsAtLocal ?? event.endsAtUtc.toLocal();
+      return startsAt.isBefore(slotEnd) && endsAt.isAfter(dt);
+    });
+    final isSlotOccupiedByBlock = blocks.any(
+      (block) => block.startTime.isBefore(slotEnd) && block.endTime.isAfter(dt),
+    );
+    final isSlotOccupied =
+        isSlotOccupiedByAppointment ||
+        isSlotOccupiedByClassEvent ||
+        isSlotOccupiedByBlock;
+
+    if (isSlotOccupied) return;
+
+    await showAddBlockDialog(
+      context,
+      ref,
+      date: DateUtils.dateOnly(dt),
+      time: TimeOfDay(hour: dt.hour, minute: dt.minute),
+      initialStaffId: widget.staff.id,
+    );
   }
 
   bool _hasReachableClientContact(List<Appointment> bookingAppointments) {

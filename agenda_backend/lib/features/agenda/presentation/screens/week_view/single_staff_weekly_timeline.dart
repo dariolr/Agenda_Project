@@ -14,6 +14,7 @@ import 'package:agenda_backend/features/agenda/domain/config/layout_config.dart'
 import 'package:agenda_backend/features/agenda/providers/agenda_scroll_request_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/block_resizing_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/booking_reschedule_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/drag_layer_link_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/drag_offset_provider.dart';
@@ -34,6 +35,7 @@ import 'package:agenda_backend/features/agenda/presentation/screens/widgets/hove
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/time_block_widget.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/unavailable_slot_pattern.dart';
 import 'package:agenda_backend/features/agenda/presentation/utils/multi_service_move_guard.dart';
+import 'package:agenda_backend/features/agenda/presentation/dialogs/add_block_dialog.dart';
 import 'package:agenda_backend/features/agenda/presentation/widgets/booking_dialog.dart';
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
@@ -627,9 +629,18 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
                 height: slotHeight,
                 colorPrimary1: theme.colorScheme.primary,
                 onTap: (dt) => _handleSlotTap(context, ref, dt),
+                onSecondaryTapDown: (dt, details) => _handleSlotSecondaryTap(
+                  context,
+                  ref,
+                  dt,
+                  details,
+                  timeBlocks,
+                  layoutConfig.minutesPerSlot,
+                ),
               );
             }),
           ),
+          for (final block in timeBlocks) _buildTimeBlock(ref, block, layoutConfig),
           for (final appointment in appointments)
             _buildAppointment(
               context,
@@ -640,7 +651,6 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
             ),
           for (final event in classEvents)
             _buildClassEvent(context, event, layoutConfig, geometry),
-          for (final block in timeBlocks) _buildTimeBlock(block, layoutConfig),
         ],
       ),
     );
@@ -738,6 +748,14 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final endMinutes = appointment.endTime.difference(dayStart).inMinutes;
     final top = layoutConfig.offsetForMinuteOfDay(startMinutes);
     final height = layoutConfig.heightForMinutes(endMinutes - startMinutes);
+    const appointmentVerticalGap = 1.0;
+    final visualTop = top + (appointmentVerticalGap / 2);
+    final visualHeight = (height - appointmentVerticalGap)
+        .clamp(0.0, double.infinity)
+        .toDouble();
+    if (visualHeight <= 0) {
+      return const SizedBox.shrink();
+    }
     final eventGeometry =
         geometry[appointment.id] ??
         const EventGeometry(leftFraction: 0, widthFraction: 1);
@@ -750,10 +768,10 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         .toDouble();
 
     return Positioned(
-      top: top,
+      top: visualTop,
       left: cardLeft,
       width: cardWidth,
-      height: height,
+      height: visualHeight,
       child: AppointmentCard(
         appointment: appointment,
         color:
@@ -846,10 +864,18 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimeBlock(TimeBlock block, LayoutConfig layoutConfig) {
+  Widget _buildTimeBlock(
+    WidgetRef ref,
+    TimeBlock block,
+    LayoutConfig layoutConfig,
+  ) {
+    final previewEnd = ref.watch(blockResizingEndTimeProvider(block.id));
+    final effectiveBlock = previewEnd == null
+        ? block
+        : block.copyWith(endTime: previewEnd);
     final dayStart = DateTime(day.year, day.month, day.day);
-    final startMinutes = block.startTime.difference(dayStart).inMinutes;
-    final endMinutes = block.endTime.difference(dayStart).inMinutes;
+    final startMinutes = effectiveBlock.startTime.difference(dayStart).inMinutes;
+    final endMinutes = effectiveBlock.endTime.difference(dayStart).inMinutes;
     final clampedStartMinutes = startMinutes.clamp(
       0,
       LayoutConfig.hoursInDay * 60,
@@ -870,12 +896,16 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     );
 
     return Positioned(
-      key: ValueKey('block_${block.id}_${day.toIso8601String()}'),
+      key: ValueKey('block_${effectiveBlock.id}_${day.toIso8601String()}'),
       top: top,
       left: padding,
       width: cardWidth,
       height: height,
-      child: TimeBlockWidget(block: block, height: height, width: cardWidth),
+      child: TimeBlockWidget(
+        block: effectiveBlock,
+        height: height,
+        width: cardWidth,
+      ),
     );
   }
 
@@ -973,6 +1003,46 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     }
 
     showBookingDialog(
+      context,
+      ref,
+      date: DateUtils.dateOnly(dt),
+      time: TimeOfDay(hour: dt.hour, minute: dt.minute),
+      initialStaffId: staffId,
+    );
+  }
+
+  Future<void> _handleSlotSecondaryTap(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime dt,
+    TapDownDetails details,
+    List<TimeBlock> blocks,
+    int minutesPerSlot,
+  ) async {
+    final slotEnd = dt.add(Duration(minutes: minutesPerSlot));
+    final isSlotOccupiedByAppointment = appointments.any(
+      (appointment) =>
+          !appointment.isCancelled &&
+          !appointment.isReplaced &&
+          appointment.startTime.isBefore(slotEnd) &&
+          appointment.endTime.isAfter(dt),
+    );
+    final isSlotOccupiedByClassEvent = classEvents.any((event) {
+      final startsAt = event.startsAtLocal ?? event.startsAtUtc.toLocal();
+      final endsAt = event.endsAtLocal ?? event.endsAtUtc.toLocal();
+      return startsAt.isBefore(slotEnd) && endsAt.isAfter(dt);
+    });
+    final isSlotOccupiedByBlock = blocks.any(
+      (block) => block.startTime.isBefore(slotEnd) && block.endTime.isAfter(dt),
+    );
+    final isSlotOccupied =
+        isSlotOccupiedByAppointment ||
+        isSlotOccupiedByClassEvent ||
+        isSlotOccupiedByBlock;
+
+    if (isSlotOccupied) return;
+
+    await showAddBlockDialog(
       context,
       ref,
       date: DateUtils.dateOnly(dt),

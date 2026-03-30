@@ -2,7 +2,9 @@ import 'package:agenda_backend/app/app.dart';
 import 'package:agenda_backend/core/environment/app_environment_config.dart';
 import 'package:agenda_backend/core/services/preferences_service.dart';
 import 'package:agenda_backend/core/services/version_checker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,6 +18,9 @@ void main() async {
   );
   usePathUrlStrategy(); // Usa URL path-based (senza #)
   tz_data.initializeTimeZones();
+  if (kIsWeb) {
+    await BrowserContextMenu.disableContextMenu();
+  }
 
   // Avvia il controllo periodico della versione (solo web).
   // Se rileva una nuova versione, forza il reload automatico.
