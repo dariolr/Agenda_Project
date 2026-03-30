@@ -1,4 +1,5 @@
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../../domain/config/layout_config.dart';
@@ -84,6 +85,7 @@ class LazyHoverSlot extends StatefulWidget {
   final double height;
   final Color colorPrimary1;
   final void Function(DateTime)? onTap;
+  final void Function(DateTime, TapDownDetails)? onSecondaryTapDown;
   final ValueChanged<bool>? onVisibilityChanged;
 
   const LazyHoverSlot({
@@ -92,6 +94,7 @@ class LazyHoverSlot extends StatefulWidget {
     required this.height,
     required this.colorPrimary1,
     this.onTap,
+    this.onSecondaryTapDown,
     this.onVisibilityChanged,
   });
 
@@ -101,6 +104,8 @@ class LazyHoverSlot extends StatefulWidget {
 
 class _LazyHoverSlotState extends State<LazyHoverSlot> {
   bool _show = false;
+  DateTime? _lastSecondaryAt;
+  Offset? _lastSecondaryGlobal;
 
   void _setShow(bool value) {
     if (_show == value) return;
@@ -132,28 +137,59 @@ class _LazyHoverSlotState extends State<LazyHoverSlot> {
     _setShow(false);
   }
 
+  void _emitSecondaryTapDown(TapDownDetails details) {
+    final now = DateTime.now();
+    final lastAt = _lastSecondaryAt;
+    final lastGlobal = _lastSecondaryGlobal;
+    if (lastAt != null &&
+        now.difference(lastAt).inMilliseconds < 150 &&
+        lastGlobal != null &&
+        (details.globalPosition - lastGlobal).distance < 2) {
+      return;
+    }
+    _lastSecondaryAt = now;
+    _lastSecondaryGlobal = details.globalPosition;
+    widget.onSecondaryTapDown?.call(widget.slotTime, details);
+  }
+
+  void _onPointerDown(PointerDownEvent event) {
+    if ((event.buttons & kSecondaryMouseButton) == 0) return;
+    _emitSecondaryTapDown(
+      TapDownDetails(
+        globalPosition: event.position,
+        localPosition: event.localPosition,
+        kind: event.kind,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // We keep the same size and margin as HoverSlot so layout doesn't jump.
     return MouseRegion(
       onEnter: _onEnter,
       onExit: _onExit,
-      child: GestureDetector(
+      child: Listener(
         behavior: HitTestBehavior.translucent,
-        onTap: () => widget.onTap?.call(widget.slotTime),
-        onTapDown: _onTapDown,
-        onTapUp: _onTapUp,
-        onTapCancel: _onTapCancel,
-        child: SizedBox(
-          height: widget.height,
-          width: double.infinity,
-          child: _show
-              ? HoverSlot(
-                  slotTime: widget.slotTime,
-                  height: widget.height,
-                  colorPrimary1: widget.colorPrimary1,
-                )
-              : Container(),
+        onPointerDown: _onPointerDown,
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => widget.onTap?.call(widget.slotTime),
+          onSecondaryTapDown: _emitSecondaryTapDown,
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onTapCancel: _onTapCancel,
+          child: SizedBox(
+            height: widget.height,
+            width: double.infinity,
+            child: _show
+                ? HoverSlot(
+                    slotTime: widget.slotTime,
+                    height: widget.height,
+                    colorPrimary1: widget.colorPrimary1,
+                  )
+                : Container(),
+          ),
         ),
       ),
     );

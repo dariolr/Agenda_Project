@@ -19,7 +19,7 @@ final class JwtService
     public function __construct()
     {
         $this->secret = $_ENV['JWT_SECRET'] ?? throw new \RuntimeException('JWT_SECRET not configured');
-        $this->accessTtl = (int) ($_ENV['JWT_ACCESS_TTL'] ?? 900); // 15 minutes
+        $this->accessTtl = (int) ($_ENV['JWT_ACCESS_TTL'] ?? 7200); // 2 hours
         $this->refreshTtl = (int) ($_ENV['JWT_REFRESH_TTL'] ?? 864000); // 10 days
     }
 

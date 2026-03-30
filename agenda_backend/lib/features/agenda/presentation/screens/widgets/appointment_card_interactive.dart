@@ -696,10 +696,10 @@ class _AppointmentCardInteractiveState
         !showStruckVariantPrice &&
         bookingSummary != null &&
         (bookingSummary.totalPrice - widget.appointment.price!).abs() < 0.01;
-    final appointmentPriceValue = showStruckVariantPrice
-        ? variantPrice
-        : widget.appointment.price!;
-    final appointmentPrice = showAppointmentPrice
+    final appointmentPriceValue = showAppointmentPrice
+        ? (showStruckVariantPrice ? variantPrice : widget.appointment.price)
+        : null;
+    final appointmentPrice = appointmentPriceValue != null
         ? PriceFormatter.format(
             context: context,
             amount: appointmentPriceValue,
@@ -761,11 +761,15 @@ class _AppointmentCardInteractiveState
       isPriceDisplayEnabled: isPriceDisplayEnabled,
       forceCompactPresentation: widget.forceCompactPresentation,
     );
+    final baseBorderRadius =
+        presentation.isUltraShort || presentation.isShort
+        ? widget.borderRadius
+        : const BorderRadius.all(Radius.circular(LayoutConfig.borderRadius));
     final radiusScale = presentation.isUltraShort
         ? 0.58
         : (presentation.isShort ? 0.75 : 1.0);
     final effectiveBorderRadius = _scaleBorderRadius(
-      widget.borderRadius,
+      baseBorderRadius,
       radiusScale,
     );
     final useAnchoredRowsLayout =

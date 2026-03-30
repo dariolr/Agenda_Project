@@ -264,7 +264,6 @@ foreach ($notifications as $notification) {
             if ($verbose) {
                 echo "OK [provider={$usedProvider}]\n";
             }
-            error_log("Notification {$id} sent via {$usedProvider}");
         } else {
             $provider = $emailService->getName();
             $providerError = null;

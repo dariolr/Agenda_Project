@@ -53,25 +53,25 @@ class AgendaDateNotifier extends Notifier<DateTime> {
   }
 
   void nextDay() {
-    final next = DateUtils.dateOnly(state.add(const Duration(days: 1)));
+    final next = _addCalendarDays(state, 1);
     state = next;
     _save(next);
   }
 
   void nextWeek() {
-    final next = DateUtils.dateOnly(state.add(const Duration(days: 7)));
+    final next = _addCalendarDays(state, 7);
     state = next;
     _save(next);
   }
 
   void previousDay() {
-    final next = DateUtils.dateOnly(state.subtract(const Duration(days: 1)));
+    final next = _addCalendarDays(state, -1);
     state = next;
     _save(next);
   }
 
   void previousWeek() {
-    final next = DateUtils.dateOnly(state.subtract(const Duration(days: 7)));
+    final next = _addCalendarDays(state, -7);
     state = next;
     _save(next);
   }
@@ -98,9 +98,14 @@ class AgendaDateNotifier extends Notifier<DateTime> {
   }
 
   void setToday() {
-    final today = ref.read(tenantTodayProvider);
+    final today = DateUtils.dateOnly(ref.read(tenantTodayProvider));
     state = today;
     _save(today);
+  }
+
+  DateTime _addCalendarDays(DateTime date, int deltaDays) {
+    final d = DateUtils.dateOnly(date);
+    return DateUtils.dateOnly(DateTime(d.year, d.month, d.day + deltaDays));
   }
 
   void _save(DateTime date) {

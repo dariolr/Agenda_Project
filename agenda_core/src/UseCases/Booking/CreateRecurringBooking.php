@@ -141,12 +141,27 @@ final class CreateRecurringBooking
             throw BookingException::invalidClient("Client with ID {$clientId} not found");
         }
 
-        // Calculate total duration (including processing_time and blocked_time, as in CreateBooking)
+        $itemTemplates = $this->buildItemTemplates(
+            services: $services,
+            data: $data,
+            defaultStaffId: $staffId
+        );
+        if (empty($itemTemplates)) {
+            throw BookingException::invalidService([]);
+        }
+        if ($staffId === null) {
+            $staffId = $itemTemplates[0]['staff_id'] ?? null;
+        }
+
         $totalDuration = 0;
-        foreach ($services as $service) {
-            $totalDuration += (int) ($service['duration_minutes'] ?? $service['default_duration'] ?? 30)
-                + (int) ($service['processing_time'] ?? 0)
-                + (int) ($service['blocked_time'] ?? 0);
+        foreach ($itemTemplates as $template) {
+            $candidateEnd = (int) $template['start_offset_minutes']
+                + (int) $template['duration_minutes']
+                + (int) $template['processing_extra_minutes']
+                + (int) $template['blocked_extra_minutes'];
+            if ($candidateEnd > $totalDuration) {
+                $totalDuration = $candidateEnd;
+            }
         }
 
         // Build RecurrenceRule
@@ -254,32 +269,27 @@ final class CreateRecurringBooking
                 ]);
 
                 // Create booking items
-                $currentStart = $occurrenceStart;
-                foreach ($services as $service) {
-                    $serviceDuration    = (int) ($service['duration_minutes'] ?? $service['default_duration'] ?? 30);
-                    $processingMinutes  = (int) ($service['processing_time'] ?? 0);
-                    $blockedMinutes     = (int) ($service['blocked_time'] ?? 0);
-
-                    // end_time = durata visibile del servizio (senza extra), come in CreateBooking
-                    $serviceEnd  = $currentStart->modify("+{$serviceDuration} minutes");
-                    // Il prossimo servizio inizia dopo tutto il tempo bloccato
-                    $blockedEnd  = $currentStart->modify("+" . ($serviceDuration + $processingMinutes + $blockedMinutes) . " minutes");
-
+                foreach ($itemTemplates as $template) {
+                    $itemStart = $occurrenceStart->modify(
+                        '+' . ((int) $template['start_offset_minutes']) . ' minutes'
+                    );
+                    $serviceDuration = (int) $template['duration_minutes'];
+                    $processingMinutes = (int) $template['processing_extra_minutes'];
+                    $blockedMinutes = (int) $template['blocked_extra_minutes'];
+                    $serviceEnd = $itemStart->modify("+{$serviceDuration} minutes");
                     $this->bookingRepository->addBookingItem($bookingId, [
                         'location_id' => $locationId,
-                        'service_id' => $service['id'],
-                        'service_variant_id' => $service['service_variant_id'] ?? $service['variant_id'] ?? $service['id'],
-                        'staff_id' => $staffId,
-                        'start_time' => $currentStart->format('Y-m-d H:i:s'),
+                        'service_id' => (int) $template['service_id'],
+                        'service_variant_id' => (int) $template['service_variant_id'],
+                        'staff_id' => (int) $template['staff_id'],
+                        'start_time' => $itemStart->format('Y-m-d H:i:s'),
                         'end_time' => $serviceEnd->format('Y-m-d H:i:s'),
-                        'price' => $service['price'] ?? 0,
+                        'price' => $template['price'] ?? 0,
                         'extra_blocked_minutes' => $blockedMinutes,
                         'extra_processing_minutes' => $processingMinutes,
-                        'service_name_snapshot' => $service['name'],
+                        'service_name_snapshot' => (string) $template['service_name'],
                         'client_name_snapshot' => trim(($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? '')),
                     ]);
-
-                    $currentStart = $blockedEnd;
                 }
 
                 $createdBookings[] = [
@@ -353,6 +363,116 @@ final class CreateRecurringBooking
         );
 
         return !empty($existingBookings);
+    }
+
+    /**
+     * Build normalized recurring item templates.
+     *
+     * @return array<int, array{
+     *   service_id:int,
+     *   service_variant_id:int,
+     *   service_name:string,
+     *   staff_id:int,
+     *   start_offset_minutes:int,
+     *   duration_minutes:int,
+     *   blocked_extra_minutes:int,
+     *   processing_extra_minutes:int,
+     *   price:float|int
+     * }>
+     */
+    private function buildItemTemplates(array $services, array $data, ?int $defaultStaffId): array
+    {
+        $serviceById = [];
+        foreach ($services as $service) {
+            $serviceById[(int) $service['id']] = $service;
+        }
+
+        $rawItems = isset($data['items']) && is_array($data['items']) ? $data['items'] : null;
+        $templates = [];
+
+        if (is_array($rawItems) && !empty($rawItems)) {
+            foreach ($rawItems as $item) {
+                $serviceId = (int) ($item['service_id'] ?? 0);
+                if ($serviceId <= 0 || !isset($serviceById[$serviceId])) {
+                    throw BookingException::invalidService([$serviceId]);
+                }
+                $service = $serviceById[$serviceId];
+
+                $itemStaffId = isset($item['staff_id']) ? (int) $item['staff_id'] : $defaultStaffId;
+                if ($itemStaffId === null || $itemStaffId <= 0) {
+                    throw BookingException::invalidStaff((int) $itemStaffId);
+                }
+
+                $serviceDuration = isset($item['duration_minutes'])
+                    ? max(1, (int) $item['duration_minutes'])
+                    : (int) ($service['duration_minutes'] ?? $service['default_duration'] ?? 30);
+                $processingMinutes = isset($item['processing_extra_minutes'])
+                    ? max(0, (int) $item['processing_extra_minutes'])
+                    : (int) ($service['processing_time'] ?? 0);
+                $blockedMinutes = isset($item['blocked_extra_minutes'])
+                    ? max(0, (int) $item['blocked_extra_minutes'])
+                    : (int) ($service['blocked_time'] ?? 0);
+                $startOffset = isset($item['start_offset_minutes'])
+                    ? max(0, (int) $item['start_offset_minutes'])
+                    : null;
+
+                $templates[] = [
+                    'service_id' => $serviceId,
+                    'service_variant_id' => (int) (
+                        $item['service_variant_id']
+                        ?? $service['service_variant_id']
+                        ?? $service['variant_id']
+                        ?? $serviceId
+                    ),
+                    'service_name' => (string) ($service['name'] ?? ''),
+                    'staff_id' => $itemStaffId,
+                    'start_offset_minutes' => $startOffset,
+                    'duration_minutes' => $serviceDuration,
+                    'blocked_extra_minutes' => $blockedMinutes,
+                    'processing_extra_minutes' => $processingMinutes,
+                    'price' => $service['price'] ?? 0,
+                ];
+            }
+        } else {
+            $cursor = 0;
+            foreach ($services as $service) {
+                $serviceDuration = (int) ($service['duration_minutes'] ?? $service['default_duration'] ?? 30);
+                $processingMinutes = (int) ($service['processing_time'] ?? 0);
+                $blockedMinutes = (int) ($service['blocked_time'] ?? 0);
+                $templates[] = [
+                    'service_id' => (int) $service['id'],
+                    'service_variant_id' => (int) ($service['service_variant_id'] ?? $service['variant_id'] ?? $service['id']),
+                    'service_name' => (string) ($service['name'] ?? ''),
+                    'staff_id' => (int) ($defaultStaffId ?? 0),
+                    'start_offset_minutes' => $cursor,
+                    'duration_minutes' => $serviceDuration,
+                    'blocked_extra_minutes' => $blockedMinutes,
+                    'processing_extra_minutes' => $processingMinutes,
+                    'price' => $service['price'] ?? 0,
+                ];
+                $cursor += $serviceDuration + $processingMinutes + $blockedMinutes;
+            }
+        }
+
+        // Auto-fill missing offsets sequentially while preserving explicit offsets.
+        $cursor = 0;
+        foreach ($templates as $index => $template) {
+            $offset = $template['start_offset_minutes'];
+            if ($offset === null) {
+                $offset = $cursor;
+            }
+            $offset = max(0, (int) $offset);
+            $templates[$index]['start_offset_minutes'] = $offset;
+            $candidateEnd = $offset
+                + (int) $template['duration_minutes']
+                + (int) $template['processing_extra_minutes']
+                + (int) $template['blocked_extra_minutes'];
+            if ($candidateEnd > $cursor) {
+                $cursor = $candidateEnd;
+            }
+        }
+
+        return $templates;
     }
 
     /**

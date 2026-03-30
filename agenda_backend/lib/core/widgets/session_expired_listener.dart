@@ -15,7 +15,8 @@ class SessionExpiredListener extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen<int>(sessionExpiredProvider, (previous, next) {
-      if (previous != null && next > previous) {
+      final prevValue = previous ?? 0;
+      if (next > prevValue) {
         _handleSessionExpired(context, ref);
       }
     });

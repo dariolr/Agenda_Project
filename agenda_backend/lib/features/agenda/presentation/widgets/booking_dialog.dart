@@ -2365,18 +2365,46 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   }) async {
     final bookingsApi = ref.read(bookingsApiProvider);
 
-    // Costruisci start_time dalla data + primo orario item
-    final firstItem = validItems.first;
+    int toMinutes(TimeOfDay time) => time.hour * 60 + time.minute;
+
+    // Anchor della ricorrenza: primo orario della sequenza (minuto più piccolo)
+    var anchorMinutes = toMinutes(validItems.first.startTime);
+    for (final item in validItems.skip(1)) {
+      final itemMinutes = toMinutes(item.startTime);
+      if (itemMinutes < anchorMinutes) {
+        anchorMinutes = itemMinutes;
+      }
+    }
+
+    final anchorHour = anchorMinutes ~/ 60;
+    final anchorMinute = anchorMinutes % 60;
     final startTime = DateTime(
       _date.year,
       _date.month,
       _date.day,
-      firstItem.startTime.hour,
-      firstItem.startTime.minute,
+      anchorHour,
+      anchorMinute,
     );
 
-    // Costruisci service_ids e staff_by_service
+    // Costruisci service_ids, staff mapping e template item ricorrenti
     final serviceIds = validItems.map((i) => i.serviceId!).toList();
+    final recurringItems = validItems.map((item) {
+      final itemMinutes = toMinutes(item.startTime);
+      final offsetMinutes = itemMinutes - anchorMinutes;
+      return RecurringBookingItemRequest(
+        serviceId: item.serviceId!,
+        staffId: item.staffId,
+        serviceVariantId: item.serviceVariantId,
+        startOffsetMinutes: offsetMinutes > 0 ? offsetMinutes : 0,
+        durationMinutes: item.durationMinutes > 0 ? item.durationMinutes : null,
+        blockedExtraMinutes: item.blockedExtraMinutes > 0
+            ? item.blockedExtraMinutes
+            : null,
+        processingExtraMinutes: item.processingExtraMinutes > 0
+            ? item.processingExtraMinutes
+            : null,
+      );
+    }).toList();
 
     // Se tutti i servizi hanno lo stesso staff, usa staff_id singolo
     // altrimenti usa staff_by_service
@@ -2408,6 +2436,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       maxOccurrences: _recurrenceConfig!.maxOccurrences,
       endDate: _recurrenceConfig!.endDate?.toIso8601String().split('T')[0],
       conflictStrategy: _recurrenceConfig!.conflictStrategy.value,
+      items: recurringItems,
     );
 
     // Prima mostra anteprima per permettere esclusione date
@@ -2444,6 +2473,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         endDate: _recurrenceConfig!.endDate?.toIso8601String().split('T')[0],
         conflictStrategy: _recurrenceConfig!.conflictStrategy.value,
         excludedIndices: excludedIndices,
+        items: recurringItems,
       );
 
       await bookingsApi.createRecurringBooking(
