@@ -511,7 +511,24 @@ final class ServicesController
             return Response::notFound('Category not found', $request->traceId);
         }
 
-        $this->serviceRepository->deleteCategory($categoryId);
+        if ($this->serviceRepository->hasActiveCategoryLinkedEntries($categoryId)) {
+            return Response::conflict(
+                'category_not_empty',
+                'Cannot delete category because it still contains services or packages',
+                $request->traceId
+            );
+        }
+
+        try {
+            $this->serviceRepository->deleteCategory($categoryId);
+        } catch (\PDOException) {
+            // Safety net for FK/race conditions: never surface as 503 to UI.
+            return Response::conflict(
+                'category_not_empty',
+                'Cannot delete category because it still contains services or packages',
+                $request->traceId
+            );
+        }
 
         return Response::success(['message' => 'Category deleted successfully']);
     }

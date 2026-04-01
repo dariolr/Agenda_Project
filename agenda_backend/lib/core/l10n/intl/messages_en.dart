@@ -193,9 +193,13 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m75(count) =>
       "${Intl.plural(count, one: '1 minute', other: '${count} minutes')}";
 
-  static String m76(selected, total) => "${selected} of ${total}";
+  static String m76(count) => "It must include \"${count}\".";
 
-  static String m77(hours) => "${hours} hours total";
+  static String m77(value) => "Default: ${value}.";
+
+  static String m78(selected, total) => "${selected} of ${total}";
+
+  static String m79(hours) => "${hours} hours total";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -2256,15 +2260,33 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationAddressLabel": MessageLookupByLibrary.simpleMessage("Address"),
     "teamLocationAllowCustomerChooseStaffHint":
         MessageLookupByLibrary.simpleMessage(
-          "If disabled, the system assigns the team member automatically",
+          "If disabled, the system assigns the service provider automatically",
         ),
     "teamLocationAllowCustomerChooseStaffLabel":
         MessageLookupByLibrary.simpleMessage(
-          "Allow customers to choose the team member",
+          "Allow customers to choose the service provider",
         ),
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Online booking limits",
     ),
+    "teamLocationBookingTextOverridesDefaultOnly":
+        MessageLookupByLibrary.simpleMessage(
+          "Only the \"default\" block is allowed.",
+        ),
+    "teamLocationBookingTextOverridesHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "Single block only: required key \"default\".",
+        ),
+    "teamLocationBookingTextOverridesHint":
+        MessageLookupByLibrary.simpleMessage(
+          "{\"default\":{\"services_title\":\"Choose activities\"}}",
+        ),
+    "teamLocationBookingTextOverridesInvalid":
+        MessageLookupByLibrary.simpleMessage(
+          "Invalid JSON. Provide an object with non-empty phrases.",
+        ),
+    "teamLocationBookingTextOverridesLabel":
+        MessageLookupByLibrary.simpleMessage("Nomenclature JSON"),
     "teamLocationCancellationHoursAlways": MessageLookupByLibrary.simpleMessage(
       "Always",
     ),
@@ -2293,6 +2315,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Location active",
     ),
     "teamLocationLabel": MessageLookupByLibrary.simpleMessage("Location"),
+    "teamLocationLocationDisplayHint": MessageLookupByLibrary.simpleMessage(
+      "E.g. Location, Place, Room",
+    ),
+    "teamLocationLocationDisplayLabel": MessageLookupByLibrary.simpleMessage(
+      "Location label",
+    ),
     "teamLocationMaxBookingAdvanceHint": MessageLookupByLibrary.simpleMessage(
       "How far ahead customers can book",
     ),
@@ -2314,6 +2342,46 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationMinutes": m75,
     "teamLocationNameLabel": MessageLookupByLibrary.simpleMessage(
       "Location name",
+    ),
+    "teamLocationNomenclatureAddRow": MessageLookupByLibrary.simpleMessage(
+      "Add label",
+    ),
+    "teamLocationNomenclatureCountPlaceholderError":
+        MessageLookupByLibrary.simpleMessage(
+          "For \"services_selected_many\" you must include the count placeholder.",
+        ),
+    "teamLocationNomenclatureCountPlaceholderNote": m76,
+    "teamLocationNomenclatureDefaultValue": m77,
+    "teamLocationNomenclatureDuplicateKey":
+        MessageLookupByLibrary.simpleMessage(
+          "The same key has been entered more than once.",
+        ),
+    "teamLocationNomenclatureEditorIntro": MessageLookupByLibrary.simpleMessage(
+      "Add only the labels you want to override. They will apply to all users.",
+    ),
+    "teamLocationNomenclatureInputHint": MessageLookupByLibrary.simpleMessage(
+      "Enter custom text (optional)",
+    ),
+    "teamLocationNomenclatureKeyLabel": MessageLookupByLibrary.simpleMessage(
+      "Key",
+    ),
+    "teamLocationNomenclatureLeaveEmptyHint":
+        MessageLookupByLibrary.simpleMessage("Leave empty to keep default."),
+    "teamLocationNomenclatureSection": MessageLookupByLibrary.simpleMessage(
+      "Online booking nomenclature",
+    ),
+    "teamLocationNomenclatureValueLabel": MessageLookupByLibrary.simpleMessage(
+      "Custom text",
+    ),
+    "teamLocationOnlineBookingSettingsSection":
+        MessageLookupByLibrary.simpleMessage(
+          "Online booking configuration for this location",
+        ),
+    "teamLocationServiceDisplayHint": MessageLookupByLibrary.simpleMessage(
+      "E.g. Service, Treatment, Session",
+    ),
+    "teamLocationServiceDisplayLabel": MessageLookupByLibrary.simpleMessage(
+      "Service label",
     ),
     "teamLocationSlotDisplayModeAll": MessageLookupByLibrary.simpleMessage(
       "Maximum availability",
@@ -2343,6 +2411,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationSmartSlotSection": MessageLookupByLibrary.simpleMessage(
       "Smart time slots",
     ),
+    "teamLocationStaffDisplayHint": MessageLookupByLibrary.simpleMessage(
+      "E.g. Team member, Resource, Specialist",
+    ),
+    "teamLocationStaffDisplayLabel": MessageLookupByLibrary.simpleMessage(
+      "Team label",
+    ),
+    "teamLocationStaffIconKeyHint": MessageLookupByLibrary.simpleMessage(
+      "Icon shown in online booking for service provider selection",
+    ),
+    "teamLocationStaffIconKeyLabel": MessageLookupByLibrary.simpleMessage(
+      "Service provider selection icon",
+    ),
     "teamLocationsLabel": MessageLookupByLibrary.simpleMessage("Locations"),
     "teamNewLocationTitle": MessageLookupByLibrary.simpleMessage(
       "New location",
@@ -2363,7 +2443,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamSelectedServicesButton": MessageLookupByLibrary.simpleMessage(
       "Selected services",
     ),
-    "teamSelectedServicesCount": m76,
+    "teamSelectedServicesCount": m78,
     "teamServicesLabel": MessageLookupByLibrary.simpleMessage("Services"),
     "teamStaffBookableOnlineLabel": MessageLookupByLibrary.simpleMessage(
       "Enabled for online bookings",
@@ -2400,7 +2480,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Remove shift",
     ),
     "weeklyScheduleTitle": MessageLookupByLibrary.simpleMessage("Weekly"),
-    "weeklyScheduleTotalHours": m77,
+    "weeklyScheduleTotalHours": m79,
     "whatsappAddConfig": MessageLookupByLibrary.simpleMessage(
       "New configuration",
     ),

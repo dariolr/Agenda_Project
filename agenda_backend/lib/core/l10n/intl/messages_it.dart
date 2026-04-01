@@ -194,9 +194,13 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m75(count) =>
       "${Intl.plural(count, one: '1 minuto', other: '${count} minuti')}";
 
-  static String m76(selected, total) => "${selected} su ${total}";
+  static String m76(count) => "Deve contenere \"${count}\".";
 
-  static String m77(hours) => "${hours} ore totale";
+  static String m77(value) => "Default: ${value}.";
+
+  static String m78(selected, total) => "${selected} su ${total}";
+
+  static String m79(hours) => "${hours} ore totale";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -2358,15 +2362,33 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "teamLocationAllowCustomerChooseStaffHint":
         MessageLookupByLibrary.simpleMessage(
-          "Se disattivato, il sistema assegna automaticamente l\'operatore",
+          "Se disattivato, il sistema assegna automaticamente il fornitore dei servizi",
         ),
     "teamLocationAllowCustomerChooseStaffLabel":
         MessageLookupByLibrary.simpleMessage(
-          "Consenti ai clienti di scegliere l\'operatore",
+          "Consenti ai clienti di scegliere il fornitore dei servizi",
         ),
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Limiti prenotazione online",
     ),
+    "teamLocationBookingTextOverridesDefaultOnly":
+        MessageLookupByLibrary.simpleMessage(
+          "È ammesso solo il blocco \"default\".",
+        ),
+    "teamLocationBookingTextOverridesHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "Un solo blocco: chiave obbligatoria \"default\".",
+        ),
+    "teamLocationBookingTextOverridesHint":
+        MessageLookupByLibrary.simpleMessage(
+          "{\"default\":{\"services_title\":\"Scegli attività\"}}",
+        ),
+    "teamLocationBookingTextOverridesInvalid":
+        MessageLookupByLibrary.simpleMessage(
+          "JSON non valido. Inserisci un oggetto con frasi non vuote.",
+        ),
+    "teamLocationBookingTextOverridesLabel":
+        MessageLookupByLibrary.simpleMessage("JSON nomenclatura"),
     "teamLocationCancellationHoursAlways": MessageLookupByLibrary.simpleMessage(
       "Sempre",
     ),
@@ -2395,6 +2417,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Sede attiva",
     ),
     "teamLocationLabel": MessageLookupByLibrary.simpleMessage("Sede"),
+    "teamLocationLocationDisplayHint": MessageLookupByLibrary.simpleMessage(
+      "Es. Sede, Luogo, Sala",
+    ),
+    "teamLocationLocationDisplayLabel": MessageLookupByLibrary.simpleMessage(
+      "Etichetta sede",
+    ),
     "teamLocationMaxBookingAdvanceHint": MessageLookupByLibrary.simpleMessage(
       "Fino a quanto tempo in anticipo possono prenotare",
     ),
@@ -2415,6 +2443,48 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "teamLocationMinutes": m75,
     "teamLocationNameLabel": MessageLookupByLibrary.simpleMessage("Nome sede"),
+    "teamLocationNomenclatureAddRow": MessageLookupByLibrary.simpleMessage(
+      "Aggiungi dicitura",
+    ),
+    "teamLocationNomenclatureCountPlaceholderError":
+        MessageLookupByLibrary.simpleMessage(
+          "Per \"services_selected_many\" devi includere il placeholder count.",
+        ),
+    "teamLocationNomenclatureCountPlaceholderNote": m76,
+    "teamLocationNomenclatureDefaultValue": m77,
+    "teamLocationNomenclatureDuplicateKey":
+        MessageLookupByLibrary.simpleMessage(
+          "La stessa chiave è stata inserita più di una volta.",
+        ),
+    "teamLocationNomenclatureEditorIntro": MessageLookupByLibrary.simpleMessage(
+      "Aggiungi solo le diciture che vuoi sovrascrivere. Verranno applicate a tutti gli utenti.",
+    ),
+    "teamLocationNomenclatureInputHint": MessageLookupByLibrary.simpleMessage(
+      "Inserisci personalizzazione (opzionale)",
+    ),
+    "teamLocationNomenclatureKeyLabel": MessageLookupByLibrary.simpleMessage(
+      "Chiave",
+    ),
+    "teamLocationNomenclatureLeaveEmptyHint":
+        MessageLookupByLibrary.simpleMessage(
+          "Lascia vuoto per mantenere il default.",
+        ),
+    "teamLocationNomenclatureSection": MessageLookupByLibrary.simpleMessage(
+      "Nomenclatura prenotazione online",
+    ),
+    "teamLocationNomenclatureValueLabel": MessageLookupByLibrary.simpleMessage(
+      "Testo personalizzato",
+    ),
+    "teamLocationOnlineBookingSettingsSection":
+        MessageLookupByLibrary.simpleMessage(
+          "Configurazione prenotazione online per questa sede",
+        ),
+    "teamLocationServiceDisplayHint": MessageLookupByLibrary.simpleMessage(
+      "Es. Servizio, Trattamento, Prestazione",
+    ),
+    "teamLocationServiceDisplayLabel": MessageLookupByLibrary.simpleMessage(
+      "Etichetta servizio",
+    ),
     "teamLocationSlotDisplayModeAll": MessageLookupByLibrary.simpleMessage(
       "Massima disponibilità",
     ),
@@ -2443,6 +2513,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationSmartSlotSection": MessageLookupByLibrary.simpleMessage(
       "Fasce orarie intelligenti",
     ),
+    "teamLocationStaffDisplayHint": MessageLookupByLibrary.simpleMessage(
+      "Es. Operatore, Risorsa, Tecnico",
+    ),
+    "teamLocationStaffDisplayLabel": MessageLookupByLibrary.simpleMessage(
+      "Etichetta operatore",
+    ),
+    "teamLocationStaffIconKeyHint": MessageLookupByLibrary.simpleMessage(
+      "Icona da visualizzare sulla prenotazione online per la selezione del fornitore dei servizi",
+    ),
+    "teamLocationStaffIconKeyLabel": MessageLookupByLibrary.simpleMessage(
+      "Icona selezione fornitore dei servizi",
+    ),
     "teamLocationsLabel": MessageLookupByLibrary.simpleMessage("Sedi"),
     "teamNewLocationTitle": MessageLookupByLibrary.simpleMessage("Nuova sede"),
     "teamNewStaffTitle": MessageLookupByLibrary.simpleMessage(
@@ -2463,7 +2545,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamSelectedServicesButton": MessageLookupByLibrary.simpleMessage(
       "Servizi selezionati",
     ),
-    "teamSelectedServicesCount": m76,
+    "teamSelectedServicesCount": m78,
     "teamServicesLabel": MessageLookupByLibrary.simpleMessage("Servizi"),
     "teamStaffBookableOnlineLabel": MessageLookupByLibrary.simpleMessage(
       "Abilitato alle prenotazioni online",
@@ -2504,7 +2586,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "weeklyScheduleTitle": MessageLookupByLibrary.simpleMessage(
       "Orario settimanale",
     ),
-    "weeklyScheduleTotalHours": m77,
+    "weeklyScheduleTotalHours": m79,
     "whatsappAddConfig": MessageLookupByLibrary.simpleMessage(
       "Nuova configurazione",
     ),

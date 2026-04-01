@@ -17,10 +17,12 @@ class Location {
   final String? currency;
   final String timezone;
   final bool allowCustomerChooseStaff;
+  final String staffIconKey;
   final int? cancellationHours;
   final bool isDefault;
   final int maxBookingAdvanceDays;
   final int onlineBookingSlotIntervalMinutes;
+  final Map<String, Map<String, String>>? bookingTextOverrides;
 
   const Location({
     required this.id,
@@ -37,10 +39,12 @@ class Location {
     this.currency,
     this.timezone = 'Europe/Rome',
     this.allowCustomerChooseStaff = false,
+    this.staffIconKey = 'person',
     this.cancellationHours,
     this.isDefault = false,
     this.maxBookingAdvanceDays = 90,
     this.onlineBookingSlotIntervalMinutes = 15,
+    this.bookingTextOverrides,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) {
@@ -64,11 +68,15 @@ class Location {
       timezone: json['timezone'] as String? ?? 'Europe/Rome',
       allowCustomerChooseStaff:
           json['allow_customer_choose_staff'] as bool? ?? false,
+      staffIconKey: (json['staff_icon_key'] as String?) ?? 'person',
       cancellationHours: json['cancellation_hours'] as int?,
       isDefault: json['is_default'] as bool? ?? false,
       maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
       onlineBookingSlotIntervalMinutes:
           json['online_booking_slot_interval_minutes'] as int? ?? 15,
+      bookingTextOverrides: _parseBookingTextOverrides(
+        json['booking_text_overrides'],
+      ),
     );
   }
 
@@ -88,10 +96,13 @@ class Location {
       'currency': currency,
       'timezone': timezone,
       'allow_customer_choose_staff': allowCustomerChooseStaff,
+      'staff_icon_key': staffIconKey,
       if (cancellationHours != null) 'cancellation_hours': cancellationHours,
       'is_default': isDefault,
       'max_booking_advance_days': maxBookingAdvanceDays,
       'online_booking_slot_interval_minutes': onlineBookingSlotIntervalMinutes,
+      if (bookingTextOverrides != null)
+        'booking_text_overrides': bookingTextOverrides,
     };
   }
 
@@ -113,4 +124,32 @@ class Location {
 
   @override
   String toString() => 'Location(id: $id, name: $name, city: $city)';
+}
+
+Map<String, Map<String, String>>? _parseBookingTextOverrides(dynamic raw) {
+  if (raw is! Map) return null;
+
+  final result = <String, Map<String, String>>{};
+  for (final entry in raw.entries) {
+    final locale = entry.key.toString().trim();
+    if (locale.isEmpty || entry.value is! Map) {
+      continue;
+    }
+
+    final phrasesRaw = entry.value as Map;
+    final phrases = <String, String>{};
+    for (final phraseEntry in phrasesRaw.entries) {
+      final key = phraseEntry.key.toString().trim();
+      final value = phraseEntry.value?.toString().trim() ?? '';
+      if (key.isEmpty || value.isEmpty) {
+        continue;
+      }
+      phrases[key] = value;
+    }
+    if (phrases.isNotEmpty) {
+      result[locale.toLowerCase()] = phrases;
+    }
+  }
+
+  return result.isEmpty ? null : result;
 }

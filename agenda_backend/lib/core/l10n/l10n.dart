@@ -1483,6 +1483,256 @@ class L10n {
     );
   }
 
+  /// `Configurazione prenotazione online per questa sede`
+  String get teamLocationOnlineBookingSettingsSection {
+    return Intl.message(
+      'Configurazione prenotazione online per questa sede',
+      name: 'teamLocationOnlineBookingSettingsSection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nomenclatura prenotazione online`
+  String get teamLocationNomenclatureSection {
+    return Intl.message(
+      'Nomenclatura prenotazione online',
+      name: 'teamLocationNomenclatureSection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Aggiungi solo le diciture che vuoi sovrascrivere. Verranno applicate a tutti gli utenti.`
+  String get teamLocationNomenclatureEditorIntro {
+    return Intl.message(
+      'Aggiungi solo le diciture che vuoi sovrascrivere. Verranno applicate a tutti gli utenti.',
+      name: 'teamLocationNomenclatureEditorIntro',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Icona selezione fornitore dei servizi`
+  String get teamLocationStaffIconKeyLabel {
+    return Intl.message(
+      'Icona selezione fornitore dei servizi',
+      name: 'teamLocationStaffIconKeyLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Icona da visualizzare sulla prenotazione online per la selezione del fornitore dei servizi`
+  String get teamLocationStaffIconKeyHint {
+    return Intl.message(
+      'Icona da visualizzare sulla prenotazione online per la selezione del fornitore dei servizi',
+      name: 'teamLocationStaffIconKeyHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inserisci personalizzazione (opzionale)`
+  String get teamLocationNomenclatureInputHint {
+    return Intl.message(
+      'Inserisci personalizzazione (opzionale)',
+      name: 'teamLocationNomenclatureInputHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Default: {value}.`
+  String teamLocationNomenclatureDefaultValue(String value) {
+    return Intl.message(
+      'Default: $value.',
+      name: 'teamLocationNomenclatureDefaultValue',
+      desc: '',
+      args: [value],
+    );
+  }
+
+  /// `Lascia vuoto per mantenere il default.`
+  String get teamLocationNomenclatureLeaveEmptyHint {
+    return Intl.message(
+      'Lascia vuoto per mantenere il default.',
+      name: 'teamLocationNomenclatureLeaveEmptyHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Deve contenere "{count}".`
+  String teamLocationNomenclatureCountPlaceholderNote(Object count) {
+    return Intl.message(
+      'Deve contenere "$count".',
+      name: 'teamLocationNomenclatureCountPlaceholderNote',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Chiave`
+  String get teamLocationNomenclatureKeyLabel {
+    return Intl.message(
+      'Chiave',
+      name: 'teamLocationNomenclatureKeyLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Testo personalizzato`
+  String get teamLocationNomenclatureValueLabel {
+    return Intl.message(
+      'Testo personalizzato',
+      name: 'teamLocationNomenclatureValueLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Aggiungi dicitura`
+  String get teamLocationNomenclatureAddRow {
+    return Intl.message(
+      'Aggiungi dicitura',
+      name: 'teamLocationNomenclatureAddRow',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La stessa chiave è stata inserita più di una volta.`
+  String get teamLocationNomenclatureDuplicateKey {
+    return Intl.message(
+      'La stessa chiave è stata inserita più di una volta.',
+      name: 'teamLocationNomenclatureDuplicateKey',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per "services_selected_many" devi includere il placeholder count.`
+  String get teamLocationNomenclatureCountPlaceholderError {
+    return Intl.message(
+      'Per "services_selected_many" devi includere il placeholder count.',
+      name: 'teamLocationNomenclatureCountPlaceholderError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `JSON nomenclatura`
+  String get teamLocationBookingTextOverridesLabel {
+    return Intl.message(
+      'JSON nomenclatura',
+      name: 'teamLocationBookingTextOverridesLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{"default":{"services_title":"Scegli attività"}}`
+  String get teamLocationBookingTextOverridesHint {
+    return Intl.message(
+      '{"default":{"services_title":"Scegli attività"}}',
+      name: 'teamLocationBookingTextOverridesHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Un solo blocco: chiave obbligatoria "default".`
+  String get teamLocationBookingTextOverridesHelper {
+    return Intl.message(
+      'Un solo blocco: chiave obbligatoria "default".',
+      name: 'teamLocationBookingTextOverridesHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `JSON non valido. Inserisci un oggetto con frasi non vuote.`
+  String get teamLocationBookingTextOverridesInvalid {
+    return Intl.message(
+      'JSON non valido. Inserisci un oggetto con frasi non vuote.',
+      name: 'teamLocationBookingTextOverridesInvalid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `È ammesso solo il blocco "default".`
+  String get teamLocationBookingTextOverridesDefaultOnly {
+    return Intl.message(
+      'È ammesso solo il blocco "default".',
+      name: 'teamLocationBookingTextOverridesDefaultOnly',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Etichetta operatore`
+  String get teamLocationStaffDisplayLabel {
+    return Intl.message(
+      'Etichetta operatore',
+      name: 'teamLocationStaffDisplayLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Es. Operatore, Risorsa, Tecnico`
+  String get teamLocationStaffDisplayHint {
+    return Intl.message(
+      'Es. Operatore, Risorsa, Tecnico',
+      name: 'teamLocationStaffDisplayHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Etichetta servizio`
+  String get teamLocationServiceDisplayLabel {
+    return Intl.message(
+      'Etichetta servizio',
+      name: 'teamLocationServiceDisplayLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Es. Servizio, Trattamento, Prestazione`
+  String get teamLocationServiceDisplayHint {
+    return Intl.message(
+      'Es. Servizio, Trattamento, Prestazione',
+      name: 'teamLocationServiceDisplayHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Etichetta sede`
+  String get teamLocationLocationDisplayLabel {
+    return Intl.message(
+      'Etichetta sede',
+      name: 'teamLocationLocationDisplayLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Es. Sede, Luogo, Sala`
+  String get teamLocationLocationDisplayHint {
+    return Intl.message(
+      'Es. Sede, Luogo, Sala',
+      name: 'teamLocationLocationDisplayHint',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Sede attiva`
   String get teamLocationIsActiveLabel {
     return Intl.message(
@@ -1513,20 +1763,20 @@ class L10n {
     );
   }
 
-  /// `Consenti ai clienti di scegliere l'operatore`
+  /// `Consenti ai clienti di scegliere il fornitore dei servizi`
   String get teamLocationAllowCustomerChooseStaffLabel {
     return Intl.message(
-      'Consenti ai clienti di scegliere l\'operatore',
+      'Consenti ai clienti di scegliere il fornitore dei servizi',
       name: 'teamLocationAllowCustomerChooseStaffLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Se disattivato, il sistema assegna automaticamente l'operatore`
+  /// `Se disattivato, il sistema assegna automaticamente il fornitore dei servizi`
   String get teamLocationAllowCustomerChooseStaffHint {
     return Intl.message(
-      'Se disattivato, il sistema assegna automaticamente l\'operatore',
+      'Se disattivato, il sistema assegna automaticamente il fornitore dei servizi',
       name: 'teamLocationAllowCustomerChooseStaffHint',
       desc: '',
       args: [],

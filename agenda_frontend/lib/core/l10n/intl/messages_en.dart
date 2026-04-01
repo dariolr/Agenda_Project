@@ -22,61 +22,107 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m0(message) => "Validation error: ${message}";
 
-  static String m1(fields) => "Changed fields: ${fields}";
+  static String m1(label) => "Choose ${label}";
 
-  static String m2(type) => "Email sent of type: ${type}";
+  static String m2(locationLabel) =>
+      "The selected ${locationLabel} is not available";
 
-  static String m3(email) => "Recipient: ${email}";
+  static String m3(serviceLabel) =>
+      "One or more selected ${serviceLabel} are not available";
 
-  static String m4(dateTime) => "Sent at: ${dateTime}";
+  static String m4(staffLabel, serviceLabel) =>
+      "The selected ${staffLabel} is not available for these ${serviceLabel}";
 
-  static String m5(id) => "Booking code: ${id}";
+  static String m5(serviceLabel) => "Unable to load booking ${serviceLabel}";
 
-  static String m6(date) => "First available: ${date}";
+  static String m6(staffLabel) =>
+      "The selected ${staffLabel} is not available at this time";
 
-  static String m7(hours) => "${hours} hour";
+  static String m7(fields) => "Changed fields: ${fields}";
 
-  static String m8(hours, minutes) => "${hours} hour ${minutes} min";
+  static String m8(type) => "Email sent of type: ${type}";
 
-  static String m9(minutes) => "${minutes} min";
+  static String m9(email) => "Recipient: ${email}";
 
-  static String m10(minutes) => "${minutes} min";
+  static String m10(dateTime) => "Sent at: ${dateTime}";
 
-  static String m11(path) => "Page not found: ${path}";
+  static String m11(id) => "Booking code: ${id}";
 
-  static String m12(dateTime) => "Modifiable until ${dateTime}";
+  static String m12(date) => "First available: ${date}";
 
-  static String m13(days) =>
+  static String m13(hours) => "${hours} hour";
+
+  static String m14(hours, minutes) => "${hours} hour ${minutes} min";
+
+  static String m15(minutes) => "${minutes} min";
+
+  static String m16(minutes) => "${minutes} min";
+
+  static String m17(path) => "Page not found: ${path}";
+
+  static String m18(label) => "${label} temporarily unavailable";
+
+  static String m19(label) => "No ${label} available";
+
+  static String m20(dateTime) => "Modifiable until ${dateTime}";
+
+  static String m21(days) =>
       "${Intl.plural(days, one: 'Modifiable until tomorrow', other: 'Modifiable for ${days} days')}";
 
-  static String m14(hours) =>
+  static String m22(hours) =>
       "${Intl.plural(hours, one: 'Modifiable for 1 hour', other: 'Modifiable for ${hours} hours')}";
 
-  static String m15(minutes) =>
+  static String m23(minutes) =>
       "${Intl.plural(minutes, one: 'Modifiable for 1 minute', other: 'Modifiable for ${minutes} minutes')}";
 
-  static String m16(dateTime) =>
+  static String m24(dateTime) =>
       "The deadline to modify or cancel expired on ${dateTime}.";
 
-  static String m17(price) => "€${price}";
+  static String m25(staffLabel, serviceLabel) =>
+      "No ${staffLabel} can perform all selected ${serviceLabel}. Try selecting fewer or different ${serviceLabel}.";
 
-  static String m18(id) => "Category ${id}";
+  static String m26(price) => "€${price}";
 
-  static String m19(duration) => "${duration} min";
+  static String m27(id) => "Category ${id}";
 
-  static String m20(price) => "from ${price}";
+  static String m28(duration) => "${duration} min";
 
-  static String m21(count) =>
+  static String m29(label) => "No ${label} available at the moment";
+
+  static String m30(label) =>
+      "There are no ${label} available for online booking at this business";
+
+  static String m31(price) => "from ${price}";
+
+  static String m32(count) =>
       "${Intl.plural(count, zero: 'No service selected', one: '1 service selected', other: '${count} services selected')}";
 
-  static String m22(total) => "Total: ${total}";
+  static String m33(count, label) => "${count} ${label} selected";
 
-  static String m23(days) =>
+  static String m34(label) => "No ${label} selected";
+
+  static String m35(label) => "1 ${label} selected";
+
+  static String m36(label) => "You can select one or more ${label}";
+
+  static String m37(total) => "Total: ${total}";
+
+  static String m38(label) => "Any available ${label}";
+
+  static String m39(label) => "We\'ll assign you the first available ${label}";
+
+  static String m40(label) => "No ${label} available at the moment";
+
+  static String m41(label) => "Select your preferred ${label}";
+
+  static String m42(days) =>
       "${Intl.plural(days, one: 'Up to 1 day before', other: 'Up to ${days} days before')}";
 
-  static String m24(hours) => "Up to ${hours} hours before";
+  static String m43(hours) => "Up to ${hours} hours before";
 
-  static String m25(businessName) =>
+  static String m44(label) => "Selected ${label}";
+
+  static String m45(businessName) =>
       "To book at ${businessName}, you need to log in with an account registered here.";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -240,21 +286,29 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingCancelled": MessageLookupByLibrary.simpleMessage(
       "Booking cancelled successfully",
     ),
+    "bookingChooseCustomLabel": m1,
     "bookingErrorInvalidClient": MessageLookupByLibrary.simpleMessage(
       "The selected client is not valid",
     ),
     "bookingErrorInvalidLocation": MessageLookupByLibrary.simpleMessage(
       "The selected location is not available",
     ),
+    "bookingErrorInvalidLocationCustom": m2,
     "bookingErrorInvalidService": MessageLookupByLibrary.simpleMessage(
       "One or more selected services are not available",
     ),
+    "bookingErrorInvalidServiceCustom": m3,
     "bookingErrorInvalidStaff": MessageLookupByLibrary.simpleMessage(
       "The selected staff member is not available for these services",
     ),
+    "bookingErrorInvalidStaffCustom": m4,
     "bookingErrorInvalidTime": MessageLookupByLibrary.simpleMessage(
       "The selected time is not valid",
     ),
+    "bookingErrorMissingServices": MessageLookupByLibrary.simpleMessage(
+      "Unable to load booking services",
+    ),
+    "bookingErrorMissingServicesCustom": m5,
     "bookingErrorNotFound": MessageLookupByLibrary.simpleMessage(
       "Booking not found",
     ),
@@ -273,6 +327,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingErrorStaffUnavailable": MessageLookupByLibrary.simpleMessage(
       "The selected staff member is not available at this time",
     ),
+    "bookingErrorStaffUnavailableCustom": m6,
     "bookingErrorUnauthorized": MessageLookupByLibrary.simpleMessage(
       "You are not authorized to complete this action",
     ),
@@ -284,7 +339,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingHistoryActorStaff": MessageLookupByLibrary.simpleMessage("Staff"),
     "bookingHistoryActorSystem": MessageLookupByLibrary.simpleMessage("System"),
-    "bookingHistoryChangedFields": m1,
+    "bookingHistoryChangedFields": m7,
     "bookingHistoryEmpty": MessageLookupByLibrary.simpleMessage(
       "No events recorded",
     ),
@@ -308,7 +363,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingHistoryEventItemDeleted": MessageLookupByLibrary.simpleMessage(
       "Service removed",
     ),
-    "bookingHistoryEventNotificationSentTitle": m2,
+    "bookingHistoryEventNotificationSentTitle": m8,
     "bookingHistoryEventPriceChanged": MessageLookupByLibrary.simpleMessage(
       "Price changed",
     ),
@@ -335,13 +390,16 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Booking reminder"),
     "bookingHistoryNotificationChannelRescheduled":
         MessageLookupByLibrary.simpleMessage("Booking rescheduled"),
-    "bookingHistoryNotificationRecipient": m3,
-    "bookingHistoryNotificationSentAt": m4,
+    "bookingHistoryNotificationRecipient": m9,
+    "bookingHistoryNotificationSentAt": m10,
     "bookingHistoryTitle": MessageLookupByLibrary.simpleMessage(
       "Booking history",
     ),
     "bookingRescheduled": MessageLookupByLibrary.simpleMessage(
       "Booking modified successfully",
+    ),
+    "bookingServiceSingularLabel": MessageLookupByLibrary.simpleMessage(
+      "service",
     ),
     "bookingStepDateTime": MessageLookupByLibrary.simpleMessage("Date & Time"),
     "bookingStepLocation": MessageLookupByLibrary.simpleMessage("Location"),
@@ -370,7 +428,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "confirmReschedule": MessageLookupByLibrary.simpleMessage(
       "Confirm changes",
     ),
-    "confirmationBookingId": m5,
+    "confirmationBookingId": m11,
     "confirmationGoHome": MessageLookupByLibrary.simpleMessage("Go to home"),
     "confirmationNewBooking": MessageLookupByLibrary.simpleMessage(
       "New booking",
@@ -384,7 +442,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "currentBooking": MessageLookupByLibrary.simpleMessage("Current booking"),
     "dateTimeAfternoon": MessageLookupByLibrary.simpleMessage("Afternoon"),
     "dateTimeEvening": MessageLookupByLibrary.simpleMessage("Evening"),
-    "dateTimeFirstAvailable": m6,
+    "dateTimeFirstAvailable": m12,
     "dateTimeGoToFirst": MessageLookupByLibrary.simpleMessage(
       "Go to first available date",
     ),
@@ -402,10 +460,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "dateTimeTitle": MessageLookupByLibrary.simpleMessage(
       "Choose date and time",
     ),
-    "durationHour": m7,
-    "durationHourMinute": m8,
-    "durationMinute": m9,
-    "durationMinutes": m10,
+    "durationHour": m13,
+    "durationHourMinute": m14,
+    "durationMinute": m15,
+    "durationMinutes": m16,
     "environmentDemoBannerSubtitle": MessageLookupByLibrary.simpleMessage(
       "Data is reset periodically.",
     ),
@@ -449,10 +507,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "errorNoAvailability": MessageLookupByLibrary.simpleMessage(
       "No availability for the selected date",
     ),
-    "errorNotFound": m11,
+    "errorNotFound": m17,
     "errorServiceUnavailable": MessageLookupByLibrary.simpleMessage(
       "Service temporarily unavailable",
     ),
+    "errorServiceUnavailableCustom": m18,
     "errorServiceUnavailableSubtitle": MessageLookupByLibrary.simpleMessage(
       "We are working to fix the issue. Please try again in a few minutes.",
     ),
@@ -464,19 +523,20 @@ class MessageLookup extends MessageLookupByLibrary {
     "locationEmpty": MessageLookupByLibrary.simpleMessage(
       "No location available",
     ),
+    "locationEmptyCustom": m19,
     "locationSubtitle": MessageLookupByLibrary.simpleMessage(
       "Select where you want to book",
     ),
     "locationTitle": MessageLookupByLibrary.simpleMessage("Choose location"),
     "modifiable": MessageLookupByLibrary.simpleMessage("Modifiable"),
-    "modifiableUntilDateTime": m12,
-    "modifiableUntilDays": m13,
-    "modifiableUntilHours": m14,
-    "modifiableUntilMinutes": m15,
+    "modifiableUntilDateTime": m20,
+    "modifiableUntilDays": m21,
+    "modifiableUntilHours": m22,
+    "modifiableUntilMinutes": m23,
     "modificationWindowExpired": MessageLookupByLibrary.simpleMessage(
       "The time window to modify or cancel this booking has expired.",
     ),
-    "modificationWindowExpiredDateTime": m16,
+    "modificationWindowExpiredDateTime": m24,
     "modify": MessageLookupByLibrary.simpleMessage("Reschedule"),
     "modifyNotImplemented": MessageLookupByLibrary.simpleMessage(
       "Modify feature under development",
@@ -504,12 +564,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "noStaffForAllServices": MessageLookupByLibrary.simpleMessage(
       "No staff member can perform all selected services. Try selecting fewer or different services.",
     ),
+    "noStaffForAllServicesCustom": m25,
     "noUpcomingBookings": MessageLookupByLibrary.simpleMessage(
       "You have no upcoming bookings",
     ),
     "notModifiable": MessageLookupByLibrary.simpleMessage("Not modifiable"),
     "pastBookings": MessageLookupByLibrary.simpleMessage("Past"),
-    "priceFormat": m17,
+    "priceFormat": m26,
     "profileTitle": MessageLookupByLibrary.simpleMessage("Profile"),
     "rescheduleBookingTitle": MessageLookupByLibrary.simpleMessage(
       "Modify booking",
@@ -531,22 +592,28 @@ class MessageLookup extends MessageLookupByLibrary {
       "Or pick a ready-made package",
     ),
     "servicePackagesTitle": MessageLookupByLibrary.simpleMessage("Packages"),
-    "servicesCategoryFallbackName": m18,
-    "servicesDuration": m19,
+    "servicesCategoryFallbackName": m27,
+    "servicesDuration": m28,
     "servicesEmpty": MessageLookupByLibrary.simpleMessage(
       "No services available at the moment",
     ),
+    "servicesEmptyCustom": m29,
     "servicesEmptySubtitle": MessageLookupByLibrary.simpleMessage(
       "There are no services available for online booking at this business",
     ),
+    "servicesEmptySubtitleCustom": m30,
     "servicesFree": MessageLookupByLibrary.simpleMessage("Free"),
-    "servicesPriceFrom": m20,
-    "servicesSelected": m21,
+    "servicesPriceFrom": m31,
+    "servicesSelected": m32,
+    "servicesSelectedManyCustom": m33,
+    "servicesSelectedNoneCustom": m34,
+    "servicesSelectedOneCustom": m35,
     "servicesSubtitle": MessageLookupByLibrary.simpleMessage(
       "You can select one or more services",
     ),
+    "servicesSubtitleCustom": m36,
     "servicesTitle": MessageLookupByLibrary.simpleMessage("Choose services"),
-    "servicesTotal": m22,
+    "servicesTotal": m37,
     "sessionExpired": MessageLookupByLibrary.simpleMessage(
       "Session expired. Please log in again.",
     ),
@@ -556,15 +623,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "staffAnyOperator": MessageLookupByLibrary.simpleMessage(
       "Any available staff",
     ),
+    "staffAnyOperatorCustom": m38,
     "staffAnyOperatorSubtitle": MessageLookupByLibrary.simpleMessage(
       "We\'ll assign you the first available staff member",
     ),
+    "staffAnyOperatorSubtitleCustom": m39,
     "staffEmpty": MessageLookupByLibrary.simpleMessage(
       "No staff available at the moment",
     ),
+    "staffEmptyCustom": m40,
     "staffSubtitle": MessageLookupByLibrary.simpleMessage(
       "Select who you want to be served by",
     ),
+    "staffSubtitleCustom": m41,
     "staffTitle": MessageLookupByLibrary.simpleMessage("Choose staff member"),
     "summaryCancellationPolicyAcceptLabel":
         MessageLookupByLibrary.simpleMessage(
@@ -577,8 +648,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "summaryCancellationPolicyAlways": MessageLookupByLibrary.simpleMessage(
       "Always",
     ),
-    "summaryCancellationPolicyDays": m23,
-    "summaryCancellationPolicyHours": m24,
+    "summaryCancellationPolicyDays": m42,
+    "summaryCancellationPolicyHours": m43,
     "summaryCancellationPolicyNever": MessageLookupByLibrary.simpleMessage(
       "Never (not allowed after booking)",
     ),
@@ -596,6 +667,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "summaryServices": MessageLookupByLibrary.simpleMessage(
       "Selected services",
     ),
+    "summaryServicesCustom": m44,
     "summarySubtitle": MessageLookupByLibrary.simpleMessage(
       "Review the details before confirming",
     ),
@@ -620,7 +692,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "wrongBusinessAuthAction": MessageLookupByLibrary.simpleMessage(
       "Log out and sign in here",
     ),
-    "wrongBusinessAuthMessage": m25,
+    "wrongBusinessAuthMessage": m45,
     "wrongBusinessAuthTitle": MessageLookupByLibrary.simpleMessage(
       "Account linked to another business",
     ),

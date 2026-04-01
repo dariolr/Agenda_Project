@@ -50,6 +50,7 @@ class AuthNotifier extends Notifier<AuthState> {
       );
       debugPrint('AUTH: tryRestoreSession result: user=${user?.email}');
       if (user != null) {
+        ref.invalidate(authenticatedBusinessIdProvider);
         state = AuthState.authenticated(user);
         debugPrint('AUTH: state set to authenticated');
         return;
@@ -93,6 +94,7 @@ class AuthNotifier extends Notifier<AuthState> {
           password: credentials.password!,
         );
 
+        ref.invalidate(authenticatedBusinessIdProvider);
         state = AuthState.authenticated(user);
         debugPrint('AUTH: auto-login successful');
         return;
@@ -108,6 +110,7 @@ class AuthNotifier extends Notifier<AuthState> {
     }
 
     // Nessuna credenziale salvata o login fallito
+    ref.invalidate(authenticatedBusinessIdProvider);
     state = AuthState.unauthenticated();
     debugPrint('AUTH: state set to unauthenticated');
   }
@@ -128,6 +131,7 @@ class AuthNotifier extends Notifier<AuthState> {
         password: password,
       );
       debugPrint('AUTH PROVIDER: login success, user=${user.email}');
+      ref.invalidate(authenticatedBusinessIdProvider);
       state = AuthState.authenticated(user);
       return true;
     } on ApiException catch (e) {
@@ -153,6 +157,7 @@ class AuthNotifier extends Notifier<AuthState> {
         await credentialsStorage.clearPassword();
         debugPrint('AUTH: cleared saved password on logout');
       } catch (_) {}
+      ref.invalidate(authenticatedBusinessIdProvider);
       state = AuthState.unauthenticated();
     }
   }
@@ -184,6 +189,7 @@ class AuthNotifier extends Notifier<AuthState> {
         phone: phone,
       );
       debugPrint('Register SUCCESS: user=${user.email}');
+      ref.invalidate(authenticatedBusinessIdProvider);
       state = AuthState.authenticated(user);
       return true;
     } on ApiException catch (e) {
@@ -306,11 +312,13 @@ class AuthNotifier extends Notifier<AuthState> {
         password: credentials.password!,
       );
 
+      ref.invalidate(authenticatedBusinessIdProvider);
       state = AuthState.authenticated(user);
       debugPrint('AUTH: retry auto-login successful');
       return true;
     } catch (e) {
       debugPrint('AUTH: retry auto-login failed: $e');
+      ref.invalidate(authenticatedBusinessIdProvider);
       state = AuthState.unauthenticated();
       return false;
     }

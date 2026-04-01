@@ -8,6 +8,7 @@ import '../../../../core/models/service_package.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/booking_nomenclature_provider.dart';
 
 class ServicesStep extends ConsumerStatefulWidget {
   const ServicesStep({super.key});
@@ -19,8 +20,11 @@ class ServicesStep extends ConsumerStatefulWidget {
 class _ServicesStepState extends ConsumerState<ServicesStep> {
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     final theme = Theme.of(context);
+    final customServiceLabel = ref.watch(bookingServiceDisplayLabelProvider);
+    final phraseOverrides = ref.watch(
+      bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
+    );
     final servicesDataAsync = ref.watch(servicesDataProvider);
     final packagesAsync = ref.watch(servicePackagesProvider);
     final bookingState = ref.watch(bookingFlowProvider);
@@ -28,7 +32,13 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     final isLoading = servicesDataAsync.isLoading;
 
     if (servicesDataAsync.hasError) {
-      return _buildErrorWidget(context, ref, servicesDataAsync.error!);
+      return _buildErrorWidget(
+        context,
+        ref,
+        servicesDataAsync.error!,
+        customServiceLabel,
+        phraseOverrides,
+      );
     }
 
     return Stack(
@@ -42,14 +52,22 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    l10n.servicesTitle,
+                    bookingServicesTitle(
+                      context,
+                      customServiceLabel,
+                      phraseOverrides: phraseOverrides,
+                    ),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    l10n.servicesSubtitle,
+                    bookingServicesSubtitle(
+                      context,
+                      customServiceLabel,
+                      phraseOverrides: phraseOverrides,
+                    ),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
@@ -68,8 +86,16 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
                       packagesAsync.value ?? const <ServicePackage>[];
                   if (data.bookableServices.isEmpty && packages.isEmpty) {
                     return _EmptyView(
-                      title: l10n.servicesEmpty,
-                      subtitle: l10n.servicesEmptySubtitle,
+                      title: bookingServicesEmptyTitle(
+                        context,
+                        customServiceLabel,
+                        phraseOverrides: phraseOverrides,
+                      ),
+                      subtitle: bookingServicesEmptySubtitle(
+                        context,
+                        customServiceLabel,
+                        phraseOverrides: phraseOverrides,
+                      ),
                     );
                   }
 
@@ -84,6 +110,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
                     bookingState.request.selectedPackageIds,
                     selectedServices,
                     packagesAsync,
+                    phraseOverrides,
                   );
                 },
               ),
@@ -105,7 +132,13 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
   }
 
   /// Costruisce il widget di errore appropriato in base al tipo di errore
-  Widget _buildErrorWidget(BuildContext context, WidgetRef ref, Object error) {
+  Widget _buildErrorWidget(
+    BuildContext context,
+    WidgetRef ref,
+    Object error,
+    String? customServiceLabel,
+    Map<String, String>? phraseOverrides,
+  ) {
     final l10n = context.l10n;
 
     // Determina titolo e sottotitolo in base al tipo di errore
@@ -126,7 +159,11 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
         icon = Icons.store_outlined;
         showRetry = false;
       } else if (error.isServiceUnavailable) {
-        title = l10n.errorServiceUnavailable;
+        title = bookingErrorServiceUnavailableMessage(
+          context,
+          customServiceLabel,
+          phraseOverrides: phraseOverrides,
+        );
         subtitle = l10n.errorServiceUnavailableSubtitle;
         icon = Icons.cloud_off_outlined;
         showRetry = true;
@@ -164,6 +201,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     Set<int> selectedPackageIds,
     List<Service> selectedServices,
     AsyncValue<List<ServicePackage>> packagesAsync,
+    Map<String, String>? phraseOverrides,
   ) {
     final widgets = <Widget>[];
     final packages = packagesAsync.value ?? [];
@@ -315,6 +353,10 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
   ) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final customServiceLabel = ref.watch(bookingServiceDisplayLabelProvider);
+    final phraseOverrides = ref.watch(
+      bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
+    );
     final bookingState = ref.watch(bookingFlowProvider);
     final totals = ref.watch(bookingTotalsProvider);
 
@@ -340,7 +382,12 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  l10n.servicesSelected(totals.selectedItemCount),
+                  bookingServicesSelectedLabel(
+                    context,
+                    customServiceLabel,
+                    totals.selectedItemCount,
+                    phraseOverrides: phraseOverrides,
+                  ),
                   style: theme.textTheme.bodyMedium,
                 ),
                 if (selectedServices.isNotEmpty)
@@ -527,7 +574,8 @@ class _CategorySectionState extends State<_CategorySection> {
                       ),
                       isDisabled:
                           !entry.package!.isActive || entry.package!.isBroken,
-                      onTap: (!entry.package!.isActive || entry.package!.isBroken)
+                      onTap:
+                          (!entry.package!.isActive || entry.package!.isBroken)
                           ? null
                           : () => widget.onPackageTap(entry.package!),
                     )
@@ -631,7 +679,9 @@ class _ServiceTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      context.localizedDurationLabel(service.totalDurationMinutes),
+                      context.localizedDurationLabel(
+                        service.totalDurationMinutes,
+                      ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),

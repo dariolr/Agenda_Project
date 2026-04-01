@@ -13,6 +13,7 @@ import '/core/widgets/feedback_dialog.dart';
 import '/features/auth/domain/auth_state.dart';
 import '/features/auth/providers/auth_provider.dart';
 import '/features/booking/providers/business_provider.dart';
+import '/features/booking/providers/booking_nomenclature_provider.dart';
 import '/features/booking/providers/locations_provider.dart';
 import '/features/booking/providers/my_bookings_provider.dart';
 import '../dialogs/booking_history_dialog.dart';
@@ -311,6 +312,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     final dateFormat = DateFormat.yMd(locale);
     final timeFormat = DateFormat.jm(locale);
     final theme = Theme.of(context);
+    final staffIcon = bookingStaffIconFromKey(location?.staffIconKey);
     final rowIconColor = theme.colorScheme.onSurface.withOpacity(0.6);
     const actionButtonPadding = EdgeInsets.symmetric(horizontal: 12);
     final modifyButtonStyle = ElevatedButton.styleFrom(
@@ -423,7 +425,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.person, size: 18, color: rowIconColor),
+                  Icon(staffIcon, size: 18, color: rowIconColor),
                   const SizedBox(width: 8),
                   Text(
                     booking.staffName!,

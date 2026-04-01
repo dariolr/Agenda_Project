@@ -143,14 +143,38 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final locations = ref.watch(locationsProvider);
     if (locations.length > 1) {
       final allLocationIds = locations.map((location) => location.id).toSet();
+      final locationIdsKey = locationIdsToKey(allLocationIds);
       final allLocationsServicesAsync = ref.watch(
-        servicesForLocationsProvider(locationIdsToKey(allLocationIds)),
+        servicesForLocationsProvider(locationIdsKey),
+      );
+      final allLocationsPackagesAsync = ref.watch(
+        servicePackagesForLocationsProvider(locationIdsKey),
       );
       final allCategoriesWithServices = <int>{
         for (final s in allLocationsServicesAsync.value?.services ?? const <Service>[])
           if (s.categoryId > 0) s.categoryId,
       };
-      categoriesWithServicesElsewhere = allCategoriesWithServices.difference(
+      final allServicesById = <int, Service>{
+        for (final s in allLocationsServicesAsync.value?.services ?? const <Service>[])
+          s.id: s,
+      };
+      final allCategoriesWithPackages = <int>{};
+      for (final package
+          in allLocationsPackagesAsync.value ?? const <ServicePackage>[]) {
+        var categoryId = package.categoryId;
+        if (categoryId == 0 && package.items.isNotEmpty) {
+          categoryId =
+              allServicesById[package.items.first.serviceId]?.categoryId ?? 0;
+        }
+        if (categoryId > 0) {
+          allCategoriesWithPackages.add(categoryId);
+        }
+      }
+      final allCategoriesWithEntries = <int>{
+        ...allCategoriesWithServices,
+        ...allCategoriesWithPackages,
+      };
+      categoriesWithServicesElsewhere = allCategoriesWithEntries.difference(
         localNonEmptyCategoryIds,
       );
     }
@@ -794,9 +818,15 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       cancelLabel: context.l10n.actionCancel,
       danger: true,
       onConfirm: () async {
-        await ref
+        final deleted = await ref
             .read(serviceCategoriesProvider.notifier)
             .deleteCategoryApi(categoryId);
+        if (!context.mounted || deleted) return;
+        FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.cannotDeleteCategoryContent,
+        );
       },
     );
   }

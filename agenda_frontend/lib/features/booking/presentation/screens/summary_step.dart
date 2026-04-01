@@ -8,6 +8,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/booking_nomenclature_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/locations_provider.dart';
 import '../widgets/wrong_business_auth_banner.dart';
@@ -50,6 +51,11 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final bookingState = ref.watch(bookingFlowProvider);
+    final customStaffLabel = ref.watch(bookingStaffDisplayLabelProvider);
+    final customServiceLabel = ref.watch(bookingServiceDisplayLabelProvider);
+    final phraseOverrides = ref.watch(
+      bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
+    );
     final request = bookingState.request;
     final totals = ref.watch(bookingTotalsProvider);
     final location = ref.watch(effectiveLocationProvider);
@@ -109,7 +115,11 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
 
                 // Servizi selezionati (con operatore)
                 _SummarySection(
-                  title: l10n.summaryServices,
+                  title: bookingSummaryServicesLabel(
+                    context,
+                    customServiceLabel,
+                    phraseOverrides: phraseOverrides,
+                  ),
                   icon: Icons.list_alt,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,10 +187,18 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                             );
                             final operatorLabel =
                                 request.isAnyOperatorForService(service.id)
-                                ? l10n.staffAnyOperator
+                                ? bookingAnyStaffLabel(
+                                    context,
+                                    customStaffLabel,
+                                    phraseOverrides: phraseOverrides,
+                                  )
                                 : (staff != null
                                       ? staff.fullName
-                                      : l10n.staffAnyOperator);
+                                      : bookingAnyStaffLabel(
+                                          context,
+                                          customStaffLabel,
+                                          phraseOverrides: phraseOverrides,
+                                        ));
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Row(
@@ -452,6 +470,12 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
   ) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final customStaffLabel = ref.watch(bookingStaffDisplayLabelProvider);
+    final customServiceLabel = ref.watch(bookingServiceDisplayLabelProvider);
+    final customLocationLabel = ref.watch(bookingLocationDisplayLabelProvider);
+    final phraseOverrides = ref.watch(
+      bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
+    );
     final isAuthenticated = ref.watch(
       authProvider.select((state) => state.isAuthenticated),
     );
@@ -489,7 +513,14 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _resolveBookingErrorMessage(context, state),
+                        _resolveBookingErrorMessage(
+                          context,
+                          state,
+                          customStaffLabel: customStaffLabel,
+                          customServiceLabel: customServiceLabel,
+                          customLocationLabel: customLocationLabel,
+                          phraseOverrides: phraseOverrides,
+                        ),
                         style: TextStyle(color: theme.colorScheme.error),
                       ),
                     ),
@@ -555,11 +586,16 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
 
   String _resolveBookingErrorMessage(
     BuildContext context,
-    BookingFlowState state,
-  ) {
+    BookingFlowState state, {
+    required String? customStaffLabel,
+    required String? customServiceLabel,
+    required String? customLocationLabel,
+    required Map<String, String>? phraseOverrides,
+  }) {
     final l10n = context.l10n;
     final normalizedMessage = (state.errorMessage ?? '').toLowerCase();
-    final isBlockedCustomer = state.errorCode == 'account_disabled' ||
+    final isBlockedCustomer =
+        state.errorCode == 'account_disabled' ||
         (state.errorCode == 'unauthorized' &&
             (normalizedMessage.contains('account is disabled') ||
                 normalizedMessage.contains('account disabled') ||
@@ -573,17 +609,34 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
       case 'slot_conflict':
         return l10n.bookingErrorSlotConflict;
       case 'invalid_service':
-        return l10n.bookingErrorInvalidService;
+        return bookingErrorInvalidServiceMessage(
+          context,
+          customServiceLabel,
+          phraseOverrides: phraseOverrides,
+        );
       case 'invalid_staff':
-        return l10n.bookingErrorInvalidStaff;
+        return bookingErrorInvalidStaffMessage(
+          context,
+          customStaffLabel,
+          customServiceLabel,
+          phraseOverrides: phraseOverrides,
+        );
       case 'invalid_location':
-        return l10n.bookingErrorInvalidLocation;
+        return bookingErrorInvalidLocationMessage(
+          context,
+          customLocationLabel,
+          phraseOverrides: phraseOverrides,
+        );
       case 'invalid_client':
         return l10n.bookingErrorInvalidClient;
       case 'invalid_time':
         return l10n.bookingErrorInvalidTime;
       case 'staff_unavailable':
-        return l10n.bookingErrorStaffUnavailable;
+        return bookingErrorStaffUnavailableMessage(
+          context,
+          customStaffLabel,
+          phraseOverrides: phraseOverrides,
+        );
       case 'outside_working_hours':
         return l10n.bookingErrorOutsideWorkingHours;
       case 'not_found':

@@ -108,18 +108,16 @@ foreach ($notifications as $notification) {
         echo "[{$id}] {$channel} -> {$recipient}... ";
     }
     
-    // Per i reminder, verifica che il booking sia ancora attivo.
-    // I booking replaced non devono più generare reminder: la coda residua va pulita.
+    // Per i reminder, verifica che il booking sia ancora attivo e che il send
+    // sia ancora nella finestra prevista (-24h con piccola tolleranza tecnica).
+    // I reminder fuori finestra vengono scartati per evitare messaggi fuorvianti.
     if ($channel === 'booking_reminder' && $bookingId !== null) {
-        $stmt = $db->getPdo()->prepare('SELECT status FROM bookings WHERE id = ?');
-        $stmt->execute([$bookingId]);
-        $bookingStatus = $stmt->fetchColumn();
-        
-        if ($bookingStatus === 'cancelled' || $bookingStatus === 'replaced') {
+        $sendDecision = getReminderSendDecision($db->getPdo(), (int) $bookingId);
+        if ($sendDecision['skip_send']) {
             if ($verbose) {
-                echo "SKIPPED (booking {$bookingStatus}) - deleting\n";
+                echo "SKIPPED ({$sendDecision['reason']}) - deleting\n";
             }
-            // Elimina il reminder (coerente con deletePendingReminders)
+            // Elimina il reminder pending non più valido.
             $deleteStmt = $db->getPdo()->prepare('DELETE FROM notification_queue WHERE id = ?');
             $deleteStmt->execute([$id]);
             $failed++;
@@ -507,6 +505,73 @@ function getReminderRetryDecision(\PDO $pdo, int $bookingId, int $currentAttempt
     return [
         'skip_retry' => false,
         'retry_at' => $retryAt->format('Y-m-d H:i:s'),
+        'reason' => '',
+    ];
+}
+
+/**
+ * Decide whether a reminder should still be sent.
+ *
+ * Rules:
+ * - booking must be active (pending|confirmed)
+ * - appointment start must be available
+ * - send only inside the 24h-before window with a tolerance of +/- 60 minutes
+ *
+ * @return array{skip_send: bool, reason: string}
+ */
+function getReminderSendDecision(\PDO $pdo, int $bookingId): array
+{
+    $stmt = $pdo->prepare(
+        'SELECT b.status, l.timezone AS location_timezone, MIN(bi.start_time) AS start_time
+         FROM bookings b
+         JOIN locations l ON b.location_id = l.id
+         LEFT JOIN booking_items bi ON bi.booking_id = b.id
+         WHERE b.id = :booking_id
+         GROUP BY b.id, b.status, l.timezone'
+    );
+    $stmt->execute(['booking_id' => $bookingId]);
+    $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+    if (!$booking) {
+        return [
+            'skip_send' => true,
+            'reason' => 'booking not found',
+        ];
+    }
+
+    $status = (string) ($booking['status'] ?? '');
+    if (!in_array($status, ['pending', 'confirmed'], true)) {
+        return [
+            'skip_send' => true,
+            'reason' => "booking status is {$status}",
+        ];
+    }
+
+    $startTimeRaw = $booking['start_time'] ?? null;
+    if (!is_string($startTimeRaw) || trim($startTimeRaw) === '') {
+        return [
+            'skip_send' => true,
+            'reason' => 'appointment start time unavailable',
+        ];
+    }
+
+    $timezone = new \DateTimeZone((string) ($booking['location_timezone'] ?? 'Europe/Rome'));
+    $appointmentStart = new \DateTimeImmutable($startTimeRaw, $timezone);
+    $now = new \DateTimeImmutable('now', $timezone);
+    $secondsUntilStart = $appointmentStart->getTimestamp() - $now->getTimestamp();
+
+    // Reminders are "24h before". Tolerance keeps cron/runtime jitter from dropping valid sends.
+    $minSeconds = 23 * 3600; // 23h
+    $maxSeconds = 25 * 3600; // 25h
+    if ($secondsUntilStart < $minSeconds || $secondsUntilStart > $maxSeconds) {
+        return [
+            'skip_send' => true,
+            'reason' => 'outside 24h reminder window',
+        ];
+    }
+
+    return [
+        'skip_send' => false,
         'reason' => '',
     ];
 }

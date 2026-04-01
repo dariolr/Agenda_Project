@@ -191,8 +191,6 @@ CREATE TABLE `business_application_settings` (
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Business-scoped application behavior parameters';
 
--- --------------------------------------------------------
-
 --
 -- Struttura della tabella `business_invitations`
 --
@@ -458,6 +456,8 @@ CREATE TABLE `locations` (
   `min_booking_notice_hours` int UNSIGNED NOT NULL DEFAULT '1' COMMENT 'Minimum hours before appointment for online booking. Default 1 hour.',
   `max_booking_advance_days` int UNSIGNED NOT NULL DEFAULT '90' COMMENT 'Maximum days in advance for online booking. Default 90 days (3 months).',
   `allow_customer_choose_staff` tinyint(1) NOT NULL DEFAULT '0',
+  `booking_text_overrides_json` json DEFAULT NULL COMMENT 'Per-locale booking phrase overrides: {\"it\":{\"services_title\":\"...\"},\"en\":{\"services_title\":\"...\"}}',
+  `staff_icon_key` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'person' COMMENT 'Semantic icon key for booking staff/resource step',
   `is_default` tinyint(1) NOT NULL DEFAULT '0',
   `sort_order` int NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -1107,7 +1107,6 @@ ALTER TABLE `business_application_settings`
   ADD UNIQUE KEY `uk_business_setting_key` (`business_id`,`setting_key`),
   ADD KEY `idx_business_setting_key` (`setting_key`);
 
---
 -- Indici per le tabelle `business_invitations`
 --
 ALTER TABLE `business_invitations`
@@ -1560,7 +1559,6 @@ ALTER TABLE `businesses`
 ALTER TABLE `business_application_settings`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
---
 -- AUTO_INCREMENT per la tabella `business_invitations`
 --
 ALTER TABLE `business_invitations`
@@ -1851,7 +1849,6 @@ ALTER TABLE `booking_replacements`
 ALTER TABLE `business_application_settings`
   ADD CONSTRAINT `fk_business_application_settings_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
---
 -- Limiti per la tabella `business_invitations`
 --
 ALTER TABLE `business_invitations`

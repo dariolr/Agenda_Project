@@ -14,6 +14,23 @@ use Agenda\Infrastructure\Repositories\UserRepository;
 final class LocationsController
 {
     private const NEVER_CANCELLATION_HOURS = 100000;
+    private const ALLOWED_STAFF_ICON_KEYS = [
+        'person',
+        'door',
+        'team',
+        'tennis',
+        'soccer',
+        'resource',
+        'room',
+        'court',
+        'equipment',
+        'wellness',
+        'medical',
+        'beauty',
+        'education',
+        'pet',
+        'generic',
+    ];
 
     public function __construct(
         private readonly LocationRepository $locationRepo,
@@ -122,6 +139,8 @@ final class LocationsController
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
+            'staff_icon_key' => $this->normalizeStaffIconKey($row['staff_icon_key'] ?? null),
+            'booking_text_overrides' => $this->decodeBookingTextOverrides($row['booking_text_overrides_json'] ?? null),
             'cancellation_hours' => isset($row['cancellation_hours']) ? (int) $row['cancellation_hours'] : null,
             'online_booking_slot_interval_minutes' => (int) ($row['online_booking_slot_interval_minutes'] ?? 15),
             'slot_display_mode' => $row['slot_display_mode'] ?? 'all',
@@ -150,6 +169,8 @@ final class LocationsController
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
+            'staff_icon_key' => $this->normalizeStaffIconKey($row['staff_icon_key'] ?? null),
+            'booking_text_overrides' => $this->decodeBookingTextOverrides($row['booking_text_overrides_json'] ?? null),
             'cancellation_hours' => isset($row['cancellation_hours']) ? (int) $row['cancellation_hours'] : null,
             'is_default' => (bool) $row['is_default'],
         ];
@@ -189,6 +210,23 @@ final class LocationsController
             }
         }
 
+        $bookingTextOverridesError = null;
+        $bookingTextOverridesJson = null;
+        if (array_key_exists('booking_text_overrides', $body)) {
+            $bookingTextOverridesJson = $this->normalizeBookingTextOverrides(
+                $body['booking_text_overrides'],
+                $bookingTextOverridesError,
+            );
+            if ($bookingTextOverridesError !== null) {
+                return Response::error($bookingTextOverridesError, 'validation_error', 400, $request->traceId);
+            }
+        }
+
+        $staffIconKey = $this->normalizeStaffIconKey($body['staff_icon_key'] ?? null, strict: true);
+        if (array_key_exists('staff_icon_key', $body) && $staffIconKey === null) {
+            return Response::error('staff_icon_key is invalid', 'validation_error', 400, $request->traceId);
+        }
+
         $locationId = $this->locationRepo->create($businessId, $body['name'], [
             'address' => $body['address'] ?? null,
             'phone' => $body['phone'] ?? null,
@@ -198,6 +236,8 @@ final class LocationsController
             'max_booking_advance_days' => $body['max_booking_advance_days'] ?? 90,
             'allow_customer_choose_staff' => $body['allow_customer_choose_staff'] ?? false,
             'cancellation_hours' => $cancellationHours,
+            'booking_text_overrides_json' => $bookingTextOverridesJson,
+            'staff_icon_key' => $staffIconKey ?? 'person',
             'is_active' => $body['is_active'] ?? true,
         ]);
 
@@ -241,6 +281,24 @@ final class LocationsController
 
         if (array_key_exists('allow_customer_choose_staff', $body)) {
             $updateData['allow_customer_choose_staff'] = (bool) $body['allow_customer_choose_staff'];
+        }
+        if (array_key_exists('booking_text_overrides', $body)) {
+            $bookingTextOverridesError = null;
+            $bookingTextOverridesJson = $this->normalizeBookingTextOverrides(
+                $body['booking_text_overrides'],
+                $bookingTextOverridesError,
+            );
+            if ($bookingTextOverridesError !== null) {
+                return Response::error($bookingTextOverridesError, 'validation_error', 400, $request->traceId);
+            }
+            $updateData['booking_text_overrides_json'] = $bookingTextOverridesJson;
+        }
+        if (array_key_exists('staff_icon_key', $body)) {
+            $staffIconKey = $this->normalizeStaffIconKey($body['staff_icon_key'], strict: true);
+            if ($staffIconKey === null) {
+                return Response::error('staff_icon_key is invalid', 'validation_error', 400, $request->traceId);
+            }
+            $updateData['staff_icon_key'] = $staffIconKey;
         }
 
         // Handle booking limits fields
@@ -370,5 +428,108 @@ final class LocationsController
         $this->locationRepo->batchUpdateSortOrder($locationList);
 
         return Response::success(['updated' => count($locationList)]);
+    }
+
+    private function decodeBookingTextOverrides(?string $raw): ?array
+    {
+        if ($raw === null || trim($raw) === '') {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded) || empty($decoded)) {
+            return null;
+        }
+
+        return $decoded;
+    }
+
+    private function normalizeBookingTextOverrides(mixed $value, ?string &$error = null): ?string
+    {
+        $error = null;
+
+        if ($value === null) {
+            return null;
+        }
+        if (!is_array($value)) {
+            $error = 'booking_text_overrides must be an object with a single "default" block';
+            return null;
+        }
+        if (empty($value)) {
+            return null;
+        }
+
+        $keys = array_keys($value);
+        if (count($keys) !== 1) {
+            $error = 'booking_text_overrides must contain exactly one block: "default"';
+            return null;
+        }
+        $key = strtolower(trim((string) $keys[0]));
+        if ($key !== 'default') {
+            $error = 'booking_text_overrides block key must be "default"';
+            return null;
+        }
+
+        $phrases = $value[$keys[0]];
+        if (!is_array($phrases)) {
+            $error = 'booking_text_overrides.default must be an object of phrase overrides';
+            return null;
+        }
+
+        $normalizedPhrases = [];
+        foreach ($phrases as $phraseKey => $phraseValue) {
+            $phraseKeyNorm = trim((string) $phraseKey);
+            if ($phraseKeyNorm === '') {
+                continue;
+            }
+            if (strlen($phraseKeyNorm) > 80) {
+                $error = 'Invalid phrase key length in booking_text_overrides.default';
+                return null;
+            }
+            if (!is_scalar($phraseValue)) {
+                $error = "Phrase value for key {$phraseKeyNorm} in booking_text_overrides.default must be a string";
+                return null;
+            }
+            $text = trim((string) $phraseValue);
+            if ($text === '') {
+                continue;
+            }
+            if (mb_strlen($text) > 500) {
+                $error = "Phrase value too long for key {$phraseKeyNorm} in booking_text_overrides.default";
+                return null;
+            }
+            $normalizedPhrases[$phraseKeyNorm] = $text;
+        }
+
+        if (empty($normalizedPhrases)) {
+            return null;
+        }
+
+        $normalized = [
+            'default' => $normalizedPhrases,
+        ];
+
+        $encoded = json_encode($normalized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($encoded === false) {
+            $error = 'Unable to encode booking_text_overrides';
+            return null;
+        }
+
+        return $encoded;
+    }
+
+    private function normalizeStaffIconKey(mixed $value, bool $strict = false): ?string
+    {
+        if ($value === null) {
+            return 'person';
+        }
+        $key = strtolower(trim((string) $value));
+        if ($key === '') {
+            return 'person';
+        }
+        if (!in_array($key, self::ALLOWED_STAFF_ICON_KEYS, true)) {
+            return $strict ? null : 'person';
+        }
+        return $key;
     }
 }

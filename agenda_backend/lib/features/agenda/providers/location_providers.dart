@@ -48,10 +48,9 @@ final locationsAsyncProvider = FutureProvider<List<Location>>((ref) async {
   final isSuperadmin = authState.user?.isSuperadmin ?? false;
   Set<int>? allowedIdsSet;
   if (!isSuperadmin) {
-    final context = ref.watch(currentBusinessUserContextProvider).maybeWhen(
-          data: (ctx) => ctx,
-          orElse: () => null,
-        );
+    final context = ref
+        .watch(currentBusinessUserContextProvider)
+        .maybeWhen(data: (ctx) => ctx, orElse: () => null);
 
     // Evita bootstrap con scope non ancora risolto: senza contesto non esporre sedi.
     if (context == null) {
@@ -78,7 +77,9 @@ final locationsAsyncProvider = FutureProvider<List<Location>>((ref) async {
   final effectiveAllowedIds = allowedIdsSet;
   if (effectiveAllowedIds != null) {
     // L'utente ha accesso limitato a specifiche location
-    locations = locations.where((l) => effectiveAllowedIds.contains(l.id)).toList();
+    locations = locations
+        .where((l) => effectiveAllowedIds.contains(l.id))
+        .toList();
   }
 
   return locations;
@@ -121,6 +122,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    Map<String, dynamic>? bookingTextOverrides,
+    String? staffIconKey,
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
     bool? isActive,
@@ -136,6 +139,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
       timezone: timezone,
       minBookingNoticeHours: minBookingNoticeHours,
       maxBookingAdvanceDays: maxBookingAdvanceDays,
+      bookingTextOverrides: bookingTextOverrides,
+      staffIconKey: staffIconKey,
       cancellationHours: cancellationHours,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
       isActive: isActive,
@@ -154,6 +159,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    Map<String, dynamic>? bookingTextOverrides,
+    String? staffIconKey,
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
     int? onlineBookingSlotIntervalMinutes,
@@ -171,6 +178,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
       timezone: timezone,
       minBookingNoticeHours: minBookingNoticeHours,
       maxBookingAdvanceDays: maxBookingAdvanceDays,
+      bookingTextOverrides: bookingTextOverrides,
+      staffIconKey: staffIconKey,
       cancellationHours: cancellationHours,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
       onlineBookingSlotIntervalMinutes: onlineBookingSlotIntervalMinutes,
