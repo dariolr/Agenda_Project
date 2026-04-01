@@ -201,7 +201,10 @@ class _BookingNotificationsScreenState
       prev,
       next,
     ) async {
-      if (prev?.error != next.error && next.error != null && mounted) {
+      if (selectedTabIndex == 0 &&
+          prev?.error != next.error &&
+          next.error != null &&
+          mounted) {
         await FeedbackDialog.showError(
           context,
           title: l10n.errorTitle,
@@ -209,19 +212,6 @@ class _BookingNotificationsScreenState
         );
       }
     });
-    ref.listen<WhatsappIntegrationState>(whatsappIntegrationProvider, (
-      prev,
-      next,
-    ) async {
-      if (prev?.error != next.error && next.error != null && mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: l10n.errorTitle,
-          message: next.error!,
-        );
-      }
-    });
-
     return Scaffold(
       appBar: widget.showStandaloneAppBar
           ? AppBar(

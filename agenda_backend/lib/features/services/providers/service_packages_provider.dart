@@ -5,6 +5,27 @@ import '../../agenda/providers/location_providers.dart';
 import '../../auth/providers/auth_provider.dart';
 import 'service_packages_repository_provider.dart';
 
+Set<int> _keyToLocationIds(String key) {
+  if (key.isEmpty) return {};
+  return key.split(',').map(int.parse).toSet();
+}
+
+final servicePackagesForLocationsProvider =
+    FutureProvider.family<List<ServicePackage>, String>((ref, locationIdsKey) async {
+      final locationIds = _keyToLocationIds(locationIdsKey);
+      if (locationIds.isEmpty) return const [];
+
+      final repository = ref.watch(servicePackagesRepositoryProvider);
+      final allPackages = <ServicePackage>[];
+
+      for (final locationId in locationIds) {
+        final packages = await repository.getPackages(locationId: locationId);
+        allPackages.addAll(packages);
+      }
+
+      return allPackages;
+    });
+
 class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
   @override
   Future<List<ServicePackage>> build() async {

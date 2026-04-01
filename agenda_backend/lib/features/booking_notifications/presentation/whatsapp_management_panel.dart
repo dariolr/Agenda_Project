@@ -686,17 +686,22 @@ class _WhatsappManagementPanelState
     final locationsAsync = ref.watch(
       whatsappLocationsByBusinessProvider(businessId),
     );
+    final locationsLoaded = locationsAsync.maybeWhen(
+      data: (_) => true,
+      orElse: () => false,
+    );
     final locations = locationsAsync.maybeWhen(
       data: (items) => items,
       orElse: () => const <Location>[],
     );
-    final hasNoLocations = locations.isEmpty;
+    final hasNoLocations = locationsLoaded && locations.isEmpty;
     final hasSingleLocation = locations.length == 1;
     final singleLocation = hasSingleLocation ? locations.first : null;
     if (singleLocation != null && _testLocationId != singleLocation.id) {
       _testLocationId = singleLocation.id;
     }
     final configs = state.configs;
+    final hasActiveConfig = configs.any((config) => config.isActive);
     final outbox = state.outbox;
     final queuedCount = outbox
         .where((item) => item.status == WhatsappOutboxStatus.queued)
@@ -774,7 +779,7 @@ class _WhatsappManagementPanelState
                         label: Text(l10n.whatsappRefresh),
                       ),
                       FilledButton.icon(
-                        onPressed: _isRunningCheck
+                        onPressed: _isRunningCheck || !hasActiveConfig
                             ? null
                             : () => _runGoLiveCheck(
                                 scopeLabel: l10n.whatsappGoLiveScopeBusiness,
@@ -793,9 +798,10 @@ class _WhatsappManagementPanelState
                       if (!hasSingleLocation)
                         locationsAsync.when(
                           data: (locations) => FilledButton.icon(
-                            onPressed: _isRunningCheck || locations.isEmpty
-                                ? null
-                                : () => _runLocationGoLiveCheck(locations),
+                          onPressed: _isRunningCheck || locations.isEmpty
+                              || !hasActiveConfig
+                              ? null
+                              : () => _runLocationGoLiveCheck(locations),
                             icon: const Icon(Icons.place_outlined),
                             label: Text(l10n.whatsappGoLiveCheckLocation),
                           ),
@@ -803,7 +809,9 @@ class _WhatsappManagementPanelState
                           loading: () => const SizedBox.shrink(),
                         ),
                       FilledButton.tonalIcon(
-                        onPressed: _isRunningWorker ? null : _runWorker,
+                        onPressed: _isRunningWorker || !hasActiveConfig
+                            ? null
+                            : _runWorker,
                         icon: _isRunningWorker
                             ? const SizedBox(
                                 width: 16,
@@ -851,7 +859,7 @@ class _WhatsappManagementPanelState
                     Text(l10n.whatsappNoLocationBannerMessage),
                     const SizedBox(height: 10),
                     FilledButton.icon(
-                      onPressed: () => context.go('/staff'),
+                      onPressed: () => context.go('/altro/sedi?from_altro=1'),
                       icon: const Icon(Icons.add_business_outlined),
                       label: Text(l10n.whatsappCreateLocationCta),
                     ),
@@ -1136,7 +1144,7 @@ class _WhatsappManagementPanelState
                     ),
                     const SizedBox(height: 10),
                     FilledButton.icon(
-                      onPressed: () => context.go('/staff'),
+                      onPressed: () => context.go('/altro/sedi?from_altro=1'),
                       icon: const Icon(Icons.add_business_outlined),
                       label: Text(l10n.whatsappCreateLocationCta),
                     ),
@@ -1249,14 +1257,14 @@ class _WhatsappManagementPanelState
                       runSpacing: 8,
                       children: [
                         OutlinedButton.icon(
-                          onPressed: _isQueueingTest
+                          onPressed: _isQueueingTest || !hasActiveConfig
                               ? null
                               : () => _queueTestMessage(sendNow: false),
                           icon: const Icon(Icons.outbox_outlined),
                           label: Text(l10n.whatsappQueueTest),
                         ),
                         FilledButton.icon(
-                          onPressed: _isQueueingTest
+                          onPressed: _isQueueingTest || !hasActiveConfig
                               ? null
                               : () => _queueTestMessage(sendNow: true),
                           icon: _isQueueingTest

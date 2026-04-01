@@ -1449,6 +1449,8 @@ class ApiClient {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    Map<String, dynamic>? bookingTextOverrides,
+    String? staffIconKey,
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
     bool? isActive,
@@ -1465,6 +1467,9 @@ class ApiClient {
           'min_booking_notice_hours': minBookingNoticeHours,
         if (maxBookingAdvanceDays != null)
           'max_booking_advance_days': maxBookingAdvanceDays,
+        if (bookingTextOverrides != null)
+          'booking_text_overrides': bookingTextOverrides,
+        if (staffIconKey != null) 'staff_icon_key': staffIconKey,
         if (cancellationHours != null) 'cancellation_hours': cancellationHours,
         if (allowCustomerChooseStaff != null)
           'allow_customer_choose_staff': allowCustomerChooseStaff,
@@ -1491,6 +1496,8 @@ class ApiClient {
     String? timezone,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
+    Map<String, dynamic>? bookingTextOverrides,
+    String? staffIconKey,
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
     int? onlineBookingSlotIntervalMinutes,
@@ -1510,6 +1517,9 @@ class ApiClient {
           'min_booking_notice_hours': minBookingNoticeHours,
         if (maxBookingAdvanceDays != null)
           'max_booking_advance_days': maxBookingAdvanceDays,
+        if (bookingTextOverrides != null)
+          'booking_text_overrides': bookingTextOverrides,
+        if (staffIconKey != null) 'staff_icon_key': staffIconKey,
         if (cancellationHours != null) 'cancellation_hours': cancellationHours,
         if (allowCustomerChooseStaff != null)
           'allow_customer_choose_staff': allowCustomerChooseStaff,

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/booking_nomenclature_provider.dart';
 
-class BookingStepIndicator extends StatelessWidget {
+class BookingStepIndicator extends ConsumerWidget {
   final BookingStep currentStep;
   final bool allowStaffSelection;
   final bool showLocationStep;
@@ -18,16 +20,47 @@ class BookingStepIndicator extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final customStaffLabel = ref.watch(bookingStaffDisplayLabelProvider);
+    final customServiceLabel = ref.watch(bookingServiceDisplayLabelProvider);
+    final customLocationLabel = ref.watch(bookingLocationDisplayLabelProvider);
+    final staffIcon = ref.watch(bookingStaffIconProvider);
+    final phraseOverrides = ref.watch(
+      bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
+    );
 
     final steps = [
       if (showLocationStep)
-        (BookingStep.location, l10n.bookingStepLocation, Icons.location_on),
-      (BookingStep.services, l10n.bookingStepServices, Icons.list_alt),
+        (
+          BookingStep.location,
+          bookingLocationStepLabel(
+            context,
+            customLocationLabel,
+            phraseOverrides: phraseOverrides,
+          ),
+          Icons.location_on,
+        ),
+      (
+        BookingStep.services,
+        bookingServicesStepLabel(
+          context,
+          customServiceLabel,
+          phraseOverrides: phraseOverrides,
+        ),
+        Icons.list_alt,
+      ),
       if (allowStaffSelection)
-        (BookingStep.staff, l10n.bookingStepStaff, Icons.person),
+        (
+          BookingStep.staff,
+          bookingStaffStepLabel(
+            context,
+            customStaffLabel,
+            phraseOverrides: phraseOverrides,
+          ),
+          staffIcon,
+        ),
       (BookingStep.dateTime, l10n.bookingStepDateTime, Icons.calendar_today),
       (
         BookingStep.summary,

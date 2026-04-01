@@ -15,6 +15,8 @@ class Location {
   final int minBookingNoticeHours;
   final int maxBookingAdvanceDays;
   final bool allowCustomerChooseStaff;
+  final String staffIconKey;
+  final Map<String, Map<String, String>>? bookingTextOverrides;
   final int? cancellationHours;
   final int onlineBookingSlotIntervalMinutes;
   final String slotDisplayMode;
@@ -40,6 +42,8 @@ class Location {
     this.minBookingNoticeHours = 1,
     this.maxBookingAdvanceDays = 90,
     this.allowCustomerChooseStaff = false,
+    this.staffIconKey = 'person',
+    this.bookingTextOverrides,
     this.cancellationHours,
     this.onlineBookingSlotIntervalMinutes = 15,
     this.slotDisplayMode = 'all',
@@ -66,6 +70,8 @@ class Location {
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     bool? allowCustomerChooseStaff,
+    String? staffIconKey,
+    Map<String, Map<String, String>>? bookingTextOverrides,
     int? cancellationHours,
     int? onlineBookingSlotIntervalMinutes,
     String? slotDisplayMode,
@@ -94,6 +100,8 @@ class Location {
           maxBookingAdvanceDays ?? this.maxBookingAdvanceDays,
       allowCustomerChooseStaff:
           allowCustomerChooseStaff ?? this.allowCustomerChooseStaff,
+      staffIconKey: staffIconKey ?? this.staffIconKey,
+      bookingTextOverrides: bookingTextOverrides ?? this.bookingTextOverrides,
       cancellationHours: cancellationHours ?? this.cancellationHours,
       onlineBookingSlotIntervalMinutes:
           onlineBookingSlotIntervalMinutes ??
@@ -125,6 +133,10 @@ class Location {
       maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
       allowCustomerChooseStaff:
           json['allow_customer_choose_staff'] as bool? ?? false,
+      staffIconKey: (json['staff_icon_key'] as String?) ?? 'person',
+      bookingTextOverrides: _parseBookingTextOverrides(
+        json['booking_text_overrides'],
+      ),
       cancellationHours: json['cancellation_hours'] as int?,
       onlineBookingSlotIntervalMinutes:
           json['online_booking_slot_interval_minutes'] as int? ?? 15,
@@ -154,13 +166,43 @@ class Location {
       'min_booking_notice_hours': minBookingNoticeHours,
       'max_booking_advance_days': maxBookingAdvanceDays,
       'allow_customer_choose_staff': allowCustomerChooseStaff,
+      'staff_icon_key': staffIconKey,
+      if (bookingTextOverrides != null)
+        'booking_text_overrides': bookingTextOverrides,
       if (cancellationHours != null) 'cancellation_hours': cancellationHours,
-      'online_booking_slot_interval_minutes':
-          onlineBookingSlotIntervalMinutes,
+      'online_booking_slot_interval_minutes': onlineBookingSlotIntervalMinutes,
       'slot_display_mode': slotDisplayMode,
       'min_gap_minutes': minGapMinutes,
       'is_default': isDefault,
       'is_active': isActive,
     };
   }
+}
+
+Map<String, Map<String, String>>? _parseBookingTextOverrides(dynamic raw) {
+  if (raw is! Map) return null;
+
+  final result = <String, Map<String, String>>{};
+  for (final entry in raw.entries) {
+    final locale = entry.key.toString().trim();
+    if (locale.isEmpty || entry.value is! Map) {
+      continue;
+    }
+
+    final phrasesRaw = entry.value as Map;
+    final phrases = <String, String>{};
+    for (final phraseEntry in phrasesRaw.entries) {
+      final key = phraseEntry.key.toString().trim();
+      final value = phraseEntry.value?.toString().trim() ?? '';
+      if (key.isEmpty || value.isEmpty) {
+        continue;
+      }
+      phrases[key] = value;
+    }
+    if (phrases.isNotEmpty) {
+      result[locale.toLowerCase()] = phrases;
+    }
+  }
+
+  return result.isEmpty ? null : result;
 }

@@ -6,6 +6,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/location.dart';
 import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/booking_nomenclature_provider.dart';
 import '../../providers/locations_provider.dart';
 
 class LocationStep extends ConsumerWidget {
@@ -28,6 +29,10 @@ class LocationStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final customLocationLabel = ref.watch(bookingLocationDisplayLabelProvider);
+    final phraseOverrides = ref.watch(
+      bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
+    );
     final locationsAsync = ref.watch(locationsProvider);
     final selectedLocation = ref.watch(selectedLocationProvider);
     final isLoading = locationsAsync.isLoading;
@@ -51,14 +56,22 @@ class LocationStep extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    l10n.locationTitle,
+                    bookingLocationTitle(
+                      context,
+                      customLocationLabel,
+                      phraseOverrides: phraseOverrides,
+                    ),
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    l10n.locationSubtitle,
+                    bookingLocationSubtitle(
+                      context,
+                      customLocationLabel,
+                      phraseOverrides: phraseOverrides,
+                    ),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
@@ -85,7 +98,11 @@ class LocationStep extends ConsumerWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            l10n.locationEmpty,
+                            bookingLocationEmptyLabel(
+                              context,
+                              customLocationLabel,
+                              phraseOverrides: phraseOverrides,
+                            ),
                             style: theme.textTheme.titleMedium,
                           ),
                         ],

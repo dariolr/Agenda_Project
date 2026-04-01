@@ -42,6 +42,12 @@
   "errorLocationNotFound": "Location not available",
   "errorLocationNotFoundSubtitle": "The selected location is not active. Contact the business for more information.",
   "errorServiceUnavailable": "Service temporarily unavailable",
+  "errorServiceUnavailableCustom": "{label} temporarily unavailable",
+  "@errorServiceUnavailableCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "errorServiceUnavailableSubtitle": "We are working to fix the issue. Please try again in a few minutes.",
   
   "authWelcome": "Welcome",
@@ -103,18 +109,37 @@
   "profileTitle": "Profile",
   
   "bookingTitle": "Book appointment",
+  "bookingServiceSingularLabel": "service",
   "bookingStepLocation": "Location",
   "bookingStepServices": "Services",
   "bookingStepStaff": "Staff",
   "bookingStepDateTime": "Date & Time",
   "bookingStepSummary": "Summary",
+  "bookingChooseCustomLabel": "Choose {label}",
+  "@bookingChooseCustomLabel": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   
   "locationTitle": "Choose location",
   "locationSubtitle": "Select where you want to book",
   "locationEmpty": "No location available",
+  "locationEmptyCustom": "No {label} available",
+  "@locationEmptyCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   
   "servicesTitle": "Choose services",
   "servicesSubtitle": "You can select one or more services",
+  "servicesSubtitleCustom": "You can select one or more {label}",
+  "@servicesSubtitleCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "servicePackagesTitle": "Packages",
   "servicePackagesSubtitle": "Or pick a ready-made package",
   "servicePackagesLoading": "Loading packages...",
@@ -127,10 +152,41 @@
     }
   },
   "servicePackageExpandError": "Unable to expand the selected package.",
+  "servicesEmptyCustom": "No {label} available at the moment",
+  "@servicesEmptyCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "servicesEmptySubtitleCustom": "There are no {label} available for online booking at this business",
+  "@servicesEmptySubtitleCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "servicesSelected": "{count, plural, =0{No service selected} =1{1 service selected} other{{count} services selected}}",
   "@servicesSelected": {
     "placeholders": {
       "count": { "type": "int" }
+    }
+  },
+  "servicesSelectedNoneCustom": "No {label} selected",
+  "@servicesSelectedNoneCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "servicesSelectedOneCustom": "1 {label} selected",
+  "@servicesSelectedOneCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "servicesSelectedManyCustom": "{count} {label} selected",
+  "@servicesSelectedManyCustom": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "label": { "type": "String" }
     }
   },
   "servicesTotal": "Total: {total}",
@@ -155,8 +211,39 @@
   
   "staffTitle": "Choose staff member",
   "staffSubtitle": "Select who you want to be served by",
+  "staffSubtitleCustom": "Select your preferred {label}",
+  "@staffSubtitleCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "staffAnyOperator": "Any available staff",
   "staffAnyOperatorSubtitle": "We'll assign you the first available staff member",
+  "staffAnyOperatorCustom": "Any available {label}",
+  "@staffAnyOperatorCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "staffAnyOperatorSubtitleCustom": "We'll assign you the first available {label}",
+  "@staffAnyOperatorSubtitleCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "staffEmptyCustom": "No {label} available at the moment",
+  "@staffEmptyCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "noStaffForAllServicesCustom": "No {staffLabel} can perform all selected {serviceLabel}. Try selecting fewer or different {serviceLabel}.",
+  "@noStaffForAllServicesCustom": {
+    "placeholders": {
+      "staffLabel": { "type": "String" },
+      "serviceLabel": { "type": "String" }
+    }
+  },
   
   "dateTimeTitle": "Choose date and time",
   "dateTimeSubtitle": "Select when you want to book",
@@ -177,6 +264,12 @@
   "summaryTitle": "Booking summary",
   "summarySubtitle": "Review the details before confirming",
   "summaryServices": "Selected services",
+  "summaryServicesCustom": "Selected {label}",
+  "@summaryServicesCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "summaryOperator": "Staff member",
   "summaryDateTime": "Date and time",
   "summaryCancellationPolicyTitle": "Modify/cancel policy",
@@ -203,11 +296,43 @@
   
   "bookingErrorSlotConflict": "The selected time slot is no longer available",
   "bookingErrorInvalidService": "One or more selected services are not available",
+  "bookingErrorInvalidServiceCustom": "One or more selected {serviceLabel} are not available",
+  "@bookingErrorInvalidServiceCustom": {
+    "placeholders": {
+      "serviceLabel": { "type": "String" }
+    }
+  },
   "bookingErrorInvalidStaff": "The selected staff member is not available for these services",
+  "bookingErrorInvalidStaffCustom": "The selected {staffLabel} is not available for these {serviceLabel}",
+  "@bookingErrorInvalidStaffCustom": {
+    "placeholders": {
+      "staffLabel": { "type": "String" },
+      "serviceLabel": { "type": "String" }
+    }
+  },
   "bookingErrorInvalidLocation": "The selected location is not available",
+  "bookingErrorInvalidLocationCustom": "The selected {locationLabel} is not available",
+  "@bookingErrorInvalidLocationCustom": {
+    "placeholders": {
+      "locationLabel": { "type": "String" }
+    }
+  },
   "bookingErrorInvalidClient": "The selected client is not valid",
   "bookingErrorInvalidTime": "The selected time is not valid",
   "bookingErrorStaffUnavailable": "The selected staff member is not available at this time",
+  "bookingErrorStaffUnavailableCustom": "The selected {staffLabel} is not available at this time",
+  "@bookingErrorStaffUnavailableCustom": {
+    "placeholders": {
+      "staffLabel": { "type": "String" }
+    }
+  },
+  "bookingErrorMissingServices": "Unable to load booking services",
+  "bookingErrorMissingServicesCustom": "Unable to load booking {serviceLabel}",
+  "@bookingErrorMissingServicesCustom": {
+    "placeholders": {
+      "serviceLabel": { "type": "String" }
+    }
+  },
   "bookingErrorOutsideWorkingHours": "The selected time is outside working hours",
   "bookingErrorNotFound": "Booking not found",
   "bookingErrorUnauthorized": "You are not authorized to complete this action",

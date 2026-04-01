@@ -42,6 +42,12 @@
   "errorLocationNotFound": "Sede non disponibile",
   "errorLocationNotFoundSubtitle": "La sede selezionata non è attiva. Contatta l'attività per maggiori informazioni.",
   "errorServiceUnavailable": "Servizio temporaneamente non disponibile",
+  "errorServiceUnavailableCustom": "{label} temporaneamente non disponibile",
+  "@errorServiceUnavailableCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "errorServiceUnavailableSubtitle": "Stiamo lavorando per risolvere il problema. Riprova tra qualche minuto.",
   
   "authWelcome": "Benvenuto",
@@ -103,18 +109,37 @@
   "profileTitle": "Profilo",
   
   "bookingTitle": "Prenota appuntamento",
+  "bookingServiceSingularLabel": "servizio",
   "bookingStepLocation": "Sede",
   "bookingStepServices": "Servizi",
   "bookingStepStaff": "Operatore",
   "bookingStepDateTime": "Data e ora",
   "bookingStepSummary": "Riepilogo",
+  "bookingChooseCustomLabel": "Scegli {label}",
+  "@bookingChooseCustomLabel": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   
   "locationTitle": "Scegli la sede",
   "locationSubtitle": "Seleziona dove vuoi effettuare la prenotazione",
   "locationEmpty": "Nessuna sede disponibile",
+  "locationEmptyCustom": "Nessun {label} disponibile",
+  "@locationEmptyCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   
   "servicesTitle": "Scegli i servizi",
   "servicesSubtitle": "Puoi selezionare uno o più servizi",
+  "servicesSubtitleCustom": "Puoi selezionare uno o più {label}",
+  "@servicesSubtitleCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "servicePackagesTitle": "Pacchetti",
   "servicePackagesSubtitle": "Oppure scegli un pacchetto pronto",
   "servicePackagesLoading": "Caricamento pacchetti...",
@@ -127,10 +152,41 @@
     }
   },
   "servicePackageExpandError": "Impossibile espandere il pacchetto selezionato.",
+  "servicesEmptyCustom": "Nessun {label} disponibile al momento",
+  "@servicesEmptyCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "servicesEmptySubtitleCustom": "Non ci sono {label} prenotabili online per questa attività",
+  "@servicesEmptySubtitleCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "servicesSelected": "{count, plural, =0{Nessun servizio selezionato} =1{1 servizio selezionato} other{{count} servizi selezionati}}",
   "@servicesSelected": {
     "placeholders": {
       "count": { "type": "int" }
+    }
+  },
+  "servicesSelectedNoneCustom": "Nessun {label} selezionato",
+  "@servicesSelectedNoneCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "servicesSelectedOneCustom": "1 {label} selezionato",
+  "@servicesSelectedOneCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "servicesSelectedManyCustom": "{count} {label} selezionati",
+  "@servicesSelectedManyCustom": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "label": { "type": "String" }
     }
   },
   "servicesTotal": "Totale: {total}",
@@ -155,8 +211,39 @@
   
   "staffTitle": "Scegli l'operatore",
   "staffSubtitle": "Seleziona con chi desideri essere servito",
+  "staffSubtitleCustom": "Seleziona {label} che preferisci",
+  "@staffSubtitleCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "staffAnyOperator": "Qualsiasi operatore disponibile",
   "staffAnyOperatorSubtitle": "Ti assegneremo il primo operatore libero",
+  "staffAnyOperatorCustom": "Qualsiasi {label} disponibile",
+  "@staffAnyOperatorCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "staffAnyOperatorSubtitleCustom": "Ti assegneremo il primo {label} disponibile",
+  "@staffAnyOperatorSubtitleCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "staffEmptyCustom": "Nessun {label} disponibile al momento",
+  "@staffEmptyCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "noStaffForAllServicesCustom": "Nessun {staffLabel} può eseguire tutti i {serviceLabel} selezionati. Prova a selezionare meno {serviceLabel} o {serviceLabel} diversi.",
+  "@noStaffForAllServicesCustom": {
+    "placeholders": {
+      "staffLabel": { "type": "String" },
+      "serviceLabel": { "type": "String" }
+    }
+  },
   
   "dateTimeTitle": "Scegli data e ora",
   "dateTimeSubtitle": "Seleziona quando desideri prenotare",
@@ -177,6 +264,12 @@
   "summaryTitle": "Riepilogo prenotazione",
   "summarySubtitle": "Controlla i dettagli prima di confermare",
   "summaryServices": "Servizi selezionati",
+  "summaryServicesCustom": "{label} selezionati",
+  "@summaryServicesCustom": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "summaryOperator": "Operatore",
   "summaryDateTime": "Data e ora",
   "summaryCancellationPolicyTitle": "Policy modifica/cancellazione",
@@ -203,11 +296,43 @@
   
   "bookingErrorSlotConflict": "L'orario selezionato non è più disponibile",
   "bookingErrorInvalidService": "Uno o più servizi selezionati non sono disponibili",
+  "bookingErrorInvalidServiceCustom": "Uno o più {serviceLabel} selezionati non sono disponibili",
+  "@bookingErrorInvalidServiceCustom": {
+    "placeholders": {
+      "serviceLabel": { "type": "String" }
+    }
+  },
   "bookingErrorInvalidStaff": "L'operatore selezionato non è disponibile per questi servizi",
+  "bookingErrorInvalidStaffCustom": "{staffLabel} selezionato non è disponibile per questi {serviceLabel}",
+  "@bookingErrorInvalidStaffCustom": {
+    "placeholders": {
+      "staffLabel": { "type": "String" },
+      "serviceLabel": { "type": "String" }
+    }
+  },
   "bookingErrorInvalidLocation": "La sede selezionata non è disponibile",
+  "bookingErrorInvalidLocationCustom": "{locationLabel} selezionata non è disponibile",
+  "@bookingErrorInvalidLocationCustom": {
+    "placeholders": {
+      "locationLabel": { "type": "String" }
+    }
+  },
   "bookingErrorInvalidClient": "Il cliente selezionato non è valido",
   "bookingErrorInvalidTime": "L'orario selezionato non è valido",
   "bookingErrorStaffUnavailable": "L'operatore selezionato non è disponibile in questo orario",
+  "bookingErrorStaffUnavailableCustom": "{staffLabel} selezionato non è disponibile in questo orario",
+  "@bookingErrorStaffUnavailableCustom": {
+    "placeholders": {
+      "staffLabel": { "type": "String" }
+    }
+  },
+  "bookingErrorMissingServices": "Impossibile recuperare i servizi della prenotazione",
+  "bookingErrorMissingServicesCustom": "Impossibile recuperare i {serviceLabel} della prenotazione",
+  "@bookingErrorMissingServicesCustom": {
+    "placeholders": {
+      "serviceLabel": { "type": "String" }
+    }
+  },
   "bookingErrorOutsideWorkingHours": "L'orario selezionato è fuori dall'orario di lavoro",
   "bookingErrorNotFound": "Prenotazione non trovata",
   "bookingErrorUnauthorized": "Non sei autorizzato a completare questa azione",

@@ -349,6 +349,16 @@ class L10n {
     );
   }
 
+  /// `{label} temporaneamente non disponibile`
+  String errorServiceUnavailableCustom(String label) {
+    return Intl.message(
+      '$label temporaneamente non disponibile',
+      name: 'errorServiceUnavailableCustom',
+      desc: '',
+      args: [label],
+    );
+  }
+
   /// `Stiamo lavorando per risolvere il problema. Riprova tra qualche minuto.`
   String get errorServiceUnavailableSubtitle {
     return Intl.message(
@@ -894,6 +904,16 @@ class L10n {
     );
   }
 
+  /// `servizio`
+  String get bookingServiceSingularLabel {
+    return Intl.message(
+      'servizio',
+      name: 'bookingServiceSingularLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Sede`
   String get bookingStepLocation {
     return Intl.message(
@@ -944,6 +964,16 @@ class L10n {
     );
   }
 
+  /// `Scegli {label}`
+  String bookingChooseCustomLabel(String label) {
+    return Intl.message(
+      'Scegli $label',
+      name: 'bookingChooseCustomLabel',
+      desc: '',
+      args: [label],
+    );
+  }
+
   /// `Scegli la sede`
   String get locationTitle {
     return Intl.message(
@@ -974,6 +1004,16 @@ class L10n {
     );
   }
 
+  /// `Nessun {label} disponibile`
+  String locationEmptyCustom(String label) {
+    return Intl.message(
+      'Nessun $label disponibile',
+      name: 'locationEmptyCustom',
+      desc: '',
+      args: [label],
+    );
+  }
+
   /// `Scegli i servizi`
   String get servicesTitle {
     return Intl.message(
@@ -991,6 +1031,16 @@ class L10n {
       name: 'servicesSubtitle',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Puoi selezionare uno o più {label}`
+  String servicesSubtitleCustom(String label) {
+    return Intl.message(
+      'Puoi selezionare uno o più $label',
+      name: 'servicesSubtitleCustom',
+      desc: '',
+      args: [label],
     );
   }
 
@@ -1064,6 +1114,26 @@ class L10n {
     );
   }
 
+  /// `Nessun {label} disponibile al momento`
+  String servicesEmptyCustom(String label) {
+    return Intl.message(
+      'Nessun $label disponibile al momento',
+      name: 'servicesEmptyCustom',
+      desc: '',
+      args: [label],
+    );
+  }
+
+  /// `Non ci sono {label} prenotabili online per questa attività`
+  String servicesEmptySubtitleCustom(String label) {
+    return Intl.message(
+      'Non ci sono $label prenotabili online per questa attività',
+      name: 'servicesEmptySubtitleCustom',
+      desc: '',
+      args: [label],
+    );
+  }
+
   /// `{count, plural, =0{Nessun servizio selezionato} =1{1 servizio selezionato} other{{count} servizi selezionati}}`
   String servicesSelected(int count) {
     return Intl.plural(
@@ -1074,6 +1144,36 @@ class L10n {
       name: 'servicesSelected',
       desc: '',
       args: [count],
+    );
+  }
+
+  /// `Nessun {label} selezionato`
+  String servicesSelectedNoneCustom(String label) {
+    return Intl.message(
+      'Nessun $label selezionato',
+      name: 'servicesSelectedNoneCustom',
+      desc: '',
+      args: [label],
+    );
+  }
+
+  /// `1 {label} selezionato`
+  String servicesSelectedOneCustom(String label) {
+    return Intl.message(
+      '1 $label selezionato',
+      name: 'servicesSelectedOneCustom',
+      desc: '',
+      args: [label],
+    );
+  }
+
+  /// `{count} {label} selezionati`
+  String servicesSelectedManyCustom(int count, String label) {
+    return Intl.message(
+      '$count $label selezionati',
+      name: 'servicesSelectedManyCustom',
+      desc: '',
+      args: [count, label],
     );
   }
 
@@ -1132,6 +1232,16 @@ class L10n {
     );
   }
 
+  /// `Seleziona {label} che preferisci`
+  String staffSubtitleCustom(String label) {
+    return Intl.message(
+      'Seleziona $label che preferisci',
+      name: 'staffSubtitleCustom',
+      desc: '',
+      args: [label],
+    );
+  }
+
   /// `Qualsiasi operatore disponibile`
   String get staffAnyOperator {
     return Intl.message(
@@ -1149,6 +1259,46 @@ class L10n {
       name: 'staffAnyOperatorSubtitle',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Qualsiasi {label} disponibile`
+  String staffAnyOperatorCustom(String label) {
+    return Intl.message(
+      'Qualsiasi $label disponibile',
+      name: 'staffAnyOperatorCustom',
+      desc: '',
+      args: [label],
+    );
+  }
+
+  /// `Ti assegneremo il primo {label} disponibile`
+  String staffAnyOperatorSubtitleCustom(String label) {
+    return Intl.message(
+      'Ti assegneremo il primo $label disponibile',
+      name: 'staffAnyOperatorSubtitleCustom',
+      desc: '',
+      args: [label],
+    );
+  }
+
+  /// `Nessun {label} disponibile al momento`
+  String staffEmptyCustom(String label) {
+    return Intl.message(
+      'Nessun $label disponibile al momento',
+      name: 'staffEmptyCustom',
+      desc: '',
+      args: [label],
+    );
+  }
+
+  /// `Nessun {staffLabel} può eseguire tutti i {serviceLabel} selezionati. Prova a selezionare meno {serviceLabel} o {serviceLabel} diversi.`
+  String noStaffForAllServicesCustom(String staffLabel, String serviceLabel) {
+    return Intl.message(
+      'Nessun $staffLabel può eseguire tutti i $serviceLabel selezionati. Prova a selezionare meno $serviceLabel o $serviceLabel diversi.',
+      name: 'noStaffForAllServicesCustom',
+      desc: '',
+      args: [staffLabel, serviceLabel],
     );
   }
 
@@ -1269,6 +1419,16 @@ class L10n {
       name: 'summaryServices',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `{label} selezionati`
+  String summaryServicesCustom(String label) {
+    return Intl.message(
+      '$label selezionati',
+      name: 'summaryServicesCustom',
+      desc: '',
+      args: [label],
     );
   }
 
@@ -1424,6 +1584,16 @@ class L10n {
     );
   }
 
+  /// `Uno o più {serviceLabel} selezionati non sono disponibili`
+  String bookingErrorInvalidServiceCustom(String serviceLabel) {
+    return Intl.message(
+      'Uno o più $serviceLabel selezionati non sono disponibili',
+      name: 'bookingErrorInvalidServiceCustom',
+      desc: '',
+      args: [serviceLabel],
+    );
+  }
+
   /// `L'operatore selezionato non è disponibile per questi servizi`
   String get bookingErrorInvalidStaff {
     return Intl.message(
@@ -1434,6 +1604,19 @@ class L10n {
     );
   }
 
+  /// `{staffLabel} selezionato non è disponibile per questi {serviceLabel}`
+  String bookingErrorInvalidStaffCustom(
+    String staffLabel,
+    String serviceLabel,
+  ) {
+    return Intl.message(
+      '$staffLabel selezionato non è disponibile per questi $serviceLabel',
+      name: 'bookingErrorInvalidStaffCustom',
+      desc: '',
+      args: [staffLabel, serviceLabel],
+    );
+  }
+
   /// `La sede selezionata non è disponibile`
   String get bookingErrorInvalidLocation {
     return Intl.message(
@@ -1441,6 +1624,16 @@ class L10n {
       name: 'bookingErrorInvalidLocation',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `{locationLabel} selezionata non è disponibile`
+  String bookingErrorInvalidLocationCustom(String locationLabel) {
+    return Intl.message(
+      '$locationLabel selezionata non è disponibile',
+      name: 'bookingErrorInvalidLocationCustom',
+      desc: '',
+      args: [locationLabel],
     );
   }
 
@@ -1471,6 +1664,36 @@ class L10n {
       name: 'bookingErrorStaffUnavailable',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `{staffLabel} selezionato non è disponibile in questo orario`
+  String bookingErrorStaffUnavailableCustom(String staffLabel) {
+    return Intl.message(
+      '$staffLabel selezionato non è disponibile in questo orario',
+      name: 'bookingErrorStaffUnavailableCustom',
+      desc: '',
+      args: [staffLabel],
+    );
+  }
+
+  /// `Impossibile recuperare i servizi della prenotazione`
+  String get bookingErrorMissingServices {
+    return Intl.message(
+      'Impossibile recuperare i servizi della prenotazione',
+      name: 'bookingErrorMissingServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Impossibile recuperare i {serviceLabel} della prenotazione`
+  String bookingErrorMissingServicesCustom(String serviceLabel) {
+    return Intl.message(
+      'Impossibile recuperare i $serviceLabel della prenotazione',
+      name: 'bookingErrorMissingServicesCustom',
+      desc: '',
+      args: [serviceLabel],
     );
   }
 

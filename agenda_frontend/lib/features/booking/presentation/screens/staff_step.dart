@@ -5,6 +5,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/booking_nomenclature_provider.dart';
 
 class StaffStep extends ConsumerStatefulWidget {
   const StaffStep({super.key});
@@ -23,6 +24,12 @@ class _StaffStepState extends ConsumerState<StaffStep> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final customStaffLabel = ref.watch(bookingStaffDisplayLabelProvider);
+    final customServiceLabel = ref.watch(bookingServiceDisplayLabelProvider);
+    final staffIcon = ref.watch(bookingStaffIconProvider);
+    final phraseOverrides = ref.watch(
+      bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
+    );
     final staffAsync = ref.watch(staffProvider);
     final bookingState = ref.watch(bookingFlowProvider);
     final bookingConfig = ref.watch(bookingConfigProvider);
@@ -54,14 +61,22 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    l10n.staffTitle,
+                    bookingStaffTitle(
+                      context,
+                      customStaffLabel,
+                      phraseOverrides: phraseOverrides,
+                    ),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    l10n.staffSubtitle,
+                    bookingStaffSubtitle(
+                      context,
+                      customStaffLabel,
+                      phraseOverrides: phraseOverrides,
+                    ),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
@@ -77,7 +92,15 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                 error: (e, _) => const SizedBox.shrink(),
                 data: (staffList) {
                   if (staffList.isEmpty) {
-                    return Center(child: Text(l10n.staffEmpty));
+                    return Center(
+                      child: Text(
+                        bookingNoStaffAvailableLabel(
+                          context,
+                          customStaffLabel,
+                          phraseOverrides: phraseOverrides,
+                        ),
+                      ),
+                    );
                   }
 
                   // UI multi-staff: permette di selezionare staff diversi per servizi diversi
@@ -99,7 +122,15 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                       (list) => list.isEmpty,
                     );
                     if (hasEmpty) {
-                      return Center(child: Text(l10n.staffEmpty));
+                      return Center(
+                        child: Text(
+                          bookingNoStaffAvailableLabel(
+                            context,
+                            customStaffLabel,
+                            phraseOverrides: phraseOverrides,
+                          ),
+                        ),
+                      );
                     }
 
                     return ListView(
@@ -108,6 +139,9 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                         _StaffTile(
                           staff: null,
                           isSelected: anyOperatorSelected,
+                          customStaffLabel: customStaffLabel,
+                          fallbackIcon: staffIcon,
+                          phraseOverrides: phraseOverrides,
                           onTap: () {
                             ref
                                 .read(bookingFlowProvider.notifier)
@@ -133,6 +167,9 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                                 isSelected:
                                     selectedStaffByService[service.id]?.id ==
                                     staff.id,
+                                customStaffLabel: customStaffLabel,
+                                fallbackIcon: staffIcon,
+                                phraseOverrides: phraseOverrides,
                                 onTap: () {
                                   ref
                                       .read(bookingFlowProvider.notifier)
@@ -164,7 +201,12 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                       child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: Text(
-                          l10n.noStaffForAllServices,
+                          bookingNoStaffForServicesLabel(
+                            context,
+                            customStaffLabel,
+                            customServiceLabel,
+                            phraseOverrides: phraseOverrides,
+                          ),
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodyLarge,
                         ),
@@ -191,6 +233,9 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                           staff: eligibleStaff.first,
                           isSelected:
                               true, // Sempre selezionato quando è l'unico
+                          customStaffLabel: customStaffLabel,
+                          fallbackIcon: staffIcon,
+                          phraseOverrides: phraseOverrides,
                           onTap: null, // Non cliccabile, è l'unica opzione
                         ),
                       ],
@@ -205,6 +250,9 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                       _StaffTile(
                         staff: null,
                         isSelected: anyOperatorSelected,
+                        customStaffLabel: customStaffLabel,
+                        fallbackIcon: staffIcon,
+                        phraseOverrides: phraseOverrides,
                         onTap: () {
                           ref
                               .read(bookingFlowProvider.notifier)
@@ -219,6 +267,9 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                           child: _StaffTile(
                             staff: staff,
                             isSelected: selectedStaff?.id == staff.id,
+                            customStaffLabel: customStaffLabel,
+                            fallbackIcon: staffIcon,
+                            phraseOverrides: phraseOverrides,
                             onTap: () {
                               ref
                                   .read(bookingFlowProvider.notifier)
@@ -251,6 +302,10 @@ class _StaffStepState extends ConsumerState<StaffStep> {
   Widget _buildFooter(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final customServiceLabel = ref.watch(bookingServiceDisplayLabelProvider);
+    final phraseOverrides = ref.watch(
+      bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
+    );
     final bookingState = ref.watch(bookingFlowProvider);
     final staffAsync = ref.watch(staffProvider);
     final totals = ref.watch(bookingTotalsProvider);
@@ -305,7 +360,12 @@ class _StaffStepState extends ConsumerState<StaffStep> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  l10n.servicesSelected(totals.selectedItemCount),
+                  bookingServicesSelectedLabel(
+                    context,
+                    customServiceLabel,
+                    totals.selectedItemCount,
+                    phraseOverrides: phraseOverrides,
+                  ),
                   style: theme.textTheme.bodyMedium,
                 ),
                 if (bookingState.request.services.isNotEmpty)
@@ -341,14 +401,23 @@ class _StaffStepState extends ConsumerState<StaffStep> {
 class _StaffTile extends StatelessWidget {
   final Staff? staff;
   final bool isSelected;
+  final String? customStaffLabel;
+  final IconData fallbackIcon;
+  final Map<String, String>? phraseOverrides;
   final VoidCallback? onTap;
 
-  const _StaffTile({required this.staff, required this.isSelected, this.onTap});
+  const _StaffTile({
+    required this.staff,
+    required this.isSelected,
+    this.customStaffLabel,
+    required this.fallbackIcon,
+    this.phraseOverrides,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l10n = context.l10n;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -373,7 +442,7 @@ class _StaffTile extends StatelessWidget {
                     ? theme.colorScheme.primary.withOpacity(0.1)
                     : theme.colorScheme.secondary.withOpacity(0.1),
                 child: staff == null
-                    ? Icon(Icons.groups, color: theme.colorScheme.primary)
+                    ? Icon(fallbackIcon, color: theme.colorScheme.primary)
                     : Text(
                         staff!.initials,
                         style: TextStyle(
@@ -389,7 +458,12 @@ class _StaffTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      staff?.displayName ?? l10n.staffAnyOperator,
+                      staff?.displayName ??
+                          bookingAnyStaffLabel(
+                            context,
+                            customStaffLabel,
+                            phraseOverrides: phraseOverrides,
+                          ),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -397,7 +471,11 @@ class _StaffTile extends StatelessWidget {
                     if (staff == null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        l10n.staffAnyOperatorSubtitle,
+                        bookingAnyStaffSubtitle(
+                          context,
+                          customStaffLabel,
+                          phraseOverrides: phraseOverrides,
+                        ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),

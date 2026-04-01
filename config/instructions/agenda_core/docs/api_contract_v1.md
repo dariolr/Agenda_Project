@@ -678,6 +678,31 @@ Error - Not Found (404):
 
 ---
 
+### GET /v1/businesses/by-slug/{slug}
+
+**No authentication required** (pubblico, usato dal frontend prenotazioni).
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Salone Bella Vita",
+    "slug": "salone-bella-vita",
+    "email": "info@bellavita.it",
+    "phone": "+39 06 12345678",
+    "timezone": "Europe/Rome",
+    "currency": "EUR",
+    "cancellation_hours": 24,
+    "primary_color": "#3B82F6",
+    "default_location_id": 1
+  }
+}
+```
+
+---
+
 ### GET /v1/businesses/{business_id}/locations
 
 Headers: `Authorization: Bearer <access_token>`
@@ -704,6 +729,7 @@ Response (200):
         "phone": "+39 06 12345678",
         "email": "roma@bellavita.it",
         "currency": "EUR",
+        "staff_icon_key": "person",
         "is_default": true,
         "is_active": true,
         "created_at": "2025-01-15T10:00:00Z",
@@ -736,6 +762,15 @@ Response (200):
         "city": "Roma",
         "phone": "+39 06 12345678",
         "timezone": "Europe/Rome",
+        "allow_customer_choose_staff": true,
+        "staff_icon_key": "court",
+        "booking_text_overrides": {
+          "default": {
+            "services_title": "Scegli attività",
+            "services_subtitle": "Seleziona quello che vuoi prenotare"
+          }
+        },
+        "cancellation_hours": 24,
         "is_default": true
       }
     ]
@@ -744,6 +779,8 @@ Response (200):
 ```
 
 Nota: Endpoint usato dal frontend di prenotazione per mostrare le sedi disponibili. Se il business ha più di una location, l'utente può scegliere dove prenotare.
+Nota: `booking_text_overrides` è opzionale e usa un solo blocco `default` con le frasi da sovrascrivere per tutti gli utenti.
+Nota: `staff_icon_key` è opzionale (default `person`). Valori ammessi: `person`, `door`, `team`, `tennis`, `soccer`, `resource`, `room`, `court`, `equipment`, `wellness`, `medical`, `beauty`, `education`, `pet`, `generic`.
 
 ---
 
@@ -769,6 +806,7 @@ Response (200):
     "phone": "+39 06 12345678",
     "email": "roma@bellavita.it",
     "currency": "EUR",
+    "staff_icon_key": "person",
     "is_active": true,
     "created_at": "2025-01-01T00:00:00Z",
     "updated_at": "2025-01-15T10:00:00Z"

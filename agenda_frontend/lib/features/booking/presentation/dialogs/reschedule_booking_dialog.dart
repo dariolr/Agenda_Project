@@ -8,6 +8,7 @@ import '/core/models/booking_item.dart';
 import '/core/network/network_providers.dart';
 import '/core/services/tenant_time_service.dart';
 import '/core/widgets/feedback_dialog.dart';
+import '../../providers/booking_nomenclature_provider.dart';
 import '../../providers/locations_provider.dart';
 import '../../providers/my_bookings_provider.dart';
 
@@ -49,6 +50,16 @@ class _RescheduleBookingDialogState
     super.dispose();
   }
 
+  String? _customServiceLabel() {
+    return null;
+  }
+
+  Map<String, String>? _phraseOverrides() {
+    return ref.read(
+      bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
+    );
+  }
+
   Future<void> _loadAvailability(DateTime date) async {
     setState(() {
       _isLoadingSlots = true;
@@ -73,7 +84,11 @@ class _RescheduleBookingDialogState
 
       if (serviceIds.isEmpty) {
         setState(() {
-          _error = 'Impossibile recuperare i servizi della prenotazione';
+          _error = bookingMissingSelectedServicesMessage(
+            context,
+            _customServiceLabel(),
+            phraseOverrides: _phraseOverrides(),
+          );
           _isLoadingSlots = false;
         });
         return;
@@ -158,7 +173,11 @@ class _RescheduleBookingDialogState
       await FeedbackDialog.showError(
         context,
         title: context.l10n.errorTitle,
-        message: 'Impossibile recuperare i servizi della prenotazione',
+        message: bookingMissingSelectedServicesMessage(
+          context,
+          _customServiceLabel(),
+          phraseOverrides: _phraseOverrides(),
+        ),
       );
       return;
     }

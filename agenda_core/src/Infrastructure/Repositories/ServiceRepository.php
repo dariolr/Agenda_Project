@@ -596,28 +596,95 @@ final class ServiceRepository
 
     /**
      * Delete a service category.
-     * Services in this category will have category_id set to NULL.
+     * Inactive linked entries are first detached from the category.
      */
     public function deleteCategory(int $categoryId): bool
     {
         $pdo = $this->db->getPdo();
-
         $pdo->beginTransaction();
+
         try {
-            // Set category_id to NULL for all services in this category
-            $stmt = $pdo->prepare('UPDATE services SET category_id = NULL, updated_at = NOW() WHERE category_id = ?');
+            // Detach inactive services from the category.
+            $stmt = $pdo->prepare(
+                'UPDATE services
+                 SET category_id = NULL, updated_at = NOW()
+                 WHERE category_id = ? AND is_active = 0'
+            );
             $stmt->execute([$categoryId]);
 
-            // Delete the category
+            // Detach inactive packages from the category when table is available.
+            if ($this->tableExists('service_packages')) {
+                $stmt = $pdo->prepare(
+                    'UPDATE service_packages
+                     SET category_id = NULL, updated_at = NOW()
+                     WHERE category_id = ? AND is_active = 0'
+                );
+                $stmt->execute([$categoryId]);
+            }
+
             $stmt = $pdo->prepare('DELETE FROM service_categories WHERE id = ?');
-            $stmt->execute([$categoryId]);
+            $ok = $stmt->execute([$categoryId]);
 
             $pdo->commit();
-            return true;
+            return $ok;
         } catch (\Throwable $e) {
             $pdo->rollBack();
             throw $e;
         }
+    }
+
+    /**
+     * Returns true when the category has active linked entries.
+     * A category is considered active/non-deletable if it has:
+     * - at least one active service with at least one active variant
+     * - or at least one active package
+     */
+    public function hasActiveCategoryLinkedEntries(int $categoryId): bool
+    {
+        $pdo = $this->db->getPdo();
+
+        $servicesStmt = $pdo->prepare(
+            'SELECT 1
+             FROM services s
+             JOIN service_variants sv ON sv.service_id = s.id
+             WHERE s.category_id = ?
+               AND s.is_active = 1
+               AND sv.is_active = 1
+             LIMIT 1'
+        );
+        $servicesStmt->execute([$categoryId]);
+        if ($servicesStmt->fetchColumn() !== false) {
+            return true;
+        }
+
+        if ($this->tableExists('service_packages')) {
+            $packagesStmt = $pdo->prepare(
+                'SELECT 1
+                 FROM service_packages
+                 WHERE category_id = ?
+                   AND is_active = 1
+                 LIMIT 1'
+            );
+            $packagesStmt->execute([$categoryId]);
+            if ($packagesStmt->fetchColumn() !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function tableExists(string $tableName): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT 1
+             FROM information_schema.tables
+             WHERE table_schema = DATABASE()
+               AND table_name = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$tableName]);
+        return $stmt->fetchColumn() !== false;
     }
 
     /**
