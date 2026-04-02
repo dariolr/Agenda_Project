@@ -270,8 +270,7 @@ final class AppointmentsController
             // Refresh reminder if time or service fields changed
             $reminderRelevantFields = ['start_time', 'end_time', 'service_id', 'service_variant_id'];
             $shouldRefreshReminder = !empty(array_intersect(array_keys($actuallyChangedFields), $reminderRelevantFields));
-            if ($shouldRefreshReminder) {
-                if ($notifyClient) {
+                if ($shouldRefreshReminder) {
                     $updatedBooking = $this->bookingRepo->findById($bookingId);
                     $newBookingFirstStart = $this->extractFirstStartTime($updatedBooking);
                     $firstStartChanged =
@@ -279,7 +278,9 @@ final class AppointmentsController
                         $newBookingFirstStart !== null &&
                         $oldBookingFirstStart !== $newBookingFirstStart;
 
-                    if ($firstStartChanged && $updatedBooking !== null) {
+                    // notify_client controls only the rescheduled email.
+                    // Reminder must always be refreshed when time/service changes.
+                    if ($notifyClient && $firstStartChanged && $updatedBooking !== null) {
                         $this->queueRescheduleNotification(
                             $updatedBooking,
                             $oldBookingFirstStart,
@@ -288,10 +289,7 @@ final class AppointmentsController
                     }
 
                     $this->refreshBookingReminder($bookingId);
-                } else {
-                    $this->clearPendingBookingReminder($bookingId);
                 }
-            }
         }
 
         return Response::success($this->formatAppointment($updated));
