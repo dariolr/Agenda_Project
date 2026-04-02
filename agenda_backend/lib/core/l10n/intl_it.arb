@@ -1589,6 +1589,7 @@
   "agendaDisplaySettingsCardTextZoomLabel": "Zoom testo",
   "agendaDisplaySettingsCardColorOpacityLabel": "Intensità colori appuntamenti",
   "agendaDisplaySettingsExtraMinutesBandIntensityLabel": "Intensità colori tempo aggiuntivo",
+  "agendaDisplaySettingsHoverUnrelatedDimIntensityLabel": "Intensità del colore su appuntamenti diversi da quelli selezionati",
   "agendaDisplaySettingsShowPricesLabel": "Visualizza importi",
   "agendaDisplaySettingsShowCancelledLabel": "Mostra appuntamenti cancellati",
   "agendaDisplaySettingsServiceColorsLabel": "Imposta colori da:",

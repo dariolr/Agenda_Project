@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
-import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/desktop_popup_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,6 +26,12 @@ enum AdaptiveDropdownAlignment { left, right }
 /// Vertical position for the popup relative to the trigger.
 enum AdaptiveDropdownVerticalPosition { below, above }
 
+/// Presentation mode on desktop.
+enum AdaptiveDropdownDesktopPresentation { popup, dialog }
+
+/// Presentation mode on mobile/tablet.
+enum AdaptiveDropdownNonDesktopPresentation { bottomSheet, popup }
+
 /// Adaptive dropdown that shows:
 /// - A modal bottom sheet on mobile/tablet
 /// - An anchored popup on desktop
@@ -46,7 +51,12 @@ class AdaptiveDropdown<T> extends ConsumerStatefulWidget {
     this.onOpened,
     this.onClosed,
     this.useRootNavigator = true,
+    this.desktopPresentation = AdaptiveDropdownDesktopPresentation.popup,
+    this.nonDesktopPresentation =
+        AdaptiveDropdownNonDesktopPresentation.bottomSheet,
     this.forcePopup = false,
+    this.forceBottomSheet = false,
+    this.forceDialogOnDesktop = false,
     this.hideTriggerWhenOpen = false,
   });
 
@@ -89,8 +99,23 @@ class AdaptiveDropdown<T> extends ConsumerStatefulWidget {
   /// Whether to push the mobile bottom sheet on the root navigator.
   final bool useRootNavigator;
 
-  /// If true, always show popup instead of bottom sheet on mobile/tablet.
+  /// Presentation mode used on desktop.
+  final AdaptiveDropdownDesktopPresentation desktopPresentation;
+
+  /// Presentation mode used on mobile/tablet.
+  final AdaptiveDropdownNonDesktopPresentation nonDesktopPresentation;
+
+  /// Legacy flag: if true, always show popup instead of bottom sheet
+  /// on mobile/tablet.
   final bool forcePopup;
+
+  /// Legacy flag: if true, always use non-desktop presentation flow
+  /// (bottom sheet by default) even on desktop.
+  final bool forceBottomSheet;
+
+  /// Legacy flag: if true and [forceBottomSheet] is enabled,
+  /// desktop uses dialog instead of bottom sheet.
+  final bool forceDialogOnDesktop;
 
   /// If true, hides the trigger widget when the popup is open.
   final bool hideTriggerWhenOpen;
@@ -125,8 +150,45 @@ class _AdaptiveDropdownState<T> extends ConsumerState<AdaptiveDropdown<T>> {
 
   void _handleTap() {
     final formFactor = ref.read(formFactorProvider);
+    final isDesktop = formFactor == AppFormFactor.desktop;
 
-    if (widget.forcePopup || formFactor == AppFormFactor.desktop) {
+    // Backward-compatible resolution for legacy flags.
+    final effectiveDesktopPresentation = widget.forceBottomSheet &&
+            widget.forceDialogOnDesktop
+        ? AdaptiveDropdownDesktopPresentation.dialog
+        : widget.desktopPresentation;
+    final effectiveNonDesktopPresentation = widget.forcePopup
+        ? AdaptiveDropdownNonDesktopPresentation.popup
+        : widget.nonDesktopPresentation;
+
+    if (widget.forceBottomSheet) {
+      if (isDesktop &&
+          effectiveDesktopPresentation ==
+              AdaptiveDropdownDesktopPresentation.dialog) {
+        _showDesktopDialog();
+        return;
+      }
+      if (effectiveNonDesktopPresentation ==
+          AdaptiveDropdownNonDesktopPresentation.popup) {
+        _showDesktopPopup();
+      } else {
+        _showMobileSheet();
+      }
+      return;
+    }
+
+    if (isDesktop) {
+      if (effectiveDesktopPresentation ==
+          AdaptiveDropdownDesktopPresentation.dialog) {
+        _showDesktopDialog();
+      } else {
+        _showDesktopPopup();
+      }
+      return;
+    }
+
+    if (effectiveNonDesktopPresentation ==
+        AdaptiveDropdownNonDesktopPresentation.popup) {
       _showDesktopPopup();
     } else {
       _showMobileSheet();
@@ -137,9 +199,15 @@ class _AdaptiveDropdownState<T> extends ConsumerState<AdaptiveDropdown<T>> {
     widget.onOpened?.call();
     _isOpen = true;
 
-    final result = await AppBottomSheet.show<T>(
+    final result = await showModalBottomSheet<T>(
       context: context,
-      heightFactor: null,
+      isScrollControlled: true,
+      useSafeArea: true,
+      useRootNavigator: widget.useRootNavigator,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => _MobileSheetContent<T>(
         items: widget.items,
         selectedValue: widget.selectedValue,
@@ -148,8 +216,36 @@ class _AdaptiveDropdownState<T> extends ConsumerState<AdaptiveDropdown<T>> {
           Navigator.of(ctx).pop(value);
         },
       ),
+    );
+
+    _isOpen = false;
+    widget.onClosed?.call();
+
+    if (result != null) {
+      widget.onSelected(result);
+    }
+  }
+
+  Future<void> _showDesktopDialog() async {
+    widget.onOpened?.call();
+    _isOpen = true;
+
+    final result = await showDialog<T>(
+      context: context,
       useRootNavigator: widget.useRootNavigator,
-      padding: EdgeInsets.zero,
+      builder: (ctx) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360, maxHeight: 420),
+          child: _DesktopDropdownContent<T>(
+            items: widget.items,
+            selectedValue: widget.selectedValue,
+            title: widget.modalTitle,
+            onSelected: (value) {
+              Navigator.of(ctx).pop(value);
+            },
+          ),
+        ),
+      ),
     );
 
     _isOpen = false;
@@ -210,15 +306,18 @@ class _AdaptiveDropdownState<T> extends ConsumerState<AdaptiveDropdown<T>> {
   Widget build(BuildContext context) {
     return CompositedTransformTarget(
       link: _layerLink,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _handleTap,
-        child: Visibility(
-          visible: !(widget.hideTriggerWhenOpen && _isOpen),
-          maintainSize: true,
-          maintainAnimation: true,
-          maintainState: true,
-          child: widget.child,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _handleTap,
+          child: Visibility(
+            visible: !(widget.hideTriggerWhenOpen && _isOpen),
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            child: widget.child,
+          ),
         ),
       ),
     );

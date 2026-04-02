@@ -393,6 +393,12 @@ DELETE /v1/bookings/recurring/{rule_id}                - Cancella serie (scope=a
 26. [ ] Template email riepilogo serie
 27. [ ] Logica invio email serie
 
+**TODO tecnico (stato attuale)**
+- La creazione ricorrente (`CreateRecurringBooking`) al momento **non accoda** notifiche
+  `booking_confirmed` e `booking_reminder` per le occorrenze della serie.
+- Impatto: le occorrenze ricorrenti possono risultare senza reminder se non accodate da job dedicati.
+- Azione prevista (Phase 2): accodare conferma + reminder per ogni occorrenza valida della serie.
+
 ### Fase 6: Test e deploy
 28. [ ] Test end-to-end su ambiente locale
 29. [ ] Deploy produzione

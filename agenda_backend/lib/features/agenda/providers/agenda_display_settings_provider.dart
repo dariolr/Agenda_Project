@@ -10,6 +10,7 @@ class AgendaDisplaySettings {
     this.cardTextScale = 1.0,
     this.cardColorOpacity = 1.0,
     this.extraMinutesBandIntensity = 0.5,
+    this.hoverUnrelatedCardDimIntensity = 0.0,
     this.showPricesOverride,
     this.useServiceColorsOverride,
     this.showCancelledAppointments = false,
@@ -18,6 +19,7 @@ class AgendaDisplaySettings {
   final double cardTextScale;
   final double cardColorOpacity;
   final double extraMinutesBandIntensity;
+  final double hoverUnrelatedCardDimIntensity;
   final bool? showPricesOverride;
   final bool? useServiceColorsOverride;
   final bool showCancelledAppointments;
@@ -26,6 +28,7 @@ class AgendaDisplaySettings {
     double? cardTextScale,
     double? cardColorOpacity,
     double? extraMinutesBandIntensity,
+    double? hoverUnrelatedCardDimIntensity,
     bool? showPricesOverride,
     bool? useServiceColorsOverride,
     bool? showCancelledAppointments,
@@ -37,6 +40,8 @@ class AgendaDisplaySettings {
       cardColorOpacity: cardColorOpacity ?? this.cardColorOpacity,
       extraMinutesBandIntensity:
           extraMinutesBandIntensity ?? this.extraMinutesBandIntensity,
+      hoverUnrelatedCardDimIntensity:
+          hoverUnrelatedCardDimIntensity ?? this.hoverUnrelatedCardDimIntensity,
       showPricesOverride: clearShowPricesOverride
           ? null
           : (showPricesOverride ?? this.showPricesOverride),
@@ -56,6 +61,8 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
   static const _maxCardOpacity = 1.0;
   static const _minExtraMinutesBandIntensity = 0.0;
   static const _maxExtraMinutesBandIntensity = 1.0;
+  static const _minHoverUnrelatedCardDimIntensity = 0.0;
+  static const _maxHoverUnrelatedCardDimIntensity = 1.0;
 
   @override
   AgendaDisplaySettings build() {
@@ -74,10 +81,19 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
           .getAgendaCardColorOpacity(businessId, locationId: locationId)
           .clamp(_minCardOpacity, _maxCardOpacity),
       extraMinutesBandIntensity: prefs
-          .getAgendaExtraMinutesBandIntensity(businessId, locationId: locationId)
+          .getAgendaExtraMinutesBandIntensity(
+            businessId,
+            locationId: locationId,
+          )
+          .clamp(_minExtraMinutesBandIntensity, _maxExtraMinutesBandIntensity),
+      hoverUnrelatedCardDimIntensity: prefs
+          .getAgendaHoverUnrelatedCardDimIntensity(
+            businessId,
+            locationId: locationId,
+          )
           .clamp(
-            _minExtraMinutesBandIntensity,
-            _maxExtraMinutesBandIntensity,
+            _minHoverUnrelatedCardDimIntensity,
+            _maxHoverUnrelatedCardDimIntensity,
           ),
       showPricesOverride: prefs.getAgendaShowPricesOverride(
         businessId,
@@ -131,6 +147,24 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     await ref
         .read(preferencesServiceProvider)
         .setAgendaExtraMinutesBandIntensity(
+          businessId,
+          next,
+          locationId: locationId,
+        );
+  }
+
+  Future<void> setHoverUnrelatedCardDimIntensity(double value) async {
+    final businessId = _businessId();
+    final locationId = _locationId();
+    if (businessId <= 0 || locationId <= 0) return;
+    final next = value.clamp(
+      _minHoverUnrelatedCardDimIntensity,
+      _maxHoverUnrelatedCardDimIntensity,
+    );
+    state = state.copyWith(hoverUnrelatedCardDimIntensity: next);
+    await ref
+        .read(preferencesServiceProvider)
+        .setAgendaHoverUnrelatedCardDimIntensity(
           businessId,
           next,
           locationId: locationId,
@@ -199,6 +233,11 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
       0.5,
       locationId: locationId,
     );
+    await prefs.setAgendaHoverUnrelatedCardDimIntensity(
+      businessId,
+      0.0,
+      locationId: locationId,
+    );
     await prefs.setAgendaShowPricesOverride(
       businessId,
       null,
@@ -234,6 +273,12 @@ final agendaCardColorOpacityProvider = Provider<double>((ref) {
 
 final agendaExtraMinutesBandIntensityProvider = Provider<double>((ref) {
   return ref.watch(agendaDisplaySettingsProvider).extraMinutesBandIntensity;
+});
+
+final agendaHoverUnrelatedCardDimIntensityProvider = Provider<double>((ref) {
+  return ref
+      .watch(agendaDisplaySettingsProvider)
+      .hoverUnrelatedCardDimIntensity;
 });
 
 final effectiveShowAppointmentPriceInCardProvider = Provider<bool>((ref) {
